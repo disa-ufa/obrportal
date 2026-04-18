@@ -140,6 +140,9 @@ def looks_like_code_reference(path: Path, line: str, value: str) -> bool:
 def scan_generic_assignment(path: Path, line: str, line_number: int) -> list[str]:
     findings: list[str] = []
 
+    if path.name in ALLOWED_FILES:
+        return findings
+
     for match in GENERIC_SECRET_ASSIGNMENT_RE.finditer(line):
         value = match.group(2).strip().strip("'\"`")
 
