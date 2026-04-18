@@ -67,3 +67,19 @@ export async function getHealth() {
 export async function getReady() {
   return request("/api/v1/ready");
 }
+
+export async function getAdminUsers() {
+  return request("/api/v1/admin/users");
+}
+
+export async function getAdminRoles() {
+  return request("/api/v1/admin/roles");
+}
+
+export async function getAdminPermissions() {
+  return request("/api/v1/admin/permissions");
+}
+
+export async function getAdminAuditEvents() {
+  return request("/api/v1/admin/audit-events");
+}
