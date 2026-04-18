@@ -1,34 +1,106 @@
-name: CI
+﻿name: CI
 
 on:
-  pull_request:
   push:
-    branches: [develop, main]
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
 
 jobs:
-  backend:
+  test:
+    name: Test ObrPortal
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: pip install -r requirements.txt
-      - run: ruff check app
-      - run: pytest
 
-  frontend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    env:
+      SEED_ADMIN_EMAIL: admin@obrportal.local
+      SEED_ADMIN_PASSWORD: Admin123Local2026!
+      SEED_DEMO_EMAIL: learner@obrportal.local
+      SEED_DEMO_PASSWORD: Learner123Local2026!
+      SEED_DEMO_ROLE: learner_fl
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: npm install
-      - run: npm run build
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Docker versions
+        run: |
+          docker version
+          docker compose version
+
+      - name: Create env file
+        run: |
+          cp .env.example .env
+
+      - name: Build and start services
+        run: |
+          docker compose up -d --build
+
+      - name: Show containers
+        run: |
+          docker compose ps
+
+      - name: Wait for backend
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8000/health; then
+              echo "Backend is ready"
+              exit 0
+            fi
+
+            echo "Waiting for backend..."
+            sleep 2
+          done
+
+          docker compose logs backend
+          exit 1
+
+      - name: Run migrations
+        run: |
+          docker compose exec -T backend alembic upgrade head
+
+      - name: Seed roles and permissions
+        run: |
+          docker compose exec -T backend python -m app.db.seed
+
+      - name: Seed admin user
+        run: |
+          docker compose exec -T \
+            -e SEED_ADMIN_EMAIL="${SEED_ADMIN_EMAIL}" \
+            -e SEED_ADMIN_PASSWORD="${SEED_ADMIN_PASSWORD}" \
+            backend python -m app.db.seed_admin
+
+      - name: Seed learner user
+        run: |
+          docker compose exec -T \
+            -e SEED_DEMO_EMAIL="${SEED_DEMO_EMAIL}" \
+            -e SEED_DEMO_PASSWORD="${SEED_DEMO_PASSWORD}" \
+            -e SEED_DEMO_ROLE="${SEED_DEMO_ROLE}" \
+            backend python -m app.db.seed_demo_user
+
+      - name: Run backend pytest
+        run: |
+          docker compose exec -T backend pytest app/tests -q
+
+      - name: Run auth RBAC smoke check
+        run: |
+          python scripts/smoke_auth_rbac.py
+
+      - name: Build frontend
+        run: |
+          docker compose exec -T frontend npm run build
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs backend
+          docker compose logs frontend
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose down -v
