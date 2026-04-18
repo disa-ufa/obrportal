@@ -20,7 +20,7 @@ def request_json(
     path: str,
     body: dict | None = None,
     token: str | None = None,
-) -> tuple[int, dict | None]:
+) -> tuple[int, dict | list | None]:
     data = None
     headers = {
         "Accept": "application/json",
@@ -56,6 +56,16 @@ def assert_status(actual: int, expected: int, label: str) -> None:
         raise AssertionError(f"{label}: expected HTTP {expected}, got {actual}")
 
 
+def assert_list_min_count(payload: dict | list | None, minimum: int, label: str) -> list:
+    if not isinstance(payload, list):
+        raise AssertionError(f"{label}: expected list payload")
+
+    if len(payload) < minimum:
+        raise AssertionError(f"{label}: expected at least {minimum} items, got {len(payload)}")
+
+    return payload
+
+
 def login(email: str, password: str) -> str:
     status, payload = request_json(
         "POST",
@@ -68,7 +78,10 @@ def login(email: str, password: str) -> str:
 
     assert_status(status, 200, f"login {email}")
 
-    token = payload.get("access_token") if payload else None
+    if not isinstance(payload, dict):
+        raise AssertionError(f"login {email}: expected dict payload")
+
+    token = payload.get("access_token")
 
     if not token:
         raise AssertionError(f"login {email}: access_token missing")
@@ -81,12 +94,12 @@ def main() -> int:
 
     status, health = request_json("GET", "/health")
     assert_status(status, 200, "health")
-    assert health and health.get("status") == "ok"
+    assert isinstance(health, dict) and health.get("status") == "ok"
     checks.append("health ok")
 
     status, ready = request_json("GET", "/api/v1/ready")
     assert_status(status, 200, "ready")
-    assert ready and ready.get("status") == "ok"
+    assert isinstance(ready, dict) and ready.get("status") == "ok"
     checks.append("ready ok")
 
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -94,14 +107,46 @@ def main() -> int:
 
     status, me = request_json("GET", "/api/v1/auth/me", token=admin_token)
     assert_status(status, 200, "admin /auth/me")
-    assert me and me.get("email") == ADMIN_EMAIL
+    assert isinstance(me, dict) and me.get("email") == ADMIN_EMAIL
     assert any(role.get("code") == "admin" for role in me.get("roles", []))
     checks.append("admin /auth/me ok")
 
     status, rbac = request_json("GET", "/api/v1/admin/rbac-check", token=admin_token)
     assert_status(status, 200, "admin rbac-check")
-    assert rbac and rbac.get("has_permission") is True
+    assert isinstance(rbac, dict) and rbac.get("has_permission") is True
     checks.append("admin rbac-check ok")
+
+    status, users_payload = request_json("GET", "/api/v1/admin/users", token=admin_token)
+    assert_status(status, 200, "admin users")
+    users = assert_list_min_count(users_payload, 2, "admin users")
+    user_emails = {item.get("email") for item in users}
+    assert ADMIN_EMAIL in user_emails
+    assert LEARNER_EMAIL in user_emails
+    checks.append("admin users ok")
+
+    status, roles_payload = request_json("GET", "/api/v1/admin/roles", token=admin_token)
+    assert_status(status, 200, "admin roles")
+    roles = assert_list_min_count(roles_payload, 9, "admin roles")
+    role_codes = {item.get("code") for item in roles}
+    assert "admin" in role_codes
+    assert "learner_fl" in role_codes
+    assert "frdo_operator" in role_codes
+    checks.append("admin roles ok")
+
+    status, permissions_payload = request_json("GET", "/api/v1/admin/permissions", token=admin_token)
+    assert_status(status, 200, "admin permissions")
+    permissions = assert_list_min_count(permissions_payload, 43, "admin permissions")
+    permission_codes = {item.get("code") for item in permissions}
+    assert "admin.users.read" in permission_codes
+    assert "frdo.export" in permission_codes
+    checks.append("admin permissions ok")
+
+    status, audit_payload = request_json("GET", "/api/v1/admin/audit-events", token=admin_token)
+    assert_status(status, 200, "admin audit-events")
+    audit_events = assert_list_min_count(audit_payload, 1, "admin audit-events")
+    audit_actions = {item.get("action") for item in audit_events}
+    assert "login_success" in audit_actions
+    checks.append("admin audit-events ok")
 
     status, _ = request_json("GET", "/api/v1/admin/rbac-check")
     assert_status(status, 401, "rbac-check without token")
@@ -110,11 +155,21 @@ def main() -> int:
     learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
     checks.append("learner login ok")
 
-    status, _ = request_json("GET", "/api/v1/admin/rbac-check", token=learner_token)
-    assert_status(status, 403, "learner rbac-check")
-    checks.append("learner rbac-check returns 403")
+    protected_paths = [
+        "/api/v1/admin/rbac-check",
+        "/api/v1/admin/users",
+        "/api/v1/admin/roles",
+        "/api/v1/admin/permissions",
+        "/api/v1/admin/audit-events",
+    ]
 
-    print("Smoke auth/RBAC passed:")
+    for path in protected_paths:
+        status, _ = request_json("GET", path, token=learner_token)
+        assert_status(status, 403, f"learner forbidden {path}")
+
+    checks.append("learner admin API returns 403")
+
+    print("Smoke auth/RBAC/admin API passed:")
     for check in checks:
         print(f" - {check}")
 
@@ -125,5 +180,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except Exception as exc:
-        print(f"Smoke auth/RBAC failed: {exc}", file=sys.stderr)
+        print(f"Smoke auth/RBAC/admin API failed: {exc}", file=sys.stderr)
         raise SystemExit(1)
