@@ -88,6 +88,10 @@ export async function getAdminRoles() {
   return request("/api/v1/admin/roles");
 }
 
+export async function getAdminRoleDetail(roleId) {
+  return request(`/api/v1/admin/roles/${roleId}`);
+}
+
 export async function getAdminPermissions() {
   return request("/api/v1/admin/permissions");
 }

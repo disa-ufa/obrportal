@@ -7,6 +7,7 @@ import {
   getAdminOrganizationDetail,
   getAdminOrganizations,
   getAdminPermissions,
+  getAdminRoleDetail,
   getAdminRoles,
   getAdminUserDetail,
   getAdminUsers,
@@ -61,6 +62,10 @@ export default function App() {
   const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [selectedOrganizationLoading, setSelectedOrganizationLoading] = useState(false);
   const [selectedOrganizationError, setSelectedOrganizationError] = useState("");
+
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedRoleLoading, setSelectedRoleLoading] = useState(false);
+  const [selectedRoleError, setSelectedRoleError] = useState("");
 
   async function loadSystemStatus() {
     try {
@@ -134,6 +139,7 @@ export default function App() {
       setAdminDataLoadedAt("");
       clearSelectedUser();
       clearSelectedOrganization();
+      clearSelectedRole();
     } finally {
       setInitializingAuth(false);
     }
@@ -151,6 +157,7 @@ export default function App() {
     setRbac(null);
     clearSelectedUser();
     clearSelectedOrganization();
+    clearSelectedRole();
 
     try {
       await login(email, password);
@@ -219,6 +226,21 @@ export default function App() {
     }
   }
 
+  async function handleOpenRole(roleId) {
+    setSelectedRole(null);
+    setSelectedRoleError("");
+    setSelectedRoleLoading(true);
+
+    try {
+      const detail = await getAdminRoleDetail(roleId);
+      setSelectedRole(detail);
+    } catch (err) {
+      setSelectedRoleError(`${err.status || ""} ${err.message}`);
+    } finally {
+      setSelectedRoleLoading(false);
+    }
+  }
+
   function clearSelectedUser() {
     setSelectedUser(null);
     setSelectedUserLoading(false);
@@ -229,6 +251,12 @@ export default function App() {
     setSelectedOrganization(null);
     setSelectedOrganizationLoading(false);
     setSelectedOrganizationError("");
+  }
+
+  function clearSelectedRole() {
+    setSelectedRole(null);
+    setSelectedRoleLoading(false);
+    setSelectedRoleError("");
   }
 
   function handleLogout() {
@@ -244,6 +272,7 @@ export default function App() {
     setInitializingAuth(false);
     clearSelectedUser();
     clearSelectedOrganization();
+    clearSelectedRole();
   }
 
   function renderCurrentPage() {
@@ -283,6 +312,11 @@ export default function App() {
           user={user}
           roles={adminData.roles}
           loading={adminLoading}
+          selectedRole={selectedRole}
+          selectedRoleLoading={selectedRoleLoading}
+          selectedRoleError={selectedRoleError}
+          onOpenRole={handleOpenRole}
+          onCloseRole={clearSelectedRole}
         />
       );
     }
