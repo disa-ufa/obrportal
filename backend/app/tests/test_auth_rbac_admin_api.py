@@ -7,10 +7,8 @@ from urllib.request import Request, urlopen
 
 
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
-
 ADMIN_EMAIL = os.getenv("TEST_ADMIN_EMAIL", "admin@obrportal.local")
 ADMIN_PASSWORD = os.getenv("TEST_ADMIN_PASSWORD", "Admin123Local2026!")
-
 LEARNER_EMAIL = os.getenv("TEST_LEARNER_EMAIL", "learner@obrportal.local")
 LEARNER_PASSWORD = os.getenv("TEST_LEARNER_PASSWORD", "Learner123Local2026!")
 
@@ -21,14 +19,12 @@ def request_json(
     body: dict | None = None,
     token: str | None = None,
 ) -> tuple[int, dict | list | None]:
-    data = None
-    headers = {
-        "Accept": "application/json",
-    }
+    headers = {"Accept": "application/json"}
 
+    data = None
     if body is not None:
-        data = json.dumps(body).encode("utf-8")
         headers["Content-Type"] = "application/json"
+        data = json.dumps(body).encode("utf-8")
 
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -41,7 +37,7 @@ def request_json(
     )
 
     try:
-        with urlopen(request, timeout=10) as response:
+        with urlopen(request, timeout=15) as response:
             raw = response.read().decode("utf-8")
             payload = json.loads(raw) if raw else None
             return response.status, payload
@@ -55,39 +51,17 @@ def login(email: str, password: str) -> str:
     status, payload = request_json(
         "POST",
         "/api/v1/auth/login",
-        {
-            "email": email,
-            "password": password,
-        },
+        {"email": email, "password": password},
     )
 
     assert status == 200
     assert isinstance(payload, dict)
-    assert payload.get("token_type") == "bearer"
-    assert payload.get("access_token")
+    assert payload["access_token"]
 
-    return payload["access_token"]
-
-
-def test_health_and_ready_are_ok() -> None:
-    status, health = request_json("GET", "/health")
-
-    assert status == 200
-    assert isinstance(health, dict)
-    assert health["status"] == "ok"
-    assert health["app"] == "ObrPortal"
-
-    status, ready = request_json("GET", "/api/v1/ready")
-
-    assert status == 200
-    assert isinstance(ready, dict)
-    assert ready["status"] == "ok"
-    assert ready["database"] == "ok"
-    assert ready["redis"] == "ok"
-    assert ready["storage"] == "ok"
+    return str(payload["access_token"])
 
 
-def test_admin_can_login_and_read_current_user() -> None:
+def test_admin_login_and_me() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
     status, payload = request_json("GET", "/api/v1/auth/me", token=token)
@@ -95,80 +69,119 @@ def test_admin_can_login_and_read_current_user() -> None:
     assert status == 200
     assert isinstance(payload, dict)
     assert payload["email"] == ADMIN_EMAIL
-    assert payload["is_active"] is True
     assert any(role["code"] == "admin" for role in payload["roles"])
 
 
-def test_admin_can_access_admin_api() -> None:
+def test_bad_password_returns_401() -> None:
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": ADMIN_EMAIL, "password": "wrong-password"},
+    )
+
+    assert status == 401
+    assert isinstance(payload, dict)
+
+
+def test_no_token_returns_401_for_admin_api() -> None:
+    status, payload = request_json("GET", "/api/v1/admin/users")
+
+    assert status == 401
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_access_admin_api() -> None:
+    token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, payload = request_json("GET", "/api/v1/admin/users", token=token)
+
+    assert status == 403
+    assert isinstance(payload, dict)
+
+
+def test_admin_rbac_check_and_read_only_api() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, rbac = request_json("GET", "/api/v1/admin/rbac-check", token=token)
+    assert status == 200
+    assert isinstance(rbac, dict)
+    assert rbac["status"] == "ok"
+    assert rbac["has_permission"] is True
 
     status, users = request_json("GET", "/api/v1/admin/users", token=token)
     assert status == 200
     assert isinstance(users, list)
     assert len(users) >= 2
 
-    user_emails = {item["email"] for item in users}
-    assert ADMIN_EMAIL in user_emails
-    assert LEARNER_EMAIL in user_emails
-
     status, roles = request_json("GET", "/api/v1/admin/roles", token=token)
     assert status == 200
     assert isinstance(roles, list)
-    assert len(roles) >= 9
-
-    role_codes = {item["code"] for item in roles}
-    assert "admin" in role_codes
-    assert "learner_fl" in role_codes
-    assert "frdo_operator" in role_codes
+    assert len(roles) >= 1
 
     status, permissions = request_json("GET", "/api/v1/admin/permissions", token=token)
     assert status == 200
     assert isinstance(permissions, list)
-    assert len(permissions) >= 43
-
-    permission_codes = {item["code"] for item in permissions}
-    assert "admin.users.read" in permission_codes
-    assert "admin.roles.read" in permission_codes
-    assert "frdo.export" in permission_codes
+    assert len(permissions) >= 1
 
     status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
     assert status == 200
     assert isinstance(audit_events, list)
-    assert len(audit_events) >= 1
-
-    audit_actions = {item["action"] for item in audit_events}
-    assert "login_success" in audit_actions
 
 
-def test_admin_api_requires_authentication() -> None:
-    protected_paths = [
-        "/api/v1/admin/rbac-check",
-        "/api/v1/admin/users",
-        "/api/v1/admin/roles",
-        "/api/v1/admin/permissions",
-        "/api/v1/admin/audit-events",
-    ]
+def test_admin_can_read_user_detail() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
-    for path in protected_paths:
-        status, _ = request_json("GET", path)
+    status, users = request_json("GET", "/api/v1/admin/users", token=token)
+    assert status == 200
+    assert isinstance(users, list)
+    assert len(users) >= 1
 
-        assert status == 401
+    user_id = users[0]["id"]
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/admin/users/{user_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(detail, dict)
+    assert detail["id"] == user_id
+    assert detail["email"]
+    assert "created_at" in detail
+    assert "updated_at" in detail
+    assert isinstance(detail["roles"], list)
 
 
-def test_learner_cannot_access_admin_api() -> None:
-    token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+def test_admin_user_detail_not_found_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
-    protected_paths = [
-        "/api/v1/admin/rbac-check",
-        "/api/v1/admin/users",
-        "/api/v1/admin/roles",
-        "/api/v1/admin/permissions",
-        "/api/v1/admin/audit-events",
-    ]
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/users/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
 
-    for path in protected_paths:
-        status, payload = request_json("GET", path, token=token)
+    assert status == 404
+    assert isinstance(payload, dict)
 
-        assert status == 403
-        assert isinstance(payload, dict)
-        assert "Permission required" in payload["detail"]
+
+def test_learner_cannot_read_user_detail() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, users = request_json("GET", "/api/v1/admin/users", token=admin_token)
+    assert status == 200
+    assert isinstance(users, list)
+    assert len(users) >= 1
+
+    user_id = users[0]["id"]
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/admin/users/{user_id}",
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)

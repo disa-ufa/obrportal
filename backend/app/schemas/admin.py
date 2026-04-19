@@ -36,6 +36,11 @@ class AdminUserItem(BaseModel):
     roles: list[AdminUserRoleItem]
 
 
+class AdminUserDetail(AdminUserItem):
+    created_at: datetime
+    updated_at: datetime
+
+
 class AdminAuditEventItem(BaseModel):
     id: str
     action: str

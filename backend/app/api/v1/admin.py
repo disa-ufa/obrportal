@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,12 +13,68 @@ from app.schemas.admin import (
     AdminAuditEventItem,
     AdminPermissionItem,
     AdminRoleItem,
+    AdminUserDetail,
     AdminUserItem,
     AdminUserRoleItem,
 )
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+async def get_user_roles(
+    user_id: str,
+    session: AsyncSession,
+) -> list[AdminUserRoleItem]:
+    roles_result = await session.execute(
+        select(Role.code, Role.name, UserRole.organization_id)
+        .join(UserRole, UserRole.role_id == Role.id)
+        .where(UserRole.user_id == user_id)
+        .order_by(Role.code)
+    )
+
+    return [
+        AdminUserRoleItem(
+            code=row.code,
+            name=row.name,
+            organization_id=str(row.organization_id) if row.organization_id else None,
+        )
+        for row in roles_result.all()
+    ]
+
+
+def build_admin_user_item(
+    user: User,
+    roles: list[AdminUserRoleItem],
+) -> AdminUserItem:
+    return AdminUserItem(
+        id=str(user.id),
+        email=user.email,
+        phone=user.phone,
+        full_name=user.full_name,
+        is_active=user.is_active,
+        is_email_verified=user.is_email_verified,
+        mfa_enabled=user.mfa_enabled,
+        roles=roles,
+    )
+
+
+def build_admin_user_detail(
+    user: User,
+    roles: list[AdminUserRoleItem],
+) -> AdminUserDetail:
+    return AdminUserDetail(
+        id=str(user.id),
+        email=user.email,
+        phone=user.phone,
+        full_name=user.full_name,
+        is_active=user.is_active,
+        is_email_verified=user.is_email_verified,
+        mfa_enabled=user.mfa_enabled,
+        roles=roles,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
 
 
 @router.get("/rbac-check")
@@ -52,36 +108,32 @@ async def list_users(
     response: list[AdminUserItem] = []
 
     for user in users:
-        roles_result = await session.execute(
-            select(Role.code, Role.name, UserRole.organization_id)
-            .join(UserRole, UserRole.role_id == Role.id)
-            .where(UserRole.user_id == user.id)
-            .order_by(Role.code)
-        )
-
-        roles = [
-            AdminUserRoleItem(
-                code=row.code,
-                name=row.name,
-                organization_id=str(row.organization_id) if row.organization_id else None,
-            )
-            for row in roles_result.all()
-        ]
-
-        response.append(
-            AdminUserItem(
-                id=str(user.id),
-                email=user.email,
-                phone=user.phone,
-                full_name=user.full_name,
-                is_active=user.is_active,
-                is_email_verified=user.is_email_verified,
-                mfa_enabled=user.mfa_enabled,
-                roles=roles,
-            )
-        )
+        roles = await get_user_roles(str(user.id), session)
+        response.append(build_admin_user_item(user, roles))
 
     return response
+
+
+@router.get("/users/{user_id}", response_model=AdminUserDetail)
+async def get_user_detail(
+    user_id: str,
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserDetail:
+    user_result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = user_result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    roles = await get_user_roles(str(user.id), session)
+
+    return build_admin_user_detail(user, roles)
 
 
 @router.get("/roles", response_model=list[AdminRoleItem])
