@@ -8,14 +8,16 @@ from app.api.v1.rbac import get_user_permission_codes, require_permission
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
 from app.models.organization import Organization
-from app.models.role import Permission, Role, UserRole
+from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.schemas.admin import (
     AdminAuditEventItem,
     AdminOrganizationDetail,
     AdminOrganizationItem,
     AdminPermissionItem,
+    AdminRoleDetail,
     AdminRoleItem,
+    AdminRolePermissionItem,
     AdminUserDetail,
     AdminUserItem,
     AdminUserRoleItem,
@@ -43,6 +45,28 @@ async def get_user_roles(
             organization_id=str(row.organization_id) if row.organization_id else None,
         )
         for row in roles_result.all()
+    ]
+
+
+async def get_role_permissions(
+    role_id: str,
+    session: AsyncSession,
+) -> list[AdminRolePermissionItem]:
+    result = await session.execute(
+        select(Permission)
+        .join(RolePermission, RolePermission.permission_id == Permission.id)
+        .where(RolePermission.role_id == role_id)
+        .order_by(Permission.code)
+    )
+    permissions = result.scalars().all()
+
+    return [
+        AdminRolePermissionItem(
+            id=str(permission.id),
+            code=permission.code,
+            name=permission.name,
+        )
+        for permission in permissions
     ]
 
 
@@ -107,6 +131,21 @@ def build_admin_organization_detail(
         actual_address=organization.actual_address,
         created_at=organization.created_at,
         updated_at=organization.updated_at,
+    )
+
+
+def build_admin_role_detail(
+    role: Role,
+    permissions: list[AdminRolePermissionItem],
+) -> AdminRoleDetail:
+    return AdminRoleDetail(
+        id=str(role.id),
+        code=role.code,
+        name=role.name,
+        description=role.description,
+        permissions=permissions,
+        created_at=role.created_at,
+        updated_at=role.updated_at,
     )
 
 
@@ -220,6 +259,28 @@ async def list_roles(
         )
         for role in roles
     ]
+
+
+@router.get("/roles/{role_id}", response_model=AdminRoleDetail)
+async def get_role_detail(
+    role_id: str,
+    _: User = Depends(require_permission("admin.roles.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminRoleDetail:
+    result = await session.execute(
+        select(Role).where(Role.id == role_id)
+    )
+    role = result.scalar_one_or_none()
+
+    if role is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found",
+        )
+
+    permissions = await get_role_permissions(str(role.id), session)
+
+    return build_admin_role_detail(role, permissions)
 
 
 @router.get("/permissions", response_model=list[AdminPermissionItem])

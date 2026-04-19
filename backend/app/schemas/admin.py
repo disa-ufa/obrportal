@@ -19,6 +19,18 @@ class AdminPermissionItem(BaseModel):
     description: str | None = None
 
 
+class AdminRolePermissionItem(BaseModel):
+    id: str
+    code: str
+    name: str
+
+
+class AdminRoleDetail(AdminRoleItem):
+    permissions: list[AdminRolePermissionItem]
+    created_at: datetime
+    updated_at: datetime
+
+
 class AdminUserRoleItem(BaseModel):
     code: str
     name: str
