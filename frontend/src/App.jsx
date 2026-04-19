@@ -30,6 +30,10 @@ function userHasRole(user, roleCode) {
   return user?.roles?.some((role) => role.code === roleCode) || false;
 }
 
+function getNowLabel() {
+  return new Date().toLocaleString("ru-RU");
+}
+
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
   const [password, setPassword] = useState("Admin123Local2026!");
@@ -38,9 +42,11 @@ export default function App() {
   const [ready, setReady] = useState(null);
   const [rbac, setRbac] = useState(null);
   const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
+  const [adminDataLoadedAt, setAdminDataLoadedAt] = useState("");
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(false);
   const [initializingAuth, setInitializingAuth] = useState(true);
 
   async function loadSystemStatus() {
@@ -57,11 +63,8 @@ export default function App() {
     }
   }
 
-  async function loadAdminData({ silent = false } = {}) {
-    if (!silent) {
-      setLoading(true);
-    }
-
+  async function loadAdminData() {
+    setAdminLoading(true);
     setError("");
 
     try {
@@ -78,13 +81,13 @@ export default function App() {
         permissions,
         auditEvents,
       });
+      setAdminDataLoadedAt(getNowLabel());
     } catch (err) {
       setError(`${err.status || ""} ${err.message}`);
       setAdminData(EMPTY_ADMIN_DATA);
+      setAdminDataLoadedAt("");
     } finally {
-      if (!silent) {
-        setLoading(false);
-      }
+      setAdminLoading(false);
     }
   }
 
@@ -96,6 +99,7 @@ export default function App() {
     if (!token) {
       setUser(null);
       setAdminData(EMPTY_ADMIN_DATA);
+      setAdminDataLoadedAt("");
       setInitializingAuth(false);
       return;
     }
@@ -105,13 +109,14 @@ export default function App() {
       setUser(currentUser);
 
       if (userHasRole(currentUser, "admin")) {
-        await loadAdminData({ silent: true });
+        await loadAdminData();
       }
     } catch {
       clearToken();
       setUser(null);
       setRbac(null);
       setAdminData(EMPTY_ADMIN_DATA);
+      setAdminDataLoadedAt("");
     } finally {
       setInitializingAuth(false);
     }
@@ -124,7 +129,7 @@ export default function App() {
 
   async function handleLogin(event) {
     event.preventDefault();
-    setLoading(true);
+    setAuthLoading(true);
     setError("");
     setRbac(null);
 
@@ -134,22 +139,24 @@ export default function App() {
       setUser(currentUser);
 
       if (userHasRole(currentUser, "admin")) {
-        await loadAdminData({ silent: true });
+        await loadAdminData();
       } else {
         setAdminData(EMPTY_ADMIN_DATA);
+        setAdminDataLoadedAt("");
       }
     } catch (err) {
       setError(err.message);
       setUser(null);
       setAdminData(EMPTY_ADMIN_DATA);
+      setAdminDataLoadedAt("");
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
       setInitializingAuth(false);
     }
   }
 
   async function handleRbacCheck() {
-    setLoading(true);
+    setAuthLoading(true);
     setError("");
 
     try {
@@ -159,7 +166,7 @@ export default function App() {
       setError(`${err.status || ""} ${err.message}`);
       setRbac(null);
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
     }
   }
 
@@ -168,43 +175,72 @@ export default function App() {
     setUser(null);
     setRbac(null);
     setAdminData(EMPTY_ADMIN_DATA);
+    setAdminDataLoadedAt("");
     setCurrentPage("dashboard");
     setError("");
+    setAuthLoading(false);
+    setAdminLoading(false);
     setInitializingAuth(false);
   }
 
   function renderCurrentPage() {
     if (currentPage === "users") {
-      return <UsersPage user={user} users={adminData.users} />;
+      return (
+        <UsersPage
+          user={user}
+          users={adminData.users}
+          loading={adminLoading}
+        />
+      );
     }
 
     if (currentPage === "roles") {
-      return <RolesPage user={user} roles={adminData.roles} />;
+      return (
+        <RolesPage
+          user={user}
+          roles={adminData.roles}
+          loading={adminLoading}
+        />
+      );
     }
 
     if (currentPage === "permissions") {
-      return <PermissionsPage user={user} permissions={adminData.permissions} />;
+      return (
+        <PermissionsPage
+          user={user}
+          permissions={adminData.permissions}
+          loading={adminLoading}
+        />
+      );
     }
 
     if (currentPage === "audit") {
-      return <AuditPage user={user} auditEvents={adminData.auditEvents} />;
+      return (
+        <AuditPage
+          user={user}
+          auditEvents={adminData.auditEvents}
+          loading={adminLoading}
+        />
+      );
     }
 
     return (
       <DashboardPage
         email={email}
         password={password}
-        loading={loading || initializingAuth}
+        loading={authLoading || initializingAuth}
+        adminLoading={adminLoading}
         error={error}
         user={user}
         rbac={rbac}
         adminData={adminData}
+        adminDataLoadedAt={adminDataLoadedAt}
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
         onLogin={handleLogin}
         onLogout={handleLogout}
         onRbacCheck={handleRbacCheck}
-        onRefreshAdminData={() => loadAdminData()}
+        onRefreshAdminData={loadAdminData}
       />
     );
   }
@@ -232,6 +268,8 @@ export default function App() {
       authBadgeTone={authBadgeTone}
       currentPage={currentPage}
       onPageChange={setCurrentPage}
+      adminLoading={adminLoading}
+      adminDataLoadedAt={adminDataLoadedAt}
       counts={{
         users: adminData.users.length,
         roles: adminData.roles.length,

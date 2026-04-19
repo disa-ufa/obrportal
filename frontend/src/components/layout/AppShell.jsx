@@ -18,6 +18,8 @@ export function AppShell({
   currentPage,
   onPageChange,
   counts,
+  adminLoading,
+  adminDataLoadedAt,
   children,
 }) {
   function getCount(key) {
@@ -27,6 +29,18 @@ export function AppShell({
     if (key === "audit") return counts.auditEvents;
     return null;
   }
+
+  const adminApiStatus = adminLoading
+    ? "loading"
+    : adminDataLoadedAt
+      ? "loaded"
+      : "empty";
+
+  const adminApiTone = adminLoading
+    ? "amber"
+    : adminDataLoadedAt
+      ? "green"
+      : "gray";
 
   return (
     <main className="min-h-screen bg-slate-100 p-6 text-slate-900">
@@ -55,6 +69,9 @@ export function AppShell({
               </StatusBadge>
               <StatusBadge tone={authBadgeTone}>
                 {authBadgeText}
+              </StatusBadge>
+              <StatusBadge tone={adminApiTone}>
+                admin api: {adminApiStatus}
               </StatusBadge>
               {isAdmin && <StatusBadge tone="amber">admin</StatusBadge>}
             </div>
@@ -106,6 +123,11 @@ export function AppShell({
                   <div className="font-semibold text-slate-800">{user.email}</div>
                   <div className="mt-1">
                     Роли: {user.roles.map((role) => role.code).join(", ")}
+                  </div>
+                  <div className="mt-3 border-t border-slate-200 pt-3">
+                    {adminDataLoadedAt
+                      ? `Admin API обновлён: ${adminDataLoadedAt}`
+                      : "Admin API ещё не загружен"}
                   </div>
                 </>
               ) : (

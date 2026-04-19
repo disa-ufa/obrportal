@@ -1,7 +1,8 @@
-﻿import { SectionCard } from "../components/ui/SectionCard";
+﻿import { LoadingBlock } from "../components/ui/LoadingBlock";
+import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 
-export function UsersPage({ user, users }) {
+export function UsersPage({ user, users, loading }) {
   return (
     <SectionCard
       title="Пользователи"
@@ -9,6 +10,8 @@ export function UsersPage({ user, users }) {
     >
       {!user ? (
         <p className="text-slate-600">Войдите под admin, чтобы увидеть пользователей.</p>
+      ) : loading ? (
+        <LoadingBlock text="Загружаем пользователей..." />
       ) : (
         <SmallTable
           emptyText="Пользователей нет."

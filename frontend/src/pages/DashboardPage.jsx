@@ -1,6 +1,8 @@
 ﻿import { AuthPanel } from "../components/auth/AuthPanel";
 import { CurrentUserCard } from "../components/auth/CurrentUserCard";
 import { RbacResult } from "../components/admin/RbacResult";
+import { Alert } from "../components/ui/Alert";
+import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 
 function MetricCard({ label, value, hint }) {
@@ -17,10 +19,12 @@ export function DashboardPage({
   email,
   password,
   loading,
+  adminLoading,
   error,
   user,
   rbac,
   adminData,
+  adminDataLoadedAt,
   onEmailChange,
   onPasswordChange,
   onLogin,
@@ -30,12 +34,18 @@ export function DashboardPage({
 }) {
   return (
     <>
+      {error && (
+        <Alert title="Ошибка выполнения" tone="red">
+          {error}
+        </Alert>
+      )}
+
       <div className="grid gap-6 xl:grid-cols-2">
         <AuthPanel
           email={email}
           password={password}
           loading={loading}
-          error={error}
+          error=""
           onEmailChange={onEmailChange}
           onPasswordChange={onPasswordChange}
           onLogin={onLogin}
@@ -44,7 +54,7 @@ export function DashboardPage({
 
         <CurrentUserCard
           user={user}
-          loading={loading}
+          loading={loading || adminLoading}
           onRbacCheck={onRbacCheck}
           onRefreshAdminData={onRefreshAdminData}
         />
@@ -52,12 +62,14 @@ export function DashboardPage({
 
       <SectionCard
         title="Сводка Admin API"
-        subtitle="Короткий обзор данных, загруженных из backend."
+        subtitle={adminDataLoadedAt ? `Последнее обновление: ${adminDataLoadedAt}` : "Данные ещё не загружены."}
       >
         {!user ? (
           <p className="text-slate-600">
             Войдите под admin, чтобы загрузить служебные данные.
           </p>
+        ) : adminLoading ? (
+          <LoadingBlock text="Загружаем Admin API..." />
         ) : (
           <div className="grid gap-4 md:grid-cols-4">
             <MetricCard label="Пользователи" value={adminData.users.length} />

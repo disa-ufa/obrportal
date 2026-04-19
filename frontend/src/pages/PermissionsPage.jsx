@@ -1,7 +1,8 @@
-﻿import { SectionCard } from "../components/ui/SectionCard";
+﻿import { LoadingBlock } from "../components/ui/LoadingBlock";
+import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 
-export function PermissionsPage({ user, permissions }) {
+export function PermissionsPage({ user, permissions, loading }) {
   return (
     <SectionCard
       title="Права"
@@ -9,6 +10,8 @@ export function PermissionsPage({ user, permissions }) {
     >
       {!user ? (
         <p className="text-slate-600">Войдите под admin, чтобы увидеть права.</p>
+      ) : loading ? (
+        <LoadingBlock text="Загружаем права..." />
       ) : (
         <SmallTable
           emptyText="Прав нет."
