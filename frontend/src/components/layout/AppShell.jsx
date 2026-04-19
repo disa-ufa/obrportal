@@ -32,6 +32,9 @@ export function AppShell({
     return null;
   }
 
+  const currentPageLabel =
+    NAV_ITEMS.find((item) => item.key === currentPage)?.label || "Раздел";
+
   const adminApiStatus = adminLoading
     ? "loading"
     : adminDataLoadedAt
@@ -45,9 +48,9 @@ export function AppShell({
       : "gray";
 
   return (
-    <main className="min-h-screen bg-slate-100 p-6 text-slate-900">
+    <main className="min-h-screen bg-slate-100 p-4 text-slate-900 md:p-6">
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+        <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
@@ -60,6 +63,11 @@ export function AppShell({
                 Рабочий back-office каркас: auth, JWT, RBAC, admin API,
                 страницы пользователей, организаций, ролей, прав и журнала аудита.
               </p>
+              <div className="mt-4">
+                <StatusBadge tone="gray">
+                  Текущий раздел: {currentPageLabel}
+                </StatusBadge>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -86,7 +94,7 @@ export function AppShell({
               Навигация
             </div>
 
-            <nav className="space-y-2">
+            <nav className="grid grid-cols-2 gap-2 lg:block lg:space-y-2">
               {NAV_ITEMS.map((item) => {
                 const count = getCount(item.key);
                 const isActive = currentPage === item.key;
@@ -138,7 +146,7 @@ export function AppShell({
             </div>
           </aside>
 
-          <section className="space-y-6">
+          <section className="min-w-0 space-y-6">
             {children}
           </section>
         </div>
