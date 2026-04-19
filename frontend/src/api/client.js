@@ -72,6 +72,10 @@ export async function getAdminUsers() {
   return request("/api/v1/admin/users");
 }
 
+export async function getAdminUserDetail(userId) {
+  return request(`/api/v1/admin/users/${userId}`);
+}
+
 export async function getAdminRoles() {
   return request("/api/v1/admin/roles");
 }

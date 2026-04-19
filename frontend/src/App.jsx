@@ -6,6 +6,7 @@ import {
   getAdminAuditEvents,
   getAdminPermissions,
   getAdminRoles,
+  getAdminUserDetail,
   getAdminUsers,
   getCurrentUser,
   getHealth,
@@ -48,6 +49,9 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
   const [initializingAuth, setInitializingAuth] = useState(true);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUserLoading, setSelectedUserLoading] = useState(false);
+  const [selectedUserError, setSelectedUserError] = useState("");
 
   async function loadSystemStatus() {
     try {
@@ -117,6 +121,7 @@ export default function App() {
       setRbac(null);
       setAdminData(EMPTY_ADMIN_DATA);
       setAdminDataLoadedAt("");
+      clearSelectedUser();
     } finally {
       setInitializingAuth(false);
     }
@@ -132,6 +137,7 @@ export default function App() {
     setAuthLoading(true);
     setError("");
     setRbac(null);
+    clearSelectedUser();
 
     try {
       await login(email, password);
@@ -170,6 +176,27 @@ export default function App() {
     }
   }
 
+  async function handleOpenUser(userId) {
+    setSelectedUser(null);
+    setSelectedUserError("");
+    setSelectedUserLoading(true);
+
+    try {
+      const detail = await getAdminUserDetail(userId);
+      setSelectedUser(detail);
+    } catch (err) {
+      setSelectedUserError(`${err.status || ""} ${err.message}`);
+    } finally {
+      setSelectedUserLoading(false);
+    }
+  }
+
+  function clearSelectedUser() {
+    setSelectedUser(null);
+    setSelectedUserLoading(false);
+    setSelectedUserError("");
+  }
+
   function handleLogout() {
     clearToken();
     setUser(null);
@@ -181,6 +208,7 @@ export default function App() {
     setAuthLoading(false);
     setAdminLoading(false);
     setInitializingAuth(false);
+    clearSelectedUser();
   }
 
   function renderCurrentPage() {
@@ -190,6 +218,11 @@ export default function App() {
           user={user}
           users={adminData.users}
           loading={adminLoading}
+          selectedUser={selectedUser}
+          selectedUserLoading={selectedUserLoading}
+          selectedUserError={selectedUserError}
+          onOpenUser={handleOpenUser}
+          onCloseUser={clearSelectedUser}
         />
       );
     }
