@@ -113,6 +113,11 @@ def test_admin_rbac_check_and_read_only_api() -> None:
     assert isinstance(users, list)
     assert len(users) >= 2
 
+    status, organizations = request_json("GET", "/api/v1/admin/organizations", token=token)
+    assert status == 200
+    assert isinstance(organizations, list)
+    assert len(organizations) >= 1
+
     status, roles = request_json("GET", "/api/v1/admin/roles", token=token)
     assert status == 200
     assert isinstance(roles, list)
@@ -180,6 +185,74 @@ def test_learner_cannot_read_user_detail() -> None:
     status, payload = request_json(
         "GET",
         f"/api/v1/admin/users/{user_id}",
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)
+
+
+def test_admin_can_read_organization_detail() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, organizations = request_json("GET", "/api/v1/admin/organizations", token=token)
+    assert status == 200
+    assert isinstance(organizations, list)
+    assert len(organizations) >= 1
+
+    organization_id = organizations[0]["id"]
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/admin/organizations/{organization_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(detail, dict)
+    assert detail["id"] == organization_id
+    assert detail["inn"]
+    assert detail["name"]
+    assert "created_at" in detail
+    assert "updated_at" in detail
+
+
+def test_admin_organization_detail_not_found_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/organizations/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_read_organizations() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, organizations = request_json("GET", "/api/v1/admin/organizations", token=admin_token)
+    assert status == 200
+    assert isinstance(organizations, list)
+    assert len(organizations) >= 1
+
+    organization_id = organizations[0]["id"]
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/organizations",
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/admin/organizations/{organization_id}",
         token=learner_token,
     )
 

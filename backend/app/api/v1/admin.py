@@ -7,10 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.rbac import get_user_permission_codes, require_permission
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
+from app.models.organization import Organization
 from app.models.role import Permission, Role, UserRole
 from app.models.user import User
 from app.schemas.admin import (
     AdminAuditEventItem,
+    AdminOrganizationDetail,
+    AdminOrganizationItem,
     AdminPermissionItem,
     AdminRoleItem,
     AdminUserDetail,
@@ -77,6 +80,36 @@ def build_admin_user_detail(
     )
 
 
+def build_admin_organization_item(
+    organization: Organization,
+) -> AdminOrganizationItem:
+    return AdminOrganizationItem(
+        id=str(organization.id),
+        inn=organization.inn,
+        kpp=organization.kpp,
+        ogrn=organization.ogrn,
+        name=organization.name,
+        legal_address=organization.legal_address,
+        actual_address=organization.actual_address,
+    )
+
+
+def build_admin_organization_detail(
+    organization: Organization,
+) -> AdminOrganizationDetail:
+    return AdminOrganizationDetail(
+        id=str(organization.id),
+        inn=organization.inn,
+        kpp=organization.kpp,
+        ogrn=organization.ogrn,
+        name=organization.name,
+        legal_address=organization.legal_address,
+        actual_address=organization.actual_address,
+        created_at=organization.created_at,
+        updated_at=organization.updated_at,
+    )
+
+
 @router.get("/rbac-check")
 async def rbac_check(
     current_user: User = Depends(require_permission("admin.users.read")),
@@ -134,6 +167,40 @@ async def get_user_detail(
     roles = await get_user_roles(str(user.id), session)
 
     return build_admin_user_detail(user, roles)
+
+
+@router.get("/organizations", response_model=list[AdminOrganizationItem])
+async def list_organizations(
+    _: User = Depends(require_permission("admin.organizations.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminOrganizationItem]:
+    result = await session.execute(select(Organization).order_by(Organization.name))
+    organizations = result.scalars().all()
+
+    return [
+        build_admin_organization_item(organization)
+        for organization in organizations
+    ]
+
+
+@router.get("/organizations/{organization_id}", response_model=AdminOrganizationDetail)
+async def get_organization_detail(
+    organization_id: str,
+    _: User = Depends(require_permission("admin.organizations.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminOrganizationDetail:
+    result = await session.execute(
+        select(Organization).where(Organization.id == organization_id)
+    )
+    organization = result.scalar_one_or_none()
+
+    if organization is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found",
+        )
+
+    return build_admin_organization_detail(organization)
 
 
 @router.get("/roles", response_model=list[AdminRoleItem])

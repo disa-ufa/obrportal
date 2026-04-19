@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -84,6 +84,10 @@ jobs:
             -e SEED_DEMO_PASSWORD="${SEED_DEMO_PASSWORD}" \
             -e SEED_DEMO_ROLE="${SEED_DEMO_ROLE}" \
             backend python -m app.db.seed_demo_user
+
+      - name: Seed demo organization
+        run: |
+          docker compose exec -T backend python -m app.db.seed_demo_organization
 
       - name: Run backend pytest
         run: |

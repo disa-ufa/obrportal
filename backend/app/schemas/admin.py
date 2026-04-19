@@ -41,6 +41,21 @@ class AdminUserDetail(AdminUserItem):
     updated_at: datetime
 
 
+class AdminOrganizationItem(BaseModel):
+    id: str
+    inn: str
+    kpp: str | None = None
+    ogrn: str | None = None
+    name: str
+    legal_address: str | None = None
+    actual_address: str | None = None
+
+
+class AdminOrganizationDetail(AdminOrganizationItem):
+    created_at: datetime
+    updated_at: datetime
+
+
 class AdminAuditEventItem(BaseModel):
     id: str
     action: str

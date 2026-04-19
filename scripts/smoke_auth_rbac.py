@@ -131,6 +131,43 @@ def main() -> int:
     assert isinstance(missing_user, dict)
     checks.append("admin user detail 404 ok")
 
+    status, organizations = request_json(
+        "GET",
+        "/api/v1/admin/organizations",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin organizations")
+    assert isinstance(organizations, list)
+    assert len(organizations) >= 1
+    first_org = organizations[0]
+    assert isinstance(first_org, dict)
+    assert first_org.get("id")
+    assert first_org.get("inn")
+    checks.append("admin organizations ok")
+
+    organization_id = str(first_org["id"])
+    status, organization_detail = request_json(
+        "GET",
+        f"/api/v1/admin/organizations/{organization_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin organization detail")
+    assert isinstance(organization_detail, dict)
+    assert organization_detail["id"] == organization_id
+    assert organization_detail["inn"]
+    assert "created_at" in organization_detail
+    assert "updated_at" in organization_detail
+    checks.append("admin organization detail ok")
+
+    status, missing_org = request_json(
+        "GET",
+        "/api/v1/admin/organizations/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin organization detail 404")
+    assert isinstance(missing_org, dict)
+    checks.append("admin organization detail 404 ok")
+
     status, roles = request_json("GET", "/api/v1/admin/roles", token=admin_token)
     assert_status(status, 200, "admin roles")
     assert isinstance(roles, list)
@@ -162,6 +199,18 @@ def main() -> int:
     status, _ = request_json("GET", f"/api/v1/admin/users/{user_id}", token=learner_token)
     assert_status(status, 403, "learner admin user detail")
     checks.append("learner user detail returns 403")
+
+    status, _ = request_json("GET", "/api/v1/admin/organizations", token=learner_token)
+    assert_status(status, 403, "learner admin organizations")
+    checks.append("learner organizations returns 403")
+
+    status, _ = request_json(
+        "GET",
+        f"/api/v1/admin/organizations/{organization_id}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin organization detail")
+    checks.append("learner organization detail returns 403")
 
     print("Smoke auth/RBAC/admin API passed:")
     for check in checks:
