@@ -71,8 +71,9 @@ export function DashboardPage({
         ) : adminLoading ? (
           <LoadingBlock text="Загружаем Admin API..." />
         ) : (
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-5">
             <MetricCard label="Пользователи" value={adminData.users.length} />
+            <MetricCard label="Организации" value={adminData.organizations.length} />
             <MetricCard label="Роли" value={adminData.roles.length} />
             <MetricCard label="Права" value={adminData.permissions.length} />
             <MetricCard label="Аудит" value={adminData.auditEvents.length} />

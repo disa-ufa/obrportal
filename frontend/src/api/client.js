@@ -76,6 +76,14 @@ export async function getAdminUserDetail(userId) {
   return request(`/api/v1/admin/users/${userId}`);
 }
 
+export async function getAdminOrganizations() {
+  return request("/api/v1/admin/organizations");
+}
+
+export async function getAdminOrganizationDetail(organizationId) {
+  return request(`/api/v1/admin/organizations/${organizationId}`);
+}
+
 export async function getAdminRoles() {
   return request("/api/v1/admin/roles");
 }

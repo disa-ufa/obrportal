@@ -4,6 +4,8 @@ import {
   checkAdminRbac,
   clearToken,
   getAdminAuditEvents,
+  getAdminOrganizationDetail,
+  getAdminOrganizations,
   getAdminPermissions,
   getAdminRoles,
   getAdminUserDetail,
@@ -16,12 +18,14 @@ import {
 } from "./api/client";
 import { AuditPage } from "./pages/AuditPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { OrganizationsPage } from "./pages/OrganizationsPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
 import { RolesPage } from "./pages/RolesPage";
 import { UsersPage } from "./pages/UsersPage";
 
 const EMPTY_ADMIN_DATA = {
   users: [],
+  organizations: [],
   roles: [],
   permissions: [],
   auditEvents: [],
@@ -49,9 +53,14 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
   const [initializingAuth, setInitializingAuth] = useState(true);
+
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedUserLoading, setSelectedUserLoading] = useState(false);
   const [selectedUserError, setSelectedUserError] = useState("");
+
+  const [selectedOrganization, setSelectedOrganization] = useState(null);
+  const [selectedOrganizationLoading, setSelectedOrganizationLoading] = useState(false);
+  const [selectedOrganizationError, setSelectedOrganizationError] = useState("");
 
   async function loadSystemStatus() {
     try {
@@ -72,8 +81,9 @@ export default function App() {
     setError("");
 
     try {
-      const [users, roles, permissions, auditEvents] = await Promise.all([
+      const [users, organizations, roles, permissions, auditEvents] = await Promise.all([
         getAdminUsers(),
+        getAdminOrganizations(),
         getAdminRoles(),
         getAdminPermissions(),
         getAdminAuditEvents(),
@@ -81,6 +91,7 @@ export default function App() {
 
       setAdminData({
         users,
+        organizations,
         roles,
         permissions,
         auditEvents,
@@ -122,6 +133,7 @@ export default function App() {
       setAdminData(EMPTY_ADMIN_DATA);
       setAdminDataLoadedAt("");
       clearSelectedUser();
+      clearSelectedOrganization();
     } finally {
       setInitializingAuth(false);
     }
@@ -138,6 +150,7 @@ export default function App() {
     setError("");
     setRbac(null);
     clearSelectedUser();
+    clearSelectedOrganization();
 
     try {
       await login(email, password);
@@ -191,10 +204,31 @@ export default function App() {
     }
   }
 
+  async function handleOpenOrganization(organizationId) {
+    setSelectedOrganization(null);
+    setSelectedOrganizationError("");
+    setSelectedOrganizationLoading(true);
+
+    try {
+      const detail = await getAdminOrganizationDetail(organizationId);
+      setSelectedOrganization(detail);
+    } catch (err) {
+      setSelectedOrganizationError(`${err.status || ""} ${err.message}`);
+    } finally {
+      setSelectedOrganizationLoading(false);
+    }
+  }
+
   function clearSelectedUser() {
     setSelectedUser(null);
     setSelectedUserLoading(false);
     setSelectedUserError("");
+  }
+
+  function clearSelectedOrganization() {
+    setSelectedOrganization(null);
+    setSelectedOrganizationLoading(false);
+    setSelectedOrganizationError("");
   }
 
   function handleLogout() {
@@ -209,6 +243,7 @@ export default function App() {
     setAdminLoading(false);
     setInitializingAuth(false);
     clearSelectedUser();
+    clearSelectedOrganization();
   }
 
   function renderCurrentPage() {
@@ -223,6 +258,21 @@ export default function App() {
           selectedUserError={selectedUserError}
           onOpenUser={handleOpenUser}
           onCloseUser={clearSelectedUser}
+        />
+      );
+    }
+
+    if (currentPage === "organizations") {
+      return (
+        <OrganizationsPage
+          user={user}
+          organizations={adminData.organizations}
+          loading={adminLoading}
+          selectedOrganization={selectedOrganization}
+          selectedOrganizationLoading={selectedOrganizationLoading}
+          selectedOrganizationError={selectedOrganizationError}
+          onOpenOrganization={handleOpenOrganization}
+          onCloseOrganization={clearSelectedOrganization}
         />
       );
     }
@@ -305,6 +355,7 @@ export default function App() {
       adminDataLoadedAt={adminDataLoadedAt}
       counts={{
         users: adminData.users.length,
+        organizations: adminData.organizations.length,
         roles: adminData.roles.length,
         permissions: adminData.permissions.length,
         auditEvents: adminData.auditEvents.length,
