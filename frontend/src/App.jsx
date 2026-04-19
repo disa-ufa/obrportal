@@ -25,6 +25,10 @@ const EMPTY_ADMIN_DATA = {
   auditEvents: [],
 };
 
+function userHasRole(user, roleCode) {
+  return user?.roles?.some((role) => role.code === roleCode) || false;
+}
+
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
   const [password, setPassword] = useState("Admin123Local2026!");
@@ -36,6 +40,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("users");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initializingAuth, setInitializingAuth] = useState(true);
 
   async function loadSystemStatus() {
     try {
@@ -51,22 +56,11 @@ export default function App() {
     }
   }
 
-  async function loadMe() {
-    if (!getStoredToken()) {
-      return;
+  async function loadAdminData({ silent = false } = {}) {
+    if (!silent) {
+      setLoading(true);
     }
 
-    try {
-      const data = await getCurrentUser();
-      setUser(data);
-    } catch {
-      clearToken();
-      setUser(null);
-    }
-  }
-
-  async function loadAdminData() {
-    setLoading(true);
     setError("");
 
     try {
@@ -85,14 +79,46 @@ export default function App() {
       });
     } catch (err) {
       setError(`${err.status || ""} ${err.message}`);
+      setAdminData(EMPTY_ADMIN_DATA);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
+    }
+  }
+
+  async function bootstrapAuthState() {
+    setInitializingAuth(true);
+
+    const token = getStoredToken();
+
+    if (!token) {
+      setUser(null);
+      setAdminData(EMPTY_ADMIN_DATA);
+      setInitializingAuth(false);
+      return;
+    }
+
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+
+      if (userHasRole(currentUser, "admin")) {
+        await loadAdminData({ silent: true });
+      }
+    } catch {
+      clearToken();
+      setUser(null);
+      setRbac(null);
+      setAdminData(EMPTY_ADMIN_DATA);
+    } finally {
+      setInitializingAuth(false);
     }
   }
 
   useEffect(() => {
     loadSystemStatus();
-    loadMe();
+    bootstrapAuthState();
   }, []);
 
   async function handleLogin(event) {
@@ -105,11 +131,19 @@ export default function App() {
       await login(email, password);
       const currentUser = await getCurrentUser();
       setUser(currentUser);
-      await loadAdminData();
+
+      if (userHasRole(currentUser, "admin")) {
+        await loadAdminData({ silent: true });
+      } else {
+        setAdminData(EMPTY_ADMIN_DATA);
+      }
     } catch (err) {
       setError(err.message);
+      setUser(null);
+      setAdminData(EMPTY_ADMIN_DATA);
     } finally {
       setLoading(false);
+      setInitializingAuth(false);
     }
   }
 
@@ -134,9 +168,21 @@ export default function App() {
     setRbac(null);
     setAdminData(EMPTY_ADMIN_DATA);
     setError("");
+    setInitializingAuth(false);
   }
 
-  const isAdmin = user?.roles?.some((role) => role.code === "admin");
+  const isAdmin = userHasRole(user, "admin");
+  const authBadgeText = initializingAuth
+    ? "initializing"
+    : user
+      ? "authenticated"
+      : "guest";
+
+  const authBadgeTone = initializingAuth
+    ? "amber"
+    : user
+      ? "blue"
+      : "gray";
 
   return (
     <main className="min-h-screen bg-slate-100 p-6 text-slate-900">
@@ -163,8 +209,8 @@ export default function App() {
               <StatusBadge tone={ready?.status === "ok" ? "green" : "red"}>
                 ready: {ready?.status || "unknown"}
               </StatusBadge>
-              <StatusBadge tone={user ? "blue" : "gray"}>
-                {user ? "authenticated" : "guest"}
+              <StatusBadge tone={authBadgeTone}>
+                {authBadgeText}
               </StatusBadge>
               {isAdmin && <StatusBadge tone="amber">admin</StatusBadge>}
             </div>
@@ -175,7 +221,7 @@ export default function App() {
           <AuthPanel
             email={email}
             password={password}
-            loading={loading}
+            loading={loading || initializingAuth}
             error={error}
             onEmailChange={setEmail}
             onPasswordChange={setPassword}
@@ -185,9 +231,9 @@ export default function App() {
 
           <CurrentUserCard
             user={user}
-            loading={loading}
+            loading={loading || initializingAuth}
             onRbacCheck={handleRbacCheck}
-            onRefreshAdminData={loadAdminData}
+            onRefreshAdminData={() => loadAdminData()}
           />
         </div>
 
