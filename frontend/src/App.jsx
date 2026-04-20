@@ -6,6 +6,7 @@ import {
   getAdminAuditEvents,
   getAdminOrganizationDetail,
   getAdminOrganizations,
+  getAdminPermissionDetail,
   getAdminPermissions,
   getAdminRoleDetail,
   getAdminRoles,
@@ -66,6 +67,10 @@ export default function App() {
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedRoleLoading, setSelectedRoleLoading] = useState(false);
   const [selectedRoleError, setSelectedRoleError] = useState("");
+
+  const [selectedPermission, setSelectedPermission] = useState(null);
+  const [selectedPermissionLoading, setSelectedPermissionLoading] = useState(false);
+  const [selectedPermissionError, setSelectedPermissionError] = useState("");
 
   async function loadSystemStatus() {
     try {
@@ -140,6 +145,7 @@ export default function App() {
       clearSelectedUser();
       clearSelectedOrganization();
       clearSelectedRole();
+      clearSelectedPermission();
     } finally {
       setInitializingAuth(false);
     }
@@ -158,6 +164,7 @@ export default function App() {
     clearSelectedUser();
     clearSelectedOrganization();
     clearSelectedRole();
+    clearSelectedPermission();
 
     try {
       await login(email, password);
@@ -241,6 +248,21 @@ export default function App() {
     }
   }
 
+  async function handleOpenPermission(permissionId) {
+    setSelectedPermission(null);
+    setSelectedPermissionError("");
+    setSelectedPermissionLoading(true);
+
+    try {
+      const detail = await getAdminPermissionDetail(permissionId);
+      setSelectedPermission(detail);
+    } catch (err) {
+      setSelectedPermissionError(`${err.status || ""} ${err.message}`);
+    } finally {
+      setSelectedPermissionLoading(false);
+    }
+  }
+
   function clearSelectedUser() {
     setSelectedUser(null);
     setSelectedUserLoading(false);
@@ -259,6 +281,12 @@ export default function App() {
     setSelectedRoleError("");
   }
 
+  function clearSelectedPermission() {
+    setSelectedPermission(null);
+    setSelectedPermissionLoading(false);
+    setSelectedPermissionError("");
+  }
+
   function handleLogout() {
     clearToken();
     setUser(null);
@@ -273,6 +301,7 @@ export default function App() {
     clearSelectedUser();
     clearSelectedOrganization();
     clearSelectedRole();
+    clearSelectedPermission();
   }
 
   function renderCurrentPage() {
@@ -327,6 +356,11 @@ export default function App() {
           user={user}
           permissions={adminData.permissions}
           loading={adminLoading}
+          selectedPermission={selectedPermission}
+          selectedPermissionLoading={selectedPermissionLoading}
+          selectedPermissionError={selectedPermissionError}
+          onOpenPermission={handleOpenPermission}
+          onClosePermission={clearSelectedPermission}
         />
       );
     }
