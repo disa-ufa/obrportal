@@ -3,6 +3,7 @@ import { AppShell } from "./components/layout/AppShell";
 import {
   checkAdminRbac,
   clearToken,
+  getAdminAuditEventDetail,
   getAdminAuditEvents,
   getAdminOrganizationDetail,
   getAdminOrganizations,
@@ -71,6 +72,10 @@ export default function App() {
   const [selectedPermission, setSelectedPermission] = useState(null);
   const [selectedPermissionLoading, setSelectedPermissionLoading] = useState(false);
   const [selectedPermissionError, setSelectedPermissionError] = useState("");
+
+  const [selectedAuditEvent, setSelectedAuditEvent] = useState(null);
+  const [selectedAuditEventLoading, setSelectedAuditEventLoading] = useState(false);
+  const [selectedAuditEventError, setSelectedAuditEventError] = useState("");
 
   async function loadSystemStatus() {
     try {
@@ -146,6 +151,7 @@ export default function App() {
       clearSelectedOrganization();
       clearSelectedRole();
       clearSelectedPermission();
+      clearSelectedAuditEvent();
     } finally {
       setInitializingAuth(false);
     }
@@ -165,6 +171,7 @@ export default function App() {
     clearSelectedOrganization();
     clearSelectedRole();
     clearSelectedPermission();
+    clearSelectedAuditEvent();
 
     try {
       await login(email, password);
@@ -263,6 +270,21 @@ export default function App() {
     }
   }
 
+  async function handleOpenAuditEvent(auditEventId) {
+    setSelectedAuditEvent(null);
+    setSelectedAuditEventError("");
+    setSelectedAuditEventLoading(true);
+
+    try {
+      const detail = await getAdminAuditEventDetail(auditEventId);
+      setSelectedAuditEvent(detail);
+    } catch (err) {
+      setSelectedAuditEventError(`${err.status || ""} ${err.message}`);
+    } finally {
+      setSelectedAuditEventLoading(false);
+    }
+  }
+
   function clearSelectedUser() {
     setSelectedUser(null);
     setSelectedUserLoading(false);
@@ -287,6 +309,12 @@ export default function App() {
     setSelectedPermissionError("");
   }
 
+  function clearSelectedAuditEvent() {
+    setSelectedAuditEvent(null);
+    setSelectedAuditEventLoading(false);
+    setSelectedAuditEventError("");
+  }
+
   function handleLogout() {
     clearToken();
     setUser(null);
@@ -302,6 +330,7 @@ export default function App() {
     clearSelectedOrganization();
     clearSelectedRole();
     clearSelectedPermission();
+    clearSelectedAuditEvent();
   }
 
   function renderCurrentPage() {
@@ -371,6 +400,11 @@ export default function App() {
           user={user}
           auditEvents={adminData.auditEvents}
           loading={adminLoading}
+          selectedAuditEvent={selectedAuditEvent}
+          selectedAuditEventLoading={selectedAuditEventLoading}
+          selectedAuditEventError={selectedAuditEventError}
+          onOpenAuditEvent={handleOpenAuditEvent}
+          onCloseAuditEvent={clearSelectedAuditEvent}
         />
       );
     }

@@ -103,3 +103,7 @@ export async function getAdminPermissionDetail(permissionId) {
 export async function getAdminAuditEvents() {
   return request("/api/v1/admin/audit-events");
 }
+
+export async function getAdminAuditEventDetail(auditEventId) {
+  return request(`/api/v1/admin/audit-events/${auditEventId}`);
+}
