@@ -1,28 +1,8 @@
 ﻿import { Alert } from "../ui/Alert";
+import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
-
-function Field({ label, value }) {
-  return (
-    <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </div>
-      <div className="mt-1 break-words text-sm font-semibold text-slate-900">
-        {value || "-"}
-      </div>
-    </div>
-  );
-}
-
-function formatDate(value) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Date(value).toLocaleString("ru-RU");
-}
 
 export function OrganizationDetailPanel({
   organizationDetail,
@@ -81,17 +61,17 @@ export function OrganizationDetailPanel({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID" value={organizationDetail.id} />
-            <Field label="ИНН" value={organizationDetail.inn} />
-            <Field label="КПП" value={organizationDetail.kpp} />
-            <Field label="ОГРН" value={organizationDetail.ogrn} />
-            <Field label="Создана" value={formatDate(organizationDetail.created_at)} />
-            <Field label="Обновлена" value={formatDate(organizationDetail.updated_at)} />
+            <DetailField label="ID" value={organizationDetail.id} />
+            <DetailField label="ИНН" value={organizationDetail.inn} />
+            <DetailField label="КПП" value={organizationDetail.kpp} />
+            <DetailField label="ОГРН" value={organizationDetail.ogrn} />
+            <DetailField label="Создана" value={formatDetailDate(organizationDetail.created_at)} />
+            <DetailField label="Обновлена" value={formatDetailDate(organizationDetail.updated_at)} />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Юридический адрес" value={organizationDetail.legal_address} />
-            <Field label="Фактический адрес" value={organizationDetail.actual_address} />
+            <DetailField label="Юридический адрес" value={organizationDetail.legal_address} />
+            <DetailField label="Фактический адрес" value={organizationDetail.actual_address} />
           </div>
         </div>
       )}

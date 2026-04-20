@@ -1,28 +1,8 @@
 ﻿import { Alert } from "../ui/Alert";
+import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
-
-function Field({ label, value }) {
-  return (
-    <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </div>
-      <div className="mt-1 break-words text-sm font-semibold text-slate-900">
-        {value || "-"}
-      </div>
-    </div>
-  );
-}
-
-function formatDate(value) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Date(value).toLocaleString("ru-RU");
-}
 
 export function RoleDetailPanel({
   roleDetail,
@@ -80,13 +60,13 @@ export function RoleDetailPanel({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID" value={roleDetail.id} />
-            <Field label="Код" value={roleDetail.code} />
-            <Field label="Создана" value={formatDate(roleDetail.created_at)} />
-            <Field label="Обновлена" value={formatDate(roleDetail.updated_at)} />
+            <DetailField label="ID" value={roleDetail.id} />
+            <DetailField label="Код" value={roleDetail.code} />
+            <DetailField label="Создана" value={formatDetailDate(roleDetail.created_at)} />
+            <DetailField label="Обновлена" value={formatDetailDate(roleDetail.updated_at)} />
           </div>
 
-          <Field label="Описание" value={roleDetail.description} />
+          <DetailField label="Описание" value={roleDetail.description} />
 
           <div>
             <div className="mb-2 text-sm font-semibold text-slate-700">

@@ -1,28 +1,8 @@
 ﻿import { Alert } from "../ui/Alert";
+import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
-
-function Field({ label, value }) {
-  return (
-    <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </div>
-      <div className="mt-1 break-words text-sm font-semibold text-slate-900">
-        {value || "-"}
-      </div>
-    </div>
-  );
-}
-
-function formatDate(value) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Date(value).toLocaleString("ru-RU");
-}
 
 export function UserDetailPanel({
   userDetail,
@@ -83,10 +63,10 @@ export function UserDetailPanel({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID" value={userDetail.id} />
-            <Field label="Телефон" value={userDetail.phone} />
-            <Field label="Создан" value={formatDate(userDetail.created_at)} />
-            <Field label="Обновлён" value={formatDate(userDetail.updated_at)} />
+            <DetailField label="ID" value={userDetail.id} />
+            <DetailField label="Телефон" value={userDetail.phone} />
+            <DetailField label="Создан" value={formatDetailDate(userDetail.created_at)} />
+            <DetailField label="Обновлён" value={formatDetailDate(userDetail.updated_at)} />
           </div>
 
           <div>

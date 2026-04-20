@@ -1,36 +1,9 @@
 ﻿import { Alert } from "../ui/Alert";
+import { DetailField, formatDetailDate } from "../ui/DetailField";
+import { JsonBlock } from "../ui/JsonBlock";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
-
-function Field({ label, value }) {
-  return (
-    <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </div>
-      <div className="mt-1 break-words text-sm font-semibold text-slate-900">
-        {value || "-"}
-      </div>
-    </div>
-  );
-}
-
-function formatDate(value) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Date(value).toLocaleString("ru-RU");
-}
-
-function PayloadBlock({ payload }) {
-  return (
-    <pre className="max-h-96 overflow-auto rounded-2xl bg-slate-950 p-4 text-xs text-slate-100 ring-1 ring-slate-800">
-      {JSON.stringify(payload || {}, null, 2)}
-    </pre>
-  );
-}
 
 export function AuditEventDetailPanel({
   auditEventDetail,
@@ -91,21 +64,21 @@ export function AuditEventDetailPanel({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID" value={auditEventDetail.id} />
-            <Field label="Action" value={auditEventDetail.action} />
-            <Field label="Actor user ID" value={auditEventDetail.actor_user_id} />
-            <Field label="Entity type" value={auditEventDetail.entity_type} />
-            <Field label="Entity ID" value={auditEventDetail.entity_id} />
-            <Field label="IP address" value={auditEventDetail.ip_address} />
-            <Field label="Дата" value={formatDate(auditEventDetail.created_at)} />
-            <Field label="User agent" value={auditEventDetail.user_agent} />
+            <DetailField label="ID" value={auditEventDetail.id} />
+            <DetailField label="Action" value={auditEventDetail.action} />
+            <DetailField label="Actor user ID" value={auditEventDetail.actor_user_id} />
+            <DetailField label="Entity type" value={auditEventDetail.entity_type} />
+            <DetailField label="Entity ID" value={auditEventDetail.entity_id} />
+            <DetailField label="IP address" value={auditEventDetail.ip_address} />
+            <DetailField label="Дата" value={formatDetailDate(auditEventDetail.created_at)} />
+            <DetailField label="User agent" value={auditEventDetail.user_agent} />
           </div>
 
           <div>
             <div className="mb-2 text-sm font-semibold text-slate-700">
               Payload
             </div>
-            <PayloadBlock payload={auditEventDetail.payload} />
+            <JsonBlock value={auditEventDetail.payload} />
           </div>
         </div>
       )}
