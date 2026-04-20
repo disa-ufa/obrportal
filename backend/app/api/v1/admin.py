@@ -14,7 +14,9 @@ from app.schemas.admin import (
     AdminAuditEventItem,
     AdminOrganizationDetail,
     AdminOrganizationItem,
+    AdminPermissionDetail,
     AdminPermissionItem,
+    AdminPermissionRoleItem,
     AdminRoleDetail,
     AdminRoleItem,
     AdminRolePermissionItem,
@@ -67,6 +69,29 @@ async def get_role_permissions(
             name=permission.name,
         )
         for permission in permissions
+    ]
+
+
+async def get_permission_roles(
+    permission_id: str,
+    session: AsyncSession,
+) -> list[AdminPermissionRoleItem]:
+    result = await session.execute(
+        select(Role)
+        .join(RolePermission, RolePermission.role_id == Role.id)
+        .where(RolePermission.permission_id == permission_id)
+        .order_by(Role.code)
+    )
+    roles = result.scalars().all()
+
+    return [
+        AdminPermissionRoleItem(
+            id=str(role.id),
+            code=role.code,
+            name=role.name,
+            description=role.description,
+        )
+        for role in roles
     ]
 
 
@@ -146,6 +171,21 @@ def build_admin_role_detail(
         permissions=permissions,
         created_at=role.created_at,
         updated_at=role.updated_at,
+    )
+
+
+def build_admin_permission_detail(
+    permission: Permission,
+    roles: list[AdminPermissionRoleItem],
+) -> AdminPermissionDetail:
+    return AdminPermissionDetail(
+        id=str(permission.id),
+        code=permission.code,
+        name=permission.name,
+        description=getattr(permission, "description", None),
+        roles=roles,
+        created_at=permission.created_at,
+        updated_at=permission.updated_at,
     )
 
 
@@ -300,6 +340,28 @@ async def list_permissions(
         )
         for permission in permissions
     ]
+
+
+@router.get("/permissions/{permission_id}", response_model=AdminPermissionDetail)
+async def get_permission_detail(
+    permission_id: str,
+    _: User = Depends(require_permission("admin.roles.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminPermissionDetail:
+    result = await session.execute(
+        select(Permission).where(Permission.id == permission_id)
+    )
+    permission = result.scalar_one_or_none()
+
+    if permission is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Permission not found",
+        )
+
+    roles = await get_permission_roles(str(permission.id), session)
+
+    return build_admin_permission_detail(permission, roles)
 
 
 @router.get("/audit-events", response_model=list[AdminAuditEventItem])

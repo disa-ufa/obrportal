@@ -206,7 +206,35 @@ def main() -> int:
     assert_status(status, 200, "admin permissions")
     assert isinstance(permissions, list)
     assert len(permissions) >= 1
+    first_permission = permissions[0]
+    assert isinstance(first_permission, dict)
+    assert first_permission.get("id")
     checks.append("admin permissions ok")
+
+    permission_id = str(first_permission["id"])
+    status, permission_detail = request_json(
+        "GET",
+        f"/api/v1/admin/permissions/{permission_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin permission detail")
+    assert isinstance(permission_detail, dict)
+    assert permission_detail["id"] == permission_id
+    assert permission_detail["code"]
+    assert permission_detail["name"]
+    assert "created_at" in permission_detail
+    assert "updated_at" in permission_detail
+    assert isinstance(permission_detail["roles"], list)
+    checks.append("admin permission detail ok")
+
+    status, missing_permission = request_json(
+        "GET",
+        "/api/v1/admin/permissions/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin permission detail 404")
+    assert isinstance(missing_permission, dict)
+    checks.append("admin permission detail 404 ok")
 
     status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=admin_token)
     assert_status(status, 200, "admin audit-events")
@@ -247,6 +275,14 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin role detail")
     checks.append("learner role detail returns 403")
+
+    status, _ = request_json(
+        "GET",
+        f"/api/v1/admin/permissions/{permission_id}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin permission detail")
+    checks.append("learner permission detail returns 403")
 
     print("Smoke auth/RBAC/admin API passed:")
     for check in checks:

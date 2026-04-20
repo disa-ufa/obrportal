@@ -317,3 +317,62 @@ def test_learner_cannot_read_role_detail() -> None:
 
     assert status == 403
     assert isinstance(payload, dict)
+
+def test_admin_can_read_permission_detail() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, permissions = request_json("GET", "/api/v1/admin/permissions", token=token)
+    assert status == 200
+    assert isinstance(permissions, list)
+    assert len(permissions) >= 1
+
+    permission_id = permissions[0]["id"]
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/admin/permissions/{permission_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(detail, dict)
+    assert detail["id"] == permission_id
+    assert detail["code"]
+    assert detail["name"]
+    assert "created_at" in detail
+    assert "updated_at" in detail
+    assert isinstance(detail["roles"], list)
+
+
+def test_admin_permission_detail_not_found_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/permissions/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_read_permission_detail() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, permissions = request_json("GET", "/api/v1/admin/permissions", token=admin_token)
+    assert status == 200
+    assert isinstance(permissions, list)
+    assert len(permissions) >= 1
+
+    permission_id = permissions[0]["id"]
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/admin/permissions/{permission_id}",
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)
