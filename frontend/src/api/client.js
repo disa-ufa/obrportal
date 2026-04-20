@@ -95,6 +95,19 @@ export async function deactivateAdminUser(userId) {
   });
 }
 
+export async function assignAdminUserRole(userId, payload) {
+  return request(`/api/v1/admin/users/${userId}/roles`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function removeAdminUserRole(userId, userRoleId) {
+  return request(`/api/v1/admin/users/${userId}/roles/${userRoleId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getAdminOrganizations() {
   return request("/api/v1/admin/organizations");
 }

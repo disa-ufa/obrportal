@@ -8,6 +8,8 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 export function UsersPage({
   user,
   users,
+  roles,
+  organizations,
   loading,
   selectedUser,
   selectedUserLoading,
@@ -17,6 +19,8 @@ export function UsersPage({
   onUpdateUser,
   onActivateUser,
   onDeactivateUser,
+  onAssignUserRole,
+  onRemoveUserRole,
 }) {
   return (
     <div className="space-y-6">
@@ -43,7 +47,10 @@ export function UsersPage({
                 render: (row) => (
                   <div className="flex flex-wrap gap-1">
                     {row.roles.map((role) => (
-                      <StatusBadge key={role.code} tone={role.code === "admin" ? "amber" : "blue"}>
+                      <StatusBadge
+                        key={role.id}
+                        tone={role.code === "admin" ? "amber" : "blue"}
+                      >
                         {role.code}
                       </StatusBadge>
                     ))}
@@ -79,12 +86,16 @@ export function UsersPage({
       {user && (
         <UserDetailPanel
           userDetail={selectedUser}
+          roles={roles}
+          organizations={organizations}
           loading={selectedUserLoading}
           error={selectedUserError}
           onClose={onCloseUser}
           onUpdateUser={onUpdateUser}
           onActivateUser={onActivateUser}
           onDeactivateUser={onDeactivateUser}
+          onAssignUserRole={onAssignUserRole}
+          onRemoveUserRole={onRemoveUserRole}
         />
       )}
     </div>

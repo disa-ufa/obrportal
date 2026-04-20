@@ -2,6 +2,7 @@
 import { AppShell } from "./components/layout/AppShell";
 import {
   activateAdminUser,
+  assignAdminUserRole,
   checkAdminRbac,
   clearToken,
   createAdminOrganization,
@@ -21,6 +22,7 @@ import {
   getReady,
   getStoredToken,
   login,
+  removeAdminUserRole,
   updateAdminOrganization,
   updateAdminUser,
 } from "./api/client";
@@ -293,6 +295,40 @@ export default function App() {
     return updated;
   }
 
+  async function handleAssignUserRole(userId, payload) {
+    const updated = await assignAdminUserRole(userId, payload);
+
+    setAdminData((current) => ({
+      ...current,
+      users: sortUsers(
+        current.users.map((item) =>
+          item.id === updated.id ? updated : item
+        )
+      ),
+    }));
+
+    setSelectedUser(updated);
+
+    return updated;
+  }
+
+  async function handleRemoveUserRole(userId, userRoleId) {
+    const updated = await removeAdminUserRole(userId, userRoleId);
+
+    setAdminData((current) => ({
+      ...current,
+      users: sortUsers(
+        current.users.map((item) =>
+          item.id === updated.id ? updated : item
+        )
+      ),
+    }));
+
+    setSelectedUser(updated);
+
+    return updated;
+  }
+
   async function handleOpenOrganization(organizationId) {
     setSelectedOrganization(null);
     setSelectedOrganizationError("");
@@ -439,6 +475,8 @@ export default function App() {
         <UsersPage
           user={user}
           users={adminData.users}
+          roles={adminData.roles}
+          organizations={adminData.organizations}
           loading={adminLoading}
           selectedUser={selectedUser}
           selectedUserLoading={selectedUserLoading}
@@ -448,6 +486,8 @@ export default function App() {
           onUpdateUser={handleUpdateUser}
           onActivateUser={handleActivateUser}
           onDeactivateUser={handleDeactivateUser}
+          onAssignUserRole={handleAssignUserRole}
+          onRemoveUserRole={handleRemoveUserRole}
         />
       );
     }
