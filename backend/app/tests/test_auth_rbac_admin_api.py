@@ -376,3 +376,65 @@ def test_learner_cannot_read_permission_detail() -> None:
 
     assert status == 403
     assert isinstance(payload, dict)
+
+def test_admin_can_read_audit_event_detail() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert len(audit_events) >= 1
+
+    audit_event_id = audit_events[0]["id"]
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/admin/audit-events/{audit_event_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(detail, dict)
+    assert detail["id"] == audit_event_id
+    assert detail["action"]
+    assert "actor_user_id" in detail
+    assert "entity_type" in detail
+    assert "entity_id" in detail
+    assert "ip_address" in detail
+    assert "user_agent" in detail
+    assert isinstance(detail["payload"], dict)
+    assert "created_at" in detail
+
+
+def test_admin_audit_event_detail_not_found_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/audit-events/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_read_audit_event_detail() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=admin_token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert len(audit_events) >= 1
+
+    audit_event_id = audit_events[0]["id"]
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/admin/audit-events/{audit_event_id}",
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)

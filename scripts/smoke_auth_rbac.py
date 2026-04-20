@@ -239,7 +239,34 @@ def main() -> int:
     status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=admin_token)
     assert_status(status, 200, "admin audit-events")
     assert isinstance(audit_events, list)
+    assert len(audit_events) >= 1
+    first_audit_event = audit_events[0]
+    assert isinstance(first_audit_event, dict)
+    assert first_audit_event.get("id")
     checks.append("admin audit-events ok")
+
+    audit_event_id = str(first_audit_event["id"])
+    status, audit_event_detail = request_json(
+        "GET",
+        f"/api/v1/admin/audit-events/{audit_event_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin audit event detail")
+    assert isinstance(audit_event_detail, dict)
+    assert audit_event_detail["id"] == audit_event_id
+    assert audit_event_detail["action"]
+    assert "payload" in audit_event_detail
+    assert "created_at" in audit_event_detail
+    checks.append("admin audit event detail ok")
+
+    status, missing_audit_event = request_json(
+        "GET",
+        "/api/v1/admin/audit-events/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin audit event detail 404")
+    assert isinstance(missing_audit_event, dict)
+    checks.append("admin audit event detail 404 ok")
 
     status, _ = request_json("GET", "/api/v1/admin/users")
     assert_status(status, 401, "no token admin users")
@@ -283,6 +310,14 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin permission detail")
     checks.append("learner permission detail returns 403")
+
+    status, _ = request_json(
+        "GET",
+        f"/api/v1/admin/audit-events/{audit_event_id}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin audit event detail")
+    checks.append("learner audit event detail returns 403")
 
     print("Smoke auth/RBAC/admin API passed:")
     for check in checks:

@@ -189,6 +189,22 @@ def build_admin_permission_detail(
     )
 
 
+def build_admin_audit_event_item(
+    event: AuditEvent,
+) -> AdminAuditEventItem:
+    return AdminAuditEventItem(
+        id=str(event.id),
+        action=event.action,
+        actor_user_id=str(event.actor_user_id) if event.actor_user_id else None,
+        entity_type=event.entity_type,
+        entity_id=str(event.entity_id) if event.entity_id else None,
+        ip_address=event.ip_address,
+        user_agent=event.user_agent,
+        payload=event.payload or {},
+        created_at=event.created_at,
+    )
+
+
 @router.get("/rbac-check")
 async def rbac_check(
     current_user: User = Depends(require_permission("admin.users.read")),
@@ -377,16 +393,27 @@ async def list_audit_events(
     events = result.scalars().all()
 
     return [
-        AdminAuditEventItem(
-            id=str(event.id),
-            action=event.action,
-            actor_user_id=str(event.actor_user_id) if event.actor_user_id else None,
-            entity_type=event.entity_type,
-            entity_id=str(event.entity_id) if event.entity_id else None,
-            ip_address=event.ip_address,
-            user_agent=event.user_agent,
-            payload=event.payload or {},
-            created_at=event.created_at,
-        )
+        build_admin_audit_event_item(event)
         for event in events
     ]
+
+
+@router.get("/audit-events/{audit_event_id}", response_model=AdminAuditEventItem)
+async def get_audit_event_detail(
+    audit_event_id: str,
+    _: User = Depends(require_permission("audit.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminAuditEventItem:
+    result = await session.execute(
+        select(AuditEvent).where(AuditEvent.id == audit_event_id)
+    )
+    event = result.scalar_one_or_none()
+
+    if event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Audit event not found",
+        )
+
+    return build_admin_audit_event_item(event)
+
