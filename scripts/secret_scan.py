@@ -121,6 +121,9 @@ def looks_like_code_reference(path: Path, line: str, value: str) -> bool:
         "payload.get(",
         "response.",
         "login(",
+        "values.",
+        "form.",
+        ".trim(",
         "${",
         "bearer",
     ]
