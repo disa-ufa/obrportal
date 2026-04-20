@@ -1,4 +1,7 @@
-﻿import { Alert } from "../ui/Alert";
+﻿import { useState } from "react";
+import { OrganizationForm } from "./OrganizationForm";
+import { ActionButton } from "../ui/ActionButton";
+import { Alert } from "../ui/Alert";
 import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
@@ -9,7 +12,15 @@ export function OrganizationDetailPanel({
   loading,
   error,
   onClose,
+  onUpdateOrganization,
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  function handleClose() {
+    setIsEditing(false);
+    onClose();
+  }
+
   return (
     <SectionCard
       title="Карточка организации"
@@ -41,38 +52,63 @@ export function OrganizationDetailPanel({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
-            >
-              Закрыть
-            </button>
+            <div className="flex flex-wrap gap-2">
+              {!isEditing && (
+                <ActionButton
+                  type="button"
+                  tone="blue"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Редактировать
+                </ActionButton>
+              )}
+
+              <ActionButton
+                type="button"
+                tone="light"
+                onClick={handleClose}
+              >
+                Закрыть
+              </ActionButton>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <StatusBadge tone="blue">organization</StatusBadge>
-            <StatusBadge tone={organizationDetail.kpp ? "green" : "gray"}>
-              kpp: {organizationDetail.kpp ? "filled" : "empty"}
-            </StatusBadge>
-            <StatusBadge tone={organizationDetail.ogrn ? "green" : "gray"}>
-              ogrn: {organizationDetail.ogrn ? "filled" : "empty"}
-            </StatusBadge>
-          </div>
+          {isEditing ? (
+            <OrganizationForm
+              initialValues={organizationDetail}
+              submitLabel="Сохранить изменения"
+              successMessage="Организация обновлена."
+              onSubmit={(payload) => onUpdateOrganization(organizationDetail.id, payload)}
+              onCancel={() => setIsEditing(false)}
+              onSuccess={() => setIsEditing(false)}
+            />
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                <StatusBadge tone="blue">organization</StatusBadge>
+                <StatusBadge tone={organizationDetail.kpp ? "green" : "gray"}>
+                  kpp: {organizationDetail.kpp ? "filled" : "empty"}
+                </StatusBadge>
+                <StatusBadge tone={organizationDetail.ogrn ? "green" : "gray"}>
+                  ogrn: {organizationDetail.ogrn ? "filled" : "empty"}
+                </StatusBadge>
+              </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <DetailField label="ID" value={organizationDetail.id} />
-            <DetailField label="ИНН" value={organizationDetail.inn} />
-            <DetailField label="КПП" value={organizationDetail.kpp} />
-            <DetailField label="ОГРН" value={organizationDetail.ogrn} />
-            <DetailField label="Создана" value={formatDetailDate(organizationDetail.created_at)} />
-            <DetailField label="Обновлена" value={formatDetailDate(organizationDetail.updated_at)} />
-          </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <DetailField label="ID" value={organizationDetail.id} />
+                <DetailField label="ИНН" value={organizationDetail.inn} />
+                <DetailField label="КПП" value={organizationDetail.kpp} />
+                <DetailField label="ОГРН" value={organizationDetail.ogrn} />
+                <DetailField label="Создана" value={formatDetailDate(organizationDetail.created_at)} />
+                <DetailField label="Обновлена" value={formatDetailDate(organizationDetail.updated_at)} />
+              </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <DetailField label="Юридический адрес" value={organizationDetail.legal_address} />
-            <DetailField label="Фактический адрес" value={organizationDetail.actual_address} />
-          </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <DetailField label="Юридический адрес" value={organizationDetail.legal_address} />
+                <DetailField label="Фактический адрес" value={organizationDetail.actual_address} />
+              </div>
+            </>
+          )}
         </div>
       )}
     </SectionCard>

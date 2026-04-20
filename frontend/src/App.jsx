@@ -3,6 +3,7 @@ import { AppShell } from "./components/layout/AppShell";
 import {
   checkAdminRbac,
   clearToken,
+  createAdminOrganization,
   getAdminAuditEventDetail,
   getAdminAuditEvents,
   getAdminOrganizationDetail,
@@ -18,6 +19,7 @@ import {
   getReady,
   getStoredToken,
   login,
+  updateAdminOrganization,
 } from "./api/client";
 import { AuditPage } from "./pages/AuditPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -40,6 +42,12 @@ function userHasRole(user, roleCode) {
 
 function getNowLabel() {
   return new Date().toLocaleString("ru-RU");
+}
+
+function sortOrganizations(organizations) {
+  return [...organizations].sort((left, right) =>
+    left.name.localeCompare(right.name, "ru-RU")
+  );
 }
 
 export default function App() {
@@ -240,6 +248,38 @@ export default function App() {
     }
   }
 
+  async function handleCreateOrganization(payload) {
+    const created = await createAdminOrganization(payload);
+
+    setAdminData((current) => ({
+      ...current,
+      organizations: sortOrganizations([
+        ...current.organizations.filter((organization) => organization.id !== created.id),
+        created,
+      ]),
+    }));
+    setSelectedOrganization(created);
+
+    return created;
+  }
+
+  async function handleUpdateOrganization(organizationId, payload) {
+    const updated = await updateAdminOrganization(organizationId, payload);
+
+    setAdminData((current) => ({
+      ...current,
+      organizations: sortOrganizations(
+        current.organizations.map((organization) =>
+          organization.id === updated.id ? updated : organization
+        )
+      ),
+    }));
+
+    setSelectedOrganization(updated);
+
+    return updated;
+  }
+
   async function handleOpenRole(roleId) {
     setSelectedRole(null);
     setSelectedRoleError("");
@@ -360,6 +400,8 @@ export default function App() {
           selectedOrganizationError={selectedOrganizationError}
           onOpenOrganization={handleOpenOrganization}
           onCloseOrganization={clearSelectedOrganization}
+          onCreateOrganization={handleCreateOrganization}
+          onUpdateOrganization={handleUpdateOrganization}
         />
       );
     }

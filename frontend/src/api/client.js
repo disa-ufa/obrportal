@@ -84,6 +84,20 @@ export async function getAdminOrganizationDetail(organizationId) {
   return request(`/api/v1/admin/organizations/${organizationId}`);
 }
 
+export async function createAdminOrganization(payload) {
+  return request("/api/v1/admin/organizations", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminOrganization(organizationId, payload) {
+  return request(`/api/v1/admin/organizations/${organizationId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getAdminRoles() {
   return request("/api/v1/admin/roles");
 }
