@@ -22,6 +22,10 @@ def unique_phone() -> str:
     return f"+7888{uuid4().int % 10_000_000:07d}"
 
 
+def unique_role_code() -> str:
+    return f"smoke_custom_{uuid4().hex[:10]}"
+
+
 def find_user_role_id(
     user_detail: dict,
     *,
@@ -417,6 +421,75 @@ def main() -> int:
     assert first_role.get("id")
     checks.append("admin roles ok")
 
+    created_role_code = unique_role_code()
+    status, created_role = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {
+            "code": created_role_code.upper(),
+            "name": "Smoke custom role",
+            "description": "Smoke custom role description",
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin role create")
+    assert isinstance(created_role, dict)
+    assert created_role["code"] == created_role_code
+    assert created_role["permissions"] == []
+    created_role_id = str(created_role["id"])
+    checks.append("admin role create ok")
+
+    status, duplicate_role = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {"code": created_role_code, "name": "Duplicate smoke custom role"},
+        token=admin_token,
+    )
+    assert_status(status, 409, "admin duplicate role create")
+    assert isinstance(duplicate_role, dict)
+    checks.append("admin duplicate role create returns 409")
+
+    status, updated_role = request_json(
+        "PATCH",
+        f"/api/v1/admin/roles/{created_role_id}",
+        {"name": "Smoke custom role updated", "description": None},
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin role update")
+    assert isinstance(updated_role, dict)
+    assert updated_role["id"] == created_role_id
+    assert updated_role["code"] == created_role_code
+    assert updated_role["name"] == "Smoke custom role updated"
+    assert updated_role["description"] is None
+    checks.append("admin role update ok")
+
+    admin_role_for_metadata = next(
+        (item for item in roles if isinstance(item, dict) and item.get("code") == "admin"),
+        None,
+    )
+    if admin_role_for_metadata is None:
+        raise AssertionError("admin role not found")
+
+    status, protected_role_update = request_json(
+        "PATCH",
+        f"/api/v1/admin/roles/{admin_role_for_metadata['id']}",
+        {"name": "Forbidden admin rename"},
+        token=admin_token,
+    )
+    assert_status(status, 400, "admin system role update protected")
+    assert isinstance(protected_role_update, dict)
+    checks.append("admin system role update protected returns 400")
+
+    status, missing_role_update = request_json(
+        "PATCH",
+        "/api/v1/admin/roles/00000000-0000-0000-0000-000000000000",
+        {"name": "Missing role"},
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin role update 404")
+    assert isinstance(missing_role_update, dict)
+    checks.append("admin role update 404 ok")
+
     teacher_role = next(
         (item for item in roles if isinstance(item, dict) and item.get("code") == "teacher"),
         None,
@@ -781,6 +854,24 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin role detail")
     checks.append("learner role detail returns 403")
+
+    status, _ = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {"code": unique_role_code(), "name": "Forbidden learner role"},
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin role create")
+    checks.append("learner role create returns 403")
+
+    status, _ = request_json(
+        "PATCH",
+        f"/api/v1/admin/roles/{created_role_id}",
+        {"name": "Forbidden learner role update"},
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin role update")
+    checks.append("learner role update returns 403")
 
     status, _ = request_json(
         "POST",

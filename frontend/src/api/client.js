@@ -152,6 +152,20 @@ export async function getAdminRoleDetail(roleId) {
   return request(`/api/v1/admin/roles/${roleId}`);
 }
 
+export async function createAdminRole(payload) {
+  return request("/api/v1/admin/roles", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminRole(roleId, payload) {
+  return request(`/api/v1/admin/roles/${roleId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function assignAdminRolePermission(roleId, payload) {
   return request(`/api/v1/admin/roles/${roleId}/permissions`, {
     method: "POST",

@@ -22,6 +22,10 @@ def unique_phone() -> str:
     return f"+7999{uuid4().int % 10_000_000:07d}"
 
 
+def unique_role_code() -> str:
+    return f"custom_{uuid4().hex[:12]}"
+
+
 def get_user_id_by_email(token: str, email: str) -> str:
     status, users = request_json("GET", "/api/v1/admin/users", token=token)
     assert status == 200
@@ -397,6 +401,130 @@ def test_admin_role_detail_not_found_returns_404() -> None:
     assert isinstance(payload, dict)
 
 
+
+
+def test_admin_can_create_and_update_role() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    role_code = unique_role_code()
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {
+            "code": role_code.upper(),
+            "name": "Custom manager",
+            "description": "Initial custom role",
+        },
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    assert created["code"] == role_code
+    assert created["name"] == "Custom manager"
+    assert created["description"] == "Initial custom role"
+    assert created["permissions"] == []
+
+    role_id = str(created["id"])
+
+    status, duplicate = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {
+            "code": role_code,
+            "name": "Duplicate custom role",
+        },
+        token=token,
+    )
+    assert status == 409
+    assert isinstance(duplicate, dict)
+
+    status, updated = request_json(
+        "PATCH",
+        f"/api/v1/admin/roles/{role_id}",
+        {
+            "name": "Custom manager updated",
+            "description": None,
+        },
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["id"] == role_id
+    assert updated["code"] == role_code
+    assert updated["name"] == "Custom manager updated"
+    assert updated["description"] is None
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.role_created"
+        and event["entity_id"] == role_id
+        for event in audit_events
+    )
+    assert any(
+        event["action"] == "admin.role_updated"
+        and event["entity_id"] == role_id
+        for event in audit_events
+    )
+
+
+def test_admin_role_update_guards() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    admin_role_id = get_role_id_by_code(token, "admin")
+
+    status, payload = request_json(
+        "PATCH",
+        f"/api/v1/admin/roles/{admin_role_id}",
+        {"name": "Forbidden admin rename"},
+        token=token,
+    )
+    assert status == 400
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "PATCH",
+        "/api/v1/admin/roles/00000000-0000-0000-0000-000000000000",
+        {"name": "Missing role"},
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {"code": "Bad Code With Spaces", "name": "Bad role"},
+        token=token,
+    )
+    assert status == 422
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_create_or_update_role() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    role_id = get_role_id_by_code(admin_token, "teacher")
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {"code": unique_role_code(), "name": "Forbidden role"},
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "PATCH",
+        f"/api/v1/admin/roles/{role_id}",
+        {"name": "Forbidden role update"},
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
 
 def test_admin_can_assign_and_remove_role_permission() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)

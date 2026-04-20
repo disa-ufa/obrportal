@@ -32,6 +32,17 @@ class AdminRoleDetail(AdminRoleItem):
     updated_at: datetime
 
 
+class AdminRoleCreate(BaseModel):
+    code: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=512)
+
+
+class AdminRoleUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=512)
+
+
 class AdminPermissionRoleItem(BaseModel):
     id: str
     code: str

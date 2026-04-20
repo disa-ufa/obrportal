@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,10 +23,12 @@ from app.schemas.admin import (
     AdminPermissionDetail,
     AdminPermissionItem,
     AdminPermissionRoleItem,
+    AdminRoleCreate,
     AdminRoleDetail,
     AdminRoleItem,
     AdminRolePermissionItem,
     AdminRolePermissionAssign,
+    AdminRoleUpdate,
     AdminUserCreate,
     AdminUserDetail,
     AdminUserItem,
@@ -36,6 +40,21 @@ from app.schemas.admin import (
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+SYSTEM_ROLE_CODES = {
+    "admin",
+    "learner_fl",
+    "learner_org",
+    "org_rep",
+    "teacher",
+    "methodist",
+    "finance_operator",
+    "edo_operator",
+    "frdo_operator",
+}
+
+ROLE_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,63}$")
 
 
 async def get_user_roles(
@@ -256,6 +275,68 @@ def user_snapshot(user: User) -> dict:
         "is_email_verified": user.is_email_verified,
         "mfa_enabled": user.mfa_enabled,
     }
+
+
+
+def role_snapshot(role: Role) -> dict:
+    return {
+        "id": str(role.id),
+        "code": role.code,
+        "name": role.name,
+        "description": role.description,
+    }
+
+
+def normalize_role_code(code: str) -> str:
+    normalized = code.strip().lower()
+
+    if not ROLE_CODE_PATTERN.match(normalized):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Role code must start with a lowercase letter or digit and contain only lowercase letters, digits, dots, underscores or hyphens",
+        )
+
+    return normalized
+
+
+def normalize_role_create_data(data: dict) -> dict:
+    normalized = dict(data)
+    normalized["code"] = normalize_role_code(normalized["code"])
+    normalized["name"] = normalized["name"].strip()
+    normalized["description"] = normalize_optional_text(normalized.get("description"))
+
+    if not normalized["name"]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Role name is required",
+        )
+
+    return normalized
+
+
+def normalize_role_update_data(data: dict) -> dict:
+    normalized = dict(data)
+
+    if "name" in normalized:
+        normalized["name"] = normalized["name"].strip()
+        if not normalized["name"]:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Role name is required",
+            )
+
+    if "description" in normalized:
+        normalized["description"] = normalize_optional_text(normalized["description"])
+
+    return normalized
+
+
+def ensure_role_metadata_can_be_modified(role: Role) -> None:
+    if role.code in SYSTEM_ROLE_CODES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot modify system role metadata",
+        )
 
 
 def normalize_email(email: str) -> str:
@@ -1139,6 +1220,99 @@ async def list_roles(
         )
         for role in roles
     ]
+
+
+@router.post("/roles", response_model=AdminRoleDetail, status_code=status.HTTP_201_CREATED)
+async def create_role(
+    payload: AdminRoleCreate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.roles.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminRoleDetail:
+    data = normalize_role_create_data(model_to_dict(payload))
+
+    role = Role(
+        code=data["code"],
+        name=data["name"],
+        description=data["description"],
+    )
+    session.add(role)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.role_created",
+            entity_type="role",
+            entity_id=str(role.id),
+            payload={
+                "role": role_snapshot(role),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(role)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Role with this code already exists",
+        )
+
+    permissions = await get_role_permissions(str(role.id), session)
+
+    return build_admin_role_detail(role, permissions)
+
+
+@router.patch("/roles/{role_id}", response_model=AdminRoleDetail)
+async def update_role(
+    role_id: str,
+    payload: AdminRoleUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.roles.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminRoleDetail:
+    role = await get_admin_role_or_404(role_id, session)
+    ensure_role_metadata_can_be_modified(role)
+
+    data = normalize_role_update_data(model_to_dict(payload, exclude_unset=True))
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+
+    before = role_snapshot(role)
+
+    for field, value in data.items():
+        setattr(role, field, value)
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.role_updated",
+        entity_type="role",
+        entity_id=str(role.id),
+        payload={
+            "before": before,
+            "after": role_snapshot(role),
+            "changed_fields": sorted(data.keys()),
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(role)
+
+    permissions = await get_role_permissions(str(role.id), session)
+
+    return build_admin_role_detail(role, permissions)
 
 
 @router.get("/roles/{role_id}", response_model=AdminRoleDetail)

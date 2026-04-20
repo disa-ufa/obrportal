@@ -7,6 +7,7 @@ import {
   checkAdminRbac,
   clearToken,
   createAdminOrganization,
+  createAdminRole,
   createAdminUser,
   deactivateAdminUser,
   getAdminAuditEventDetail,
@@ -28,6 +29,7 @@ import {
   removeAdminUserRole,
   resetAdminUserPassword,
   updateAdminOrganization,
+  updateAdminRole,
   updateAdminUser,
 } from "./api/client";
 import { AuditPage } from "./pages/AuditPage";
@@ -62,6 +64,12 @@ function sortOrganizations(organizations) {
 function sortUsers(users) {
   return [...users].sort((left, right) =>
     left.email.localeCompare(right.email, "ru-RU")
+  );
+}
+
+function sortRoles(roles) {
+  return [...roles].sort((left, right) =>
+    left.code.localeCompare(right.code, "ru-RU")
   );
 }
 
@@ -413,6 +421,39 @@ export default function App() {
     return updated;
   }
 
+  async function handleCreateRole(payload) {
+    const created = await createAdminRole(payload);
+
+    setAdminData((current) => ({
+      ...current,
+      roles: sortRoles([
+        ...current.roles.filter((role) => role.id !== created.id),
+        created,
+      ]),
+    }));
+
+    setSelectedRole(created);
+
+    return created;
+  }
+
+  async function handleUpdateRole(roleId, payload) {
+    const updated = await updateAdminRole(roleId, payload);
+
+    setAdminData((current) => ({
+      ...current,
+      roles: sortRoles(
+        current.roles.map((role) =>
+          role.id === updated.id ? updated : role
+        )
+      ),
+    }));
+
+    setSelectedRole(updated);
+
+    return updated;
+  }
+
   async function handleOpenRole(roleId) {
     setSelectedRole(null);
     setSelectedRoleError("");
@@ -574,6 +615,8 @@ export default function App() {
           selectedRoleError={selectedRoleError}
           onOpenRole={handleOpenRole}
           onCloseRole={clearSelectedRole}
+          onCreateRole={handleCreateRole}
+          onUpdateRole={handleUpdateRole}
           onAssignRolePermission={handleAssignRolePermission}
           onRemoveRolePermission={handleRemoveRolePermission}
         />

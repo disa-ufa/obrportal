@@ -5,6 +5,19 @@ import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
+import { RoleForm } from "./RoleForm";
+
+const SYSTEM_ROLE_CODES = new Set([
+  "admin",
+  "learner_fl",
+  "learner_org",
+  "org_rep",
+  "teacher",
+  "methodist",
+  "finance_operator",
+  "edo_operator",
+  "frdo_operator",
+]);
 
 function Field({ label, children, hint }) {
   return (
@@ -140,11 +153,22 @@ export function RoleDetailPanel({
   onClose,
   onAssignPermission,
   onRemovePermission,
+  onUpdateRole,
 }) {
+  const [editingMetadata, setEditingMetadata] = useState(false);
   const [removingPermissionId, setRemovingPermissionId] = useState("");
   const [actionError, setActionError] = useState("");
 
   const isSystemAdminRole = roleDetail?.code === "admin";
+  const isSystemRole = SYSTEM_ROLE_CODES.has(roleDetail?.code);
+
+  async function handleUpdateRole(payload) {
+    setActionError("");
+    const updated = await onUpdateRole(roleDetail.id, payload);
+    setEditingMetadata(false);
+
+    return updated;
+  }
 
   async function handleAssignPermission(payload) {
     setActionError("");
@@ -195,13 +219,25 @@ export function RoleDetailPanel({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
-            >
-              Закрыть
-            </button>
+            <div className="flex flex-wrap gap-2">
+              {!isSystemRole && (
+                <ActionButton
+                  type="button"
+                  tone="light"
+                  onClick={() => setEditingMetadata((current) => !current)}
+                >
+                  {editingMetadata ? "Скрыть форму" : "Редактировать"}
+                </ActionButton>
+              )}
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+              >
+                Закрыть
+              </button>
+            </div>
           </div>
 
           {actionError && (
@@ -211,8 +247,14 @@ export function RoleDetailPanel({
           )}
 
           {isSystemAdminRole && (
-            <Alert title="Системная роль защищена" tone="amber">
+            <Alert title="Системная роль admin защищена" tone="amber">
               Состав прав роли admin нельзя менять из интерфейса, чтобы не заблокировать административный доступ.
+            </Alert>
+          )}
+
+          {isSystemRole && !isSystemAdminRole && (
+            <Alert title="Системная роль защищена" tone="amber">
+              Название и описание базовых ролей управляются системным seed. Для ручной настройки создавайте пользовательские роли.
             </Alert>
           )}
 
@@ -233,6 +275,28 @@ export function RoleDetailPanel({
           </div>
 
           <DetailField label="Описание" value={roleDetail.description} />
+
+          {editingMetadata && !isSystemRole && (
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="mb-4">
+                <div className="text-sm font-semibold text-slate-900">
+                  Редактировать роль
+                </div>
+                <p className="mt-1 text-xs text-slate-600">
+                  Код роли неизменяемый. Меняются только название и описание.
+                </p>
+              </div>
+
+              <RoleForm
+                mode="edit"
+                initialValues={roleDetail}
+                submitLabel="Сохранить роль"
+                successMessage="Роль обновлена."
+                onSubmit={handleUpdateRole}
+                onCancel={() => setEditingMetadata(false)}
+              />
+            </div>
+          )}
 
           <div className="space-y-4">
             <div>
