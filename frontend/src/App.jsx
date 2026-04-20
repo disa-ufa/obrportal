@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "./components/layout/AppShell";
 import {
   activateAdminUser,
@@ -6,6 +6,7 @@ import {
   checkAdminRbac,
   clearToken,
   createAdminOrganization,
+  createAdminUser,
   deactivateAdminUser,
   getAdminAuditEventDetail,
   getAdminAuditEvents,
@@ -242,6 +243,22 @@ export default function App() {
     } finally {
       setSelectedUserLoading(false);
     }
+  }
+
+  async function handleCreateUser(payload) {
+    const created = await createAdminUser(payload);
+
+    setAdminData((current) => ({
+      ...current,
+      users: sortUsers([
+        ...current.users.filter((item) => item.id !== created.id),
+        created,
+      ]),
+    }));
+
+    setSelectedUser(created);
+
+    return created;
   }
 
   async function handleUpdateUser(userId, payload) {
@@ -483,6 +500,7 @@ export default function App() {
           selectedUserError={selectedUserError}
           onOpenUser={handleOpenUser}
           onCloseUser={clearSelectedUser}
+          onCreateUser={handleCreateUser}
           onUpdateUser={handleUpdateUser}
           onActivateUser={handleActivateUser}
           onDeactivateUser={handleDeactivateUser}

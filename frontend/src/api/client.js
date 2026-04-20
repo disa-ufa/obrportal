@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export function getStoredToken() {
   return localStorage.getItem("obrportal_access_token");
@@ -74,6 +74,13 @@ export async function getAdminUsers() {
 
 export async function getAdminUserDetail(userId) {
   return request(`/api/v1/admin/users/${userId}`);
+}
+
+export async function createAdminUser(payload) {
+  return request("/api/v1/admin/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function updateAdminUser(userId, payload) {

@@ -1,4 +1,6 @@
-﻿import { UserDetailPanel } from "../components/admin/UserDetailPanel";
+﻿import { useState } from "react";
+import { UserDetailPanel } from "../components/admin/UserDetailPanel";
+import { UserForm } from "../components/admin/UserForm";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -16,17 +18,32 @@ export function UsersPage({
   selectedUserError,
   onOpenUser,
   onCloseUser,
+  onCreateUser,
   onUpdateUser,
   onActivateUser,
   onDeactivateUser,
   onAssignUserRole,
   onRemoveUserRole,
 }) {
+  const [isCreating, setIsCreating] = useState(false);
+
   return (
     <div className="space-y-6">
       <SectionCard
         title="Пользователи"
         subtitle="Список пользователей из backend."
+        action={
+          user ? (
+            <ActionButton
+              type="button"
+              tone={isCreating ? "light" : "blue"}
+              onClick={() => setIsCreating((current) => !current)}
+              disabled={loading}
+            >
+              {isCreating ? "Скрыть форму" : "Создать пользователя"}
+            </ActionButton>
+          ) : null
+        }
       >
         {!user ? (
           <p className="text-slate-600">Войдите под admin, чтобы увидеть пользователей.</p>
@@ -82,6 +99,22 @@ export function UsersPage({
           />
         )}
       </SectionCard>
+
+      {user && isCreating && (
+        <SectionCard
+          title="Создание пользователя"
+          subtitle="Создаёт учётную запись без ролей. Роль можно назначить после создания в карточке пользователя."
+        >
+          <UserForm
+            mode="create"
+            submitLabel="Создать пользователя"
+            successMessage="Пользователь создан. Теперь можно назначить ему роль."
+            onSubmit={onCreateUser}
+            onCancel={() => setIsCreating(false)}
+            onSuccess={() => setIsCreating(false)}
+          />
+        </SectionCard>
+      )}
 
       {user && (
         <UserDetailPanel

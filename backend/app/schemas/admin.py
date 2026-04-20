@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime
 
@@ -66,6 +66,15 @@ class AdminUserItem(BaseModel):
 class AdminUserDetail(AdminUserItem):
     created_at: datetime
     updated_at: datetime
+
+
+class AdminUserCreate(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=8, max_length=128)
+    full_name: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=32)
+    is_active: bool = True
+    is_email_verified: bool = False
 
 
 class AdminUserUpdate(BaseModel):

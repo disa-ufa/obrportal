@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import os
@@ -166,6 +166,48 @@ def main() -> int:
     assert_status(status, 404, "admin user detail 404")
     assert isinstance(missing_user, dict)
     checks.append("admin user detail 404 ok")
+
+    created_user_suffix = uuid4().hex[:10]
+    created_user_email = f"smoke-created-{created_user_suffix}@obrportal.local"
+    created_user_password = "SmokeCreated123!"
+    created_user_phone = unique_phone()
+    status, created_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": created_user_email,
+            "password": created_user_password,
+            "full_name": f"Smoke created user {created_user_suffix}",
+            "phone": created_user_phone,
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin user create")
+    assert isinstance(created_user, dict)
+    assert created_user["email"] == created_user_email
+    assert created_user["phone"] == created_user_phone
+    assert created_user["roles"] == []
+    checks.append("admin user create ok")
+
+    created_user_token = login(created_user_email, created_user_password)
+    if not created_user_token:
+        raise AssertionError("created user login failed")
+    checks.append("created user login ok")
+
+    status, duplicate_created_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": created_user_email,
+            "password": created_user_password,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 409, "admin duplicate user create")
+    assert isinstance(duplicate_created_user, dict)
+    checks.append("admin duplicate user create returns 409")
 
     user_update_phone = unique_phone()
     status, updated_user = request_json(
@@ -481,6 +523,18 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin user update")
     checks.append("learner user update returns 403")
+
+    status, _ = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": f"forbidden-smoke-{uuid4().hex[:10]}@obrportal.local",
+            "password": "ForbiddenSmoke123!",
+        },
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin user create")
+    checks.append("learner user create returns 403")
 
     status, _ = request_json(
         "POST",

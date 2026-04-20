@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import os
@@ -656,6 +656,80 @@ def test_learner_cannot_create_or_update_organization() -> None:
 
     assert status == 403
     assert isinstance(payload, dict)
+
+def test_admin_can_create_user_and_created_user_can_login() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    suffix = uuid4().hex[:10]
+    email = f"created-{suffix}@obrportal.local"
+    password = "CreatedUser123!"
+    phone = unique_phone()
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": f"  {email.upper()}  ",
+            "password": password,
+            "full_name": "Created test user",
+            "phone": phone,
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    assert created["id"]
+    assert created["email"] == email
+    assert created["phone"] == phone
+    assert created["full_name"] == "Created test user"
+    assert created["is_active"] is True
+    assert created["is_email_verified"] is True
+    assert created["mfa_enabled"] is False
+    assert created["roles"] == []
+
+    created_user_token = login(email, password)
+    assert created_user_token
+
+    status, duplicate = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": email,
+            "password": password,
+        },
+        token=token,
+    )
+    assert status == 409
+    assert isinstance(duplicate, dict)
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.user_created"
+        and event["entity_id"] == created["id"]
+        for event in audit_events
+    )
+
+
+def test_learner_cannot_create_user() -> None:
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": f"forbidden-{uuid4().hex[:10]}@obrportal.local",
+            "password": "Forbidden123!",
+        },
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)
+
 
 def test_admin_can_update_user() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.rbac import get_user_permission_codes, require_permission
+from app.core.security import get_password_hash
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
 from app.models.organization import Organization
@@ -23,6 +24,7 @@ from app.schemas.admin import (
     AdminRoleDetail,
     AdminRoleItem,
     AdminRolePermissionItem,
+    AdminUserCreate,
     AdminUserDetail,
     AdminUserItem,
     AdminUserRoleAssign,
@@ -249,14 +251,44 @@ def user_snapshot(user: User) -> dict:
     }
 
 
+def normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def normalize_optional_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    return value.strip() or None
+
+
+def validate_email_format(email: str) -> None:
+    if "@" not in email or email.startswith("@") or email.endswith("@"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid email format",
+        )
+
+
+def normalize_user_create_data(data: dict) -> dict:
+    normalized = dict(data)
+    normalized["email"] = normalize_email(normalized["email"])
+    normalized["phone"] = normalize_optional_text(normalized.get("phone"))
+    normalized["full_name"] = normalize_optional_text(normalized.get("full_name"))
+
+    validate_email_format(normalized["email"])
+
+    return normalized
+
+
 def normalize_user_update_data(data: dict) -> dict:
     normalized = dict(data)
 
-    if "phone" in normalized and normalized["phone"] is not None:
-        normalized["phone"] = normalized["phone"].strip() or None
+    if "phone" in normalized:
+        normalized["phone"] = normalize_optional_text(normalized["phone"])
 
-    if "full_name" in normalized and normalized["full_name"] is not None:
-        normalized["full_name"] = normalized["full_name"].strip() or None
+    if "full_name" in normalized:
+        normalized["full_name"] = normalize_optional_text(normalized["full_name"])
 
     return normalized
 
@@ -520,6 +552,62 @@ async def list_users(
         response.append(build_admin_user_item(user, roles))
 
     return response
+
+
+@router.post("/users", response_model=AdminUserDetail, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    payload: AdminUserCreate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserDetail:
+    data = normalize_user_create_data(model_to_dict(payload))
+
+    user = User(
+        email=data["email"],
+        phone=data["phone"],
+        full_name=data["full_name"],
+        hashed_password=get_password_hash(data["password"]),
+        is_active=data["is_active"],
+        is_email_verified=data["is_email_verified"],
+        mfa_enabled=False,
+    )
+    session.add(user)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.user_created",
+            entity_type="user",
+            entity_id=str(user.id),
+            payload={
+                "after": user_snapshot(user),
+                "created_fields": [
+                    "email",
+                    "phone",
+                    "full_name",
+                    "is_active",
+                    "is_email_verified",
+                ],
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(user)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this email or phone already exists",
+        )
+
+    roles = await get_user_roles(str(user.id), session)
+
+    return build_admin_user_detail(user, roles)
 
 
 @router.get("/users/{user_id}", response_model=AdminUserDetail)
