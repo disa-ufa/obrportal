@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AdminRoleItem(BaseModel):
@@ -79,6 +79,24 @@ class AdminOrganizationItem(BaseModel):
 class AdminOrganizationDetail(AdminOrganizationItem):
     created_at: datetime
     updated_at: datetime
+
+
+class AdminOrganizationCreate(BaseModel):
+    inn: str = Field(min_length=10, max_length=12)
+    kpp: str | None = Field(default=None, max_length=9)
+    ogrn: str | None = Field(default=None, max_length=15)
+    name: str = Field(min_length=1, max_length=512)
+    legal_address: str | None = Field(default=None, max_length=1024)
+    actual_address: str | None = Field(default=None, max_length=1024)
+
+
+class AdminOrganizationUpdate(BaseModel):
+    inn: str | None = Field(default=None, min_length=10, max_length=12)
+    kpp: str | None = Field(default=None, max_length=9)
+    ogrn: str | None = Field(default=None, max_length=15)
+    name: str | None = Field(default=None, min_length=1, max_length=512)
+    legal_address: str | None = Field(default=None, max_length=1024)
+    actual_address: str | None = Field(default=None, max_length=1024)
 
 
 class AdminAuditEventItem(BaseModel):

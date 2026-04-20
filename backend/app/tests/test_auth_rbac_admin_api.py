@@ -2,6 +2,7 @@
 
 import json
 import os
+from uuid import uuid4
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -11,6 +12,10 @@ ADMIN_EMAIL = os.getenv("TEST_ADMIN_EMAIL", "admin@obrportal.local")
 ADMIN_PASSWORD = os.getenv("TEST_ADMIN_PASSWORD", "Admin123Local2026!")
 LEARNER_EMAIL = os.getenv("TEST_LEARNER_EMAIL", "learner@obrportal.local")
 LEARNER_PASSWORD = os.getenv("TEST_LEARNER_PASSWORD", "Learner123Local2026!")
+
+
+def unique_inn() -> str:
+    return f"9{uuid4().int % 1_000_000_000:09d}"
 
 
 def request_json(
@@ -438,3 +443,154 @@ def test_learner_cannot_read_audit_event_detail() -> None:
 
     assert status == 403
     assert isinstance(payload, dict)
+
+def test_admin_can_create_and_update_organization() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    inn = unique_inn()
+
+    create_payload = {
+        "inn": inn,
+        "kpp": "027801001",
+        "ogrn": "1020200000000",
+        "name": f"???????? ??????????? {inn}",
+        "legal_address": "450000, ?????????? ????????????, ?. ???, ???????? ?????",
+        "actual_address": "450000, ?????????? ????????????, ?. ???, ???????? ?????",
+    }
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        create_payload,
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    assert created["id"]
+    assert created["inn"] == inn
+    assert created["name"] == create_payload["name"]
+    assert "created_at" in created
+    assert "updated_at" in created
+
+    organization_id = created["id"]
+    updated_name = f"??????????? ??????????? {inn}"
+
+    status, updated = request_json(
+        "PATCH",
+        f"/api/v1/admin/organizations/{organization_id}",
+        {
+            "name": updated_name,
+            "actual_address": "450000, ?????????? ????????????, ?. ???, ??????????? ?????",
+        },
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["id"] == organization_id
+    assert updated["inn"] == inn
+    assert updated["name"] == updated_name
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.organization_created"
+        and event["entity_id"] == organization_id
+        for event in audit_events
+    )
+    assert any(
+        event["action"] == "admin.organization_updated"
+        and event["entity_id"] == organization_id
+        for event in audit_events
+    )
+
+
+def test_admin_create_organization_duplicate_inn_returns_409() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    inn = unique_inn()
+
+    payload = {
+        "inn": inn,
+        "name": f"???????? ??? {inn}",
+    }
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        payload,
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+
+    status, duplicate = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        payload,
+        token=token,
+    )
+
+    assert status == 409
+    assert isinstance(duplicate, dict)
+
+
+def test_admin_update_organization_not_found_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "PATCH",
+        "/api/v1/admin/organizations/00000000-0000-0000-0000-000000000000",
+        {"name": "?????????????? ???????????"},
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_create_or_update_organization() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    inn = unique_inn()
+
+    create_payload = {
+        "inn": inn,
+        "name": f"??????????? ??? ???????? ???? {inn}",
+    }
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        create_payload,
+        token=admin_token,
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    organization_id = created["id"]
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        {
+            "inn": unique_inn(),
+            "name": "??????????? ???????????",
+        },
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "PATCH",
+        f"/api/v1/admin/organizations/{organization_id}",
+        {"name": "??????????? ??????????"},
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)
+

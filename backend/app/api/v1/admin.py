@@ -1,8 +1,9 @@
 ﻿from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.rbac import get_user_permission_codes, require_permission
 from app.db.session import get_db
@@ -12,8 +13,10 @@ from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.schemas.admin import (
     AdminAuditEventItem,
+    AdminOrganizationCreate,
     AdminOrganizationDetail,
     AdminOrganizationItem,
+    AdminOrganizationUpdate,
     AdminPermissionDetail,
     AdminPermissionItem,
     AdminPermissionRoleItem,
@@ -205,6 +208,59 @@ def build_admin_audit_event_item(
     )
 
 
+def model_to_dict(model, **kwargs) -> dict:
+    if hasattr(model, "model_dump"):
+        return model.model_dump(**kwargs)
+
+    return model.dict(**kwargs)
+
+
+def organization_snapshot(organization: Organization) -> dict:
+    return {
+        "id": str(organization.id),
+        "inn": organization.inn,
+        "kpp": organization.kpp,
+        "ogrn": organization.ogrn,
+        "name": organization.name,
+        "legal_address": organization.legal_address,
+        "actual_address": organization.actual_address,
+    }
+
+
+def get_request_ip(request: Request) -> str | None:
+    if not request.client:
+        return None
+
+    return request.client.host
+
+
+def get_request_user_agent(request: Request) -> str | None:
+    return request.headers.get("user-agent")
+
+
+async def create_admin_audit_event(
+    session: AsyncSession,
+    *,
+    actor_user: User,
+    action: str,
+    entity_type: str,
+    entity_id: str,
+    payload: dict,
+    request: Request,
+) -> None:
+    session.add(
+        AuditEvent(
+            actor_user_id=actor_user.id,
+            action=action,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            ip_address=get_request_ip(request),
+            user_agent=get_request_user_agent(request),
+            payload=payload,
+        )
+    )
+
+
 @router.get("/rbac-check")
 async def rbac_check(
     current_user: User = Depends(require_permission("admin.users.read")),
@@ -276,6 +332,109 @@ async def list_organizations(
         build_admin_organization_item(organization)
         for organization in organizations
     ]
+
+
+@router.post(
+    "/organizations",
+    response_model=AdminOrganizationDetail,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_organization(
+    payload: AdminOrganizationCreate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.organizations.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminOrganizationDetail:
+    data = model_to_dict(payload)
+    organization = Organization(**data)
+    session.add(organization)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.organization_created",
+            entity_type="organization",
+            entity_id=str(organization.id),
+            payload={
+                "organization": organization_snapshot(organization),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(organization)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Organization with this INN already exists",
+        )
+
+    return build_admin_organization_detail(organization)
+
+
+@router.patch("/organizations/{organization_id}", response_model=AdminOrganizationDetail)
+async def update_organization(
+    organization_id: str,
+    payload: AdminOrganizationUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.organizations.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminOrganizationDetail:
+    result = await session.execute(
+        select(Organization).where(Organization.id == organization_id)
+    )
+    organization = result.scalar_one_or_none()
+
+    if organization is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found",
+        )
+
+    data = model_to_dict(payload, exclude_unset=True)
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+
+    before = organization_snapshot(organization)
+
+    for field, value in data.items():
+        setattr(organization, field, value)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.organization_updated",
+            entity_type="organization",
+            entity_id=str(organization.id),
+            payload={
+                "before": before,
+                "after": organization_snapshot(organization),
+                "changed_fields": sorted(data.keys()),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(organization)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Organization with this INN already exists",
+        )
+
+    return build_admin_organization_detail(organization)
 
 
 @router.get("/organizations/{organization_id}", response_model=AdminOrganizationDetail)

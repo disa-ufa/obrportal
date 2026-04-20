@@ -2,6 +2,7 @@
 
 import json
 import os
+from uuid import uuid4
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -11,6 +12,10 @@ ADMIN_EMAIL = os.getenv("SMOKE_ADMIN_EMAIL", "admin@obrportal.local")
 ADMIN_PASSWORD = os.getenv("SMOKE_ADMIN_PASSWORD", "Admin123Local2026!")
 LEARNER_EMAIL = os.getenv("SMOKE_LEARNER_EMAIL", "learner@obrportal.local")
 LEARNER_PASSWORD = os.getenv("SMOKE_LEARNER_PASSWORD", "Learner123Local2026!")
+
+
+def unique_inn() -> str:
+    return f"8{uuid4().int % 1_000_000_000:09d}"
 
 
 def request_json(
@@ -168,6 +173,52 @@ def main() -> int:
     assert isinstance(missing_org, dict)
     checks.append("admin organization detail 404 ok")
 
+    created_org_inn = unique_inn()
+    status, created_org = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        {
+            "inn": created_org_inn,
+            "kpp": "027801001",
+            "ogrn": "1020200000000",
+            "name": f"Smoke organization {created_org_inn}",
+            "legal_address": "Smoke legal address",
+            "actual_address": "Smoke actual address",
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin organization create")
+    assert isinstance(created_org, dict)
+    assert created_org["id"]
+    assert created_org["inn"] == created_org_inn
+    checks.append("admin organization create ok")
+
+    created_organization_id = str(created_org["id"])
+    status, updated_org = request_json(
+        "PATCH",
+        f"/api/v1/admin/organizations/{created_organization_id}",
+        {
+            "name": f"Smoke organization updated {created_org_inn}",
+            "actual_address": "Smoke updated actual address",
+        },
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin organization update")
+    assert isinstance(updated_org, dict)
+    assert updated_org["id"] == created_organization_id
+    assert updated_org["name"].startswith("Smoke organization updated")
+    checks.append("admin organization update ok")
+
+    status, missing_org_update = request_json(
+        "PATCH",
+        "/api/v1/admin/organizations/00000000-0000-0000-0000-000000000000",
+        {"name": "Missing organization"},
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin organization update 404")
+    assert isinstance(missing_org_update, dict)
+    checks.append("admin organization update 404 ok")
+
     status, roles = request_json("GET", "/api/v1/admin/roles", token=admin_token)
     assert_status(status, 200, "admin roles")
     assert isinstance(roles, list)
@@ -294,6 +345,27 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin organization detail")
     checks.append("learner organization detail returns 403")
+
+    status, _ = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        {
+            "inn": unique_inn(),
+            "name": "Forbidden learner organization",
+        },
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin organization create")
+    checks.append("learner organization create returns 403")
+
+    status, _ = request_json(
+        "PATCH",
+        f"/api/v1/admin/organizations/{created_organization_id}",
+        {"name": "Forbidden learner update"},
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin organization update")
+    checks.append("learner organization update returns 403")
 
     status, _ = request_json(
         "GET",
