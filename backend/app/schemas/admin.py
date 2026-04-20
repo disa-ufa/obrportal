@@ -83,6 +83,10 @@ class AdminUserUpdate(BaseModel):
     is_email_verified: bool | None = None
 
 
+class AdminUserPasswordUpdate(BaseModel):
+    password: str = Field(min_length=8, max_length=128)
+
+
 class AdminUserRoleAssign(BaseModel):
     role_id: str
     organization_id: str | None = None

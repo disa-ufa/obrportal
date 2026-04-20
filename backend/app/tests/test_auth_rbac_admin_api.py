@@ -714,6 +714,67 @@ def test_admin_can_create_user_and_created_user_can_login() -> None:
     )
 
 
+def test_admin_can_reset_user_password() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    suffix = uuid4().hex[:10]
+    email = f"password-reset-{suffix}@obrportal.local"
+    initial_password = "InitialUser123!"
+    new_password = "ResetUser123!"
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": email,
+            "password": initial_password,
+            "full_name": "Password reset test user",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    user_id = created["id"]
+
+    assert login(email, initial_password)
+
+    status, updated = request_json(
+        "POST",
+        f"/api/v1/admin/users/{user_id}/password",
+        {"password": new_password},
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["id"] == user_id
+    assert "password" not in updated
+    assert "hashed_password" not in updated
+
+    status, old_password_payload = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": email, "password": initial_password},
+    )
+    assert status == 401
+    assert isinstance(old_password_payload, dict)
+
+    assert login(email, new_password)
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.user_password_reset"
+        and event["entity_id"] == user_id
+        and initial_password not in json.dumps(event.get("payload", {}))
+        and new_password not in json.dumps(event.get("payload", {}))
+        for event in audit_events
+    )
+
+
 def test_learner_cannot_create_user() -> None:
     learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
 
@@ -820,6 +881,15 @@ def test_admin_user_write_missing_returns_404() -> None:
 
     status, payload = request_json(
         "POST",
+        f"/api/v1/admin/users/{missing_user_id}/password",
+        {"password": "MissingUser123!"},
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
         f"/api/v1/admin/users/{missing_user_id}/activate",
         token=token,
     )
@@ -867,6 +937,15 @@ def test_learner_cannot_update_activate_or_deactivate_user() -> None:
         "PATCH",
         f"/api/v1/admin/users/{learner_user_id}",
         {"full_name": "Forbidden update"},
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/password",
+        {"password": "ForbiddenReset123!"},
         token=learner_token,
     )
     assert status == 403

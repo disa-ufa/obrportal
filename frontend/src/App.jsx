@@ -24,6 +24,7 @@ import {
   getStoredToken,
   login,
   removeAdminUserRole,
+  resetAdminUserPassword,
   updateAdminOrganization,
   updateAdminUser,
 } from "./api/client";
@@ -278,6 +279,23 @@ export default function App() {
     return updated;
   }
 
+  async function handleResetUserPassword(userId, password) {
+    const updated = await resetAdminUserPassword(userId, password);
+
+    setAdminData((current) => ({
+      ...current,
+      users: sortUsers(
+        current.users.map((item) =>
+          item.id === updated.id ? updated : item
+        )
+      ),
+    }));
+
+    setSelectedUser(updated);
+
+    return updated;
+  }
+
   async function handleActivateUser(userId) {
     const updated = await activateAdminUser(userId);
 
@@ -502,6 +520,7 @@ export default function App() {
           onCloseUser={clearSelectedUser}
           onCreateUser={handleCreateUser}
           onUpdateUser={handleUpdateUser}
+          onResetUserPassword={handleResetUserPassword}
           onActivateUser={handleActivateUser}
           onDeactivateUser={handleDeactivateUser}
           onAssignUserRole={handleAssignUserRole}

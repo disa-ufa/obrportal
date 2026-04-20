@@ -90,6 +90,13 @@ export async function updateAdminUser(userId, payload) {
   });
 }
 
+export async function resetAdminUserPassword(userId, password) {
+  return request(`/api/v1/admin/users/${userId}/password`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
 export async function activateAdminUser(userId) {
   return request(`/api/v1/admin/users/${userId}/activate`, {
     method: "POST",

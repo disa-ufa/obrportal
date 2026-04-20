@@ -27,6 +27,7 @@ from app.schemas.admin import (
     AdminUserCreate,
     AdminUserDetail,
     AdminUserItem,
+    AdminUserPasswordUpdate,
     AdminUserRoleAssign,
     AdminUserRoleItem,
     AdminUserUpdate,
@@ -669,6 +670,43 @@ async def update_user(
             status_code=status.HTTP_409_CONFLICT,
             detail="User with this phone already exists",
         )
+
+    roles = await get_user_roles(str(user.id), session)
+
+    return build_admin_user_detail(user, roles)
+
+
+@router.post("/users/{user_id}/password", response_model=AdminUserDetail)
+async def reset_user_password(
+    user_id: str,
+    payload: AdminUserPasswordUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserDetail:
+    user = await get_admin_user_or_404(user_id, session)
+
+    before = user_snapshot(user)
+    user.hashed_password = get_password_hash(payload.password)
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.user_password_reset",
+        entity_type="user",
+        entity_id=str(user.id),
+        payload={
+            "before": before,
+            "after": user_snapshot(user),
+            "changed_fields": ["password"],
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(user)
 
     roles = await get_user_roles(str(user.id), session)
 

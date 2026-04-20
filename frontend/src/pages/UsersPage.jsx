@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { UserDetailPanel } from "../components/admin/UserDetailPanel";
 import { UserForm } from "../components/admin/UserForm";
 import { ActionButton } from "../components/ui/ActionButton";
@@ -20,6 +20,7 @@ export function UsersPage({
   onCloseUser,
   onCreateUser,
   onUpdateUser,
+  onResetUserPassword,
   onActivateUser,
   onDeactivateUser,
   onAssignUserRole,
@@ -125,6 +126,7 @@ export function UsersPage({
           error={selectedUserError}
           onClose={onCloseUser}
           onUpdateUser={onUpdateUser}
+          onResetUserPassword={onResetUserPassword}
           onActivateUser={onActivateUser}
           onDeactivateUser={onDeactivateUser}
           onAssignUserRole={onAssignUserRole}

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { UserForm } from "./UserForm";
 import { ActionButton } from "../ui/ActionButton";
 import { Alert } from "../ui/Alert";
@@ -28,6 +28,15 @@ function SelectInput(props) {
   );
 }
 
+function TextInput(props) {
+  return (
+    <input
+      {...props}
+      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-50 disabled:text-slate-500"
+    />
+  );
+}
+
 function roleBadgeTone(roleCode) {
   if (roleCode === "admin") {
     return "amber";
@@ -46,6 +55,108 @@ function buildRoleAssignmentInitialValues(roles, organizations) {
     scope: organizations?.length ? "organization" : "global",
     organization_id: organizations?.[0]?.id || "",
   };
+}
+
+
+function UserPasswordResetForm({ onReset }) {
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const canSubmit = password.length >= 8 && password === confirmation;
+
+  function updatePassword(value) {
+    setPassword(value);
+    setError("");
+    setSuccess("");
+  }
+
+  function updateConfirmation(value) {
+    setConfirmation(value);
+    setError("");
+    setSuccess("");
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    if (password !== confirmation) {
+      setLoading(false);
+      setError("Пароли не совпадают.");
+      return;
+    }
+
+    try {
+      await onReset(password);
+      setPassword("");
+      setConfirmation("");
+      setSuccess("Пароль пользователя обновлён.");
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message}`.trim());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+      <div>
+        <div className="text-sm font-semibold text-slate-900">
+          Сбросить пароль
+        </div>
+        <p className="mt-1 text-xs text-slate-600">
+          Новый пароль не сохраняется в журнале аудита и не возвращается из API.
+        </p>
+      </div>
+
+      {error && (
+        <Alert title="Не удалось обновить пароль" tone="red">
+          {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert title="Готово" tone="blue">
+          {success}
+        </Alert>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Новый пароль" hint="Минимум 8 символов.">
+          <TextInput
+            type="password"
+            value={password}
+            onChange={(event) => updatePassword(event.target.value)}
+            minLength={8}
+            maxLength={128}
+            required
+            disabled={loading}
+          />
+        </Field>
+
+        <Field label="Повторите пароль">
+          <TextInput
+            type="password"
+            value={confirmation}
+            onChange={(event) => updateConfirmation(event.target.value)}
+            minLength={8}
+            maxLength={128}
+            required
+            disabled={loading}
+          />
+        </Field>
+      </div>
+
+      <ActionButton type="submit" tone="blue" disabled={loading || !canSubmit}>
+        {loading ? "Обновляем..." : "Обновить пароль"}
+      </ActionButton>
+    </form>
+  );
 }
 
 function UserRoleAssignmentForm({
@@ -190,6 +301,7 @@ export function UserDetailPanel({
   organizations,
   onClose,
   onUpdateUser,
+  onResetUserPassword,
   onActivateUser,
   onDeactivateUser,
   onAssignUserRole,
@@ -215,6 +327,10 @@ export function UserDetailPanel({
     setActionError("");
     setRemovingRoleId("");
     onClose();
+  }
+
+  async function handleResetPassword(password) {
+    return onResetUserPassword(userDetail.id, password);
   }
 
   async function handleActivate() {
@@ -431,6 +547,8 @@ export function UserDetailPanel({
                   onAssign={handleAssignRole}
                 />
               </div>
+
+              <UserPasswordResetForm onReset={handleResetPassword} />
             </>
           )}
         </div>

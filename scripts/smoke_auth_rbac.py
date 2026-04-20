@@ -196,6 +196,34 @@ def main() -> int:
         raise AssertionError("created user login failed")
     checks.append("created user login ok")
 
+    created_user_new_password = "SmokeReset123!"
+    status, reset_password_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{created_user['id']}/password",
+        {"password": created_user_new_password},
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin user password reset")
+    assert isinstance(reset_password_user, dict)
+    assert reset_password_user["id"] == created_user["id"]
+    if "password" in reset_password_user or "hashed_password" in reset_password_user:
+        raise AssertionError("password fields leaked in user password reset response")
+    checks.append("admin user password reset ok")
+
+    status, old_password_login = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": created_user_email, "password": created_user_password},
+    )
+    assert_status(status, 401, "created user old password rejected")
+    assert isinstance(old_password_login, dict)
+    checks.append("created user old password rejected")
+
+    created_user_reset_token = login(created_user_email, created_user_new_password)
+    if not created_user_reset_token:
+        raise AssertionError("created user reset password login failed")
+    checks.append("created user reset password login ok")
+
     status, duplicate_created_user = request_json(
         "POST",
         "/api/v1/admin/users",
@@ -257,6 +285,16 @@ def main() -> int:
     assert_status(status, 404, "admin user update 404")
     assert isinstance(missing_user_update, dict)
     checks.append("admin user update 404 ok")
+
+    status, missing_user_password_reset = request_json(
+        "POST",
+        "/api/v1/admin/users/00000000-0000-0000-0000-000000000000/password",
+        {"password": "MissingSmoke123!"},
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin user password reset 404")
+    assert isinstance(missing_user_password_reset, dict)
+    checks.append("admin user password reset 404 ok")
 
     status, last_admin_deactivate = request_json(
         "POST",
@@ -535,6 +573,15 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin user create")
     checks.append("learner user create returns 403")
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/password",
+        {"password": "ForbiddenResetSmoke123!"},
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin user password reset")
+    checks.append("learner user password reset returns 403")
 
     status, _ = request_json(
         "POST",
