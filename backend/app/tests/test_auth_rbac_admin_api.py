@@ -18,6 +18,22 @@ def unique_inn() -> str:
     return f"9{uuid4().int % 1_000_000_000:09d}"
 
 
+def unique_phone() -> str:
+    return f"+7999{uuid4().int % 10_000_000:07d}"
+
+
+def get_user_id_by_email(token: str, email: str) -> str:
+    status, users = request_json("GET", "/api/v1/admin/users", token=token)
+    assert status == 200
+    assert isinstance(users, list)
+
+    for user in users:
+        if user["email"] == email:
+            return str(user["id"])
+
+    raise AssertionError(f"User not found: {email}")
+
+
 def request_json(
     method: str,
     path: str,
@@ -591,6 +607,163 @@ def test_learner_cannot_create_or_update_organization() -> None:
         token=learner_token,
     )
 
+    assert status == 403
+    assert isinstance(payload, dict)
+
+def test_admin_can_update_user() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    user_id = get_user_id_by_email(token, LEARNER_EMAIL)
+    phone = unique_phone()
+
+    status, updated = request_json(
+        "PATCH",
+        f"/api/v1/admin/users/{user_id}",
+        {
+            "full_name": f"Updated learner {phone}",
+            "phone": phone,
+            "is_email_verified": False,
+        },
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["id"] == user_id
+    assert updated["phone"] == phone
+    assert updated["full_name"] == f"Updated learner {phone}"
+    assert updated["is_email_verified"] is False
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.user_updated"
+        and event["entity_id"] == user_id
+        for event in audit_events
+    )
+
+
+def test_admin_can_deactivate_and_activate_user() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    user_id = get_user_id_by_email(token, LEARNER_EMAIL)
+
+    status, deactivated = request_json(
+        "POST",
+        f"/api/v1/admin/users/{user_id}/deactivate",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(deactivated, dict)
+    assert deactivated["id"] == user_id
+    assert deactivated["is_active"] is False
+
+    status, activated = request_json(
+        "POST",
+        f"/api/v1/admin/users/{user_id}/activate",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(activated, dict)
+    assert activated["id"] == user_id
+    assert activated["is_active"] is True
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.user_deactivated"
+        and event["entity_id"] == user_id
+        for event in audit_events
+    )
+    assert any(
+        event["action"] == "admin.user_activated"
+        and event["entity_id"] == user_id
+        for event in audit_events
+    )
+
+
+def test_admin_user_write_missing_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    missing_user_id = "00000000-0000-0000-0000-000000000000"
+
+    status, payload = request_json(
+        "PATCH",
+        f"/api/v1/admin/users/{missing_user_id}",
+        {"full_name": "Missing user"},
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{missing_user_id}/activate",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{missing_user_id}/deactivate",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_admin_cannot_deactivate_last_active_admin() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    admin_user_id = get_user_id_by_email(token, ADMIN_EMAIL)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{admin_user_id}/deactivate",
+        token=token,
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_update_activate_or_deactivate_user() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_user_id = get_user_id_by_email(admin_token, LEARNER_EMAIL)
+
+    status, activated = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/activate",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(activated, dict)
+
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, payload = request_json(
+        "PATCH",
+        f"/api/v1/admin/users/{learner_user_id}",
+        {"full_name": "Forbidden update"},
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/deactivate",
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/activate",
+        token=learner_token,
+    )
     assert status == 403
     assert isinstance(payload, dict)
 

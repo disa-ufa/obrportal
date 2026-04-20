@@ -26,6 +26,7 @@ from app.schemas.admin import (
     AdminUserDetail,
     AdminUserItem,
     AdminUserRoleItem,
+    AdminUserUpdate,
 )
 
 
@@ -227,6 +228,102 @@ def organization_snapshot(organization: Organization) -> dict:
     }
 
 
+def user_snapshot(user: User) -> dict:
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "phone": user.phone,
+        "full_name": user.full_name,
+        "is_active": user.is_active,
+        "is_email_verified": user.is_email_verified,
+        "mfa_enabled": user.mfa_enabled,
+    }
+
+
+def normalize_user_update_data(data: dict) -> dict:
+    normalized = dict(data)
+
+    if "phone" in normalized and normalized["phone"] is not None:
+        normalized["phone"] = normalized["phone"].strip() or None
+
+    if "full_name" in normalized and normalized["full_name"] is not None:
+        normalized["full_name"] = normalized["full_name"].strip() or None
+
+    return normalized
+
+
+async def get_admin_user_or_404(
+    user_id: str,
+    session: AsyncSession,
+) -> User:
+    result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    return user
+
+
+async def user_has_role_code(
+    user_id: str,
+    role_code: str,
+    session: AsyncSession,
+) -> bool:
+    result = await session.execute(
+        select(UserRole.id)
+        .join(Role, UserRole.role_id == Role.id)
+        .where(
+            UserRole.user_id == user_id,
+            Role.code == role_code,
+        )
+        .limit(1)
+    )
+
+    return result.scalar_one_or_none() is not None
+
+
+async def count_active_admin_users(session: AsyncSession) -> int:
+    result = await session.execute(
+        select(User.id)
+        .join(UserRole, UserRole.user_id == User.id)
+        .join(Role, UserRole.role_id == Role.id)
+        .where(
+            Role.code == "admin",
+            User.is_active.is_(True),
+        )
+        .distinct()
+    )
+
+    return len(result.scalars().all())
+
+
+async def ensure_user_can_be_deactivated(
+    user: User,
+    session: AsyncSession,
+) -> None:
+    if not user.is_active:
+        return
+
+    is_admin = await user_has_role_code(str(user.id), "admin", session)
+
+    if not is_admin:
+        return
+
+    active_admins_count = await count_active_admin_users(session)
+
+    if active_admins_count <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot deactivate the last active admin",
+        )
+
+
 def get_request_ip(request: Request) -> str | None:
     if not request.client:
         return None
@@ -304,16 +401,133 @@ async def get_user_detail(
     _: User = Depends(require_permission("admin.users.read")),
     session: AsyncSession = Depends(get_db),
 ) -> AdminUserDetail:
-    user_result = await session.execute(
-        select(User).where(User.id == user_id)
-    )
-    user = user_result.scalar_one_or_none()
+    user = await get_admin_user_or_404(user_id, session)
+    roles = await get_user_roles(str(user.id), session)
 
-    if user is None:
+    return build_admin_user_detail(user, roles)
+
+
+@router.patch("/users/{user_id}", response_model=AdminUserDetail)
+async def update_user(
+    user_id: str,
+    payload: AdminUserUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserDetail:
+    user = await get_admin_user_or_404(user_id, session)
+    data = normalize_user_update_data(model_to_dict(payload, exclude_unset=True))
+
+    if not data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
         )
+
+    before = user_snapshot(user)
+
+    for field, value in data.items():
+        setattr(user, field, value)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.user_updated",
+            entity_type="user",
+            entity_id=str(user.id),
+            payload={
+                "before": before,
+                "after": user_snapshot(user),
+                "changed_fields": sorted(data.keys()),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(user)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this phone already exists",
+        )
+
+    roles = await get_user_roles(str(user.id), session)
+
+    return build_admin_user_detail(user, roles)
+
+
+@router.post("/users/{user_id}/activate", response_model=AdminUserDetail)
+async def activate_user(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserDetail:
+    user = await get_admin_user_or_404(user_id, session)
+    before = user_snapshot(user)
+
+    user.is_active = True
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.user_activated",
+        entity_type="user",
+        entity_id=str(user.id),
+        payload={
+            "before": before,
+            "after": user_snapshot(user),
+            "changed_fields": ["is_active"] if before["is_active"] is not True else [],
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(user)
+
+    roles = await get_user_roles(str(user.id), session)
+
+    return build_admin_user_detail(user, roles)
+
+
+@router.post("/users/{user_id}/deactivate", response_model=AdminUserDetail)
+async def deactivate_user(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserDetail:
+    user = await get_admin_user_or_404(user_id, session)
+
+    await ensure_user_can_be_deactivated(user, session)
+
+    before = user_snapshot(user)
+    user.is_active = False
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.user_deactivated",
+        entity_type="user",
+        entity_id=str(user.id),
+        payload={
+            "before": before,
+            "after": user_snapshot(user),
+            "changed_fields": ["is_active"] if before["is_active"] is not False else [],
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(user)
 
     roles = await get_user_roles(str(user.id), session)
 

@@ -18,6 +18,10 @@ def unique_inn() -> str:
     return f"8{uuid4().int % 1_000_000_000:09d}"
 
 
+def unique_phone() -> str:
+    return f"+7888{uuid4().int % 10_000_000:07d}"
+
+
 def request_json(
     method: str,
     path: str,
@@ -112,6 +116,16 @@ def main() -> int:
     assert first_user.get("id")
     checks.append("admin users ok")
 
+
+    learner_user = next(
+        (item for item in users if isinstance(item, dict) and item.get("email") == LEARNER_EMAIL),
+        None,
+    )
+    if learner_user is None:
+        raise AssertionError("learner user not found")
+
+    learner_user_id = str(learner_user["id"])
+
     user_id = str(first_user["id"])
     status, user_detail = request_json(
         "GET",
@@ -135,6 +149,64 @@ def main() -> int:
     assert_status(status, 404, "admin user detail 404")
     assert isinstance(missing_user, dict)
     checks.append("admin user detail 404 ok")
+
+    user_update_phone = unique_phone()
+    status, updated_user = request_json(
+        "PATCH",
+        f"/api/v1/admin/users/{learner_user_id}",
+        {
+            "full_name": f"Smoke learner {user_update_phone}",
+            "phone": user_update_phone,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin user update")
+    assert isinstance(updated_user, dict)
+    assert updated_user["id"] == learner_user_id
+    assert updated_user["phone"] == user_update_phone
+    checks.append("admin user update ok")
+
+    status, deactivated_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/deactivate",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin user deactivate")
+    assert isinstance(deactivated_user, dict)
+    assert deactivated_user["id"] == learner_user_id
+    assert deactivated_user["is_active"] is False
+    checks.append("admin user deactivate ok")
+
+    status, activated_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/activate",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin user activate")
+    assert isinstance(activated_user, dict)
+    assert activated_user["id"] == learner_user_id
+    assert activated_user["is_active"] is True
+    checks.append("admin user activate ok")
+
+    status, missing_user_update = request_json(
+        "PATCH",
+        "/api/v1/admin/users/00000000-0000-0000-0000-000000000000",
+        {"full_name": "Missing user"},
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin user update 404")
+    assert isinstance(missing_user_update, dict)
+    checks.append("admin user update 404 ok")
+
+    status, last_admin_deactivate = request_json(
+        "POST",
+        f"/api/v1/admin/users/{user_id}/deactivate",
+        token=admin_token,
+    )
+    assert_status(status, 400, "admin last admin deactivate 400")
+    assert isinstance(last_admin_deactivate, dict)
+    checks.append("admin last admin deactivate returns 400")
 
     status, organizations = request_json(
         "GET",
@@ -333,6 +405,31 @@ def main() -> int:
     status, _ = request_json("GET", f"/api/v1/admin/users/{user_id}", token=learner_token)
     assert_status(status, 403, "learner admin user detail")
     checks.append("learner user detail returns 403")
+
+    status, _ = request_json(
+        "PATCH",
+        f"/api/v1/admin/users/{learner_user_id}",
+        {"full_name": "Forbidden learner update"},
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin user update")
+    checks.append("learner user update returns 403")
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/deactivate",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin user deactivate")
+    checks.append("learner user deactivate returns 403")
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/activate",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin user activate")
+    checks.append("learner user activate returns 403")
 
     status, _ = request_json("GET", "/api/v1/admin/organizations", token=learner_token)
     assert_status(status, 403, "learner admin organizations")

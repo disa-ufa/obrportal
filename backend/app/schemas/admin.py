@@ -66,6 +66,12 @@ class AdminUserDetail(AdminUserItem):
     updated_at: datetime
 
 
+class AdminUserUpdate(BaseModel):
+    full_name: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=32)
+    is_email_verified: bool | None = None
+
+
 class AdminOrganizationItem(BaseModel):
     id: str
     inn: str
