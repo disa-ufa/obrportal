@@ -22,6 +22,23 @@ def unique_phone() -> str:
     return f"+7888{uuid4().int % 10_000_000:07d}"
 
 
+def find_user_role_id(
+    user_detail: dict,
+    *,
+    role_code: str,
+    organization_id: str | None = None,
+) -> str:
+    roles = user_detail.get("roles", [])
+    if not isinstance(roles, list):
+        raise AssertionError("user roles must be a list")
+
+    for role in roles:
+        if role["code"] == role_code and role.get("organization_id") == organization_id:
+            return str(role["id"])
+
+    raise AssertionError(f"User role not found: {role_code} / {organization_id}")
+
+
 def request_json(
     method: str,
     path: str,
@@ -300,6 +317,15 @@ def main() -> int:
     assert first_role.get("id")
     checks.append("admin roles ok")
 
+    teacher_role = next(
+        (item for item in roles if isinstance(item, dict) and item.get("code") == "teacher"),
+        None,
+    )
+    if teacher_role is None:
+        raise AssertionError("teacher role not found")
+
+    teacher_role_id = str(teacher_role["id"])
+
     role_id = str(first_role["id"])
     status, role_detail = request_json(
         "GET",
@@ -315,6 +341,47 @@ def main() -> int:
     assert "updated_at" in role_detail
     assert isinstance(role_detail["permissions"], list)
     checks.append("admin role detail ok")
+
+    status, assigned_role_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": created_organization_id,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin user role assign")
+    assert isinstance(assigned_role_user, dict)
+    assert assigned_role_user["id"] == learner_user_id
+    assigned_user_role_id = find_user_role_id(
+        assigned_role_user,
+        role_code="teacher",
+        organization_id=created_organization_id,
+    )
+    checks.append("admin user role assign ok")
+
+    status, duplicate_role_assign = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": created_organization_id,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 409, "admin duplicate user role assign")
+    assert isinstance(duplicate_role_assign, dict)
+    checks.append("admin duplicate user role assign returns 409")
+
+    status, last_admin_role_remove = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{user_id}/roles/{find_user_role_id(user_detail, role_code='admin')}",
+        token=admin_token,
+    )
+    assert_status(status, 400, "admin last admin role remove 400")
+    assert isinstance(last_admin_role_remove, dict)
+    checks.append("admin last admin role remove returns 400")
 
     status, missing_role = request_json(
         "GET",
@@ -430,6 +497,36 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin user activate")
     checks.append("learner user activate returns 403")
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": created_organization_id,
+        },
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin user role assign")
+    checks.append("learner user role assign returns 403")
+
+    status, _ = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{learner_user_id}/roles/{assigned_user_role_id}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin user role remove")
+    checks.append("learner user role remove returns 403")
+
+    status, removed_role_user = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{learner_user_id}/roles/{assigned_user_role_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin user role remove")
+    assert isinstance(removed_role_user, dict)
+    assert removed_role_user["id"] == learner_user_id
+    checks.append("admin user role remove ok")
 
     status, _ = request_json("GET", "/api/v1/admin/organizations", token=learner_token)
     assert_status(status, 403, "learner admin organizations")

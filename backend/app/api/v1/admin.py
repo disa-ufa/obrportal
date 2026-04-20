@@ -25,6 +25,7 @@ from app.schemas.admin import (
     AdminRolePermissionItem,
     AdminUserDetail,
     AdminUserItem,
+    AdminUserRoleAssign,
     AdminUserRoleItem,
     AdminUserUpdate,
 )
@@ -38,7 +39,13 @@ async def get_user_roles(
     session: AsyncSession,
 ) -> list[AdminUserRoleItem]:
     roles_result = await session.execute(
-        select(Role.code, Role.name, UserRole.organization_id)
+        select(
+            UserRole.id.label("id"),
+            Role.id.label("role_id"),
+            Role.code,
+            Role.name,
+            UserRole.organization_id,
+        )
         .join(UserRole, UserRole.role_id == Role.id)
         .where(UserRole.user_id == user_id)
         .order_by(Role.code)
@@ -46,6 +53,8 @@ async def get_user_roles(
 
     return [
         AdminUserRoleItem(
+            id=str(row.id),
+            role_id=str(row.role_id),
             code=row.code,
             name=row.name,
             organization_id=str(row.organization_id) if row.organization_id else None,
@@ -268,6 +277,124 @@ async def get_admin_user_or_404(
         )
 
     return user
+
+
+async def get_admin_role_or_404(
+    role_id: str,
+    session: AsyncSession,
+) -> Role:
+    result = await session.execute(
+        select(Role).where(Role.id == role_id)
+    )
+    role = result.scalar_one_or_none()
+
+    if role is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found",
+        )
+
+    return role
+
+
+async def get_admin_organization_or_404(
+    organization_id: str,
+    session: AsyncSession,
+) -> Organization:
+    result = await session.execute(
+        select(Organization).where(Organization.id == organization_id)
+    )
+    organization = result.scalar_one_or_none()
+
+    if organization is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found",
+        )
+
+    return organization
+
+
+async def get_user_role_or_404(
+    user_id: str,
+    user_role_id: str,
+    session: AsyncSession,
+) -> tuple[UserRole, Role]:
+    result = await session.execute(
+        select(UserRole, Role)
+        .join(Role, UserRole.role_id == Role.id)
+        .where(
+            UserRole.id == user_role_id,
+            UserRole.user_id == user_id,
+        )
+    )
+    row = result.first()
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User role assignment not found",
+        )
+
+    user_role, role = row
+
+    return user_role, role
+
+
+async def user_role_assignment_exists(
+    *,
+    user_id: str,
+    role_id: str,
+    organization_id: str | None,
+    session: AsyncSession,
+) -> bool:
+    query = select(UserRole.id).where(
+        UserRole.user_id == user_id,
+        UserRole.role_id == role_id,
+    )
+
+    if organization_id is None:
+        query = query.where(UserRole.organization_id.is_(None))
+    else:
+        query = query.where(UserRole.organization_id == organization_id)
+
+    result = await session.execute(query.limit(1))
+
+    return result.scalar_one_or_none() is not None
+
+
+def role_assignment_snapshot(
+    user_role: UserRole,
+    role: Role,
+) -> dict:
+    return {
+        "id": str(user_role.id),
+        "user_id": str(user_role.user_id),
+        "role_id": str(user_role.role_id),
+        "role_code": role.code,
+        "role_name": role.name,
+        "organization_id": str(user_role.organization_id) if user_role.organization_id else None,
+    }
+
+
+async def ensure_user_role_can_be_removed(
+    user: User,
+    role: Role,
+    session: AsyncSession,
+) -> None:
+    if not user.is_active:
+        return
+
+    if role.code != "admin":
+        return
+
+    active_admins_count = await count_active_admin_users(session)
+
+    if active_admins_count <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot remove the last admin role from the last active admin",
+        )
 
 
 async def user_has_role_code(
@@ -522,6 +649,112 @@ async def deactivate_user(
             "before": before,
             "after": user_snapshot(user),
             "changed_fields": ["is_active"] if before["is_active"] is not False else [],
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(user)
+
+    roles = await get_user_roles(str(user.id), session)
+
+    return build_admin_user_detail(user, roles)
+
+
+
+@router.post("/users/{user_id}/roles", response_model=AdminUserDetail)
+async def assign_user_role(
+    user_id: str,
+    payload: AdminUserRoleAssign,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserDetail:
+    user = await get_admin_user_or_404(user_id, session)
+    role = await get_admin_role_or_404(payload.role_id, session)
+
+    organization_id = payload.organization_id
+
+    if organization_id is not None:
+        await get_admin_organization_or_404(organization_id, session)
+
+    duplicate_exists = await user_role_assignment_exists(
+        user_id=str(user.id),
+        role_id=str(role.id),
+        organization_id=organization_id,
+        session=session,
+    )
+
+    if duplicate_exists:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User role assignment already exists",
+        )
+
+    user_role = UserRole(
+        user_id=user.id,
+        role_id=role.id,
+        organization_id=organization_id,
+    )
+    session.add(user_role)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.user_role_assigned",
+            entity_type="user",
+            entity_id=str(user.id),
+            payload={
+                "user": user_snapshot(user),
+                "role_assignment": role_assignment_snapshot(user_role, role),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(user)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User role assignment already exists",
+        )
+
+    roles = await get_user_roles(str(user.id), session)
+
+    return build_admin_user_detail(user, roles)
+
+
+@router.delete("/users/{user_id}/roles/{user_role_id}", response_model=AdminUserDetail)
+async def remove_user_role(
+    user_id: str,
+    user_role_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserDetail:
+    user = await get_admin_user_or_404(user_id, session)
+    user_role, role = await get_user_role_or_404(user_id, user_role_id, session)
+
+    await ensure_user_role_can_be_removed(user, role, session)
+
+    role_assignment = role_assignment_snapshot(user_role, role)
+
+    await session.delete(user_role)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.user_role_removed",
+        entity_type="user",
+        entity_id=str(user.id),
+        payload={
+            "user": user_snapshot(user),
+            "role_assignment": role_assignment,
         },
         request=request,
     )

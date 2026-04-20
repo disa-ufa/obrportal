@@ -34,6 +34,53 @@ def get_user_id_by_email(token: str, email: str) -> str:
     raise AssertionError(f"User not found: {email}")
 
 
+def get_role_id_by_code(token: str, code: str) -> str:
+    status, roles = request_json("GET", "/api/v1/admin/roles", token=token)
+    assert status == 200
+    assert isinstance(roles, list)
+
+    for role in roles:
+        if role["code"] == code:
+            return str(role["id"])
+
+    raise AssertionError(f"Role not found: {code}")
+
+
+def create_test_organization(token: str) -> str:
+    inn = unique_inn()
+
+    status, organization = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        {
+            "inn": inn,
+            "name": f"Role assignment test organization {inn}",
+        },
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(organization, dict)
+
+    return str(organization["id"])
+
+
+def find_user_role_id(
+    user_detail: dict,
+    *,
+    role_code: str,
+    organization_id: str | None = None,
+) -> str:
+    roles = user_detail.get("roles", [])
+    assert isinstance(roles, list)
+
+    for role in roles:
+        if role["code"] == role_code and role.get("organization_id") == organization_id:
+            return str(role["id"])
+
+    raise AssertionError(f"User role not found: {role_code} / {organization_id}")
+
+
 def request_json(
     method: str,
     path: str,
@@ -766,4 +813,209 @@ def test_learner_cannot_update_activate_or_deactivate_user() -> None:
     )
     assert status == 403
     assert isinstance(payload, dict)
+
+def test_admin_can_assign_and_remove_user_role() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_user_id = get_user_id_by_email(token, LEARNER_EMAIL)
+    teacher_role_id = get_role_id_by_code(token, "teacher")
+    organization_id = create_test_organization(token)
+
+    status, updated = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": organization_id,
+        },
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["id"] == learner_user_id
+
+    user_role_id = find_user_role_id(
+        updated,
+        role_code="teacher",
+        organization_id=organization_id,
+    )
+
+    status, duplicate = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": organization_id,
+        },
+        token=token,
+    )
+
+    assert status == 409
+    assert isinstance(duplicate, dict)
+
+    status, removed = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{learner_user_id}/roles/{user_role_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(removed, dict)
+    assert removed["id"] == learner_user_id
+
+    assert not any(
+        role["id"] == user_role_id
+        for role in removed["roles"]
+    )
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.user_role_assigned"
+        and event["entity_id"] == learner_user_id
+        for event in audit_events
+    )
+    assert any(
+        event["action"] == "admin.user_role_removed"
+        and event["entity_id"] == learner_user_id
+        for event in audit_events
+    )
+
+
+def test_admin_user_role_write_missing_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_user_id = get_user_id_by_email(token, LEARNER_EMAIL)
+    teacher_role_id = get_role_id_by_code(token, "teacher")
+    organization_id = create_test_organization(token)
+    missing_id = "00000000-0000-0000-0000-000000000000"
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{missing_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": organization_id,
+        },
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": missing_id,
+            "organization_id": organization_id,
+        },
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": missing_id,
+        },
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{learner_user_id}/roles/{missing_id}",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_admin_cannot_remove_last_admin_role_from_last_active_admin() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    admin_user_id = get_user_id_by_email(token, ADMIN_EMAIL)
+
+    status, admin_detail = request_json(
+        "GET",
+        f"/api/v1/admin/users/{admin_user_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(admin_detail, dict)
+
+    admin_user_role_id = find_user_role_id(
+        admin_detail,
+        role_code="admin",
+        organization_id=None,
+    )
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{admin_user_id}/roles/{admin_user_role_id}",
+        token=token,
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_assign_or_remove_user_role() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_user_id = get_user_id_by_email(admin_token, LEARNER_EMAIL)
+    teacher_role_id = get_role_id_by_code(admin_token, "teacher")
+    organization_id = create_test_organization(admin_token)
+
+    status, assigned = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": organization_id,
+        },
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(assigned, dict)
+
+    user_role_id = find_user_role_id(
+        assigned,
+        role_code="teacher",
+        organization_id=organization_id,
+    )
+
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": organization_id,
+        },
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{learner_user_id}/roles/{user_role_id}",
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    cleanup_status, cleanup_payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{learner_user_id}/roles/{user_role_id}",
+        token=admin_token,
+    )
+    assert cleanup_status == 200
+    assert isinstance(cleanup_payload, dict)
 

@@ -45,6 +45,8 @@ class AdminPermissionDetail(AdminPermissionItem):
 
 
 class AdminUserRoleItem(BaseModel):
+    id: str
+    role_id: str
     code: str
     name: str
     organization_id: str | None = None
@@ -70,6 +72,11 @@ class AdminUserUpdate(BaseModel):
     full_name: str | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=32)
     is_email_verified: bool | None = None
+
+
+class AdminUserRoleAssign(BaseModel):
+    role_id: str
+    organization_id: str | None = None
 
 
 class AdminOrganizationItem(BaseModel):
