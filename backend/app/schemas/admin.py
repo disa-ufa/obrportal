@@ -21,6 +21,7 @@ class AdminPermissionItem(BaseModel):
 
 class AdminRolePermissionItem(BaseModel):
     id: str
+    role_permission_id: str
     code: str
     name: str
 
@@ -90,6 +91,10 @@ class AdminUserPasswordUpdate(BaseModel):
 class AdminUserRoleAssign(BaseModel):
     role_id: str
     organization_id: str | None = None
+
+
+class AdminRolePermissionAssign(BaseModel):
+    permission_id: str
 
 
 class AdminOrganizationItem(BaseModel):

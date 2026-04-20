@@ -152,6 +152,19 @@ export async function getAdminRoleDetail(roleId) {
   return request(`/api/v1/admin/roles/${roleId}`);
 }
 
+export async function assignAdminRolePermission(roleId, payload) {
+  return request(`/api/v1/admin/roles/${roleId}/permissions`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function removeAdminRolePermission(roleId, rolePermissionId) {
+  return request(`/api/v1/admin/roles/${roleId}/permissions/${rolePermissionId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getAdminPermissions() {
   return request("/api/v1/admin/permissions");
 }

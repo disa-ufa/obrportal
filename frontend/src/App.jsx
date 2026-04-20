@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "./components/layout/AppShell";
 import {
   activateAdminUser,
+  assignAdminRolePermission,
   assignAdminUserRole,
   checkAdminRbac,
   clearToken,
@@ -23,6 +24,7 @@ import {
   getReady,
   getStoredToken,
   login,
+  removeAdminRolePermission,
   removeAdminUserRole,
   resetAdminUserPassword,
   updateAdminOrganization,
@@ -426,6 +428,20 @@ export default function App() {
     }
   }
 
+  async function handleAssignRolePermission(roleId, payload) {
+    const updated = await assignAdminRolePermission(roleId, payload);
+    setSelectedRole(updated);
+
+    return updated;
+  }
+
+  async function handleRemoveRolePermission(roleId, rolePermissionId) {
+    const updated = await removeAdminRolePermission(roleId, rolePermissionId);
+    setSelectedRole(updated);
+
+    return updated;
+  }
+
   async function handleOpenPermission(permissionId) {
     setSelectedPermission(null);
     setSelectedPermissionError("");
@@ -551,12 +567,15 @@ export default function App() {
         <RolesPage
           user={user}
           roles={adminData.roles}
+          permissions={adminData.permissions}
           loading={adminLoading}
           selectedRole={selectedRole}
           selectedRoleLoading={selectedRoleLoading}
           selectedRoleError={selectedRoleError}
           onOpenRole={handleOpenRole}
           onCloseRole={clearSelectedRole}
+          onAssignRolePermission={handleAssignRolePermission}
+          onRemoveRolePermission={handleRemoveRolePermission}
         />
       );
     }

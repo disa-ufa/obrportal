@@ -24,6 +24,7 @@ from app.schemas.admin import (
     AdminRoleDetail,
     AdminRoleItem,
     AdminRolePermissionItem,
+    AdminRolePermissionAssign,
     AdminUserCreate,
     AdminUserDetail,
     AdminUserItem,
@@ -71,20 +72,25 @@ async def get_role_permissions(
     session: AsyncSession,
 ) -> list[AdminRolePermissionItem]:
     result = await session.execute(
-        select(Permission)
-        .join(RolePermission, RolePermission.permission_id == Permission.id)
+        select(
+            RolePermission.id.label("role_permission_id"),
+            Permission.id.label("permission_id"),
+            Permission.code,
+            Permission.name,
+        )
+        .join(Permission, RolePermission.permission_id == Permission.id)
         .where(RolePermission.role_id == role_id)
         .order_by(Permission.code)
     )
-    permissions = result.scalars().all()
 
     return [
         AdminRolePermissionItem(
-            id=str(permission.id),
-            code=permission.code,
-            name=permission.name,
+            id=str(row.permission_id),
+            role_permission_id=str(row.role_permission_id),
+            code=row.code,
+            name=row.name,
         )
-        for permission in permissions
+        for row in result.all()
     ]
 
 
@@ -330,6 +336,24 @@ async def get_admin_role_or_404(
     return role
 
 
+async def get_admin_permission_or_404(
+    permission_id: str,
+    session: AsyncSession,
+) -> Permission:
+    result = await session.execute(
+        select(Permission).where(Permission.id == permission_id)
+    )
+    permission = result.scalar_one_or_none()
+
+    if permission is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Permission not found",
+        )
+
+    return permission
+
+
 async def get_admin_organization_or_404(
     organization_id: str,
     session: AsyncSession,
@@ -374,6 +398,32 @@ async def get_user_role_or_404(
     return user_role, role
 
 
+async def get_role_permission_or_404(
+    role_id: str,
+    role_permission_id: str,
+    session: AsyncSession,
+) -> tuple[RolePermission, Permission]:
+    result = await session.execute(
+        select(RolePermission, Permission)
+        .join(Permission, RolePermission.permission_id == Permission.id)
+        .where(
+            RolePermission.id == role_permission_id,
+            RolePermission.role_id == role_id,
+        )
+    )
+    row = result.first()
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role permission assignment not found",
+        )
+
+    role_permission, permission = row
+
+    return role_permission, permission
+
+
 async def user_role_assignment_exists(
     *,
     user_id: str,
@@ -396,6 +446,24 @@ async def user_role_assignment_exists(
     return result.scalar_one_or_none() is not None
 
 
+async def role_permission_assignment_exists(
+    *,
+    role_id: str,
+    permission_id: str,
+    session: AsyncSession,
+) -> bool:
+    result = await session.execute(
+        select(RolePermission.id)
+        .where(
+            RolePermission.role_id == role_id,
+            RolePermission.permission_id == permission_id,
+        )
+        .limit(1)
+    )
+
+    return result.scalar_one_or_none() is not None
+
+
 def role_assignment_snapshot(
     user_role: UserRole,
     role: Role,
@@ -408,6 +476,30 @@ def role_assignment_snapshot(
         "role_name": role.name,
         "organization_id": str(user_role.organization_id) if user_role.organization_id else None,
     }
+
+
+def role_permission_snapshot(
+    role_permission: RolePermission,
+    role: Role,
+    permission: Permission,
+) -> dict:
+    return {
+        "id": str(role_permission.id),
+        "role_id": str(role_permission.role_id),
+        "role_code": role.code,
+        "role_name": role.name,
+        "permission_id": str(role_permission.permission_id),
+        "permission_code": permission.code,
+        "permission_name": permission.name,
+    }
+
+
+def ensure_role_permissions_can_be_modified(role: Role) -> None:
+    if role.code == "admin":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot modify system admin role permissions",
+        )
 
 
 async def ensure_user_role_can_be_removed(
@@ -1065,6 +1157,107 @@ async def get_role_detail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Role not found",
         )
+
+    permissions = await get_role_permissions(str(role.id), session)
+
+    return build_admin_role_detail(role, permissions)
+
+
+@router.post("/roles/{role_id}/permissions", response_model=AdminRoleDetail)
+async def assign_role_permission(
+    role_id: str,
+    payload: AdminRolePermissionAssign,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.roles.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminRoleDetail:
+    role = await get_admin_role_or_404(role_id, session)
+    ensure_role_permissions_can_be_modified(role)
+
+    permission = await get_admin_permission_or_404(payload.permission_id, session)
+
+    duplicate_exists = await role_permission_assignment_exists(
+        role_id=str(role.id),
+        permission_id=str(permission.id),
+        session=session,
+    )
+
+    if duplicate_exists:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Role permission assignment already exists",
+        )
+
+    role_permission = RolePermission(
+        role_id=role.id,
+        permission_id=permission.id,
+    )
+    session.add(role_permission)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.role_permission_assigned",
+            entity_type="role",
+            entity_id=str(role.id),
+            payload={
+                "role_permission": role_permission_snapshot(role_permission, role, permission),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(role)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Role permission assignment already exists",
+        )
+
+    permissions = await get_role_permissions(str(role.id), session)
+
+    return build_admin_role_detail(role, permissions)
+
+
+@router.delete("/roles/{role_id}/permissions/{role_permission_id}", response_model=AdminRoleDetail)
+async def remove_role_permission(
+    role_id: str,
+    role_permission_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.roles.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminRoleDetail:
+    role = await get_admin_role_or_404(role_id, session)
+    ensure_role_permissions_can_be_modified(role)
+
+    role_permission, permission = await get_role_permission_or_404(
+        role_id,
+        role_permission_id,
+        session,
+    )
+    snapshot = role_permission_snapshot(role_permission, role, permission)
+
+    await session.delete(role_permission)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.role_permission_removed",
+        entity_type="role",
+        entity_id=str(role.id),
+        payload={
+            "role_permission": snapshot,
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(role)
 
     permissions = await get_role_permissions(str(role.id), session)
 

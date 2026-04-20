@@ -8,12 +8,15 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 export function RolesPage({
   user,
   roles,
+  permissions,
   loading,
   selectedRole,
   selectedRoleLoading,
   selectedRoleError,
   onOpenRole,
   onCloseRole,
+  onAssignRolePermission,
+  onRemoveRolePermission,
 }) {
   return (
     <div className="space-y-6">
@@ -63,9 +66,12 @@ export function RolesPage({
       {user && (
         <RoleDetailPanel
           roleDetail={selectedRole}
+          permissions={permissions}
           loading={selectedRoleLoading}
           error={selectedRoleError}
           onClose={onCloseRole}
+          onAssignPermission={onAssignRolePermission}
+          onRemovePermission={onRemoveRolePermission}
         />
       )}
     </div>

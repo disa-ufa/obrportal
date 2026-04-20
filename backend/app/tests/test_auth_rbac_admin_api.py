@@ -46,6 +46,37 @@ def get_role_id_by_code(token: str, code: str) -> str:
     raise AssertionError(f"Role not found: {code}")
 
 
+def get_permission_id_by_code(token: str, code: str) -> str:
+    status, permissions = request_json("GET", "/api/v1/admin/permissions", token=token)
+    assert status == 200
+    assert isinstance(permissions, list)
+
+    for permission in permissions:
+        if permission["code"] == code:
+            return str(permission["id"])
+
+    raise AssertionError(f"Permission not found: {code}")
+
+
+def find_role_permission_id(
+    role_detail: dict,
+    *,
+    permission_code: str,
+    required: bool = True,
+) -> str | None:
+    permissions = role_detail.get("permissions", [])
+    assert isinstance(permissions, list)
+
+    for permission in permissions:
+        if permission["code"] == permission_code:
+            return str(permission["role_permission_id"])
+
+    if required:
+        raise AssertionError(f"Role permission not found: {permission_code}")
+
+    return None
+
+
 def create_test_organization(token: str) -> str:
     inn = unique_inn()
 
@@ -365,6 +396,207 @@ def test_admin_role_detail_not_found_returns_404() -> None:
     assert status == 404
     assert isinstance(payload, dict)
 
+
+
+def test_admin_can_assign_and_remove_role_permission() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    role_id = get_role_id_by_code(token, "teacher")
+    permission_id = get_permission_id_by_code(token, "payments.write")
+
+    status, initial_detail = request_json(
+        "GET",
+        f"/api/v1/admin/roles/{role_id}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(initial_detail, dict)
+
+    existing_role_permission_id = find_role_permission_id(
+        initial_detail,
+        permission_code="payments.write",
+        required=False,
+    )
+
+    if existing_role_permission_id:
+        status, cleanup = request_json(
+            "DELETE",
+            f"/api/v1/admin/roles/{role_id}/permissions/{existing_role_permission_id}",
+            token=token,
+        )
+        assert status == 200
+        assert isinstance(cleanup, dict)
+
+    status, updated = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{role_id}/permissions",
+        {"permission_id": permission_id},
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["id"] == role_id
+
+    role_permission_id = find_role_permission_id(
+        updated,
+        permission_code="payments.write",
+    )
+
+    status, duplicate = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{role_id}/permissions",
+        {"permission_id": permission_id},
+        token=token,
+    )
+    assert status == 409
+    assert isinstance(duplicate, dict)
+
+    status, removed = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{role_id}/permissions/{role_permission_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(removed, dict)
+    assert removed["id"] == role_id
+    assert find_role_permission_id(
+        removed,
+        permission_code="payments.write",
+        required=False,
+    ) is None
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.role_permission_assigned"
+        and event["entity_id"] == role_id
+        for event in audit_events
+    )
+    assert any(
+        event["action"] == "admin.role_permission_removed"
+        and event["entity_id"] == role_id
+        for event in audit_events
+    )
+
+
+def test_admin_role_permission_write_missing_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    role_id = get_role_id_by_code(token, "teacher")
+    permission_id = get_permission_id_by_code(token, "payments.write")
+    missing_id = "00000000-0000-0000-0000-000000000000"
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{missing_id}/permissions",
+        {"permission_id": permission_id},
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{role_id}/permissions",
+        {"permission_id": missing_id},
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{role_id}/permissions/{missing_id}",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_admin_role_permissions_are_protected() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    admin_role_id = get_role_id_by_code(token, "admin")
+    permission_id = get_permission_id_by_code(token, "admin.roles.write")
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{admin_role_id}/permissions",
+        {"permission_id": permission_id},
+        token=token,
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_assign_or_remove_role_permission() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    role_id = get_role_id_by_code(admin_token, "teacher")
+    permission_id = get_permission_id_by_code(admin_token, "payments.write")
+
+    status, initial_detail = request_json(
+        "GET",
+        f"/api/v1/admin/roles/{role_id}",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(initial_detail, dict)
+
+    existing_role_permission_id = find_role_permission_id(
+        initial_detail,
+        permission_code="payments.write",
+        required=False,
+    )
+
+    if existing_role_permission_id:
+        status, cleanup = request_json(
+            "DELETE",
+            f"/api/v1/admin/roles/{role_id}/permissions/{existing_role_permission_id}",
+            token=admin_token,
+        )
+        assert status == 200
+        assert isinstance(cleanup, dict)
+
+    status, assigned = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{role_id}/permissions",
+        {"permission_id": permission_id},
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(assigned, dict)
+
+    role_permission_id = find_role_permission_id(
+        assigned,
+        permission_code="payments.write",
+    )
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{role_id}/permissions",
+        {"permission_id": permission_id},
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{role_id}/permissions/{role_permission_id}",
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    cleanup_status, cleanup_payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{role_id}/permissions/{role_permission_id}",
+        token=admin_token,
+    )
+    assert cleanup_status == 200
+    assert isinstance(cleanup_payload, dict)
 
 def test_learner_cannot_read_role_detail() -> None:
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)

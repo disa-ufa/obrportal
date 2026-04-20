@@ -39,6 +39,26 @@ def find_user_role_id(
     raise AssertionError(f"User role not found: {role_code} / {organization_id}")
 
 
+def find_role_permission_id(
+    role_detail: dict,
+    *,
+    permission_code: str,
+    required: bool = True,
+) -> str | None:
+    permissions = role_detail.get("permissions", [])
+    if not isinstance(permissions, list):
+        raise AssertionError("role permissions must be a list")
+
+    for permission in permissions:
+        if permission["code"] == permission_code:
+            return str(permission["role_permission_id"])
+
+    if required:
+        raise AssertionError(f"Role permission not found: {permission_code}")
+
+    return None
+
+
 def request_json(
     method: str,
     path: str,
@@ -481,6 +501,98 @@ def main() -> int:
     assert first_permission.get("id")
     checks.append("admin permissions ok")
 
+    payments_permission = next(
+        (item for item in permissions if isinstance(item, dict) and item.get("code") == "payments.write"),
+        None,
+    )
+    if payments_permission is None:
+        raise AssertionError("payments.write permission not found")
+
+    payments_permission_id = str(payments_permission["id"])
+
+    admin_role = next(
+        (item for item in roles if isinstance(item, dict) and item.get("code") == "admin"),
+        None,
+    )
+    if admin_role is None:
+        raise AssertionError("admin role not found")
+
+    status, teacher_role_detail = request_json(
+        "GET",
+        f"/api/v1/admin/roles/{teacher_role_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin teacher role detail")
+    assert isinstance(teacher_role_detail, dict)
+
+    existing_role_permission_id = find_role_permission_id(
+        teacher_role_detail,
+        permission_code="payments.write",
+        required=False,
+    )
+    if existing_role_permission_id:
+        status, cleanup_role_permission = request_json(
+            "DELETE",
+            f"/api/v1/admin/roles/{teacher_role_id}/permissions/{existing_role_permission_id}",
+            token=admin_token,
+        )
+        assert_status(status, 200, "admin stale role permission cleanup")
+        assert isinstance(cleanup_role_permission, dict)
+
+    status, assigned_role_permission = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{teacher_role_id}/permissions",
+        {"permission_id": payments_permission_id},
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin role permission assign")
+    assert isinstance(assigned_role_permission, dict)
+    assigned_role_permission_id = find_role_permission_id(
+        assigned_role_permission,
+        permission_code="payments.write",
+    )
+    checks.append("admin role permission assign ok")
+
+    status, duplicate_role_permission = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{teacher_role_id}/permissions",
+        {"permission_id": payments_permission_id},
+        token=admin_token,
+    )
+    assert_status(status, 409, "admin duplicate role permission assign")
+    assert isinstance(duplicate_role_permission, dict)
+    checks.append("admin duplicate role permission assign returns 409")
+
+    status, admin_role_permission_protected = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{admin_role['id']}/permissions",
+        {"permission_id": payments_permission_id},
+        token=admin_token,
+    )
+    assert_status(status, 400, "admin role permissions protected")
+    assert isinstance(admin_role_permission_protected, dict)
+    checks.append("admin role permissions protected returns 400")
+
+    status, missing_role_permission_assign = request_json(
+        "POST",
+        "/api/v1/admin/roles/00000000-0000-0000-0000-000000000000/permissions",
+        {"permission_id": payments_permission_id},
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin role permission assign missing role")
+    assert isinstance(missing_role_permission_assign, dict)
+    checks.append("admin role permission assign 404 ok")
+
+    status, missing_permission_assign = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{teacher_role_id}/permissions",
+        {"permission_id": "00000000-0000-0000-0000-000000000000"},
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin role permission assign missing permission")
+    assert isinstance(missing_permission_assign, dict)
+    checks.append("admin role permission missing permission returns 404")
+
     permission_id = str(first_permission["id"])
     status, permission_detail = request_json(
         "GET",
@@ -669,6 +781,32 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin role detail")
     checks.append("learner role detail returns 403")
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{teacher_role_id}/permissions",
+        {"permission_id": payments_permission_id},
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin role permission assign")
+    checks.append("learner role permission assign returns 403")
+
+    status, _ = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{teacher_role_id}/permissions/{assigned_role_permission_id}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin role permission remove")
+    checks.append("learner role permission remove returns 403")
+
+    status, removed_role_permission = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{teacher_role_id}/permissions/{assigned_role_permission_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin role permission remove")
+    assert isinstance(removed_role_permission, dict)
+    checks.append("admin role permission remove ok")
 
     status, _ = request_json(
         "GET",
