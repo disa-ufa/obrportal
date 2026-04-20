@@ -76,6 +76,25 @@ export async function getAdminUserDetail(userId) {
   return request(`/api/v1/admin/users/${userId}`);
 }
 
+export async function updateAdminUser(userId, payload) {
+  return request(`/api/v1/admin/users/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function activateAdminUser(userId) {
+  return request(`/api/v1/admin/users/${userId}/activate`, {
+    method: "POST",
+  });
+}
+
+export async function deactivateAdminUser(userId) {
+  return request(`/api/v1/admin/users/${userId}/deactivate`, {
+    method: "POST",
+  });
+}
+
 export async function getAdminOrganizations() {
   return request("/api/v1/admin/organizations");
 }

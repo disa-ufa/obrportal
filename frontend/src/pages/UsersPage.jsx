@@ -14,12 +14,15 @@ export function UsersPage({
   selectedUserError,
   onOpenUser,
   onCloseUser,
+  onUpdateUser,
+  onActivateUser,
+  onDeactivateUser,
 }) {
   return (
     <div className="space-y-6">
       <SectionCard
         title="Пользователи"
-        subtitle="Read-only список пользователей из backend."
+        subtitle="Список пользователей из backend."
       >
         {!user ? (
           <p className="text-slate-600">Войдите под admin, чтобы увидеть пользователей.</p>
@@ -79,6 +82,9 @@ export function UsersPage({
           loading={selectedUserLoading}
           error={selectedUserError}
           onClose={onCloseUser}
+          onUpdateUser={onUpdateUser}
+          onActivateUser={onActivateUser}
+          onDeactivateUser={onDeactivateUser}
         />
       )}
     </div>

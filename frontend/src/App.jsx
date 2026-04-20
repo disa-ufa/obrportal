@@ -1,9 +1,11 @@
 ﻿import { useEffect, useState } from "react";
 import { AppShell } from "./components/layout/AppShell";
 import {
+  activateAdminUser,
   checkAdminRbac,
   clearToken,
   createAdminOrganization,
+  deactivateAdminUser,
   getAdminAuditEventDetail,
   getAdminAuditEvents,
   getAdminOrganizationDetail,
@@ -20,6 +22,7 @@ import {
   getStoredToken,
   login,
   updateAdminOrganization,
+  updateAdminUser,
 } from "./api/client";
 import { AuditPage } from "./pages/AuditPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -47,6 +50,12 @@ function getNowLabel() {
 function sortOrganizations(organizations) {
   return [...organizations].sort((left, right) =>
     left.name.localeCompare(right.name, "ru-RU")
+  );
+}
+
+function sortUsers(users) {
+  return [...users].sort((left, right) =>
+    left.email.localeCompare(right.email, "ru-RU")
   );
 }
 
@@ -233,6 +242,57 @@ export default function App() {
     }
   }
 
+  async function handleUpdateUser(userId, payload) {
+    const updated = await updateAdminUser(userId, payload);
+
+    setAdminData((current) => ({
+      ...current,
+      users: sortUsers(
+        current.users.map((item) =>
+          item.id === updated.id ? updated : item
+        )
+      ),
+    }));
+
+    setSelectedUser(updated);
+
+    return updated;
+  }
+
+  async function handleActivateUser(userId) {
+    const updated = await activateAdminUser(userId);
+
+    setAdminData((current) => ({
+      ...current,
+      users: sortUsers(
+        current.users.map((item) =>
+          item.id === updated.id ? updated : item
+        )
+      ),
+    }));
+
+    setSelectedUser(updated);
+
+    return updated;
+  }
+
+  async function handleDeactivateUser(userId) {
+    const updated = await deactivateAdminUser(userId);
+
+    setAdminData((current) => ({
+      ...current,
+      users: sortUsers(
+        current.users.map((item) =>
+          item.id === updated.id ? updated : item
+        )
+      ),
+    }));
+
+    setSelectedUser(updated);
+
+    return updated;
+  }
+
   async function handleOpenOrganization(organizationId) {
     setSelectedOrganization(null);
     setSelectedOrganizationError("");
@@ -385,6 +445,9 @@ export default function App() {
           selectedUserError={selectedUserError}
           onOpenUser={handleOpenUser}
           onCloseUser={clearSelectedUser}
+          onUpdateUser={handleUpdateUser}
+          onActivateUser={handleActivateUser}
+          onDeactivateUser={handleDeactivateUser}
         />
       );
     }
