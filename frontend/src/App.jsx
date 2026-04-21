@@ -656,6 +656,7 @@ export default function App() {
           onCreateOrganization={handleCreateOrganization}
           onUpdateOrganization={handleUpdateOrganization}
           onDeleteOrganization={handleDeleteOrganization}
+          onRefreshAdminData={loadAdminData}
         />
       );
     }

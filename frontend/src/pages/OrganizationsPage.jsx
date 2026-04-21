@@ -73,6 +73,7 @@ export function OrganizationsPage({
   onCreateOrganization,
   onUpdateOrganization,
   onDeleteOrganization,
+  onRefreshAdminData,
 }) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,6 +105,15 @@ export function OrganizationsPage({
         ) : (
           <div className="space-y-5">
             <div className="flex flex-wrap justify-end gap-2">
+              <ActionButton
+                type="button"
+                tone="light"
+                onClick={onRefreshAdminData}
+                disabled={loading}
+              >
+                {loading ? "Обновляем..." : "Обновить"}
+              </ActionButton>
+
               {!showCreateForm ? (
                 <ActionButton
                   type="button"
