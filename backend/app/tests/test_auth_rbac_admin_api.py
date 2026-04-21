@@ -471,6 +471,132 @@ def test_admin_can_create_and_update_role() -> None:
     )
 
 
+
+def test_admin_can_delete_custom_role_and_delete_guards() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    role_code = unique_role_code()
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {
+            "code": role_code,
+            "name": "Deletable custom role",
+            "description": "Role scheduled for deletion",
+        },
+        token=token,
+    )
+    assert status == 201
+    assert isinstance(created, dict)
+    role_id = str(created["id"])
+
+    permission_id = get_permission_id_by_code(token, "payments.write")
+    status, role_with_permission = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{role_id}/permissions",
+        {"permission_id": permission_id},
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(role_with_permission, dict)
+    assert find_role_permission_id(role_with_permission, permission_code="payments.write")
+
+    status, deleted = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{role_id}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(deleted, dict)
+    assert deleted["status"] == "deleted"
+    assert deleted["id"] == role_id
+
+    status, missing = request_json(
+        "GET",
+        f"/api/v1/admin/roles/{role_id}",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(missing, dict)
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.role_deleted"
+        and event["entity_id"] == role_id
+        for event in audit_events
+    )
+
+    admin_role_id = get_role_id_by_code(token, "admin")
+    status, protected = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{admin_role_id}",
+        token=token,
+    )
+    assert status == 400
+    assert isinstance(protected, dict)
+
+    assigned_role_code = unique_role_code()
+    status, assigned_role = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {"code": assigned_role_code, "name": "Assigned custom role"},
+        token=token,
+    )
+    assert status == 201
+    assert isinstance(assigned_role, dict)
+    assigned_role_id = str(assigned_role["id"])
+    learner_user_id = get_user_id_by_email(token, LEARNER_EMAIL)
+
+    status, assigned_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {"role_id": assigned_role_id, "organization_id": None},
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(assigned_user, dict)
+    assigned_user_role_id = find_user_role_id(
+        assigned_user,
+        role_code=assigned_role_code,
+        organization_id=None,
+    )
+
+    status, assigned_role_delete = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{assigned_role_id}",
+        token=token,
+    )
+    assert status == 400
+    assert isinstance(assigned_role_delete, dict)
+
+    status, cleaned_user = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{learner_user_id}/roles/{assigned_user_role_id}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(cleaned_user, dict)
+
+    status, cleaned_role = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{assigned_role_id}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(cleaned_role, dict)
+    assert cleaned_role["status"] == "deleted"
+
+    status, missing_delete = request_json(
+        "DELETE",
+        "/api/v1/admin/roles/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(missing_delete, dict)
+
+
 def test_admin_role_update_guards() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     admin_role_id = get_role_id_by_code(token, "admin")
@@ -503,7 +629,7 @@ def test_admin_role_update_guards() -> None:
     assert isinstance(payload, dict)
 
 
-def test_learner_cannot_create_or_update_role() -> None:
+def test_learner_cannot_create_update_or_delete_role() -> None:
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
     role_id = get_role_id_by_code(admin_token, "teacher")
@@ -521,6 +647,14 @@ def test_learner_cannot_create_or_update_role() -> None:
         "PATCH",
         f"/api/v1/admin/roles/{role_id}",
         {"name": "Forbidden role update"},
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{role_id}",
         token=learner_token,
     )
     assert status == 403

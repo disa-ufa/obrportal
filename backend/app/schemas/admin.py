@@ -43,6 +43,10 @@ class AdminRoleUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=512)
 
 
+class AdminDeleteResult(BaseModel):
+    status: str
+    id: str
+
 class AdminPermissionRoleItem(BaseModel):
     id: str
     code: str

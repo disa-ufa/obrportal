@@ -166,6 +166,12 @@ export async function updateAdminRole(roleId, payload) {
   });
 }
 
+export async function deleteAdminRole(roleId) {
+  return request(`/api/v1/admin/roles/${roleId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function assignAdminRolePermission(roleId, payload) {
   return request(`/api/v1/admin/roles/${roleId}/permissions`, {
     method: "POST",

@@ -490,6 +490,51 @@ def main() -> int:
     assert isinstance(missing_role_update, dict)
     checks.append("admin role update 404 ok")
 
+    deletable_role_code = unique_role_code()
+    status, deletable_role = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {
+            "code": deletable_role_code,
+            "name": "Smoke deletable role",
+            "description": "Role for delete smoke check",
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin role create for delete")
+    assert isinstance(deletable_role, dict)
+    deletable_role_id = str(deletable_role["id"])
+
+    status, deleted_role = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{deletable_role_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin role delete")
+    assert isinstance(deleted_role, dict)
+    assert deleted_role["status"] == "deleted"
+    assert deleted_role["id"] == deletable_role_id
+    checks.append("admin role delete ok")
+
+    status, deleted_role_detail = request_json(
+        "GET",
+        f"/api/v1/admin/roles/{deletable_role_id}",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin deleted role detail 404")
+    assert isinstance(deleted_role_detail, dict)
+    checks.append("admin deleted role detail returns 404")
+
+    status, protected_role_delete = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{admin_role_for_metadata['id']}",
+        token=admin_token,
+    )
+    assert_status(status, 400, "admin system role delete protected")
+    assert isinstance(protected_role_delete, dict)
+    checks.append("admin system role delete protected returns 400")
+
+
     teacher_role = next(
         (item for item in roles if isinstance(item, dict) and item.get("code") == "teacher"),
         None,
@@ -872,6 +917,24 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin role update")
     checks.append("learner role update returns 403")
+
+    status, _ = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{created_role_id}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin role delete")
+    checks.append("learner role delete returns 403")
+
+    status, deleted_created_role = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{created_role_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin created role cleanup delete")
+    assert isinstance(deleted_created_role, dict)
+    checks.append("admin created role cleanup delete ok")
+
 
     status, _ = request_json(
         "POST",

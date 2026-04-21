@@ -16,6 +16,7 @@ from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.schemas.admin import (
     AdminAuditEventItem,
+    AdminDeleteResult,
     AdminOrganizationCreate,
     AdminOrganizationDetail,
     AdminOrganizationItem,
@@ -338,6 +339,28 @@ def ensure_role_metadata_can_be_modified(role: Role) -> None:
             detail="Cannot modify system role metadata",
         )
 
+
+async def ensure_role_can_be_deleted(
+    role: Role,
+    session: AsyncSession,
+) -> None:
+    if role.code in SYSTEM_ROLE_CODES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete system role",
+        )
+
+    result = await session.execute(
+        select(UserRole.id)
+        .where(UserRole.role_id == role.id)
+        .limit(1)
+    )
+
+    if result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete role assigned to users",
+        )
 
 def normalize_email(email: str) -> str:
     return email.strip().lower()
@@ -1313,6 +1336,54 @@ async def update_role(
     permissions = await get_role_permissions(str(role.id), session)
 
     return build_admin_role_detail(role, permissions)
+
+
+
+
+@router.delete("/roles/{role_id}", response_model=AdminDeleteResult)
+async def delete_role(
+    role_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.roles.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDeleteResult:
+    role = await get_admin_role_or_404(role_id, session)
+    await ensure_role_can_be_deleted(role, session)
+
+    deleted_role_id = str(role.id)
+    before = role_snapshot(role)
+
+    permissions_result = await session.execute(
+        select(RolePermission).where(RolePermission.role_id == role.id)
+    )
+    role_permissions = permissions_result.scalars().all()
+    removed_permission_ids = [
+        str(role_permission.permission_id)
+        for role_permission in role_permissions
+    ]
+
+    for role_permission in role_permissions:
+        await session.delete(role_permission)
+
+    await session.delete(role)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.role_deleted",
+        entity_type="role",
+        entity_id=deleted_role_id,
+        payload={
+            "before": before,
+            "removed_permission_ids": removed_permission_ids,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return AdminDeleteResult(status="deleted", id=deleted_role_id)
 
 
 @router.get("/roles/{role_id}", response_model=AdminRoleDetail)

@@ -19,6 +19,7 @@ export function RolesPage({
   onCloseRole,
   onCreateRole,
   onUpdateRole,
+  onDeleteRole,
   onAssignRolePermission,
   onRemoveRolePermission,
 }) {
@@ -116,6 +117,7 @@ export function RolesPage({
           error={selectedRoleError}
           onClose={onCloseRole}
           onUpdateRole={onUpdateRole}
+          onDeleteRole={onDeleteRole}
           onAssignPermission={onAssignRolePermission}
           onRemovePermission={onRemoveRolePermission}
         />

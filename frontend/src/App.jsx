@@ -9,6 +9,7 @@ import {
   createAdminOrganization,
   createAdminRole,
   createAdminUser,
+  deleteAdminRole,
   deactivateAdminUser,
   getAdminAuditEventDetail,
   getAdminAuditEvents,
@@ -454,6 +455,23 @@ export default function App() {
     return updated;
   }
 
+
+
+  async function handleDeleteRole(roleId) {
+    const deleted = await deleteAdminRole(roleId);
+
+    setAdminData((current) => ({
+      ...current,
+      roles: sortRoles(current.roles.filter((role) => role.id !== roleId)),
+    }));
+
+    if (selectedRole?.id === roleId) {
+      clearSelectedRole();
+    }
+
+    return deleted;
+  }
+
   async function handleOpenRole(roleId) {
     setSelectedRole(null);
     setSelectedRoleError("");
@@ -617,6 +635,7 @@ export default function App() {
           onCloseRole={clearSelectedRole}
           onCreateRole={handleCreateRole}
           onUpdateRole={handleUpdateRole}
+          onDeleteRole={handleDeleteRole}
           onAssignRolePermission={handleAssignRolePermission}
           onRemoveRolePermission={handleRemoveRolePermission}
         />

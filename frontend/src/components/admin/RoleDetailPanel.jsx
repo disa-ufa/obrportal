@@ -154,9 +154,11 @@ export function RoleDetailPanel({
   onAssignPermission,
   onRemovePermission,
   onUpdateRole,
+  onDeleteRole,
 }) {
   const [editingMetadata, setEditingMetadata] = useState(false);
   const [removingPermissionId, setRemovingPermissionId] = useState("");
+  const [deletingRole, setDeletingRole] = useState(false);
   const [actionError, setActionError] = useState("");
 
   const isSystemAdminRole = roleDetail?.code === "admin";
@@ -173,6 +175,29 @@ export function RoleDetailPanel({
   async function handleAssignPermission(payload) {
     setActionError("");
     return onAssignPermission(roleDetail.id, payload);
+  }
+
+
+
+  async function handleDeleteRole() {
+    const confirmed = window.confirm(
+      `Удалить роль "${roleDetail.name}"? Действие нельзя отменить.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingRole(true);
+    setActionError("");
+
+    try {
+      await onDeleteRole(roleDetail.id);
+    } catch (err) {
+      setActionError(`${err.status || ""} ${err.message}`.trim());
+    } finally {
+      setDeletingRole(false);
+    }
   }
 
   async function handleRemovePermission(rolePermissionId) {
@@ -230,6 +255,18 @@ export function RoleDetailPanel({
                 </ActionButton>
               )}
 
+              {!isSystemRole && onDeleteRole && (
+
+                <ActionButton
+                  type="button"
+                  tone="red"
+                  onClick={handleDeleteRole}
+                  disabled={deletingRole}
+                >
+                  {deletingRole ? "Удаляем..." : "Удалить роль"}
+                </ActionButton>
+              )}
+
               <button
                 type="button"
                 onClick={onClose}
@@ -255,6 +292,13 @@ export function RoleDetailPanel({
           {isSystemRole && !isSystemAdminRole && (
             <Alert title="Системная роль защищена" tone="amber">
               Название и описание базовых ролей управляются системным seed. Для ручной настройки создавайте пользовательские роли.
+            </Alert>
+          )}
+
+          {!isSystemRole && (
+            <Alert title="Удаление роли" tone="blue">
+              Пользовательскую роль можно удалить только если она не назначена пользователям.
+              Все связи с permissions будут сняты автоматически.
             </Alert>
           )}
 
