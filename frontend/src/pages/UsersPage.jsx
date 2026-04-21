@@ -12,6 +12,7 @@ import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildSearchText, normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
+import { ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS } from "../utils/adminClasses";
 
 function userMatchesSearch(user, query) {
   if (!query) {
@@ -117,7 +118,7 @@ export function UsersPage({
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Email, ФИО, телефон или роль"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className={ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS}
                 />
               </AdminFilterField>
 
@@ -125,7 +126,7 @@ export function UsersPage({
                 <select
                   value={activityFilter}
                   onChange={(event) => setActivityFilter(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className={ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS}
                 >
                   <option value="all">Все пользователи</option>
                   <option value="active">Только активные</option>
