@@ -8,12 +8,9 @@ import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import { normalizeSearchValue } from "../utils/search";
 
 const ALL_PERMISSION_GROUPS = "all";
-
-function normalizeSearchValue(value) {
-  return String(value || "").trim().toLowerCase();
-}
 
 function getPermissionGroup(permission) {
   const code = permission?.code || "";
