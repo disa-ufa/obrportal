@@ -3,6 +3,7 @@ import { UserDetailPanel } from "../components/admin/UserDetailPanel";
 import { UserForm } from "../components/admin/UserForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
+import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -113,10 +114,7 @@ export function UsersPage({
               resetDisabled={!filtersAreActive}
               summary={`Показано: ${filteredUsers.length} из ${users.length}`}
             >
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Поиск
-                </span>
+              <AdminFilterField label="Поиск">
                 <input
                   type="search"
                   value={searchQuery}
@@ -124,12 +122,9 @@ export function UsersPage({
                   placeholder="Email, ФИО, телефон или роль"
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
-              </label>
+              </AdminFilterField>
 
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Активность
-                </span>
+              <AdminFilterField label="Активность">
                 <select
                   value={activityFilter}
                   onChange={(event) => setActivityFilter(event.target.value)}
@@ -139,7 +134,7 @@ export function UsersPage({
                   <option value="active">Только активные</option>
                   <option value="inactive">Только отключённые</option>
                 </select>
-              </label>
+              </AdminFilterField>
             </AdminFilterPanel>
 
             {loading ? (
