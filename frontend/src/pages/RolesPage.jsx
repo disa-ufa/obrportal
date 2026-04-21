@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { RoleDetailPanel } from "../components/admin/RoleDetailPanel";
 import { RoleForm } from "../components/admin/RoleForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
+import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -153,45 +154,35 @@ export function RolesPage({
               </div>
             )}
 
-            <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
-              <div className="grid gap-4 lg:grid-cols-[1fr_260px_auto] lg:items-end">
-                <FilterLabel label="Поиск">
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Код, название или описание"
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
-                  />
-                </FilterLabel>
+            <AdminFilterPanel
+              columnsClassName="lg:grid-cols-[1fr_260px_auto]"
+              onReset={resetFilters}
+              resetDisabled={!hasActiveFilters}
+              summary={`Показано: ${filteredRoles.length} из ${roles.length}`}
+            >
+              <FilterLabel label="Поиск">
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Код, название или описание"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                />
+              </FilterLabel>
 
-                <FilterLabel label="Тип роли">
-                  <select
-                    value={roleTypeFilter}
-                    onChange={(event) => setRoleTypeFilter(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
-                  >
-                    <option value="all">Все роли</option>
-                    <option value="system">Системные</option>
-                    <option value="custom">Пользовательские</option>
-                    <option value="admin">Только admin</option>
-                  </select>
-                </FilterLabel>
-
-                <ActionButton
-                  type="button"
-                  tone="light"
-                  onClick={resetFilters}
-                  disabled={!hasActiveFilters}
+              <FilterLabel label="Тип роли">
+                <select
+                  value={roleTypeFilter}
+                  onChange={(event) => setRoleTypeFilter(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
                 >
-                  Сбросить
-                </ActionButton>
-              </div>
-
-              <div className="mt-4 text-xs font-medium text-slate-500">
-                Показано: {filteredRoles.length} из {roles.length}
-              </div>
-            </div>
+                  <option value="all">Все роли</option>
+                  <option value="system">Системные</option>
+                  <option value="custom">Пользовательские</option>
+                  <option value="admin">Только admin</option>
+                </select>
+              </FilterLabel>
+            </AdminFilterPanel>
 
             {loading ? (
               <LoadingBlock text="Загружаем роли..." />
