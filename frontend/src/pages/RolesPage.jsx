@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { RoleDetailPanel } from "../components/admin/RoleDetailPanel";
 import { RoleForm } from "../components/admin/RoleForm";
+import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -119,25 +120,13 @@ export function RolesPage({
         title="Роли"
         subtitle="Базовые и пользовательские роли RBAC."
         action={user ? (
-          <div className="flex flex-wrap gap-2">
-            <ActionButton
-              type="button"
-              tone="light"
-              onClick={onRefreshAdminData}
-              disabled={loading}
-            >
-              {loading ? "Обновляем..." : "Обновить"}
-            </ActionButton>
-
-            <ActionButton
-              type="button"
-              tone={showCreateForm ? "light" : "blue"}
-              onClick={() => setShowCreateForm((current) => !current)}
-              disabled={loading}
-            >
-              {showCreateForm ? "Скрыть форму" : "Создать роль"}
-            </ActionButton>
-          </div>
+          <AdminPageActions
+            loading={loading}
+            onRefresh={onRefreshAdminData}
+            primaryLabel={showCreateForm ? "Скрыть форму" : "Создать роль"}
+            primaryTone={showCreateForm ? "light" : "blue"}
+            onPrimaryClick={() => setShowCreateForm((current) => !current)}
+          />
         ) : null}
       >
         {!user ? (
