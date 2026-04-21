@@ -9,7 +9,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
-import { getFilteredEmptyText } from "../utils/tableText";
+import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 
 const ALL_PERMISSION_GROUPS = "all";
 
@@ -102,7 +102,7 @@ export function PermissionsPage({
               columnsClassName="lg:grid-cols-[1fr_260px_auto]"
               onReset={resetFilters}
               resetDisabled={!hasActiveFilters}
-              summary={`Показано: ${filteredPermissions.length} из ${permissions.length}`}
+              summary={getShownSummary(filteredPermissions.length, permissions.length)}
             >
               <AdminFilterField label="Поиск" className="block space-y-2" labelClassName="tracking-[0.18em]">
                 <input

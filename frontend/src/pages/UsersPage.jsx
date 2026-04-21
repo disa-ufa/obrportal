@@ -11,7 +11,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildSearchText, normalizeSearchValue } from "../utils/search";
-import { getFilteredEmptyText } from "../utils/tableText";
+import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 
 function userMatchesSearch(user, query) {
   if (!query) {
@@ -109,7 +109,7 @@ export function UsersPage({
               columnsClassName="lg:grid-cols-[1fr_220px_auto]"
               onReset={resetFilters}
               resetDisabled={!filtersAreActive}
-              summary={`Показано: ${filteredUsers.length} из ${users.length}`}
+              summary={getShownSummary(filteredUsers.length, users.length)}
             >
               <AdminFilterField label="Поиск">
                 <input

@@ -11,7 +11,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
-import { getFilteredEmptyText } from "../utils/tableText";
+import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 
 function organizationMatchesSearch(organization, query) {
   const normalizedQuery = normalizeSearchValue(query);
@@ -124,7 +124,7 @@ export function OrganizationsPage({
               columnsClassName="lg:grid-cols-[1fr_260px_auto]"
               onReset={resetFilters}
               resetDisabled={!filtersAreActive}
-              summary={`Показано: ${filteredOrganizations.length} из ${organizations.length}`}
+              summary={getShownSummary(filteredOrganizations.length, organizations.length)}
             >
               <AdminFilterField label="Поиск" className="block space-y-2">
                 <input
