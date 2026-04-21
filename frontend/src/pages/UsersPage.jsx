@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { UserDetailPanel } from "../components/admin/UserDetailPanel";
 import { UserForm } from "../components/admin/UserForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
+import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
@@ -188,9 +189,13 @@ export function UsersPage({
       </SectionCard>
 
       {user && isCreating && (
-        <SectionCard
+        <AdminCreatePanel
           title="Создание пользователя"
           subtitle="Создаёт учётную запись без ролей. Роль можно назначить после создания в карточке пользователя."
+          className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+          headerClassName="mb-5"
+          titleClassName="text-xl font-semibold"
+          subtitleClassName="mt-1 text-sm text-slate-600"
         >
           <UserForm
             mode="create"
@@ -200,7 +205,7 @@ export function UsersPage({
             onCancel={() => setIsCreating(false)}
             onSuccess={() => setIsCreating(false)}
           />
-        </SectionCard>
+        </AdminCreatePanel>
       )}
 
       {user && (
