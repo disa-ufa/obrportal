@@ -82,7 +82,7 @@ export function UsersPage({
     setActivityFilter("all");
   }
 
-  const filtersAreActive = searchQuery.trim() !== "" || activityFilter !== "all";
+  const hasActiveFilters = searchQuery.trim() !== "" || activityFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -108,7 +108,7 @@ export function UsersPage({
             <AdminFilterPanel
               columnsClassName="lg:grid-cols-[1fr_220px_auto]"
               onReset={resetFilters}
-              resetDisabled={!filtersAreActive}
+              resetDisabled={!hasActiveFilters}
               summary={getShownSummary(filteredUsers.length, users.length)}
             >
               <AdminFilterField label="Поиск">
@@ -139,7 +139,7 @@ export function UsersPage({
             ) : (
               <SmallTable
                 emptyText={getFilteredEmptyText(
-                  filtersAreActive,
+                  hasActiveFilters,
                   "Пользователей по фильтру нет.",
                   "Пользователей нет."
                 )}
