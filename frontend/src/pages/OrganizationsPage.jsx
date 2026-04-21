@@ -4,6 +4,7 @@ import { OrganizationForm } from "../components/admin/OrganizationForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
+import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -102,16 +103,10 @@ export function OrganizationsPage({
             />
 
             {showCreateForm && (
-              <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
-                <div className="mb-4">
-                  <h3 className="text-base font-semibold text-slate-900">
-                    Новая организация
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Минимально нужны ИНН и название. Остальные поля можно заполнить позже.
-                  </p>
-                </div>
-
+              <AdminCreatePanel
+                title="Новая организация"
+                subtitle="Минимально нужны ИНН и название. Остальные поля можно заполнить позже."
+              >
                 <OrganizationForm
                   submitLabel="Создать организацию"
                   successMessage="Организация создана."
@@ -119,7 +114,7 @@ export function OrganizationsPage({
                   onCancel={() => setShowCreateForm(false)}
                   onSuccess={() => setShowCreateForm(false)}
                 />
-              </div>
+              </AdminCreatePanel>
             )}
 
             <AdminFilterPanel
