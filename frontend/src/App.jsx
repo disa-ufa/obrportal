@@ -637,6 +637,7 @@ export default function App() {
           onDeactivateUser={handleDeactivateUser}
           onAssignUserRole={handleAssignUserRole}
           onRemoveUserRole={handleRemoveUserRole}
+          onRefreshAdminData={loadAdminData}
         />
       );
     }

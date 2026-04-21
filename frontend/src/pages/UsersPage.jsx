@@ -62,6 +62,7 @@ export function UsersPage({
   onDeactivateUser,
   onAssignUserRole,
   onRemoveUserRole,
+  onRefreshAdminData,
 }) {
   const [isCreating, setIsCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -90,14 +91,25 @@ export function UsersPage({
         subtitle="Список пользователей из backend."
         action={
           user ? (
-            <ActionButton
-              type="button"
-              tone={isCreating ? "light" : "blue"}
-              onClick={() => setIsCreating((current) => !current)}
-              disabled={loading}
-            >
-              {isCreating ? "Скрыть форму" : "Создать пользователя"}
-            </ActionButton>
+            <div className="flex flex-wrap justify-end gap-2">
+              <ActionButton
+                type="button"
+                tone="light"
+                onClick={onRefreshAdminData}
+                disabled={loading}
+              >
+                {loading ? "Обновляем..." : "Обновить"}
+              </ActionButton>
+
+              <ActionButton
+                type="button"
+                tone={isCreating ? "light" : "blue"}
+                onClick={() => setIsCreating((current) => !current)}
+                disabled={loading}
+              >
+                {isCreating ? "Скрыть форму" : "Создать пользователя"}
+              </ActionButton>
+            </div>
           ) : null
         }
       >
