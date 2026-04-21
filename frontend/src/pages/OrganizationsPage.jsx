@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { OrganizationDetailPanel } from "../components/admin/OrganizationDetailPanel";
 import { OrganizationForm } from "../components/admin/OrganizationForm";
+import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -104,34 +105,13 @@ export function OrganizationsPage({
           </p>
         ) : (
           <div className="space-y-5">
-            <div className="flex flex-wrap justify-end gap-2">
-              <ActionButton
-                type="button"
-                tone="light"
-                onClick={onRefreshAdminData}
-                disabled={loading}
-              >
-                {loading ? "Обновляем..." : "Обновить"}
-              </ActionButton>
-
-              {!showCreateForm ? (
-                <ActionButton
-                  type="button"
-                  tone="blue"
-                  onClick={() => setShowCreateForm(true)}
-                >
-                  Добавить организацию
-                </ActionButton>
-              ) : (
-                <ActionButton
-                  type="button"
-                  tone="light"
-                  onClick={() => setShowCreateForm(false)}
-                >
-                  Скрыть форму
-                </ActionButton>
-              )}
-            </div>
+            <AdminPageActions
+              loading={loading}
+              onRefresh={onRefreshAdminData}
+              primaryLabel={showCreateForm ? "Скрыть форму" : "Добавить организацию"}
+              primaryTone={showCreateForm ? "light" : "blue"}
+              onPrimaryClick={() => setShowCreateForm((current) => !current)}
+            />
 
             {showCreateForm && (
               <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
