@@ -9,6 +9,7 @@ import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import { buildSearchText, normalizeSearchValue } from "../utils/search";
 
 const SYSTEM_ROLE_CODES = new Set([
   "admin",
@@ -22,10 +23,6 @@ const SYSTEM_ROLE_CODES = new Set([
   "frdo_operator",
 ]);
 
-function normalizeText(value) {
-  return String(value || "").toLowerCase().trim();
-}
-
 function isSystemRole(role) {
   return SYSTEM_ROLE_CODES.has(role.code);
 }
@@ -35,11 +32,11 @@ function roleMatchesSearch(role, query) {
     return true;
   }
 
-  const haystack = [
+  const haystack = buildSearchText([
     role.code,
     role.name,
     role.description,
-  ].map(normalizeText).join(" ");
+  ]);
 
   return haystack.includes(query);
 }
@@ -81,7 +78,7 @@ export function RolesPage({
   const [searchQuery, setSearchQuery] = useState("");
   const [roleTypeFilter, setRoleTypeFilter] = useState("all");
 
-  const normalizedSearchQuery = normalizeText(searchQuery);
+  const normalizedSearchQuery = normalizeSearchValue(searchQuery);
 
   const filteredRoles = useMemo(
     () => roles.filter((role) =>
