@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { PermissionDetailPanel } from "../components/admin/PermissionDetailPanel";
+import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -96,14 +97,10 @@ export function PermissionsPage({
         title="Права"
         subtitle="Read-only список permissions."
         action={user ? (
-          <ActionButton
-            type="button"
-            tone="light"
-            onClick={onRefreshAdminData}
-            disabled={loading}
-          >
-            {loading ? "Обновляем..." : "Обновить"}
-          </ActionButton>
+          <AdminPageActions
+            loading={loading}
+            onRefresh={onRefreshAdminData}
+          />
         ) : null}
       >
         {!user ? (
