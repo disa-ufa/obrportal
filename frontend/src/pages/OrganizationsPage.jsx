@@ -3,6 +3,7 @@ import { OrganizationDetailPanel } from "../components/admin/OrganizationDetailP
 import { OrganizationForm } from "../components/admin/OrganizationForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
+import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -50,17 +51,6 @@ function organizationMatchesScope(organization, scope) {
   }
 
   return true;
-}
-
-function FilterLabel({ label, children }) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </span>
-      {children}
-    </label>
-  );
 }
 
 export function OrganizationsPage({
@@ -141,7 +131,7 @@ export function OrganizationsPage({
               resetDisabled={!searchQuery && scopeFilter === "all"}
               summary={`Показано: ${filteredOrganizations.length} из ${organizations.length}`}
             >
-              <FilterLabel label="Поиск">
+              <AdminFilterField label="Поиск" className="block space-y-2">
                 <input
                   type="search"
                   value={searchQuery}
@@ -149,9 +139,9 @@ export function OrganizationsPage({
                   placeholder="Название, ИНН, КПП, ОГРН или адрес"
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 />
-              </FilterLabel>
+              </AdminFilterField>
 
-              <FilterLabel label="Данные">
+              <AdminFilterField label="Данные" className="block space-y-2">
                 <select
                   value={scopeFilter}
                   onChange={(event) => setScopeFilter(event.target.value)}
@@ -163,7 +153,7 @@ export function OrganizationsPage({
                   <option value="with_ogrn">С ОГРН</option>
                   <option value="without_ogrn">Без ОГРН</option>
                 </select>
-              </FilterLabel>
+              </AdminFilterField>
             </AdminFilterPanel>
 
             {loading ? (
