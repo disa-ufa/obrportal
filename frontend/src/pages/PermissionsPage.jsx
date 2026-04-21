@@ -1,9 +1,55 @@
-﻿import { PermissionDetailPanel } from "../components/admin/PermissionDetailPanel";
+import { useMemo, useState } from "react";
+import { PermissionDetailPanel } from "../components/admin/PermissionDetailPanel";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
+
+const ALL_PERMISSION_GROUPS = "all";
+
+function normalizeSearchValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getPermissionGroup(permission) {
+  const code = permission?.code || "";
+  const [group] = code.split(".");
+
+  return group || "other";
+}
+
+function getPermissionSearchText(permission) {
+  return normalizeSearchValue([
+    permission.code,
+    permission.name,
+    permission.description,
+    getPermissionGroup(permission),
+  ].filter(Boolean).join(" "));
+}
+
+function getPermissionGroupTone(group) {
+  if (group === "admin") {
+    return "amber";
+  }
+
+  if (group === "audit") {
+    return "blue";
+  }
+
+  return "gray";
+}
+
+function FilterLabel({ label, children }) {
+  return (
+    <label className="block space-y-2">
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
 
 export function PermissionsPage({
   user,
@@ -15,6 +61,34 @@ export function PermissionsPage({
   onOpenPermission,
   onClosePermission,
 }) {
+  const [search, setSearch] = useState("");
+  const [groupFilter, setGroupFilter] = useState(ALL_PERMISSION_GROUPS);
+
+  const permissionGroups = useMemo(() => {
+    return Array.from(
+      new Set(permissions.map((permission) => getPermissionGroup(permission)))
+    ).sort((left, right) => left.localeCompare(right, "ru-RU"));
+  }, [permissions]);
+
+  const filteredPermissions = useMemo(() => {
+    const query = normalizeSearchValue(search);
+
+    return permissions.filter((permission) => {
+      const matchesSearch = !query || getPermissionSearchText(permission).includes(query);
+      const matchesGroup = groupFilter === ALL_PERMISSION_GROUPS
+        || getPermissionGroup(permission) === groupFilter;
+
+      return matchesSearch && matchesGroup;
+    });
+  }, [permissions, search, groupFilter]);
+
+  const hasActiveFilters = Boolean(search.trim()) || groupFilter !== ALL_PERMISSION_GROUPS;
+
+  function resetFilters() {
+    setSearch("");
+    setGroupFilter(ALL_PERMISSION_GROUPS);
+  }
+
   return (
     <div className="space-y-6">
       <SectionCard
@@ -26,37 +100,94 @@ export function PermissionsPage({
         ) : loading ? (
           <LoadingBlock text="Загружаем права..." />
         ) : (
-          <SmallTable
-            emptyText="Прав нет."
-            rows={permissions}
-            selectedRowId={selectedPermission?.id}
-            minWidth="900px"
-            columns={[
-              {
-                key: "code",
-                title: "Код",
-                render: (row) => (
-                  <StatusBadge tone="blue">
-                    {row.code}
-                  </StatusBadge>
-                ),
-              },
-              { key: "name", title: "Название" },
-              { key: "description", title: "Описание" },
-              {
-                key: "actions",
-                title: "Действия",
-                render: (row) => (
-                  <ActionButton
-                    onClick={() => onOpenPermission(row.id)}
-                    disabled={selectedPermissionLoading}
+          <div className="space-y-5">
+            <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
+              <div className="grid gap-4 lg:grid-cols-[1fr_260px_auto] lg:items-end">
+                <FilterLabel label="Поиск">
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Код, название или описание"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  />
+                </FilterLabel>
+
+                <FilterLabel label="Группа">
+                  <select
+                    value={groupFilter}
+                    onChange={(event) => setGroupFilter(event.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                   >
-                    {selectedPermission?.id === row.id ? "Открыто" : "Открыть"}
-                  </ActionButton>
-                ),
-              },
-            ]}
-          />
+                    <option value={ALL_PERMISSION_GROUPS}>Все группы</option>
+                    {permissionGroups.map((group) => (
+                      <option key={group} value={group}>
+                        {group}
+                      </option>
+                    ))}
+                  </select>
+                </FilterLabel>
+
+                <ActionButton
+                  type="button"
+                  tone="light"
+                  onClick={resetFilters}
+                  disabled={!hasActiveFilters}
+                >
+                  Сбросить
+                </ActionButton>
+              </div>
+
+              <div className="mt-4 text-xs text-slate-500">
+                Показано: {filteredPermissions.length} из {permissions.length}
+              </div>
+            </div>
+
+            <SmallTable
+              emptyText={hasActiveFilters ? "Прав по фильтру нет." : "Прав нет."}
+              rows={filteredPermissions}
+              selectedRowId={selectedPermission?.id}
+              minWidth="960px"
+              columns={[
+                {
+                  key: "code",
+                  title: "Код",
+                  render: (row) => (
+                    <StatusBadge tone="blue">
+                      {row.code}
+                    </StatusBadge>
+                  ),
+                },
+                {
+                  key: "group",
+                  title: "Группа",
+                  render: (row) => {
+                    const group = getPermissionGroup(row);
+
+                    return (
+                      <StatusBadge tone={getPermissionGroupTone(group)}>
+                        {group}
+                      </StatusBadge>
+                    );
+                  },
+                },
+                { key: "name", title: "Название" },
+                { key: "description", title: "Описание" },
+                {
+                  key: "actions",
+                  title: "Действия",
+                  render: (row) => (
+                    <ActionButton
+                      onClick={() => onOpenPermission(row.id)}
+                      disabled={selectedPermissionLoading}
+                    >
+                      {selectedPermission?.id === row.id ? "Открыто" : "Открыть"}
+                    </ActionButton>
+                  ),
+                },
+              ]}
+            />
+          </div>
         )}
       </SectionCard>
 
