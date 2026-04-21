@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { PermissionDetailPanel } from "../components/admin/PermissionDetailPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
+import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -40,17 +41,6 @@ function getPermissionGroupTone(group) {
   }
 
   return "gray";
-}
-
-function FilterLabel({ label, children }) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-        {label}
-      </span>
-      {children}
-    </label>
-  );
 }
 
 export function PermissionsPage({
@@ -116,7 +106,7 @@ export function PermissionsPage({
               resetDisabled={!hasActiveFilters}
               summary={`Показано: ${filteredPermissions.length} из ${permissions.length}`}
             >
-              <FilterLabel label="Поиск">
+              <AdminFilterField label="Поиск" className="block space-y-2" labelClassName="tracking-[0.18em]">
                 <input
                   type="search"
                   value={search}
@@ -124,9 +114,9 @@ export function PermissionsPage({
                   placeholder="Код, название или описание"
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 />
-              </FilterLabel>
+              </AdminFilterField>
 
-              <FilterLabel label="Группа">
+              <AdminFilterField label="Группа" className="block space-y-2" labelClassName="tracking-[0.18em]">
                 <select
                   value={groupFilter}
                   onChange={(event) => setGroupFilter(event.target.value)}
@@ -139,7 +129,7 @@ export function PermissionsPage({
                     </option>
                   ))}
                 </select>
-              </FilterLabel>
+              </AdminFilterField>
             </AdminFilterPanel>
 
             <SmallTable
