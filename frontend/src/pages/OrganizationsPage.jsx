@@ -12,6 +12,7 @@ import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
+import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
 
 function organizationMatchesSearch(organization, query) {
   const normalizedQuery = normalizeSearchValue(query);
@@ -132,7 +133,7 @@ export function OrganizationsPage({
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Название, ИНН, КПП, ОГРН или адрес"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 />
               </AdminFilterField>
 
@@ -140,7 +141,7 @@ export function OrganizationsPage({
                 <select
                   value={scopeFilter}
                   onChange={(event) => setScopeFilter(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 >
                   <option value="all">Все организации</option>
                   <option value="with_kpp">С КПП</option>
