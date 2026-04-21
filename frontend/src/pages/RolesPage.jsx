@@ -81,6 +81,7 @@ export function RolesPage({
   onCreateRole,
   onUpdateRole,
   onDeleteRole,
+  onRefreshAdminData,
   onAssignRolePermission,
   onRemoveRolePermission,
 }) {
@@ -118,12 +119,25 @@ export function RolesPage({
         title="Роли"
         subtitle="Базовые и пользовательские роли RBAC."
         action={user ? (
-          <ActionButton
-            tone={showCreateForm ? "light" : "blue"}
-            onClick={() => setShowCreateForm((current) => !current)}
-          >
-            {showCreateForm ? "Скрыть форму" : "Создать роль"}
-          </ActionButton>
+          <div className="flex flex-wrap gap-2">
+            <ActionButton
+              type="button"
+              tone="light"
+              onClick={onRefreshAdminData}
+              disabled={loading}
+            >
+              {loading ? "Обновляем..." : "Обновить"}
+            </ActionButton>
+
+            <ActionButton
+              type="button"
+              tone={showCreateForm ? "light" : "blue"}
+              onClick={() => setShowCreateForm((current) => !current)}
+              disabled={loading}
+            >
+              {showCreateForm ? "Скрыть форму" : "Создать роль"}
+            </ActionButton>
+          </div>
         ) : null}
       >
         {!user ? (

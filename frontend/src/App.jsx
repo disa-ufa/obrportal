@@ -676,6 +676,7 @@ export default function App() {
           onCreateRole={handleCreateRole}
           onUpdateRole={handleUpdateRole}
           onDeleteRole={handleDeleteRole}
+          onRefreshAdminData={loadAdminData}
           onAssignRolePermission={handleAssignRolePermission}
           onRemoveRolePermission={handleRemoveRolePermission}
         />
