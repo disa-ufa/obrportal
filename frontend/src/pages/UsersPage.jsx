@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { UserDetailPanel } from "../components/admin/UserDetailPanel";
 import { UserForm } from "../components/admin/UserForm";
+import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -91,25 +92,13 @@ export function UsersPage({
         subtitle="Список пользователей из backend."
         action={
           user ? (
-            <div className="flex flex-wrap justify-end gap-2">
-              <ActionButton
-                type="button"
-                tone="light"
-                onClick={onRefreshAdminData}
-                disabled={loading}
-              >
-                {loading ? "Обновляем..." : "Обновить"}
-              </ActionButton>
-
-              <ActionButton
-                type="button"
-                tone={isCreating ? "light" : "blue"}
-                onClick={() => setIsCreating((current) => !current)}
-                disabled={loading}
-              >
-                {isCreating ? "Скрыть форму" : "Создать пользователя"}
-              </ActionButton>
-            </div>
+            <AdminPageActions
+              loading={loading}
+              onRefresh={onRefreshAdminData}
+              primaryLabel={isCreating ? "Скрыть форму" : "Создать пользователя"}
+              primaryTone={isCreating ? "light" : "blue"}
+              onPrimaryClick={() => setIsCreating((current) => !current)}
+            />
           ) : null
         }
       >
