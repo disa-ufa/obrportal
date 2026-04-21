@@ -9,10 +9,7 @@ import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
-
-function normalizeSearch(value) {
-  return String(value || "").trim().toLowerCase();
-}
+import { buildSearchText, normalizeSearchValue } from "../utils/search";
 
 function userMatchesSearch(user, query) {
   if (!query) {
@@ -23,14 +20,12 @@ function userMatchesSearch(user, query) {
     .map((role) => `${role.code} ${role.name || ""}`)
     .join(" ");
 
-  const haystack = [
+  const haystack = buildSearchText([
     user.email,
     user.full_name,
     user.phone,
     rolesText,
-  ]
-    .map((value) => String(value || "").toLowerCase())
-    .join(" ");
+  ]);
 
   return haystack.includes(query);
 }
@@ -72,7 +67,7 @@ export function UsersPage({
   const [activityFilter, setActivityFilter] = useState("all");
 
   const filteredUsers = useMemo(() => {
-    const query = normalizeSearch(searchQuery);
+    const query = normalizeSearchValue(searchQuery);
 
     return users.filter((item) =>
       userMatchesSearch(item, query) &&
