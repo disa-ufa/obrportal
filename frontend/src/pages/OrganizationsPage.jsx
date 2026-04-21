@@ -83,7 +83,7 @@ export function OrganizationsPage({
     setScopeFilter("all");
   }
 
-  const filtersAreActive = Boolean(searchQuery.trim()) || scopeFilter !== "all";
+  const hasActiveFilters = Boolean(searchQuery.trim()) || scopeFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -123,7 +123,7 @@ export function OrganizationsPage({
             <AdminFilterPanel
               columnsClassName="lg:grid-cols-[1fr_260px_auto]"
               onReset={resetFilters}
-              resetDisabled={!filtersAreActive}
+              resetDisabled={!hasActiveFilters}
               summary={getShownSummary(filteredOrganizations.length, organizations.length)}
             >
               <AdminFilterField label="Поиск" className="block space-y-2">
@@ -156,7 +156,7 @@ export function OrganizationsPage({
             ) : (
               <SmallTable
                 emptyText={getFilteredEmptyText(
-                  filtersAreActive,
+                  hasActiveFilters,
                   "Организаций по фильтру нет.",
                   "Организаций нет."
                 )}
