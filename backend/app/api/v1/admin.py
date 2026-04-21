@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -1602,13 +1602,37 @@ async def get_permission_detail(
 
 @router.get("/audit-events", response_model=list[AdminAuditEventItem])
 async def list_audit_events(
+    action: str | None = Query(default=None, max_length=128),
+    entity_type: str | None = Query(default=None, max_length=64),
+    entity_id: str | None = Query(default=None, max_length=64),
+    actor_user_id: str | None = Query(default=None, max_length=64),
+    limit: int = Query(default=50, ge=1, le=200),
     _: User = Depends(require_permission("audit.read")),
     session: AsyncSession = Depends(get_db),
 ) -> list[AdminAuditEventItem]:
+    action_filter = action.strip() if action else None
+    entity_type_filter = entity_type.strip() if entity_type else None
+    entity_id_filter = entity_id.strip() if entity_id else None
+    actor_user_id_filter = actor_user_id.strip() if actor_user_id else None
+
+    query = select(AuditEvent)
+
+    if action_filter:
+        query = query.where(AuditEvent.action == action_filter)
+
+    if entity_type_filter:
+        query = query.where(AuditEvent.entity_type == entity_type_filter)
+
+    if entity_id_filter:
+        query = query.where(AuditEvent.entity_id == entity_id_filter)
+
+    if actor_user_id_filter:
+        query = query.where(AuditEvent.actor_user_id == actor_user_id_filter)
+
     result = await session.execute(
-        select(AuditEvent)
+        query
         .order_by(AuditEvent.created_at.desc())
-        .limit(50)
+        .limit(limit)
     )
     events = result.scalars().all()
 

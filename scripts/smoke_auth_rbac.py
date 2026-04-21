@@ -802,6 +802,22 @@ def main() -> int:
     assert "created_at" in audit_event_detail
     checks.append("admin audit event detail ok")
 
+    filtered_audit_path = f"/api/v1/admin/audit-events?action={audit_event_detail['action']}&limit=5"
+    status, filtered_audit_events = request_json(
+        "GET",
+        filtered_audit_path,
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin audit-events filter")
+    assert isinstance(filtered_audit_events, list)
+    if len(filtered_audit_events) > 5:
+        raise AssertionError("admin audit-events filter returned too many events")
+    if not filtered_audit_events:
+        raise AssertionError("admin audit-events filter returned no events")
+    if any(event["action"] != audit_event_detail["action"] for event in filtered_audit_events):
+        raise AssertionError("admin audit-events filter returned wrong action")
+    checks.append("admin audit-events filter ok")
+
     status, missing_audit_event = request_json(
         "GET",
         "/api/v1/admin/audit-events/00000000-0000-0000-0000-000000000000",
@@ -1037,6 +1053,14 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin audit event detail")
     checks.append("learner audit event detail returns 403")
+
+    status, _ = request_json(
+        "GET",
+        "/api/v1/admin/audit-events?action=admin.user_created&limit=5",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin audit-events filter")
+    checks.append("learner audit-events filter returns 403")
 
     print("Smoke auth/RBAC/admin API passed:")
     for check in checks:

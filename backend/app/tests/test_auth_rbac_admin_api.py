@@ -1770,3 +1770,54 @@ def test_learner_cannot_assign_or_remove_user_role() -> None:
     assert cleanup_status == 200
     assert isinstance(cleanup_payload, dict)
 
+
+
+def test_admin_can_filter_audit_events() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    inn = unique_inn()
+
+    status, organization = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        {
+            "inn": inn,
+            "name": f"Audit filter organization {inn}",
+        },
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(organization, dict)
+    organization_id = str(organization["id"])
+
+    status, events = request_json(
+        "GET",
+        f"/api/v1/admin/audit-events?action=admin.organization_created&entity_type=organization&entity_id={organization_id}&limit=5",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(events, list)
+    assert 1 <= len(events) <= 5
+    assert all(event["action"] == "admin.organization_created" for event in events)
+    assert all(event["entity_type"] == "organization" for event in events)
+    assert all(event["entity_id"] == organization_id for event in events)
+
+    status, limited_events = request_json(
+        "GET",
+        "/api/v1/admin/audit-events?limit=1",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(limited_events, list)
+    assert len(limited_events) <= 1
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/audit-events?action=admin.organization_created&limit=5",
+        token=login(LEARNER_EMAIL, LEARNER_PASSWORD),
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)

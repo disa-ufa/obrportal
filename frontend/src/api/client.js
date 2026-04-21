@@ -199,8 +199,20 @@ export async function getAdminPermissionDetail(permissionId) {
   return request(`/api/v1/admin/permissions/${permissionId}`);
 }
 
-export async function getAdminAuditEvents() {
-  return request("/api/v1/admin/audit-events");
+export async function getAdminAuditEvents(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/admin/audit-events${query ? `?${query}` : ""}`);
 }
 
 export async function getAdminAuditEventDetail(auditEventId) {

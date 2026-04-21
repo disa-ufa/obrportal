@@ -545,6 +545,29 @@ export default function App() {
     }
   }
 
+  async function handleApplyAuditFilters(filters) {
+    setAdminLoading(true);
+    setError("");
+    clearSelectedAuditEvent();
+
+    try {
+      const auditEvents = await getAdminAuditEvents(filters);
+
+      setAdminData((current) => ({
+        ...current,
+        auditEvents,
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+
+      return auditEvents;
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message}`);
+      throw err;
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
   function clearSelectedUser() {
     setSelectedUser(null);
     setSelectedUserLoading(false);
@@ -683,6 +706,7 @@ export default function App() {
           selectedAuditEventError={selectedAuditEventError}
           onOpenAuditEvent={handleOpenAuditEvent}
           onCloseAuditEvent={clearSelectedAuditEvent}
+          onApplyAuditFilters={handleApplyAuditFilters}
         />
       );
     }
