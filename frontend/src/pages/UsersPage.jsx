@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { UserDetailPanel } from "../components/admin/UserDetailPanel";
 import { UserForm } from "../components/admin/UserForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
+import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -106,50 +107,40 @@ export function UsersPage({
           <p className="text-slate-600">Войдите под admin, чтобы увидеть пользователей.</p>
         ) : (
           <div className="space-y-5">
-            <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
-              <div className="grid gap-4 lg:grid-cols-[1fr_220px_auto] lg:items-end">
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Поиск
-                  </span>
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Email, ФИО, телефон или роль"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  />
-                </label>
+            <AdminFilterPanel
+              columnsClassName="lg:grid-cols-[1fr_220px_auto]"
+              onReset={resetFilters}
+              resetDisabled={!filtersAreActive}
+              summary={`Показано: ${filteredUsers.length} из ${users.length}`}
+            >
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Поиск
+                </span>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Email, ФИО, телефон или роль"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
+              </label>
 
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Активность
-                  </span>
-                  <select
-                    value={activityFilter}
-                    onChange={(event) => setActivityFilter(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  >
-                    <option value="all">Все пользователи</option>
-                    <option value="active">Только активные</option>
-                    <option value="inactive">Только отключённые</option>
-                  </select>
-                </label>
-
-                <ActionButton
-                  type="button"
-                  tone="light"
-                  onClick={resetFilters}
-                  disabled={!filtersAreActive}
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Активность
+                </span>
+                <select
+                  value={activityFilter}
+                  onChange={(event) => setActivityFilter(event.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 >
-                  Сбросить
-                </ActionButton>
-              </div>
-
-              <div className="mt-3 text-xs text-slate-500">
-                Показано: {filteredUsers.length} из {users.length}
-              </div>
-            </div>
+                  <option value="all">Все пользователи</option>
+                  <option value="active">Только активные</option>
+                  <option value="inactive">Только отключённые</option>
+                </select>
+              </label>
+            </AdminFilterPanel>
 
             {loading ? (
               <LoadingBlock text="Загружаем пользователей..." />
