@@ -412,6 +412,40 @@ def main() -> int:
     assert isinstance(missing_org_update, dict)
     checks.append("admin organization update 404 ok")
 
+    delete_org_inn = unique_inn()
+    status, deletable_org = request_json(
+        "POST",
+        "/api/v1/admin/organizations",
+        {
+            "inn": delete_org_inn,
+            "name": f"Smoke deletable organization {delete_org_inn}",
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin organization create for delete")
+    assert isinstance(deletable_org, dict)
+    deletable_org_id = str(deletable_org["id"])
+
+    status, deleted_org = request_json(
+        "DELETE",
+        f"/api/v1/admin/organizations/{deletable_org_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin organization delete")
+    assert isinstance(deleted_org, dict)
+    assert deleted_org["status"] == "deleted"
+    assert deleted_org["id"] == deletable_org_id
+    checks.append("admin organization delete ok")
+
+    status, deleted_org_detail = request_json(
+        "GET",
+        f"/api/v1/admin/organizations/{deletable_org_id}",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin deleted organization detail")
+    assert isinstance(deleted_org_detail, dict)
+    checks.append("admin deleted organization detail returns 404")
+
     status, roles = request_json("GET", "/api/v1/admin/roles", token=admin_token)
     assert_status(status, 200, "admin roles")
     assert isinstance(roles, list)
@@ -591,6 +625,15 @@ def main() -> int:
     assert_status(status, 409, "admin duplicate user role assign")
     assert isinstance(duplicate_role_assign, dict)
     checks.append("admin duplicate user role assign returns 409")
+
+    status, assigned_organization_delete = request_json(
+        "DELETE",
+        f"/api/v1/admin/organizations/{created_organization_id}",
+        token=admin_token,
+    )
+    assert_status(status, 400, "admin assigned organization delete protected")
+    assert isinstance(assigned_organization_delete, dict)
+    checks.append("admin assigned organization delete protected returns 400")
 
     status, last_admin_role_remove = request_json(
         "DELETE",
@@ -891,6 +934,23 @@ def main() -> int:
     )
     assert_status(status, 403, "learner admin organization update")
     checks.append("learner organization update returns 403")
+
+    status, _ = request_json(
+        "DELETE",
+        f"/api/v1/admin/organizations/{created_organization_id}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin organization delete")
+    checks.append("learner organization delete returns 403")
+
+    status, deleted_created_org = request_json(
+        "DELETE",
+        f"/api/v1/admin/organizations/{created_organization_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin created organization cleanup delete")
+    assert isinstance(deleted_created_org, dict)
+    checks.append("admin created organization cleanup delete ok")
 
     status, _ = request_json(
         "GET",

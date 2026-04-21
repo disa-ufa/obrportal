@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { OrganizationDetailPanel } from "../components/admin/OrganizationDetailPanel";
 import { OrganizationForm } from "../components/admin/OrganizationForm";
 import { ActionButton } from "../components/ui/ActionButton";
@@ -18,6 +18,7 @@ export function OrganizationsPage({
   onCloseOrganization,
   onCreateOrganization,
   onUpdateOrganization,
+  onDeleteOrganization,
 }) {
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -128,6 +129,7 @@ export function OrganizationsPage({
           error={selectedOrganizationError}
           onClose={onCloseOrganization}
           onUpdateOrganization={onUpdateOrganization}
+          onDeleteOrganization={onDeleteOrganization}
         />
       )}
     </div>

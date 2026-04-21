@@ -144,6 +144,12 @@ export async function updateAdminOrganization(organizationId, payload) {
   });
 }
 
+export async function deleteAdminOrganization(organizationId) {
+  return request(`/api/v1/admin/organizations/${organizationId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getAdminRoles() {
   return request("/api/v1/admin/roles");
 }

@@ -9,6 +9,7 @@ import {
   createAdminOrganization,
   createAdminRole,
   createAdminUser,
+  deleteAdminOrganization,
   deleteAdminRole,
   deactivateAdminUser,
   getAdminAuditEventDetail,
@@ -422,6 +423,19 @@ export default function App() {
     return updated;
   }
 
+  async function handleDeleteOrganization(organizationId) {
+    const deleted = await deleteAdminOrganization(organizationId);
+
+    setAdminData((current) => ({
+      ...current,
+      organizations: current.organizations.filter((organization) => organization.id !== organizationId),
+    }));
+
+    clearSelectedOrganization();
+
+    return deleted;
+  }
+
   async function handleCreateRole(payload) {
     const created = await createAdminRole(payload);
 
@@ -617,6 +631,7 @@ export default function App() {
           onCloseOrganization={clearSelectedOrganization}
           onCreateOrganization={handleCreateOrganization}
           onUpdateOrganization={handleUpdateOrganization}
+          onDeleteOrganization={handleDeleteOrganization}
         />
       );
     }

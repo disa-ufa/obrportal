@@ -1107,6 +1107,102 @@ def test_admin_update_organization_not_found_returns_404() -> None:
     assert isinstance(payload, dict)
 
 
+def test_admin_can_delete_unused_organization() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    organization_id = create_test_organization(token)
+
+    status, deleted = request_json(
+        "DELETE",
+        f"/api/v1/admin/organizations/{organization_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(deleted, dict)
+    assert deleted["status"] == "deleted"
+    assert deleted["id"] == organization_id
+
+    status, missing = request_json(
+        "GET",
+        f"/api/v1/admin/organizations/{organization_id}",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(missing, dict)
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(
+        event["action"] == "admin.organization_deleted"
+        and event["entity_id"] == organization_id
+        for event in audit_events
+    )
+
+
+def test_admin_cannot_delete_organization_assigned_to_user() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_user_id = get_user_id_by_email(token, LEARNER_EMAIL)
+    teacher_role_id = get_role_id_by_code(token, "teacher")
+    organization_id = create_test_organization(token)
+
+    status, updated = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": teacher_role_id,
+            "organization_id": organization_id,
+        },
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(updated, dict)
+
+    user_role_id = find_user_role_id(
+        updated,
+        role_code="teacher",
+        organization_id=organization_id,
+    )
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/organizations/{organization_id}",
+        token=token,
+    )
+    assert status == 400
+    assert isinstance(payload, dict)
+
+    cleanup_status, cleanup_payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{learner_user_id}/roles/{user_role_id}",
+        token=token,
+    )
+    assert cleanup_status == 200
+    assert isinstance(cleanup_payload, dict)
+
+    status, deleted = request_json(
+        "DELETE",
+        f"/api/v1/admin/organizations/{organization_id}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(deleted, dict)
+
+
+def test_admin_delete_organization_not_found_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "DELETE",
+        "/api/v1/admin/organizations/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
 def test_learner_cannot_create_or_update_organization() -> None:
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
@@ -1148,6 +1244,14 @@ def test_learner_cannot_create_or_update_organization() -> None:
         token=learner_token,
     )
 
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/admin/organizations/{organization_id}",
+        token=learner_token,
+    )
     assert status == 403
     assert isinstance(payload, dict)
 

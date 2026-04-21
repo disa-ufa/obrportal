@@ -266,6 +266,23 @@ def organization_snapshot(organization: Organization) -> dict:
     }
 
 
+async def ensure_organization_can_be_deleted(
+    organization: Organization,
+    session: AsyncSession,
+) -> None:
+    result = await session.execute(
+        select(UserRole.id)
+        .where(UserRole.organization_id == organization.id)
+        .limit(1)
+    )
+
+    if result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete organization assigned to users",
+        )
+
+
 def user_snapshot(user: User) -> dict:
     return {
         "id": str(user.id),
@@ -1204,6 +1221,39 @@ async def update_organization(
         )
 
     return build_admin_organization_detail(organization)
+
+
+@router.delete("/organizations/{organization_id}", response_model=AdminDeleteResult)
+async def delete_organization(
+    organization_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.organizations.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDeleteResult:
+    organization = await get_admin_organization_or_404(organization_id, session)
+    await ensure_organization_can_be_deleted(organization, session)
+
+    deleted_organization_id = str(organization.id)
+    before = organization_snapshot(organization)
+
+    await session.delete(organization)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.organization_deleted",
+        entity_type="organization",
+        entity_id=deleted_organization_id,
+        payload={
+            "before": before,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return AdminDeleteResult(status="deleted", id=deleted_organization_id)
 
 
 @router.get("/organizations/{organization_id}", response_model=AdminOrganizationDetail)

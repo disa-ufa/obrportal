@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { OrganizationForm } from "./OrganizationForm";
 import { ActionButton } from "../ui/ActionButton";
 import { Alert } from "../ui/Alert";
@@ -13,12 +13,38 @@ export function OrganizationDetailPanel({
   error,
   onClose,
   onUpdateOrganization,
+  onDeleteOrganization,
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   function handleClose() {
     setIsEditing(false);
+    setActionError("");
     onClose();
+  }
+
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      "Удалить организацию? Действие нельзя отменить. Организацию нельзя удалить, если она используется в назначениях ролей пользователей."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleting(true);
+    setActionError("");
+
+    try {
+      await onDeleteOrganization(organizationDetail.id);
+      setIsEditing(false);
+    } catch (err) {
+      setActionError(`${err.status || ""} ${err.message}`.trim());
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -63,6 +89,17 @@ export function OrganizationDetailPanel({
                 </ActionButton>
               )}
 
+              {!isEditing && (
+                <ActionButton
+                  type="button"
+                  tone="red"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? "Удаляем..." : "Удалить"}
+                </ActionButton>
+              )}
+
               <ActionButton
                 type="button"
                 tone="light"
@@ -72,6 +109,12 @@ export function OrganizationDetailPanel({
               </ActionButton>
             </div>
           </div>
+
+          {actionError && (
+            <Alert title="Не удалось выполнить действие" tone="red">
+              {actionError}
+            </Alert>
+          )}
 
           {isEditing ? (
             <OrganizationForm
