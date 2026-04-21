@@ -77,12 +77,12 @@ export function UsersPage({
     );
   }, [users, searchQuery, activityFilter]);
 
+  const hasActiveFilters = searchQuery.trim() !== "" || activityFilter !== "all";
+
   function resetFilters() {
     setSearchQuery("");
     setActivityFilter("all");
   }
-
-  const hasActiveFilters = searchQuery.trim() !== "" || activityFilter !== "all";
 
   return (
     <div className="space-y-6">
