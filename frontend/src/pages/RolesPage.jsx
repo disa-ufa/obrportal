@@ -11,6 +11,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildSearchText, normalizeSearchValue } from "../utils/search";
+import { getFilteredEmptyText } from "../utils/tableText";
 
 const SYSTEM_ROLE_CODES = new Set([
   "admin",
@@ -173,7 +174,11 @@ export function RolesPage({
               <LoadingBlock text="Загружаем роли..." />
             ) : (
               <SmallTable
-                emptyText="Ролей по фильтру нет."
+                emptyText={getFilteredEmptyText(
+                  hasActiveFilters,
+                  "Ролей по фильтру нет.",
+                  "Ролей нет."
+                )}
                 rows={filteredRoles}
                 selectedRowId={selectedRole?.id}
                 minWidth="860px"
