@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { OrganizationDetailPanel } from "../components/admin/OrganizationDetailPanel";
 import { OrganizationForm } from "../components/admin/OrganizationForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
+import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -134,46 +135,36 @@ export function OrganizationsPage({
               </div>
             )}
 
-            <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
-              <div className="grid gap-4 lg:grid-cols-[1fr_260px_auto] lg:items-end">
-                <FilterLabel label="Поиск">
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Название, ИНН, КПП, ОГРН или адрес"
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                  />
-                </FilterLabel>
+            <AdminFilterPanel
+              columnsClassName="lg:grid-cols-[1fr_260px_auto]"
+              onReset={resetFilters}
+              resetDisabled={!searchQuery && scopeFilter === "all"}
+              summary={`Показано: ${filteredOrganizations.length} из ${organizations.length}`}
+            >
+              <FilterLabel label="Поиск">
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Название, ИНН, КПП, ОГРН или адрес"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                />
+              </FilterLabel>
 
-                <FilterLabel label="Данные">
-                  <select
-                    value={scopeFilter}
-                    onChange={(event) => setScopeFilter(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                  >
-                    <option value="all">Все организации</option>
-                    <option value="with_kpp">С КПП</option>
-                    <option value="without_kpp">Без КПП</option>
-                    <option value="with_ogrn">С ОГРН</option>
-                    <option value="without_ogrn">Без ОГРН</option>
-                  </select>
-                </FilterLabel>
-
-                <ActionButton
-                  type="button"
-                  tone="light"
-                  onClick={resetFilters}
-                  disabled={!searchQuery && scopeFilter === "all"}
+              <FilterLabel label="Данные">
+                <select
+                  value={scopeFilter}
+                  onChange={(event) => setScopeFilter(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 >
-                  Сбросить
-                </ActionButton>
-              </div>
-
-              <div className="mt-4 text-xs text-slate-500">
-                Показано: {filteredOrganizations.length} из {organizations.length}
-              </div>
-            </div>
+                  <option value="all">Все организации</option>
+                  <option value="with_kpp">С КПП</option>
+                  <option value="without_kpp">Без КПП</option>
+                  <option value="with_ogrn">С ОГРН</option>
+                  <option value="without_ogrn">Без ОГРН</option>
+                </select>
+              </FilterLabel>
+            </AdminFilterPanel>
 
             {loading ? (
               <LoadingBlock text="Загружаем организации..." />
