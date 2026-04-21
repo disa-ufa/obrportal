@@ -11,6 +11,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildSearchText, normalizeSearchValue } from "../utils/search";
+import { getFilteredEmptyText } from "../utils/tableText";
 
 function userMatchesSearch(user, query) {
   if (!query) {
@@ -137,7 +138,11 @@ export function UsersPage({
               <LoadingBlock text="Загружаем пользователей..." />
             ) : (
               <SmallTable
-                emptyText="Пользователей по фильтру нет."
+                emptyText={getFilteredEmptyText(
+                  filtersAreActive,
+                  "Пользователей по фильтру нет.",
+                  "Пользователей нет."
+                )}
                 rows={filteredUsers}
                 selectedRowId={selectedUser?.id}
                 minWidth="820px"
