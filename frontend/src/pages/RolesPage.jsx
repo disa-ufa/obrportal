@@ -4,6 +4,7 @@ import { RoleForm } from "../components/admin/RoleForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
+import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -122,23 +123,20 @@ export function RolesPage({
         ) : (
           <div className="space-y-5">
             {showCreateForm && (
-              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                <div className="mb-4">
-                  <div className="text-sm font-semibold text-slate-900">
-                    Новая роль
-                  </div>
-                  <p className="mt-1 text-xs text-slate-600">
-                    После создания роль можно открыть и назначить ей permissions.
-                  </p>
-                </div>
-
+              <AdminCreatePanel
+                title="Новая роль"
+                subtitle="После создания роль можно открыть и назначить ей permissions."
+                className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                titleClassName="text-sm font-semibold text-slate-900"
+                subtitleClassName="mt-1 text-xs text-slate-600"
+              >
                 <RoleForm
                   submitLabel="Создать роль"
                   successMessage="Роль создана."
                   onSubmit={handleCreateRole}
                   onCancel={() => setShowCreateForm(false)}
                 />
-              </div>
+              </AdminCreatePanel>
             )}
 
             <AdminFilterPanel
