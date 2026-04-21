@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { PermissionDetailPanel } from "../components/admin/PermissionDetailPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
+import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -109,47 +110,37 @@ export function PermissionsPage({
           <LoadingBlock text="Загружаем права..." />
         ) : (
           <div className="space-y-5">
-            <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
-              <div className="grid gap-4 lg:grid-cols-[1fr_260px_auto] lg:items-end">
-                <FilterLabel label="Поиск">
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Код, название или описание"
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                  />
-                </FilterLabel>
+            <AdminFilterPanel
+              columnsClassName="lg:grid-cols-[1fr_260px_auto]"
+              onReset={resetFilters}
+              resetDisabled={!hasActiveFilters}
+              summary={`Показано: ${filteredPermissions.length} из ${permissions.length}`}
+            >
+              <FilterLabel label="Поиск">
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Код, название или описание"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                />
+              </FilterLabel>
 
-                <FilterLabel label="Группа">
-                  <select
-                    value={groupFilter}
-                    onChange={(event) => setGroupFilter(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                  >
-                    <option value={ALL_PERMISSION_GROUPS}>Все группы</option>
-                    {permissionGroups.map((group) => (
-                      <option key={group} value={group}>
-                        {group}
-                      </option>
-                    ))}
-                  </select>
-                </FilterLabel>
-
-                <ActionButton
-                  type="button"
-                  tone="light"
-                  onClick={resetFilters}
-                  disabled={!hasActiveFilters}
+              <FilterLabel label="Группа">
+                <select
+                  value={groupFilter}
+                  onChange={(event) => setGroupFilter(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 >
-                  Сбросить
-                </ActionButton>
-              </div>
-
-              <div className="mt-4 text-xs text-slate-500">
-                Показано: {filteredPermissions.length} из {permissions.length}
-              </div>
-            </div>
+                  <option value={ALL_PERMISSION_GROUPS}>Все группы</option>
+                  {permissionGroups.map((group) => (
+                    <option key={group} value={group}>
+                      {group}
+                    </option>
+                  ))}
+                </select>
+              </FilterLabel>
+            </AdminFilterPanel>
 
             <SmallTable
               emptyText={hasActiveFilters ? "Прав по фильтру нет." : "Прав нет."}
