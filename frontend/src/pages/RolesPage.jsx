@@ -3,6 +3,7 @@ import { RoleDetailPanel } from "../components/admin/RoleDetailPanel";
 import { RoleForm } from "../components/admin/RoleForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
+import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -57,17 +58,6 @@ function roleMatchesType(role, filter) {
   }
 
   return true;
-}
-
-function FilterLabel({ label, children }) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-        {label}
-      </span>
-      {children}
-    </label>
-  );
 }
 
 export function RolesPage({
@@ -160,7 +150,7 @@ export function RolesPage({
               resetDisabled={!hasActiveFilters}
               summary={`Показано: ${filteredRoles.length} из ${roles.length}`}
             >
-              <FilterLabel label="Поиск">
+              <AdminFilterField label="Поиск" className="block space-y-2" labelClassName="tracking-[0.2em]">
                 <input
                   type="search"
                   value={searchQuery}
@@ -168,9 +158,9 @@ export function RolesPage({
                   placeholder="Код, название или описание"
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
                 />
-              </FilterLabel>
+              </AdminFilterField>
 
-              <FilterLabel label="Тип роли">
+              <AdminFilterField label="Тип роли" className="block space-y-2" labelClassName="tracking-[0.2em]">
                 <select
                   value={roleTypeFilter}
                   onChange={(event) => setRoleTypeFilter(event.target.value)}
@@ -181,7 +171,7 @@ export function RolesPage({
                   <option value="custom">Пользовательские</option>
                   <option value="admin">Только admin</option>
                 </select>
-              </FilterLabel>
+              </AdminFilterField>
             </AdminFilterPanel>
 
             {loading ? (
