@@ -9,6 +9,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
+import { getFilteredEmptyText } from "../utils/tableText";
 
 const ALL_PERMISSION_GROUPS = "all";
 
@@ -130,7 +131,11 @@ export function PermissionsPage({
             </AdminFilterPanel>
 
             <SmallTable
-              emptyText={hasActiveFilters ? "Прав по фильтру нет." : "Прав нет."}
+              emptyText={getFilteredEmptyText(
+                hasActiveFilters,
+                "Прав по фильтру нет.",
+                "Прав нет."
+              )}
               rows={filteredPermissions}
               selectedRowId={selectedPermission?.id}
               minWidth="960px"
