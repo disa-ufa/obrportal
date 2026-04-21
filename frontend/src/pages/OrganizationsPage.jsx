@@ -9,10 +9,7 @@ import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
-
-function normalizeSearchValue(value) {
-  return String(value || "").toLowerCase().trim();
-}
+import { normalizeSearchValue } from "../utils/search";
 
 function organizationMatchesSearch(organization, query) {
   const normalizedQuery = normalizeSearchValue(query);
