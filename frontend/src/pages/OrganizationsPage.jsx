@@ -11,6 +11,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
+import { getFilteredEmptyText } from "../utils/tableText";
 
 function organizationMatchesSearch(organization, query) {
   const normalizedQuery = normalizeSearchValue(query);
@@ -82,6 +83,8 @@ export function OrganizationsPage({
     setScopeFilter("all");
   }
 
+  const filtersAreActive = Boolean(searchQuery.trim()) || scopeFilter !== "all";
+
   return (
     <div className="space-y-6">
       <SectionCard
@@ -120,7 +123,7 @@ export function OrganizationsPage({
             <AdminFilterPanel
               columnsClassName="lg:grid-cols-[1fr_260px_auto]"
               onReset={resetFilters}
-              resetDisabled={!searchQuery && scopeFilter === "all"}
+              resetDisabled={!filtersAreActive}
               summary={`Показано: ${filteredOrganizations.length} из ${organizations.length}`}
             >
               <AdminFilterField label="Поиск" className="block space-y-2">
@@ -152,7 +155,11 @@ export function OrganizationsPage({
               <LoadingBlock text="Загружаем организации..." />
             ) : (
               <SmallTable
-                emptyText="Организаций по фильтру нет."
+                emptyText={getFilteredEmptyText(
+                  filtersAreActive,
+                  "Организаций по фильтру нет.",
+                  "Организаций нет."
+                )}
                 rows={filteredOrganizations}
                 selectedRowId={selectedOrganization?.id}
                 minWidth="860px"
