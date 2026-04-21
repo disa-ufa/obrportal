@@ -60,6 +60,7 @@ export function PermissionsPage({
   selectedPermissionError,
   onOpenPermission,
   onClosePermission,
+  onRefreshAdminData,
 }) {
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState(ALL_PERMISSION_GROUPS);
@@ -94,6 +95,16 @@ export function PermissionsPage({
       <SectionCard
         title="Права"
         subtitle="Read-only список permissions."
+        action={user ? (
+          <ActionButton
+            type="button"
+            tone="light"
+            onClick={onRefreshAdminData}
+            disabled={loading}
+          >
+            {loading ? "Обновляем..." : "Обновить"}
+          </ActionButton>
+        ) : null}
       >
         {!user ? (
           <p className="text-slate-600">Войдите под admin, чтобы увидеть права.</p>

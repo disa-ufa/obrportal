@@ -694,6 +694,7 @@ export default function App() {
           selectedPermissionError={selectedPermissionError}
           onOpenPermission={handleOpenPermission}
           onClosePermission={clearSelectedPermission}
+          onRefreshAdminData={loadAdminData}
         />
       );
     }
