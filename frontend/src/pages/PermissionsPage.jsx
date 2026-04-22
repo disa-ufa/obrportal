@@ -10,6 +10,7 @@ import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
+import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
 
 const ALL_PERMISSION_GROUPS = "all";
 
@@ -110,7 +111,7 @@ export function PermissionsPage({
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Код, название или описание"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 />
               </AdminFilterField>
 
@@ -118,7 +119,7 @@ export function PermissionsPage({
                 <select
                   value={groupFilter}
                   onChange={(event) => setGroupFilter(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 >
                   <option value={ALL_PERMISSION_GROUPS}>Все группы</option>
                   {permissionGroups.map((group) => (
