@@ -26,6 +26,10 @@ def unique_role_code() -> str:
     return f"custom_{uuid4().hex[:12]}"
 
 
+def unique_group_code() -> str:
+    return f"group_{uuid4().hex[:12]}"
+
+
 def get_user_id_by_email(token: str, email: str) -> str:
     status, users = request_json("GET", "/api/v1/admin/users", token=token)
     assert status == 200
@@ -98,6 +102,34 @@ def create_test_organization(token: str) -> str:
     assert isinstance(organization, dict)
 
     return str(organization["id"])
+
+
+def create_test_learning_group(
+    token: str,
+    organization_id: str,
+    *,
+    name: str | None = None,
+    code: str | None = None,
+) -> dict:
+    group_code = code or unique_group_code()
+    group_name = name or f"Learning group {group_code}"
+
+    status, group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": organization_id,
+            "name": group_name,
+            "code": group_code,
+            "description": "Autotest learning group",
+        },
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(group, dict)
+
+    return group
 
 
 def find_user_role_id(
@@ -1821,3 +1853,209 @@ def test_admin_can_filter_audit_events() -> None:
 
     assert status == 403
     assert isinstance(payload, dict)
+
+
+def test_admin_can_create_list_filter_read_and_update_learning_group() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    organization_id = create_test_organization(token)
+    group_code = unique_group_code()
+    group_name = f"Learning group {group_code}"
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": organization_id,
+            "name": f"  {group_name}  ",
+            "code": f"  {group_code}  ",
+            "description": "  Initial group description  ",
+        },
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    assert created["organization_id"] == organization_id
+    assert created["name"] == group_name
+    assert created["code"] == group_code
+    assert created["description"] == "Initial group description"
+    assert created["is_active"] is True
+    assert "created_at" in created
+    assert "updated_at" in created
+
+    group_id = str(created["id"])
+
+    status, groups = request_json("GET", "/api/v1/org/groups", token=token)
+    assert status == 200
+    assert isinstance(groups, list)
+    assert any(group["id"] == group_id for group in groups)
+
+    status, filtered_groups = request_json(
+        "GET",
+        f"/api/v1/org/groups?organization_id={organization_id}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(filtered_groups, list)
+    assert any(group["id"] == group_id for group in filtered_groups)
+    assert all(group["organization_id"] == organization_id for group in filtered_groups)
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/org/groups/{group_id}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(detail, dict)
+    assert detail["id"] == group_id
+    assert detail["organization_id"] == organization_id
+
+    updated_name = f"{group_name} updated"
+    status, updated = request_json(
+        "PATCH",
+        f"/api/v1/org/groups/{group_id}",
+        {
+            "name": updated_name,
+            "description": None,
+            "is_active": False,
+        },
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["id"] == group_id
+    assert updated["name"] == updated_name
+    assert updated["description"] is None
+    assert updated["is_active"] is False
+
+
+def test_learning_group_duplicate_name_or_code_returns_409() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    organization_id = create_test_organization(token)
+    group_code = unique_group_code()
+    group_name = f"Duplicate group {group_code}"
+
+    created = create_test_learning_group(
+        token,
+        organization_id,
+        name=group_name,
+        code=group_code,
+    )
+    assert created["name"] == group_name
+    assert created["code"] == group_code
+
+    status, duplicate_name = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": organization_id,
+            "name": group_name,
+            "code": unique_group_code(),
+        },
+        token=token,
+    )
+    assert status == 409
+    assert isinstance(duplicate_name, dict)
+
+    status, duplicate_code = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": organization_id,
+            "name": f"{group_name} another",
+            "code": group_code,
+        },
+        token=token,
+    )
+    assert status == 409
+    assert isinstance(duplicate_code, dict)
+
+
+def test_learning_group_missing_organization_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    missing_id = "00000000-0000-0000-0000-000000000000"
+
+    status, create_payload = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": missing_id,
+            "name": "Missing organization group",
+            "code": unique_group_code(),
+        },
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(create_payload, dict)
+
+    status, list_payload = request_json(
+        "GET",
+        f"/api/v1/org/groups?organization_id={missing_id}",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(list_payload, dict)
+
+    status, group_payload = request_json(
+        "GET",
+        "/api/v1/org/groups/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(group_payload, dict)
+
+    status, update_payload = request_json(
+        "PATCH",
+        "/api/v1/org/groups/00000000-0000-0000-0000-000000000000",
+        {"name": "Missing group"},
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(update_payload, dict)
+
+
+def test_learner_cannot_access_learning_groups_api() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    organization_id = create_test_organization(admin_token)
+    group = create_test_learning_group(admin_token, organization_id)
+    group_id = str(group["id"])
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/org/groups",
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": organization_id,
+            "name": "Forbidden group",
+            "code": unique_group_code(),
+        },
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/org/groups/{group_id}",
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
+    status, payload = request_json(
+        "PATCH",
+        f"/api/v1/org/groups/{group_id}",
+        {"name": "Forbidden update"},
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)
+
