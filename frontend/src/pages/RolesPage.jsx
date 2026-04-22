@@ -12,6 +12,7 @@ import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildSearchText, normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
+import { ADMIN_FILTER_CONTROL_SUBTLE_CLASS } from "../utils/adminClasses";
 
 const SYSTEM_ROLE_CODES = new Set([
   "admin",
@@ -152,7 +153,7 @@ export function RolesPage({
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Код, название или описание"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                  className={ADMIN_FILTER_CONTROL_SUBTLE_CLASS}
                 />
               </AdminFilterField>
 
@@ -160,7 +161,7 @@ export function RolesPage({
                 <select
                   value={roleTypeFilter}
                   onChange={(event) => setRoleTypeFilter(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                  className={ADMIN_FILTER_CONTROL_SUBTLE_CLASS}
                 >
                   <option value="all">Все роли</option>
                   <option value="system">Системные</option>
