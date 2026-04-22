@@ -7,6 +7,7 @@ import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import { ADMIN_FILTER_CONTROL_SUBTLE_DISABLED_CLASS } from "../utils/adminClasses";
 
 function formatDate(value) {
   if (!value) {
@@ -20,7 +21,7 @@ function TextInput(props) {
   return (
     <input
       {...props}
-      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-50 disabled:text-slate-500"
+      className={ADMIN_FILTER_CONTROL_SUBTLE_DISABLED_CLASS}
     />
   );
 }
