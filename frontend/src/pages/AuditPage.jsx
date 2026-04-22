@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AuditEventDetailPanel } from "../components/admin/AuditEventDetailPanel";
+import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
 import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
@@ -21,18 +22,6 @@ function TextInput(props) {
       {...props}
       className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-50 disabled:text-slate-500"
     />
-  );
-}
-
-function Field({ label, children, hint }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </span>
-      <div className="mt-1">{children}</div>
-      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
-    </label>
   );
 }
 
@@ -135,43 +124,43 @@ export function AuditPage({
               )}
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                <Field label="Action" hint="Например: admin.user_created">
+                <AdminFilterField label="Action" hint="Например: admin.user_created">
                   <TextInput
                     value={filters.action}
                     onChange={(event) => updateFilter("action", event.target.value)}
                     placeholder="admin.user_created"
                     disabled={loading}
                   />
-                </Field>
+                </AdminFilterField>
 
-                <Field label="Entity type" hint="user / role / organization">
+                <AdminFilterField label="Entity type" hint="user / role / organization">
                   <TextInput
                     value={filters.entity_type}
                     onChange={(event) => updateFilter("entity_type", event.target.value)}
                     placeholder="organization"
                     disabled={loading}
                   />
-                </Field>
+                </AdminFilterField>
 
-                <Field label="Entity ID">
+                <AdminFilterField label="Entity ID">
                   <TextInput
                     value={filters.entity_id}
                     onChange={(event) => updateFilter("entity_id", event.target.value)}
                     placeholder="UUID"
                     disabled={loading}
                   />
-                </Field>
+                </AdminFilterField>
 
-                <Field label="Actor user ID">
+                <AdminFilterField label="Actor user ID">
                   <TextInput
                     value={filters.actor_user_id}
                     onChange={(event) => updateFilter("actor_user_id", event.target.value)}
                     placeholder="UUID"
                     disabled={loading}
                   />
-                </Field>
+                </AdminFilterField>
 
-                <Field label="Лимит" hint="1–200">
+                <AdminFilterField label="Лимит" hint="1–200">
                   <TextInput
                     type="number"
                     min="1"
@@ -180,7 +169,7 @@ export function AuditPage({
                     onChange={(event) => updateFilter("limit", event.target.value)}
                     disabled={loading}
                   />
-                </Field>
+                </AdminFilterField>
               </div>
 
               <div className="flex flex-wrap gap-2">
