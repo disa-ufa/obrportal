@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "./components/layout/AppShell";
+import { PublicShell } from "./components/layout/PublicShell";
 import {
   activateAdminUser,
   assignAdminRolePermission,
@@ -40,12 +41,23 @@ import {
   updateOrgLearningGroup,
 } from "./api/client";
 import { AuditPage } from "./pages/AuditPage";
+import { AuthPage } from "./pages/AuthPage";
+import { CatalogPage } from "./pages/CatalogPage";
+import { CourseDetailPage } from "./pages/CourseDetailPage";
+import { ContactsPage } from "./pages/ContactsPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { FaqPage } from "./pages/FaqPage";
 import { GroupsPage } from "./pages/GroupsPage";
+import { HomePage } from "./pages/HomePage";
+import { OfferPage } from "./pages/OfferPage";
+import { OrganizationInfoPage } from "./pages/OrganizationInfoPage";
 import { OrganizationsPage } from "./pages/OrganizationsPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
+import { PublicInfoPage } from "./pages/PublicInfoPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 import { RolesPage } from "./pages/RolesPage";
 import { UsersPage } from "./pages/UsersPage";
+import { VerifyDocumentPage } from "./pages/VerifyDocumentPage";
 
 const EMPTY_ADMIN_DATA = {
   users: [],
@@ -88,6 +100,19 @@ function sortRoles(roles) {
   );
 }
 
+const PUBLIC_PAGES = new Set([
+  "home",
+  "catalog",
+  "course-detail",
+  "organization-info",
+  "verify-document",
+  "contacts",
+  "faq",
+  "privacy",
+  "offer",
+  "login",
+]);
+
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
   const [password, setPassword] = useState("Admin123Local2026!");
@@ -97,7 +122,8 @@ export default function App() {
   const [rbac, setRbac] = useState(null);
   const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
   const [adminDataLoadedAt, setAdminDataLoadedAt] = useState("");
-  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [currentPage, setCurrentPage] = useState("home");
+  const [selectedPublicCourseId, setSelectedPublicCourseId] = useState(null);
   const [error, setError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
@@ -191,7 +217,10 @@ export default function App() {
       setUser(currentUser);
 
       if (userHasRole(currentUser, "admin")) {
+        setCurrentPage("dashboard");
         await loadAdminData();
+      } else {
+        setCurrentPage("home");
       }
     } catch {
       clearToken();
@@ -215,6 +244,11 @@ export default function App() {
     bootstrapAuthState();
   }, []);
 
+  function handleOpenPublicCourse(courseId) {
+    setSelectedPublicCourseId(courseId);
+    setCurrentPage("course-detail");
+  }
+
   async function handleLogin(event) {
     event.preventDefault();
     setAuthLoading(true);
@@ -233,8 +267,10 @@ export default function App() {
       setUser(currentUser);
 
       if (userHasRole(currentUser, "admin")) {
+        setCurrentPage("dashboard");
         await loadAdminData();
       } else {
+        setCurrentPage("home");
         setAdminData(EMPTY_ADMIN_DATA);
         setAdminDataLoadedAt("");
       }
@@ -694,7 +730,7 @@ export default function App() {
     setRbac(null);
     setAdminData(EMPTY_ADMIN_DATA);
     setAdminDataLoadedAt("");
-    setCurrentPage("dashboard");
+    setCurrentPage("home");
     setError("");
     setAuthLoading(false);
     setAdminLoading(false);
@@ -708,6 +744,63 @@ export default function App() {
   }
 
   function renderCurrentPage() {
+    if (currentPage === "home") {
+      return <HomePage onPageChange={setCurrentPage} onOpenCourse={handleOpenPublicCourse} />;
+    }
+
+    if (currentPage === "catalog") {
+      return <CatalogPage onPageChange={setCurrentPage} onOpenCourse={handleOpenPublicCourse} />;
+    }
+
+    if (currentPage === "course-detail") {
+      return (
+        <CourseDetailPage
+          courseId={selectedPublicCourseId}
+          onPageChange={setCurrentPage}
+          onOpenCourse={handleOpenPublicCourse}
+        />
+      );
+    }
+
+    if (currentPage === "organization-info") {
+      return <OrganizationInfoPage onPageChange={setCurrentPage} />;
+    }
+
+    if (currentPage === "verify-document") {
+      return <VerifyDocumentPage onPageChange={setCurrentPage} />;
+    }
+
+    if (currentPage === "contacts") {
+      return <ContactsPage onPageChange={setCurrentPage} />;
+    }
+
+    if (currentPage === "faq") {
+      return <FaqPage onPageChange={setCurrentPage} />;
+    }
+
+    if (currentPage === "privacy") {
+      return <PrivacyPage onPageChange={setCurrentPage} />;
+    }
+
+    if (currentPage === "offer") {
+      return <OfferPage onPageChange={setCurrentPage} />;
+    }
+
+    if (currentPage === "login") {
+      return (
+        <AuthPage
+          email={email}
+          password={password}
+          loading={authLoading || initializingAuth}
+          error={error}
+          user={user}
+          onEmailChange={setEmail}
+          onPasswordChange={setPassword}
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+        />
+      );
+    }
     if (currentPage === "users") {
       return (
         <UsersPage
@@ -847,6 +940,8 @@ export default function App() {
     );
   }
 
+  const pageContent = renderCurrentPage();
+  const isPublicPage = PUBLIC_PAGES.has(currentPage);
   const isAdmin = userHasRole(user, "admin");
   const authBadgeText = initializingAuth
     ? "initializing"
@@ -860,7 +955,16 @@ export default function App() {
       ? "blue"
       : "gray";
 
-  return (
+  return isPublicPage ? (
+    <PublicShell
+      user={user}
+      isAdmin={isAdmin}
+      currentPage={currentPage}
+      onPageChange={setCurrentPage}
+    >
+      {pageContent}
+    </PublicShell>
+  ) : (
     <AppShell
       health={health}
       ready={ready}
@@ -881,7 +985,7 @@ export default function App() {
         auditEvents: adminData.auditEvents.length,
       }}
     >
-      {renderCurrentPage()}
+      {pageContent}
     </AppShell>
   );
 }
