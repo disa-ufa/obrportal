@@ -11,6 +11,7 @@ import {
   createAdminUser,
   createOrgLearningGroup,
   deleteAdminOrganization,
+  deleteOrgLearningGroup,
   deleteAdminRole,
   deactivateAdminUser,
   getAdminAuditEventDetail,
@@ -504,6 +505,21 @@ export default function App() {
     return updated;
   }
 
+  async function handleDeleteGroup(groupId) {
+    const deleted = await deleteOrgLearningGroup(groupId);
+
+    setAdminData((current) => ({
+      ...current,
+      groups: sortGroups(current.groups.filter((group) => group.id !== groupId)),
+    }));
+
+    if (selectedGroup?.id === groupId) {
+      clearSelectedGroup();
+    }
+
+    return deleted;
+  }
+
   async function handleCreateRole(payload) {
     const created = await createAdminRole(payload);
 
@@ -750,6 +766,7 @@ export default function App() {
           onCloseGroup={clearSelectedGroup}
           onCreateGroup={handleCreateGroup}
           onUpdateGroup={handleUpdateGroup}
+          onDeleteGroup={handleDeleteGroup}
           onRefreshAdminData={loadAdminData}
         />
       );

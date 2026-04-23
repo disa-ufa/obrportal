@@ -255,9 +255,40 @@ function LearningGroupDetailPanel({
   error,
   onClose,
   onUpdateGroup,
+  onDeleteGroup,
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState("");
   const organizationsMap = useMemo(() => buildOrganizationsMap(organizations), [organizations]);
+
+  function handleClose() {
+    setIsEditing(false);
+    setActionError("");
+    onClose();
+  }
+
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      "Удалить группу? Действие нельзя отменить."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleting(true);
+    setActionError("");
+
+    try {
+      await onDeleteGroup(groupDetail.id);
+      setIsEditing(false);
+    } catch (err) {
+      setActionError(`${err.status || ""} ${err.message}`.trim());
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <SectionCard
@@ -301,19 +332,32 @@ function LearningGroupDetailPanel({
                 </ActionButton>
               )}
 
+              {!isEditing && (
+                <ActionButton
+                  type="button"
+                  tone="red"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? "Удаляем..." : "Удалить"}
+                </ActionButton>
+              )}
+
               <ActionButton
                 type="button"
                 tone="light"
-                onClick={() => {
-                  setIsEditing(false);
-                  onClose();
-                }}
+                onClick={handleClose}
               >
                 Закрыть
               </ActionButton>
             </div>
           </div>
 
+          {actionError && (
+            <Alert title="Не удалось выполнить действие" tone="red">
+              {actionError}
+            </Alert>
+          )}
           {isEditing ? (
             <LearningGroupForm
               organizations={organizations}
@@ -369,6 +413,7 @@ export function GroupsPage({
   onCloseGroup,
   onCreateGroup,
   onUpdateGroup,
+  onDeleteGroup,
   onRefreshAdminData,
 }) {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -523,6 +568,7 @@ export function GroupsPage({
           error={selectedGroupError}
           onClose={onCloseGroup}
           onUpdateGroup={onUpdateGroup}
+          onDeleteGroup={onDeleteGroup}
         />
       )}
     </div>

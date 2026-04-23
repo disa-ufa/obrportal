@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -207,3 +207,19 @@ async def update_learning_group(
         )
 
     return build_learning_group_detail(group)
+
+
+@router.delete(
+    "/groups/{group_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+async def delete_learning_group(
+    group_id: str,
+    _: User = Depends(require_permission("org.groups.write")),
+    session: AsyncSession = Depends(get_db),
+) -> Response:
+    group = await get_learning_group_or_404(group_id, session)
+    await session.delete(group)
+    await session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

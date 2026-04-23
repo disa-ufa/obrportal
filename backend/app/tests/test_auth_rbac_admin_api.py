@@ -2059,3 +2059,53 @@ def test_learner_cannot_access_learning_groups_api() -> None:
     assert status == 403
     assert isinstance(payload, dict)
 
+def test_admin_can_delete_learning_group() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    organization_id = create_test_organization(token)
+    group = create_test_learning_group(token, organization_id)
+    group_id = str(group["id"])
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{group_id}",
+        token=token,
+    )
+    assert status == 204
+    assert payload is None
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/org/groups/{group_id}",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_admin_delete_learning_group_not_found_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "DELETE",
+        "/api/v1/org/groups/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_delete_learning_group() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    organization_id = create_test_organization(admin_token)
+    group = create_test_learning_group(admin_token, organization_id)
+    group_id = str(group["id"])
+
+    status, payload = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{group_id}",
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(payload, dict)

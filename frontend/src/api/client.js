@@ -184,6 +184,12 @@ export async function updateOrgLearningGroup(groupId, payload) {
   });
 }
 
+export async function deleteOrgLearningGroup(groupId) {
+  return request(`/api/v1/org/groups/${groupId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getAdminRoles() {
   return request("/api/v1/admin/roles");
 }

@@ -540,6 +540,33 @@ def main() -> int:
     assert isinstance(duplicate_learning_group, dict)
     checks.append("admin duplicate learning group create returns 409")
 
+    status, deleted_learning_group = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{created_group_id}",
+        token=admin_token,
+    )
+    assert_status(status, 204, "admin learning group delete")
+    assert deleted_learning_group is None
+    checks.append("admin learning group delete ok")
+
+    status, deleted_learning_group_detail = request_json(
+        "GET",
+        f"/api/v1/org/groups/{created_group_id}",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin deleted learning group detail")
+    assert isinstance(deleted_learning_group_detail, dict)
+    checks.append("admin deleted learning group detail returns 404")
+
+    status, missing_learning_group_delete = request_json(
+        "DELETE",
+        "/api/v1/org/groups/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin learning group delete 404")
+    assert isinstance(missing_learning_group_delete, dict)
+    checks.append("admin learning group delete 404 ok")
+
     status, roles = request_json("GET", "/api/v1/admin/roles", token=admin_token)
     assert_status(status, 200, "admin roles")
     assert isinstance(roles, list)
