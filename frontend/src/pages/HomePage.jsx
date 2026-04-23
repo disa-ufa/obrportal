@@ -94,7 +94,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
               </div>
               <button
                 type="button"
-                onClick={() => onOpenCourse(course.id)}
+                onClick={() => onOpenCourse(course.slug)}
                 className="mt-5 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
               >
                 Открыть карточку курса

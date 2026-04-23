@@ -1,8 +1,8 @@
 import { PUBLIC_COURSES } from "../data/publicCourses";
 
-export function CourseDetailPage({ courseId, onPageChange, onOpenCourse }) {
+export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse }) {
   const course =
-    PUBLIC_COURSES.find((item) => item.id === courseId) || PUBLIC_COURSES[0];
+    PUBLIC_COURSES.find((item) => item.slug === courseSlug) || PUBLIC_COURSES[0];
 
   if (!course) {
     return (
@@ -147,7 +147,7 @@ export function CourseDetailPage({ courseId, onPageChange, onOpenCourse }) {
               </div>
               <button
                 type="button"
-                onClick={() => onOpenCourse(item.id)}
+                onClick={() => onOpenCourse(item.slug)}
                 className="mt-4 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
               >
                 Открыть карточку

@@ -11,18 +11,19 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
+    "framer-motion": "latest",
+    "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "framer-motion": "latest",
-    "lucide-react": "latest"
+    "react-router-dom": "^7.14.2",
+    "typescript": "latest",
+    "vite": "latest"
   },
-"devDependencies": {
-  "@vitejs/plugin-react": "latest",
-  "vite": "latest",
-  "tailwindcss": "3.4.17",
-  "postcss": "8.4.49",
-  "autoprefixer": "10.4.20"
-}
+  "devDependencies": {
+    "@vitejs/plugin-react": "latest",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.4.49",
+    "tailwindcss": "3.4.17",
+    "vite": "latest"
+  }
 }

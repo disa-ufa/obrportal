@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { PublicShell } from "./components/layout/PublicShell";
 import {
@@ -99,18 +100,43 @@ function sortRoles(roles) {
   );
 }
 
-const PUBLIC_PAGES = new Set([
-  "home",
-  "catalog",
-  "course-detail",
-  "organization-info",
-  "verify-document",
-  "contacts",
-  "faq",
-  "privacy",
-  "offer",
-  "login",
-]);
+const PUBLIC_ROUTE_MAP = {
+  home: "/",
+  catalog: "/catalog",
+  "organization-info": "/organization-info",
+  "verify-document": "/verify-document",
+  contacts: "/contacts",
+  faq: "/faq",
+  privacy: "/privacy",
+  offer: "/offer",
+  login: "/login",
+};
+
+function getPublicPageFromPathname(pathname) {
+  if (pathname === "/") return "home";
+  if (pathname === "/catalog") return "catalog";
+  if (pathname.startsWith("/courses/")) return "course-detail";
+  if (pathname === "/organization-info") return "organization-info";
+  if (pathname === "/verify-document") return "verify-document";
+  if (pathname === "/contacts") return "contacts";
+  if (pathname === "/faq") return "faq";
+  if (pathname === "/privacy") return "privacy";
+  if (pathname === "/offer") return "offer";
+  if (pathname === "/login") return "login";
+  return "home";
+}
+
+function CourseDetailPublicRoute({ onPageChange, onOpenCourse }) {
+  const { slug } = useParams();
+
+  return (
+    <CourseDetailPage
+      courseSlug={slug}
+      onPageChange={onPageChange}
+      onOpenCourse={onOpenCourse}
+    />
+  );
+}
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -121,8 +147,7 @@ export default function App() {
   const [rbac, setRbac] = useState(null);
   const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
   const [adminDataLoadedAt, setAdminDataLoadedAt] = useState("");
-  const [currentPage, setCurrentPage] = useState("home");
-  const [selectedPublicCourseId, setSelectedPublicCourseId] = useState(null);
+  const [currentPage, setCurrentPage] = useState("dashboard");
   const [error, setError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
@@ -151,6 +176,9 @@ export default function App() {
   const [selectedAuditEvent, setSelectedAuditEvent] = useState(null);
   const [selectedAuditEventLoading, setSelectedAuditEventLoading] = useState(false);
   const [selectedAuditEventError, setSelectedAuditEventError] = useState("");
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   async function loadSystemStatus() {
     try {
@@ -219,7 +247,7 @@ export default function App() {
         setCurrentPage("dashboard");
         await loadAdminData();
       } else {
-        setCurrentPage("home");
+        setCurrentPage("dashboard");
       }
     } catch {
       clearToken();
@@ -243,9 +271,17 @@ export default function App() {
     bootstrapAuthState();
   }, []);
 
-  function handleOpenPublicCourse(courseId) {
-    setSelectedPublicCourseId(courseId);
-    setCurrentPage("course-detail");
+  function handleNavigatePublicPage(pageKey) {
+    if (pageKey === "dashboard" || pageKey === "admin") {
+      navigate("/admin");
+      return;
+    }
+
+    navigate(PUBLIC_ROUTE_MAP[pageKey] || "/");
+  }
+
+  function handleOpenPublicCourse(courseSlug) {
+    navigate(`/courses/${courseSlug}`);
   }
 
   async function handleLogin(event) {
@@ -268,10 +304,11 @@ export default function App() {
       if (userHasRole(currentUser, "admin")) {
         setCurrentPage("dashboard");
         await loadAdminData();
+        navigate("/admin", { replace: true });
       } else {
-        setCurrentPage("home");
         setAdminData(EMPTY_ADMIN_DATA);
         setAdminDataLoadedAt("");
+        navigate("/", { replace: true });
       }
     } catch (err) {
       setError(err.message);
@@ -729,7 +766,7 @@ export default function App() {
     setRbac(null);
     setAdminData(EMPTY_ADMIN_DATA);
     setAdminDataLoadedAt("");
-    setCurrentPage("home");
+    setCurrentPage("dashboard");
     setError("");
     setAuthLoading(false);
     setAdminLoading(false);
@@ -744,45 +781,45 @@ export default function App() {
 
   function renderCurrentPage() {
     if (currentPage === "home") {
-      return <HomePage onPageChange={setCurrentPage} onOpenCourse={handleOpenPublicCourse} />;
+      return <HomePage onPageChange={handleNavigatePublicPage} onOpenCourse={handleOpenPublicCourse} />;
     }
 
     if (currentPage === "catalog") {
-      return <CatalogPage onPageChange={setCurrentPage} onOpenCourse={handleOpenPublicCourse} />;
+      return <CatalogPage onPageChange={handleNavigatePublicPage} onOpenCourse={handleOpenPublicCourse} />;
     }
 
     if (currentPage === "course-detail") {
       return (
         <CourseDetailPage
-          courseId={selectedPublicCourseId}
-          onPageChange={setCurrentPage}
+          courseSlug={null}
+          onPageChange={handleNavigatePublicPage}
           onOpenCourse={handleOpenPublicCourse}
         />
       );
     }
 
     if (currentPage === "organization-info") {
-      return <OrganizationInfoPage onPageChange={setCurrentPage} />;
+      return <OrganizationInfoPage onPageChange={handleNavigatePublicPage} />;
     }
 
     if (currentPage === "verify-document") {
-      return <VerifyDocumentPage onPageChange={setCurrentPage} />;
+      return <VerifyDocumentPage onPageChange={handleNavigatePublicPage} />;
     }
 
     if (currentPage === "contacts") {
-      return <ContactsPage onPageChange={setCurrentPage} />;
+      return <ContactsPage onPageChange={handleNavigatePublicPage} />;
     }
 
     if (currentPage === "faq") {
-      return <FaqPage onPageChange={setCurrentPage} />;
+      return <FaqPage onPageChange={handleNavigatePublicPage} />;
     }
 
     if (currentPage === "privacy") {
-      return <PrivacyPage onPageChange={setCurrentPage} />;
+      return <PrivacyPage onPageChange={handleNavigatePublicPage} />;
     }
 
     if (currentPage === "offer") {
-      return <OfferPage onPageChange={setCurrentPage} />;
+      return <OfferPage onPageChange={handleNavigatePublicPage} />;
     }
 
     if (currentPage === "login") {
@@ -939,8 +976,9 @@ export default function App() {
     );
   }
 
-  const pageContent = renderCurrentPage();
-  const isPublicPage = PUBLIC_PAGES.has(currentPage);
+  const adminPageContent = renderCurrentPage();
+  const currentPublicPage = getPublicPageFromPathname(location.pathname);
+  const isAdminRoute = location.pathname === "/admin";
   const isAdmin = userHasRole(user, "admin");
   const authBadgeText = initializingAuth
     ? "initializing"
@@ -954,37 +992,124 @@ export default function App() {
       ? "blue"
       : "gray";
 
-  return isPublicPage ? (
+  if (isAdminRoute) {
+    if (initializingAuth) {
+      return (
+        <main className="min-h-screen bg-slate-50 p-6 text-slate-900">
+          <div className="mx-auto max-w-3xl rounded-[2rem] bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
+            Инициализация сессии...
+          </div>
+        </main>
+      );
+    }
+
+    if (!isAdmin) {
+      return <Navigate to="/login" replace />;
+    }
+
+    return (
+      <AppShell
+        health={health}
+        ready={ready}
+        user={user}
+        isAdmin={isAdmin}
+        authBadgeText={authBadgeText}
+        authBadgeTone={authBadgeTone}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        adminLoading={adminLoading}
+        adminDataLoadedAt={adminDataLoadedAt}
+        counts={{
+          users: adminData.users.length,
+          organizations: adminData.organizations.length,
+          groups: adminData.groups.length,
+          roles: adminData.roles.length,
+          permissions: adminData.permissions.length,
+          auditEvents: adminData.auditEvents.length,
+        }}
+      >
+        {adminPageContent}
+      </AppShell>
+    );
+  }
+
+  return (
     <PublicShell
       user={user}
       isAdmin={isAdmin}
-      currentPage={currentPage}
-      onPageChange={setCurrentPage}
+      currentPage={currentPublicPage}
+      onPageChange={handleNavigatePublicPage}
     >
-      {pageContent}
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <HomePage
+              onPageChange={handleNavigatePublicPage}
+              onOpenCourse={handleOpenPublicCourse}
+            />
+          }
+        />
+        <Route
+          path="/catalog"
+          element={
+            <CatalogPage
+              onPageChange={handleNavigatePublicPage}
+              onOpenCourse={handleOpenPublicCourse}
+            />
+          }
+        />
+        <Route
+          path="/courses/:slug"
+          element={
+            <CourseDetailPublicRoute
+              onPageChange={handleNavigatePublicPage}
+              onOpenCourse={handleOpenPublicCourse}
+            />
+          }
+        />
+        <Route
+          path="/organization-info"
+          element={<OrganizationInfoPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/verify-document"
+          element={<VerifyDocumentPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/contacts"
+          element={<ContactsPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/faq"
+          element={<FaqPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/privacy"
+          element={<PrivacyPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/offer"
+          element={<OfferPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/login"
+          element={
+            <AuthPage
+              email={email}
+              password={password}
+              loading={authLoading || initializingAuth}
+              error={error}
+              user={user}
+              onEmailChange={setEmail}
+              onPasswordChange={setPassword}
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+            />
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </PublicShell>
-  ) : (
-    <AppShell
-      health={health}
-      ready={ready}
-      user={user}
-      isAdmin={isAdmin}
-      authBadgeText={authBadgeText}
-      authBadgeTone={authBadgeTone}
-      currentPage={currentPage}
-      onPageChange={setCurrentPage}
-      adminLoading={adminLoading}
-      adminDataLoadedAt={adminDataLoadedAt}
-      counts={{
-        users: adminData.users.length,
-        organizations: adminData.organizations.length,
-        groups: adminData.groups.length,
-        roles: adminData.roles.length,
-        permissions: adminData.permissions.length,
-        auditEvents: adminData.auditEvents.length,
-      }}
-    >
-      {pageContent}
-    </AppShell>
   );
 }
