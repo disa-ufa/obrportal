@@ -26,6 +26,10 @@ def unique_role_code() -> str:
     return f"smoke_custom_{uuid4().hex[:10]}"
 
 
+def unique_group_code() -> str:
+    return f"smoke_group_{uuid4().hex[:10]}"
+
+
 def find_user_role_id(
     user_detail: dict,
     *,
@@ -445,6 +449,96 @@ def main() -> int:
     assert_status(status, 404, "admin deleted organization detail")
     assert isinstance(deleted_org_detail, dict)
     checks.append("admin deleted organization detail returns 404")
+
+    created_group_code = unique_group_code()
+    status, created_group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": created_organization_id,
+            "name": f"Smoke group {created_group_code}",
+            "code": created_group_code,
+            "description": "Smoke learning group",
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin learning group create")
+    assert isinstance(created_group, dict)
+    assert created_group["organization_id"] == created_organization_id
+    assert created_group["code"] == created_group_code
+    created_group_id = str(created_group["id"])
+    checks.append("admin learning group create ok")
+
+    status, learning_groups = request_json(
+        "GET",
+        "/api/v1/org/groups",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learning groups")
+    assert isinstance(learning_groups, list)
+    assert any(
+        isinstance(group, dict) and str(group.get("id")) == created_group_id
+        for group in learning_groups
+    )
+    checks.append("admin learning groups ok")
+
+    status, filtered_learning_groups = request_json(
+        "GET",
+        f"/api/v1/org/groups?organization_id={created_organization_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learning groups filter")
+    assert isinstance(filtered_learning_groups, list)
+    assert any(
+        isinstance(group, dict) and str(group.get("id")) == created_group_id
+        for group in filtered_learning_groups
+    )
+    assert all(
+        isinstance(group, dict) and group.get("organization_id") == created_organization_id
+        for group in filtered_learning_groups
+    )
+    checks.append("admin learning groups filter ok")
+
+    status, learning_group_detail = request_json(
+        "GET",
+        f"/api/v1/org/groups/{created_group_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learning group detail")
+    assert isinstance(learning_group_detail, dict)
+    assert learning_group_detail["id"] == created_group_id
+    assert learning_group_detail["organization_id"] == created_organization_id
+    checks.append("admin learning group detail ok")
+
+    status, updated_learning_group = request_json(
+        "PATCH",
+        f"/api/v1/org/groups/{created_group_id}",
+        {
+            "name": f"Smoke group updated {created_group_code}",
+            "description": None,
+            "is_active": False,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learning group update")
+    assert isinstance(updated_learning_group, dict)
+    assert updated_learning_group["id"] == created_group_id
+    assert updated_learning_group["is_active"] is False
+    checks.append("admin learning group update ok")
+
+    status, duplicate_learning_group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": created_organization_id,
+            "name": updated_learning_group["name"],
+            "code": unique_group_code(),
+        },
+        token=admin_token,
+    )
+    assert_status(status, 409, "admin duplicate learning group create")
+    assert isinstance(duplicate_learning_group, dict)
+    checks.append("admin duplicate learning group create returns 409")
 
     status, roles = request_json("GET", "/api/v1/admin/roles", token=admin_token)
     assert_status(status, 200, "admin roles")
@@ -959,6 +1053,44 @@ def main() -> int:
     assert_status(status, 403, "learner admin organization delete")
     checks.append("learner organization delete returns 403")
 
+    status, _ = request_json(
+        "GET",
+        "/api/v1/org/groups",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner org groups")
+    checks.append("learner learning groups returns 403")
+
+    status, _ = request_json(
+        "GET",
+        f"/api/v1/org/groups/{created_group_id}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner org group detail")
+    checks.append("learner learning group detail returns 403")
+
+    status, _ = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": created_organization_id,
+            "name": "Forbidden learner group",
+            "code": unique_group_code(),
+        },
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner org group create")
+    checks.append("learner learning group create returns 403")
+
+    status, _ = request_json(
+        "PATCH",
+        f"/api/v1/org/groups/{created_group_id}",
+        {"name": "Forbidden learner group update"},
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner org group update")
+    checks.append("learner learning group update returns 403")
+
     status, deleted_created_org = request_json(
         "DELETE",
         f"/api/v1/admin/organizations/{created_organization_id}",
@@ -1062,7 +1194,7 @@ def main() -> int:
     assert_status(status, 403, "learner admin audit-events filter")
     checks.append("learner audit-events filter returns 403")
 
-    print("Smoke auth/RBAC/admin API passed:")
+    print("Smoke auth/RBAC/admin/org API passed:")
     for check in checks:
         print(f" - {check}")
 
