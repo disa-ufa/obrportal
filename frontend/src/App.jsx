@@ -9,6 +9,7 @@ import {
   createAdminOrganization,
   createAdminRole,
   createAdminUser,
+  createOrgLearningGroup,
   deleteAdminOrganization,
   deleteAdminRole,
   deactivateAdminUser,
@@ -24,6 +25,8 @@ import {
   getAdminUsers,
   getCurrentUser,
   getHealth,
+  getOrgLearningGroupDetail,
+  getOrgLearningGroups,
   getReady,
   getStoredToken,
   login,
@@ -33,9 +36,11 @@ import {
   updateAdminOrganization,
   updateAdminRole,
   updateAdminUser,
+  updateOrgLearningGroup,
 } from "./api/client";
 import { AuditPage } from "./pages/AuditPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { GroupsPage } from "./pages/GroupsPage";
 import { OrganizationsPage } from "./pages/OrganizationsPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
 import { RolesPage } from "./pages/RolesPage";
@@ -44,6 +49,7 @@ import { UsersPage } from "./pages/UsersPage";
 const EMPTY_ADMIN_DATA = {
   users: [],
   organizations: [],
+  groups: [],
   roles: [],
   permissions: [],
   auditEvents: [],
@@ -59,6 +65,12 @@ function getNowLabel() {
 
 function sortOrganizations(organizations) {
   return [...organizations].sort((left, right) =>
+    left.name.localeCompare(right.name, "ru-RU")
+  );
+}
+
+function sortGroups(groups) {
+  return [...groups].sort((left, right) =>
     left.name.localeCompare(right.name, "ru-RU")
   );
 }
@@ -98,6 +110,10 @@ export default function App() {
   const [selectedOrganizationLoading, setSelectedOrganizationLoading] = useState(false);
   const [selectedOrganizationError, setSelectedOrganizationError] = useState("");
 
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [selectedGroupLoading, setSelectedGroupLoading] = useState(false);
+  const [selectedGroupError, setSelectedGroupError] = useState("");
+
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedRoleLoading, setSelectedRoleLoading] = useState(false);
   const [selectedRoleError, setSelectedRoleError] = useState("");
@@ -129,9 +145,10 @@ export default function App() {
     setError("");
 
     try {
-      const [users, organizations, roles, permissions, auditEvents] = await Promise.all([
+      const [users, organizations, groups, roles, permissions, auditEvents] = await Promise.all([
         getAdminUsers(),
         getAdminOrganizations(),
+        getOrgLearningGroups(),
         getAdminRoles(),
         getAdminPermissions(),
         getAdminAuditEvents(),
@@ -140,6 +157,7 @@ export default function App() {
       setAdminData({
         users,
         organizations,
+        groups: sortGroups(groups),
         roles,
         permissions,
         auditEvents,
@@ -182,6 +200,7 @@ export default function App() {
       setAdminDataLoadedAt("");
       clearSelectedUser();
       clearSelectedOrganization();
+      clearSelectedGroup();
       clearSelectedRole();
       clearSelectedPermission();
       clearSelectedAuditEvent();
@@ -202,6 +221,7 @@ export default function App() {
     setRbac(null);
     clearSelectedUser();
     clearSelectedOrganization();
+    clearSelectedGroup();
     clearSelectedRole();
     clearSelectedPermission();
     clearSelectedAuditEvent();
@@ -436,6 +456,54 @@ export default function App() {
     return deleted;
   }
 
+  async function handleOpenGroup(groupId) {
+    setSelectedGroup(null);
+    setSelectedGroupError("");
+    setSelectedGroupLoading(true);
+
+    try {
+      const detail = await getOrgLearningGroupDetail(groupId);
+      setSelectedGroup(detail);
+    } catch (err) {
+      setSelectedGroupError(`${err.status || ""} ${err.message}`);
+    } finally {
+      setSelectedGroupLoading(false);
+    }
+  }
+
+  async function handleCreateGroup(payload) {
+    const created = await createOrgLearningGroup(payload);
+
+    setAdminData((current) => ({
+      ...current,
+      groups: sortGroups([
+        ...current.groups.filter((group) => group.id !== created.id),
+        created,
+      ]),
+    }));
+
+    setSelectedGroup(created);
+
+    return created;
+  }
+
+  async function handleUpdateGroup(groupId, payload) {
+    const updated = await updateOrgLearningGroup(groupId, payload);
+
+    setAdminData((current) => ({
+      ...current,
+      groups: sortGroups(
+        current.groups.map((group) =>
+          group.id === updated.id ? updated : group
+        )
+      ),
+    }));
+
+    setSelectedGroup(updated);
+
+    return updated;
+  }
+
   async function handleCreateRole(payload) {
     const created = await createAdminRole(payload);
 
@@ -580,6 +648,12 @@ export default function App() {
     setSelectedOrganizationError("");
   }
 
+  function clearSelectedGroup() {
+    setSelectedGroup(null);
+    setSelectedGroupLoading(false);
+    setSelectedGroupError("");
+  }
+
   function clearSelectedRole() {
     setSelectedRole(null);
     setSelectedRoleLoading(false);
@@ -611,6 +685,7 @@ export default function App() {
     setInitializingAuth(false);
     clearSelectedUser();
     clearSelectedOrganization();
+    clearSelectedGroup();
     clearSelectedRole();
     clearSelectedPermission();
     clearSelectedAuditEvent();
@@ -656,6 +731,25 @@ export default function App() {
           onCreateOrganization={handleCreateOrganization}
           onUpdateOrganization={handleUpdateOrganization}
           onDeleteOrganization={handleDeleteOrganization}
+          onRefreshAdminData={loadAdminData}
+        />
+      );
+    }
+
+    if (currentPage === "groups") {
+      return (
+        <GroupsPage
+          user={user}
+          groups={adminData.groups}
+          organizations={adminData.organizations}
+          loading={adminLoading}
+          selectedGroup={selectedGroup}
+          selectedGroupLoading={selectedGroupLoading}
+          selectedGroupError={selectedGroupError}
+          onOpenGroup={handleOpenGroup}
+          onCloseGroup={clearSelectedGroup}
+          onCreateGroup={handleCreateGroup}
+          onUpdateGroup={handleUpdateGroup}
           onRefreshAdminData={loadAdminData}
         />
       );
@@ -764,6 +858,7 @@ export default function App() {
       counts={{
         users: adminData.users.length,
         organizations: adminData.organizations.length,
+        groups: adminData.groups.length,
         roles: adminData.roles.length,
         permissions: adminData.permissions.length,
         auditEvents: adminData.auditEvents.length,

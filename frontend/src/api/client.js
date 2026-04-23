@@ -150,6 +150,40 @@ export async function deleteAdminOrganization(organizationId) {
   });
 }
 
+export async function getOrgLearningGroups(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/org/groups${query ? `?${query}` : ""}`);
+}
+
+export async function getOrgLearningGroupDetail(groupId) {
+  return request(`/api/v1/org/groups/${groupId}`);
+}
+
+export async function createOrgLearningGroup(payload) {
+  return request("/api/v1/org/groups", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateOrgLearningGroup(groupId, payload) {
+  return request(`/api/v1/org/groups/${groupId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getAdminRoles() {
   return request("/api/v1/admin/roles");
 }

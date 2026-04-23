@@ -1,9 +1,10 @@
-﻿import { StatusBadge } from "../ui/StatusBadge";
+import { StatusBadge } from "../ui/StatusBadge";
 
 const NAV_ITEMS = [
   { key: "dashboard", label: "Обзор" },
   { key: "users", label: "Пользователи" },
   { key: "organizations", label: "Организации" },
+  { key: "groups", label: "Группы" },
   { key: "roles", label: "Роли" },
   { key: "permissions", label: "Права" },
   { key: "audit", label: "Аудит" },
@@ -26,6 +27,7 @@ export function AppShell({
   function getCount(key) {
     if (key === "users") return counts.users;
     if (key === "organizations") return counts.organizations;
+    if (key === "groups") return counts.groups;
     if (key === "roles") return counts.roles;
     if (key === "permissions") return counts.permissions;
     if (key === "audit") return counts.auditEvents;
@@ -61,7 +63,7 @@ export function AppShell({
               </h1>
               <p className="mt-3 max-w-3xl text-slate-600">
                 Рабочий back-office каркас: auth, JWT, RBAC, admin API,
-                страницы пользователей, организаций, ролей, прав и журнала аудита.
+                страницы пользователей, организаций, групп, ролей, прав и журнала аудита.
               </p>
               <div className="mt-4">
                 <StatusBadge tone="gray">
