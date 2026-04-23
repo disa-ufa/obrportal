@@ -53,7 +53,6 @@ import { OfferPage } from "./pages/OfferPage";
 import { OrganizationInfoPage } from "./pages/OrganizationInfoPage";
 import { OrganizationsPage } from "./pages/OrganizationsPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
-import { PublicInfoPage } from "./pages/PublicInfoPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { RolesPage } from "./pages/RolesPage";
 import { UsersPage } from "./pages/UsersPage";
