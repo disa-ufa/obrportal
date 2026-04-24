@@ -3221,3 +3221,62 @@ def test_learner_cannot_download_admin_document() -> None:
     )
 
     assert response.status_code == 403
+
+
+def test_admin_can_filter_admin_documents() -> None:
+    from urllib.parse import urlencode
+
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    matching_document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Unique filtered document",
+        document_type="Сертификат фильтра",
+        status="draft",
+    )
+
+    create_test_document_record_in_db(
+        user_id=user_id,
+        title="Another available document",
+        document_type="Удостоверение",
+        status="available",
+    )
+
+    query = urlencode(
+        {
+            "user_id": user_id,
+            "status": "draft",
+            "document_type": "Сертификат",
+            "q": matching_document["document_number"],
+        }
+    )
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/admin/documents?{query}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, list)
+    assert any(item["id"] == matching_document["id"] for item in payload)
+    assert all(item["status"] == "draft" for item in payload)
+    assert all(item["user_id"] == user_id for item in payload)
+
+
+def test_admin_documents_invalid_status_filter_returns_422() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/documents?status=unknown",
+        token=token,
+    )
+
+    assert status == 422
+    assert isinstance(payload, dict)

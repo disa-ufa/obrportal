@@ -81,6 +81,9 @@ export function DocumentsPage() {
   const [documents, setDocuments] = useState([]);
   const [users, setUsers] = useState([]);
   const [filterUserId, setFilterUserId] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterDocumentType, setFilterDocumentType] = useState("");
+  const [filterQuery, setFilterQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editSavingId, setEditSavingId] = useState("");
@@ -112,13 +115,24 @@ export function DocumentsPage() {
     [form.user_id, users]
   );
 
-  async function loadData(nextFilterUserId = filterUserId) {
+  function buildDocumentFilters(overrides = {}) {
+    return {
+      user_id: overrides.user_id ?? filterUserId,
+      status: overrides.status ?? filterStatus,
+      document_type: overrides.document_type ?? filterDocumentType,
+      q: overrides.q ?? filterQuery,
+    };
+  }
+
+  async function loadData(nextFilters = null) {
     try {
       setLoading(true);
       setError("");
 
+      const filters = nextFilters ?? buildDocumentFilters();
+
       const [documentsResponse, usersResponse] = await Promise.all([
-        getAdminDocuments(nextFilterUserId ? { user_id: nextFilterUserId } : {}),
+        getAdminDocuments(filters),
         getAdminUsers(),
       ]);
 
@@ -132,7 +146,7 @@ export function DocumentsPage() {
   }
 
   useEffect(() => {
-    loadData("");
+    loadData({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -223,7 +237,7 @@ export function DocumentsPage() {
 
       setSuccessMessage(`Документ создан: ${created.document_number}`);
       resetForm();
-      await loadData(filterUserId);
+      await loadData(buildDocumentFilters());
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось создать документ."}`.trim());
     } finally {
@@ -276,7 +290,7 @@ export function DocumentsPage() {
 
       setSuccessMessage(`Документ обновлен: ${updated.document_number}`);
       resetEditState();
-      await loadData(filterUserId);
+      await loadData(buildDocumentFilters());
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось обновить документ."}`.trim());
     } finally {
@@ -324,7 +338,7 @@ export function DocumentsPage() {
       }
 
       setSuccessMessage(`Документ удален: ${documentItem.document_number}`);
-      await loadData(filterUserId);
+      await loadData(buildDocumentFilters());
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось удалить документ."}`.trim());
     } finally {
@@ -334,12 +348,15 @@ export function DocumentsPage() {
 
   async function handleApplyFilter(event) {
     event.preventDefault();
-    await loadData(filterUserId);
+    await loadData(buildDocumentFilters());
   }
 
   async function handleResetFilter() {
     setFilterUserId("");
-    await loadData("");
+    setFilterStatus("");
+    setFilterDocumentType("");
+    setFilterQuery("");
+    await loadData({});
   }
 
   return (
@@ -492,7 +509,15 @@ export function DocumentsPage() {
         </SectionCard>
 
         <SectionCard title="Список документов" subtitle="Документы из /api/v1/admin/documents">
-          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
+          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr_1fr_auto_auto]">
+            <input
+              type="search"
+              value={filterQuery}
+              onChange={(event) => setFilterQuery(event.target.value)}
+              placeholder="Поиск: номер, название, e-mail, ФИО"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+
             <select
               value={filterUserId}
               onChange={(event) => setFilterUserId(event.target.value)}
@@ -505,6 +530,27 @@ export function DocumentsPage() {
                 </option>
               ))}
             </select>
+
+            <select
+              value={filterStatus}
+              onChange={(event) => setFilterStatus(event.target.value)}
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="">Все статусы</option>
+              {DOCUMENT_STATUSES.map((statusItem) => (
+                <option key={statusItem.value} value={statusItem.value}>
+                  {statusItem.label}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              value={filterDocumentType}
+              onChange={(event) => setFilterDocumentType(event.target.value)}
+              placeholder="Тип документа"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
 
             <button
               type="submit"

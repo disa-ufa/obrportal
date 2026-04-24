@@ -259,6 +259,15 @@ def main() -> int:
     assert isinstance(admin_documents, list)
     checks.append("admin documents list ok")
 
+    status, filtered_admin_documents = request_json(
+        "GET",
+        "/api/v1/admin/documents?status=available&limit=5",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin documents filters")
+    assert isinstance(filtered_admin_documents, list)
+    checks.append("admin documents filters ok")
+
     status, missing_admin_document_update = request_json(
         "PATCH",
         "/api/v1/admin/documents/00000000-0000-0000-0000-000000000000",

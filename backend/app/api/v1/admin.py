@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
@@ -1805,6 +1805,9 @@ async def get_admin_document_row_or_404(
 @router.get("/documents", response_model=list[AdminDocumentItem])
 async def list_admin_documents(
     user_id: str | None = Query(default=None, max_length=64),
+    status_filter: str | None = Query(default=None, alias="status", max_length=32),
+    document_type: str | None = Query(default=None, max_length=128),
+    q: str | None = Query(default=None, max_length=255),
     limit: int = Query(default=100, ge=1, le=300),
     _: User = Depends(require_permission("admin.users.read")),
     session: AsyncSession = Depends(get_db),
@@ -1835,13 +1838,31 @@ async def list_admin_documents(
     if user_id:
         query = query.where(DocumentRecord.user_id == user_id.strip())
 
+    if status_filter:
+        query = query.where(DocumentRecord.status == normalize_document_status(status_filter))
+
+    if document_type and document_type.strip():
+        query = query.where(DocumentRecord.document_type.ilike(f"%{document_type.strip()}%"))
+
+    if q and q.strip():
+        q_filter = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                DocumentRecord.document_number.ilike(q_filter),
+                DocumentRecord.title.ilike(q_filter),
+                DocumentRecord.document_type.ilike(q_filter),
+                User.email.ilike(q_filter),
+                User.full_name.ilike(q_filter),
+                Course.title.ilike(q_filter),
+            )
+        )
+
     result = await session.execute(query)
 
     return [
         build_admin_document_item(row)
         for row in result.all()
     ]
-
 
 @router.post("/documents", response_model=AdminDocumentItem, status_code=status.HTTP_201_CREATED)
 async def create_admin_document(
