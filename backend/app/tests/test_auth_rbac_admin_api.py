@@ -4045,3 +4045,83 @@ def test_guest_cannot_start_or_complete_course() -> None:
 
     assert status == 401
     assert isinstance(complete_payload, dict)
+
+
+def test_account_course_progress_dates_are_returned() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "Learner Course Dates",
+            "description": "Course progress dates",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, enrolled = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(enrolled, dict)
+    assert enrolled["started_at"] is None
+    assert enrolled["completed_at"] is None
+
+    enrollment_id = enrolled["enrollment_id"]
+
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["status"] == "active"
+    assert started["started_at"] is not None
+    assert started["completed_at"] is None
+
+    status, completed = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/complete",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(completed, dict)
+    assert completed["status"] == "completed"
+    assert completed["started_at"] is not None
+    assert completed["completed_at"] is not None
+
+    status, account_courses = request_json(
+        "GET",
+        "/api/v1/account/courses",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(account_courses, dict)
+
+    item = next(
+        candidate
+        for candidate in account_courses["items"]
+        if candidate["enrollment_id"] == enrollment_id
+    )
+
+    assert item["status"] == "completed"
+    assert item["started_at"] is not None
+    assert item["completed_at"] is not None

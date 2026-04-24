@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel
 
 from app.schemas.auth import CurrentUserResponse
@@ -26,7 +28,8 @@ class AccountCourseItemResponse(BaseModel):
     organization_name: str | None = None
     learning_group_id: str | None = None
     learning_group_name: str | None = None
-
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
 class AccountCoursesResponse(BaseModel):
     total: int

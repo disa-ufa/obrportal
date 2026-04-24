@@ -93,6 +93,8 @@ async def get_account_courses(
         select(
             Enrollment.id.label("enrollment_id"),
             Enrollment.status.label("status"),
+            Enrollment.started_at.label("started_at"),
+            Enrollment.completed_at.label("completed_at"),
             Enrollment.organization_id.label("organization_id"),
             Enrollment.learning_group_id.label("learning_group_id"),
             Course.id.label("course_id"),
@@ -127,6 +129,8 @@ async def get_account_courses(
             organization_name=row.organization_name,
             learning_group_id=row.learning_group_id,
             learning_group_name=row.learning_group_name,
+        started_at=getattr(row, "started_at", None),
+        completed_at=getattr(row, "completed_at", None),
         )
         for row in result.all()
     ]
@@ -244,6 +248,8 @@ def build_account_course_item_from_row(row) -> AccountCourseItemResponse:
         document_type=row.document_type,
         organization_name=row.organization_name,
         learning_group_name=row.learning_group_name,
+        started_at=getattr(row, "started_at", None),
+        completed_at=getattr(row, "completed_at", None),
     )
 
 
@@ -257,6 +263,8 @@ async def get_account_course_row_or_404(
             Enrollment.id.label("enrollment_id"),
             Enrollment.course_id.label("course_id"),
             Enrollment.status.label("status"),
+            Enrollment.started_at.label("started_at"),
+            Enrollment.completed_at.label("completed_at"),
             Course.slug.label("course_slug"),
             Course.title.label("course_title"),
             Course.description.label("course_description"),

@@ -49,6 +49,19 @@ function getDocumentStatusLabel(status) {
   }
 }
 
+function formatDateTime(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleString("ru-RU");
+}
 export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [summary, setSummary] = useState(null);
   const [coursesResponse, setCoursesResponse] = useState(null);
@@ -419,6 +432,27 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   </div>
                 </div>
 
+                {(course.started_at || course.completed_at) && (
+                  <div className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                      <div className="text-xs uppercase tracking-wide text-slate-500">
+                        Начато
+                      </div>
+                      <div className="mt-2 font-semibold text-slate-900">
+                        {formatDateTime(course.started_at)}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                      <div className="text-xs uppercase tracking-wide text-slate-500">
+                        Завершено
+                      </div>
+                      <div className="mt-2 font-semibold text-slate-900">
+                        {formatDateTime(course.completed_at)}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     type="button"
