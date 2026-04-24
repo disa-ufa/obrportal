@@ -1,23 +1,41 @@
 import { PUBLIC_COURSES } from "../data/publicCourses";
 
 export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse }) {
-  const course =
-    PUBLIC_COURSES.find((item) => item.slug === courseSlug) || PUBLIC_COURSES[0];
+  const course = PUBLIC_COURSES.find((item) => item.slug === courseSlug) || null;
 
   if (!course) {
     return (
-      <section className="rounded-[2rem] bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
-        <div className="text-xl font-bold text-slate-900">
-          Карточка курса пока недоступна
-        </div>
-        <button
-          type="button"
-          onClick={() => onPageChange("catalog")}
-          className="mt-5 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          В каталог
-        </button>
-      </section>
+      <div className="space-y-6">
+        <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+          <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+            Карточка курса
+          </div>
+          <h1 className="mt-2 text-4xl font-bold text-slate-900">
+            Курс не найден
+          </h1>
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
+            По этому адресу нет опубликованной карточки курса. Вернитесь в каталог
+            и выберите доступную программу.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => onPageChange("catalog")}
+              className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              В каталог
+            </button>
+            <button
+              type="button"
+              onClick={() => onPageChange("home")}
+              className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            >
+              На главную
+            </button>
+          </div>
+        </section>
+      </div>
     );
   }
 
