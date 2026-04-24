@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { enrollAccountCourse, getPublicCourseDetail, getPublicCourses } from "../api/client";
+import { enrollAccountCourse, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
 
 function formatCourseDocument(course) {
   return course?.document_type || course?.document || "Итоговый документ";
@@ -17,6 +17,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [enrollLoading, setEnrollLoading] = useState(false);
   const [enrollError, setEnrollError] = useState("");
   const [enrollSuccess, setEnrollSuccess] = useState("");
+  const [existingEnrollment, setExistingEnrollment] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -25,6 +26,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       if (!courseSlug) {
         setCourse(null);
         setRelatedCourses([]);
+        setExistingEnrollment(null);
         setLoading(false);
         setError("Курс не выбран.");
         return;
@@ -34,9 +36,10 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         setLoading(true);
         setError("");
 
-        const [courseResponse, coursesResponse] = await Promise.all([
+        const [courseResponse, coursesResponse, accountCoursesResponse] = await Promise.all([
           getPublicCourseDetail(courseSlug),
           getPublicCourses({ limit: 6 }),
+          user ? getAccountCourses() : Promise.resolve(null),
         ]);
 
         if (!isMounted) {
@@ -49,6 +52,18 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
             ? coursesResponse.filter((item) => item.slug !== courseResponse.slug).slice(0, 2)
             : []
         );
+
+        const accountCourses = Array.isArray(accountCoursesResponse?.items)
+          ? accountCoursesResponse.items
+          : [];
+
+        setExistingEnrollment(
+          accountCourses.find(
+            (item) =>
+              item.course_id === courseResponse.id ||
+              item.course_slug === courseResponse.slug
+          ) || null
+        );
       } catch (err) {
         if (!isMounted) {
           return;
@@ -56,6 +71,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
 
         setCourse(null);
         setRelatedCourses([]);
+        setExistingEnrollment(null);
         setError(`${err.status || ""} ${err.message || "Программа не найдена."}`.trim());
       } finally {
         if (isMounted) {
@@ -69,7 +85,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     return () => {
       isMounted = false;
     };
-  }, [courseSlug]);
+  }, [courseSlug, user?.id]);
 
   async function handleEnroll() {
     if (!course) {
@@ -81,16 +97,33 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       return;
     }
 
+    if (existingEnrollment) {
+      onPageChange("account");
+      return;
+    }
+
     try {
       setEnrollLoading(true);
       setEnrollError("");
       setEnrollSuccess("");
 
-      await enrollAccountCourse(course.id);
+      const createdEnrollment = await enrollAccountCourse(course.id);
 
+      setExistingEnrollment(createdEnrollment);
       setEnrollSuccess("Вы записаны на программу. Курс добавлен в личный кабинет.");
       onPageChange("account");
     } catch (err) {
+      if (err.status === 409) {
+        setExistingEnrollment({
+          course_id: course.id,
+          course_slug: course.slug,
+          status: "assigned",
+        });
+        setEnrollError("");
+        setEnrollSuccess("Вы уже записаны на эту программу. Курс доступен в личном кабинете.");
+        return;
+      }
+
       setEnrollError(`${err.status || ""} ${err.message || "Не удалось записаться на программу."}`.trim());
     } finally {
       setEnrollLoading(false);
@@ -157,6 +190,12 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           </p>
         )}
 
+        {existingEnrollment && (
+          <div className="mt-6 rounded-2xl bg-blue-50 p-4 text-sm text-blue-700 ring-1 ring-blue-200">
+            Вы уже записаны на эту программу. Перейдите в личный кабинет, чтобы открыть назначенный курс.
+          </div>
+        )}
+
         {enrollError && (
           <div className="mt-6 rounded-2xl bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
             {enrollError}
@@ -199,7 +238,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
             disabled={enrollLoading}
             className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {enrollLoading ? "Записываем..." : user ? "Записаться" : "Зарегистрироваться и записаться"}
+            {enrollLoading ? "Записываем..." : existingEnrollment ? "Открыть личный кабинет" : user ? "Записаться" : "Зарегистрироваться и записаться"}
           </button>
 
           <button
