@@ -14,10 +14,11 @@ export function clearToken() {
 
 async function request(path, options = {}) {
   const token = getStoredToken();
+  const isFormDataBody = typeof FormData !== "undefined" && options.body instanceof FormData;
 
   const headers = {
     "Accept": "application/json",
-    ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...(options.body && !isFormDataBody ? { "Content-Type": "application/json" } : {}),
     ...(token ? { "Authorization": `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
@@ -348,4 +349,28 @@ export async function getAdminAuditEvents(filters = {}) {
 
 export async function getAdminAuditEventDetail(auditEventId) {
   return request(`/api/v1/admin/audit-events/${auditEventId}`);
+}
+
+
+export async function getAdminDocuments(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/admin/documents${query ? `?${query}` : ""}`);
+}
+
+export async function createAdminDocument(payload) {
+  return request("/api/v1/admin/documents", {
+    method: "POST",
+    body: payload,
+  });
 }

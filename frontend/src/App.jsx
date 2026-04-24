@@ -50,6 +50,7 @@ import { CatalogPage } from "./pages/CatalogPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { ContactsPage } from "./pages/ContactsPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { DocumentsPage } from "./pages/DocumentsPage";
 import { FaqPage } from "./pages/FaqPage";
 import { GroupsPage } from "./pages/GroupsPage";
 import { HomePage } from "./pages/HomePage";
@@ -1319,6 +1320,20 @@ export default function App() {
             )
           }
         />
+          <Route
+            path="/admin/documents"
+            element={
+              user ? (
+                isAdmin ? (
+                  <DocumentsPage />
+                ) : (
+                  <Navigate to="/account" replace />
+                )
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
         <Route path="*" element={<NotFoundPage onPageChange={handleNavigatePublicPage} />} />
       </Routes>
     </PublicShell>

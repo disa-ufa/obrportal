@@ -19,6 +19,7 @@ PUBLIC_ROUTES = [
     "/register",
     "/account",
     "/admin",
+        "/admin/documents",
     "/unknown-page",
 ]
 
