@@ -1,6 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getPublicCourseDetail } from "../api/client";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
+
+const PENDING_ENROLLMENT_STORAGE_KEY = "obrportal_pending_enrollment_slug";
+
+function getPendingEnrollmentSlug() {
+  try {
+    return localStorage.getItem(PENDING_ENROLLMENT_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function formatCourseDocument(course) {
+  return course?.document_type || "Итоговый документ";
+}
 
 export function RegisterPage({ onPageChange, onRegister, loading, error }) {
   const [fullName, setFullName] = useState("");
@@ -9,6 +24,51 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
   const [password, setPassword] = useState("");
   const [consent, setConsent] = useState(false);
   const [localError, setLocalError] = useState("");
+
+  const [pendingCourse, setPendingCourse] = useState(null);
+  const [pendingCourseLoading, setPendingCourseLoading] = useState(false);
+  const [pendingCourseError, setPendingCourseError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const pendingSlug = getPendingEnrollmentSlug();
+
+    if (!pendingSlug) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    async function loadPendingCourse() {
+      try {
+        setPendingCourseLoading(true);
+        setPendingCourseError("");
+
+        const course = await getPublicCourseDetail(pendingSlug);
+
+        if (!cancelled) {
+          setPendingCourse(course);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPendingCourse(null);
+          setPendingCourseError(
+            `${err.status || ""} ${err.message || "Не удалось загрузить выбранную программу."}`.trim()
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setPendingCourseLoading(false);
+        }
+      }
+    }
+
+    loadPendingCourse();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -47,6 +107,33 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
           <Alert title="Не удалось зарегистрироваться" tone="red">
             {error}
           </Alert>
+        )}
+
+        {pendingCourseLoading && (
+          <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+            Проверяем выбранную программу...
+          </div>
+        )}
+
+        {pendingCourse && (
+          <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-200">
+            <div className="font-semibold text-blue-900">
+              После регистрации вы будете записаны на программу:
+            </div>
+            <div className="mt-2 text-base font-bold text-blue-950">
+              {pendingCourse.title}
+            </div>
+            <div className="mt-2 text-blue-800">
+              {pendingCourse.hours ? `${pendingCourse.hours} часов` : "Объём уточняется"} ·{" "}
+              {formatCourseDocument(pendingCourse)}
+            </div>
+          </div>
+        )}
+
+        {pendingCourseError && (
+          <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
+            {pendingCourseError}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -140,18 +227,28 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
 
       <SectionCard
         title="Что будет дальше"
-        subtitle="Следующий проход уже будет про наполнение кабинета реальными данными."
+        subtitle="После регистрации пользователь попадает в личный кабинет."
       >
         <div className="space-y-4 text-sm leading-6 text-slate-600">
           <div className="rounded-2xl bg-green-50 p-4 text-green-800 ring-1 ring-green-200">
             После успешной регистрации пользователь автоматически входит в систему
             и попадает в личный кабинет.
           </div>
+
+          {pendingCourse ? (
+            <div className="rounded-2xl bg-blue-50 p-4 text-blue-800 ring-1 ring-blue-200">
+              Выбранная программа будет автоматически добавлена в раздел
+              «Назначенные программы».
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              После входа можно выбрать программу в каталоге и записаться на обучение.
+            </div>
+          )}
+
           <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            Дальше сюда подключим реальные данные по программам, прогрессу и документам.
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            Следом можно будет добавить человеко-понятные ошибки и подтверждение e-mail.
+            Следом можно будет добавить человеко-понятные ошибки, подтверждение e-mail
+            и полноценную анкету слушателя.
           </div>
         </div>
       </SectionCard>
