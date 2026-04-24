@@ -8,6 +8,7 @@ import {
   assignAdminUserRole,
   checkAdminRbac,
   clearToken,
+  enrollAccountCourse,
   createAdminOrganization,
   createAdminRole,
   createAdminUser,
@@ -30,6 +31,7 @@ import {
   getHealth,
   getOrgLearningGroupDetail,
   getOrgLearningGroups,
+  getPublicCourseDetail,
   getReady,
   getStoredToken,
   storeToken,
@@ -437,6 +439,66 @@ export default function App() {
     navigate(`/courses/${courseSlug}`);
   }
 
+  function getPendingEnrollmentSlug() {
+    try {
+      return localStorage.getItem("obrportal_pending_enrollment_slug") || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function clearPendingEnrollmentSlug() {
+    try {
+      localStorage.removeItem("obrportal_pending_enrollment_slug");
+    } catch {
+      // localStorage может быть недоступен в приватном режиме или тестовой среде
+    }
+  }
+
+  async function completePendingEnrollmentIfNeeded() {
+    const pendingSlug = getPendingEnrollmentSlug();
+
+    if (!pendingSlug) {
+      return null;
+    }
+
+    try {
+      const course = await getPublicCourseDetail(pendingSlug);
+      await enrollAccountCourse(course.id);
+      clearPendingEnrollmentSlug();
+
+      return {
+        status: "created",
+        slug: pendingSlug,
+      };
+    } catch (err) {
+      if (err.status === 409) {
+        clearPendingEnrollmentSlug();
+
+        return {
+          status: "already_enrolled",
+          slug: pendingSlug,
+        };
+      }
+
+      if (err.status === 404) {
+        clearPendingEnrollmentSlug();
+
+        return {
+          status: "not_found",
+          slug: pendingSlug,
+        };
+      }
+
+      setError(`${err.status || ""} ${err.message || "Не удалось автоматически записать на выбранную программу."}`.trim());
+
+      return {
+        status: "failed",
+        slug: pendingSlug,
+      };
+    }
+  }
+
   async function handleRegister(payload) {
     setAuthLoading(true);
     setError("");
@@ -455,6 +517,7 @@ export default function App() {
       } else {
         setAdminData(EMPTY_ADMIN_DATA);
         setAdminDataLoadedAt("");
+        await completePendingEnrollmentIfNeeded();
         navigate("/account", { replace: true });
       }
 
@@ -493,6 +556,7 @@ export default function App() {
       } else {
         setAdminData(EMPTY_ADMIN_DATA);
         setAdminDataLoadedAt("");
+        await completePendingEnrollmentIfNeeded();
         navigate("/account", { replace: true });
       }
     } catch (err) {

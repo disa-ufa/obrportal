@@ -93,6 +93,12 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     }
 
     if (!user) {
+      try {
+        localStorage.setItem("obrportal_pending_enrollment_slug", course.slug);
+      } catch {
+        // localStorage может быть недоступен в приватном режиме или тестовой среде
+      }
+
       onPageChange("register");
       return;
     }
