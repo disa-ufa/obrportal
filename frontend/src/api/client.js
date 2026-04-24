@@ -382,3 +382,10 @@ export async function updateAdminDocument(documentId, payload) {
     body: payload,
   });
 }
+
+
+export async function deleteAdminDocument(documentId) {
+  return request(`/api/v1/admin/documents/${documentId}`, {
+    method: "DELETE",
+  });
+}

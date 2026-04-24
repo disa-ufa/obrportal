@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   createAdminDocument,
+  deleteAdminDocument,
   getAdminDocuments,
   getAdminUsers,
   updateAdminDocument,
@@ -82,6 +83,7 @@ export function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editSavingId, setEditSavingId] = useState("");
+  const [deleteSavingId, setDeleteSavingId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -277,6 +279,35 @@ export function DocumentsPage() {
       setError(`${err.status || ""} ${err.message || "Не удалось обновить документ."}`.trim());
     } finally {
       setEditSavingId("");
+    }
+  }
+
+  async function handleDelete(documentItem) {
+    const confirmed = window.confirm(
+      `Удалить документ ${documentItem.document_number}? Действие нельзя отменить.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeleteSavingId(documentItem.id);
+      setError("");
+      setSuccessMessage("");
+
+      await deleteAdminDocument(documentItem.id);
+
+      if (editingDocumentId === documentItem.id) {
+        resetEditState();
+      }
+
+      setSuccessMessage(`Документ удален: ${documentItem.document_number}`);
+      await loadData(filterUserId);
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message || "Не удалось удалить документ."}`.trim());
+    } finally {
+      setDeleteSavingId("");
     }
   }
 
@@ -481,6 +512,7 @@ export function DocumentsPage() {
               {documents.map((documentItem) => {
                 const isEditing = editingDocumentId === documentItem.id;
                 const isEditSaving = editSavingId === documentItem.id;
+                const isDeleteSaving = deleteSavingId === documentItem.id;
 
                 return (
                   <article
@@ -563,9 +595,19 @@ export function DocumentsPage() {
                           <button
                             type="button"
                             onClick={() => handleStartEdit(documentItem)}
-                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                            disabled={isDeleteSaving}
+                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Редактировать
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(documentItem)}
+                            disabled={isDeleteSaving}
+                            className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isDeleteSaving ? "Удаляем..." : "Удалить"}
                           </button>
                         </div>
                       </>
