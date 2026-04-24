@@ -39,20 +39,13 @@ class AccountDocumentItemResponse(BaseModel):
     document_type: str
     title: str
     status: str
-    file_url: str | None = None
     course_id: str | None = None
     course_slug: str | None = None
     course_title: str | None = None
     enrollment_id: str | None = None
+    file_available: bool = False
 
 
 class AccountDocumentsResponse(BaseModel):
     total: int
     items: list[AccountDocumentItemResponse]
-
-
-class AccountDocumentDownloadResponse(BaseModel):
-    id: str
-    document_number: str
-    title: str
-    file_url: str

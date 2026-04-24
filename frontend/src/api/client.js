@@ -75,8 +75,71 @@ export async function getAccountDocuments() {
   return request("/api/v1/account/documents");
 }
 
-export async function getAccountDocumentDownload(documentId) {
-  return request(`/api/v1/account/documents/${documentId}/download`);
+function extractDownloadFilename(response, fallback = "document.bin") {
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+
+  const plainMatch = disposition.match(/filename="([^"]+)"/i) || disposition.match(/filename=([^;]+)/i);
+
+  if (plainMatch?.[1]) {
+    return plainMatch[1].trim().replace(/^"|"$/g, "");
+  }
+
+  return fallback;
+}
+
+export async function downloadAccountDocument(documentId) {
+  const token = getStoredToken();
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/account/documents/${documentId}/download`, {
+    method: "GET",
+    headers: {
+      "Accept": "application/octet-stream",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    let data = null;
+
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+
+    const message = data?.detail || `HTTP ${response.status}`;
+    const error = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    error.status = response.status;
+    error.payload = data;
+    throw error;
+  }
+
+  const blob = await response.blob();
+  const filename = extractDownloadFilename(response, `document-${documentId}.bin`);
+  const objectUrl = window.URL.createObjectURL(blob);
+
+  try {
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.setTimeout(() => {
+      window.URL.revokeObjectURL(objectUrl);
+    }, 0);
+  }
 }
 
 export async function verifyPublicDocument(number) {

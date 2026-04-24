@@ -2494,8 +2494,11 @@ def create_test_document_record_in_db(
     document_type: str = "Сертификат",
     status: str = "available",
     file_url: str | None = None,
+    storage_content: bytes | None = None,
+    storage_extension: str = ".pdf",
 ) -> dict:
     import asyncio
+    from pathlib import Path
     from uuid import uuid4
 
     import app.db.base  # noqa: F401
@@ -2505,6 +2508,17 @@ def create_test_document_record_in_db(
 
     document_title = title or f"Document {uuid4().hex[:8]}"
     document_number = unique_document_number()
+    storage_path = None
+
+    if storage_content is not None:
+        storage_root = Path(settings.document_storage_dir)
+        storage_root.mkdir(parents=True, exist_ok=True)
+
+        relative_path = Path("tests") / f"{document_number.lower()}{storage_extension}"
+        absolute_path = storage_root / relative_path
+        absolute_path.parent.mkdir(parents=True, exist_ok=True)
+        absolute_path.write_bytes(storage_content)
+        storage_path = relative_path.as_posix()
 
     async def _create() -> dict:
         engine = create_async_engine(settings.database_url, future=True)
@@ -2520,6 +2534,7 @@ def create_test_document_record_in_db(
                     document_type=document_type,
                     title=document_title,
                     status=status,
+                    storage_path=storage_path,
                     file_url=file_url,
                 )
                 session.add(document)
@@ -2534,12 +2549,13 @@ def create_test_document_record_in_db(
                     "status": document.status,
                     "course_id": str(document.course_id) if document.course_id else None,
                     "enrollment_id": str(document.enrollment_id) if document.enrollment_id else None,
+                    "storage_path": document.storage_path,
+                    "file_available": bool(document.storage_path),
                 }
         finally:
             await engine.dispose()
 
     return asyncio.run(_create())
-
 
 def test_admin_can_get_account_documents() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -2648,6 +2664,8 @@ def test_public_verify_document_not_found_returns_404() -> None:
 
 
 def test_admin_can_get_account_document_download() -> None:
+    from urllib.request import Request, urlopen
+
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
     status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
@@ -2668,21 +2686,22 @@ def test_admin_can_get_account_document_download() -> None:
         enrollment_id=enrollment["id"],
         title="Downloadable certificate",
         document_type="Сертификат",
-        file_url="https://example.com/files/downloadable-certificate.pdf",
+        storage_content=b"downloadable certificate content",
+        storage_extension=".pdf",
     )
 
-    status, payload = request_json(
-        "GET",
-        f'/api/v1/account/documents/{document["id"]}/download',
-        token=token,
+    request = Request(
+        f"http://127.0.0.1:8000/api/v1/account/documents/{document['id']}/download",
+        headers={"Authorization": f"Bearer {token}"},
+        method="GET",
     )
 
-    assert status == 200
-    assert isinstance(payload, dict)
-    assert payload["id"] == document["id"]
-    assert payload["document_number"] == document["document_number"]
-    assert payload["title"] == "Downloadable certificate"
-    assert payload["file_url"] == "https://example.com/files/downloadable-certificate.pdf"
+    with urlopen(request, timeout=20) as response:
+        body = response.read()
+        disposition = response.headers.get("Content-Disposition", "")
+
+    assert body == b"downloadable certificate content"
+    assert document["document_number"].lower() in disposition.lower()
 
 
 def test_foreign_user_cannot_get_account_document_download() -> None:

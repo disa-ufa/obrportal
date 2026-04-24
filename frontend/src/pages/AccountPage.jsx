@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
+  downloadAccountDocument,
   getAccountCourses,
-  getAccountDocumentDownload,
   getAccountDocuments,
   getAccountSummary,
 } from "../api/client";
@@ -97,14 +97,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     try {
       setDownloadError("");
       setDownloadLoadingId(documentId);
-
-      const response = await getAccountDocumentDownload(documentId);
-
-      if (!response?.file_url) {
-        throw new Error("Файл документа пока недоступен.");
-      }
-
-      window.open(response.file_url, "_blank", "noopener,noreferrer");
+      await downloadAccountDocument(documentId);
     } catch (err) {
       setDownloadError(`${err.status || ""} ${err.message || "Не удалось подготовить документ."}`.trim());
     } finally {
@@ -428,12 +421,12 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   <button
                     type="button"
                     onClick={() => handleDownload(documentItem.id)}
-                    disabled={!documentItem.file_url || downloadLoadingId === documentItem.id}
+                    disabled={!documentItem.file_available || downloadLoadingId === documentItem.id}
                     className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {downloadLoadingId === documentItem.id
                       ? "Готовим..."
-                      : documentItem.file_url
+                      : documentItem.file_available
                         ? "Скачать документ"
                         : "Файл недоступен"}
                   </button>

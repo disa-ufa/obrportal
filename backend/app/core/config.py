@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     s3_bucket_private: str = "obrportal-private"
     s3_bucket_public: str = "obrportal-public"
 
+    document_storage_dir: str = "/app/storage/private"
+
     cors_origins_raw: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     @property

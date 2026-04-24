@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from mimetypes import guess_type
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import build_current_user_response, get_current_user
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
@@ -15,7 +20,6 @@ from app.models.user import User
 from app.schemas.account import (
     AccountCourseItemResponse,
     AccountCoursesResponse,
-    AccountDocumentDownloadResponse,
     AccountDocumentItemResponse,
     AccountDocumentsResponse,
     AccountSummaryResponse,
@@ -23,6 +27,31 @@ from app.schemas.account import (
 
 
 router = APIRouter(prefix="/account", tags=["account"])
+
+
+def _resolve_storage_path(storage_path: str) -> Path | None:
+    base_path = Path(settings.document_storage_dir).resolve()
+    candidate_path = (base_path / storage_path).resolve()
+
+    try:
+        candidate_path.relative_to(base_path)
+    except ValueError:
+        return None
+
+    return candidate_path
+
+
+def _build_download_filename(document_number: str, storage_path: str) -> str:
+    suffix = Path(storage_path).suffix or ".bin"
+    safe_stem = "".join(
+        ch if ch.isalnum() or ch in ("-", "_") else "_"
+        for ch in document_number
+    ).strip("_")
+
+    if not safe_stem:
+        safe_stem = "document"
+
+    return f"{safe_stem}{suffix}"
 
 
 @router.get("/summary", response_model=AccountSummaryResponse)
@@ -118,7 +147,7 @@ async def get_account_documents(
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("status"),
-            DocumentRecord.file_url.label("file_url"),
+            DocumentRecord.storage_path.label("storage_path"),
             DocumentRecord.enrollment_id.label("enrollment_id"),
             Course.id.label("course_id"),
             Course.slug.label("course_slug"),
@@ -136,11 +165,11 @@ async def get_account_documents(
             document_type=row.document_type,
             title=row.title,
             status=row.status,
-            file_url=row.file_url,
             course_id=row.course_id,
             course_slug=row.course_slug,
             course_title=row.course_title,
             enrollment_id=row.enrollment_id,
+            file_available=bool(row.storage_path),
         )
         for row in result.all()
     ]
@@ -151,18 +180,18 @@ async def get_account_documents(
     )
 
 
-@router.get("/documents/{document_id}/download", response_model=AccountDocumentDownloadResponse)
+@router.get("/documents/{document_id}/download")
 async def get_account_document_download(
     document_id: str,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
-) -> AccountDocumentDownloadResponse:
+):
     result = await session.execute(
         select(
             DocumentRecord.id.label("id"),
             DocumentRecord.document_number.label("document_number"),
             DocumentRecord.title.label("title"),
-            DocumentRecord.file_url.label("file_url"),
+            DocumentRecord.storage_path.label("storage_path"),
         ).where(
             DocumentRecord.id == document_id,
             DocumentRecord.user_id == current_user.id,
@@ -176,15 +205,25 @@ async def get_account_document_download(
             detail="Document not found",
         )
 
-    if not row.file_url:
+    if not row.storage_path:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Document file is not available",
         )
 
-    return AccountDocumentDownloadResponse(
-        id=row.id,
-        document_number=row.document_number,
-        title=row.title,
-        file_url=row.file_url,
+    resolved_path = _resolve_storage_path(row.storage_path)
+
+    if not resolved_path or not resolved_path.exists() or not resolved_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document file is not available",
+        )
+
+    media_type = guess_type(resolved_path.name)[0] or "application/octet-stream"
+    filename = _build_download_filename(row.document_number, row.storage_path)
+
+    return FileResponse(
+        path=resolved_path,
+        media_type=media_type,
+        filename=filename,
     )

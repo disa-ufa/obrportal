@@ -26,4 +26,5 @@ class DocumentRecord(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     document_type: Mapped[str] = mapped_column(String(128), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="available", nullable=False)
+    storage_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     file_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
