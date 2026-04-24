@@ -4125,3 +4125,98 @@ def test_account_course_progress_dates_are_returned() -> None:
     assert item["status"] == "completed"
     assert item["started_at"] is not None
     assert item["completed_at"] is not None
+
+
+def test_complete_course_creates_draft_document() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "Learner Completion Document",
+            "description": "Course completion document",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, enrolled = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(enrolled, dict)
+
+    enrollment_id = enrolled["enrollment_id"]
+
+    status, completed = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/complete",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(completed, dict)
+    assert completed["status"] == "completed"
+
+    status, documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, dict)
+
+    matched_documents = [
+        item
+        for item in documents["items"]
+        if item["enrollment_id"] == enrollment_id
+    ]
+
+    assert len(matched_documents) == 1
+
+    document = matched_documents[0]
+    assert document["course_id"] == created_course["id"]
+    assert document["course_slug"] == slug
+    assert document["document_type"] == "Сертификат"
+    assert document["status"] == "draft"
+    assert document["file_available"] is False
+
+    status, completed_again = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/complete",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(completed_again, dict)
+
+    status, documents_after_repeat = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents_after_repeat, dict)
+
+    matched_documents_after_repeat = [
+        item
+        for item in documents_after_repeat["items"]
+        if item["enrollment_id"] == enrollment_id
+    ]
+
+    assert len(matched_documents_after_repeat) == 1

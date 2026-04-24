@@ -390,6 +390,38 @@ async def start_account_course_learning(
     return build_account_course_item_from_row(row)
 
 
+async def ensure_account_completion_document(
+    enrollment: Enrollment,
+    session: AsyncSession,
+) -> None:
+    existing_result = await session.execute(
+        select(DocumentRecord.id)
+        .where(DocumentRecord.enrollment_id == enrollment.id)
+        .limit(1)
+    )
+
+    if existing_result.scalar_one_or_none() is not None:
+        return
+
+    course_result = await session.execute(
+        select(Course).where(Course.id == enrollment.course_id)
+    )
+    course = course_result.scalar_one_or_none()
+
+    document_type = course.document_type if course and course.document_type else "Сертификат"
+    course_title = course.title if course and course.title else "образовательная программа"
+
+    document = DocumentRecord(
+        user_id=enrollment.user_id,
+        course_id=enrollment.course_id,
+        enrollment_id=enrollment.id,
+        document_number=f"AUTO-{str(enrollment.id).replace('-', '')[:16].upper()}",
+        document_type=document_type,
+        title=f"{document_type}: {course_title}",
+        status="draft",
+    )
+    session.add(document)
+
 @router.post("/courses/{enrollment_id}/complete", response_model=AccountCourseItemResponse)
 async def complete_account_course_learning(
     enrollment_id: str,
@@ -413,6 +445,8 @@ async def complete_account_course_learning(
 
     enrollment.status = "completed"
     enrollment.completed_at = datetime.now(timezone.utc)
+
+    await ensure_account_completion_document(enrollment, session)
 
     await session.commit()
 

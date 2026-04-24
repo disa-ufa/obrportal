@@ -125,13 +125,15 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   }, []);
 
   async function refreshAccountSnapshot() {
-    const [summaryResponse, coursesData] = await Promise.all([
+    const [summaryResponse, coursesData, documentsData] = await Promise.all([
       getAccountSummary(),
       getAccountCourses(),
+      getAccountDocuments(),
     ]);
 
     setSummary(summaryResponse);
     setCoursesResponse(coursesData);
+    setDocumentsResponse(documentsData);
   }
 
   async function handleStartCourse(enrollmentId) {
@@ -165,7 +167,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       setAccountNotice({
         tone: "green",
         title: "Обучение завершено",
-        message: "Статус программы обновлён. Курс отмечен как завершённый.",
+        message: "Статус программы обновлён. Курс отмечен как завершённый, черновик итогового документа добавлен в раздел документов.",
       });
     } catch (err) {
       setCourseActionError(`${err.status || ""} ${err.message || "Не удалось завершить обучение."}`.trim());
