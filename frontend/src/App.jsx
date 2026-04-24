@@ -43,6 +43,7 @@ import {
 } from "./api/client";
 import { PUBLIC_COURSES } from "./data/publicCourses";
 import { AuditPage } from "./pages/AuditPage";
+import { AccountPage } from "./pages/AccountPage";
 import { AuthPage } from "./pages/AuthPage";
 import { CatalogPage } from "./pages/CatalogPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
@@ -114,6 +115,7 @@ const PUBLIC_ROUTE_MAP = {
   offer: "/offer",
   login: "/login",
   register: "/register",
+  account: "/account",
 };
 
 function getPublicPageFromPathname(pathname) {
@@ -128,6 +130,7 @@ function getPublicPageFromPathname(pathname) {
   if (pathname === "/offer") return "offer";
   if (pathname === "/login") return "login";
   if (pathname === "/register") return "register";
+  if (pathname === "/account") return "account";
   return "not-found";
 }
 
@@ -251,6 +254,14 @@ function buildPublicMeta(pathname) {
       title: "Регистрация — ObrPortal",
       description:
         "Публичная страница регистрации пользователя. На текущем этапе это UX-экран для будущего signup flow.",
+    };
+  }
+
+  if (pathname === "/account") {
+    return {
+      title: "Личный кабинет — ObrPortal",
+      description:
+        "Личный кабинет пользователя образовательной платформы с будущими разделами программ, обучения и документов.",
     };
   }
 
@@ -383,7 +394,7 @@ export default function App() {
         setCurrentPage("dashboard");
         await loadAdminData();
       } else {
-        setCurrentPage("dashboard");
+        setCurrentPage("account");
       }
     } catch {
       clearToken();
@@ -444,7 +455,7 @@ export default function App() {
       } else {
         setAdminData(EMPTY_ADMIN_DATA);
         setAdminDataLoadedAt("");
-        navigate("/", { replace: true });
+        navigate("/account", { replace: true });
       }
     } catch (err) {
       setError(err.message);
@@ -1248,6 +1259,24 @@ export default function App() {
         <Route
           path="/register"
           element={<RegisterPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/account"
+          element={
+            user ? (
+              isAdmin ? (
+                <Navigate to="/admin" replace />
+              ) : (
+                <AccountPage
+                  user={user}
+                  onPageChange={handleNavigatePublicPage}
+                  onLogout={handleLogout}
+                />
+              )
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
         />
         <Route path="*" element={<NotFoundPage onPageChange={handleNavigatePublicPage} />} />
       </Routes>

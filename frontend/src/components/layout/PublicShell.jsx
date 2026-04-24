@@ -77,6 +77,13 @@ export function PublicShell({
               >
                 В админку
               </NavButton>
+            ) : user ? (
+              <NavButton
+                active={currentPage === "account"}
+                onClick={() => onPageChange("account")}
+              >
+                Личный кабинет
+              </NavButton>
             ) : (
               <>
                 <NavButton
