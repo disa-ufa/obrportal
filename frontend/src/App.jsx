@@ -317,7 +317,7 @@ export default function App() {
   const location = useLocation();
 
   useEffect(() => {
-    const meta = location.pathname === "/admin"
+    const meta = location.pathname === "/admin" || location.pathname.startsWith("/admin/")
       ? {
           title: "Административный контур — ObrPortal",
           description: "Административный контур образовательной платформы с управлением пользователями, организациями, группами и RBAC.",
@@ -1120,6 +1120,12 @@ export default function App() {
       );
     }
 
+    if (currentPage === "documents" || location.pathname === "/admin/documents") {
+
+      return <DocumentsPage />;
+
+    }
+
     if (currentPage === "audit") {
       return (
         <AuditPage
@@ -1158,8 +1164,10 @@ export default function App() {
   }
 
   const adminPageContent = renderCurrentPage();
+
+  const activeAdminPage = location.pathname === "/admin/documents" ? "documents" : currentPage;
   const currentPublicPage = getPublicPageFromPathname(location.pathname);
-  const isAdminRoute = location.pathname === "/admin";
+  const isAdminRoute = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
   const isAdmin = userHasRole(user, "admin");
   const authBadgeText = initializingAuth
     ? "initializing"

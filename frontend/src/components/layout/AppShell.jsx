@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { key: "users", label: "Пользователи" },
   { key: "organizations", label: "Организации" },
   { key: "groups", label: "Группы" },
+  { key: "documents", label: "Документы" },
   { key: "roles", label: "Роли" },
   { key: "permissions", label: "Права" },
   { key: "audit", label: "Аудит" },
@@ -63,7 +64,7 @@ export function AppShell({
               </h1>
               <p className="mt-3 max-w-3xl text-slate-600">
                 Рабочий back-office каркас: auth, JWT, RBAC, admin API,
-                страницы пользователей, организаций, групп, ролей, прав и журнала аудита.
+                страницы пользователей, организаций, групп, документов, ролей, прав и журнала аудита.
               </p>
               <div className="mt-4">
                 <StatusBadge tone="gray">
