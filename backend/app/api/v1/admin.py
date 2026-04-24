@@ -19,6 +19,7 @@ from app.models.audit_event import AuditEvent
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.learning_group import LearningGroup
 from app.models.organization import Organization
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
@@ -28,6 +29,9 @@ from app.schemas.admin import (
     AdminCourseDetail,
     AdminCourseItem,
     AdminCourseUpdate,
+    AdminEnrollmentCreate,
+    AdminEnrollmentItem,
+    AdminEnrollmentUpdate,
     AdminDocumentItem,
     AdminDeleteResult,
     AdminOrganizationCreate,
@@ -2665,3 +2669,411 @@ async def delete_admin_course(
     await session.commit()
 
     return AdminDeleteResult(status="deleted", id=deleted_course_id)
+
+
+ADMIN_ENROLLMENT_STATUSES = {
+    "assigned",
+    "active",
+    "completed",
+    "cancelled",
+}
+
+
+def normalize_enrollment_status(value: str) -> str:
+    normalized = value.strip().lower()
+
+    if normalized not in ADMIN_ENROLLMENT_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported enrollment status",
+        )
+
+    return normalized
+
+
+def normalize_optional_reference(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    normalized = value.strip()
+
+    return normalized or None
+
+
+def build_admin_enrollment_item(row) -> AdminEnrollmentItem:
+    return AdminEnrollmentItem(
+        id=str(row.id),
+        user_id=str(row.user_id),
+        user_email=row.user_email,
+        user_full_name=row.user_full_name,
+        course_id=str(row.course_id),
+        course_slug=row.course_slug,
+        course_title=row.course_title,
+        organization_id=str(row.organization_id) if row.organization_id else None,
+        organization_name=row.organization_name,
+        learning_group_id=str(row.learning_group_id) if row.learning_group_id else None,
+        learning_group_name=row.learning_group_name,
+        status=row.status,
+        started_at=row.started_at,
+        completed_at=row.completed_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+def enrollment_snapshot(enrollment: Enrollment) -> dict:
+    return {
+        "id": str(enrollment.id),
+        "user_id": str(enrollment.user_id),
+        "course_id": str(enrollment.course_id),
+        "organization_id": str(enrollment.organization_id) if enrollment.organization_id else None,
+        "learning_group_id": str(enrollment.learning_group_id) if enrollment.learning_group_id else None,
+        "status": enrollment.status,
+        "started_at": enrollment.started_at.isoformat() if enrollment.started_at else None,
+        "completed_at": enrollment.completed_at.isoformat() if enrollment.completed_at else None,
+    }
+
+
+async def get_admin_enrollment_or_404(
+    enrollment_id: str,
+    session: AsyncSession,
+) -> Enrollment:
+    result = await session.execute(
+        select(Enrollment).where(Enrollment.id == enrollment_id)
+    )
+    enrollment = result.scalar_one_or_none()
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Enrollment not found",
+        )
+
+    return enrollment
+
+
+async def get_admin_enrollment_row_or_404(
+    enrollment_id: str,
+    session: AsyncSession,
+):
+    result = await session.execute(
+        select(
+            Enrollment.id.label("id"),
+            Enrollment.user_id.label("user_id"),
+            Enrollment.course_id.label("course_id"),
+            Enrollment.organization_id.label("organization_id"),
+            Enrollment.learning_group_id.label("learning_group_id"),
+            Enrollment.status.label("status"),
+            Enrollment.started_at.label("started_at"),
+            Enrollment.completed_at.label("completed_at"),
+            Enrollment.created_at.label("created_at"),
+            Enrollment.updated_at.label("updated_at"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            Organization.name.label("organization_name"),
+            LearningGroup.name.label("learning_group_name"),
+        )
+        .join(User, User.id == Enrollment.user_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+        .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+        .where(Enrollment.id == enrollment_id)
+    )
+
+    row = result.first()
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Enrollment not found",
+        )
+
+    return row
+
+
+async def ensure_enrollment_references_exist(
+    *,
+    user_id: str,
+    course_id: str,
+    organization_id: str | None,
+    learning_group_id: str | None,
+    session: AsyncSession,
+) -> None:
+    await get_admin_user_or_404(user_id, session)
+    await get_admin_course_or_404(course_id, session)
+
+    if organization_id is not None:
+        await get_admin_organization_or_404(organization_id, session)
+
+    if learning_group_id is not None:
+        result = await session.execute(
+            select(LearningGroup).where(LearningGroup.id == learning_group_id)
+        )
+
+        if result.scalar_one_or_none() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Learning group not found",
+            )
+
+
+async def ensure_enrollment_can_be_deleted(
+    enrollment: Enrollment,
+    session: AsyncSession,
+) -> None:
+    document_result = await session.execute(
+        select(DocumentRecord.id)
+        .where(DocumentRecord.enrollment_id == enrollment.id)
+        .limit(1)
+    )
+
+    if document_result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete enrollment with documents",
+        )
+
+
+@router.get("/enrollments", response_model=list[AdminEnrollmentItem])
+async def list_admin_enrollments(
+    user_id: str | None = Query(default=None, max_length=64),
+    course_id: str | None = Query(default=None, max_length=64),
+    status_filter: str | None = Query(default=None, alias="status", max_length=32),
+    q: str | None = Query(default=None, max_length=255),
+    limit: int = Query(default=100, ge=1, le=300),
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminEnrollmentItem]:
+    query = (
+        select(
+            Enrollment.id.label("id"),
+            Enrollment.user_id.label("user_id"),
+            Enrollment.course_id.label("course_id"),
+            Enrollment.organization_id.label("organization_id"),
+            Enrollment.learning_group_id.label("learning_group_id"),
+            Enrollment.status.label("status"),
+            Enrollment.started_at.label("started_at"),
+            Enrollment.completed_at.label("completed_at"),
+            Enrollment.created_at.label("created_at"),
+            Enrollment.updated_at.label("updated_at"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            Organization.name.label("organization_name"),
+            LearningGroup.name.label("learning_group_name"),
+        )
+        .join(User, User.id == Enrollment.user_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+        .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+        .order_by(Enrollment.created_at.desc())
+        .limit(limit)
+    )
+
+    if user_id:
+        query = query.where(Enrollment.user_id == user_id.strip())
+
+    if course_id:
+        query = query.where(Enrollment.course_id == course_id.strip())
+
+    if status_filter:
+        query = query.where(Enrollment.status == normalize_enrollment_status(status_filter))
+
+    if q and q.strip():
+        q_filter = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                User.email.ilike(q_filter),
+                User.full_name.ilike(q_filter),
+                Course.slug.ilike(q_filter),
+                Course.title.ilike(q_filter),
+                Enrollment.status.ilike(q_filter),
+                Organization.name.ilike(q_filter),
+                LearningGroup.name.ilike(q_filter),
+            )
+        )
+
+    result = await session.execute(query)
+
+    return [
+        build_admin_enrollment_item(row)
+        for row in result.all()
+    ]
+
+
+@router.post("/enrollments", response_model=AdminEnrollmentItem, status_code=status.HTTP_201_CREATED)
+async def create_admin_enrollment(
+    payload: AdminEnrollmentCreate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminEnrollmentItem:
+    user_id = payload.user_id.strip()
+    course_id = payload.course_id.strip()
+    organization_id = normalize_optional_reference(payload.organization_id)
+    learning_group_id = normalize_optional_reference(payload.learning_group_id)
+    normalized_status = normalize_enrollment_status(payload.status)
+
+    await ensure_enrollment_references_exist(
+        user_id=user_id,
+        course_id=course_id,
+        organization_id=organization_id,
+        learning_group_id=learning_group_id,
+        session=session,
+    )
+
+    enrollment = Enrollment(
+        user_id=user_id,
+        course_id=course_id,
+        organization_id=organization_id,
+        learning_group_id=learning_group_id,
+        status=normalized_status,
+        started_at=payload.started_at,
+        completed_at=payload.completed_at,
+    )
+    session.add(enrollment)
+
+    try:
+        await session.flush()
+        enrollment_id = str(enrollment.id)
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.enrollment_created",
+            entity_type="enrollment",
+            entity_id=enrollment_id,
+            payload={
+                "enrollment": enrollment_snapshot(enrollment),
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Enrollment already exists for this user and course",
+        )
+
+    row = await get_admin_enrollment_row_or_404(enrollment_id, session)
+
+    return build_admin_enrollment_item(row)
+
+
+@router.get("/enrollments/{enrollment_id}", response_model=AdminEnrollmentItem)
+async def get_admin_enrollment_detail(
+    enrollment_id: str,
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminEnrollmentItem:
+    row = await get_admin_enrollment_row_or_404(enrollment_id, session)
+
+    return build_admin_enrollment_item(row)
+
+
+@router.patch("/enrollments/{enrollment_id}", response_model=AdminEnrollmentItem)
+async def update_admin_enrollment(
+    enrollment_id: str,
+    payload: AdminEnrollmentUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminEnrollmentItem:
+    enrollment = await get_admin_enrollment_or_404(enrollment_id, session)
+    data = model_to_dict(payload, exclude_unset=True)
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+
+    before = enrollment_snapshot(enrollment)
+
+    if "status" in data and data["status"] is not None:
+        enrollment.status = normalize_enrollment_status(data["status"])
+
+    if "organization_id" in data:
+        organization_id = normalize_optional_reference(data["organization_id"])
+        if organization_id is not None:
+            await get_admin_organization_or_404(organization_id, session)
+        enrollment.organization_id = organization_id
+
+    if "learning_group_id" in data:
+        learning_group_id = normalize_optional_reference(data["learning_group_id"])
+        if learning_group_id is not None:
+            result = await session.execute(
+                select(LearningGroup).where(LearningGroup.id == learning_group_id)
+            )
+            if result.scalar_one_or_none() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Learning group not found",
+                )
+        enrollment.learning_group_id = learning_group_id
+
+    if "started_at" in data:
+        enrollment.started_at = data["started_at"]
+
+    if "completed_at" in data:
+        enrollment.completed_at = data["completed_at"]
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.enrollment_updated",
+        entity_type="enrollment",
+        entity_id=str(enrollment.id),
+        payload={
+            "before": before,
+            "after": enrollment_snapshot(enrollment),
+            "changed_fields": sorted(data.keys()),
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    row = await get_admin_enrollment_row_or_404(enrollment_id, session)
+
+    return build_admin_enrollment_item(row)
+
+
+@router.delete("/enrollments/{enrollment_id}", response_model=AdminDeleteResult)
+async def delete_admin_enrollment(
+    enrollment_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDeleteResult:
+    enrollment = await get_admin_enrollment_or_404(enrollment_id, session)
+    await ensure_enrollment_can_be_deleted(enrollment, session)
+
+    deleted_enrollment_id = str(enrollment.id)
+    before = enrollment_snapshot(enrollment)
+
+    await session.delete(enrollment)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.enrollment_deleted",
+        entity_type="enrollment",
+        entity_id=deleted_enrollment_id,
+        payload={
+            "before": before,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return AdminDeleteResult(status="deleted", id=deleted_enrollment_id)

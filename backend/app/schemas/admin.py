@@ -208,3 +208,40 @@ class AdminCourseUpdate(BaseModel):
     format: str | None = Field(default=None, max_length=64)
     document_type: str | None = Field(default=None, max_length=128)
     is_active: bool | None = None
+
+
+class AdminEnrollmentItem(BaseModel):
+    id: str
+    user_id: str
+    user_email: str
+    user_full_name: str | None = None
+    course_id: str
+    course_slug: str
+    course_title: str
+    organization_id: str | None = None
+    organization_name: str | None = None
+    learning_group_id: str | None = None
+    learning_group_name: str | None = None
+    status: str
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminEnrollmentCreate(BaseModel):
+    user_id: str = Field(min_length=1, max_length=64)
+    course_id: str = Field(min_length=1, max_length=64)
+    organization_id: str | None = Field(default=None, max_length=64)
+    learning_group_id: str | None = Field(default=None, max_length=64)
+    status: str = Field(default="assigned", max_length=32)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+class AdminEnrollmentUpdate(BaseModel):
+    organization_id: str | None = Field(default=None, max_length=64)
+    learning_group_id: str | None = Field(default=None, max_length=64)
+    status: str | None = Field(default=None, max_length=32)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None

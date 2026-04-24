@@ -3523,3 +3523,195 @@ def test_learner_cannot_manage_admin_courses() -> None:
 
     assert status == 403
     assert isinstance(create_payload, dict)
+
+
+def test_admin_can_list_admin_enrollments() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/enrollments",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, list)
+
+
+def test_admin_can_create_update_and_delete_enrollment() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    course = create_test_course_in_db(
+        title="Admin Enrollment Course",
+    )
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=token,
+        body={
+            "user_id": user_id,
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    assert created["user_id"] == user_id
+    assert created["course_id"] == course["id"]
+    assert created["status"] == "assigned"
+    enrollment_id = created["id"]
+
+    status, account_courses = request_json(
+        "GET",
+        "/api/v1/account/courses",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(account_courses, dict)
+    assert any(item["enrollment_id"] == enrollment_id for item in account_courses["items"])
+
+    status, updated = request_json(
+        "PATCH",
+        f"/api/v1/admin/enrollments/{enrollment_id}",
+        token=token,
+        body={
+            "status": "active",
+        },
+    )
+
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["status"] == "active"
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/admin/enrollments/{enrollment_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(detail, dict)
+    assert detail["id"] == enrollment_id
+    assert detail["course_title"] == course["title"]
+
+    status, deleted = request_json(
+        "DELETE",
+        f"/api/v1/admin/enrollments/{enrollment_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(deleted, dict)
+    assert deleted["status"] == "deleted"
+    assert deleted["id"] == enrollment_id
+
+    status, missing = request_json(
+        "GET",
+        f"/api/v1/admin/enrollments/{enrollment_id}",
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(missing, dict)
+
+
+def test_admin_duplicate_enrollment_returns_409() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    course = create_test_course_in_db(
+        title="Duplicate Enrollment Course",
+    )
+
+    status, first = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=token,
+        body={
+            "user_id": user_id,
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+    )
+
+    assert status == 201
+    assert isinstance(first, dict)
+
+    status, second = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=token,
+        body={
+            "user_id": user_id,
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+    )
+
+    assert status == 409
+    assert isinstance(second, dict)
+
+
+def test_admin_enrollment_invalid_status_returns_422() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/enrollments?status=unknown",
+        token=token,
+    )
+
+    assert status == 422
+    assert isinstance(payload, dict)
+
+
+def test_admin_enrollment_missing_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/enrollments/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_manage_admin_enrollments() -> None:
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, list_payload = request_json(
+        "GET",
+        "/api/v1/admin/enrollments",
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(list_payload, dict)
+
+    status, create_payload = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=learner_token,
+        body={
+            "user_id": "00000000-0000-0000-0000-000000000000",
+            "course_id": "00000000-0000-0000-0000-000000000000",
+            "status": "assigned",
+        },
+    )
+
+    assert status == 403
+    assert isinstance(create_payload, dict)
