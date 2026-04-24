@@ -1209,6 +1209,61 @@ def main() -> int:
         for item in learner_account_courses["items"]
     )
     checks.append("learner account courses include self enrollment")
+    status, completed_self_enrollment = request_json(
+        "POST",
+        "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner complete self enrolled course")
+    assert isinstance(completed_self_enrollment, dict)
+    assert completed_self_enrollment["status"] == "completed"
+    checks.append("learner complete self enrolled course ok")
+
+    status, learner_documents_after_completion = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner documents after course completion")
+    assert isinstance(learner_documents_after_completion, dict)
+
+    completion_documents = [
+        item
+        for item in learner_documents_after_completion["items"]
+        if item["enrollment_id"] == self_enrollment["enrollment_id"]
+    ]
+
+    assert len(completion_documents) == 1
+    assert completion_documents[0]["status"] == "draft"
+    assert completion_documents[0]["course_id"] == self_enroll_course["id"]
+    assert completion_documents[0]["course_slug"] == self_enroll_slug
+    assert completion_documents[0]["file_available"] is False
+    checks.append("learner course completion creates draft document")
+
+    status, completed_self_enrollment_again = request_json(
+        "POST",
+        "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner repeat complete self enrolled course")
+    assert isinstance(completed_self_enrollment_again, dict)
+
+    status, learner_documents_after_repeat_completion = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner documents after repeat completion")
+    assert isinstance(learner_documents_after_repeat_completion, dict)
+
+    completion_documents_after_repeat = [
+        item
+        for item in learner_documents_after_repeat_completion["items"]
+        if item["enrollment_id"] == self_enrollment["enrollment_id"]
+    ]
+
+    assert len(completion_documents_after_repeat) == 1
+    checks.append("learner repeat completion does not duplicate draft document")
 
     status, _ = request_json("GET", "/api/v1/admin/users", token=learner_token)
     assert_status(status, 403, "learner admin API")
