@@ -145,6 +145,72 @@ def main() -> int:
     assert me["email"] == ADMIN_EMAIL
     checks.append("admin /auth/me ok")
 
+    public_email = f"public_{uuid4().hex[:12]}@example.com"
+    public_password = "Public123Local2026!"
+    public_phone = f"+7999{uuid4().int % 10_000_000:07d}"
+
+    status, public_register = request_json(
+        "POST",
+        "/api/v1/auth/register",
+        {
+            "email": public_email.upper(),
+            "password": public_password,
+            "full_name": "Public Smoke User",
+            "phone": public_phone,
+        },
+    )
+    assert_status(status, 201, "public register")
+    assert isinstance(public_register, dict)
+    assert public_register["access_token"]
+    checks.append("public register ok")
+
+    public_token = str(public_register["access_token"])
+
+    status, public_me = request_json("GET", "/api/v1/auth/me", token=public_token)
+    assert_status(status, 200, "public register /auth/me")
+    assert isinstance(public_me, dict)
+    assert public_me["email"] == public_email
+    assert public_me["full_name"] == "Public Smoke User"
+    assert public_me["roles"] == []
+    checks.append("public register /auth/me ok")
+
+    status, public_login = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": public_email, "password": public_password},
+    )
+    assert_status(status, 200, "public register login")
+    assert isinstance(public_login, dict)
+    assert public_login["access_token"]
+    checks.append("public register login ok")
+
+    status, duplicate_register = request_json(
+        "POST",
+        "/api/v1/auth/register",
+        {
+            "email": public_email,
+            "password": public_password,
+            "full_name": "Duplicate Public Smoke User",
+        },
+    )
+    assert_status(status, 409, "public register duplicate email")
+    assert isinstance(duplicate_register, dict)
+    checks.append("public register duplicate email returns 409")
+
+    status, duplicate_phone_register = request_json(
+        "POST",
+        "/api/v1/auth/register",
+        {
+            "email": f"public_phone_{uuid4().hex[:12]}@example.com",
+            "password": public_password,
+            "full_name": "Duplicate Phone Public Smoke User",
+            "phone": public_phone,
+        },
+    )
+    assert_status(status, 409, "public register duplicate phone")
+    assert isinstance(duplicate_phone_register, dict)
+    checks.append("public register duplicate phone returns 409")
+
     status, rbac = request_json("GET", "/api/v1/admin/rbac-check", token=admin_token)
     assert_status(status, 200, "admin rbac-check")
     assert isinstance(rbac, dict)

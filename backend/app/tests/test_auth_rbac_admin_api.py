@@ -2109,3 +2109,97 @@ def test_learner_cannot_delete_learning_group() -> None:
     )
     assert status == 403
     assert isinstance(payload, dict)
+def test_public_register_returns_token_and_me() -> None:
+    email = f"public_{uuid4().hex[:12]}@example.com"
+    password = "Public123Local2026!"
+    phone = unique_phone()
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/register",
+        {
+            "email": email.upper(),
+            "password": password,
+            "full_name": "Public User",
+            "phone": phone,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(payload, dict)
+    assert payload["access_token"]
+
+    token = str(payload["access_token"])
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    assert me_payload["email"] == email
+    assert me_payload["full_name"] == "Public User"
+    assert me_payload["is_active"] is True
+    assert me_payload["is_email_verified"] is False
+    assert me_payload["mfa_enabled"] is False
+    assert me_payload["roles"] == []
+
+    login_token = login(email, password)
+    assert login_token
+
+
+def test_public_register_duplicate_email_returns_409() -> None:
+    email = f"dup_{uuid4().hex[:12]}@example.com"
+
+    first_status, first_payload = request_json(
+        "POST",
+        "/api/v1/auth/register",
+        {
+            "email": email,
+            "password": "Public123Local2026!",
+            "full_name": "Duplicate Email User",
+        },
+    )
+    assert first_status == 201
+    assert isinstance(first_payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/register",
+        {
+            "email": email.upper(),
+            "password": "Public123Local2026!",
+            "full_name": "Duplicate Email User 2",
+        },
+    )
+
+    assert status == 409
+    assert isinstance(payload, dict)
+
+
+def test_public_register_duplicate_phone_returns_409() -> None:
+    phone = unique_phone()
+
+    first_status, first_payload = request_json(
+        "POST",
+        "/api/v1/auth/register",
+        {
+            "email": f"phonea_{uuid4().hex[:12]}@example.com",
+            "password": "Public123Local2026!",
+            "full_name": "Phone A",
+            "phone": phone,
+        },
+    )
+    assert first_status == 201
+    assert isinstance(first_payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/register",
+        {
+            "email": f"phoneb_{uuid4().hex[:12]}@example.com",
+            "password": "Public123Local2026!",
+            "full_name": "Phone B",
+            "phone": phone,
+        },
+    )
+
+    assert status == 409
+    assert isinstance(payload, dict)

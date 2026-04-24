@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import timedelta
 
@@ -8,13 +8,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.security import create_access_token, decode_access_token, verify_password
+from app.core.security import create_access_token, decode_access_token, get_password_hash, verify_password
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
 from app.models.organization import Organization  # noqa: F401
 from app.models.role import Role, UserRole
 from app.models.user import User
-from app.schemas.auth import CurrentUserResponse, CurrentUserRole, LoginRequest, TokenResponse
+from app.schemas.auth import CurrentUserResponse, CurrentUserRole, LoginRequest, RegisterRequest, TokenResponse
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -121,6 +121,82 @@ async def build_current_user_response(session: AsyncSession, user: User) -> Curr
         mfa_enabled=user.mfa_enabled,
         roles=roles,
     )
+
+
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def register(
+    payload: RegisterRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    normalized_email = payload.email.lower().strip()
+    normalized_full_name = payload.full_name.strip() if payload.full_name else None
+    normalized_phone = payload.phone.strip() if payload.phone else None
+
+    existing_user = await get_user_by_email(session, normalized_email)
+    if existing_user:
+        await write_audit_event(
+            session,
+            action="register_failed",
+            request=request,
+            entity_type="user",
+            payload={"email": normalized_email, "reason": "email_conflict"},
+        )
+        await session.commit()
+
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this email already exists",
+        )
+
+    if normalized_phone:
+        result = await session.execute(select(User).where(User.phone == normalized_phone))
+        existing_phone_user = result.scalar_one_or_none()
+
+        if existing_phone_user:
+            await write_audit_event(
+                session,
+                action="register_failed",
+                request=request,
+                entity_type="user",
+                payload={"email": normalized_email, "phone": normalized_phone, "reason": "phone_conflict"},
+            )
+            await session.commit()
+
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with this phone already exists",
+            )
+
+    user = User(
+        email=normalized_email,
+        phone=normalized_phone,
+        full_name=normalized_full_name,
+        hashed_password=get_password_hash(payload.password),
+        is_active=True,
+        is_email_verified=False,
+        mfa_enabled=False,
+    )
+    session.add(user)
+    await session.flush()
+
+    access_token = create_access_token(
+        subject=user.id,
+        expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
+    )
+
+    await write_audit_event(
+        session,
+        action="register_success",
+        request=request,
+        actor_user_id=user.id,
+        entity_type="user",
+        entity_id=user.id,
+        payload={"email": user.email},
+    )
+    await session.commit()
+
+    return TokenResponse(access_token=access_token)
 
 
 @router.post("/login", response_model=TokenResponse)

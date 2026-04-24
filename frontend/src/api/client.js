@@ -52,6 +52,13 @@ export async function login(email, password) {
   return data;
 }
 
+export async function registerUser(payload) {
+  return request("/api/v1/auth/register", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getCurrentUser() {
   return request("/api/v1/auth/me");
 }
