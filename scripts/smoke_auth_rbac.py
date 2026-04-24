@@ -211,6 +211,20 @@ def main() -> int:
     assert isinstance(duplicate_phone_register, dict)
     checks.append("public register duplicate phone returns 409")
 
+    status, admin_account_summary = request_json(
+        "GET",
+        "/api/v1/account/summary",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin account summary")
+    assert isinstance(admin_account_summary, dict)
+    assert admin_account_summary["enrollments_count"] == 0
+    assert admin_account_summary["active_courses_count"] == 0
+    assert admin_account_summary["documents_count"] == 0
+    assert isinstance(admin_account_summary["profile"], dict)
+    assert admin_account_summary["profile"]["email"] == ADMIN_EMAIL
+    checks.append("admin account summary ok")
+
     status, rbac = request_json("GET", "/api/v1/admin/rbac-check", token=admin_token)
     assert_status(status, 200, "admin rbac-check")
     assert isinstance(rbac, dict)

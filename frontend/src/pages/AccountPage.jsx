@@ -1,6 +1,45 @@
+import { useEffect, useState } from "react";
+import { getAccountSummary } from "../api/client";
+import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
 
 export function AccountPage({ user, onPageChange, onLogout }) {
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSummary() {
+      try {
+        setLoading(true);
+        setError("");
+        const response = await getAccountSummary();
+
+        if (!cancelled) {
+          setSummary(response);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(`${err.status || ""} ${err.message}`.trim());
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const profile = summary?.profile || user;
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
@@ -11,9 +50,8 @@ export function AccountPage({ user, onPageChange, onLogout }) {
           Кабинет пользователя
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-          Это первый frontend-stub личного кабинета физического лица. На следующем
-          этапе сюда будут подключены реальные данные по обучению, курсам,
-          документам и прогрессу.
+          Первый рабочий срез кабинета физического лица: профиль уже приходит с backend,
+          а счетчики подключены к реальному endpoint summary.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -41,44 +79,83 @@ export function AccountPage({ user, onPageChange, onLogout }) {
         </div>
       </section>
 
+      {error && (
+        <Alert title="Не удалось загрузить кабинет" tone="red">
+          {error}
+        </Alert>
+      )}
+
       <div className="grid gap-6 xl:grid-cols-3">
         <SectionCard title="Профиль" subtitle="Базовая информация пользователя">
-          <div className="space-y-3 text-sm text-slate-700">
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              <div className="text-xs uppercase tracking-wide text-slate-500">E-mail</div>
-              <div className="mt-2 font-semibold text-slate-900">
-                {user?.email || "—"}
+          {loading ? (
+            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+              Загрузка профиля...
+            </div>
+          ) : (
+            <div className="space-y-3 text-sm text-slate-700">
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <div className="text-xs uppercase tracking-wide text-slate-500">E-mail</div>
+                <div className="mt-2 font-semibold text-slate-900">
+                  {profile?.email || "—"}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <div className="text-xs uppercase tracking-wide text-slate-500">ФИО</div>
+                <div className="mt-2 font-semibold text-slate-900">
+                  {profile?.full_name || "—"}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <div className="text-xs uppercase tracking-wide text-slate-500">Статус</div>
+                <div className="mt-2 font-semibold text-slate-900">
+                  Авторизованный пользователь
+                </div>
               </div>
             </div>
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Статус</div>
-              <div className="mt-2 font-semibold text-slate-900">
-                Авторизованный пользователь
+          )}
+        </SectionCard>
+
+        <SectionCard title="Мои программы" subtitle="Первый реальный summary count">
+          {loading ? (
+            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+              Загрузка данных...
+            </div>
+          ) : (
+            <div className="space-y-3 text-sm text-slate-700">
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <div className="text-xs uppercase tracking-wide text-slate-500">Всего назначений</div>
+                <div className="mt-2 text-2xl font-bold text-slate-900">
+                  {summary?.enrollments_count ?? 0}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <div className="text-xs uppercase tracking-wide text-slate-500">Активных программ</div>
+                <div className="mt-2 text-2xl font-bold text-slate-900">
+                  {summary?.active_courses_count ?? 0}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </SectionCard>
 
-        <SectionCard title="Мои программы" subtitle="Будущий раздел обучения">
-          <div className="space-y-3 text-sm text-slate-700">
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              Здесь появится список программ, на которые записан пользователь.
+        <SectionCard title="Документы" subtitle="Первый реальный summary count">
+          {loading ? (
+            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+              Загрузка данных...
             </div>
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              Будут добавлены статусы, прогресс и быстрый переход к обучению.
+          ) : (
+            <div className="space-y-3 text-sm text-slate-700">
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <div className="text-xs uppercase tracking-wide text-slate-500">Документов доступно</div>
+                <div className="mt-2 text-2xl font-bold text-slate-900">
+                  {summary?.documents_count ?? 0}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                Следующим шагом сюда подключим реальный список документов пользователя.
+              </div>
             </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Документы" subtitle="Будущий раздел итоговых документов">
-          <div className="space-y-3 text-sm text-slate-700">
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              Здесь появится список выданных документов и статусов формирования.
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              Будет добавлена связка с публичной проверкой подлинности.
-            </div>
-          </div>
+          )}
         </SectionCard>
       </div>
     </div>

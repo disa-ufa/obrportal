@@ -63,6 +63,10 @@ export async function getCurrentUser() {
   return request("/api/v1/auth/me");
 }
 
+export async function getAccountSummary() {
+  return request("/api/v1/account/summary");
+}
+
 export async function checkAdminRbac() {
   return request("/api/v1/admin/rbac-check");
 }

@@ -2203,3 +2203,53 @@ def test_public_register_duplicate_phone_returns_409() -> None:
 
     assert status == 409
     assert isinstance(payload, dict)
+def test_admin_can_get_account_summary() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/account/summary",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["enrollments_count"] == 0
+    assert payload["active_courses_count"] == 0
+    assert payload["documents_count"] == 0
+
+    profile = payload["profile"]
+    assert isinstance(profile, dict)
+    assert profile["email"] == ADMIN_EMAIL
+    assert isinstance(profile["roles"], list)
+
+
+def test_learner_can_get_account_summary() -> None:
+    token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/account/summary",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["enrollments_count"] == 0
+    assert payload["active_courses_count"] == 0
+    assert payload["documents_count"] == 0
+
+    profile = payload["profile"]
+    assert isinstance(profile, dict)
+    assert profile["email"] == LEARNER_EMAIL
+    assert isinstance(profile["roles"], list)
+
+
+def test_account_summary_without_token_returns_401() -> None:
+    status, payload = request_json(
+        "GET",
+        "/api/v1/account/summary",
+    )
+
+    assert status == 401
+    assert isinstance(payload, dict)
