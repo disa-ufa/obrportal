@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getPublicCourseDetail, getPublicCourses } from "../api/client";
+import { enrollAccountCourse, getPublicCourseDetail, getPublicCourses } from "../api/client";
 
 function formatCourseDocument(course) {
   return course?.document_type || course?.document || "Итоговый документ";
@@ -9,11 +9,14 @@ function formatCoursePrice(course) {
   return course?.price || "Стоимость уточняется";
 }
 
-export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse }) {
+export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user }) {
   const [course, setCourse] = useState(null);
   const [relatedCourses, setRelatedCourses] = useState([]);
   const [loading, setLoading] = useState(Boolean(courseSlug));
   const [error, setError] = useState("");
+  const [enrollLoading, setEnrollLoading] = useState(false);
+  const [enrollError, setEnrollError] = useState("");
+  const [enrollSuccess, setEnrollSuccess] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -68,6 +71,31 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse }) {
     };
   }, [courseSlug]);
 
+  async function handleEnroll() {
+    if (!course) {
+      return;
+    }
+
+    if (!user) {
+      onPageChange("register");
+      return;
+    }
+
+    try {
+      setEnrollLoading(true);
+      setEnrollError("");
+      setEnrollSuccess("");
+
+      await enrollAccountCourse(course.id);
+
+      setEnrollSuccess("Вы записаны на программу. Курс добавлен в личный кабинет.");
+      onPageChange("account");
+    } catch (err) {
+      setEnrollError(`${err.status || ""} ${err.message || "Не удалось записаться на программу."}`.trim());
+    } finally {
+      setEnrollLoading(false);
+    }
+  }
   if (loading) {
     return (
       <div className="rounded-[2rem] bg-white p-8 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
@@ -129,6 +157,17 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse }) {
           </p>
         )}
 
+        {enrollError && (
+          <div className="mt-6 rounded-2xl bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
+            {enrollError}
+          </div>
+        )}
+
+        {enrollSuccess && (
+          <div className="mt-6 rounded-2xl bg-green-50 p-4 text-sm text-green-700 ring-1 ring-green-200">
+            {enrollSuccess}
+          </div>
+        )}
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
             <div className="text-xs uppercase tracking-wide text-slate-500">Формат</div>
@@ -156,10 +195,11 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse }) {
         <div className="mt-8 flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => onPageChange("register")}
-            className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            onClick={handleEnroll}
+            disabled={enrollLoading}
+            className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Записаться
+            {enrollLoading ? "Записываем..." : user ? "Записаться" : "Зарегистрироваться и записаться"}
           </button>
 
           <button

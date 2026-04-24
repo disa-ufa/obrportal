@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import build_current_user_response, get_current_user
@@ -227,3 +228,102 @@ async def get_account_document_download(
         media_type=media_type,
         filename=filename,
     )
+
+
+def build_account_course_item_from_row(row) -> AccountCourseItemResponse:
+    return AccountCourseItemResponse(
+        enrollment_id=str(row.enrollment_id),
+        course_id=str(row.course_id),
+        course_slug=row.course_slug,
+        course_title=row.course_title,
+        course_description=row.course_description,
+        status=row.status,
+        hours=row.hours,
+        format=row.format,
+        document_type=row.document_type,
+        organization_name=row.organization_name,
+        learning_group_name=row.learning_group_name,
+    )
+
+
+async def get_account_course_row_or_404(
+    enrollment_id: str,
+    current_user: User,
+    session: AsyncSession,
+):
+    result = await session.execute(
+        select(
+            Enrollment.id.label("enrollment_id"),
+            Enrollment.course_id.label("course_id"),
+            Enrollment.status.label("status"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            Course.description.label("course_description"),
+            Course.hours.label("hours"),
+            Course.format.label("format"),
+            Course.document_type.label("document_type"),
+            Organization.name.label("organization_name"),
+            LearningGroup.name.label("learning_group_name"),
+        )
+        .join(Course, Course.id == Enrollment.course_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+        .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+        .where(
+            Enrollment.id == enrollment_id,
+            Enrollment.user_id == current_user.id,
+        )
+    )
+    row = result.first()
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Enrollment not found",
+        )
+
+    return row
+
+
+@router.post("/courses/{course_id}/enroll", response_model=AccountCourseItemResponse, status_code=status.HTTP_201_CREATED)
+async def create_account_course_enrollment(
+    course_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountCourseItemResponse:
+    normalized_course_id = course_id.strip()
+
+    result = await session.execute(
+        select(Course).where(
+            Course.id == normalized_course_id,
+            Course.is_active.is_(True),
+        )
+    )
+    course = result.scalar_one_or_none()
+
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Active course not found",
+        )
+
+    enrollment = Enrollment(
+        user_id=current_user.id,
+        course_id=course.id,
+        status="assigned",
+    )
+    session.add(enrollment)
+
+    try:
+        await session.flush()
+        enrollment_id = str(enrollment.id)
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You are already enrolled in this course",
+        )
+
+    row = await get_account_course_row_or_404(enrollment_id, current_user, session)
+
+    return build_account_course_item_from_row(row)

@@ -3839,3 +3839,126 @@ def test_public_missing_course_detail_returns_404() -> None:
 
     assert status == 404
     assert isinstance(payload, dict)
+
+
+def test_learner_can_self_enroll_active_course() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "Self Enrollment Active Course",
+            "description": "Self enrollment course",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, enrolled = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(enrolled, dict)
+    assert enrolled["course_id"] == created_course["id"]
+    assert enrolled["course_slug"] == slug
+    assert enrolled["status"] == "assigned"
+
+    status, account_courses = request_json(
+        "GET",
+        "/api/v1/account/courses",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(account_courses, dict)
+    assert any(item["course_id"] == created_course["id"] for item in account_courses["items"])
+
+
+def test_self_enroll_duplicate_course_returns_409() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "Self Enrollment Duplicate Course",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, first = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(first, dict)
+
+    status, duplicate = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 409
+    assert isinstance(duplicate, dict)
+
+
+def test_self_enroll_inactive_course_returns_404() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "Self Enrollment Inactive Course",
+            "is_active": False,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, payload = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_guest_cannot_self_enroll_course() -> None:
+    status, payload = request_json(
+        "POST",
+        "/api/v1/account/courses/00000000-0000-0000-0000-000000000000/enroll",
+    )
+
+    assert status == 401
+    assert isinstance(payload, dict)

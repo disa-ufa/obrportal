@@ -32,6 +32,7 @@ import {
   getOrgLearningGroups,
   getReady,
   getStoredToken,
+  storeToken,
   login,
   registerUser,
   removeAdminRolePermission,
@@ -138,7 +139,7 @@ function getPublicPageFromPathname(pathname) {
   return "not-found";
 }
 
-function CourseDetailPublicRoute({ onPageChange, onOpenCourse }) {
+function CourseDetailPublicRoute({ onPageChange, onOpenCourse, user }) {
   const { slug } = useParams();
 
   return (
@@ -146,6 +147,7 @@ function CourseDetailPublicRoute({ onPageChange, onOpenCourse }) {
       courseSlug={slug}
       onPageChange={onPageChange}
       onOpenCourse={onOpenCourse}
+      user={user}
     />
   );
 }
@@ -441,7 +443,7 @@ export default function App() {
 
     try {
       const tokenResponse = await registerUser(payload);
-      setToken(tokenResponse.access_token);
+      storeToken(tokenResponse.access_token);
 
       const currentUser = await getCurrentUser();
       setUser(currentUser);
@@ -1262,6 +1264,7 @@ export default function App() {
             <CourseDetailPublicRoute
               onPageChange={handleNavigatePublicPage}
               onOpenCourse={handleOpenPublicCourse}
+              user={user}
             />
           }
         />
