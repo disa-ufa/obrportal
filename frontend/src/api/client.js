@@ -78,6 +78,18 @@ export async function enrollAccountCourse(courseId) {
   });
 }
 
+export async function startAccountCourse(enrollmentId) {
+  return request(`/api/v1/account/courses/${enrollmentId}/start`, {
+    method: "POST",
+  });
+}
+
+export async function completeAccountCourse(enrollmentId) {
+  return request(`/api/v1/account/courses/${enrollmentId}/complete`, {
+    method: "POST",
+  });
+}
+
 export async function getAccountDocuments() {
   return request("/api/v1/account/documents");
 }

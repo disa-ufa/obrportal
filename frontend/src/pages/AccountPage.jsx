@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import {
+  completeAccountCourse,
   downloadAccountDocument,
   getAccountCourses,
   getAccountDocuments,
   getAccountSummary,
+  startAccountCourse,
 } from "../api/client";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -55,6 +57,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [downloadLoadingId, setDownloadLoadingId] = useState("");
+  const [courseActionError, setCourseActionError] = useState("");
+  const [courseActionLoadingKey, setCourseActionLoadingKey] = useState("");
   const [accountNotice, setAccountNotice] = useState(null);
 
   useEffect(() => {
@@ -107,6 +111,55 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     };
   }, []);
 
+  async function refreshAccountSnapshot() {
+    const [summaryResponse, coursesData] = await Promise.all([
+      getAccountSummary(),
+      getAccountCourses(),
+    ]);
+
+    setSummary(summaryResponse);
+    setCoursesResponse(coursesData);
+  }
+
+  async function handleStartCourse(enrollmentId) {
+    try {
+      setCourseActionError("");
+      setCourseActionLoadingKey(`${enrollmentId}:start`);
+
+      await startAccountCourse(enrollmentId);
+      await refreshAccountSnapshot();
+
+      setAccountNotice({
+        tone: "green",
+        title: "Обучение начато",
+        message: "Статус программы обновлён. Теперь курс находится в работе.",
+      });
+    } catch (err) {
+      setCourseActionError(`${err.status || ""} ${err.message || "Не удалось начать обучение."}`.trim());
+    } finally {
+      setCourseActionLoadingKey("");
+    }
+  }
+
+  async function handleCompleteCourse(enrollmentId) {
+    try {
+      setCourseActionError("");
+      setCourseActionLoadingKey(`${enrollmentId}:complete`);
+
+      await completeAccountCourse(enrollmentId);
+      await refreshAccountSnapshot();
+
+      setAccountNotice({
+        tone: "green",
+        title: "Обучение завершено",
+        message: "Статус программы обновлён. Курс отмечен как завершённый.",
+      });
+    } catch (err) {
+      setCourseActionError(`${err.status || ""} ${err.message || "Не удалось завершить обучение."}`.trim());
+    } finally {
+      setCourseActionLoadingKey("");
+    }
+  }
   async function handleDownload(documentId) {
     try {
       setDownloadError("");
@@ -171,6 +224,12 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       {downloadError && (
         <Alert title="Не удалось скачать документ" tone="red">
           {downloadError}
+        </Alert>
+      )}
+
+      {courseActionError && (
+        <Alert title="Не удалось обновить статус обучения" tone="red">
+          {courseActionError}
         </Alert>
       )}
 
@@ -368,6 +427,38 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   >
                     Открыть карточку курса
                   </button>
+
+                  {course.status === "assigned" && (
+                    <button
+                      type="button"
+                      onClick={() => handleStartCourse(course.enrollment_id)}
+                      disabled={courseActionLoadingKey === `${course.enrollment_id}:start`}
+                      className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {courseActionLoadingKey === `${course.enrollment_id}:start`
+                        ? "Запускаем..."
+                        : "Начать обучение"}
+                    </button>
+                  )}
+
+                  {course.status === "active" && (
+                    <button
+                      type="button"
+                      onClick={() => handleCompleteCourse(course.enrollment_id)}
+                      disabled={courseActionLoadingKey === `${course.enrollment_id}:complete`}
+                      className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {courseActionLoadingKey === `${course.enrollment_id}:complete`
+                        ? "Завершаем..."
+                        : "Завершить обучение"}
+                    </button>
+                  )}
+
+                  {course.status === "completed" && (
+                    <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">
+                      Обучение завершено
+                    </span>
+                  )}
                 </div>
               </article>
             ))}

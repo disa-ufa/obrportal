@@ -3962,3 +3962,86 @@ def test_guest_cannot_self_enroll_course() -> None:
 
     assert status == 401
     assert isinstance(payload, dict)
+
+
+def test_learner_can_start_and_complete_self_enrolled_course() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "Learner Course Progress",
+            "description": "Course progress smoke",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, enrolled = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(enrolled, dict)
+    enrollment_id = enrolled["enrollment_id"]
+
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
+
+    status, completed = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/complete",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(completed, dict)
+    assert completed["enrollment_id"] == enrollment_id
+    assert completed["status"] == "completed"
+
+    status, restart_completed = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 400
+    assert isinstance(restart_completed, dict)
+
+
+def test_guest_cannot_start_or_complete_course() -> None:
+    status, start_payload = request_json(
+        "POST",
+        "/api/v1/account/courses/00000000-0000-0000-0000-000000000000/start",
+    )
+
+    assert status == 401
+    assert isinstance(start_payload, dict)
+
+    status, complete_payload = request_json(
+        "POST",
+        "/api/v1/account/courses/00000000-0000-0000-0000-000000000000/complete",
+    )
+
+    assert status == 401
+    assert isinstance(complete_payload, dict)

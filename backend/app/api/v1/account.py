@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from mimetypes import guess_type
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -325,5 +326,88 @@ async def create_account_course_enrollment(
         )
 
     row = await get_account_course_row_or_404(enrollment_id, current_user, session)
+
+    return build_account_course_item_from_row(row)
+
+
+async def get_account_enrollment_entity_or_404(
+    enrollment_id: str,
+    current_user: User,
+    session: AsyncSession,
+) -> Enrollment:
+    result = await session.execute(
+        select(Enrollment).where(
+            Enrollment.id == enrollment_id.strip(),
+            Enrollment.user_id == current_user.id,
+        )
+    )
+    enrollment = result.scalar_one_or_none()
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Enrollment not found",
+        )
+
+    return enrollment
+
+
+@router.post("/courses/{enrollment_id}/start", response_model=AccountCourseItemResponse)
+async def start_account_course_learning(
+    enrollment_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountCourseItemResponse:
+    enrollment = await get_account_enrollment_entity_or_404(
+        enrollment_id=enrollment_id,
+        current_user=current_user,
+        session=session,
+    )
+
+    if enrollment.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Completed course cannot be started",
+        )
+
+    enrollment.status = "active"
+
+    if enrollment.started_at is None:
+        enrollment.started_at = datetime.now(timezone.utc)
+
+    await session.commit()
+
+    row = await get_account_course_row_or_404(str(enrollment.id), current_user, session)
+
+    return build_account_course_item_from_row(row)
+
+
+@router.post("/courses/{enrollment_id}/complete", response_model=AccountCourseItemResponse)
+async def complete_account_course_learning(
+    enrollment_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountCourseItemResponse:
+    enrollment = await get_account_enrollment_entity_or_404(
+        enrollment_id=enrollment_id,
+        current_user=current_user,
+        session=session,
+    )
+
+    if enrollment.status not in {"assigned", "active", "completed"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Enrollment cannot be completed from current status",
+        )
+
+    if enrollment.started_at is None:
+        enrollment.started_at = datetime.now(timezone.utc)
+
+    enrollment.status = "completed"
+    enrollment.completed_at = datetime.now(timezone.utc)
+
+    await session.commit()
+
+    row = await get_account_course_row_or_404(str(enrollment.id), current_user, session)
 
     return build_account_course_item_from_row(row)
