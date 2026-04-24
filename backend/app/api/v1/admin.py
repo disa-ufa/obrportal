@@ -1,21 +1,28 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.rbac import get_user_permission_codes, require_permission
+from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
+from app.models.course import Course
+from app.models.document_record import DocumentRecord
+from app.models.enrollment import Enrollment
 from app.models.organization import Organization
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.schemas.admin import (
     AdminAuditEventItem,
+    AdminDocumentItem,
     AdminDeleteResult,
     AdminOrganizationCreate,
     AdminOrganizationDetail,
@@ -1661,3 +1668,295 @@ async def get_audit_event_detail(
 
     return build_admin_audit_event_item(event)
 
+
+
+ADMIN_DOCUMENT_STATUSES = {"available", "draft", "revoked"}
+ADMIN_DOCUMENT_ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"}
+
+
+def build_admin_document_item(row) -> AdminDocumentItem:
+    return AdminDocumentItem(
+        id=str(row.id),
+        document_number=row.document_number,
+        document_type=row.document_type,
+        title=row.title,
+        status=row.status,
+        user_id=str(row.user_id),
+        user_email=row.user_email,
+        user_full_name=row.user_full_name,
+        course_id=str(row.course_id) if row.course_id else None,
+        course_title=row.course_title,
+        enrollment_id=str(row.enrollment_id) if row.enrollment_id else None,
+        file_available=bool(row.storage_path),
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+def normalize_document_number(value: str | None) -> str:
+    if value is None or not value.strip():
+        return f"DOC-{uuid4().hex[:12].upper()}"
+
+    normalized = value.strip().upper()
+
+    if len(normalized) < 3 or len(normalized) > 128:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Document number length must be between 3 and 128 characters",
+        )
+
+    return normalized
+
+
+def normalize_document_status(value: str) -> str:
+    normalized = value.strip().lower()
+
+    if normalized not in ADMIN_DOCUMENT_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported document status",
+        )
+
+    return normalized
+
+
+def normalize_uploaded_extension(filename: str | None) -> str:
+    suffix = Path(filename or "").suffix.lower()
+
+    if not suffix:
+        return ".bin"
+
+    if suffix not in ADMIN_DOCUMENT_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported document file extension",
+        )
+
+    return suffix
+
+
+async def save_admin_document_file(document_id: str, upload_file: UploadFile) -> str:
+    content = await upload_file.read()
+
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Uploaded file is empty",
+        )
+
+    extension = normalize_uploaded_extension(upload_file.filename)
+    relative_path = Path("documents") / f"{document_id}{extension}"
+
+    storage_root = Path(settings.document_storage_dir).resolve()
+    absolute_path = (storage_root / relative_path).resolve()
+
+    try:
+        absolute_path.relative_to(storage_root)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid document storage path",
+        )
+
+    absolute_path.parent.mkdir(parents=True, exist_ok=True)
+    absolute_path.write_bytes(content)
+
+    return relative_path.as_posix()
+
+
+async def get_admin_document_row_or_404(
+    document_id: str,
+    session: AsyncSession,
+):
+    result = await session.execute(
+        select(
+            DocumentRecord.id.label("id"),
+            DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.document_type.label("document_type"),
+            DocumentRecord.title.label("title"),
+            DocumentRecord.status.label("status"),
+            DocumentRecord.user_id.label("user_id"),
+            DocumentRecord.course_id.label("course_id"),
+            DocumentRecord.enrollment_id.label("enrollment_id"),
+            DocumentRecord.storage_path.label("storage_path"),
+            DocumentRecord.created_at.label("created_at"),
+            DocumentRecord.updated_at.label("updated_at"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.title.label("course_title"),
+        )
+        .join(User, User.id == DocumentRecord.user_id)
+        .outerjoin(Course, Course.id == DocumentRecord.course_id)
+        .where(DocumentRecord.id == document_id)
+    )
+    row = result.first()
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    return row
+
+
+@router.get("/documents", response_model=list[AdminDocumentItem])
+async def list_admin_documents(
+    user_id: str | None = Query(default=None, max_length=64),
+    limit: int = Query(default=100, ge=1, le=300),
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminDocumentItem]:
+    query = (
+        select(
+            DocumentRecord.id.label("id"),
+            DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.document_type.label("document_type"),
+            DocumentRecord.title.label("title"),
+            DocumentRecord.status.label("status"),
+            DocumentRecord.user_id.label("user_id"),
+            DocumentRecord.course_id.label("course_id"),
+            DocumentRecord.enrollment_id.label("enrollment_id"),
+            DocumentRecord.storage_path.label("storage_path"),
+            DocumentRecord.created_at.label("created_at"),
+            DocumentRecord.updated_at.label("updated_at"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.title.label("course_title"),
+        )
+        .join(User, User.id == DocumentRecord.user_id)
+        .outerjoin(Course, Course.id == DocumentRecord.course_id)
+        .order_by(DocumentRecord.created_at.desc(), DocumentRecord.title.asc())
+        .limit(limit)
+    )
+
+    if user_id:
+        query = query.where(DocumentRecord.user_id == user_id.strip())
+
+    result = await session.execute(query)
+
+    return [
+        build_admin_document_item(row)
+        for row in result.all()
+    ]
+
+
+@router.post("/documents", response_model=AdminDocumentItem, status_code=status.HTTP_201_CREATED)
+async def create_admin_document(
+    request: Request,
+    user_id: str = Form(...),
+    title: str = Form(...),
+    document_type: str = Form(...),
+    document_number: str | None = Form(default=None),
+    doc_status: str = Form(default="available", alias="status"),
+    course_id: str | None = Form(default=None),
+    enrollment_id: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDocumentItem:
+    user = await get_admin_user_or_404(user_id.strip(), session)
+
+    normalized_title = title.strip()
+    normalized_document_type = document_type.strip()
+
+    if not normalized_title:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Document title is required",
+        )
+
+    if not normalized_document_type:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Document type is required",
+        )
+
+    normalized_status = normalize_document_status(doc_status)
+    normalized_number = normalize_document_number(document_number)
+
+    normalized_course_id = course_id.strip() if course_id and course_id.strip() else None
+    normalized_enrollment_id = enrollment_id.strip() if enrollment_id and enrollment_id.strip() else None
+
+    if normalized_course_id is not None:
+        course_result = await session.execute(
+            select(Course).where(Course.id == normalized_course_id)
+        )
+        if course_result.scalar_one_or_none() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Course not found",
+            )
+
+    if normalized_enrollment_id is not None:
+        enrollment_result = await session.execute(
+            select(Enrollment).where(Enrollment.id == normalized_enrollment_id)
+        )
+        enrollment = enrollment_result.scalar_one_or_none()
+
+        if enrollment is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Enrollment not found",
+            )
+
+        if str(enrollment.user_id) != str(user.id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Enrollment belongs to another user",
+            )
+
+        if normalized_course_id is None:
+            normalized_course_id = str(enrollment.course_id)
+
+    document = DocumentRecord(
+        user_id=user.id,
+        course_id=normalized_course_id,
+        enrollment_id=normalized_enrollment_id,
+        document_number=normalized_number,
+        document_type=normalized_document_type,
+        title=normalized_title,
+        status=normalized_status,
+    )
+    session.add(document)
+
+    try:
+        await session.flush()
+
+        if file is not None and file.filename:
+            document.storage_path = await save_admin_document_file(str(document.id), file)
+            await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.document_created",
+            entity_type="document",
+            entity_id=str(document.id),
+            payload={
+                "document": {
+                    "id": str(document.id),
+                    "document_number": document.document_number,
+                    "title": document.title,
+                    "document_type": document.document_type,
+                    "status": document.status,
+                    "user_id": str(document.user_id),
+                    "course_id": str(document.course_id) if document.course_id else None,
+                    "enrollment_id": str(document.enrollment_id) if document.enrollment_id else None,
+                    "file_available": bool(document.storage_path),
+                },
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document with this number already exists",
+        )
+
+    row = await get_admin_document_row_or_404(str(document.id), session)
+
+    return build_admin_document_item(row)

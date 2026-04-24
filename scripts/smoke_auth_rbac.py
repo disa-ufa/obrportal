@@ -250,6 +250,15 @@ def main() -> int:
     assert isinstance(missing_admin_document_download, dict)
     checks.append("admin missing account document download returns 404")
 
+    status, admin_documents = request_json(
+        "GET",
+        "/api/v1/admin/documents",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin documents")
+    assert isinstance(admin_documents, list)
+    checks.append("admin documents list ok")
+
     status, rbac = request_json("GET", "/api/v1/admin/rbac-check", token=admin_token)
     assert_status(status, 200, "admin rbac-check")
     assert isinstance(rbac, dict)

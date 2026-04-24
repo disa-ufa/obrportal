@@ -155,3 +155,20 @@ class AdminAuditEventItem(BaseModel):
     user_agent: str | None = None
     payload: dict
     created_at: datetime
+
+
+class AdminDocumentItem(BaseModel):
+    id: str
+    document_number: str
+    document_type: str
+    title: str
+    status: str
+    user_id: str
+    user_email: str
+    user_full_name: str | None = None
+    course_id: str | None = None
+    course_title: str | None = None
+    enrollment_id: str | None = None
+    file_available: bool = False
+    created_at: datetime
+    updated_at: datetime

@@ -2747,3 +2747,142 @@ def test_account_document_download_without_token_returns_401() -> None:
 
     assert status == 401
     assert isinstance(payload, dict)
+
+
+def post_multipart_admin_document(
+    *,
+    token: str,
+    fields: dict[str, str],
+    file_field: tuple[str, bytes, str] | None = None,
+):
+    import httpx
+
+    files = None
+
+    if file_field is not None:
+        filename, content, content_type = file_field
+        files = {
+            "file": (filename, content, content_type),
+        }
+
+    return httpx.post(
+        "http://127.0.0.1:8000/api/v1/admin/documents",
+        headers={"Authorization": f"Bearer {token}"},
+        data=fields,
+        files=files,
+        timeout=20.0,
+    )
+
+
+def test_admin_can_list_admin_documents() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/documents",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, list)
+
+
+def test_admin_can_create_document_with_file() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    response = post_multipart_admin_document(
+        token=token,
+        fields={
+            "user_id": user_id,
+            "title": "Admin uploaded certificate",
+            "document_type": "Сертификат",
+            "status": "available",
+        },
+        file_field=("certificate.pdf", b"admin uploaded certificate content", "application/pdf"),
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["title"] == "Admin uploaded certificate"
+    assert payload["document_type"] == "Сертификат"
+    assert payload["status"] == "available"
+    assert payload["user_id"] == user_id
+    assert payload["file_available"] is True
+
+    status, account_documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(account_documents, dict)
+
+    item = next(
+        (candidate for candidate in account_documents["items"] if candidate["id"] == payload["id"]),
+        None,
+    )
+    assert item is not None
+    assert item["file_available"] is True
+
+
+def test_admin_create_document_duplicate_number_returns_409() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document_number = unique_document_number()
+
+    first_response = post_multipart_admin_document(
+        token=token,
+        fields={
+            "user_id": user_id,
+            "title": "Duplicate document first",
+            "document_type": "Сертификат",
+            "document_number": document_number,
+            "status": "available",
+        },
+    )
+    assert first_response.status_code == 201
+
+    second_response = post_multipart_admin_document(
+        token=token,
+        fields={
+            "user_id": user_id,
+            "title": "Duplicate document second",
+            "document_type": "Сертификат",
+            "document_number": document_number,
+            "status": "available",
+        },
+    )
+    assert second_response.status_code == 409
+
+
+def test_learner_cannot_create_admin_document() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    response = post_multipart_admin_document(
+        token=learner_token,
+        fields={
+            "user_id": user_id,
+            "title": "Forbidden document",
+            "document_type": "Сертификат",
+            "status": "available",
+        },
+    )
+
+    assert response.status_code == 403
