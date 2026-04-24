@@ -1311,6 +1311,7 @@ export default function App() {
                   user={user}
                   onPageChange={handleNavigatePublicPage}
                   onLogout={handleLogout}
+                  onOpenCourse={handleOpenPublicCourse}
                 />
               )
             ) : (

@@ -67,6 +67,14 @@ export async function getAccountSummary() {
   return request("/api/v1/account/summary");
 }
 
+export async function getAccountCourses() {
+  return request("/api/v1/account/courses");
+}
+
+export async function getAccountDocuments() {
+  return request("/api/v1/account/documents");
+}
+
 export async function checkAdminRbac() {
   return request("/api/v1/admin/rbac-check");
 }

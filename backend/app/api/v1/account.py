@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import build_current_user_response, get_current_user
 from app.db.session import get_db
 from app.models.course import Course
+from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup
 from app.models.organization import Organization
@@ -14,6 +15,8 @@ from app.models.user import User
 from app.schemas.account import (
     AccountCourseItemResponse,
     AccountCoursesResponse,
+    AccountDocumentItemResponse,
+    AccountDocumentsResponse,
     AccountSummaryResponse,
 )
 
@@ -28,24 +31,24 @@ async def get_account_summary(
 ) -> AccountSummaryResponse:
     profile = await build_current_user_response(session, current_user)
 
-    enrollments_count_result = await session.execute(
-        select(Enrollment.id).where(Enrollment.user_id == current_user.id)
+    enrollments_count = await session.scalar(
+        select(func.count(Enrollment.id)).where(Enrollment.user_id == current_user.id)
     )
-    enrollment_ids = enrollments_count_result.scalars().all()
-
-    active_courses_count_result = await session.execute(
-        select(Enrollment.id).where(
+    active_courses_count = await session.scalar(
+        select(func.count(Enrollment.id)).where(
             Enrollment.user_id == current_user.id,
             Enrollment.status.in_(["assigned", "active"]),
         )
     )
-    active_course_ids = active_courses_count_result.scalars().all()
+    documents_count = await session.scalar(
+        select(func.count(DocumentRecord.id)).where(DocumentRecord.user_id == current_user.id)
+    )
 
     return AccountSummaryResponse(
         profile=profile,
-        enrollments_count=len(enrollment_ids),
-        active_courses_count=len(active_course_ids),
-        documents_count=0,
+        enrollments_count=int(enrollments_count or 0),
+        active_courses_count=int(active_courses_count or 0),
+        documents_count=int(documents_count or 0),
     )
 
 
@@ -97,6 +100,51 @@ async def get_account_courses(
     ]
 
     return AccountCoursesResponse(
+        total=len(items),
+        items=items,
+    )
+
+
+@router.get("/documents", response_model=AccountDocumentsResponse)
+async def get_account_documents(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountDocumentsResponse:
+    result = await session.execute(
+        select(
+            DocumentRecord.id.label("id"),
+            DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.document_type.label("document_type"),
+            DocumentRecord.title.label("title"),
+            DocumentRecord.status.label("status"),
+            DocumentRecord.file_url.label("file_url"),
+            DocumentRecord.enrollment_id.label("enrollment_id"),
+            Course.id.label("course_id"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+        )
+        .outerjoin(Course, Course.id == DocumentRecord.course_id)
+        .where(DocumentRecord.user_id == current_user.id)
+        .order_by(DocumentRecord.created_at.desc(), DocumentRecord.title.asc())
+    )
+
+    items = [
+        AccountDocumentItemResponse(
+            id=row.id,
+            document_number=row.document_number,
+            document_type=row.document_type,
+            title=row.title,
+            status=row.status,
+            file_url=row.file_url,
+            course_id=row.course_id,
+            course_slug=row.course_slug,
+            course_title=row.course_title,
+            enrollment_id=row.enrollment_id,
+        )
+        for row in result.all()
+    ]
+
+    return AccountDocumentsResponse(
         total=len(items),
         items=items,
     )

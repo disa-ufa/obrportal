@@ -2477,3 +2477,123 @@ def test_account_courses_without_token_returns_401() -> None:
 
     assert status == 401
     assert isinstance(payload, dict)
+
+
+def unique_document_number() -> str:
+    from uuid import uuid4
+
+    return f"DOC-{uuid4().hex[:12].upper()}"
+
+
+def create_test_document_record_in_db(
+    *,
+    user_id: str,
+    course_id: str | None = None,
+    enrollment_id: str | None = None,
+    title: str | None = None,
+    document_type: str = "Сертификат",
+    status: str = "available",
+    file_url: str | None = None,
+) -> dict:
+    import asyncio
+    from uuid import uuid4
+
+    import app.db.base  # noqa: F401
+    from app.core.config import settings
+    from app.models.document_record import DocumentRecord
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    document_title = title or f"Document {uuid4().hex[:8]}"
+    document_number = unique_document_number()
+
+    async def _create() -> dict:
+        engine = create_async_engine(settings.database_url, future=True)
+        SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+        try:
+            async with SessionLocal() as session:
+                document = DocumentRecord(
+                    user_id=user_id,
+                    course_id=course_id,
+                    enrollment_id=enrollment_id,
+                    document_number=document_number,
+                    document_type=document_type,
+                    title=document_title,
+                    status=status,
+                    file_url=file_url,
+                )
+                session.add(document)
+                await session.commit()
+                await session.refresh(document)
+
+                return {
+                    "id": str(document.id),
+                    "document_number": document.document_number,
+                    "document_type": document.document_type,
+                    "title": document.title,
+                    "status": document.status,
+                    "course_id": str(document.course_id) if document.course_id else None,
+                    "enrollment_id": str(document.enrollment_id) if document.enrollment_id else None,
+                }
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(_create())
+
+
+def test_admin_can_get_account_documents() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=course["id"],
+        enrollment_id=enrollment["id"],
+        title="Admin certificate",
+        document_type="Сертификат",
+    )
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["total"] >= 1
+    assert isinstance(payload["items"], list)
+
+    item = next(
+        (candidate for candidate in payload["items"] if candidate["id"] == document["id"]),
+        None,
+    )
+    assert item is not None
+    assert item["document_number"] == document["document_number"]
+    assert item["document_type"] == "Сертификат"
+    assert item["title"] == "Admin certificate"
+    assert item["course_id"] == course["id"]
+    assert item["course_slug"] == course["slug"]
+    assert item["course_title"] == course["title"]
+    assert item["enrollment_id"] == enrollment["id"]
+
+
+def test_account_documents_without_token_returns_401() -> None:
+    status, payload = request_json(
+        "GET",
+        "/api/v1/account/documents",
+    )
+
+    assert status == 401
+    assert isinstance(payload, dict)

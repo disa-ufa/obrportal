@@ -229,6 +229,18 @@ def main() -> int:
     assert admin_account_summary["profile"]["email"] == ADMIN_EMAIL
     checks.append("admin account summary ok")
 
+    status, admin_account_documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin account documents")
+    assert isinstance(admin_account_documents, dict)
+    assert isinstance(admin_account_documents["total"], int)
+    assert admin_account_documents["total"] >= 0
+    assert isinstance(admin_account_documents["items"], list)
+    checks.append("admin account documents ok")
+
     status, rbac = request_json("GET", "/api/v1/admin/rbac-check", token=admin_token)
     assert_status(status, 200, "admin rbac-check")
     assert isinstance(rbac, dict)

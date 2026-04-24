@@ -31,3 +31,21 @@ class AccountCourseItemResponse(BaseModel):
 class AccountCoursesResponse(BaseModel):
     total: int
     items: list[AccountCourseItemResponse]
+
+
+class AccountDocumentItemResponse(BaseModel):
+    id: str
+    document_number: str
+    document_type: str
+    title: str
+    status: str
+    file_url: str | None = None
+    course_id: str | None = None
+    course_slug: str | None = None
+    course_title: str | None = None
+    enrollment_id: str | None = None
+
+
+class AccountDocumentsResponse(BaseModel):
+    total: int
+    items: list[AccountDocumentItemResponse]
