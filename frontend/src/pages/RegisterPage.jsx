@@ -1,76 +1,64 @@
 import { useState } from "react";
-import { registerUser } from "../api/client";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
 
-export function RegisterPage({ onPageChange }) {
+export function RegisterPage({ onPageChange, onRegister, loading, error }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [consent, setConsent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [successEmail, setSuccessEmail] = useState("");
+  const [localError, setLocalError] = useState("");
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setError("");
-    setSuccessEmail("");
+    setLocalError("");
 
     if (!consent) {
-      setError("одтвердите ознакомление с политикой н.");
+      setLocalError("Подтвердите ознакомление с политикой ПДн.");
       return;
     }
 
     try {
-      setLoading(true);
-
-      await registerUser({
+      await onRegister({
         email,
         password,
         full_name: fullName.trim() || null,
         phone: phone.trim() || null,
       });
-
-      setSuccessEmail(email.trim().toLowerCase());
-    } catch (err) {
-      setError(`${err.status || ""} ${err.message}`.trim());
-    } finally {
-      setLoading(false);
+    } catch {
+      // Ошибка уже поднята и отрисуется через внешний error
     }
   }
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <SectionCard
-        title="егистрация"
-        subtitle="ервый рабочий self-service signup для физического лица."
+        title="Регистрация"
+        subtitle="Рабочая регистрация пользователя с последующим автологином."
       >
-        {error && (
-          <Alert title="е удалось зарегистрироваться" tone="red">
-            {error}
+        {localError && (
+          <Alert title="Не удалось зарегистрироваться" tone="red">
+            {localError}
           </Alert>
         )}
 
-        {successEmail && (
-          <Alert title="ккаунт создан" tone="green">
-            ользователь <strong>{successEmail}</strong> зарегистрирован. а этом
-            этапе регистрация уже пишет данные в backend, а следующий шаг - автоматический
-            вход и полноценный user-flow после signup.
+        {error && (
+          <Alert title="Не удалось зарегистрироваться" tone="red">
+            {error}
           </Alert>
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
-              
+              ФИО
             </label>
             <input
               type="text"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              placeholder="ванов ван ванович"
+              placeholder="Иванов Иван Иванович"
               className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
             />
           </div>
@@ -104,13 +92,13 @@ export function RegisterPage({ onPageChange }) {
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
-              ароль
+              Пароль
             </label>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="инимум 8 символов"
+              placeholder="Минимум 8 символов"
               className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
               required
               minLength={8}
@@ -125,7 +113,7 @@ export function RegisterPage({ onPageChange }) {
               className="mt-1 h-4 w-4 rounded border-slate-300"
             />
             <span>
-              Я подтверждаю ознакомление с публичной политикой н и соглашаюсь
+              Я подтверждаю ознакомление с публичной политикой ПДн и соглашаюсь
               на обработку данных в рамках регистрации на платформе.
             </span>
           </label>
@@ -136,7 +124,7 @@ export function RegisterPage({ onPageChange }) {
               disabled={loading}
               className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "егистрируем..." : "арегистрироваться"}
+              {loading ? "Регистрируем..." : "Зарегистрироваться"}
             </button>
 
             <button
@@ -144,33 +132,26 @@ export function RegisterPage({ onPageChange }) {
               onClick={() => onPageChange("login")}
               className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
             >
-               меня уже есть аккаунт
+              У меня уже есть аккаунт
             </button>
           </div>
         </form>
       </SectionCard>
 
       <SectionCard
-        title="то будет на следующем этапе"
-        subtitle="Следующий проход уже будет про полный self-service flow."
+        title="Что будет дальше"
+        subtitle="Следующий проход уже будет про наполнение кабинета реальными данными."
       >
         <div className="space-y-4 text-sm leading-6 text-slate-600">
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            втовход после успешной регистрации
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            ереход сразу в личный кабинет
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            алидация формы и человеко-понятные ошибки
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            Связка с будущими пользовательскими программами и документами
-          </div>
-
           <div className="rounded-2xl bg-green-50 p-4 text-green-800 ring-1 ring-green-200">
-            ажное отличие от предыдущего шага: теперь регистрация уже реально создаёт
-            пользователя через backend endpoint.
+            После успешной регистрации пользователь автоматически входит в систему
+            и попадает в личный кабинет.
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            Дальше сюда подключим реальные данные по программам, прогрессу и документам.
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            Следом можно будет добавить человеко-понятные ошибки и подтверждение e-mail.
           </div>
         </div>
       </SectionCard>

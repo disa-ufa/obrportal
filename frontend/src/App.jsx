@@ -33,6 +33,7 @@ import {
   getReady,
   getStoredToken,
   login,
+  registerUser,
   removeAdminRolePermission,
   removeAdminUserRole,
   resetAdminUserPassword,
@@ -430,6 +431,38 @@ export default function App() {
   function handleOpenPublicCourse(courseSlug) {
     navigate(`/courses/${courseSlug}`);
   }
+
+  async function handleRegister(payload) {
+    setAuthLoading(true);
+    setError("");
+
+    try {
+      const tokenResponse = await registerUser(payload);
+      setToken(tokenResponse.access_token);
+
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+
+      if (userHasRole(currentUser, "admin")) {
+        setCurrentPage("dashboard");
+        await loadAdminData();
+        navigate("/admin", { replace: true });
+      } else {
+        setAdminData(EMPTY_ADMIN_DATA);
+        setAdminDataLoadedAt("");
+        navigate("/account", { replace: true });
+      }
+
+      return currentUser;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -1258,7 +1291,14 @@ export default function App() {
         />
         <Route
           path="/register"
-          element={<RegisterPage onPageChange={handleNavigatePublicPage} />}
+          element={
+            <RegisterPage
+              onPageChange={handleNavigatePublicPage}
+              onRegister={handleRegister}
+              loading={authLoading || initializingAuth}
+              error={error}
+            />
+          }
         />
         <Route
           path="/account"
