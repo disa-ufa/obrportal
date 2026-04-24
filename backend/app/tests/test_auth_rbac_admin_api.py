@@ -3043,3 +3043,95 @@ def test_learner_cannot_update_admin_document() -> None:
     )
 
     assert response.status_code == 403
+
+
+def delete_admin_document_request(
+    *,
+    token: str,
+    document_id: str,
+):
+    import httpx
+
+    return httpx.delete(
+        f"http://127.0.0.1:8000/api/v1/admin/documents/{document_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=20.0,
+    )
+
+
+def test_admin_can_delete_document() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Document to delete",
+        storage_content=b"document to delete content",
+        storage_extension=".pdf",
+    )
+
+    response = delete_admin_document_request(
+        token=token,
+        document_id=document["id"],
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "deleted"
+    assert payload["id"] == document["id"]
+
+    status, account_documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(account_documents, dict)
+    assert all(item["id"] != document["id"] for item in account_documents["items"])
+
+    status, missing_download_payload = request_json(
+        "GET",
+        f'/api/v1/account/documents/{document["id"]}/download',
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(missing_download_payload, dict)
+
+
+def test_admin_delete_document_not_found_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    response = delete_admin_document_request(
+        token=token,
+        document_id="00000000-0000-0000-0000-000000000000",
+    )
+
+    assert response.status_code == 404
+
+
+def test_learner_cannot_delete_admin_document() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Forbidden delete document",
+    )
+
+    response = delete_admin_document_request(
+        token=learner_token,
+        document_id=document["id"],
+    )
+
+    assert response.status_code == 403

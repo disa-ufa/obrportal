@@ -2164,3 +2164,38 @@ async def update_admin_document(
     row = await get_admin_document_row_or_404(str(document.id), session)
 
     return build_admin_document_item(row)
+
+
+@router.delete("/documents/{document_id}", response_model=AdminDeleteResult)
+async def delete_admin_document(
+    document_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDeleteResult:
+    document = await get_admin_document_or_404(document_id, session)
+
+    deleted_document_id = str(document.id)
+    storage_path = document.storage_path
+    before = document_record_snapshot(document)
+
+    await session.delete(document)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.document_deleted",
+        entity_type="document",
+        entity_id=deleted_document_id,
+        payload={
+            "before": before,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    delete_admin_document_file(storage_path)
+
+    return AdminDeleteResult(status="deleted", id=deleted_document_id)

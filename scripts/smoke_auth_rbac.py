@@ -268,6 +268,15 @@ def main() -> int:
     assert isinstance(missing_admin_document_update, dict)
     checks.append("admin missing document update returns 404")
 
+    status, missing_admin_document_delete = request_json(
+        "DELETE",
+        "/api/v1/admin/documents/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin missing document delete")
+    assert isinstance(missing_admin_document_delete, dict)
+    checks.append("admin missing document delete returns 404")
+
     status, rbac = request_json("GET", "/api/v1/admin/rbac-check", token=admin_token)
     assert_status(status, 200, "admin rbac-check")
     assert isinstance(rbac, dict)
