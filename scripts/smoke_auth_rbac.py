@@ -210,6 +210,21 @@ def main() -> int:
     assert_status(status, 409, "public register duplicate phone")
     assert isinstance(duplicate_phone_register, dict)
     checks.append("public register duplicate phone returns 409")
+    status, public_courses = request_json(
+        "GET",
+        "/api/v1/public/courses?limit=5",
+    )
+    assert_status(status, 200, "public courses")
+    assert isinstance(public_courses, list)
+    checks.append("public courses list ok")
+
+    status, missing_public_course = request_json(
+        "GET",
+        "/api/v1/public/courses/missing-public-course",
+    )
+    assert_status(status, 404, "public missing course")
+    assert isinstance(missing_public_course, dict)
+    checks.append("public missing course returns 404")
 
     status, admin_account_summary = request_json(
         "GET",

@@ -3715,3 +3715,127 @@ def test_learner_cannot_manage_admin_enrollments() -> None:
 
     assert status == 403
     assert isinstance(create_payload, dict)
+
+
+def test_public_can_list_active_courses() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    active_slug = unique_course_slug()
+    inactive_slug = unique_course_slug()
+
+    status, active_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=token,
+        body={
+            "slug": active_slug,
+            "title": "Public Active Course",
+            "description": "Visible public course",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(active_course, dict)
+
+    status, inactive_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=token,
+        body={
+            "slug": inactive_slug,
+            "title": "Public Inactive Course",
+            "description": "Hidden public course",
+            "hours": 36,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": False,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(inactive_course, dict)
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/public/courses?q={active_slug}",
+    )
+
+    assert status == 200
+    assert isinstance(payload, list)
+    assert any(item["slug"] == active_slug for item in payload)
+    assert all(item["slug"] != inactive_slug for item in payload)
+
+
+def test_public_can_get_active_course_detail_by_slug() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=token,
+        body={
+            "slug": slug,
+            "title": "Public Detail Course",
+            "description": "Course detail from backend",
+            "hours": 108,
+            "format": "mixed",
+            "document_type": "Удостоверение",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/public/courses/{slug}",
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["slug"] == slug
+    assert payload["title"] == "Public Detail Course"
+    assert payload["hours"] == 108
+    assert payload["document_type"] == "Удостоверение"
+
+
+def test_public_inactive_course_detail_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=token,
+        body={
+            "slug": slug,
+            "title": "Inactive Detail Course",
+            "is_active": False,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/public/courses/{slug}",
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_public_missing_course_detail_returns_404() -> None:
+    status, payload = request_json(
+        "GET",
+        "/api/v1/public/courses/missing-public-course",
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)

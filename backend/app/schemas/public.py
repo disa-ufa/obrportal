@@ -14,3 +14,17 @@ class PublicDocumentVerifyResponse(BaseModel):
     issued_at: datetime | None = None
     registry_status: str
     verification_status: str
+
+
+class PublicCourseItemResponse(BaseModel):
+    id: str
+    slug: str
+    title: str
+    description: str | None = None
+    hours: int | None = None
+    format: str | None = None
+    document_type: str | None = None
+
+
+class PublicCourseDetailResponse(PublicCourseItemResponse):
+    pass

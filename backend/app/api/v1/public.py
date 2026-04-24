@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 
@@ -9,11 +9,94 @@ from app.db.session import get_db
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.user import User
-from app.schemas.public import PublicDocumentVerifyResponse
+from app.schemas.public import PublicCourseDetailResponse, PublicCourseItemResponse, PublicDocumentVerifyResponse
 
 
 router = APIRouter(prefix="/public", tags=["public"])
 
+
+
+
+def build_public_course_item(course: Course) -> PublicCourseItemResponse:
+    return PublicCourseItemResponse(
+        id=str(course.id),
+        slug=course.slug,
+        title=course.title,
+        description=course.description,
+        hours=course.hours,
+        format=course.format,
+        document_type=course.document_type,
+    )
+
+
+def build_public_course_detail(course: Course) -> PublicCourseDetailResponse:
+    return PublicCourseDetailResponse(
+        id=str(course.id),
+        slug=course.slug,
+        title=course.title,
+        description=course.description,
+        hours=course.hours,
+        format=course.format,
+        document_type=course.document_type,
+    )
+
+
+@router.get("/courses", response_model=list[PublicCourseItemResponse])
+async def list_public_courses(
+    q: str | None = Query(default=None, max_length=255),
+    limit: int = Query(default=100, ge=1, le=300),
+    session: AsyncSession = Depends(get_db),
+) -> list[PublicCourseItemResponse]:
+    query = (
+        select(Course)
+        .where(Course.is_active.is_(True))
+        .order_by(Course.title.asc())
+        .limit(limit)
+    )
+
+    if q and q.strip():
+        q_filter = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                Course.slug.ilike(q_filter),
+                Course.title.ilike(q_filter),
+                Course.description.ilike(q_filter),
+                Course.format.ilike(q_filter),
+                Course.document_type.ilike(q_filter),
+            )
+        )
+
+    result = await session.execute(query)
+    courses = result.scalars().all()
+
+    return [
+        build_public_course_item(course)
+        for course in courses
+    ]
+
+
+@router.get("/courses/{slug}", response_model=PublicCourseDetailResponse)
+async def get_public_course_detail(
+    slug: str,
+    session: AsyncSession = Depends(get_db),
+) -> PublicCourseDetailResponse:
+    normalized_slug = slug.strip().lower()
+
+    result = await session.execute(
+        select(Course).where(
+            Course.slug == normalized_slug,
+            Course.is_active.is_(True),
+        )
+    )
+    course = result.scalar_one_or_none()
+
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    return build_public_course_detail(course)
 
 @router.get("/documents/verify", response_model=PublicDocumentVerifyResponse)
 async def verify_document(
