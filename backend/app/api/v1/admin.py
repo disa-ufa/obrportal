@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import re
+from mimetypes import guess_type
 from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -2199,3 +2201,60 @@ async def delete_admin_document(
     delete_admin_document_file(storage_path)
 
     return AdminDeleteResult(status="deleted", id=deleted_document_id)
+
+
+def resolve_admin_document_storage_path(storage_path: str) -> Path | None:
+    storage_root = Path(settings.document_storage_dir).resolve()
+    absolute_path = (storage_root / storage_path).resolve()
+
+    try:
+        absolute_path.relative_to(storage_root)
+    except ValueError:
+        return None
+
+    return absolute_path
+
+
+def build_admin_document_download_filename(document: DocumentRecord) -> str:
+    suffix = Path(document.storage_path or "").suffix or ".bin"
+    safe_stem = "".join(
+        ch if ch.isalnum() or ch in ("-", "_") else "_"
+        for ch in document.document_number
+    ).strip("_")
+
+    if not safe_stem:
+        safe_stem = "document"
+
+    return f"{safe_stem}{suffix}"
+
+
+@router.get("/documents/{document_id}/download")
+async def download_admin_document(
+    document_id: str,
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+):
+    document = await get_admin_document_or_404(document_id, session)
+
+    if not document.storage_path:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document file is not available",
+        )
+
+    resolved_path = resolve_admin_document_storage_path(document.storage_path)
+
+    if not resolved_path or not resolved_path.exists() or not resolved_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document file is not available",
+        )
+
+    media_type = guess_type(resolved_path.name)[0] or "application/octet-stream"
+    filename = build_admin_document_download_filename(document)
+
+    return FileResponse(
+        path=resolved_path,
+        media_type=media_type,
+        filename=filename,
+    )

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   createAdminDocument,
   deleteAdminDocument,
+  downloadAdminDocument,
   getAdminDocuments,
   getAdminUsers,
   updateAdminDocument,
@@ -83,6 +84,7 @@ export function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editSavingId, setEditSavingId] = useState("");
+  const [downloadSavingId, setDownloadSavingId] = useState("");
   const [deleteSavingId, setDeleteSavingId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -279,6 +281,25 @@ export function DocumentsPage() {
       setError(`${err.status || ""} ${err.message || "Не удалось обновить документ."}`.trim());
     } finally {
       setEditSavingId("");
+    }
+  }
+
+  async function handleAdminDownload(documentItem) {
+    if (!documentItem.file_available) {
+      setError("Файл документа недоступен для скачивания.");
+      return;
+    }
+
+    try {
+      setDownloadSavingId(documentItem.id);
+      setError("");
+      setSuccessMessage("");
+
+      await downloadAdminDocument(documentItem.id);
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message || "Не удалось скачать документ."}`.trim());
+    } finally {
+      setDownloadSavingId("");
     }
   }
 
@@ -512,6 +533,7 @@ export function DocumentsPage() {
               {documents.map((documentItem) => {
                 const isEditing = editingDocumentId === documentItem.id;
                 const isEditSaving = editSavingId === documentItem.id;
+                const isDownloadSaving = downloadSavingId === documentItem.id;
                 const isDeleteSaving = deleteSavingId === documentItem.id;
 
                 return (
@@ -599,6 +621,15 @@ export function DocumentsPage() {
                             className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Редактировать
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleAdminDownload(documentItem)}
+                            disabled={!documentItem.file_available || isDownloadSaving || isDeleteSaving}
+                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isDownloadSaving ? "Скачиваем..." : "Скачать"}
                           </button>
 
                           <button

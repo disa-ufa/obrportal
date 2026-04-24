@@ -3135,3 +3135,89 @@ def test_learner_cannot_delete_admin_document() -> None:
     )
 
     assert response.status_code == 403
+
+
+def get_admin_document_download_response(
+    *,
+    token: str,
+    document_id: str,
+):
+    import httpx
+
+    return httpx.get(
+        f"http://127.0.0.1:8000/api/v1/admin/documents/{document_id}/download",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=20.0,
+    )
+
+
+def test_admin_can_download_admin_document() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Admin downloadable document",
+        storage_content=b"admin downloadable content",
+        storage_extension=".pdf",
+    )
+
+    response = get_admin_document_download_response(
+        token=token,
+        document_id=document["id"],
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"admin downloadable content"
+
+    disposition = response.headers.get("content-disposition", "")
+    assert document["document_number"].lower() in disposition.lower()
+
+
+def test_admin_download_document_without_file_returns_409() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Document without file",
+    )
+
+    response = get_admin_document_download_response(
+        token=token,
+        document_id=document["id"],
+    )
+
+    assert response.status_code == 409
+
+
+def test_learner_cannot_download_admin_document() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Forbidden admin download document",
+        storage_content=b"private admin file",
+        storage_extension=".pdf",
+    )
+
+    response = get_admin_document_download_response(
+        token=learner_token,
+        document_id=document["id"],
+    )
+
+    assert response.status_code == 403

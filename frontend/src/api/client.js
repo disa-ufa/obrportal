@@ -389,3 +389,50 @@ export async function deleteAdminDocument(documentId) {
     method: "DELETE",
   });
 }
+
+
+export async function downloadAdminDocument(documentId) {
+  const token = getStoredToken();
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/documents/${documentId}/download`, {
+    method: "GET",
+    headers: {
+      "Accept": "application/octet-stream",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    let data = null;
+
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+
+    const message = data?.detail || `HTTP ${response.status}`;
+    const error = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    error.status = response.status;
+    error.payload = data;
+    throw error;
+  }
+
+  const blob = await response.blob();
+  const filename = extractDownloadFilename(response, `admin-document-${documentId}.bin`);
+  const objectUrl = window.URL.createObjectURL(blob);
+
+  try {
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.setTimeout(() => {
+      window.URL.revokeObjectURL(objectUrl);
+    }, 0);
+  }
+}
