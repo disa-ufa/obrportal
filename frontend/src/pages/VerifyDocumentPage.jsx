@@ -1,23 +1,19 @@
 import { useMemo, useState } from "react";
+import { verifyPublicDocument } from "../api/client";
 
-const DEMO_DOCUMENTS = [
-  {
-    id: "DOC-2026-0001",
-    holder: "Иванов Иван Иванович",
-    program: "Повышение квалификации педагогических работников",
-    issueDate: "12.07.2026",
-    status: "Документ подтвержден",
-    type: "Удостоверение",
-  },
-  {
-    id: "DOC-2026-0107",
-    holder: "Петрова Анна Сергеевна",
-    program: "Методист: проектирование программ и аттестации",
-    issueDate: "20.07.2026",
-    status: "Документ подтвержден",
-    type: "Сертификат",
-  },
-];
+function formatIssuedAt(value) {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("ru-RU").format(date);
+}
 
 function ResultCard({ result }) {
   return (
@@ -27,28 +23,58 @@ function ResultCard({ result }) {
           Проверка завершена
         </span>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-          {result.type}
+          {result.document_type}
         </span>
       </div>
 
-      <h2 className="mt-4 text-2xl font-bold text-slate-900">{result.status}</h2>
+      <h2 className="mt-4 text-2xl font-bold text-slate-900">
+        {result.verification_status}
+      </h2>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-          <div className="text-xs uppercase tracking-wide text-slate-500">Номер документа</div>
-          <div className="mt-2 font-semibold text-slate-900">{result.id}</div>
+          <div className="text-xs uppercase tracking-wide text-slate-500">
+            Номер документа
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {result.document_number}
+          </div>
         </div>
+
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-          <div className="text-xs uppercase tracking-wide text-slate-500">Дата выдачи</div>
-          <div className="mt-2 font-semibold text-slate-900">{result.issueDate}</div>
+          <div className="text-xs uppercase tracking-wide text-slate-500">
+            Дата выдачи
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {formatIssuedAt(result.issued_at)}
+          </div>
         </div>
+
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-          <div className="text-xs uppercase tracking-wide text-slate-500">Владелец</div>
-          <div className="mt-2 font-semibold text-slate-900">{result.holder}</div>
+          <div className="text-xs uppercase tracking-wide text-slate-500">
+            Владелец
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {result.holder_name || "—"}
+          </div>
         </div>
+
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-          <div className="text-xs uppercase tracking-wide text-slate-500">Программа</div>
-          <div className="mt-2 font-semibold text-slate-900">{result.program}</div>
+          <div className="text-xs uppercase tracking-wide text-slate-500">
+            Программа
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {result.course_title || result.title || "—"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 md:col-span-2">
+          <div className="text-xs uppercase tracking-wide text-slate-500">
+            Статус в реестре
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {result.registry_status || "—"}
+          </div>
         </div>
       </div>
     </div>
@@ -57,30 +83,43 @@ function ResultCard({ result }) {
 
 export function VerifyDocumentPage({ onPageChange }) {
   const [query, setQuery] = useState("");
+  const [result, setResult] = useState(null);
   const [submittedQuery, setSubmittedQuery] = useState("");
-  const [touched, setTouched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
 
-  const normalizedSubmitted = submittedQuery.trim().toUpperCase();
+  const normalizedQuery = useMemo(() => query.trim(), [query]);
 
-  const result = useMemo(() => {
-    if (!normalizedSubmitted) {
-      return null;
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (!normalizedQuery) {
+      setError("Введите номер документа.");
+      setResult(null);
+      setNotFound(false);
+      return;
     }
 
-    return (
-      DEMO_DOCUMENTS.find(
-        (item) => item.id.toUpperCase() === normalizedSubmitted
-      ) || null
-    );
-  }, [normalizedSubmitted]);
+    setLoading(true);
+    setError("");
+    setNotFound(false);
+    setResult(null);
+    setSubmittedQuery(normalizedQuery);
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    setTouched(true);
-    setSubmittedQuery(query);
+    try {
+      const response = await verifyPublicDocument(normalizedQuery);
+      setResult(response);
+    } catch (err) {
+      if (err.status === 404) {
+        setNotFound(true);
+      } else {
+        setError(err.message || "Не удалось выполнить проверку документа.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
-
-  const showNotFound = touched && normalizedSubmitted && !result;
 
   return (
     <div className="space-y-6">
@@ -94,7 +133,7 @@ export function VerifyDocumentPage({ onPageChange }) {
         <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
           Введите номер документа или безопасный идентификатор из QR-кода.
           Публичный контур показывает только безопасный набор полей без доступа
-          к внутренним служебным реестрам.
+          к внутренним служебным данным.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4 lg:grid-cols-[1fr_auto]">
@@ -102,25 +141,35 @@ export function VerifyDocumentPage({ onPageChange }) {
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Например: DOC-2026-0001"
+            placeholder="Например: DOC-XXXXXXXXXXXX"
             className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
           />
           <button
             type="submit"
-            className="h-12 rounded-full bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-700"
+            disabled={loading}
+            className="h-12 rounded-full bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Проверить документ
+            {loading ? "Проверяем..." : "Проверить документ"}
           </button>
         </form>
 
-        <div className="mt-4 text-xs text-slate-500">
-          Демо-примеры: DOC-2026-0001, DOC-2026-0107
-        </div>
+        {submittedQuery && !loading && (
+          <div className="mt-4 text-xs text-slate-500">
+            Последний запрос: {submittedQuery}
+          </div>
+        )}
       </section>
+
+      {error && (
+        <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-red-200">
+          <div className="text-lg font-bold text-red-700">Ошибка проверки</div>
+          <p className="mt-2 text-sm leading-6 text-slate-600">{error}</p>
+        </section>
+      )}
 
       {result && <ResultCard result={result} />}
 
-      {showNotFound && (
+      {notFound && (
         <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200">
           <div className="text-xl font-bold text-slate-900">Документ не найден</div>
           <p className="mt-2 text-sm leading-6 text-slate-600">

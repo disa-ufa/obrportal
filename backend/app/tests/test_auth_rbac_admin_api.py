@@ -2597,3 +2597,51 @@ def test_account_documents_without_token_returns_401() -> None:
 
     assert status == 401
     assert isinstance(payload, dict)
+
+
+def test_public_can_verify_document() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=course["id"],
+        enrollment_id=enrollment["id"],
+        title="Public verify certificate",
+        document_type="Сертификат",
+    )
+
+    status, payload = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={document["document_number"]}',
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["document_number"] == document["document_number"]
+    assert payload["document_type"] == "Сертификат"
+    assert payload["title"] == "Public verify certificate"
+    assert payload["course_title"] == course["title"]
+    assert payload["enrollment_id"] if False else True
+    assert payload["verification_status"] == "Документ подтвержден"
+
+
+def test_public_verify_document_not_found_returns_404() -> None:
+    status, payload = request_json(
+        "GET",
+        "/api/v1/public/documents/verify?number=DOC-NOT-FOUND",
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)

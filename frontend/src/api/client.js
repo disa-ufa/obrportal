@@ -75,6 +75,11 @@ export async function getAccountDocuments() {
   return request("/api/v1/account/documents");
 }
 
+export async function verifyPublicDocument(number) {
+  const query = new URLSearchParams({ number });
+  return request(`/api/v1/public/documents/verify?${query.toString()}`);
+}
+
 export async function checkAdminRbac() {
   return request("/api/v1/admin/rbac-check");
 }
