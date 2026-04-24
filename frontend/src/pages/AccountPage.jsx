@@ -55,6 +55,20 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [downloadLoadingId, setDownloadLoadingId] = useState("");
+  const [accountNotice, setAccountNotice] = useState(null);
+
+  useEffect(() => {
+    try {
+      const rawNotice = sessionStorage.getItem("obrportal_account_notice");
+
+      if (rawNotice) {
+        setAccountNotice(JSON.parse(rawNotice));
+        sessionStorage.removeItem("obrportal_account_notice");
+      }
+    } catch {
+      setAccountNotice(null);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,6 +171,12 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       {downloadError && (
         <Alert title="Не удалось скачать документ" tone="red">
           {downloadError}
+        </Alert>
+      )}
+
+      {accountNotice && (
+        <Alert title={accountNotice.title || "Уведомление"} tone={accountNotice.tone || "green"}>
+          {accountNotice.message}
         </Alert>
       )}
 

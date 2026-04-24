@@ -455,6 +455,14 @@ export default function App() {
     }
   }
 
+  function setAccountEnrollmentNotice(notice) {
+    try {
+      sessionStorage.setItem("obrportal_account_notice", JSON.stringify(notice));
+    } catch {
+      // sessionStorage может быть недоступен в приватном режиме или тестовой среде
+    }
+  }
+
   async function completePendingEnrollmentIfNeeded() {
     const pendingSlug = getPendingEnrollmentSlug();
 
@@ -466,6 +474,11 @@ export default function App() {
       const course = await getPublicCourseDetail(pendingSlug);
       await enrollAccountCourse(course.id);
       clearPendingEnrollmentSlug();
+      setAccountEnrollmentNotice({
+        tone: "green",
+        title: "Запись на курс",
+        message: "Вы успешно записаны на выбранную программу. Курс добавлен в личный кабинет.",
+      });
 
       return {
         status: "created",
@@ -474,6 +487,11 @@ export default function App() {
     } catch (err) {
       if (err.status === 409) {
         clearPendingEnrollmentSlug();
+        setAccountEnrollmentNotice({
+          tone: "green",
+          title: "Курс уже назначен",
+          message: "Вы уже были записаны на выбранную программу. Курс доступен в личном кабинете.",
+        });
 
         return {
           status: "already_enrolled",
@@ -483,6 +501,11 @@ export default function App() {
 
       if (err.status === 404) {
         clearPendingEnrollmentSlug();
+        setAccountEnrollmentNotice({
+          tone: "red",
+          title: "Курс не найден",
+          message: "Выбранная программа больше не опубликована или была отключена администратором.",
+        });
 
         return {
           status: "not_found",
