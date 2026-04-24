@@ -75,6 +75,10 @@ export async function getAccountDocuments() {
   return request("/api/v1/account/documents");
 }
 
+export async function getAccountDocumentDownload(documentId) {
+  return request(`/api/v1/account/documents/${documentId}/download`);
+}
+
 export async function verifyPublicDocument(number) {
   const query = new URLSearchParams({ number });
   return request(`/api/v1/public/documents/verify?${query.toString()}`);

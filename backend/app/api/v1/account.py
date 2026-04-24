@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,7 @@ from app.models.user import User
 from app.schemas.account import (
     AccountCourseItemResponse,
     AccountCoursesResponse,
+    AccountDocumentDownloadResponse,
     AccountDocumentItemResponse,
     AccountDocumentsResponse,
     AccountSummaryResponse,
@@ -147,4 +148,43 @@ async def get_account_documents(
     return AccountDocumentsResponse(
         total=len(items),
         items=items,
+    )
+
+
+@router.get("/documents/{document_id}/download", response_model=AccountDocumentDownloadResponse)
+async def get_account_document_download(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountDocumentDownloadResponse:
+    result = await session.execute(
+        select(
+            DocumentRecord.id.label("id"),
+            DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.title.label("title"),
+            DocumentRecord.file_url.label("file_url"),
+        ).where(
+            DocumentRecord.id == document_id,
+            DocumentRecord.user_id == current_user.id,
+        )
+    )
+    row = result.first()
+
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    if not row.file_url:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document file is not available",
+        )
+
+    return AccountDocumentDownloadResponse(
+        id=row.id,
+        document_number=row.document_number,
+        title=row.title,
+        file_url=row.file_url,
     )

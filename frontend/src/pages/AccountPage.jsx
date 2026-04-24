@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   getAccountCourses,
+  getAccountDocumentDownload,
   getAccountDocuments,
   getAccountSummary,
 } from "../api/client";
@@ -52,6 +53,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [documentsResponse, setDocumentsResponse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [downloadError, setDownloadError] = useState("");
+  const [downloadLoadingId, setDownloadLoadingId] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -89,6 +92,25 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       cancelled = true;
     };
   }, []);
+
+  async function handleDownload(documentId) {
+    try {
+      setDownloadError("");
+      setDownloadLoadingId(documentId);
+
+      const response = await getAccountDocumentDownload(documentId);
+
+      if (!response?.file_url) {
+        throw new Error("Файл документа пока недоступен.");
+      }
+
+      window.open(response.file_url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setDownloadError(`${err.status || ""} ${err.message || "Не удалось подготовить документ."}`.trim());
+    } finally {
+      setDownloadLoadingId("");
+    }
+  }
 
   const profile = summary?.profile || user;
   const courses = coursesResponse?.items || [];
@@ -139,6 +161,12 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         </Alert>
       )}
 
+      {downloadError && (
+        <Alert title="Не удалось скачать документ" tone="red">
+          {downloadError}
+        </Alert>
+      )}
+
       <div className="grid gap-6 xl:grid-cols-3">
         <SectionCard title="Профиль" subtitle="Базовая информация пользователя">
           {loading ? (
@@ -152,7 +180,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   E-mail
                 </div>
                 <div className="mt-2 font-semibold text-slate-900">
-                  {profile?.email || "—"}
+                  {profile?.email || "-"}
                 </div>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
@@ -160,7 +188,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   ФИО
                 </div>
                 <div className="mt-2 font-semibold text-slate-900">
-                  {profile?.full_name || "—"}
+                  {profile?.full_name || "-"}
                 </div>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
@@ -220,7 +248,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
               <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                 {documents.length > 0
                   ? "Документы уже доступны для пользователя."
-                  : "Следующим шагом сюда можно подключить скачивание файлов и проверку подлинности по реальным данным."}
+                  : "Следующим шагом сюда можно подключить хранение бинарных файлов и реальную выдачу через внутреннее хранилище."}
               </div>
             </div>
           )}
@@ -399,10 +427,15 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
 
                   <button
                     type="button"
-                    disabled
-                    className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-400 ring-1 ring-slate-200"
+                    onClick={() => handleDownload(documentItem.id)}
+                    disabled={!documentItem.file_url || downloadLoadingId === documentItem.id}
+                    className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Скачать документ
+                    {downloadLoadingId === documentItem.id
+                      ? "Готовим..."
+                      : documentItem.file_url
+                        ? "Скачать документ"
+                        : "Файл недоступен"}
                   </button>
                 </div>
               </article>

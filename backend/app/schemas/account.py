@@ -49,3 +49,10 @@ class AccountDocumentItemResponse(BaseModel):
 class AccountDocumentsResponse(BaseModel):
     total: int
     items: list[AccountDocumentItemResponse]
+
+
+class AccountDocumentDownloadResponse(BaseModel):
+    id: str
+    document_number: str
+    title: str
+    file_url: str

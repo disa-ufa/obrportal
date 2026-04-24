@@ -2645,3 +2645,86 @@ def test_public_verify_document_not_found_returns_404() -> None:
 
     assert status == 404
     assert isinstance(payload, dict)
+
+
+def test_admin_can_get_account_document_download() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=course["id"],
+        enrollment_id=enrollment["id"],
+        title="Downloadable certificate",
+        document_type="Сертификат",
+        file_url="https://example.com/files/downloadable-certificate.pdf",
+    )
+
+    status, payload = request_json(
+        "GET",
+        f'/api/v1/account/documents/{document["id"]}/download',
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["id"] == document["id"]
+    assert payload["document_number"] == document["document_number"]
+    assert payload["title"] == "Downloadable certificate"
+    assert payload["file_url"] == "https://example.com/files/downloadable-certificate.pdf"
+
+
+def test_foreign_user_cannot_get_account_document_download() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    admin_user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=admin_user_id,
+        status="completed",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    document = create_test_document_record_in_db(
+        user_id=admin_user_id,
+        course_id=course["id"],
+        enrollment_id=enrollment["id"],
+        title="Private document",
+        file_url="https://example.com/files/private-document.pdf",
+    )
+
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        f'/api/v1/account/documents/{document["id"]}/download',
+        token=learner_token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_account_document_download_without_token_returns_401() -> None:
+    status, payload = request_json(
+        "GET",
+        "/api/v1/account/documents/00000000-0000-0000-0000-000000000000/download",
+    )
+
+    assert status == 401
+    assert isinstance(payload, dict)
