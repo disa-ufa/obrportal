@@ -1155,6 +1155,60 @@ def main() -> int:
 
     learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
     checks.append("learner login ok")
+    self_enroll_slug = f"smoke-self-enroll-{uuid4().hex[:12]}"
+
+    status, self_enroll_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": self_enroll_slug,
+            "title": "Smoke Self Enrollment Course",
+            "description": "Smoke course for learner self enrollment",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+    assert_status(status, 201, "self enroll course create")
+    assert isinstance(self_enroll_course, dict)
+    checks.append("self enrollment course create ok")
+
+    self_enroll_url = "/api/v1/account/courses/" + str(self_enroll_course["id"]) + "/enroll"
+
+    status, self_enrollment = request_json(
+        "POST",
+        self_enroll_url,
+        token=learner_token,
+    )
+    assert_status(status, 201, "learner self enrollment")
+    assert isinstance(self_enrollment, dict)
+    assert self_enrollment["course_id"] == self_enroll_course["id"]
+    assert self_enrollment["course_slug"] == self_enroll_slug
+    checks.append("learner self enrollment ok")
+
+    status, duplicate_self_enrollment = request_json(
+        "POST",
+        self_enroll_url,
+        token=learner_token,
+    )
+    assert_status(status, 409, "learner duplicate self enrollment")
+    assert isinstance(duplicate_self_enrollment, dict)
+    checks.append("learner duplicate self enrollment returns 409")
+
+    status, learner_account_courses = request_json(
+        "GET",
+        "/api/v1/account/courses",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner account courses after self enrollment")
+    assert isinstance(learner_account_courses, dict)
+    assert any(
+        item["course_id"] == self_enroll_course["id"]
+        for item in learner_account_courses["items"]
+    )
+    checks.append("learner account courses include self enrollment")
 
     status, _ = request_json("GET", "/api/v1/admin/users", token=learner_token)
     assert_status(status, 403, "learner admin API")
