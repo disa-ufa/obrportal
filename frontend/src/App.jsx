@@ -41,6 +41,7 @@ import {
   updateAdminUser,
   updateOrgLearningGroup,
 } from "./api/client";
+import { PUBLIC_COURSES } from "./data/publicCourses";
 import { AuditPage } from "./pages/AuditPage";
 import { AuthPage } from "./pages/AuthPage";
 import { CatalogPage } from "./pages/CatalogPage";
@@ -50,6 +51,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { FaqPage } from "./pages/FaqPage";
 import { GroupsPage } from "./pages/GroupsPage";
 import { HomePage } from "./pages/HomePage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { OfferPage } from "./pages/OfferPage";
 import { OrganizationInfoPage } from "./pages/OrganizationInfoPage";
 import { OrganizationsPage } from "./pages/OrganizationsPage";
@@ -123,7 +125,7 @@ function getPublicPageFromPathname(pathname) {
   if (pathname === "/privacy") return "privacy";
   if (pathname === "/offer") return "offer";
   if (pathname === "/login") return "login";
-  return "home";
+  return "not-found";
 }
 
 function CourseDetailPublicRoute({ onPageChange, onOpenCourse }) {
@@ -136,6 +138,116 @@ function CourseDetailPublicRoute({ onPageChange, onOpenCourse }) {
       onOpenCourse={onOpenCourse}
     />
   );
+}
+
+function ensureMetaDescriptionTag() {
+  let element = document.querySelector('meta[name="description"]');
+
+  if (!element) {
+    element = document.createElement("meta");
+    element.setAttribute("name", "description");
+    document.head.appendChild(element);
+  }
+
+  return element;
+}
+
+function buildPublicMeta(pathname) {
+  if (pathname === "/") {
+    return {
+      title: "ObrPortal — образовательная платформа",
+      description:
+        "Публичный сайт образовательной платформы: каталог программ, сведения об организации, проверка документов и правовые страницы.",
+    };
+  }
+
+  if (pathname === "/catalog") {
+    return {
+      title: "Каталог программ — ObrPortal",
+      description:
+        "Публичный каталог образовательных программ с карточками курсов, стоимостью, форматом обучения и итоговыми документами.",
+    };
+  }
+
+  if (pathname.startsWith("/courses/")) {
+    const slug = pathname.replace(/^\/courses\//, "").replace(/\/$/, "");
+    const course = PUBLIC_COURSES.find((item) => item.slug === slug);
+
+    if (course) {
+      return {
+        title: `${course.title} — ObrPortal`,
+        description: `${course.title}. Формат: ${course.format}. Объем: ${course.hours} часов. Итоговый документ: ${course.document}.`,
+      };
+    }
+
+    return {
+      title: "Карточка курса — ObrPortal",
+      description:
+        "Описание образовательной программы, условий обучения, итоговой аттестации и итогового документа.",
+    };
+  }
+
+  if (pathname === "/organization-info") {
+    return {
+      title: "Сведения об образовательной организации — ObrPortal",
+      description:
+        "Официальный публичный раздел со сведениями об образовательной организации, документах, программах и контактных данных.",
+    };
+  }
+
+  if (pathname === "/verify-document") {
+    return {
+      title: "Проверка документа — ObrPortal",
+      description:
+        "Публичная проверка подлинности итогового документа по номеру или безопасному идентификатору.",
+    };
+  }
+
+  if (pathname === "/contacts") {
+    return {
+      title: "Контакты — ObrPortal",
+      description:
+        "Публичные контакты образовательной платформы для физических лиц, юридических лиц и обращений по документам.",
+    };
+  }
+
+  if (pathname === "/faq") {
+    return {
+      title: "FAQ — ObrPortal",
+      description:
+        "Частые вопросы по курсам, обучению, итоговым документам, проверке подлинности и работе платформы.",
+    };
+  }
+
+  if (pathname === "/privacy") {
+    return {
+      title: "Политика обработки персональных данных — ObrPortal",
+      description:
+        "Публичная политика обработки персональных данных: цели, состав данных, правовые основания и права субъекта.",
+    };
+  }
+
+  if (pathname === "/offer") {
+    return {
+      title: "Оферта — ObrPortal",
+      description:
+        "Публичная оферта образовательной платформы: предмет услуги, порядок акцепта, оплата, доступ к обучению и ответственность сторон.",
+    };
+  }
+
+  if (pathname === "/login") {
+    return {
+      title: "Вход — ObrPortal",
+      description:
+        "Публичная точка входа в образовательную платформу для пользователей и административных ролей.",
+    };
+  }
+
+  return {
+    title: "Страница не найдена — ObrPortal",
+    description:
+      "Запрошенная страница не найдена. Вернитесь на главную, в каталог программ или в обязательные публичные разделы.",
+  };
 }
 
 export default function App() {
@@ -179,6 +291,19 @@ export default function App() {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const meta = location.pathname === "/admin"
+      ? {
+          title: "Административный контур — ObrPortal",
+          description: "Административный контур образовательной платформы с управлением пользователями, организациями, группами и RBAC.",
+        }
+      : buildPublicMeta(location.pathname);
+
+    document.title = meta.title;
+    const metaDescriptionTag = ensureMetaDescriptionTag();
+    metaDescriptionTag.setAttribute("content", meta.description);
+  }, [location.pathname]);
 
   async function loadSystemStatus() {
     try {
@@ -1108,7 +1233,7 @@ export default function App() {
             />
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage onPageChange={handleNavigatePublicPage} />} />
       </Routes>
     </PublicShell>
   );
