@@ -3,6 +3,7 @@ import {
   createAdminDocument,
   getAdminDocuments,
   getAdminUsers,
+  updateAdminDocument,
 } from "../api/client";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -47,6 +48,15 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+function buildEditForm(documentItem) {
+  return {
+    title: documentItem.title || "",
+    document_type: documentItem.document_type || "",
+    document_number: documentItem.document_number || "",
+    status: documentItem.status || "available",
+  };
+}
+
 function EmptyState({ onReset }) {
   return (
     <div className="rounded-[2rem] bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
@@ -71,6 +81,7 @@ export function DocumentsPage() {
   const [filterUserId, setFilterUserId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editSavingId, setEditSavingId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -82,6 +93,15 @@ export function DocumentsPage() {
     status: "available",
   });
   const [file, setFile] = useState(null);
+
+  const [editingDocumentId, setEditingDocumentId] = useState("");
+  const [editForm, setEditForm] = useState({
+    title: "",
+    document_type: "",
+    document_number: "",
+    status: "available",
+  });
+  const [editFile, setEditFile] = useState(null);
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === form.user_id) || null,
@@ -119,6 +139,13 @@ export function DocumentsPage() {
     }));
   }
 
+  function updateEditField(field, value) {
+    setEditForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
   function resetForm() {
     setForm({
       user_id: "",
@@ -130,6 +157,22 @@ export function DocumentsPage() {
     setFile(null);
 
     const input = document.getElementById("admin-document-file");
+    if (input) {
+      input.value = "";
+    }
+  }
+
+  function resetEditState() {
+    setEditingDocumentId("");
+    setEditForm({
+      title: "",
+      document_type: "",
+      document_number: "",
+      status: "available",
+    });
+    setEditFile(null);
+
+    const input = document.getElementById("admin-document-edit-file");
     if (input) {
       input.value = "";
     }
@@ -184,6 +227,59 @@ export function DocumentsPage() {
     }
   }
 
+  function handleStartEdit(documentItem) {
+    setError("");
+    setSuccessMessage("");
+    setEditingDocumentId(documentItem.id);
+    setEditForm(buildEditForm(documentItem));
+    setEditFile(null);
+
+    const input = document.getElementById("admin-document-edit-file");
+    if (input) {
+      input.value = "";
+    }
+  }
+
+  async function handleEditSubmit(event, documentId) {
+    event.preventDefault();
+
+    if (!editForm.title.trim()) {
+      setError("Введите название документа.");
+      return;
+    }
+
+    if (!editForm.document_type.trim()) {
+      setError("Введите тип документа.");
+      return;
+    }
+
+    try {
+      setEditSavingId(documentId);
+      setError("");
+      setSuccessMessage("");
+
+      const payload = new FormData();
+      payload.append("title", editForm.title.trim());
+      payload.append("document_type", editForm.document_type.trim());
+      payload.append("document_number", editForm.document_number.trim());
+      payload.append("status", editForm.status);
+
+      if (editFile) {
+        payload.append("file", editFile);
+      }
+
+      const updated = await updateAdminDocument(documentId, payload);
+
+      setSuccessMessage(`Документ обновлен: ${updated.document_number}`);
+      resetEditState();
+      await loadData(filterUserId);
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message || "Не удалось обновить документ."}`.trim());
+    } finally {
+      setEditSavingId("");
+    }
+  }
+
   async function handleApplyFilter(event) {
     event.preventDefault();
     await loadData(filterUserId);
@@ -204,9 +300,9 @@ export function DocumentsPage() {
           Документы пользователей
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-          Загрузка сертификатов, удостоверений и других файлов в приватное
-          хранилище. Пользователь видит документ в личном кабинете, а файл
-          скачивается только через защищенный account endpoint.
+          Загрузка и редактирование сертификатов, удостоверений и других файлов
+          в приватном хранилище. Пользователь видит документ в личном кабинете,
+          а файл скачивается только через защищенный account endpoint.
         </p>
       </section>
 
@@ -237,7 +333,7 @@ export function DocumentsPage() {
                 <option value="">Выберите пользователя</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.email}{user.full_name ? ` — ${user.full_name}` : ""}
+                    {user.email}{user.full_name ? ` - ${user.full_name}` : ""}
                   </option>
                 ))}
               </select>
@@ -302,7 +398,7 @@ export function DocumentsPage() {
                 type="text"
                 value={form.document_number}
                 onChange={(event) => updateField("document_number", event.target.value)}
-                placeholder="Можно оставить пустым — номер сгенерируется автоматически"
+                placeholder="Можно оставить пустым - номер сгенерируется автоматически"
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
               />
             </label>
@@ -353,7 +449,7 @@ export function DocumentsPage() {
               <option value="">Все пользователи</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
-                  {user.email}{user.full_name ? ` — ${user.full_name}` : ""}
+                  {user.email}{user.full_name ? ` - ${user.full_name}` : ""}
                 </option>
               ))}
             </select>
@@ -382,82 +478,192 @@ export function DocumentsPage() {
             <EmptyState onReset={handleResetFilter} />
           ) : (
             <div className="space-y-4">
-              {documents.map((documentItem) => (
-                <article
-                  key={documentItem.id}
-                  className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getDocumentStatusTone(
-                        documentItem.status
-                      )}`}
-                    >
-                      {getDocumentStatusLabel(documentItem.status)}
-                    </span>
+              {documents.map((documentItem) => {
+                const isEditing = editingDocumentId === documentItem.id;
+                const isEditSaving = editSavingId === documentItem.id;
 
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
-                      {documentItem.document_type}
-                    </span>
+                return (
+                  <article
+                    key={documentItem.id}
+                    className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getDocumentStatusTone(
+                          documentItem.status
+                        )}`}
+                      >
+                        {getDocumentStatusLabel(documentItem.status)}
+                      </span>
 
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
-                      {documentItem.file_available ? "Файл загружен" : "Без файла"}
-                    </span>
-                  </div>
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
+                        {documentItem.document_type}
+                      </span>
 
-                  <div className="mt-4">
-                    <h2 className="text-xl font-bold text-slate-900">
-                      {documentItem.title}
-                    </h2>
-                    <div className="mt-1 text-sm text-slate-500">
-                      {documentItem.document_number}
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
+                        {documentItem.file_available ? "Файл загружен" : "Без файла"}
+                      </span>
                     </div>
-                  </div>
 
-                  <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">
-                        Пользователь
-                      </div>
-                      <div className="mt-2 font-semibold text-slate-900">
-                        {documentItem.user_email}
-                      </div>
-                      {documentItem.user_full_name && (
-                        <div className="mt-1 text-slate-600">
-                          {documentItem.user_full_name}
+                    {!isEditing ? (
+                      <>
+                        <div className="mt-4">
+                          <h2 className="text-xl font-bold text-slate-900">
+                            {documentItem.title}
+                          </h2>
+                          <div className="mt-1 text-sm text-slate-500">
+                            {documentItem.document_number}
+                          </div>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">
-                        Курс
-                      </div>
-                      <div className="mt-2 font-semibold text-slate-900">
-                        {documentItem.course_title || "-"}
-                      </div>
-                    </div>
+                        <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
+                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                            <div className="text-xs uppercase tracking-wide text-slate-500">
+                              Пользователь
+                            </div>
+                            <div className="mt-2 font-semibold text-slate-900">
+                              {documentItem.user_email}
+                            </div>
+                            {documentItem.user_full_name && (
+                              <div className="mt-1 text-slate-600">
+                                {documentItem.user_full_name}
+                              </div>
+                            )}
+                          </div>
 
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">
-                        Создан
-                      </div>
-                      <div className="mt-2 font-semibold text-slate-900">
-                        {formatDateTime(documentItem.created_at)}
-                      </div>
-                    </div>
+                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                            <div className="text-xs uppercase tracking-wide text-slate-500">
+                              Курс
+                            </div>
+                            <div className="mt-2 font-semibold text-slate-900">
+                              {documentItem.course_title || "-"}
+                            </div>
+                          </div>
 
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">
-                        Обновлен
-                      </div>
-                      <div className="mt-2 font-semibold text-slate-900">
-                        {formatDateTime(documentItem.updated_at)}
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
+                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                            <div className="text-xs uppercase tracking-wide text-slate-500">
+                              Создан
+                            </div>
+                            <div className="mt-2 font-semibold text-slate-900">
+                              {formatDateTime(documentItem.created_at)}
+                            </div>
+                          </div>
+
+                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                            <div className="text-xs uppercase tracking-wide text-slate-500">
+                              Обновлен
+                            </div>
+                            <div className="mt-2 font-semibold text-slate-900">
+                              {formatDateTime(documentItem.updated_at)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEdit(documentItem)}
+                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                          >
+                            Редактировать
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <form
+                        onSubmit={(event) => handleEditSubmit(event, documentItem.id)}
+                        className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
+                      >
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <label className="block md:col-span-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Название
+                            </span>
+                            <input
+                              type="text"
+                              value={editForm.title}
+                              onChange={(event) => updateEditField("title", event.target.value)}
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                            />
+                          </label>
+
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Тип документа
+                            </span>
+                            <input
+                              type="text"
+                              value={editForm.document_type}
+                              onChange={(event) => updateEditField("document_type", event.target.value)}
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                            />
+                          </label>
+
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Статус
+                            </span>
+                            <select
+                              value={editForm.status}
+                              onChange={(event) => updateEditField("status", event.target.value)}
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                            >
+                              {DOCUMENT_STATUSES.map((statusItem) => (
+                                <option key={statusItem.value} value={statusItem.value}>
+                                  {statusItem.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
+                          <label className="block md:col-span-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Номер документа
+                            </span>
+                            <input
+                              type="text"
+                              value={editForm.document_number}
+                              onChange={(event) => updateEditField("document_number", event.target.value)}
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                            />
+                          </label>
+
+                          <label className="block md:col-span-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Заменить файл
+                            </span>
+                            <input
+                              id="admin-document-edit-file"
+                              type="file"
+                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                              onChange={(event) => setEditFile(event.target.files?.[0] || null)}
+                              className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                          </label>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="submit"
+                            disabled={isEditSaving}
+                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isEditSaving ? "Сохраняем..." : "Сохранить"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={resetEditState}
+                            disabled={isEditSaving}
+                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Отмена
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </SectionCard>

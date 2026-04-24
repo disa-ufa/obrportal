@@ -374,3 +374,11 @@ export async function createAdminDocument(payload) {
     body: payload,
   });
 }
+
+
+export async function updateAdminDocument(documentId, payload) {
+  return request(`/api/v1/admin/documents/${documentId}`, {
+    method: "PATCH",
+    body: payload,
+  });
+}
