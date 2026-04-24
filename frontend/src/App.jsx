@@ -50,6 +50,7 @@ import { CatalogPage } from "./pages/CatalogPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { ContactsPage } from "./pages/ContactsPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { AdminCoursesPage } from "./pages/AdminCoursesPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { FaqPage } from "./pages/FaqPage";
 import { GroupsPage } from "./pages/GroupsPage";
@@ -1018,6 +1019,9 @@ export default function App() {
         />
       );
     }
+    if (currentPage === "courses" || location.pathname === "/admin/courses") {
+      return <AdminCoursesPage />;
+    }
     if (currentPage === "users") {
       return (
         <UsersPage
@@ -1165,7 +1169,7 @@ export default function App() {
 
   const adminPageContent = renderCurrentPage();
 
-  const activeAdminPage = location.pathname === "/admin/documents" ? "documents" : currentPage;
+  const activeAdminPage = location.pathname === "/admin/documents" ? "documents" : location.pathname === "/admin/courses" ? "courses" : currentPage;
   const currentPublicPage = getPublicPageFromPathname(location.pathname);
   const isAdminRoute = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
   const isAdmin = userHasRole(user, "admin");

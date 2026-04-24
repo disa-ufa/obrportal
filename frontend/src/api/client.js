@@ -436,3 +436,56 @@ export async function downloadAdminDocument(documentId) {
     }, 0);
   }
 }
+
+
+export async function getAdminCourses(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/admin/courses${query ? `?${query}` : ""}`);
+}
+
+export async function getAdminCourseDetail(courseId) {
+  return request(`/api/v1/admin/courses/${courseId}`);
+}
+
+export async function createAdminCourse(payload) {
+  return request("/api/v1/admin/courses", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminCourse(courseId, payload) {
+  return request(`/api/v1/admin/courses/${courseId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function activateAdminCourse(courseId) {
+  return request(`/api/v1/admin/courses/${courseId}/activate`, {
+    method: "POST",
+  });
+}
+
+export async function deactivateAdminCourse(courseId) {
+  return request(`/api/v1/admin/courses/${courseId}/deactivate`, {
+    method: "POST",
+  });
+}
+
+export async function deleteAdminCourse(courseId) {
+  return request(`/api/v1/admin/courses/${courseId}`, {
+    method: "DELETE",
+  });
+}
