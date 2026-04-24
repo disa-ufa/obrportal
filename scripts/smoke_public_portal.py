@@ -21,6 +21,7 @@ PUBLIC_ROUTES = [
     "/admin",
         "/admin/documents",
         "/admin/courses",
+        "/admin/enrollments",
     "/unknown-page",
 ]
 

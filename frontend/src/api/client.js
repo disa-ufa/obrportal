@@ -489,3 +489,44 @@ export async function deleteAdminCourse(courseId) {
     method: "DELETE",
   });
 }
+
+
+export async function getAdminEnrollments(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/admin/enrollments${query ? `?${query}` : ""}`);
+}
+
+export async function getAdminEnrollmentDetail(enrollmentId) {
+  return request(`/api/v1/admin/enrollments/${enrollmentId}`);
+}
+
+export async function createAdminEnrollment(payload) {
+  return request("/api/v1/admin/enrollments", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminEnrollment(enrollmentId, payload) {
+  return request(`/api/v1/admin/enrollments/${enrollmentId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminEnrollment(enrollmentId) {
+  return request(`/api/v1/admin/enrollments/${enrollmentId}`, {
+    method: "DELETE",
+  });
+}
