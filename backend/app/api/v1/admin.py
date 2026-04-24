@@ -24,6 +24,10 @@ from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.schemas.admin import (
     AdminAuditEventItem,
+    AdminCourseCreate,
+    AdminCourseDetail,
+    AdminCourseItem,
+    AdminCourseUpdate,
     AdminDocumentItem,
     AdminDeleteResult,
     AdminOrganizationCreate,
@@ -2279,3 +2283,385 @@ async def download_admin_document(
         media_type=media_type,
         filename=filename,
     )
+
+
+COURSE_SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,254}$")
+
+
+def normalize_course_slug(value: str) -> str:
+    normalized = value.strip().lower()
+
+    if not COURSE_SLUG_PATTERN.match(normalized):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Course slug must start with a lowercase letter or digit and contain only lowercase letters, digits or hyphens",
+        )
+
+    return normalized
+
+
+def normalize_course_create_data(data: dict) -> dict:
+    normalized = dict(data)
+    normalized["slug"] = normalize_course_slug(normalized["slug"])
+    normalized["title"] = normalized["title"].strip()
+    normalized["description"] = normalize_optional_text(normalized.get("description"))
+    normalized["format"] = normalize_optional_text(normalized.get("format"))
+    normalized["document_type"] = normalize_optional_text(normalized.get("document_type"))
+
+    if not normalized["title"]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Course title is required",
+        )
+
+    return normalized
+
+
+def normalize_course_update_data(data: dict) -> dict:
+    normalized = dict(data)
+
+    if "slug" in normalized and normalized["slug"] is not None:
+        normalized["slug"] = normalize_course_slug(normalized["slug"])
+
+    if "title" in normalized and normalized["title"] is not None:
+        normalized["title"] = normalized["title"].strip()
+        if not normalized["title"]:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Course title is required",
+            )
+
+    if "description" in normalized:
+        normalized["description"] = normalize_optional_text(normalized["description"])
+
+    if "format" in normalized:
+        normalized["format"] = normalize_optional_text(normalized["format"])
+
+    if "document_type" in normalized:
+        normalized["document_type"] = normalize_optional_text(normalized["document_type"])
+
+    return normalized
+
+
+def build_admin_course_item(course: Course) -> AdminCourseItem:
+    return AdminCourseItem(
+        id=str(course.id),
+        slug=course.slug,
+        title=course.title,
+        description=course.description,
+        hours=course.hours,
+        format=course.format,
+        document_type=course.document_type,
+        is_active=course.is_active,
+    )
+
+
+def build_admin_course_detail(course: Course) -> AdminCourseDetail:
+    return AdminCourseDetail(
+        id=str(course.id),
+        slug=course.slug,
+        title=course.title,
+        description=course.description,
+        hours=course.hours,
+        format=course.format,
+        document_type=course.document_type,
+        is_active=course.is_active,
+        created_at=course.created_at,
+        updated_at=course.updated_at,
+    )
+
+
+def course_snapshot(course: Course) -> dict:
+    return {
+        "id": str(course.id),
+        "slug": course.slug,
+        "title": course.title,
+        "description": course.description,
+        "hours": course.hours,
+        "format": course.format,
+        "document_type": course.document_type,
+        "is_active": course.is_active,
+    }
+
+
+async def get_admin_course_or_404(
+    course_id: str,
+    session: AsyncSession,
+) -> Course:
+    result = await session.execute(
+        select(Course).where(Course.id == course_id)
+    )
+    course = result.scalar_one_or_none()
+
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    return course
+
+
+async def ensure_course_can_be_deleted(
+    course: Course,
+    session: AsyncSession,
+) -> None:
+    enrollment_result = await session.execute(
+        select(Enrollment.id)
+        .where(Enrollment.course_id == course.id)
+        .limit(1)
+    )
+
+    if enrollment_result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete course with enrollments",
+        )
+
+    document_result = await session.execute(
+        select(DocumentRecord.id)
+        .where(DocumentRecord.course_id == course.id)
+        .limit(1)
+    )
+
+    if document_result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete course with documents",
+        )
+
+
+@router.get("/courses", response_model=list[AdminCourseItem])
+async def list_admin_courses(
+    is_active: bool | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=255),
+    limit: int = Query(default=100, ge=1, le=300),
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminCourseItem]:
+    query = select(Course).order_by(Course.title.asc()).limit(limit)
+
+    if is_active is not None:
+        query = query.where(Course.is_active == is_active)
+
+    if q and q.strip():
+        q_filter = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                Course.slug.ilike(q_filter),
+                Course.title.ilike(q_filter),
+                Course.description.ilike(q_filter),
+                Course.format.ilike(q_filter),
+                Course.document_type.ilike(q_filter),
+            )
+        )
+
+    result = await session.execute(query)
+    courses = result.scalars().all()
+
+    return [
+        build_admin_course_item(course)
+        for course in courses
+    ]
+
+
+@router.post("/courses", response_model=AdminCourseDetail, status_code=status.HTTP_201_CREATED)
+async def create_admin_course(
+    payload: AdminCourseCreate,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseDetail:
+    data = normalize_course_create_data(model_to_dict(payload))
+
+    course = Course(**data)
+    session.add(course)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.course_created",
+            entity_type="course",
+            entity_id=str(course.id),
+            payload={
+                "course": course_snapshot(course),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(course)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Course with this slug already exists",
+        )
+
+    return build_admin_course_detail(course)
+
+
+@router.get("/courses/{course_id}", response_model=AdminCourseDetail)
+async def get_admin_course_detail(
+    course_id: str,
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseDetail:
+    course = await get_admin_course_or_404(course_id, session)
+
+    return build_admin_course_detail(course)
+
+
+@router.patch("/courses/{course_id}", response_model=AdminCourseDetail)
+async def update_admin_course(
+    course_id: str,
+    payload: AdminCourseUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseDetail:
+    course = await get_admin_course_or_404(course_id, session)
+    data = normalize_course_update_data(model_to_dict(payload, exclude_unset=True))
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+
+    before = course_snapshot(course)
+
+    for field, value in data.items():
+        setattr(course, field, value)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.course_updated",
+            entity_type="course",
+            entity_id=str(course.id),
+            payload={
+                "before": before,
+                "after": course_snapshot(course),
+                "changed_fields": sorted(data.keys()),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(course)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Course with this slug already exists",
+        )
+
+    return build_admin_course_detail(course)
+
+
+@router.post("/courses/{course_id}/activate", response_model=AdminCourseDetail)
+async def activate_admin_course(
+    course_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseDetail:
+    course = await get_admin_course_or_404(course_id, session)
+    before = course_snapshot(course)
+
+    course.is_active = True
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.course_activated",
+        entity_type="course",
+        entity_id=str(course.id),
+        payload={
+            "before": before,
+            "after": course_snapshot(course),
+            "changed_fields": ["is_active"] if before["is_active"] is not True else [],
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(course)
+
+    return build_admin_course_detail(course)
+
+
+@router.post("/courses/{course_id}/deactivate", response_model=AdminCourseDetail)
+async def deactivate_admin_course(
+    course_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseDetail:
+    course = await get_admin_course_or_404(course_id, session)
+    before = course_snapshot(course)
+
+    course.is_active = False
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.course_deactivated",
+        entity_type="course",
+        entity_id=str(course.id),
+        payload={
+            "before": before,
+            "after": course_snapshot(course),
+            "changed_fields": ["is_active"] if before["is_active"] is not False else [],
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(course)
+
+    return build_admin_course_detail(course)
+
+
+@router.delete("/courses/{course_id}", response_model=AdminDeleteResult)
+async def delete_admin_course(
+    course_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDeleteResult:
+    course = await get_admin_course_or_404(course_id, session)
+    await ensure_course_can_be_deleted(course, session)
+
+    deleted_course_id = str(course.id)
+    before = course_snapshot(course)
+
+    await session.delete(course)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.course_deleted",
+        entity_type="course",
+        entity_id=deleted_course_id,
+        payload={
+            "before": before,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return AdminDeleteResult(status="deleted", id=deleted_course_id)

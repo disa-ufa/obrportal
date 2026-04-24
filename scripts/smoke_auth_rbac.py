@@ -268,6 +268,24 @@ def main() -> int:
     assert isinstance(filtered_admin_documents, list)
     checks.append("admin documents filters ok")
 
+    status, admin_courses = request_json(
+        "GET",
+        "/api/v1/admin/courses?limit=5",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin courses")
+    assert isinstance(admin_courses, list)
+    checks.append("admin courses list ok")
+
+    status, missing_admin_course = request_json(
+        "GET",
+        "/api/v1/admin/courses/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin missing course")
+    assert isinstance(missing_admin_course, dict)
+    checks.append("admin missing course returns 404")
+
     status, missing_admin_document_update = request_json(
         "PATCH",
         "/api/v1/admin/documents/00000000-0000-0000-0000-000000000000",

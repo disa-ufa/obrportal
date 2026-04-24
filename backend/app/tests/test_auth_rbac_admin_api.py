@@ -3280,3 +3280,246 @@ def test_admin_documents_invalid_status_filter_returns_422() -> None:
 
     assert status == 422
     assert isinstance(payload, dict)
+
+
+def test_admin_can_list_admin_courses() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/courses",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, list)
+
+
+def test_admin_can_create_update_activate_deactivate_and_delete_course() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=token,
+        body={
+            "slug": slug,
+            "title": "Admin Course CRUD",
+            "description": "Initial admin course description",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    assert created["slug"] == slug
+    assert created["title"] == "Admin Course CRUD"
+    assert created["hours"] == 72
+    assert created["is_active"] is True
+    course_id = created["id"]
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/admin/courses/{course_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(detail, dict)
+    assert detail["id"] == course_id
+
+    status, updated = request_json(
+        "PATCH",
+        f"/api/v1/admin/courses/{course_id}",
+        token=token,
+        body={
+            "title": "Admin Course CRUD Updated",
+            "hours": 108,
+            "format": "mixed",
+            "document_type": "Удостоверение",
+        },
+    )
+
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["title"] == "Admin Course CRUD Updated"
+    assert updated["hours"] == 108
+    assert updated["format"] == "mixed"
+    assert updated["document_type"] == "Удостоверение"
+
+    status, deactivated = request_json(
+        "POST",
+        f"/api/v1/admin/courses/{course_id}/deactivate",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(deactivated, dict)
+    assert deactivated["is_active"] is False
+
+    status, activated = request_json(
+        "POST",
+        f"/api/v1/admin/courses/{course_id}/activate",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(activated, dict)
+    assert activated["is_active"] is True
+
+    status, deleted = request_json(
+        "DELETE",
+        f"/api/v1/admin/courses/{course_id}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(deleted, dict)
+    assert deleted["status"] == "deleted"
+    assert deleted["id"] == course_id
+
+    status, missing = request_json(
+        "GET",
+        f"/api/v1/admin/courses/{course_id}",
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(missing, dict)
+
+
+def test_admin_course_duplicate_slug_returns_409() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    slug = unique_course_slug()
+
+    status, first = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=token,
+        body={
+            "slug": slug,
+            "title": "First duplicate slug course",
+        },
+    )
+
+    assert status == 201
+    assert isinstance(first, dict)
+
+    status, second = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=token,
+        body={
+            "slug": slug,
+            "title": "Second duplicate slug course",
+        },
+    )
+
+    assert status == 409
+    assert isinstance(second, dict)
+
+
+def test_admin_can_filter_admin_courses() -> None:
+    from urllib.parse import urlencode
+
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=token,
+        body={
+            "slug": slug,
+            "title": "Unique Admin Filter Course",
+            "description": "Filter target description",
+            "is_active": False,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    query = urlencode(
+        {
+            "is_active": "false",
+            "q": "Unique Admin Filter",
+        }
+    )
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/admin/courses?{query}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, list)
+    assert any(item["id"] == created_course["id"] for item in payload)
+    assert all(item["is_active"] is False for item in payload)
+
+
+def test_admin_cannot_delete_course_with_enrollment() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=str(me_payload["id"]),
+        status="assigned",
+    )
+    course = created["course"]
+
+    status, payload = request_json(
+        "DELETE",
+        f'/api/v1/admin/courses/{course["id"]}',
+        token=token,
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+
+
+def test_admin_course_missing_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/admin/courses/00000000-0000-0000-0000-000000000000",
+        token=token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_manage_admin_courses() -> None:
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, list_payload = request_json(
+        "GET",
+        "/api/v1/admin/courses",
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(list_payload, dict)
+
+    status, create_payload = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=learner_token,
+        body={
+            "slug": unique_course_slug(),
+            "title": "Learner forbidden course",
+        },
+    )
+
+    assert status == 403
+    assert isinstance(create_payload, dict)

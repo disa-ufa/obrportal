@@ -172,3 +172,39 @@ class AdminDocumentItem(BaseModel):
     file_available: bool = False
     created_at: datetime
     updated_at: datetime
+
+
+class AdminCourseItem(BaseModel):
+    id: str
+    slug: str
+    title: str
+    description: str | None = None
+    hours: int | None = None
+    format: str | None = None
+    document_type: str | None = None
+    is_active: bool
+
+
+class AdminCourseDetail(AdminCourseItem):
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminCourseCreate(BaseModel):
+    slug: str = Field(min_length=1, max_length=255)
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=2048)
+    hours: int | None = Field(default=None, ge=1, le=10000)
+    format: str | None = Field(default=None, max_length=64)
+    document_type: str | None = Field(default=None, max_length=128)
+    is_active: bool = True
+
+
+class AdminCourseUpdate(BaseModel):
+    slug: str | None = Field(default=None, min_length=1, max_length=255)
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=2048)
+    hours: int | None = Field(default=None, ge=1, le=10000)
+    format: str | None = Field(default=None, max_length=64)
+    document_type: str | None = Field(default=None, max_length=128)
+    is_active: bool | None = None
