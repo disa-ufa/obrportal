@@ -218,9 +218,13 @@ def main() -> int:
     )
     assert_status(status, 200, "admin account summary")
     assert isinstance(admin_account_summary, dict)
-    assert admin_account_summary["enrollments_count"] == 0
-    assert admin_account_summary["active_courses_count"] == 0
-    assert admin_account_summary["documents_count"] == 0
+    assert isinstance(admin_account_summary["enrollments_count"], int)
+    assert admin_account_summary["enrollments_count"] >= 0
+    assert isinstance(admin_account_summary["active_courses_count"], int)
+    assert admin_account_summary["active_courses_count"] >= 0
+    assert admin_account_summary["active_courses_count"] <= admin_account_summary["enrollments_count"]
+    assert isinstance(admin_account_summary["documents_count"], int)
+    assert admin_account_summary["documents_count"] >= 0
     assert isinstance(admin_account_summary["profile"], dict)
     assert admin_account_summary["profile"]["email"] == ADMIN_EMAIL
     checks.append("admin account summary ok")

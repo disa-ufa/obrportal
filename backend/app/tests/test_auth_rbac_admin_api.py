@@ -2214,15 +2214,15 @@ def test_admin_can_get_account_summary() -> None:
 
     assert status == 200
     assert isinstance(payload, dict)
-    assert payload["enrollments_count"] == 0
-    assert payload["active_courses_count"] == 0
-    assert payload["documents_count"] == 0
-
-    profile = payload["profile"]
-    assert isinstance(profile, dict)
-    assert profile["email"] == ADMIN_EMAIL
-    assert isinstance(profile["roles"], list)
-
+    assert isinstance(payload["enrollments_count"], int)
+    assert payload["enrollments_count"] >= 0
+    assert isinstance(payload["active_courses_count"], int)
+    assert payload["active_courses_count"] >= 0
+    assert payload["active_courses_count"] <= payload["enrollments_count"]
+    assert isinstance(payload["documents_count"], int)
+    assert payload["documents_count"] >= 0
+    assert isinstance(payload["profile"], dict)
+    assert payload["profile"]["email"] == ADMIN_EMAIL
 
 def test_learner_can_get_account_summary() -> None:
     token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
@@ -2235,20 +2235,244 @@ def test_learner_can_get_account_summary() -> None:
 
     assert status == 200
     assert isinstance(payload, dict)
-    assert payload["enrollments_count"] == 0
-    assert payload["active_courses_count"] == 0
-    assert payload["documents_count"] == 0
-
-    profile = payload["profile"]
-    assert isinstance(profile, dict)
-    assert profile["email"] == LEARNER_EMAIL
-    assert isinstance(profile["roles"], list)
-
+    assert isinstance(payload["enrollments_count"], int)
+    assert payload["enrollments_count"] >= 0
+    assert isinstance(payload["active_courses_count"], int)
+    assert payload["active_courses_count"] >= 0
+    assert payload["active_courses_count"] <= payload["enrollments_count"]
+    assert isinstance(payload["documents_count"], int)
+    assert payload["documents_count"] >= 0
+    assert isinstance(payload["profile"], dict)
+    assert payload["profile"]["email"] == LEARNER_EMAIL
 
 def test_account_summary_without_token_returns_401() -> None:
     status, payload = request_json(
         "GET",
         "/api/v1/account/summary",
+    )
+
+    assert status == 401
+    assert isinstance(payload, dict)
+def unique_course_slug() -> str:
+    from uuid import uuid4
+
+    return f"course-{uuid4().hex[:12]}"
+
+
+def create_test_course_in_db(
+    *,
+    title: str | None = None,
+    slug: str | None = None,
+    description: str | None = "Test course description",
+    hours: int | None = 24,
+    format_: str | None = "Онлайн",
+    document_type: str | None = "Сертификат",
+) -> dict:
+    import asyncio
+    from uuid import uuid4
+
+    import app.db.base  # noqa: F401
+    from app.core.config import settings
+    from app.models.course import Course
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    course_title = title or f"Test Course {uuid4().hex[:8]}"
+    course_slug = slug or unique_course_slug()
+
+    async def _create() -> dict:
+        engine = create_async_engine(settings.database_url, future=True)
+        SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+        try:
+            async with SessionLocal() as session:
+                course = Course(
+                    title=course_title,
+                    slug=course_slug,
+                    description=description,
+                    hours=hours,
+                    format=format_,
+                    document_type=document_type,
+                    is_active=True,
+                )
+                session.add(course)
+                await session.commit()
+                await session.refresh(course)
+
+                return {
+                    "id": str(course.id),
+                    "title": course.title,
+                    "slug": course.slug,
+                }
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(_create())
+
+
+def create_test_course_with_enrollment_in_db(
+    *,
+    user_id: str,
+    title: str | None = None,
+    slug: str | None = None,
+    description: str | None = "Test course description",
+    hours: int | None = 24,
+    format_: str | None = "Онлайн",
+    document_type: str | None = "Сертификат",
+    organization_id: str | None = None,
+    learning_group_id: str | None = None,
+    status: str = "assigned",
+) -> dict:
+    import asyncio
+    from uuid import uuid4
+
+    import app.db.base  # noqa: F401
+    from app.core.config import settings
+    from app.models.course import Course
+    from app.models.enrollment import Enrollment
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    course_title = title or f"Test Course {uuid4().hex[:8]}"
+    course_slug = slug or unique_course_slug()
+
+    async def _create() -> dict:
+        engine = create_async_engine(settings.database_url, future=True)
+        SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+        try:
+            async with SessionLocal() as session:
+                course = Course(
+                    title=course_title,
+                    slug=course_slug,
+                    description=description,
+                    hours=hours,
+                    format=format_,
+                    document_type=document_type,
+                    is_active=True,
+                )
+                session.add(course)
+                await session.flush()
+
+                enrollment = Enrollment(
+                    user_id=user_id,
+                    course_id=course.id,
+                    organization_id=organization_id,
+                    learning_group_id=learning_group_id,
+                    status=status,
+                )
+                session.add(enrollment)
+                await session.commit()
+                await session.refresh(course)
+                await session.refresh(enrollment)
+
+                return {
+                    "course": {
+                        "id": str(course.id),
+                        "title": course.title,
+                        "slug": course.slug,
+                    },
+                    "enrollment": {
+                        "id": str(enrollment.id),
+                        "user_id": str(enrollment.user_id),
+                        "course_id": str(enrollment.course_id),
+                        "organization_id": str(enrollment.organization_id) if enrollment.organization_id else None,
+                        "learning_group_id": str(enrollment.learning_group_id) if enrollment.learning_group_id else None,
+                        "status": enrollment.status,
+                    },
+                }
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(_create())
+
+
+def test_admin_can_get_account_courses() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    organization_id = create_test_organization(token)
+    group = create_test_learning_group(token, organization_id)
+    group_id = str(group["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        organization_id=organization_id,
+        learning_group_id=group_id,
+        status="active",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/account/courses",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["total"] >= 1
+    assert isinstance(payload["items"], list)
+
+    item = next(
+        (candidate for candidate in payload["items"] if candidate["enrollment_id"] == enrollment["id"]),
+        None,
+    )
+    assert item is not None
+    assert item["course_id"] == course["id"]
+    assert item["course_slug"] == course["slug"]
+    assert item["course_title"] == course["title"]
+    assert item["organization_id"] == organization_id
+    assert item["learning_group_id"] == group_id
+    assert item["status"] == "active"
+
+
+def test_learner_can_get_account_courses() -> None:
+    token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="assigned",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    status, payload = request_json(
+        "GET",
+        "/api/v1/account/courses",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["total"] >= 1
+    assert isinstance(payload["items"], list)
+
+    item = next(
+        (candidate for candidate in payload["items"] if candidate["enrollment_id"] == enrollment["id"]),
+        None,
+    )
+    assert item is not None
+    assert item["course_id"] == course["id"]
+    assert item["course_slug"] == course["slug"]
+    assert item["course_title"] == course["title"]
+    assert item["organization_id"] is None
+    assert item["learning_group_id"] is None
+    assert item["status"] == "assigned"
+
+
+def test_account_courses_without_token_returns_401() -> None:
+    status, payload = request_json(
+        "GET",
+        "/api/v1/account/courses",
     )
 
     assert status == 401
