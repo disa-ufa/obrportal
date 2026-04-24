@@ -78,12 +78,20 @@ export function PublicShell({
                 В админку
               </NavButton>
             ) : (
-              <NavButton
-                active={currentPage === "login"}
-                onClick={() => onPageChange("login")}
-              >
-                Войти
-              </NavButton>
+              <>
+                <NavButton
+                  active={currentPage === "login"}
+                  onClick={() => onPageChange("login")}
+                >
+                  Войти
+                </NavButton>
+                <NavButton
+                  active={currentPage === "register"}
+                  onClick={() => onPageChange("register")}
+                >
+                  Регистрация
+                </NavButton>
+              </>
             )}
           </div>
         </div>

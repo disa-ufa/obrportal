@@ -16,6 +16,7 @@ PUBLIC_ROUTES = [
     "/privacy",
     "/offer",
     "/login",
+    "/register",
     "/admin",
     "/unknown-page",
 ]

@@ -57,6 +57,7 @@ import { OrganizationInfoPage } from "./pages/OrganizationInfoPage";
 import { OrganizationsPage } from "./pages/OrganizationsPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { RolesPage } from "./pages/RolesPage";
 import { UsersPage } from "./pages/UsersPage";
 import { VerifyDocumentPage } from "./pages/VerifyDocumentPage";
@@ -112,6 +113,7 @@ const PUBLIC_ROUTE_MAP = {
   privacy: "/privacy",
   offer: "/offer",
   login: "/login",
+  register: "/register",
 };
 
 function getPublicPageFromPathname(pathname) {
@@ -125,6 +127,7 @@ function getPublicPageFromPathname(pathname) {
   if (pathname === "/privacy") return "privacy";
   if (pathname === "/offer") return "offer";
   if (pathname === "/login") return "login";
+  if (pathname === "/register") return "register";
   return "not-found";
 }
 
@@ -240,6 +243,14 @@ function buildPublicMeta(pathname) {
       title: "Вход — ObrPortal",
       description:
         "Публичная точка входа в образовательную платформу для пользователей и административных ролей.",
+    };
+  }
+
+  if (pathname === "/register") {
+    return {
+      title: "Регистрация — ObrPortal",
+      description:
+        "Публичная страница регистрации пользователя. На текущем этапе это UX-экран для будущего signup flow.",
     };
   }
 
@@ -1230,8 +1241,13 @@ export default function App() {
               onPasswordChange={setPassword}
               onLogin={handleLogin}
               onLogout={handleLogout}
+              onPageChange={handleNavigatePublicPage}
             />
           }
+        />
+        <Route
+          path="/register"
+          element={<RegisterPage onPageChange={handleNavigatePublicPage} />}
         />
         <Route path="*" element={<NotFoundPage onPageChange={handleNavigatePublicPage} />} />
       </Routes>
