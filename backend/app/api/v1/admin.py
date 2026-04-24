@@ -1960,3 +1960,207 @@ async def create_admin_document(
     row = await get_admin_document_row_or_404(str(document.id), session)
 
     return build_admin_document_item(row)
+
+
+def document_record_snapshot(document: DocumentRecord) -> dict:
+    return {
+        "id": str(document.id),
+        "document_number": document.document_number,
+        "document_type": document.document_type,
+        "title": document.title,
+        "status": document.status,
+        "user_id": str(document.user_id),
+        "course_id": str(document.course_id) if document.course_id else None,
+        "enrollment_id": str(document.enrollment_id) if document.enrollment_id else None,
+        "file_available": bool(document.storage_path),
+        "storage_path": document.storage_path,
+    }
+
+
+def delete_admin_document_file(storage_path: str | None) -> None:
+    if not storage_path:
+        return
+
+    storage_root = Path(settings.document_storage_dir).resolve()
+    absolute_path = (storage_root / storage_path).resolve()
+
+    try:
+        absolute_path.relative_to(storage_root)
+    except ValueError:
+        return
+
+    if absolute_path.exists() and absolute_path.is_file():
+        absolute_path.unlink()
+
+
+async def get_admin_document_or_404(
+    document_id: str,
+    session: AsyncSession,
+) -> DocumentRecord:
+    result = await session.execute(
+        select(DocumentRecord).where(DocumentRecord.id == document_id)
+    )
+    document = result.scalar_one_or_none()
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    return document
+
+
+@router.patch("/documents/{document_id}", response_model=AdminDocumentItem)
+async def update_admin_document(
+    document_id: str,
+    request: Request,
+    title: str | None = Form(default=None),
+    document_type: str | None = Form(default=None),
+    document_number: str | None = Form(default=None),
+    doc_status: str | None = Form(default=None, alias="status"),
+    course_id: str | None = Form(default=None),
+    enrollment_id: str | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDocumentItem:
+    document = await get_admin_document_or_404(document_id, session)
+
+    has_file = file is not None and bool(file.filename)
+    has_changes = any(
+        value is not None
+        for value in [title, document_type, document_number, doc_status, course_id, enrollment_id]
+    ) or has_file
+
+    if not has_changes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+
+    before = document_record_snapshot(document)
+    old_storage_path = document.storage_path
+    new_storage_path_to_cleanup = None
+    old_storage_path_to_delete = None
+
+    if title is not None:
+        normalized_title = title.strip()
+
+        if not normalized_title:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Document title is required",
+            )
+
+        document.title = normalized_title
+
+    if document_type is not None:
+        normalized_document_type = document_type.strip()
+
+        if not normalized_document_type:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Document type is required",
+            )
+
+        document.document_type = normalized_document_type
+
+    if document_number is not None and document_number.strip():
+        document.document_number = normalize_document_number(document_number)
+
+    if doc_status is not None:
+        document.status = normalize_document_status(doc_status)
+
+    normalized_course_id = None
+    normalized_enrollment_id = None
+
+    if course_id is not None:
+        normalized_course_id = course_id.strip() if course_id.strip() else None
+
+        if normalized_course_id is not None:
+            course_result = await session.execute(
+                select(Course).where(Course.id == normalized_course_id)
+            )
+            if course_result.scalar_one_or_none() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Course not found",
+                )
+
+        document.course_id = normalized_course_id
+
+    if enrollment_id is not None:
+        normalized_enrollment_id = enrollment_id.strip() if enrollment_id.strip() else None
+
+        if normalized_enrollment_id is not None:
+            enrollment_result = await session.execute(
+                select(Enrollment).where(Enrollment.id == normalized_enrollment_id)
+            )
+            enrollment = enrollment_result.scalar_one_or_none()
+
+            if enrollment is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Enrollment not found",
+                )
+
+            if str(enrollment.user_id) != str(document.user_id):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Enrollment belongs to another user",
+                )
+
+            if document.course_id and str(enrollment.course_id) != str(document.course_id):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Enrollment course does not match document course",
+                )
+
+            if document.course_id is None:
+                document.course_id = enrollment.course_id
+
+        document.enrollment_id = normalized_enrollment_id
+
+    try:
+        if has_file:
+            new_storage_path = await save_admin_document_file(str(document.id), file)
+            document.storage_path = new_storage_path
+
+            if new_storage_path != old_storage_path:
+                new_storage_path_to_cleanup = new_storage_path
+                old_storage_path_to_delete = old_storage_path
+
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.document_updated",
+            entity_type="document",
+            entity_id=str(document.id),
+            payload={
+                "before": before,
+                "after": document_record_snapshot(document),
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+
+        if new_storage_path_to_cleanup:
+            delete_admin_document_file(new_storage_path_to_cleanup)
+
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document with this number already exists",
+        )
+
+    if old_storage_path_to_delete:
+        delete_admin_document_file(old_storage_path_to_delete)
+
+    row = await get_admin_document_row_or_404(str(document.id), session)
+
+    return build_admin_document_item(row)

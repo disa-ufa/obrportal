@@ -2886,3 +2886,160 @@ def test_learner_cannot_create_admin_document() -> None:
     )
 
     assert response.status_code == 403
+
+
+def patch_multipart_admin_document(
+    *,
+    token: str,
+    document_id: str,
+    fields: dict[str, str],
+    file_field: tuple[str, bytes, str] | None = None,
+):
+    import httpx
+
+    files = None
+
+    if file_field is not None:
+        filename, content, content_type = file_field
+        files = {
+            "file": (filename, content, content_type),
+        }
+
+    return httpx.patch(
+        f"http://127.0.0.1:8000/api/v1/admin/documents/{document_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        data=fields,
+        files=files,
+        timeout=20.0,
+    )
+
+
+def test_admin_can_update_document_status_and_replace_file() -> None:
+    from urllib.request import Request, urlopen
+
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=course["id"],
+        enrollment_id=enrollment["id"],
+        title="Original certificate",
+        document_type="Сертификат",
+        status="available",
+        storage_content=b"old document content",
+        storage_extension=".pdf",
+    )
+
+    response = patch_multipart_admin_document(
+        token=token,
+        document_id=document["id"],
+        fields={
+            "title": "Updated certificate",
+            "document_type": "Удостоверение",
+            "status": "draft",
+        },
+        file_field=("updated.pdf", b"updated document content", "application/pdf"),
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == document["id"]
+    assert payload["title"] == "Updated certificate"
+    assert payload["document_type"] == "Удостоверение"
+    assert payload["status"] == "draft"
+    assert payload["file_available"] is True
+
+    status, account_documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(account_documents, dict)
+
+    item = next(
+        (candidate for candidate in account_documents["items"] if candidate["id"] == document["id"]),
+        None,
+    )
+    assert item is not None
+    assert item["title"] == "Updated certificate"
+    assert item["document_type"] == "Удостоверение"
+    assert item["status"] == "draft"
+    assert item["file_available"] is True
+
+    request = Request(
+        f"http://127.0.0.1:8000/api/v1/account/documents/{document['id']}/download",
+        headers={"Authorization": f"Bearer {token}"},
+        method="GET",
+    )
+
+    with urlopen(request, timeout=20) as download_response:
+        body = download_response.read()
+
+    assert body == b"updated document content"
+
+
+def test_admin_update_document_duplicate_number_returns_409() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    first_document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="First duplicate source",
+    )
+    second_document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Second duplicate target",
+    )
+
+    response = patch_multipart_admin_document(
+        token=token,
+        document_id=second_document["id"],
+        fields={
+            "document_number": first_document["document_number"],
+        },
+    )
+
+    assert response.status_code == 409
+
+
+def test_learner_cannot_update_admin_document() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Forbidden update document",
+    )
+
+    response = patch_multipart_admin_document(
+        token=learner_token,
+        document_id=document["id"],
+        fields={
+            "title": "Learner should not update this",
+        },
+    )
+
+    assert response.status_code == 403
