@@ -1,65 +1,119 @@
-import { useMemo, useState } from "react";
-import { PUBLIC_COURSES } from "../data/publicCourses";
+import { useEffect, useMemo, useState } from "react";
+import { getPublicCourses } from "../api/client";
+
+function formatCourseDocument(course) {
+  return course.document_type || course.document || "Итоговый документ";
+}
+
+function formatCoursePrice(course) {
+  return course.price || "Стоимость уточняется";
+}
+
+function getFormatOptions(courses) {
+  const formats = courses
+    .map((course) => course.format)
+    .filter(Boolean);
+
+  return Array.from(new Set(formats)).sort();
+}
 
 export function CatalogPage({ onPageChange, onOpenCourse }) {
+  const [courses, setCourses] = useState([]);
   const [query, setQuery] = useState("");
   const [formatFilter, setFormatFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const formatOptions = useMemo(() => getFormatOptions(courses), [courses]);
 
   const filteredCourses = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+    const normalizedQuery = query.trim().toLowerCase();
 
-    return PUBLIC_COURSES.filter((course) => {
+    return courses.filter((course) => {
       const matchesQuery =
-        !normalized ||
+        !normalizedQuery ||
         [
           course.title,
-          course.direction,
-          course.format,
-          course.document,
+          course.slug,
           course.description,
+          course.format,
+          course.document_type,
         ]
+          .filter(Boolean)
           .join(" ")
           .toLowerCase()
-          .includes(normalized);
+          .includes(normalizedQuery);
 
       const matchesFormat =
         formatFilter === "all" || course.format === formatFilter;
 
       return matchesQuery && matchesFormat;
     });
-  }, [query, formatFilter]);
+  }, [courses, formatFilter, query]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCourses() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await getPublicCourses({ limit: 300 });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCourses(Array.isArray(response) ? response : []);
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError(`${err.status || ""} ${err.message || "Не удалось загрузить каталог программ."}`.trim());
+        setCourses([]);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  function resetFilters() {
+    setQuery("");
+    setFormatFilter("all");
+  }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-              Каталог программ
-            </div>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">
-              Найдите подходящий курс
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Публичный каталог должен позволять фильтровать программы по формату,
-              длительности, стоимости и типу итогового документа.
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
-            Найдено программ:{" "}
-            <span className="font-semibold text-slate-900">
-              {filteredCourses.length}
-            </span>
-          </div>
+    <div className="space-y-8">
+      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+        <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+          Каталог программ
         </div>
+        <h1 className="mt-2 text-4xl font-bold text-slate-900">
+          Образовательные программы
+        </h1>
+        <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
+          Публичная витрина теперь получает активные программы из backend API.
+          В админке можно создать курс, активировать его — и он появится здесь.
+        </p>
+      </section>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_220px]">
+      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <div className="grid gap-3 lg:grid-cols-[1fr_240px_auto]">
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Поиск по названию, направлению или документу"
+            placeholder="Поиск: название, slug, описание, документ"
             className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
           />
 
@@ -69,89 +123,97 @@ export function CatalogPage({ onPageChange, onOpenCourse }) {
             className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
           >
             <option value="all">Все форматы</option>
-            <option value="Онлайн">Онлайн</option>
-            <option value="Смешанный">Смешанный</option>
+            {formatOptions.map((format) => (
+              <option key={format} value={format}>
+                {format}
+              </option>
+            ))}
           </select>
+
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+          >
+            Сбросить
+          </button>
+        </div>
+
+        <div className="mt-4 text-sm text-slate-500">
+          Найдено программ: {filteredCourses.length}
         </div>
       </section>
 
-      {filteredCourses.length === 0 ? (
-        <section className="rounded-[2rem] bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
-          <div className="text-xl font-bold text-slate-900">
-            По вашему запросу ничего не найдено
-          </div>
-          <p className="mt-2 text-sm text-slate-600">
-            Измените фильтры или вернитесь на главную страницу.
+      {loading ? (
+        <div className="rounded-2xl bg-white p-6 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
+          Загружаем каталог...
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl bg-red-50 p-6 text-sm text-red-700 ring-1 ring-red-200">
+          {error}
+        </div>
+      ) : filteredCourses.length === 0 ? (
+        <div className="rounded-[2rem] bg-white p-8 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
+          <div className="font-semibold text-slate-900">Программы не найдены</div>
+          <p className="mt-2 leading-6">
+            Измените фильтры или создайте активные программы в разделе администрирования.
           </p>
-          <div className="mt-5 flex justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                setFormatFilter("all");
-              }}
-              className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-            >
-              Сбросить фильтры
-            </button>
-            <button
-              type="button"
-              onClick={() => onPageChange("home")}
-              className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-            >
-              На главную
-            </button>
-          </div>
-        </section>
+          <button
+            type="button"
+            onClick={() => onPageChange("admin")}
+            className="mt-5 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Перейти в админку
+          </button>
+        </div>
       ) : (
-        <section className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {filteredCourses.map((course) => (
             <article
               key={course.id}
               className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
             >
-              <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide">
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">
-                  {course.direction}
-                </span>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-                  {course.format}
+              <div className="flex flex-wrap gap-2">
+                {course.format && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                    {course.format}
+                  </span>
+                )}
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-200">
+                  {formatCourseDocument(course)}
                 </span>
               </div>
 
-              <h2 className="mt-4 text-2xl font-bold text-slate-900">
+              <h2 className="mt-4 text-xl font-bold text-slate-900">
                 {course.title}
               </h2>
 
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                {course.description}
-              </p>
-
-              <div className="mt-4 grid gap-2 text-sm text-slate-600 md:grid-cols-3">
-                <div>Объём: {course.hours} ч.</div>
-                <div>Цена: {course.price}</div>
-                <div>Документ: {course.document}</div>
+              <div className="mt-1 text-sm text-slate-500">
+                /courses/{course.slug}
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => onOpenCourse(course.slug)}
-                  className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                >
-                  Открыть карточку
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onPageChange("login")}
-                  className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-                >
-                  Купить / записаться
-                </button>
+              {course.description && (
+                <p className="mt-3 line-clamp-4 text-sm leading-6 text-slate-600">
+                  {course.description}
+                </p>
+              )}
+
+              <div className="mt-5 grid gap-2 text-sm text-slate-600">
+                <div>Объём: {course.hours ? `${course.hours} ч.` : "—"}</div>
+                <div>Цена: {formatCoursePrice(course)}</div>
+                <div>Документ: {formatCourseDocument(course)}</div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => onOpenCourse(course.slug)}
+                className="mt-6 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                Открыть программу
+              </button>
             </article>
           ))}
-        </section>
+        </div>
       )}
     </div>
   );

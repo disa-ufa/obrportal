@@ -530,3 +530,24 @@ export async function deleteAdminEnrollment(enrollmentId) {
     method: "DELETE",
   });
 }
+
+
+export async function getPublicCourses(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/public/courses${query ? `?${query}` : ""}`);
+}
+
+export async function getPublicCourseDetail(slug) {
+  return request(`/api/v1/public/courses/${slug}`);
+}

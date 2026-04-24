@@ -1,122 +1,163 @@
-import { PUBLIC_COURSES } from "../data/publicCourses";
+import { useEffect, useState } from "react";
+import { getPublicCourses } from "../api/client";
 
-function FeatureCard({ title, text }) {
-  return (
-    <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <div className="text-lg font-bold text-slate-900">{title}</div>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
-    </div>
-  );
+function formatCourseDocument(course) {
+  return course.document_type || course.document || "Итоговый документ";
+}
+
+function formatCoursePrice(course) {
+  return course.price || "Стоимость уточняется";
 }
 
 export function HomePage({ onPageChange, onOpenCourse }) {
-  const featuredCourses = PUBLIC_COURSES.slice(0, 3);
+  const [featuredCourses, setFeaturedCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [coursesError, setCoursesError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadFeaturedCourses() {
+      try {
+        setLoadingCourses(true);
+        setCoursesError("");
+
+        const response = await getPublicCourses({ limit: 3 });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setFeaturedCourses(Array.isArray(response) ? response : []);
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
+        setCoursesError(`${err.status || ""} ${err.message || "Не удалось загрузить программы."}`.trim());
+        setFeaturedCourses([]);
+      } finally {
+        if (isMounted) {
+          setLoadingCourses(false);
+        }
+      }
+    }
+
+    loadFeaturedCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 via-blue-700 to-slate-900 px-6 py-10 text-white shadow-sm md:px-10 md:py-14">
-        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-          <div>
-            <div className="inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-blue-100">
-              Публичный сайт и каталог
-            </div>
-            <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-tight md:text-5xl">
-              Современная образовательная платформа для физических и корпоративных клиентов
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-blue-50">
-              Выбор программ, обучение, документы, договорный контур и прозрачная
-              цифровая инфраструктура в одном продукте.
-            </p>
+    <div className="space-y-10">
+      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-12">
+        <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+          Публичный сайт и каталог
+        </div>
+        <h1 className="mt-3 max-w-4xl text-4xl font-bold tracking-tight text-slate-900 md:text-6xl">
+          Образовательная платформа для обучения, документов и проверки результатов
+        </h1>
+        <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600">
+          Каталог программ, личный кабинет слушателя, электронные документы и публичная
+          проверка выданных документов в едином контуре ObrPortal.
+        </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => onPageChange("catalog")}
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
-              >
-                Перейти в каталог
-              </button>
-              <button
-                type="button"
-                onClick={() => onPageChange("organization-info")}
-                className="rounded-full bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/15"
-              >
-                Сведения об организации
-              </button>
-            </div>
-          </div>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => onPageChange("catalog")}
+            className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Перейти в каталог
+          </button>
 
-          <div className="grid gap-4">
-            <div className="rounded-3xl bg-white/10 p-5 ring-1 ring-white/15">
-              <div className="text-sm font-semibold text-blue-100">Для ФЛ</div>
-              <div className="mt-2 text-xl font-bold">Выбрать → оплатить → пройти → получить документ</div>
-            </div>
-            <div className="rounded-3xl bg-white/10 p-5 ring-1 ring-white/15">
-              <div className="text-sm font-semibold text-blue-100">Для ЮЛ</div>
-              <div className="mt-2 text-xl font-bold">Выбрать → согласовать → подписать → загрузить группу</div>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => onPageChange("verify-document")}
+            className="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+          >
+            Проверить документ
+          </button>
         </div>
       </section>
 
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Популярные программы</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Публичная витрина курсов с быстрым переходом в каталог и карточку курса.
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Карточки загружаются из backend через публичный API курсов.
             </p>
           </div>
 
           <button
             type="button"
             onClick={() => onPageChange("catalog")}
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
           >
-            Смотреть все
+            Все программы
           </button>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          {featuredCourses.map((course) => (
-            <div
-              key={course.id}
-              className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
-            >
-              <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-                {course.format}
-              </div>
-              <div className="mt-3 text-xl font-bold text-slate-900">{course.title}</div>
-              <div className="mt-3 space-y-1 text-sm text-slate-600">
-                <div>Объём: {course.hours} часов</div>
-                <div>Итог: {course.document}</div>
-                <div>Цена: {course.price}</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => onOpenCourse(course.slug)}
-                className="mt-5 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+        {loadingCourses ? (
+          <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+            Загружаем программы...
+          </div>
+        ) : coursesError ? (
+          <div className="mt-6 rounded-2xl bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
+            {coursesError}
+          </div>
+        ) : featuredCourses.length === 0 ? (
+          <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+            Пока нет опубликованных активных программ. Создайте и активируйте курс в админке.
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {featuredCourses.map((course) => (
+              <article
+                key={course.id}
+                className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
               >
-                Открыть карточку курса
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
+                <div className="flex flex-wrap gap-2">
+                  {course.format && (
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
+                      {course.format}
+                    </span>
+                  )}
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-200">
+                    {formatCourseDocument(course)}
+                  </span>
+                </div>
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <FeatureCard
-          title="Как это работает"
-          text="Физическое лицо выбирает курс, оплачивает обучение и проходит программу. Корпоративный заказчик работает через отдельный B2B-контур."
-        />
-        <FeatureCard
-          title="Итоговый документ"
-          text="Пользователь получает документ по итогам обучения, а публичный контур включает страницу проверки подлинности."
-        />
-        <FeatureCard
-          title="Доверие и открытость"
-          text="Контакты, правовые страницы и сведения об образовательной организации встроены в публичный слой продукта."
-        />
+                <div className="mt-4 text-xl font-bold text-slate-900">
+                  {course.title}
+                </div>
+
+                {course.description && (
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+                    {course.description}
+                  </p>
+                )}
+
+                <div className="mt-4 space-y-1 text-sm text-slate-600">
+                  <div>Объём: {course.hours ? `${course.hours} часов` : "—"}</div>
+                  <div>Итог: {formatCourseDocument(course)}</div>
+                  <div>Цена: {formatCoursePrice(course)}</div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onOpenCourse(course.slug)}
+                  className="mt-5 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  Подробнее
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
