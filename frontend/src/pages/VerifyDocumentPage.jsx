@@ -15,19 +15,58 @@ function formatIssuedAt(value) {
   return new Intl.DateTimeFormat("ru-RU").format(date);
 }
 
+function getRegistryStatusLabel(status) {
+  const labels = {
+    available: "Доступен",
+    draft: "Черновик",
+    revoked: "Отозван",
+  };
+
+  return labels[status] || status || "—";
+}
+
+function getVerificationTone(result) {
+  if (result.registry_status === "available") {
+    return {
+      card: "ring-green-200",
+      badge: "bg-green-50 text-green-700",
+      title: "text-green-700",
+      label: "Проверка завершена",
+    };
+  }
+
+  if (result.registry_status === "revoked") {
+    return {
+      card: "ring-red-200",
+      badge: "bg-red-50 text-red-700",
+      title: "text-red-700",
+      label: "Документ недействителен",
+    };
+  }
+
+  return {
+    card: "ring-amber-200",
+    badge: "bg-amber-50 text-amber-700",
+    title: "text-amber-700",
+    label: "Требуется проверка",
+  };
+}
+
 function ResultCard({ result }) {
+  const tone = getVerificationTone(result);
+
   return (
-    <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className={`rounded-[2rem] bg-white p-6 shadow-sm ring-1 ${tone.card}`}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-green-700">
-          Проверка завершена
+        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${tone.badge}`}>
+          {tone.label}
         </span>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
           {result.document_type}
         </span>
       </div>
 
-      <h2 className="mt-4 text-2xl font-bold text-slate-900">
+      <h2 className={`mt-4 text-2xl font-bold ${tone.title}`}>
         {result.verification_status}
       </h2>
 
@@ -73,7 +112,7 @@ function ResultCard({ result }) {
             Статус в реестре
           </div>
           <div className="mt-2 font-semibold text-slate-900">
-            {result.registry_status || "—"}
+            {getRegistryStatusLabel(result.registry_status)}
           </div>
         </div>
       </div>
@@ -173,19 +212,20 @@ export function VerifyDocumentPage({ onPageChange }) {
         <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200">
           <div className="text-xl font-bold text-slate-900">Документ не найден</div>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Проверьте корректность номера или обратитесь в образовательную организацию.
+            Проверьте корректность номера. Черновики и документы без опубликованного файла
+            не подтверждаются в публичном реестре.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => onPageChange("contacts")}
+              onClick={() => onPageChange?.("contacts")}
               className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               Перейти в контакты
             </button>
             <button
               type="button"
-              onClick={() => onPageChange("home")}
+              onClick={() => onPageChange?.("home")}
               className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
             >
               На главную

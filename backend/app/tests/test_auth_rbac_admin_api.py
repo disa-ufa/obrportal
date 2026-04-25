@@ -2636,6 +2636,9 @@ def test_public_can_verify_document() -> None:
         enrollment_id=enrollment["id"],
         title="Public verify certificate",
         document_type="Сертификат",
+        status="available",
+        storage_content=b"public verify certificate content",
+        storage_extension=".pdf",
     )
 
     status, payload = request_json(
@@ -2649,9 +2652,8 @@ def test_public_can_verify_document() -> None:
     assert payload["document_type"] == "Сертификат"
     assert payload["title"] == "Public verify certificate"
     assert payload["course_title"] == course["title"]
-    assert payload["enrollment_id"] if False else True
-    assert payload["verification_status"] == "Документ подтвержден"
-
+    assert payload["registry_status"] == "available"
+    assert payload["verification_status"] == "Документ подтверждён"
 
 def test_public_verify_document_not_found_returns_404() -> None:
     status, payload = request_json(
@@ -4667,3 +4669,80 @@ def test_admin_rejects_document_course_update_mismatched_with_existing_enrollmen
     assert response.status_code == 400
     payload = response.json()
     assert payload["detail"] == "Enrollment course does not match document course"
+
+
+def test_public_verify_draft_document_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    document = create_test_document_record_in_db(
+        user_id=str(me_payload["id"]),
+        title="Draft public verify document",
+        document_type="Сертификат",
+        status="draft",
+        storage_content=b"draft document content",
+        storage_extension=".pdf",
+    )
+
+    status, payload = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={document["document_number"]}',
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_public_verify_available_document_without_file_returns_404() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    document = create_test_document_record_in_db(
+        user_id=str(me_payload["id"]),
+        title="Available document without file",
+        document_type="Сертификат",
+        status="available",
+    )
+
+    status, payload = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={document["document_number"]}',
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_public_verify_revoked_document_returns_revoked_status() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    document = create_test_document_record_in_db(
+        user_id=str(me_payload["id"]),
+        title="Revoked public verify document",
+        document_type="Сертификат",
+        status="revoked",
+        storage_content=b"revoked document content",
+        storage_extension=".pdf",
+    )
+
+    status, payload = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={document["document_number"]}',
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["document_number"] == document["document_number"]
+    assert payload["registry_status"] == "revoked"
+    assert payload["verification_status"] == "Документ отозван"
+

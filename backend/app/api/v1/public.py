@@ -112,6 +112,7 @@ async def verify_document(
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("registry_status"),
             DocumentRecord.created_at.label("issued_at"),
+            DocumentRecord.storage_path.label("storage_path"),
             User.full_name.label("holder_name"),
             Course.title.label("course_title"),
         )
@@ -128,6 +129,25 @@ async def verify_document(
             detail="Document not found",
         )
 
+    if row.registry_status == "draft":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    if row.registry_status == "available" and not row.storage_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    if row.registry_status == "revoked":
+        verification_status = "Документ отозван"
+    elif row.registry_status == "available":
+        verification_status = "Документ подтверждён"
+    else:
+        verification_status = "Документ не подтверждён"
+
     return PublicDocumentVerifyResponse(
         document_number=row.document_number,
         document_type=row.document_type,
@@ -136,5 +156,5 @@ async def verify_document(
         course_title=row.course_title,
         issued_at=row.issued_at,
         registry_status=row.registry_status,
-        verification_status="Документ подтвержден",
+        verification_status=verification_status,
     )
