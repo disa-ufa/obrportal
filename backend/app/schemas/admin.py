@@ -160,6 +160,7 @@ class AdminAuditEventItem(BaseModel):
 class AdminDocumentItem(BaseModel):
     id: str
     document_number: str
+    verification_code: str
     document_type: str
     title: str
     status: str

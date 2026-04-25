@@ -150,6 +150,7 @@ async def get_account_documents(
         select(
             DocumentRecord.id.label("id"),
             DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.verification_code.label("verification_code"),
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("status"),
@@ -168,6 +169,7 @@ async def get_account_documents(
         AccountDocumentItemResponse(
             id=row.id,
             document_number=row.document_number,
+            verification_code=row.verification_code,
             document_type=row.document_type,
             title=row.title,
             status=row.status,

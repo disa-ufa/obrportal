@@ -2544,6 +2544,7 @@ def create_test_document_record_in_db(
                 return {
                     "id": str(document.id),
                     "document_number": document.document_number,
+                    "verification_code": document.verification_code,
                     "document_type": document.document_type,
                     "title": document.title,
                     "status": document.status,
@@ -2597,6 +2598,7 @@ def test_admin_can_get_account_documents() -> None:
     )
     assert item is not None
     assert item["document_number"] == document["document_number"]
+    assert item["verification_code"].startswith("DOCV-")
     assert item["document_type"] == "Сертификат"
     assert item["title"] == "Admin certificate"
     assert item["course_id"] == course["id"]
@@ -2649,11 +2651,22 @@ def test_public_can_verify_document() -> None:
     assert status == 200
     assert isinstance(payload, dict)
     assert payload["document_number"] == document["document_number"]
+    assert payload["verification_code"].startswith("DOCV-")
     assert payload["document_type"] == "Сертификат"
     assert payload["title"] == "Public verify certificate"
     assert payload["course_title"] == course["title"]
     assert payload["registry_status"] == "available"
     assert payload["verification_status"] == "Документ подтверждён"
+    status, code_payload = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={payload["verification_code"]}',
+    )
+
+    assert status == 200
+    assert isinstance(code_payload, dict)
+    assert code_payload["document_number"] == document["document_number"]
+    assert code_payload["verification_code"] == payload["verification_code"]
+    assert code_payload["verification_status"] == "Документ подтверждён"
 
 def test_public_verify_document_not_found_returns_404() -> None:
     status, payload = request_json(
@@ -4500,6 +4513,7 @@ def test_admin_can_create_document_linked_to_enrollment_via_api() -> None:
     assert isinstance(created_document, dict)
 
     assert created_document["title"] == "API linked enrollment document"
+    assert created_document["verification_code"].startswith("DOCV-")
     assert created_document["document_type"] == "Сертификат"
     assert created_document["status"] == "draft"
     assert created_document["user_id"] == user_id

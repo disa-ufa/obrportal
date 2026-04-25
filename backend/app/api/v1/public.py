@@ -108,6 +108,7 @@ async def verify_document(
     result = await session.execute(
         select(
             DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.verification_code.label("verification_code"),
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("registry_status"),
@@ -118,7 +119,12 @@ async def verify_document(
         )
         .join(User, User.id == DocumentRecord.user_id)
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
-        .where(func.lower(DocumentRecord.document_number) == normalized_number.lower())
+        .where(
+            or_(
+                func.lower(DocumentRecord.document_number) == normalized_number.lower(),
+                func.lower(DocumentRecord.verification_code) == normalized_number.lower(),
+            )
+        )
     )
 
     row = result.first()
@@ -150,6 +156,7 @@ async def verify_document(
 
     return PublicDocumentVerifyResponse(
         document_number=row.document_number,
+        verification_code=row.verification_code,
         document_type=row.document_type,
         title=row.title,
         holder_name=row.holder_name,

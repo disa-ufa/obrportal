@@ -1688,6 +1688,7 @@ def build_admin_document_item(row) -> AdminDocumentItem:
     return AdminDocumentItem(
         id=str(row.id),
         document_number=row.document_number,
+        verification_code=row.verification_code,
         document_type=row.document_type,
         title=row.title,
         status=row.status,
@@ -1787,6 +1788,7 @@ async def get_admin_document_row_or_404(
         select(
             DocumentRecord.id.label("id"),
             DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.verification_code.label("verification_code"),
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("status"),
@@ -1837,6 +1839,7 @@ async def list_admin_documents(
         select(
             DocumentRecord.id.label("id"),
             DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.verification_code.label("verification_code"),
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("status"),
@@ -2023,6 +2026,7 @@ def document_record_snapshot(document: DocumentRecord) -> dict:
     return {
         "id": str(document.id),
         "document_number": document.document_number,
+        "verification_code": document.verification_code,
         "document_type": document.document_type,
         "title": document.title,
         "status": document.status,
