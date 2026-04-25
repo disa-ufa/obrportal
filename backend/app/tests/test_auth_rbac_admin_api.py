@@ -4409,3 +4409,57 @@ def test_admin_can_publish_completion_document_for_learner_download() -> None:
         body = download_response.read()
 
     assert body == b"published completion certificate"
+
+
+
+def test_admin_documents_include_enrollment_details() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=course["id"],
+        enrollment_id=enrollment["id"],
+        title="Enrollment details certificate",
+        document_type="Сертификат",
+        status="available",
+        storage_content=b"enrollment details document",
+        storage_extension=".pdf",
+    )
+
+    status, documents = request_json(
+        "GET",
+        "/api/v1/admin/documents",
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, list)
+
+    item = next(
+        candidate
+        for candidate in documents
+        if candidate["id"] == document["id"]
+    )
+
+    assert item["course_id"] == course["id"]
+    assert item["course_title"] == course["title"]
+    assert item["enrollment_id"] == enrollment["id"]
+    assert item["enrollment_status"] == "completed"
+
+    assert "organization_id" in item
+    assert "organization_name" in item
+    assert "learning_group_id" in item
+    assert "learning_group_name" in item
