@@ -1960,6 +1960,11 @@ async def create_admin_document(
 
         if normalized_course_id is None:
             normalized_course_id = str(enrollment.course_id)
+        elif str(enrollment.course_id) != normalized_course_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Enrollment course does not match document course",
+            )
 
     document = DocumentRecord(
         user_id=user.id,

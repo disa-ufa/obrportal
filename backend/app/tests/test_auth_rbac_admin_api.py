@@ -4526,3 +4526,42 @@ def test_admin_can_create_document_linked_to_enrollment_via_api() -> None:
     assert item["course_title"] == course["title"]
     assert item["enrollment_id"] == enrollment["id"]
     assert item["enrollment_status"] == "completed"
+
+
+
+def test_admin_rejects_document_course_mismatched_with_enrollment() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    user_id = str(me_payload["id"])
+
+    first = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    second = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="assigned",
+    )
+
+    enrollment = first["enrollment"]
+    another_course = second["course"]
+
+    response = post_multipart_admin_document(
+        token=admin_token,
+        fields={
+            "user_id": user_id,
+            "title": "Mismatched enrollment document",
+            "document_type": "Сертификат",
+            "status": "draft",
+            "course_id": another_course["id"],
+            "enrollment_id": enrollment["id"],
+        },
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["detail"] == "Enrollment course does not match document course"
