@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import {
   completeAccountCourse,
   downloadAccountDocument,
@@ -9,11 +8,7 @@ import {
   startAccountCourse,
 } from "../api/client";
 import { Alert } from "../components/ui/Alert";
-import {
-  buildDocumentVerificationPath,
-  copyTextToClipboard,
-  downloadQrSvgById,
-} from "../utils/documentVerification";
+import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 
 function getStatusLabel(status) {
@@ -80,7 +75,6 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [downloadLoadingId, setDownloadLoadingId] = useState("");
-  const [documentCopyKey, setDocumentCopyKey] = useState("");
   const [courseActionError, setCourseActionError] = useState("");
   const [courseActionLoadingKey, setCourseActionLoadingKey] = useState("");
   const [accountNotice, setAccountNotice] = useState(null);
@@ -196,27 +190,6 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     } finally {
       setDownloadLoadingId("");
     }
-  }
-
-  async function handleCopyDocumentCode(documentItem) {
-    const code = documentItem.verification_code || "";
-
-    if (!code) {
-      return;
-    }
-
-    const ok = await copyTextToClipboard(code);
-
-    if (!ok) {
-      return;
-    }
-
-    const key = `${documentItem.id}:verification-code`;
-    setDocumentCopyKey(key);
-
-    window.setTimeout(() => {
-      setDocumentCopyKey("");
-    }, 1800);
   }
 
   const profile = summary?.profile || user;
@@ -595,32 +568,16 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   </div>
                 </div>
 
-                {(documentItem.verification_code || documentItem.document_number) && (
-                  <div className="mt-5 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                      <div
-                        id={`account-document-qr-${documentItem.id}`}
-                        className="w-fit rounded-2xl bg-white p-3 ring-1 ring-blue-100"
-                      >
-                        <QRCodeSVG
-                          value={buildDocumentVerificationPath(documentItem.verification_code || documentItem.document_number)}
-                          size={116}
-                          level="M"
-                          includeMargin
-                          aria-label="QR-код проверки документа"
-                        />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                          QR-код проверки
-                        </div>
-                        <p className="mt-2 text-sm leading-6 text-blue-800">
-                          По этому QR-коду можно открыть публичную проверку документа.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <DocumentVerificationQrBlock
+                  code={documentItem.verification_code}
+                  documentNumber={documentItem.document_number}
+                  containerId={`account-document-qr-${documentItem.id}`}
+                  title="QR-код проверки"
+                  description="По этому QR-коду можно открыть публичную проверку документа."
+                  showPublicLink
+                  publicLinkLabel="Проверить публично"
+                  className="mt-5"
+                />
 
                 <div className="mt-5 flex flex-wrap gap-3">
                   {documentItem.course_slug && (
@@ -632,13 +589,6 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                       Открыть курс
                     </button>
                   )}
-
-                  <a
-                    href={buildDocumentVerificationPath(documentItem.verification_code || documentItem.document_number)}
-                    className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
-                  >
-                    Проверить публично
-                  </a>
 
                   {documentItem.file_available && !canDownloadDocument(documentItem) && (
                     <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 ring-1 ring-amber-200">

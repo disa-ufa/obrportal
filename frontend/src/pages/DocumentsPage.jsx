@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import {
   createAdminDocument,
   deleteAdminDocument,
@@ -10,11 +9,7 @@ import {
   updateAdminDocument,
 } from "../api/client";
 import { Alert } from "../components/ui/Alert";
-import {
-  buildDocumentVerificationPath,
-  copyTextToClipboard,
-  downloadQrSvgById,
-} from "../utils/documentVerification";
+import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 
 const DOCUMENT_STATUSES = [
@@ -148,7 +143,6 @@ export function DocumentsPage() {
   const [editSavingId, setEditSavingId] = useState("");
   const [downloadSavingId, setDownloadSavingId] = useState("");
   const [deleteSavingId, setDeleteSavingId] = useState("");
-  const [documentCopyKey, setDocumentCopyKey] = useState("");
   const [statusSavingKey, setStatusSavingKey] = useState("");
 
   const [error, setError] = useState("");
@@ -421,27 +415,6 @@ export function DocumentsPage() {
     } finally {
       setDownloadSavingId("");
     }
-  }
-
-  async function handleCopyDocumentCode(documentItem) {
-    const code = documentItem.verification_code || "";
-
-    if (!code) {
-      return;
-    }
-
-    const ok = await copyTextToClipboard(code);
-
-    if (!ok) {
-      return;
-    }
-
-    const key = `${documentItem.id}:verification-code`;
-    setDocumentCopyKey(key);
-
-    window.setTimeout(() => {
-      setDocumentCopyKey("");
-    }, 1800);
   }
 
   async function handleDelete(documentItem) {
@@ -847,32 +820,16 @@ export function DocumentsPage() {
                           </div>
                         </div>
 
-                        {(documentItem.verification_code || documentItem.document_number) && (
-                          <div className="mt-5 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                              <div
-                                id={`admin-document-qr-${documentItem.id}`}
-                                className="w-fit rounded-2xl bg-white p-3 ring-1 ring-blue-100"
-                              >
-                                <QRCodeSVG
-                                  value={buildDocumentVerificationPath(documentItem.verification_code || documentItem.document_number)}
-                                  size={116}
-                                  level="M"
-                                  includeMargin
-                                  aria-label="QR-код публичной проверки документа"
-                                />
-                              </div>
-                              <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                                  QR-код проверки
-                                </div>
-                                <p className="mt-2 text-sm leading-6 text-blue-800">
-                                  QR-код можно использовать для размещения на документе или отправки слушателю.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                        <DocumentVerificationQrBlock
+                          code={documentItem.verification_code}
+                          documentNumber={documentItem.document_number}
+                          containerId={`admin-document-qr-${documentItem.id}`}
+                          title="QR-код проверки"
+                          description="QR-код можно использовать для размещения на документе или отправки слушателю."
+                          showPublicLink
+                          publicLinkLabel="Публичная проверка"
+                          className="mt-5"
+                        />
 
                         <div className="mt-5 flex flex-wrap gap-3">
                           <button
@@ -883,13 +840,6 @@ export function DocumentsPage() {
                           >
                             Редактировать
                           </button>
-
-                          <a
-                            href={buildDocumentVerificationPath(documentItem.verification_code || documentItem.document_number)}
-                            className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
-                          >
-                            Публичная проверка
-                          </a>
 
                           <button
                             type="button"

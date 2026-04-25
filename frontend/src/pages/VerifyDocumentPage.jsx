@@ -1,21 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import { verifyPublicDocument } from "../api/client";
-import {
-  buildDocumentVerificationUrl,
-  copyTextToClipboard,
-  downloadQrSvgById,
-} from "../utils/documentVerification";
+import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 
 function formatIssuedAt(value) {
   if (!value) {
-    return "—";
+    return "-";
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "—";
+    return "-";
   }
 
   return new Intl.DateTimeFormat("ru-RU").format(date);
@@ -28,7 +23,7 @@ function getRegistryStatusLabel(status) {
     revoked: "Отозван",
   };
 
-  return labels[status] || status || "—";
+  return labels[status] || status || "-";
 }
 
 function getVerificationTone(result) {
@@ -60,23 +55,6 @@ function getVerificationTone(result) {
 
 function ResultCard({ result }) {
   const tone = getVerificationTone(result);
-  const verificationUrl = buildDocumentVerificationUrl(result.verification_code);
-  const qrContainerId = "public-document-verification-qr";
-  const [copied, setCopied] = useState("");
-
-  async function handleCopy(kind, text) {
-    const ok = await copyTextToClipboard(text);
-
-    if (!ok) {
-      return;
-    }
-
-    setCopied(kind);
-
-    window.setTimeout(() => {
-      setCopied("");
-    }, 1800);
-  }
 
   return (
     <div className={`rounded-[2rem] bg-white p-6 shadow-sm ring-1 ${tone.card}`}>
@@ -108,7 +86,7 @@ function ResultCard({ result }) {
             Код проверки
           </div>
           <div className="mt-2 break-all font-semibold text-slate-900">
-            {result.verification_code || "—"}
+            {result.verification_code || "-"}
           </div>
         </div>
 
@@ -126,7 +104,7 @@ function ResultCard({ result }) {
             Владелец
           </div>
           <div className="mt-2 font-semibold text-slate-900">
-            {result.holder_name || "—"}
+            {result.holder_name || "-"}
           </div>
         </div>
 
@@ -135,7 +113,7 @@ function ResultCard({ result }) {
             Программа
           </div>
           <div className="mt-2 font-semibold text-slate-900">
-            {result.course_title || result.title || "—"}
+            {result.course_title || result.title || "-"}
           </div>
         </div>
 
@@ -148,63 +126,17 @@ function ResultCard({ result }) {
           </div>
         </div>
 
-        {verificationUrl && (
-          <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100 md:col-span-2">
-            <div className="grid gap-4 lg:grid-cols-[auto_1fr] lg:items-start">
-              <div id={qrContainerId} className="rounded-2xl bg-white p-3 ring-1 ring-blue-100">
-                <QRCodeSVG
-                  value={verificationUrl}
-                  size={132}
-                  level="M"
-                  includeMargin
-                  aria-label="QR-код публичной проверки документа"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs uppercase tracking-wide text-blue-700">
-                  Публичная ссылка проверки
-                </div>
-                <a
-                  href={verificationUrl}
-                  className="mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800"
-                >
-                  {verificationUrl}
-                </a>
-                <p className="mt-2 text-xs leading-5 text-blue-700">
-                  QR-код ведёт на публичную страницу проверки по безопасному коду документа.
-                </p>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleCopy("link", verificationUrl)}
-                    className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                  >
-                    {copied === "link" ? "Ссылка скопирована" : "Скопировать ссылку"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleCopy("code", result.verification_code)}
-                    disabled={!result.verification_code}
-                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {copied === "code" ? "Код скопирован" : "Скопировать код"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => downloadQrSvgById(qrContainerId, result.verification_code || result.document_number)}
-                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50"
-                  >
-                    Скачать QR SVG
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <DocumentVerificationQrBlock
+          code={result.verification_code}
+          documentNumber={result.document_number}
+          containerId="public-document-verification-qr"
+          title="Публичная ссылка проверки"
+          description="QR-код ведёт на публичную страницу проверки по безопасному коду документа."
+          size={132}
+          showUrl
+          showCopyLink
+          className="md:col-span-2"
+        />
       </div>
     </div>
   );
