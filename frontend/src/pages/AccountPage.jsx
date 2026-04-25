@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import {
   completeAccountCourse,
   downloadAccountDocument,
@@ -631,6 +632,30 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </div>
                   </div>
                 </div>
+
+                {(documentItem.verification_code || documentItem.document_number) && (
+                  <div className="mt-5 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                      <div className="w-fit rounded-2xl bg-white p-3 ring-1 ring-blue-100">
+                        <QRCodeSVG
+                          value={buildDocumentVerificationPath(documentItem.verification_code || documentItem.document_number)}
+                          size={116}
+                          level="M"
+                          includeMargin
+                          aria-label="QR-код проверки документа"
+                        />
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                          QR-код проверки
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-blue-800">
+                          По этому QR-коду можно открыть публичную проверку документа.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-5 flex flex-wrap gap-3">
                   {documentItem.course_slug && (

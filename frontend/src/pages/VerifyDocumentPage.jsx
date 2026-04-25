@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { verifyPublicDocument } from "../api/client";
 
 function formatIssuedAt(value) {
@@ -196,33 +197,50 @@ function ResultCard({ result }) {
 
         {verificationUrl && (
           <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100 md:col-span-2">
-            <div className="text-xs uppercase tracking-wide text-blue-700">
-              Публичная ссылка проверки
-            </div>
-            <a
-              href={verificationUrl}
-              className="mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800"
-            >
-              {verificationUrl}
-            </a>
+            <div className="grid gap-4 lg:grid-cols-[auto_1fr] lg:items-start">
+              <div className="rounded-2xl bg-white p-3 ring-1 ring-blue-100">
+                <QRCodeSVG
+                  value={verificationUrl}
+                  size={132}
+                  level="M"
+                  includeMargin
+                  aria-label="QR-код публичной проверки документа"
+                />
+              </div>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => handleCopy("link", verificationUrl)}
-                className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-              >
-                {copied === "link" ? "Ссылка скопирована" : "Скопировать ссылку"}
-              </button>
+              <div>
+                <div className="text-xs uppercase tracking-wide text-blue-700">
+                  Публичная ссылка проверки
+                </div>
+                <a
+                  href={verificationUrl}
+                  className="mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800"
+                >
+                  {verificationUrl}
+                </a>
+                <p className="mt-2 text-xs leading-5 text-blue-700">
+                  QR-код ведёт на публичную страницу проверки по безопасному коду документа.
+                </p>
 
-              <button
-                type="button"
-                onClick={() => handleCopy("code", result.verification_code)}
-                disabled={!result.verification_code}
-                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {copied === "code" ? "Код скопирован" : "Скопировать код"}
-              </button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCopy("link", verificationUrl)}
+                    className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    {copied === "link" ? "Ссылка скопирована" : "Скопировать ссылку"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCopy("code", result.verification_code)}
+                    disabled={!result.verification_code}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {copied === "code" ? "Код скопирован" : "Скопировать код"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
