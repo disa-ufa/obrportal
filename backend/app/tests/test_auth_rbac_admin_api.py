@@ -4565,3 +4565,60 @@ def test_admin_rejects_document_course_mismatched_with_enrollment() -> None:
     assert response.status_code == 400
     payload = response.json()
     assert payload["detail"] == "Enrollment course does not match document course"
+
+
+
+def test_admin_rejects_document_enrollment_for_another_user() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, admin_me = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(admin_me, dict)
+
+    status, learner_me = request_json("GET", "/api/v1/auth/me", token=learner_token)
+    assert status == 200
+    assert isinstance(learner_me, dict)
+
+    admin_user_id = str(admin_me["id"])
+    learner_user_id = str(learner_me["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=learner_user_id,
+        status="completed",
+    )
+    foreign_enrollment = created["enrollment"]
+
+    create_response = post_multipart_admin_document(
+        token=admin_token,
+        fields={
+            "user_id": admin_user_id,
+            "title": "Foreign enrollment create document",
+            "document_type": "Сертификат",
+            "status": "draft",
+            "enrollment_id": foreign_enrollment["id"],
+        },
+    )
+
+    assert create_response.status_code == 400
+    create_payload = create_response.json()
+    assert create_payload["detail"] == "Enrollment belongs to another user"
+
+    document = create_test_document_record_in_db(
+        user_id=admin_user_id,
+        title="Foreign enrollment update document",
+        document_type="Сертификат",
+        status="draft",
+    )
+
+    update_response = patch_multipart_admin_document(
+        token=admin_token,
+        document_id=document["id"],
+        fields={
+            "enrollment_id": foreign_enrollment["id"],
+        },
+    )
+
+    assert update_response.status_code == 400
+    update_payload = update_response.json()
+    assert update_payload["detail"] == "Enrollment belongs to another user"
