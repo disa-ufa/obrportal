@@ -106,9 +106,55 @@ async function copyTextToClipboard(text) {
   }
 }
 
+
+function sanitizeQrFilename(value) {
+  return (value || "document-verification")
+    .toString()
+    .trim()
+    .replace(/[^a-zA-Z0-9а-яА-ЯёЁ._-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 120) || "document-verification";
+}
+
+function downloadQrSvgById(containerId, filenameBase) {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const container = document.getElementById(containerId);
+  const svg = container?.querySelector("svg");
+
+  if (!svg) {
+    return false;
+  }
+
+  const clonedSvg = svg.cloneNode(true);
+  clonedSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  const source = new XMLSerializer().serializeToString(clonedSvg);
+  const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+  const objectUrl = URL.createObjectURL(blob);
+
+  try {
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `${sanitizeQrFilename(filenameBase)}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    return true;
+  } finally {
+    window.setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+    }, 0);
+  }
+}
+
 function ResultCard({ result }) {
   const tone = getVerificationTone(result);
   const verificationUrl = buildVerificationUrl(result.verification_code);
+  const qrContainerId = "public-document-verification-qr";
   const [copied, setCopied] = useState("");
 
   async function handleCopy(kind, text) {
@@ -198,7 +244,7 @@ function ResultCard({ result }) {
         {verificationUrl && (
           <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100 md:col-span-2">
             <div className="grid gap-4 lg:grid-cols-[auto_1fr] lg:items-start">
-              <div className="rounded-2xl bg-white p-3 ring-1 ring-blue-100">
+              <div id={qrContainerId} className="rounded-2xl bg-white p-3 ring-1 ring-blue-100">
                 <QRCodeSVG
                   value={verificationUrl}
                   size={132}
@@ -238,6 +284,14 @@ function ResultCard({ result }) {
                     className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {copied === "code" ? "Код скопирован" : "Скопировать код"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadQrSvgById(qrContainerId, result.verification_code || result.document_number)}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50"
+                  >
+                    Скачать QR SVG
                   </button>
                 </div>
               </div>

@@ -110,6 +110,51 @@ async function copyTextToClipboard(text) {
     textarea.remove();
   }
 }
+
+
+function sanitizeQrFilename(value) {
+  return (value || "document-verification")
+    .toString()
+    .trim()
+    .replace(/[^a-zA-Z0-9а-яА-ЯёЁ._-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 120) || "document-verification";
+}
+
+function downloadQrSvgById(containerId, filenameBase) {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const container = document.getElementById(containerId);
+  const svg = container?.querySelector("svg");
+
+  if (!svg) {
+    return false;
+  }
+
+  const clonedSvg = svg.cloneNode(true);
+  clonedSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  const source = new XMLSerializer().serializeToString(clonedSvg);
+  const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+  const objectUrl = URL.createObjectURL(blob);
+
+  try {
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `${sanitizeQrFilename(filenameBase)}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    return true;
+  } finally {
+    window.setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+    }, 0);
+  }
+}
 export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [summary, setSummary] = useState(null);
   const [coursesResponse, setCoursesResponse] = useState(null);
@@ -636,7 +681,10 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                 {(documentItem.verification_code || documentItem.document_number) && (
                   <div className="mt-5 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                      <div className="w-fit rounded-2xl bg-white p-3 ring-1 ring-blue-100">
+                      <div
+                        id={`account-document-qr-${documentItem.id}`}
+                        className="w-fit rounded-2xl bg-white p-3 ring-1 ring-blue-100"
+                      >
                         <QRCodeSVG
                           value={buildDocumentVerificationPath(documentItem.verification_code || documentItem.document_number)}
                           size={116}
