@@ -4,6 +4,7 @@ import {
   deleteAdminDocument,
   downloadAdminDocument,
   getAdminDocuments,
+  getAdminEnrollments,
   getAdminUsers,
   updateAdminDocument,
 } from "../api/client";
@@ -61,6 +62,14 @@ function getLearnerVisibilityTone(documentItem) {
   return "bg-slate-100 text-slate-600 ring-slate-200";
 }
 
+function getEnrollmentOptionLabel(enrollment) {
+  const courseTitle = enrollment.course_title || "Программа без названия";
+  const status = getDocumentStatusLabel(enrollment.status);
+  const group = enrollment.learning_group_name ? ` · ${enrollment.learning_group_name}` : "";
+  const organization = enrollment.organization_name ? ` · ${enrollment.organization_name}` : "";
+
+  return `${courseTitle} · ${status}${group}${organization}`;
+}
 function formatDateTime(value) {
   if (!value) {
     return "-";
@@ -84,6 +93,7 @@ function buildEditForm(documentItem) {
     document_type: documentItem.document_type || "",
     document_number: documentItem.document_number || "",
     status: documentItem.status || "available",
+    enrollment_id: documentItem.enrollment_id || "",
   };
 }
 
@@ -108,6 +118,7 @@ function EmptyState({ onReset }) {
 export function DocumentsPage() {
   const [documents, setDocuments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [enrollments, setEnrollments] = useState([]);
 
   const [filterUserId, setFilterUserId] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -130,6 +141,7 @@ export function DocumentsPage() {
     document_type: "Сертификат",
     document_number: "",
     status: "available",
+    enrollment_id: "",
   });
   const [file, setFile] = useState(null);
 
@@ -139,6 +151,7 @@ export function DocumentsPage() {
     document_type: "",
     document_number: "",
     status: "available",
+    enrollment_id: "",
   });
   const [editFile, setEditFile] = useState(null);
 
@@ -146,6 +159,11 @@ export function DocumentsPage() {
     () => users.find((user) => user.id === form.user_id) || null,
     [form.user_id, users]
   );
+  const selectedUserEnrollments = useMemo(
+    () => enrollments.filter((enrollment) => enrollment.user_id === form.user_id),
+    [enrollments, form.user_id]
+  );
+
 
   function buildDocumentFilters(overrides = {}) {
     return {
@@ -163,13 +181,15 @@ export function DocumentsPage() {
 
       const filters = nextFilters ?? buildDocumentFilters();
 
-      const [documentsResponse, usersResponse] = await Promise.all([
+      const [documentsResponse, usersResponse, enrollmentsResponse] = await Promise.all([
         getAdminDocuments(filters),
         getAdminUsers(),
+        getAdminEnrollments({ limit: 300 }),
       ]);
 
       setDocuments(Array.isArray(documentsResponse) ? documentsResponse : []);
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
+      setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось загрузить документы."}`.trim());
     } finally {
@@ -186,6 +206,7 @@ export function DocumentsPage() {
     setForm((current) => ({
       ...current,
       [field]: value,
+      ...(field === "user_id" ? { enrollment_id: "" } : {}),
     }));
   }
 
@@ -203,6 +224,7 @@ export function DocumentsPage() {
       document_type: "Сертификат",
       document_number: "",
       status: "available",
+    enrollment_id: "",
     });
     setFile(null);
 
@@ -219,6 +241,7 @@ export function DocumentsPage() {
       document_type: "",
       document_number: "",
       status: "available",
+    enrollment_id: "",
     });
     setEditFile(null);
 
@@ -256,6 +279,10 @@ export function DocumentsPage() {
       payload.append("title", form.title.trim());
       payload.append("document_type", form.document_type.trim());
       payload.append("status", form.status);
+
+      if (form.enrollment_id) {
+        payload.append("enrollment_id", form.enrollment_id);
+      }
 
       if (form.document_number.trim()) {
         payload.append("document_number", form.document_number.trim());
@@ -313,6 +340,7 @@ export function DocumentsPage() {
       payload.append("document_type", editForm.document_type.trim());
       payload.append("document_number", editForm.document_number.trim());
       payload.append("status", editForm.status);
+      payload.append("enrollment_id", editForm.enrollment_id);
 
       if (editFile) {
         payload.append("file", editFile);
@@ -472,6 +500,30 @@ export function DocumentsPage() {
                 Документ будет назначен пользователю:{" "}
                 <span className="font-semibold">{selectedUser.email}</span>
               </div>
+            )}
+            {selectedUser && (
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Назначенная программа
+                </span>
+                <select
+                  value={form.enrollment_id}
+                  onChange={(event) => updateField("enrollment_id", event.target.value)}
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="">Без привязки к назначению</option>
+                  {selectedUserEnrollments.map((enrollment) => (
+                    <option key={enrollment.id} value={enrollment.id}>
+                      {getEnrollmentOptionLabel(enrollment)}
+                    </option>
+                  ))}
+                </select>
+                {selectedUserEnrollments.length === 0 && (
+                  <span className="mt-2 block text-xs text-amber-700">
+                    У выбранного пользователя пока нет назначенных программ.
+                  </span>
+                )}
+              </label>
             )}
 
             <label className="block">
@@ -848,6 +900,26 @@ export function DocumentsPage() {
                               onChange={(event) => updateEditField("document_number", event.target.value)}
                               className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                             />
+                          </label>
+
+                          <label className="block md:col-span-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Назначенная программа
+                            </span>
+                            <select
+                              value={editForm.enrollment_id}
+                              onChange={(event) => updateEditField("enrollment_id", event.target.value)}
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                            >
+                              <option value="">Без привязки к назначению</option>
+                              {enrollments
+                                .filter((enrollment) => enrollment.user_id === documentItem.user_id)
+                                .map((enrollment) => (
+                                  <option key={enrollment.id} value={enrollment.id}>
+                                    {getEnrollmentOptionLabel(enrollment)}
+                                  </option>
+                                ))}
+                            </select>
                           </label>
 
                           <label className="block md:col-span-2">
