@@ -62,6 +62,9 @@ function formatDateTime(value) {
 
   return date.toLocaleString("ru-RU");
 }
+function canDownloadDocument(documentItem) {
+  return Boolean(documentItem.download_available ?? documentItem.file_available);
+}
 export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [summary, setSummary] = useState(null);
   const [coursesResponse, setCoursesResponse] = useState(null);
@@ -565,17 +568,24 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </button>
                   )}
 
+                  {documentItem.file_available && !canDownloadDocument(documentItem) && (
+                    <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 ring-1 ring-amber-200">
+                      Документ загружен, но пока не опубликован для скачивания.
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleDownload(documentItem.id)}
-                    disabled={!documentItem.file_available || downloadLoadingId === documentItem.id}
+                    disabled={!canDownloadDocument(documentItem) || downloadLoadingId === documentItem.id}
                     className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {downloadLoadingId === documentItem.id
                       ? "Готовим..."
-                      : documentItem.file_available
+                      : canDownloadDocument(documentItem)
                         ? "Скачать документ"
-                        : "Файл недоступен"}
+                        : documentItem.file_available
+                          ? "Не опубликован"
+                          : "Файл недоступен"}
                   </button>
                 </div>
               </article>

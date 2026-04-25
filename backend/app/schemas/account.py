@@ -47,6 +47,7 @@ class AccountDocumentItemResponse(BaseModel):
     course_title: str | None = None
     enrollment_id: str | None = None
     file_available: bool = False
+    download_available: bool = False
 
 
 class AccountDocumentsResponse(BaseModel):

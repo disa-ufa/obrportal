@@ -176,6 +176,7 @@ async def get_account_documents(
             course_title=row.course_title,
             enrollment_id=row.enrollment_id,
             file_available=bool(row.storage_path),
+            download_available=row.status == "available" and bool(row.storage_path),
         )
         for row in result.all()
     ]

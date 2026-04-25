@@ -2979,6 +2979,7 @@ def test_admin_can_update_document_status_and_replace_file() -> None:
     assert item["document_type"] == "Удостоверение"
     assert item["status"] == "draft"
     assert item["file_available"] is True
+    assert item["download_available"] is False
 
     status, draft_download_payload = request_json(
         "GET",
@@ -4192,6 +4193,7 @@ def test_complete_course_creates_draft_document() -> None:
     assert document["document_type"] == "Сертификат"
     assert document["status"] == "draft"
     assert document["file_available"] is False
+    assert document["download_available"] is False
 
     status, completed_again = request_json(
         "POST",
@@ -4281,6 +4283,7 @@ def test_draft_completion_document_cannot_be_downloaded_by_learner() -> None:
 
     assert draft_document["status"] == "draft"
     assert draft_document["file_available"] is False
+    assert draft_document["download_available"] is False
 
     status, download_payload = request_json(
         "GET",
