@@ -197,6 +197,7 @@ async def get_account_document_download(
             DocumentRecord.id.label("id"),
             DocumentRecord.document_number.label("document_number"),
             DocumentRecord.title.label("title"),
+            DocumentRecord.status.label("status"),
             DocumentRecord.storage_path.label("storage_path"),
         ).where(
             DocumentRecord.id == document_id,
@@ -209,6 +210,12 @@ async def get_account_document_download(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found",
+        )
+
+    if row.status != "available":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document is not available for download",
         )
 
     if not row.storage_path:

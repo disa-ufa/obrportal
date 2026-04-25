@@ -1239,6 +1239,14 @@ def main() -> int:
     assert completion_documents[0]["course_slug"] == self_enroll_slug
     assert completion_documents[0]["file_available"] is False
     checks.append("learner course completion creates draft document")
+    status, draft_download_payload = request_json(
+        "GET",
+        "/api/v1/account/documents/" + str(completion_documents[0]["id"]) + "/download",
+        token=learner_token,
+    )
+    assert_status(status, 409, "learner draft document download blocked")
+    assert isinstance(draft_download_payload, dict)
+    checks.append("learner draft document download blocked")
 
     status, completed_self_enrollment_again = request_json(
         "POST",
