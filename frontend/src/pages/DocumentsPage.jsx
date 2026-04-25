@@ -99,6 +99,14 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+function buildDocumentVerificationPath(code) {
+  if (!code) {
+    return "/verify-document";
+  }
+
+  return `/verify-document?number=${encodeURIComponent(code)}`;
+}
+
 function buildEditForm(documentItem) {
   return {
     title: documentItem.title || "",
@@ -637,7 +645,7 @@ export function DocumentsPage() {
               type="search"
               value={filterQuery}
               onChange={(event) => setFilterQuery(event.target.value)}
-              placeholder="Поиск: номер, название, e-mail, ФИО"
+              placeholder="Поиск: номер, код, название, e-mail, ФИО"
               className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
             />
 
@@ -748,6 +756,9 @@ export function DocumentsPage() {
                           <div className="mt-1 text-sm text-slate-500">
                             {documentItem.document_number}
                           </div>
+                          <div className="mt-1 break-all text-xs font-semibold text-blue-700">
+                            Код проверки: {documentItem.verification_code || "—"}
+                          </div>
                         </div>
 
                         <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
@@ -825,6 +836,13 @@ export function DocumentsPage() {
                           >
                             Редактировать
                           </button>
+
+                          <a
+                            href={buildDocumentVerificationPath(documentItem.verification_code || documentItem.document_number)}
+                            className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
+                          >
+                            Публичная проверка
+                          </a>
 
                           <button
                             type="button"

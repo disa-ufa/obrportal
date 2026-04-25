@@ -65,6 +65,14 @@ function formatDateTime(value) {
 function canDownloadDocument(documentItem) {
   return Boolean(documentItem.download_available ?? documentItem.file_available);
 }
+
+function buildDocumentVerificationPath(code) {
+  if (!code) {
+    return "/verify-document";
+  }
+
+  return `/verify-document?number=${encodeURIComponent(code)}`;
+}
 export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [summary, setSummary] = useState(null);
   const [coursesResponse, setCoursesResponse] = useState(null);
@@ -549,6 +557,15 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
 
                   <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                     <div className="text-xs uppercase tracking-wide text-slate-500">
+                      Код проверки
+                    </div>
+                    <div className="mt-2 break-all font-semibold text-slate-900">
+                      {documentItem.verification_code || "—"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                    <div className="text-xs uppercase tracking-wide text-slate-500">
                       Курс
                     </div>
                     <div className="mt-2 font-semibold text-slate-900">
@@ -567,6 +584,13 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                       Открыть курс
                     </button>
                   )}
+
+                  <a
+                    href={buildDocumentVerificationPath(documentItem.verification_code || documentItem.document_number)}
+                    className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
+                  >
+                    Проверить публично
+                  </a>
 
                   {documentItem.file_available && !canDownloadDocument(documentItem) && (
                     <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 ring-1 ring-amber-200">

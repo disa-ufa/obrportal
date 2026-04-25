@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { verifyPublicDocument } from "../api/client";
 
 function formatIssuedAt(value) {
@@ -52,8 +52,26 @@ function getVerificationTone(result) {
   };
 }
 
+function buildVerificationUrl(code) {
+  if (!code) {
+    return "";
+  }
+
+  if (typeof window === "undefined") {
+    return `/verify-document?number=${encodeURIComponent(code)}`;
+  }
+
+  const url = new URL(window.location.href);
+  url.pathname = "/verify-document";
+  url.search = "";
+  url.searchParams.set("number", code);
+
+  return url.toString();
+}
+
 function ResultCard({ result }) {
   const tone = getVerificationTone(result);
+  const verificationUrl = buildVerificationUrl(result.verification_code);
 
   return (
     <div className={`rounded-[2rem] bg-white p-6 shadow-sm ring-1 ${tone.card}`}>
@@ -77,6 +95,15 @@ function ResultCard({ result }) {
           </div>
           <div className="mt-2 font-semibold text-slate-900">
             {result.document_number}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs uppercase tracking-wide text-slate-500">
+            Код проверки
+          </div>
+          <div className="mt-2 break-all font-semibold text-slate-900">
+            {result.verification_code || "—"}
           </div>
         </div>
 
@@ -107,7 +134,7 @@ function ResultCard({ result }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 md:col-span-2">
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
           <div className="text-xs uppercase tracking-wide text-slate-500">
             Статус в реестре
           </div>
@@ -115,6 +142,20 @@ function ResultCard({ result }) {
             {getRegistryStatusLabel(result.registry_status)}
           </div>
         </div>
+
+        {verificationUrl && (
+          <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100 md:col-span-2">
+            <div className="text-xs uppercase tracking-wide text-blue-700">
+              Публичная ссылка проверки
+            </div>
+            <a
+              href={verificationUrl}
+              className="mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800"
+            >
+              {verificationUrl}
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -130,11 +171,11 @@ export function VerifyDocumentPage({ onPageChange }) {
 
   const normalizedQuery = useMemo(() => query.trim(), [query]);
 
-  async function handleSubmit(event) {
-    event.preventDefault();
+  async function runVerification(rawValue, options = {}) {
+    const value = rawValue.trim();
 
-    if (!normalizedQuery) {
-      setError("Введите номер документа.");
+    if (!value) {
+      setError("Введите номер документа или код проверки.");
       setResult(null);
       setNotFound(false);
       return;
@@ -144,10 +185,18 @@ export function VerifyDocumentPage({ onPageChange }) {
     setError("");
     setNotFound(false);
     setResult(null);
-    setSubmittedQuery(normalizedQuery);
+    setSubmittedQuery(value);
+
+    if (options.updateUrl && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.pathname = "/verify-document";
+      url.search = "";
+      url.searchParams.set("number", value);
+      window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+    }
 
     try {
-      const response = await verifyPublicDocument(normalizedQuery);
+      const response = await verifyPublicDocument(value);
       setResult(response);
     } catch (err) {
       if (err.status === 404) {
@@ -158,6 +207,28 @@ export function VerifyDocumentPage({ onPageChange }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const value = (params.get("number") || params.get("code") || "").trim();
+
+    if (!value) {
+      return;
+    }
+
+    setQuery(value);
+    runVerification(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    await runVerification(normalizedQuery, { updateUrl: true });
   }
 
   return (
@@ -180,7 +251,7 @@ export function VerifyDocumentPage({ onPageChange }) {
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Например: DOC-XXXXXXXXXXXX"
+            placeholder="Например: DOC-XXXXXXXXXXXX или DOCV-XXXXXXXXXXXX"
             className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
           />
           <button
@@ -212,7 +283,7 @@ export function VerifyDocumentPage({ onPageChange }) {
         <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200">
           <div className="text-xl font-bold text-slate-900">Документ не найден</div>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Проверьте корректность номера. Черновики и документы без опубликованного файла
+            Проверьте корректность номера или кода проверки. Черновики и документы без опубликованного файла
             не подтверждаются в публичном реестре.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
