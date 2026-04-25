@@ -4760,3 +4760,38 @@ def test_public_verify_revoked_document_returns_revoked_status() -> None:
     assert payload["registry_status"] == "revoked"
     assert payload["verification_status"] == "Документ отозван"
 
+
+def test_admin_documents_filter_by_verification_code() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    document = create_test_document_record_in_db(
+        user_id=str(me_payload["id"]),
+        title="Verification code searchable document",
+        document_type="Сертификат",
+        status="available",
+        storage_content=b"verification code searchable content",
+        storage_extension=".pdf",
+    )
+
+    query = f'q={document["verification_code"]}'
+
+    status, payload = request_json(
+        "GET",
+        f"/api/v1/admin/documents?{query}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(payload, list)
+    assert any(item["id"] == document["id"] for item in payload)
+    assert all(
+        document["verification_code"] == item["verification_code"]
+        or document["verification_code"].lower() in item["verification_code"].lower()
+        for item in payload
+        if item["id"] == document["id"]
+    )
+

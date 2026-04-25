@@ -1881,6 +1881,7 @@ async def list_admin_documents(
         query = query.where(
             or_(
                 DocumentRecord.document_number.ilike(q_filter),
+                DocumentRecord.verification_code.ilike(q_filter),
                 DocumentRecord.title.ilike(q_filter),
                 DocumentRecord.document_type.ilike(q_filter),
                 User.email.ilike(q_filter),
