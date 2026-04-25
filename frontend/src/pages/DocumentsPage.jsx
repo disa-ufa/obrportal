@@ -70,6 +70,18 @@ function getEnrollmentOptionLabel(enrollment) {
 
   return `${courseTitle} · ${status}${group}${organization}`;
 }
+
+function getEnrollmentStatusLabel(status) {
+  const labels = {
+    assigned: "Назначен",
+    in_progress: "В процессе",
+    completed: "Завершён",
+    cancelled: "Отменён",
+  };
+
+  return labels[status] || status || "-";
+}
+
 function formatDateTime(value) {
   if (!value) {
     return "-";
@@ -760,6 +772,29 @@ export function DocumentsPage() {
                             <div className="mt-2 font-semibold text-slate-900">
                               {documentItem.course_title || "-"}
                             </div>
+                          </div>
+
+                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                            <div className="text-xs uppercase tracking-wide text-slate-500">
+                              Назначение
+                            </div>
+                            {documentItem.enrollment_id ? (
+                              <div className="mt-2 space-y-1">
+                                <div className="font-semibold text-slate-900">
+                                  {getEnrollmentStatusLabel(documentItem.enrollment_status)}
+                                </div>
+                                <div className="text-slate-600">
+                                  {documentItem.organization_name || "Организация не указана"}
+                                </div>
+                                <div className="text-slate-500">
+                                  {documentItem.learning_group_name || "Группа не указана"}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="mt-2 font-semibold text-slate-900">
+                                Без привязки к назначению
+                              </div>
+                            )}
                           </div>
 
                           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">

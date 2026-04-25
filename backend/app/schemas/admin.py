@@ -169,6 +169,11 @@ class AdminDocumentItem(BaseModel):
     course_id: str | None = None
     course_title: str | None = None
     enrollment_id: str | None = None
+    enrollment_status: str | None = None
+    organization_id: str | None = None
+    organization_name: str | None = None
+    learning_group_id: str | None = None
+    learning_group_name: str | None = None
     file_available: bool = False
     created_at: datetime
     updated_at: datetime

@@ -1697,6 +1697,11 @@ def build_admin_document_item(row) -> AdminDocumentItem:
         course_id=str(row.course_id) if row.course_id else None,
         course_title=row.course_title,
         enrollment_id=str(row.enrollment_id) if row.enrollment_id else None,
+        enrollment_status=row.enrollment_status,
+        organization_id=str(row.organization_id) if row.organization_id else None,
+        organization_name=row.organization_name,
+        learning_group_id=str(row.learning_group_id) if row.learning_group_id else None,
+        learning_group_name=row.learning_group_name,
         file_available=bool(row.storage_path),
         created_at=row.created_at,
         updated_at=row.updated_at,
@@ -1794,9 +1799,17 @@ async def get_admin_document_row_or_404(
             User.email.label("user_email"),
             User.full_name.label("user_full_name"),
             Course.title.label("course_title"),
+            Enrollment.status.label("enrollment_status"),
+            Enrollment.organization_id.label("organization_id"),
+            Enrollment.learning_group_id.label("learning_group_id"),
+            Organization.name.label("organization_name"),
+            LearningGroup.name.label("learning_group_name"),
         )
         .join(User, User.id == DocumentRecord.user_id)
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+        .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
         .where(DocumentRecord.id == document_id)
     )
     row = result.first()
@@ -1836,9 +1849,17 @@ async def list_admin_documents(
             User.email.label("user_email"),
             User.full_name.label("user_full_name"),
             Course.title.label("course_title"),
+            Enrollment.status.label("enrollment_status"),
+            Enrollment.organization_id.label("organization_id"),
+            Enrollment.learning_group_id.label("learning_group_id"),
+            Organization.name.label("organization_name"),
+            LearningGroup.name.label("learning_group_name"),
         )
         .join(User, User.id == DocumentRecord.user_id)
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+        .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
         .order_by(DocumentRecord.created_at.desc(), DocumentRecord.title.asc())
         .limit(limit)
     )
