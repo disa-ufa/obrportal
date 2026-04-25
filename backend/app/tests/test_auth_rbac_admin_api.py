@@ -4622,3 +4622,48 @@ def test_admin_rejects_document_enrollment_for_another_user() -> None:
     assert update_response.status_code == 400
     update_payload = update_response.json()
     assert update_payload["detail"] == "Enrollment belongs to another user"
+
+
+
+def test_admin_rejects_document_course_update_mismatched_with_existing_enrollment() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    user_id = str(me_payload["id"])
+
+    first = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    second = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="assigned",
+    )
+
+    course = first["course"]
+    enrollment = first["enrollment"]
+    another_course = second["course"]
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=course["id"],
+        enrollment_id=enrollment["id"],
+        title="Existing enrollment document",
+        document_type="Сертификат",
+        status="draft",
+    )
+
+    response = patch_multipart_admin_document(
+        token=admin_token,
+        document_id=document["id"],
+        fields={
+            "course_id": another_course["id"],
+        },
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["detail"] == "Enrollment course does not match document course"

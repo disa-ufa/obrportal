@@ -2179,6 +2179,32 @@ async def update_admin_document(
 
         document.enrollment_id = normalized_enrollment_id
 
+    if document.enrollment_id is not None:
+        enrollment_result = await session.execute(
+            select(Enrollment).where(Enrollment.id == document.enrollment_id)
+        )
+        enrollment = enrollment_result.scalar_one_or_none()
+
+        if enrollment is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Enrollment not found",
+            )
+
+        if str(enrollment.user_id) != str(document.user_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Enrollment belongs to another user",
+            )
+
+        if document.course_id is None:
+            document.course_id = enrollment.course_id
+        elif str(enrollment.course_id) != str(document.course_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Enrollment course does not match document course",
+            )
+
     try:
         if has_file:
             new_storage_path = await save_admin_document_file(str(document.id), file)
