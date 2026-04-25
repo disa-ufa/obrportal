@@ -64,7 +64,7 @@ function getLearnerVisibilityTone(documentItem) {
 
 function getEnrollmentOptionLabel(enrollment) {
   const courseTitle = enrollment.course_title || "Программа без названия";
-  const status = getDocumentStatusLabel(enrollment.status);
+  const status = getEnrollmentStatusLabel(enrollment.status);
   const group = enrollment.learning_group_name ? ` · ${enrollment.learning_group_name}` : "";
   const organization = enrollment.organization_name ? ` · ${enrollment.organization_name}` : "";
 
@@ -236,7 +236,7 @@ export function DocumentsPage() {
       document_type: "Сертификат",
       document_number: "",
       status: "available",
-    enrollment_id: "",
+      enrollment_id: "",
     });
     setFile(null);
 
@@ -253,7 +253,7 @@ export function DocumentsPage() {
       document_type: "",
       document_number: "",
       status: "available",
-    enrollment_id: "",
+      enrollment_id: "",
     });
     setEditFile(null);
 
