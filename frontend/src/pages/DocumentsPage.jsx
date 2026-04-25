@@ -33,6 +33,34 @@ function getDocumentStatusTone(status) {
   }
 }
 
+function getLearnerVisibilityLabel(documentItem) {
+  if (documentItem.status === "available" && documentItem.file_available) {
+    return "Слушатель может скачать";
+  }
+
+  if (documentItem.status === "available" && !documentItem.file_available) {
+    return "Нужен файл для скачивания";
+  }
+
+  if (documentItem.file_available) {
+    return "Файл скрыт от слушателя";
+  }
+
+  return "Файл не загружен";
+}
+
+function getLearnerVisibilityTone(documentItem) {
+  if (documentItem.status === "available" && documentItem.file_available) {
+    return "bg-green-50 text-green-700 ring-green-200";
+  }
+
+  if (documentItem.file_available) {
+    return "bg-amber-50 text-amber-700 ring-amber-200";
+  }
+
+  return "bg-slate-100 text-slate-600 ring-slate-200";
+}
+
 function formatDateTime(value) {
   if (!value) {
     return "-";
@@ -64,7 +92,7 @@ function EmptyState({ onReset }) {
     <div className="rounded-[2rem] bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
       <div className="font-semibold text-slate-900">Документы не найдены</div>
       <p className="mt-2 leading-6">
-        Попробуйте снять фильтр по пользователю или загрузите первый документ.
+        Попробуйте снять фильтр по пользователю, статусу, типу документа или загрузите первый документ.
       </p>
       <button
         type="button"
@@ -80,15 +108,19 @@ function EmptyState({ onReset }) {
 export function DocumentsPage() {
   const [documents, setDocuments] = useState([]);
   const [users, setUsers] = useState([]);
+
   const [filterUserId, setFilterUserId] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterDocumentType, setFilterDocumentType] = useState("");
   const [filterQuery, setFilterQuery] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editSavingId, setEditSavingId] = useState("");
   const [downloadSavingId, setDownloadSavingId] = useState("");
   const [deleteSavingId, setDeleteSavingId] = useState("");
+  const [statusSavingKey, setStatusSavingKey] = useState("");
+
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -288,13 +320,40 @@ export function DocumentsPage() {
 
       const updated = await updateAdminDocument(documentId, payload);
 
-      setSuccessMessage(`Документ обновлен: ${updated.document_number}`);
+      setSuccessMessage(`Документ обновлён: ${updated.document_number}`);
       resetEditState();
       await loadData(buildDocumentFilters());
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось обновить документ."}`.trim());
     } finally {
       setEditSavingId("");
+    }
+  }
+
+  async function handleQuickStatusUpdate(documentItem, nextStatus) {
+    if (nextStatus === "available" && !documentItem.file_available) {
+      setError("Нельзя опубликовать документ без файла. Сначала загрузите файл в режиме редактирования.");
+      return;
+    }
+
+    try {
+      setStatusSavingKey(`${documentItem.id}:${nextStatus}`);
+      setError("");
+      setSuccessMessage("");
+
+      const payload = new FormData();
+      payload.append("status", nextStatus);
+
+      const updated = await updateAdminDocument(documentItem.id, payload);
+
+      setSuccessMessage(
+        `Статус документа ${updated.document_number} изменён: ${getDocumentStatusLabel(updated.status)}`
+      );
+      await loadData(buildDocumentFilters());
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message || "Не удалось изменить статус документа."}`.trim());
+    } finally {
+      setStatusSavingKey("");
     }
   }
 
@@ -337,7 +396,7 @@ export function DocumentsPage() {
         resetEditState();
       }
 
-      setSuccessMessage(`Документ удален: ${documentItem.document_number}`);
+      setSuccessMessage(`Документ удалён: ${documentItem.document_number}`);
       await loadData(buildDocumentFilters());
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось удалить документ."}`.trim());
@@ -369,9 +428,9 @@ export function DocumentsPage() {
           Документы пользователей
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-          Загрузка и редактирование сертификатов, удостоверений и других файлов
-          в приватном хранилище. Пользователь видит документ в личном кабинете,
-          а файл скачивается только через защищенный account endpoint.
+          Загрузка, редактирование и публикация сертификатов, удостоверений и других файлов.
+          Черновик виден в личном кабинете слушателя, но скачать файл можно только после публикации документа
+          со статусом «Доступен».
         </p>
       </section>
 
@@ -388,7 +447,7 @@ export function DocumentsPage() {
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)]">
-        <SectionCard title="Загрузить документ" subtitle="Файл будет сохранен в приватное хранилище">
+        <SectionCard title="Загрузить документ" subtitle="Файл будет сохранён в приватное хранилище">
           <form onSubmit={handleSubmit} className="space-y-4">
             <label className="block">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -402,7 +461,7 @@ export function DocumentsPage() {
                 <option value="">Выберите пользователя</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.email}{user.full_name ? ` - ${user.full_name}` : ""}
+                    {user.email}{user.full_name ? ` — ${user.full_name}` : ""}
                   </option>
                 ))}
               </select>
@@ -467,7 +526,7 @@ export function DocumentsPage() {
                 type="text"
                 value={form.document_number}
                 onChange={(event) => updateField("document_number", event.target.value)}
-                placeholder="Можно оставить пустым - номер сгенерируется автоматически"
+                placeholder="Можно оставить пустым — номер сгенерируется автоматически"
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
               />
             </label>
@@ -526,7 +585,7 @@ export function DocumentsPage() {
               <option value="">Все пользователи</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
-                  {user.email}{user.full_name ? ` - ${user.full_name}` : ""}
+                  {user.email}{user.full_name ? ` — ${user.full_name}` : ""}
                 </option>
               ))}
             </select>
@@ -581,6 +640,9 @@ export function DocumentsPage() {
                 const isEditSaving = editSavingId === documentItem.id;
                 const isDownloadSaving = downloadSavingId === documentItem.id;
                 const isDeleteSaving = deleteSavingId === documentItem.id;
+                const isPublishing = statusSavingKey === `${documentItem.id}:available`;
+                const isDrafting = statusSavingKey === `${documentItem.id}:draft`;
+                const isRevoking = statusSavingKey === `${documentItem.id}:revoked`;
 
                 return (
                   <article
@@ -602,6 +664,14 @@ export function DocumentsPage() {
 
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
                         {documentItem.file_available ? "Файл загружен" : "Без файла"}
+                      </span>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getLearnerVisibilityTone(
+                          documentItem
+                        )}`}
+                      >
+                        {getLearnerVisibilityLabel(documentItem)}
                       </span>
                     </div>
 
@@ -651,7 +721,7 @@ export function DocumentsPage() {
 
                           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                             <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Обновлен
+                              Обновлён
                             </div>
                             <div className="mt-2 font-semibold text-slate-900">
                               {formatDateTime(documentItem.updated_at)}
@@ -677,6 +747,39 @@ export function DocumentsPage() {
                           >
                             {isDownloadSaving ? "Скачиваем..." : "Скачать"}
                           </button>
+
+                          {documentItem.status !== "available" && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickStatusUpdate(documentItem, "available")}
+                              disabled={!documentItem.file_available || isPublishing || isDeleteSaving}
+                              className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isPublishing ? "Публикуем..." : "Опубликовать"}
+                            </button>
+                          )}
+
+                          {documentItem.status === "available" && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickStatusUpdate(documentItem, "draft")}
+                              disabled={isDrafting || isDeleteSaving}
+                              className="rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isDrafting ? "Снимаем..." : "В черновик"}
+                            </button>
+                          )}
+
+                          {documentItem.status !== "revoked" && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickStatusUpdate(documentItem, "revoked")}
+                              disabled={isRevoking || isDeleteSaving}
+                              className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isRevoking ? "Отзываем..." : "Отозвать"}
+                            </button>
+                          )}
 
                           <button
                             type="button"
@@ -758,6 +861,9 @@ export function DocumentsPage() {
                               onChange={(event) => setEditFile(event.target.files?.[0] || null)}
                               className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
                             />
+                            <span className="mt-2 block text-xs text-slate-500">
+                              Чтобы слушатель мог скачать документ, загрузите файл и установите статус «Доступен».
+                            </span>
                           </label>
                         </div>
 
