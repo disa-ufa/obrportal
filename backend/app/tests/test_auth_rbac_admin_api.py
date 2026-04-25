@@ -4463,3 +4463,66 @@ def test_admin_documents_include_enrollment_details() -> None:
     assert "organization_name" in item
     assert "learning_group_id" in item
     assert "learning_group_name" in item
+
+
+
+def test_admin_can_create_document_linked_to_enrollment_via_api() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    response = post_multipart_admin_document(
+        token=admin_token,
+        fields={
+            "user_id": user_id,
+            "title": "API linked enrollment document",
+            "document_type": "Сертификат",
+            "status": "draft",
+            "enrollment_id": enrollment["id"],
+        },
+    )
+
+    assert response.status_code == 201
+    created_document = response.json()
+    assert isinstance(created_document, dict)
+
+    assert created_document["title"] == "API linked enrollment document"
+    assert created_document["document_type"] == "Сертификат"
+    assert created_document["status"] == "draft"
+    assert created_document["user_id"] == user_id
+    assert created_document["course_id"] == course["id"]
+    assert created_document["course_title"] == course["title"]
+    assert created_document["enrollment_id"] == enrollment["id"]
+    assert created_document["enrollment_status"] == "completed"
+    assert created_document["file_available"] is False
+
+    status, documents = request_json(
+        "GET",
+        "/api/v1/admin/documents",
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, list)
+
+    item = next(
+        candidate
+        for candidate in documents
+        if candidate["id"] == created_document["id"]
+    )
+
+    assert item["course_id"] == course["id"]
+    assert item["course_title"] == course["title"]
+    assert item["enrollment_id"] == enrollment["id"]
+    assert item["enrollment_status"] == "completed"
