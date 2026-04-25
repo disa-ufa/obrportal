@@ -107,6 +107,42 @@ function buildDocumentVerificationPath(code) {
   return `/verify-document?number=${encodeURIComponent(code)}`;
 }
 
+
+async function copyTextToClipboard(text) {
+  if (!text) {
+    return false;
+  }
+
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === "function"
+  ) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    return document.execCommand("copy");
+  } finally {
+    textarea.remove();
+  }
+}
+
 function buildEditForm(documentItem) {
   return {
     title: documentItem.title || "",
@@ -150,6 +186,7 @@ export function DocumentsPage() {
   const [editSavingId, setEditSavingId] = useState("");
   const [downloadSavingId, setDownloadSavingId] = useState("");
   const [deleteSavingId, setDeleteSavingId] = useState("");
+  const [documentCopyKey, setDocumentCopyKey] = useState("");
   const [statusSavingKey, setStatusSavingKey] = useState("");
 
   const [error, setError] = useState("");
@@ -422,6 +459,27 @@ export function DocumentsPage() {
     } finally {
       setDownloadSavingId("");
     }
+  }
+
+  async function handleCopyDocumentCode(documentItem) {
+    const code = documentItem.verification_code || "";
+
+    if (!code) {
+      return;
+    }
+
+    const ok = await copyTextToClipboard(code);
+
+    if (!ok) {
+      return;
+    }
+
+    const key = `${documentItem.id}:verification-code`;
+    setDocumentCopyKey(key);
+
+    window.setTimeout(() => {
+      setDocumentCopyKey("");
+    }, 1800);
   }
 
   async function handleDelete(documentItem) {

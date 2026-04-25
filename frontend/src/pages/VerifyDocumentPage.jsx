@@ -69,9 +69,60 @@ function buildVerificationUrl(code) {
   return url.toString();
 }
 
+
+async function copyTextToClipboard(text) {
+  if (!text) {
+    return false;
+  }
+
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === "function"
+  ) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    return document.execCommand("copy");
+  } finally {
+    textarea.remove();
+  }
+}
+
 function ResultCard({ result }) {
   const tone = getVerificationTone(result);
   const verificationUrl = buildVerificationUrl(result.verification_code);
+  const [copied, setCopied] = useState("");
+
+  async function handleCopy(kind, text) {
+    const ok = await copyTextToClipboard(text);
+
+    if (!ok) {
+      return;
+    }
+
+    setCopied(kind);
+
+    window.setTimeout(() => {
+      setCopied("");
+    }, 1800);
+  }
 
   return (
     <div className={`rounded-[2rem] bg-white p-6 shadow-sm ring-1 ${tone.card}`}>
@@ -154,6 +205,25 @@ function ResultCard({ result }) {
             >
               {verificationUrl}
             </a>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => handleCopy("link", verificationUrl)}
+                className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                {copied === "link" ? "Ссылка скопирована" : "Скопировать ссылку"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleCopy("code", result.verification_code)}
+                disabled={!result.verification_code}
+                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {copied === "code" ? "Код скопирован" : "Скопировать код"}
+              </button>
+            </div>
           </div>
         )}
       </div>

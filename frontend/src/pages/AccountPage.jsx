@@ -73,6 +73,42 @@ function buildDocumentVerificationPath(code) {
 
   return `/verify-document?number=${encodeURIComponent(code)}`;
 }
+
+
+async function copyTextToClipboard(text) {
+  if (!text) {
+    return false;
+  }
+
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === "function"
+  ) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    return document.execCommand("copy");
+  } finally {
+    textarea.remove();
+  }
+}
 export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [summary, setSummary] = useState(null);
   const [coursesResponse, setCoursesResponse] = useState(null);
@@ -81,6 +117,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [downloadLoadingId, setDownloadLoadingId] = useState("");
+  const [documentCopyKey, setDocumentCopyKey] = useState("");
   const [courseActionError, setCourseActionError] = useState("");
   const [courseActionLoadingKey, setCourseActionLoadingKey] = useState("");
   const [accountNotice, setAccountNotice] = useState(null);
@@ -196,6 +233,27 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     } finally {
       setDownloadLoadingId("");
     }
+  }
+
+  async function handleCopyDocumentCode(documentItem) {
+    const code = documentItem.verification_code || "";
+
+    if (!code) {
+      return;
+    }
+
+    const ok = await copyTextToClipboard(code);
+
+    if (!ok) {
+      return;
+    }
+
+    const key = `${documentItem.id}:verification-code`;
+    setDocumentCopyKey(key);
+
+    window.setTimeout(() => {
+      setDocumentCopyKey("");
+    }, 1800);
   }
 
   const profile = summary?.profile || user;
