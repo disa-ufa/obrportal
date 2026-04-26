@@ -4207,7 +4207,7 @@ def test_complete_course_creates_draft_document() -> None:
     assert document["course_slug"] == slug
     assert document["document_type"] == "Сертификат"
     assert document["status"] == "draft"
-    assert document["file_available"] is False
+    assert document["file_available"] is True
     assert document["download_available"] is False
 
     status, completed_again = request_json(
@@ -4297,7 +4297,7 @@ def test_draft_completion_document_cannot_be_downloaded_by_learner() -> None:
     )
 
     assert draft_document["status"] == "draft"
-    assert draft_document["file_available"] is False
+    assert draft_document["file_available"] is True
     assert draft_document["download_available"] is False
 
     status, download_payload = request_json(
@@ -4372,7 +4372,7 @@ def test_admin_can_publish_completion_document_for_learner_download() -> None:
     )
 
     assert draft_document["status"] == "draft"
-    assert draft_document["file_available"] is False
+    assert draft_document["file_available"] is True
     assert draft_document["download_available"] is False
 
     response = patch_multipart_admin_document(
@@ -4795,3 +4795,82 @@ def test_admin_documents_filter_by_verification_code() -> None:
         if item["id"] == document["id"]
     )
 
+
+
+def test_learner_course_completion_generates_draft_pdf_file() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "PDF Completion Course",
+            "description": "Course should generate draft PDF after completion",
+            "hours": 36,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, enrolled = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(enrolled, dict)
+    enrollment_id = enrolled["enrollment_id"]
+
+    status, completed = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/complete",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(completed, dict)
+    assert completed["status"] == "completed"
+
+    status, documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, dict)
+    assert isinstance(documents["items"], list)
+
+    matched_documents = [
+        item
+        for item in documents["items"]
+        if item["enrollment_id"] == enrollment_id
+    ]
+
+    assert len(matched_documents) == 1
+
+    document = matched_documents[0]
+    assert document["status"] == "draft"
+    assert document["file_available"] is True
+    assert document["download_available"] is False
+    assert document["document_number"].startswith("AUTO-")
+    assert document["verification_code"].startswith("DOCV-")
+
+    status, download_payload = request_json(
+        "GET",
+        f'/api/v1/account/documents/{document["id"]}/download',
+        token=learner_token,
+    )
+
+    assert status == 409
+    assert isinstance(download_payload, dict)
+    assert download_payload["detail"] == "Document is not available for download"

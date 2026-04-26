@@ -19,6 +19,12 @@ from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup
 from app.models.organization import Organization
 from app.models.user import User
+from app.services.document_pdf import render_completion_document_pdf
+from app.services.document_templates import (
+    CompletionDocumentTemplateContext,
+    build_completion_document_title,
+    build_document_verification_url,
+)
 from app.schemas.account import (
     AccountCourseItemResponse,
     AccountCoursesResponse,
@@ -400,6 +406,46 @@ async def start_account_course_learning(
     return build_account_course_item_from_row(row)
 
 
+
+def write_completion_document_pdf_to_storage(
+    *,
+    enrollment: Enrollment,
+    document: DocumentRecord,
+    course: Course | None,
+    learner: User | None,
+) -> str:
+    course_title = course.title if course and course.title else "образовательная программа"
+    document_type = document.document_type or "Сертификат"
+    learner_full_name = learner.full_name if learner and learner.full_name else "ФИО обучающегося"
+
+    verification_url = build_document_verification_url(
+        public_base_url=None,
+        verification_code=document.verification_code,
+    )
+
+    pdf_bytes = render_completion_document_pdf(
+        CompletionDocumentTemplateContext(
+            learner_full_name=learner_full_name,
+            course_title=course_title,
+            document_type=document_type,
+            document_number=document.document_number,
+            verification_code=document.verification_code,
+            completed_at=enrollment.completed_at,
+            course_hours=course.hours if course else None,
+            verification_url=verification_url,
+        )
+    )
+
+    storage_root = Path(settings.document_storage_dir)
+    relative_path = Path("generated") / "completion" / f"{document.document_number}.pdf"
+    absolute_path = storage_root / relative_path
+
+    absolute_path.parent.mkdir(parents=True, exist_ok=True)
+    absolute_path.write_bytes(pdf_bytes)
+
+    return relative_path.as_posix()
+
+
 async def ensure_account_completion_document(
     enrollment: Enrollment,
     session: AsyncSession,
@@ -418,6 +464,11 @@ async def ensure_account_completion_document(
     )
     course = course_result.scalar_one_or_none()
 
+    learner_result = await session.execute(
+        select(User).where(User.id == enrollment.user_id)
+    )
+    learner = learner_result.scalar_one_or_none()
+
     document_type = course.document_type if course and course.document_type else "Сертификат"
     course_title = course.title if course and course.title else "образовательная программа"
 
@@ -427,10 +478,21 @@ async def ensure_account_completion_document(
         enrollment_id=enrollment.id,
         document_number=f"AUTO-{str(enrollment.id).replace('-', '')[:16].upper()}",
         document_type=document_type,
-        title=f"{document_type}: {course_title}",
+        title=build_completion_document_title(
+            document_type=document_type,
+            course_title=course_title,
+        ),
         status="draft",
     )
     session.add(document)
+    await session.flush()
+
+    document.storage_path = write_completion_document_pdf_to_storage(
+        enrollment=enrollment,
+        document=document,
+        course=course,
+        learner=learner,
+    )
 
 @router.post("/courses/{enrollment_id}/complete", response_model=AccountCourseItemResponse)
 async def complete_account_course_learning(

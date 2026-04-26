@@ -1237,7 +1237,7 @@ def main() -> int:
     assert completion_documents[0]["status"] == "draft"
     assert completion_documents[0]["course_id"] == self_enroll_course["id"]
     assert completion_documents[0]["course_slug"] == self_enroll_slug
-    assert completion_documents[0]["file_available"] is False
+    assert completion_documents[0]["file_available"] is True
     assert completion_documents[0]["download_available"] is False
     checks.append("learner course completion creates draft document")
     status, draft_download_payload = request_json(
