@@ -23,6 +23,12 @@ from app.models.learning_group import LearningGroup
 from app.models.organization import Organization
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
+from app.services.document_storage import (
+    build_document_download_filename,
+    delete_private_storage_file,
+    resolve_private_storage_path,
+    write_private_storage_file,
+)
 from app.schemas.admin import (
     AdminAuditEventItem,
     AdminCourseCreate,
@@ -1763,21 +1769,13 @@ async def save_admin_document_file(document_id: str, upload_file: UploadFile) ->
     extension = normalize_uploaded_extension(upload_file.filename)
     relative_path = Path("documents") / f"{document_id}{extension}"
 
-    storage_root = Path(settings.document_storage_dir).resolve()
-    absolute_path = (storage_root / relative_path).resolve()
-
     try:
-        absolute_path.relative_to(storage_root)
+        return write_private_storage_file(relative_path, content)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid document storage path",
         )
-
-    absolute_path.parent.mkdir(parents=True, exist_ok=True)
-    absolute_path.write_bytes(content)
-
-    return relative_path.as_posix()
 
 
 async def get_admin_document_row_or_404(
@@ -2040,19 +2038,7 @@ def document_record_snapshot(document: DocumentRecord) -> dict:
 
 
 def delete_admin_document_file(storage_path: str | None) -> None:
-    if not storage_path:
-        return
-
-    storage_root = Path(settings.document_storage_dir).resolve()
-    absolute_path = (storage_root / storage_path).resolve()
-
-    try:
-        absolute_path.relative_to(storage_root)
-    except ValueError:
-        return
-
-    if absolute_path.exists() and absolute_path.is_file():
-        absolute_path.unlink()
+    delete_private_storage_file(storage_path)
 
 
 async def get_admin_document_or_404(
@@ -2290,28 +2276,14 @@ async def delete_admin_document(
 
 
 def resolve_admin_document_storage_path(storage_path: str) -> Path | None:
-    storage_root = Path(settings.document_storage_dir).resolve()
-    absolute_path = (storage_root / storage_path).resolve()
-
-    try:
-        absolute_path.relative_to(storage_root)
-    except ValueError:
-        return None
-
-    return absolute_path
+    return resolve_private_storage_path(storage_path)
 
 
 def build_admin_document_download_filename(document: DocumentRecord) -> str:
-    suffix = Path(document.storage_path or "").suffix or ".bin"
-    safe_stem = "".join(
-        ch if ch.isalnum() or ch in ("-", "_") else "_"
-        for ch in document.document_number
-    ).strip("_")
-
-    if not safe_stem:
-        safe_stem = "document"
-
-    return f"{safe_stem}{suffix}"
+    return build_document_download_filename(
+        document.document_number,
+        document.storage_path,
+    )
 
 
 @router.get("/documents/{document_id}/download")

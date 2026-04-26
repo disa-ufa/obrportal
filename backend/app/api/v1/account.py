@@ -20,6 +20,11 @@ from app.models.learning_group import LearningGroup
 from app.models.organization import Organization
 from app.models.user import User
 from app.services.document_pdf import render_completion_document_pdf
+from app.services.document_storage import (
+    build_document_download_filename,
+    resolve_private_storage_path,
+    write_private_storage_file,
+)
 from app.services.document_templates import (
     CompletionDocumentTemplateContext,
     build_completion_document_title,
@@ -38,28 +43,11 @@ router = APIRouter(prefix="/account", tags=["account"])
 
 
 def _resolve_storage_path(storage_path: str) -> Path | None:
-    base_path = Path(settings.document_storage_dir).resolve()
-    candidate_path = (base_path / storage_path).resolve()
-
-    try:
-        candidate_path.relative_to(base_path)
-    except ValueError:
-        return None
-
-    return candidate_path
+    return resolve_private_storage_path(storage_path)
 
 
 def _build_download_filename(document_number: str, storage_path: str) -> str:
-    suffix = Path(storage_path).suffix or ".bin"
-    safe_stem = "".join(
-        ch if ch.isalnum() or ch in ("-", "_") else "_"
-        for ch in document_number
-    ).strip("_")
-
-    if not safe_stem:
-        safe_stem = "document"
-
-    return f"{safe_stem}{suffix}"
+    return build_document_download_filename(document_number, storage_path)
 
 
 @router.get("/summary", response_model=AccountSummaryResponse)
@@ -436,14 +424,9 @@ def write_completion_document_pdf_to_storage(
         )
     )
 
-    storage_root = Path(settings.document_storage_dir)
     relative_path = Path("generated") / "completion" / f"{document.document_number}.pdf"
-    absolute_path = storage_root / relative_path
 
-    absolute_path.parent.mkdir(parents=True, exist_ok=True)
-    absolute_path.write_bytes(pdf_bytes)
-
-    return relative_path.as_posix()
+    return write_private_storage_file(relative_path, pdf_bytes)
 
 
 async def ensure_account_completion_document(
