@@ -5050,3 +5050,117 @@ def test_completion_document_keeps_enrollment_course_and_user_integrity() -> Non
     assert admin_document["course_id"] == created_course["id"]
     assert admin_document["enrollment_id"] == enrollment_id
     assert admin_document["enrollment_status"] == "completed"
+
+def test_admin_can_publish_generated_completion_pdf_without_reupload() -> None:
+    from urllib.request import Request, urlopen
+
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "Generated PDF Publish Without Reupload",
+            "description": "Generated completion PDF should be published without file reupload",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, enrolled = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(enrolled, dict)
+    enrollment_id = enrolled["enrollment_id"]
+
+    status, completed = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/complete",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(completed, dict)
+    assert completed["status"] == "completed"
+
+    status, documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, dict)
+
+    draft_document = next(
+        item
+        for item in documents["items"]
+        if item["enrollment_id"] == enrollment_id
+    )
+
+    assert draft_document["status"] == "draft"
+    assert draft_document["file_available"] is True
+    assert draft_document["download_available"] is False
+
+    response = patch_multipart_admin_document(
+        token=admin_token,
+        document_id=draft_document["id"],
+        fields={
+            "status": "available",
+        },
+    )
+
+    assert response.status_code == 200
+    published_payload = response.json()
+    assert published_payload["id"] == draft_document["id"]
+    assert published_payload["status"] == "available"
+    assert published_payload["file_available"] is True
+
+    status, documents_after_publish = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents_after_publish, dict)
+
+    published_document = next(
+        item
+        for item in documents_after_publish["items"]
+        if item["id"] == draft_document["id"]
+    )
+
+    assert published_document["status"] == "available"
+    assert published_document["file_available"] is True
+    assert published_document["download_available"] is True
+
+    request = Request(
+        f'http://127.0.0.1:8000/api/v1/account/documents/{draft_document["id"]}/download',
+        headers={"Authorization": f"Bearer {learner_token}"},
+        method="GET",
+    )
+
+    with urlopen(request, timeout=20) as download_response:
+        body = download_response.read()
+        content_type = download_response.headers.get("Content-Type", "")
+        disposition = download_response.headers.get("Content-Disposition", "")
+
+    assert body.startswith(b"%PDF-")
+    assert b"%%EOF" in body
+    assert len(body) > 2_500
+    assert "application/pdf" in content_type
+    assert draft_document["document_number"].lower() in disposition.lower()

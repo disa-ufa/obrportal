@@ -4,6 +4,7 @@ import json
 import os
 from uuid import uuid4
 from urllib.error import HTTPError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
@@ -99,6 +100,65 @@ def request_json(
         raw = error.read().decode("utf-8")
         payload = json.loads(raw) if raw else None
         return error.code, payload
+
+
+
+def request_form(
+    method: str,
+    path: str,
+    fields: dict | None = None,
+    token: str | None = None,
+) -> tuple[int, dict | list | None]:
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    data = urlencode(fields or {}).encode("utf-8")
+
+    request = Request(
+        url=f"{BASE_URL}{path}",
+        data=data,
+        headers=headers,
+        method=method,
+    )
+
+    try:
+        with urlopen(request, timeout=15) as response:
+            raw = response.read().decode("utf-8")
+            payload = json.loads(raw) if raw else None
+            return response.status, payload
+    except HTTPError as error:
+        raw = error.read().decode("utf-8")
+        payload = json.loads(raw) if raw else None
+        return error.code, payload
+
+
+def request_binary(
+    method: str,
+    path: str,
+    token: str | None = None,
+) -> tuple[int, bytes, dict]:
+    headers = {"Accept": "application/octet-stream"}
+
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    request = Request(
+        url=f"{BASE_URL}{path}",
+        headers=headers,
+        method=method,
+    )
+
+    try:
+        with urlopen(request, timeout=20) as response:
+            return response.status, response.read(), dict(response.headers)
+    except HTTPError as error:
+        return error.code, error.read(), dict(error.headers)
+
 
 
 def assert_status(actual: int, expected: int, label: str) -> None:
@@ -1249,6 +1309,64 @@ def main() -> int:
     assert isinstance(draft_download_payload, dict)
     checks.append("learner draft document download blocked")
 
+    completion_document_id = str(completion_documents[0]["id"])
+
+    status, published_completion_document = request_form(
+        "PATCH",
+        f"/api/v1/admin/documents/{completion_document_id}",
+        {"status": "available"},
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin publish generated completion document")
+    assert isinstance(published_completion_document, dict)
+    assert published_completion_document["id"] == completion_document_id
+    assert published_completion_document["status"] == "available"
+    assert published_completion_document["file_available"] is True
+    checks.append("admin publish generated completion document ok")
+
+    status, learner_documents_after_publish = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner documents after generated PDF publish")
+    assert isinstance(learner_documents_after_publish, dict)
+
+    published_completion_documents = [
+        item
+        for item in learner_documents_after_publish["items"]
+        if item["id"] == completion_document_id
+    ]
+
+    assert len(published_completion_documents) == 1
+    assert published_completion_documents[0]["status"] == "available"
+    assert published_completion_documents[0]["file_available"] is True
+    assert published_completion_documents[0]["download_available"] is True
+    checks.append("learner generated completion document becomes downloadable")
+
+    status, generated_pdf_body, generated_pdf_headers = request_binary(
+        "GET",
+        f"/api/v1/account/documents/{completion_document_id}/download",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner generated completion PDF download")
+    assert generated_pdf_body.startswith(b"%PDF-")
+    assert b"%%EOF" in generated_pdf_body
+    assert len(generated_pdf_body) > 2_500
+
+    generated_pdf_content_type = (
+        generated_pdf_headers.get("Content-Type", "")
+        or generated_pdf_headers.get("content-type", "")
+    )
+    generated_pdf_disposition = (
+        generated_pdf_headers.get("Content-Disposition", "")
+        or generated_pdf_headers.get("content-disposition", "")
+    )
+
+    assert "application/pdf" in generated_pdf_content_type.lower()
+    assert completion_documents[0]["document_number"].lower() in generated_pdf_disposition.lower()
+    checks.append("learner generated completion PDF download ok")
+
     status, completed_self_enrollment_again = request_json(
         "POST",
         "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
@@ -1272,7 +1390,7 @@ def main() -> int:
     ]
 
     assert len(completion_documents_after_repeat) == 1
-    checks.append("learner repeat completion does not duplicate draft document")
+    checks.append("learner repeat completion does not duplicate completion document")
 
     status, _ = request_json("GET", "/api/v1/admin/users", token=learner_token)
     assert_status(status, 403, "learner admin API")
