@@ -142,7 +142,7 @@ function ResultCard({ result }) {
   );
 }
 
-export function VerifyDocumentPage({ onPageChange }) {
+export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState(null);
   const [submittedQuery, setSubmittedQuery] = useState("");
@@ -196,7 +196,7 @@ export function VerifyDocumentPage({ onPageChange }) {
     }
 
     const params = new URLSearchParams(window.location.search);
-    const value = (params.get("number") || params.get("code") || "").trim();
+    const value = (initialCode || params.get("number") || params.get("code") || "").trim();
 
     if (!value) {
       return;

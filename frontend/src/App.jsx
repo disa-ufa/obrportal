@@ -131,6 +131,7 @@ function getPublicPageFromPathname(pathname) {
   if (pathname.startsWith("/courses/")) return "course-detail";
   if (pathname === "/organization-info") return "organization-info";
   if (pathname === "/verify-document") return "verify-document";
+  if (pathname.startsWith("/verify/")) return "verify-document";
   if (pathname === "/contacts") return "contacts";
   if (pathname === "/faq") return "faq";
   if (pathname === "/privacy") return "privacy";
@@ -152,6 +153,13 @@ function CourseDetailPublicRoute({ onPageChange, onOpenCourse, user }) {
       user={user}
     />
   );
+}
+
+
+function VerifyDocumentCodeRoute({ onPageChange }) {
+  const { code } = useParams();
+
+  return <VerifyDocumentPage onPageChange={onPageChange} initialCode={code || ""} />;
 }
 
 function ensureMetaDescriptionTag() {
@@ -209,7 +217,7 @@ function buildPublicMeta(pathname) {
     };
   }
 
-  if (pathname === "/verify-document") {
+  if (pathname === "/verify-document" || pathname.startsWith("/verify/")) {
     return {
       title: "Проверка документа — ObrPortal",
       description:
@@ -1358,6 +1366,10 @@ export default function App() {
         <Route
           path="/organization-info"
           element={<OrganizationInfoPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/verify/:code"
+          element={<VerifyDocumentCodeRoute onPageChange={handleNavigatePublicPage} />}
         />
         <Route
           path="/verify-document"
