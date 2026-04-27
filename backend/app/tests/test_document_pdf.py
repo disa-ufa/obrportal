@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from app.services.document_pdf import (
+    build_verification_qr_drawing,
     PDF_FONT_NAME,
     find_pdf_regular_font_path,
     register_pdf_fonts,
@@ -82,3 +83,22 @@ def test_render_completion_document_pdf_handles_long_values() -> None:
     assert pdf_bytes.startswith(b"%PDF-")
     assert b"%%EOF" in pdf_bytes
     assert len(pdf_bytes) > 2_500
+
+
+def test_build_verification_qr_drawing_returns_reportlab_drawing() -> None:
+    drawing = build_verification_qr_drawing(
+        "https://obrportal.example.ru/verify/DOCV-ABC123",
+        96,
+    )
+
+    assert drawing is not None
+    assert drawing.width == 96
+    assert drawing.height == 96
+    assert len(drawing.contents) == 1
+
+
+def test_build_verification_qr_drawing_skips_empty_values() -> None:
+    assert build_verification_qr_drawing(None, 96) is None
+    assert build_verification_qr_drawing("", 96) is None
+    assert build_verification_qr_drawing("   ", 96) is None
+    assert build_verification_qr_drawing("-", 96) is None

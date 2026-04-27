@@ -4,6 +4,9 @@ import os
 from io import BytesIO
 from pathlib import Path
 
+from reportlab.graphics import renderPDF
+from reportlab.graphics.barcode.qr import QrCodeWidget
+from reportlab.graphics.shapes import Drawing
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -123,6 +126,58 @@ def _draw_centered_wrapped_text(
         y -= leading
 
     return y
+
+
+
+def build_verification_qr_drawing(value: str | None, size: float) -> Drawing | None:
+    normalized_value = normalize_document_text(value, fallback="").strip()
+
+    if not normalized_value or normalized_value == "-":
+        return None
+
+    qr_code = QrCodeWidget(normalized_value)
+    bounds = qr_code.getBounds()
+    qr_width = bounds[2] - bounds[0]
+    qr_height = bounds[3] - bounds[1]
+
+    if qr_width <= 0 or qr_height <= 0:
+        return None
+
+    scale_x = size / qr_width
+    scale_y = size / qr_height
+
+    drawing = Drawing(
+        size,
+        size,
+        transform=[
+            scale_x,
+            0,
+            0,
+            scale_y,
+            -bounds[0] * scale_x,
+            -bounds[1] * scale_y,
+        ],
+    )
+    drawing.add(qr_code)
+
+    return drawing
+
+
+def draw_verification_qr(
+    pdf: canvas.Canvas,
+    *,
+    value: str | None,
+    x: float,
+    y: float,
+    size: float,
+) -> bool:
+    drawing = build_verification_qr_drawing(value, size)
+
+    if drawing is None:
+        return False
+
+    renderPDF.draw(drawing, pdf, x, y)
+    return True
 
 
 def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -> bytes:
@@ -278,6 +333,21 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     pdf.setFont(regular_font, 8)
     pdf.drawRightString(width - margin - 18 * mm, footer_y + 4 * mm, "Проверка подлинности:")
     pdf.drawRightString(width - margin - 18 * mm, footer_y - 2 * mm, verification_url)
+
+    qr_size = 24 * mm
+    qr_x = width - margin - 18 * mm - qr_size
+    qr_y = margin + 8 * mm
+
+    if draw_verification_qr(
+        pdf,
+        value=verification_url if verification_url != "-" else verification_code,
+        x=qr_x,
+        y=qr_y,
+        size=qr_size,
+    ):
+        pdf.setFillColor(colors.HexColor("#4b5563"))
+        pdf.setFont(regular_font, 7)
+        pdf.drawCentredString(qr_x + qr_size / 2, qr_y - 3 * mm, "QR")
 
     pdf.showPage()
     pdf.save()
