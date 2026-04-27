@@ -11,6 +11,7 @@ import {
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { SectionCard } from "../components/ui/SectionCard";
+import { buildDocumentVerificationPath } from "../utils/documentVerification";
 
 const DOCUMENT_STATUSES = [
   { value: "available", label: "Доступен" },
@@ -61,6 +62,53 @@ function getLearnerVisibilityTone(documentItem) {
   }
 
   return "bg-slate-100 text-slate-600 ring-slate-200";
+}
+
+
+function isGeneratedCompletionDocument(documentItem) {
+  const documentNumber = String(documentItem.document_number || "");
+
+  return Boolean(
+    documentItem.enrollment_id &&
+      documentItem.file_available &&
+      documentNumber.startsWith("AUTO-")
+  );
+}
+
+function canPublishGeneratedCompletionDocument(documentItem) {
+  return documentItem.status === "draft" && isGeneratedCompletionDocument(documentItem);
+}
+
+function getGeneratedCompletionNotice(documentItem) {
+  if (canPublishGeneratedCompletionDocument(documentItem)) {
+    return {
+      title: "Итоговый PDF уже сформирован",
+      text: "Документ создан автоматически после завершения обучения. Его можно опубликовать без повторной загрузки файла.",
+      toneClass: "bg-green-50 text-green-800 ring-green-200",
+    };
+  }
+
+  if (documentItem.status === "available") {
+    return {
+      title: "Итоговый PDF опубликован",
+      text: "Слушатель может скачать документ, а публичная проверка подтверждает его по номеру или коду.",
+      toneClass: "bg-blue-50 text-blue-800 ring-blue-200",
+    };
+  }
+
+  if (documentItem.status === "revoked") {
+    return {
+      title: "Итоговый PDF отозван",
+      text: "Документ остаётся в реестре, но публичная проверка показывает, что он отозван.",
+      toneClass: "bg-red-50 text-red-800 ring-red-200",
+    };
+  }
+
+  return {
+    title: "Итоговый PDF скрыт от слушателя",
+    text: "Файл есть в приватном хранилище, но скачивание и публичное подтверждение станут доступными только после публикации.",
+    toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
+  };
 }
 
 function getEnrollmentOptionLabel(enrollment) {
@@ -708,6 +756,16 @@ export function DocumentsPage() {
                 const isPublishing = statusSavingKey === `${documentItem.id}:available`;
                 const isDrafting = statusSavingKey === `${documentItem.id}:draft`;
                 const isRevoking = statusSavingKey === `${documentItem.id}:revoked`;
+                const isGeneratedCompletion = isGeneratedCompletionDocument(documentItem);
+                const canPublishGeneratedCompletion = canPublishGeneratedCompletionDocument(documentItem);
+                const generatedCompletionNotice = isGeneratedCompletion
+                  ? getGeneratedCompletionNotice(documentItem)
+                  : null;
+                const verificationTarget =
+                  documentItem.verification_code || documentItem.document_number || "";
+                const verificationPath = verificationTarget
+                  ? buildDocumentVerificationPath(verificationTarget)
+                  : "";
 
                 return (
                   <article
@@ -753,6 +811,44 @@ export function DocumentsPage() {
                             Код проверки: {documentItem.verification_code || "—"}
                           </div>
                         </div>
+
+                        {generatedCompletionNotice && (
+                          <div className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${generatedCompletionNotice.toneClass}`}>
+                            <div className="font-semibold">
+                              {generatedCompletionNotice.title}
+                            </div>
+                            <p className="mt-1 leading-6">
+                              {generatedCompletionNotice.text}
+                            </p>
+
+                            {(canPublishGeneratedCompletion ||
+                              (documentItem.status === "available" && verificationPath)) && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {canPublishGeneratedCompletion && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleQuickStatusUpdate(documentItem, "available")}
+                                    disabled={isPublishing || isDeleteSaving}
+                                    className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    {isPublishing ? "Публикуем..." : "Опубликовать без загрузки файла"}
+                                  </button>
+                                )}
+
+                                {documentItem.status === "available" && verificationPath && (
+                                  <a
+                                    href={verificationPath}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                                  >
+                                    Проверить публичную ссылку
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
                           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
@@ -825,8 +921,13 @@ export function DocumentsPage() {
                           documentNumber={documentItem.document_number}
                           containerId={`admin-document-qr-${documentItem.id}`}
                           title="QR-код проверки"
-                          description="QR-код можно использовать для размещения на документе или отправки слушателю."
-                          showPublicLink
+                          description={
+                            documentItem.status === "available"
+                              ? "QR-код можно использовать для размещения на документе или отправки слушателю."
+                              : "Код проверки уже закреплён за документом. Публичная проверка подтвердит документ после публикации."
+                          }
+                          showPublicLink={documentItem.status === "available"}
+                          showCopyLink
                           publicLinkLabel="Публичная проверка"
                           className="mt-5"
                         />
