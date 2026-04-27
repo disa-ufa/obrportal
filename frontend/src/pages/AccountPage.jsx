@@ -50,6 +50,100 @@ function getDocumentStatusLabel(status) {
   }
 }
 
+
+function getDocumentStatusTone(status) {
+  switch (status) {
+    case "available":
+      return "bg-green-50 text-green-700 ring-green-200";
+    case "draft":
+      return "bg-amber-50 text-amber-700 ring-amber-200";
+    case "revoked":
+      return "bg-red-50 text-red-700 ring-red-200";
+    default:
+      return "bg-slate-100 text-slate-700 ring-slate-200";
+  }
+}
+
+function hasDocumentVerificationTarget(documentItem) {
+  return Boolean(documentItem.verification_code || documentItem.document_number);
+}
+
+function canShowPublicDocumentVerification(documentItem) {
+  return documentItem.status === "available" && hasDocumentVerificationTarget(documentItem);
+}
+
+function getAccountDocumentNotice(documentItem) {
+  if (documentItem.status === "available" && canDownloadDocument(documentItem)) {
+    return {
+      title: "Документ опубликован",
+      text: "Документ доступен для скачивания. Публичная проверка подтверждает его по номеру или коду проверки.",
+      toneClass: "bg-green-50 text-green-800 ring-green-200",
+    };
+  }
+
+  if (documentItem.status === "available" && documentItem.file_available) {
+    return {
+      title: "Документ опубликован, но скачивание временно недоступно",
+      text: "Файл есть в хранилище, но backend не разрешил скачивание. Обратитесь к администратору.",
+      toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
+    };
+  }
+
+  if (documentItem.status === "draft" && documentItem.file_available) {
+    return {
+      title: "Документ сформирован и ожидает публикации",
+      text: "Итоговый PDF уже создан, но пока скрыт от скачивания и публичного подтверждения. После публикации администратором появятся скачивание и публичная проверка.",
+      toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
+    };
+  }
+
+  if (documentItem.status === "draft") {
+    return {
+      title: "Документ готовится",
+      text: "Документ находится в черновике. Скачивание и публичная проверка станут доступны после формирования файла и публикации.",
+      toneClass: "bg-slate-100 text-slate-700 ring-slate-200",
+    };
+  }
+
+  if (documentItem.status === "revoked") {
+    return {
+      title: "Документ отозван",
+      text: "Документ больше нельзя использовать как действующий. Скачивание и публичная проверка для слушателя ограничены.",
+      toneClass: "bg-red-50 text-red-800 ring-red-200",
+    };
+  }
+
+  return {
+    title: "Статус документа требует уточнения",
+    text: "Текущий статус не позволяет однозначно определить доступность скачивания и публичной проверки.",
+    toneClass: "bg-slate-100 text-slate-700 ring-slate-200",
+  };
+}
+
+function getAccountDocumentDownloadLabel(documentItem) {
+  if (canDownloadDocument(documentItem)) {
+    return "Скачать документ";
+  }
+
+  if (documentItem.status === "draft" && documentItem.file_available) {
+    return "Ожидает публикации";
+  }
+
+  if (documentItem.status === "draft") {
+    return "Документ готовится";
+  }
+
+  if (documentItem.status === "revoked") {
+    return "Документ отозван";
+  }
+
+  if (documentItem.file_available) {
+    return "Недоступен";
+  }
+
+  return "Файл недоступен";
+}
+
 function formatDateTime(value) {
   if (!value) {
     return "-";
@@ -64,7 +158,10 @@ function formatDateTime(value) {
   return date.toLocaleString("ru-RU");
 }
 function canDownloadDocument(documentItem) {
-  return Boolean(documentItem.download_available ?? documentItem.file_available);
+  return Boolean(
+    documentItem.download_available ??
+      (documentItem.status === "available" && documentItem.file_available)
+  );
 }
 
 export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
@@ -521,23 +618,52 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
           </div>
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
-            {documents.map((documentItem) => (
-              <article
+            {documents.map((documentItem) => {
+              const downloadAvailable = canDownloadDocument(documentItem);
+              const documentNotice = getAccountDocumentNotice(documentItem);
+              const showPublicVerification = canShowPublicDocumentVerification(documentItem);
+
+              return (
+                <article
                 key={documentItem.id}
                 className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-green-700 ring-1 ring-green-200">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getDocumentStatusTone(
+                      documentItem.status
+                    )}`}
+                  >
                     {getDocumentStatusLabel(documentItem.status)}
                   </span>
+
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
                     {documentItem.document_type}
+                  </span>
+
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
+                    {documentItem.file_available ? "Файл сформирован" : "Файл не сформирован"}
+                  </span>
+
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${
+                      downloadAvailable
+                        ? "bg-green-50 text-green-700 ring-green-200"
+                        : "bg-slate-100 text-slate-600 ring-slate-200"
+                    }`}
+                  >
+                    {downloadAvailable ? "Скачивание доступно" : "Скачивание закрыто"}
                   </span>
                 </div>
 
                 <h2 className="mt-4 text-2xl font-bold text-slate-900">
                   {documentItem.title}
                 </h2>
+
+                <div className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${documentNotice.toneClass}`}>
+                  <div className="font-semibold">{documentNotice.title}</div>
+                  <p className="mt-1 leading-6">{documentNotice.text}</p>
+                </div>
 
                 <div className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
                   <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
@@ -568,16 +694,19 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   </div>
                 </div>
 
-                <DocumentVerificationQrBlock
-                  code={documentItem.verification_code}
-                  documentNumber={documentItem.document_number}
-                  containerId={`account-document-qr-${documentItem.id}`}
-                  title="QR-код проверки"
-                  description="По этому QR-коду можно открыть публичную проверку документа."
-                  showPublicLink
-                  publicLinkLabel="Проверить публично"
-                  className="mt-5"
-                />
+                {showPublicVerification && (
+                  <DocumentVerificationQrBlock
+                    code={documentItem.verification_code}
+                    documentNumber={documentItem.document_number}
+                    containerId={`account-document-qr-${documentItem.id}`}
+                    title="QR-код проверки"
+                    description="По этому QR-коду можно открыть публичную проверку опубликованного документа."
+                    showPublicLink
+                    showCopyLink
+                    publicLinkLabel="Проверить публично"
+                    className="mt-5"
+                  />
+                )}
 
                 <div className="mt-5 flex flex-wrap gap-3">
                   {documentItem.course_slug && (
@@ -590,28 +719,20 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </button>
                   )}
 
-                  {documentItem.file_available && !canDownloadDocument(documentItem) && (
-                    <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 ring-1 ring-amber-200">
-                      Документ загружен, но пока не опубликован для скачивания.
-                    </div>
-                  )}
                   <button
                     type="button"
                     onClick={() => handleDownload(documentItem.id)}
-                    disabled={!canDownloadDocument(documentItem) || downloadLoadingId === documentItem.id}
+                    disabled={!downloadAvailable || downloadLoadingId === documentItem.id}
                     className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {downloadLoadingId === documentItem.id
                       ? "Готовим..."
-                      : canDownloadDocument(documentItem)
-                        ? "Скачать документ"
-                        : documentItem.file_available
-                          ? "Не опубликован"
-                          : "Файл недоступен"}
+                      : getAccountDocumentDownloadLabel(documentItem)}
                   </button>
                 </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
       </SectionCard>
