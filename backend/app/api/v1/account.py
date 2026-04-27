@@ -434,12 +434,22 @@ async def ensure_account_completion_document(
     session: AsyncSession,
 ) -> None:
     existing_result = await session.execute(
-        select(DocumentRecord.id)
+        select(DocumentRecord)
         .where(DocumentRecord.enrollment_id == enrollment.id)
         .limit(1)
     )
+    existing_document = existing_result.scalar_one_or_none()
 
-    if existing_result.scalar_one_or_none() is not None:
+    if existing_document is not None:
+        if (
+            str(existing_document.user_id) != str(enrollment.user_id)
+            or str(existing_document.course_id) != str(enrollment.course_id)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Existing document does not match enrollment",
+            )
+
         return
 
     course_result = await session.execute(

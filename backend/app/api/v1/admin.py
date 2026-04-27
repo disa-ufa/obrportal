@@ -1778,6 +1778,30 @@ async def save_admin_document_file(document_id: str, upload_file: UploadFile) ->
         )
 
 
+
+async def ensure_document_enrollment_is_unique(
+    *,
+    enrollment_id: str | None,
+    session: AsyncSession,
+    exclude_document_id: str | None = None,
+) -> None:
+    if enrollment_id is None:
+        return
+
+    query = select(DocumentRecord.id).where(DocumentRecord.enrollment_id == enrollment_id)
+
+    if exclude_document_id is not None:
+        query = query.where(DocumentRecord.id != exclude_document_id)
+
+    result = await session.execute(query.limit(1))
+
+    if result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document for this enrollment already exists",
+        )
+
+
 async def get_admin_document_row_or_404(
     document_id: str,
     session: AsyncSession,
@@ -1967,6 +1991,11 @@ async def create_admin_document(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Enrollment course does not match document course",
             )
+
+    await ensure_document_enrollment_is_unique(
+        enrollment_id=normalized_enrollment_id,
+        session=session,
+    )
 
     document = DocumentRecord(
         user_id=user.id,
@@ -2167,6 +2196,12 @@ async def update_admin_document(
 
             if document.course_id is None:
                 document.course_id = enrollment.course_id
+
+            await ensure_document_enrollment_is_unique(
+                enrollment_id=normalized_enrollment_id,
+                session=session,
+                exclude_document_id=str(document.id),
+            )
 
         document.enrollment_id = normalized_enrollment_id
 

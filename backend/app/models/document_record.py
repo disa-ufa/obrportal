@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -12,6 +12,10 @@ def generate_document_verification_code() -> str:
 
 class DocumentRecord(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "document_records"
+
+    __table_args__ = (
+        UniqueConstraint("enrollment_id", name="uq_document_records_enrollment_id"),
+    )
 
     user_id: Mapped[str] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),

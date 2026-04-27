@@ -4874,3 +4874,179 @@ def test_learner_course_completion_generates_draft_pdf_file() -> None:
     assert status == 409
     assert isinstance(download_payload, dict)
     assert download_payload["detail"] == "Document is not available for download"
+
+def test_admin_cannot_create_second_document_for_same_enrollment() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=course["id"],
+        enrollment_id=enrollment["id"],
+        title="Existing enrollment document",
+        document_type="Сертификат",
+        status="draft",
+    )
+
+    response = post_multipart_admin_document(
+        token=admin_token,
+        fields={
+            "user_id": user_id,
+            "title": "Duplicate enrollment document",
+            "document_type": "Сертификат",
+            "status": "draft",
+            "enrollment_id": enrollment["id"],
+        },
+    )
+
+    assert response.status_code == 409
+    payload = response.json()
+    assert payload["detail"] == "Document for this enrollment already exists"
+
+
+def test_admin_cannot_update_second_document_to_existing_enrollment() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        status="completed",
+    )
+    course = created["course"]
+    enrollment = created["enrollment"]
+
+    create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=course["id"],
+        enrollment_id=enrollment["id"],
+        title="Primary enrollment document",
+        document_type="Сертификат",
+        status="draft",
+    )
+
+    second_document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Second document without enrollment",
+        document_type="Сертификат",
+        status="draft",
+    )
+
+    response = patch_multipart_admin_document(
+        token=admin_token,
+        document_id=second_document["id"],
+        fields={
+            "enrollment_id": enrollment["id"],
+        },
+    )
+
+    assert response.status_code == 409
+    payload = response.json()
+    assert payload["detail"] == "Document for this enrollment already exists"
+
+
+def test_completion_document_keeps_enrollment_course_and_user_integrity() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "Integrity Completion Course",
+            "description": "Course for document integrity checks",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, enrolled = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(enrolled, dict)
+    enrollment_id = enrolled["enrollment_id"]
+
+    status, completed = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/complete",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(completed, dict)
+    assert completed["status"] == "completed"
+
+    status, documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, dict)
+
+    matched_documents = [
+        item
+        for item in documents["items"]
+        if item["enrollment_id"] == enrollment_id
+    ]
+
+    assert len(matched_documents) == 1
+
+    document = matched_documents[0]
+    assert document["course_id"] == created_course["id"]
+    assert document["course_slug"] == slug
+    assert document["enrollment_id"] == enrollment_id
+    assert document["status"] == "draft"
+    assert document["file_available"] is True
+    assert document["download_available"] is False
+
+    status, admin_documents = request_json(
+        "GET",
+        f"/api/v1/admin/documents?q={document['document_number']}",
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(admin_documents, list)
+
+    admin_document = next(
+        item
+        for item in admin_documents
+        if item["id"] == document["id"]
+    )
+
+    status, learner_me = request_json("GET", "/api/v1/auth/me", token=learner_token)
+    assert status == 200
+    assert isinstance(learner_me, dict)
+
+    assert admin_document["user_id"] == learner_me["id"]
+    assert admin_document["course_id"] == created_course["id"]
+    assert admin_document["enrollment_id"] == enrollment_id
+    assert admin_document["enrollment_status"] == "completed"
