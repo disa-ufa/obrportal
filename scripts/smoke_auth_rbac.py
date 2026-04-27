@@ -4,11 +4,12 @@ import json
 import os
 from uuid import uuid4
 from urllib.error import HTTPError
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 
 BASE_URL = os.getenv("SMOKE_BASE_URL", "http://localhost:8000")
+FRONTEND_BASE_URL = os.getenv("SMOKE_FRONTEND_BASE_URL", "http://localhost:5173")
 ADMIN_EMAIL = os.getenv("SMOKE_ADMIN_EMAIL", "admin@obrportal.local")
 ADMIN_PASSWORD = os.getenv("SMOKE_ADMIN_PASSWORD", "Admin123Local2026!")
 LEARNER_EMAIL = os.getenv("SMOKE_LEARNER_EMAIL", "learner@obrportal.local")
@@ -158,6 +159,22 @@ def request_binary(
             return response.status, response.read(), dict(response.headers)
     except HTTPError as error:
         return error.code, error.read(), dict(error.headers)
+
+
+
+
+def request_frontend_text(path: str) -> tuple[int, str, dict]:
+    request = Request(
+        url=f"{FRONTEND_BASE_URL}{path}",
+        headers={"Accept": "text/html"},
+        method="GET",
+    )
+
+    try:
+        with urlopen(request, timeout=15) as response:
+            return response.status, response.read().decode("utf-8", errors="replace"), dict(response.headers)
+    except HTTPError as error:
+        return error.code, error.read().decode("utf-8", errors="replace"), dict(error.headers)
 
 
 
@@ -1390,6 +1407,24 @@ def main() -> int:
     assert generated_public_verify_by_code["registry_status"] == "available"
     assert generated_public_verify_by_code["verification_status"] == "Документ подтверждён"
     checks.append("public verify generated completion document by code ok")
+
+    frontend_verify_path = "/verify/" + quote(str(completion_documents[0]["verification_code"]), safe="")
+    status, frontend_verify_html, frontend_verify_headers = request_frontend_text(frontend_verify_path)
+    assert_status(status, 200, "frontend direct generated document verification route")
+
+    frontend_content_type = (
+        frontend_verify_headers.get("Content-Type", "")
+        or frontend_verify_headers.get("content-type", "")
+    )
+
+    assert "text/html" in frontend_content_type.lower()
+    assert '<div id="root">' in frontend_verify_html
+    assert (
+        'src="/src/main.jsx"' in frontend_verify_html
+        or "/assets/index-" in frontend_verify_html
+        or 'type="module"' in frontend_verify_html
+    )
+    checks.append("frontend direct generated document verification route ok")
 
     status, completed_self_enrollment_again = request_json(
         "POST",
