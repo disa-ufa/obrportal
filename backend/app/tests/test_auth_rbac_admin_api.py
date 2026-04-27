@@ -5164,3 +5164,117 @@ def test_admin_can_publish_generated_completion_pdf_without_reupload() -> None:
     assert len(body) > 2_500
     assert "application/pdf" in content_type
     assert draft_document["document_number"].lower() in disposition.lower()
+
+
+def test_public_can_verify_published_generated_completion_pdf() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": "Generated PDF Public Verify Course",
+            "description": "Generated completion PDF should be visible in public registry after publish",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, enrolled = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(enrolled, dict)
+    enrollment_id = enrolled["enrollment_id"]
+
+    status, completed = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/complete",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(completed, dict)
+    assert completed["status"] == "completed"
+
+    status, documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, dict)
+
+    draft_document = next(
+        item
+        for item in documents["items"]
+        if item["enrollment_id"] == enrollment_id
+    )
+
+    assert draft_document["status"] == "draft"
+    assert draft_document["file_available"] is True
+    assert draft_document["download_available"] is False
+    assert draft_document["document_number"].startswith("AUTO-")
+    assert draft_document["verification_code"].startswith("DOCV-")
+
+    draft_verify_status, draft_verify_payload = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={draft_document["document_number"]}',
+    )
+
+    assert draft_verify_status == 404
+    assert isinstance(draft_verify_payload, dict)
+
+    response = patch_multipart_admin_document(
+        token=admin_token,
+        document_id=draft_document["id"],
+        fields={
+            "status": "available",
+        },
+    )
+
+    assert response.status_code == 200
+    published_document = response.json()
+    assert published_document["id"] == draft_document["id"]
+    assert published_document["status"] == "available"
+    assert published_document["file_available"] is True
+
+    status, verify_by_number = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={draft_document["document_number"]}',
+    )
+
+    assert status == 200
+    assert isinstance(verify_by_number, dict)
+    assert verify_by_number["document_number"] == draft_document["document_number"]
+    assert verify_by_number["verification_code"] == draft_document["verification_code"]
+    assert verify_by_number["document_type"] == "Сертификат"
+    assert verify_by_number["title"] == draft_document["title"]
+    assert verify_by_number["course_title"] == created_course["title"]
+    assert verify_by_number["registry_status"] == "available"
+    assert verify_by_number["verification_status"] == "Документ подтверждён"
+
+    status, verify_by_code = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={draft_document["verification_code"]}',
+    )
+
+    assert status == 200
+    assert isinstance(verify_by_code, dict)
+    assert verify_by_code["document_number"] == draft_document["document_number"]
+    assert verify_by_code["verification_code"] == draft_document["verification_code"]
+    assert verify_by_code["registry_status"] == "available"
+    assert verify_by_code["verification_status"] == "Документ подтверждён"

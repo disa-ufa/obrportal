@@ -1367,6 +1367,30 @@ def main() -> int:
     assert completion_documents[0]["document_number"].lower() in generated_pdf_disposition.lower()
     checks.append("learner generated completion PDF download ok")
 
+    status, generated_public_verify_by_number = request_json(
+        "GET",
+        f"/api/v1/public/documents/verify?number={completion_documents[0]['document_number']}",
+    )
+    assert_status(status, 200, "public verify generated completion document by number")
+    assert isinstance(generated_public_verify_by_number, dict)
+    assert generated_public_verify_by_number["document_number"] == completion_documents[0]["document_number"]
+    assert generated_public_verify_by_number["verification_code"] == completion_documents[0]["verification_code"]
+    assert generated_public_verify_by_number["registry_status"] == "available"
+    assert generated_public_verify_by_number["verification_status"] == "Документ подтверждён"
+    checks.append("public verify generated completion document by number ok")
+
+    status, generated_public_verify_by_code = request_json(
+        "GET",
+        f"/api/v1/public/documents/verify?number={completion_documents[0]['verification_code']}",
+    )
+    assert_status(status, 200, "public verify generated completion document by code")
+    assert isinstance(generated_public_verify_by_code, dict)
+    assert generated_public_verify_by_code["document_number"] == completion_documents[0]["document_number"]
+    assert generated_public_verify_by_code["verification_code"] == completion_documents[0]["verification_code"]
+    assert generated_public_verify_by_code["registry_status"] == "available"
+    assert generated_public_verify_by_code["verification_status"] == "Документ подтверждён"
+    checks.append("public verify generated completion document by code ok")
+
     status, completed_self_enrollment_again = request_json(
         "POST",
         "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
