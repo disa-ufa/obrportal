@@ -6,6 +6,7 @@ import {
   getAdminEnrollments,
   getAdminOrganizations,
   getAdminUsers,
+  getOrgLearningGroupMembers,
   getOrgLearningGroups,
   updateAdminEnrollment,
 } from "../api/client";
@@ -101,6 +102,14 @@ function buildGroupsMap(groups) {
   }, {});
 }
 
+function groupHasMember(groupId, userId, membersByGroupId) {
+  if (!groupId || !userId) {
+    return false;
+  }
+
+  return (membersByGroupId[groupId] || []).some((member) => member.user_id === userId);
+}
+
 function buildGroupLabel(group, organizationsById = {}) {
   if (!group) {
     return "";
@@ -117,10 +126,23 @@ function sortByLabel(left, right, getLabel) {
   return getLabel(left).localeCompare(getLabel(right), "ru-RU");
 }
 
-function getAvailableGroups(groups, organizationId, selectedGroupId = "") {
+function getAvailableGroups(
+  groups,
+  organizationId,
+  selectedGroupId = "",
+  userId = "",
+  membersByGroupId = {}
+) {
   return groups
     .filter((group) => group.is_active || group.id === selectedGroupId)
     .filter((group) => !organizationId || group.organization_id === organizationId)
+    .filter((group) => {
+      if (group.id === selectedGroupId) {
+        return true;
+      }
+
+      return groupHasMember(group.id, userId, membersByGroupId);
+    })
     .sort((left, right) => left.name.localeCompare(right.name, "ru-RU"));
 }
 
@@ -177,6 +199,7 @@ export function AdminEnrollmentsPage() {
   const [courses, setCourses] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [groupMembersByGroupId, setGroupMembersByGroupId] = useState({});
 
   const [filterQuery, setFilterQuery] = useState("");
   const [filterUserId, setFilterUserId] = useState("");
@@ -246,14 +269,39 @@ export function AdminEnrollmentsPage() {
     [groups, organizationsById]
   );
 
+  const editingEnrollment = useMemo(
+    () => enrollments.find((item) => item.id === editingEnrollmentId) || null,
+    [enrollments, editingEnrollmentId]
+  );
+
   const createFormGroups = useMemo(
-    () => getAvailableGroups(groups, form.organization_id, form.learning_group_id),
-    [groups, form.organization_id, form.learning_group_id]
+    () =>
+      getAvailableGroups(
+        groups,
+        form.organization_id,
+        form.learning_group_id,
+        form.user_id,
+        groupMembersByGroupId
+      ),
+    [groups, form.organization_id, form.learning_group_id, form.user_id, groupMembersByGroupId]
   );
 
   const editFormGroups = useMemo(
-    () => getAvailableGroups(groups, editForm.organization_id, editForm.learning_group_id),
-    [groups, editForm.organization_id, editForm.learning_group_id]
+    () =>
+      getAvailableGroups(
+        groups,
+        editForm.organization_id,
+        editForm.learning_group_id,
+        editingEnrollment?.user_id || "",
+        groupMembersByGroupId
+      ),
+    [
+      groups,
+      editForm.organization_id,
+      editForm.learning_group_id,
+      editingEnrollment?.user_id,
+      groupMembersByGroupId,
+    ]
   );
 
   const visibleEnrollments = useMemo(
@@ -290,11 +338,22 @@ export function AdminEnrollmentsPage() {
         getOrgLearningGroups(),
       ]);
 
+      const loadedGroups = Array.isArray(groupsResponse) ? groupsResponse : [];
+      const loadedGroupMembersByGroupId = Object.fromEntries(
+        await Promise.all(
+          loadedGroups.map(async (group) => {
+            const members = await getOrgLearningGroupMembers(group.id);
+            return [group.id, Array.isArray(members) ? members : []];
+          })
+        )
+      );
+
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setOrganizations(Array.isArray(organizationsResponse) ? organizationsResponse : []);
-      setGroups(Array.isArray(groupsResponse) ? groupsResponse : []);
+      setGroups(loadedGroups);
+      setGroupMembersByGroupId(loadedGroupMembersByGroupId);
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось загрузить назначения."}`.trim());
     } finally {
@@ -327,6 +386,17 @@ export function AdminEnrollmentsPage() {
 
         if (selectedGroup) {
           next.organization_id = selectedGroup.organization_id;
+        }
+      }
+
+      if (field === "user_id") {
+        const selectedGroup = groupsById[next.learning_group_id];
+
+        if (
+          !value ||
+          (selectedGroup && !groupHasMember(selectedGroup.id, value, groupMembersByGroupId))
+        ) {
+          next.learning_group_id = "";
         }
       }
 
@@ -595,10 +665,14 @@ export function AdminEnrollmentsPage() {
                   value={form.learning_group_id}
                   onChange={(event) => updateField("learning_group_id", event.target.value)}
                   className={INPUT_CLASS}
-                  disabled={groups.length === 0}
+                  disabled={groups.length === 0 || !form.user_id}
                 >
                   <option value="">
-                    {groups.length === 0 ? "Групп пока нет" : "Без группы"}
+                    {!form.user_id
+                      ? "??????? ???????? ????????????"
+                      : groups.length === 0
+                        ? "????? ???? ???"
+                        : "??? ??????"}
                   </option>
                   {createFormGroups.map((group) => (
                     <option key={group.id} value={group.id}>
