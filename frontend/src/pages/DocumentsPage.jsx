@@ -123,9 +123,9 @@ function getEnrollmentOptionLabel(enrollment) {
 
 function getCourseOptionLabel(course) {
   const title = course.title || "Программа без названия";
-  const hours = course.hours ? ` ? ${course.hours} ч.` : "";
-  const format = course.format ? ` ? ${course.format}` : "";
-  const documentType = course.document_type ? ` ? ${course.document_type}` : "";
+  const hours = course.hours ? ` / ${course.hours} ч.` : "";
+  const format = course.format ? ` / ${course.format}` : "";
+  const documentType = course.document_type ? ` / ${course.document_type}` : "";
 
   return `${title}${hours}${format}${documentType}`;
 }
