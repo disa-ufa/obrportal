@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from mimetypes import guess_type
 from pathlib import Path
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
@@ -29,6 +30,7 @@ from app.services.document_storage import (
     resolve_private_storage_path,
     write_private_storage_file,
 )
+from app.services.completion_documents import ensure_completion_document_for_enrollment
 from app.schemas.admin import (
     AdminAuditEventItem,
     AdminCourseCreate,
@@ -3282,12 +3284,24 @@ async def update_admin_enrollment(
     if "completed_at" in data:
         enrollment.completed_at = data["completed_at"]
 
+    if enrollment.status == "completed":
+        now = datetime.now(timezone.utc)
+
+        if enrollment.started_at is None:
+            enrollment.started_at = now
+
+        if enrollment.completed_at is None:
+            enrollment.completed_at = now
+
     await ensure_learning_group_assignment_is_valid(
         user_id=str(enrollment.user_id),
         organization_id=str(enrollment.organization_id) if enrollment.organization_id else None,
         learning_group_id=str(enrollment.learning_group_id) if enrollment.learning_group_id else None,
         session=session,
     )
+
+    if enrollment.status == "completed":
+        await ensure_completion_document_for_enrollment(enrollment, session)
 
     await session.flush()
 

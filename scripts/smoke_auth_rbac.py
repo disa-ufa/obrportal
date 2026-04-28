@@ -1717,6 +1717,92 @@ def main() -> int:
     assert "root" in frontend_filtered_documents_html
     checks.append("frontend direct filtered documents route ok")
 
+    admin_completion_suffix = uuid4().hex[:12]
+    admin_completion_user_id = filtered_completion_admin_documents[0]["user_id"]
+
+    status, admin_completion_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": f"admin-completion-{admin_completion_suffix}",
+            "title": "Admin Completion Auto Document",
+            "description": "Smoke course for admin completion document generation",
+            "hours": 16,
+            "format": "online",
+            "document_type": "??????????",
+            "is_active": True,
+        },
+    )
+    assert_status(status, 201, "admin completion course create")
+    assert isinstance(admin_completion_course, dict)
+
+    status, admin_completion_enrollment = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=admin_token,
+        body={
+            "user_id": admin_completion_user_id,
+            "course_id": admin_completion_course["id"],
+            "status": "assigned",
+        },
+    )
+    assert_status(status, 201, "admin completion enrollment create")
+    assert isinstance(admin_completion_enrollment, dict)
+
+    status, completed_admin_enrollment = request_json(
+        "PATCH",
+        "/api/v1/admin/enrollments/" + str(admin_completion_enrollment["id"]),
+        token=admin_token,
+        body={
+            "status": "completed",
+        },
+    )
+    assert_status(status, 200, "admin complete enrollment")
+    assert isinstance(completed_admin_enrollment, dict)
+    assert completed_admin_enrollment["status"] == "completed"
+    assert completed_admin_enrollment["started_at"]
+    assert completed_admin_enrollment["completed_at"]
+
+    status, admin_completion_documents = request_json(
+        "GET",
+        "/api/v1/admin/documents?enrollment_id="
+        + quote(str(admin_completion_enrollment["id"]), safe=""),
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin completion documents filter")
+    assert isinstance(admin_completion_documents, list)
+    assert len(admin_completion_documents) == 1
+    assert admin_completion_documents[0]["enrollment_id"] == admin_completion_enrollment["id"]
+    assert admin_completion_documents[0]["status"] == "draft"
+    assert admin_completion_documents[0]["file_available"] is True
+    checks.append("admin completion creates draft document ok")
+
+    status, deleted_admin_completion_document = request_json(
+        "DELETE",
+        "/api/v1/admin/documents/" + str(admin_completion_documents[0]["id"]),
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin completion document cleanup delete")
+    assert isinstance(deleted_admin_completion_document, dict)
+
+    status, deleted_admin_completion_enrollment = request_json(
+        "DELETE",
+        "/api/v1/admin/enrollments/" + str(admin_completion_enrollment["id"]),
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin completion enrollment cleanup delete")
+    assert isinstance(deleted_admin_completion_enrollment, dict)
+
+    status, deleted_admin_completion_course = request_json(
+        "DELETE",
+        "/api/v1/admin/courses/" + str(admin_completion_course["id"]),
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin completion course cleanup delete")
+    assert isinstance(deleted_admin_completion_course, dict)
+    checks.append("admin completion draft document cleanup ok")
+
     status, draft_download_payload = request_json(
         "GET",
         "/api/v1/account/documents/" + str(completion_documents[0]["id"]) + "/download",
