@@ -1167,7 +1167,7 @@ export default function App() {
       );
     }
 
-    if (currentPage === "groups") {
+    if (currentPage === "groups" || location.pathname === "/admin/groups") {
       return (
         <GroupsPage
           user={user}
@@ -1270,7 +1270,15 @@ export default function App() {
 
   const adminPageContent = renderCurrentPage();
 
-  const activeAdminPage = location.pathname === "/admin/documents" ? "documents" : location.pathname === "/admin/courses" ? "courses" : location.pathname === "/admin/enrollments" ? "enrollments" : currentPage;
+  const activeAdminPage = location.pathname === "/admin/documents"
+    ? "documents"
+    : location.pathname === "/admin/courses"
+      ? "courses"
+      : location.pathname === "/admin/enrollments"
+        ? "enrollments"
+        : location.pathname === "/admin/groups"
+          ? "groups"
+          : currentPage;
   const currentPublicPage = getPublicPageFromPathname(location.pathname);
   const isAdminRoute = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
   const isAdmin = userHasRole(user, "admin");
