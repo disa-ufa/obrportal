@@ -3554,6 +3554,130 @@ def test_admin_can_list_admin_enrollments() -> None:
 
 
 
+
+def test_admin_can_bulk_create_group_enrollments_and_skip_duplicates() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, admin_me = request_json("GET", "/api/v1/auth/me", token=admin_token)
+    assert status == 200
+    assert isinstance(admin_me, dict)
+    admin_user_id = str(admin_me["id"])
+
+    status, learner_me = request_json("GET", "/api/v1/auth/me", token=learner_token)
+    assert status == 200
+    assert isinstance(learner_me, dict)
+    learner_user_id = str(learner_me["id"])
+
+    organization_id = create_test_organization(admin_token)
+    group = create_test_learning_group(admin_token, organization_id)
+    group_id = str(group["id"])
+
+    for user_id in [admin_user_id, learner_user_id]:
+        status, member = request_json(
+            "POST",
+            f"/api/v1/org/groups/{group_id}/members",
+            token=admin_token,
+            body={"user_id": user_id},
+        )
+        assert status == 201
+        assert isinstance(member, dict)
+        assert member["learning_group_id"] == group_id
+        assert member["user_id"] == user_id
+
+    course = create_test_course_in_db(title="Bulk Group Enrollment Course")
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/enrollments/group",
+        token=admin_token,
+        body={
+            "learning_group_id": group_id,
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    assert created["status"] == "completed"
+    assert created["learning_group_id"] == group_id
+    assert created["course_id"] == course["id"]
+    assert created["organization_id"] == organization_id
+    assert created["created_count"] == 2
+    assert created["skipped_count"] == 0
+    assert isinstance(created["created"], list)
+    assert isinstance(created["skipped"], list)
+    assert created["skipped"] == []
+
+    created_user_ids = {item["user_id"] for item in created["created"]}
+    assert created_user_ids == {admin_user_id, learner_user_id}
+    assert all(item["learning_group_id"] == group_id for item in created["created"])
+    assert all(item["organization_id"] == organization_id for item in created["created"])
+
+    status, repeated = request_json(
+        "POST",
+        "/api/v1/admin/enrollments/group",
+        token=admin_token,
+        body={
+            "learning_group_id": group_id,
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+    )
+
+    assert status == 201
+    assert isinstance(repeated, dict)
+    assert repeated["status"] == "completed"
+    assert repeated["created_count"] == 0
+    assert repeated["skipped_count"] == 2
+    assert repeated["created"] == []
+    assert isinstance(repeated["skipped"], list)
+
+    skipped_user_ids = {item["user_id"] for item in repeated["skipped"]}
+    assert skipped_user_ids == {admin_user_id, learner_user_id}
+    assert all(
+        item["reason"] == "Enrollment already exists for this user and course"
+        for item in repeated["skipped"]
+    )
+    assert all(item["existing_enrollment_id"] for item in repeated["skipped"])
+
+    status, filtered = request_json(
+        "GET",
+        f"/api/v1/admin/enrollments?learning_group_id={group_id}&course_id={course['id']}&limit=300",
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(filtered, list)
+    assert len([item for item in filtered if item["course_id"] == course["id"]]) == 2
+    assert all(item["learning_group_id"] == group_id for item in filtered)
+
+
+def test_admin_bulk_group_enrollments_rejects_empty_group() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    organization_id = create_test_organization(admin_token)
+    group = create_test_learning_group(admin_token, organization_id)
+    group_id = str(group["id"])
+    course = create_test_course_in_db(title="Empty Bulk Group Enrollment Course")
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/admin/enrollments/group",
+        token=admin_token,
+        body={
+            "learning_group_id": group_id,
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+    assert payload["detail"] == "Learning group has no members"
+
+
 def test_admin_rejects_enrollment_group_when_user_is_not_member() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 

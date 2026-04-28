@@ -245,6 +245,33 @@ class AdminEnrollmentCreate(BaseModel):
     completed_at: datetime | None = None
 
 
+class AdminEnrollmentGroupCreate(BaseModel):
+    learning_group_id: str = Field(min_length=1, max_length=64)
+    course_id: str = Field(min_length=1, max_length=64)
+    status: str = Field(default="assigned", max_length=32)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+class AdminEnrollmentBulkSkippedItem(BaseModel):
+    user_id: str
+    user_email: str
+    user_full_name: str | None = None
+    reason: str
+    existing_enrollment_id: str | None = None
+
+
+class AdminEnrollmentBulkCreateResult(BaseModel):
+    status: str
+    learning_group_id: str
+    course_id: str
+    organization_id: str
+    created_count: int
+    skipped_count: int
+    created: list[AdminEnrollmentItem] = Field(default_factory=list)
+    skipped: list[AdminEnrollmentBulkSkippedItem] = Field(default_factory=list)
+
+
 class AdminEnrollmentUpdate(BaseModel):
     organization_id: str | None = Field(default=None, max_length=64)
     learning_group_id: str | None = Field(default=None, max_length=64)

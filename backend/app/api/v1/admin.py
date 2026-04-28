@@ -35,7 +35,10 @@ from app.schemas.admin import (
     AdminCourseDetail,
     AdminCourseItem,
     AdminCourseUpdate,
+    AdminEnrollmentBulkCreateResult,
+    AdminEnrollmentBulkSkippedItem,
     AdminEnrollmentCreate,
+    AdminEnrollmentGroupCreate,
     AdminEnrollmentItem,
     AdminEnrollmentUpdate,
     AdminDocumentItem,
@@ -3068,6 +3071,163 @@ async def create_admin_enrollment(
     row = await get_admin_enrollment_row_or_404(enrollment_id, session)
 
     return build_admin_enrollment_item(row)
+
+
+@router.post(
+    "/enrollments/group",
+    response_model=AdminEnrollmentBulkCreateResult,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_admin_group_enrollments(
+    payload: AdminEnrollmentGroupCreate,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminEnrollmentBulkCreateResult:
+    learning_group_id = payload.learning_group_id.strip()
+    course_id = payload.course_id.strip()
+    normalized_status = normalize_enrollment_status(payload.status)
+
+    group_result = await session.execute(
+        select(LearningGroup).where(LearningGroup.id == learning_group_id)
+    )
+    learning_group = group_result.scalar_one_or_none()
+
+    if learning_group is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Learning group not found",
+        )
+
+    await get_admin_course_or_404(course_id, session)
+
+    members_result = await session.execute(
+        select(
+            LearningGroupMember.user_id.label("user_id"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+        )
+        .join(User, User.id == LearningGroupMember.user_id)
+        .where(LearningGroupMember.learning_group_id == learning_group_id)
+        .order_by(User.email.asc())
+    )
+    member_rows = members_result.all()
+
+    if not member_rows:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Learning group has no members",
+        )
+
+    member_user_ids = [str(row.user_id) for row in member_rows]
+
+    existing_result = await session.execute(
+        select(
+            Enrollment.id.label("id"),
+            Enrollment.user_id.label("user_id"),
+        )
+        .where(Enrollment.course_id == course_id)
+        .where(Enrollment.user_id.in_(member_user_ids))
+    )
+    existing_by_user_id = {
+        str(row.user_id): str(row.id)
+        for row in existing_result.all()
+    }
+
+    organization_id = str(learning_group.organization_id)
+    created_enrollments: list[Enrollment] = []
+    skipped: list[AdminEnrollmentBulkSkippedItem] = []
+
+    for row in member_rows:
+        user_id = str(row.user_id)
+        existing_enrollment_id = existing_by_user_id.get(user_id)
+
+        if existing_enrollment_id is not None:
+            skipped.append(
+                AdminEnrollmentBulkSkippedItem(
+                    user_id=user_id,
+                    user_email=row.user_email,
+                    user_full_name=row.user_full_name,
+                    reason="Enrollment already exists for this user and course",
+                    existing_enrollment_id=existing_enrollment_id,
+                )
+            )
+            continue
+
+        enrollment = Enrollment(
+            user_id=user_id,
+            course_id=course_id,
+            organization_id=organization_id,
+            learning_group_id=learning_group_id,
+            status=normalized_status,
+            started_at=payload.started_at,
+            completed_at=payload.completed_at,
+        )
+        session.add(enrollment)
+        created_enrollments.append(enrollment)
+
+    try:
+        await session.flush()
+        created_enrollment_ids = [
+            str(enrollment.id)
+            for enrollment in created_enrollments
+        ]
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.enrollments_group_created",
+            entity_type="learning_group",
+            entity_id=learning_group_id,
+            payload={
+                "learning_group_id": learning_group_id,
+                "course_id": course_id,
+                "organization_id": organization_id,
+                "status": normalized_status,
+                "created_count": len(created_enrollment_ids),
+                "skipped_count": len(skipped),
+                "created_enrollment_ids": created_enrollment_ids,
+                "skipped": [
+                    {
+                        "user_id": item.user_id,
+                        "user_email": item.user_email,
+                        "user_full_name": item.user_full_name,
+                        "reason": item.reason,
+                        "existing_enrollment_id": item.existing_enrollment_id,
+                    }
+                    for item in skipped
+                ],
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Some enrollments already exist for this course",
+        )
+
+    created_items: list[AdminEnrollmentItem] = []
+
+    for created_enrollment_id in created_enrollment_ids:
+        created_row = await get_admin_enrollment_row_or_404(
+            created_enrollment_id,
+            session,
+        )
+        created_items.append(build_admin_enrollment_item(created_row))
+
+    return AdminEnrollmentBulkCreateResult(
+        status="completed",
+        learning_group_id=learning_group_id,
+        course_id=course_id,
+        organization_id=organization_id,
+        created_count=len(created_items),
+        skipped_count=len(skipped),
+        created=created_items,
+        skipped=skipped,
+    )
 
 
 @router.get("/enrollments/{enrollment_id}", response_model=AdminEnrollmentItem)
