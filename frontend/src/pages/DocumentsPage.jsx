@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   createAdminDocument,
   deleteAdminDocument,
@@ -195,6 +195,7 @@ function EmptyState({ onReset }) {
 
 export function DocumentsPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -261,6 +262,11 @@ export function DocumentsPage() {
   }, [courses, form.course_id, selectedEnrollment]);
 
 
+  const selectedFilterEnrollment = useMemo(
+    () => enrollments.find((enrollment) => enrollment.id === filterEnrollmentId) || null,
+    [enrollments, filterEnrollmentId]
+  );
+
   function buildDocumentFilters(overrides = {}) {
     return {
       user_id: overrides.user_id ?? filterUserId,
@@ -300,6 +306,17 @@ export function DocumentsPage() {
     loadData({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const nextEnrollmentId = getEnrollmentIdFromSearch(location.search);
+
+    setFilterEnrollmentId(nextEnrollmentId);
+
+    if (nextEnrollmentId) {
+      loadData({ enrollment_id: nextEnrollmentId });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   function updateField(field, value) {
     setForm((current) => {
@@ -572,12 +589,28 @@ export function DocumentsPage() {
     await loadData(buildDocumentFilters());
   }
 
+  async function handleClearEnrollmentFilter() {
+    setFilterEnrollmentId("");
+
+    if (location.pathname === "/admin/documents" && location.search) {
+      navigate("/admin/documents", { replace: true });
+      return;
+    }
+
+    await loadData({ enrollment_id: "" });
+  }
+
   async function handleResetFilter() {
     setFilterUserId("");
     setFilterEnrollmentId("");
     setFilterStatus("");
     setFilterDocumentType("");
     setFilterQuery("");
+    if (location.pathname === "/admin/documents" && location.search) {
+      navigate("/admin/documents", { replace: true });
+      return;
+    }
+
     await loadData({});
   }
 
@@ -781,6 +814,31 @@ export function DocumentsPage() {
         </SectionCard>
 
         <SectionCard title="Список документов" subtitle="Документы из /api/v1/admin/documents">
+          {filterEnrollmentId && (
+            <div className="mb-5 rounded-2xl bg-blue-50 p-4 text-sm text-blue-900 ring-1 ring-blue-100">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="font-semibold">
+                    ??????? ?????? ?? ??????????
+                  </div>
+                  <div className="mt-1 text-blue-800">
+                    {selectedFilterEnrollment
+                      ? `${selectedFilterEnrollment.user_email} ? ${selectedFilterEnrollment.course_title}`
+                      : `ID ??????????: ${filterEnrollmentId}`}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleClearEnrollmentFilter}
+                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
+                >
+                  ???????? ??? ?????????
+                </button>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr_1fr_auto_auto]">
             <input
               type="search"
