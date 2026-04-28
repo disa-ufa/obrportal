@@ -842,6 +842,82 @@ def main() -> int:
     assert isinstance(duplicate_group_member, dict)
     checks.append("admin duplicate learning group member returns 409")
 
+    grouped_enrollment_course_slug_suffix = "".join(
+        character.lower() if character.isalnum() else "-"
+        for character in str(created_group_code)
+    )
+    grouped_enrollment_course_slug = (
+        f"smoke-grouped-enrollment-{grouped_enrollment_course_slug_suffix}"
+    )
+
+    status, grouped_enrollment_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        {
+            "slug": grouped_enrollment_course_slug,
+            "title": "Smoke Grouped Enrollment Course",
+            "description": "Smoke course for grouped enrollment assignment",
+            "hours": 72,
+            "format": "online",
+            "document_type": "??????????",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin grouped enrollment course create")
+    assert isinstance(grouped_enrollment_course, dict)
+    checks.append("admin grouped enrollment course create ok")
+
+    status, grouped_enrollment = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        {
+            "user_id": learner_user_id,
+            "course_id": grouped_enrollment_course["id"],
+            "organization_id": created_organization_id,
+            "learning_group_id": created_group_id,
+            "status": "assigned",
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin grouped enrollment create")
+    assert isinstance(grouped_enrollment, dict)
+    assert grouped_enrollment["user_id"] == learner_user_id
+    assert grouped_enrollment["course_id"] == grouped_enrollment_course["id"]
+    assert grouped_enrollment["organization_id"] == created_organization_id
+    assert grouped_enrollment["learning_group_id"] == created_group_id
+    grouped_enrollment_id = str(grouped_enrollment["id"])
+    checks.append("admin grouped enrollment create ok")
+
+    status, filtered_grouped_enrollments = request_json(
+        "GET",
+        f"/api/v1/admin/enrollments?learning_group_id={created_group_id}&limit=300",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin grouped enrollments filter")
+    assert isinstance(filtered_grouped_enrollments, list)
+    assert any(
+        isinstance(enrollment, dict) and enrollment.get("id") == grouped_enrollment_id
+        for enrollment in filtered_grouped_enrollments
+    )
+    assert all(
+        not isinstance(enrollment, dict)
+        or enrollment.get("learning_group_id") == created_group_id
+        for enrollment in filtered_grouped_enrollments
+    )
+    checks.append("admin grouped enrollment filter ok")
+
+    status, deleted_grouped_enrollment = request_json(
+        "DELETE",
+        f"/api/v1/admin/enrollments/{grouped_enrollment_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin grouped enrollment cleanup delete")
+    assert isinstance(deleted_grouped_enrollment, dict)
+    assert deleted_grouped_enrollment["status"] == "deleted"
+    assert deleted_grouped_enrollment["id"] == grouped_enrollment_id
+    checks.append("admin grouped enrollment cleanup delete ok")
+
     status, group_members_after_add = request_json(
         "GET",
         f"/api/v1/org/groups/{created_group_id}/members",
