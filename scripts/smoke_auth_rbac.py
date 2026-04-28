@@ -804,6 +804,120 @@ def main() -> int:
     assert updated_learning_group["is_active"] is False
     checks.append("admin learning group update ok")
 
+
+    status, initial_group_members = request_json(
+        "GET",
+        f"/api/v1/org/groups/{created_group_id}/members",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learning group members list")
+    assert isinstance(initial_group_members, list)
+    checks.append("admin learning group members list ok")
+
+    status, created_group_member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{created_group_id}/members",
+        {"user_id": learner_user_id},
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin learning group member add")
+    assert isinstance(created_group_member, dict)
+    assert created_group_member["id"]
+    assert created_group_member["learning_group_id"] == created_group_id
+    assert created_group_member["user_id"] == learner_user_id
+    assert created_group_member["user_email"] == LEARNER_EMAIL
+    assert "user_full_name" in created_group_member
+    assert isinstance(created_group_member["user_is_active"], bool)
+    assert "created_at" in created_group_member
+    assert "updated_at" in created_group_member
+    checks.append("admin learning group member add ok")
+
+    status, duplicate_group_member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{created_group_id}/members",
+        {"user_id": learner_user_id},
+        token=admin_token,
+    )
+    assert_status(status, 409, "admin duplicate learning group member")
+    assert isinstance(duplicate_group_member, dict)
+    checks.append("admin duplicate learning group member returns 409")
+
+    status, group_members_after_add = request_json(
+        "GET",
+        f"/api/v1/org/groups/{created_group_id}/members",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learning group members after add")
+    assert isinstance(group_members_after_add, list)
+    assert any(
+        isinstance(member, dict) and member.get("user_id") == learner_user_id
+        for member in group_members_after_add
+    )
+    checks.append("admin learning group members after add ok")
+
+    if "learner_token" not in locals():
+        learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, learner_group_members = request_json(
+        "GET",
+        f"/api/v1/org/groups/{created_group_id}/members",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner learning group members list forbidden")
+    assert isinstance(learner_group_members, dict)
+    checks.append("learner learning group members list forbidden")
+
+    status, learner_add_group_member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{created_group_id}/members",
+        {"user_id": learner_user_id},
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner learning group member add forbidden")
+    assert isinstance(learner_add_group_member, dict)
+    checks.append("learner learning group member add forbidden")
+
+    status, learner_delete_group_member = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{created_group_id}/members/{learner_user_id}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner learning group member delete forbidden")
+    assert isinstance(learner_delete_group_member, dict)
+    checks.append("learner learning group member delete forbidden")
+
+    status, deleted_group_member = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{created_group_id}/members/{learner_user_id}",
+        token=admin_token,
+    )
+    assert_status(status, 204, "admin learning group member delete")
+    assert deleted_group_member is None
+    checks.append("admin learning group member delete ok")
+
+    status, group_members_after_delete = request_json(
+        "GET",
+        f"/api/v1/org/groups/{created_group_id}/members",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learning group members after delete")
+    assert isinstance(group_members_after_delete, list)
+    assert all(
+        not isinstance(member, dict) or member.get("user_id") != learner_user_id
+        for member in group_members_after_delete
+    )
+    checks.append("admin learning group members after delete ok")
+
+    status, missing_group_member_delete = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{created_group_id}/members/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin learning group member delete 404")
+    assert isinstance(missing_group_member_delete, dict)
+    checks.append("admin learning group member delete 404 ok")
+
+
     status, duplicate_learning_group = request_json(
         "POST",
         "/api/v1/org/groups",

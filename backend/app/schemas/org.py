@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime
 
@@ -32,3 +32,18 @@ class OrgLearningGroupUpdate(BaseModel):
     code: str | None = Field(default=None, max_length=64)
     description: str | None = Field(default=None, max_length=1024)
     is_active: bool | None = None
+
+
+class OrgLearningGroupMemberItem(BaseModel):
+    id: str
+    learning_group_id: str
+    user_id: str
+    user_email: str
+    user_full_name: str | None = None
+    user_is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class OrgLearningGroupMemberCreate(BaseModel):
+    user_id: str = Field(min_length=1, max_length=64)
