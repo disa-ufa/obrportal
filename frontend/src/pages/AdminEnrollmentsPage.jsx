@@ -616,6 +616,38 @@ export function AdminEnrollmentsPage() {
   }
 
 
+  async function handleCompleteEnrollment(enrollment) {
+    if (!enrollment || enrollment.status === "completed") {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Завершить обучение по этому назначению?\\n\\nБудет проставлен статус completed и создан черновик документа."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await updateAdminEnrollment(enrollment.id, {
+        status: "completed",
+      });
+
+      await loadData();
+
+      window.alert(
+        "Обучение завершено. Черновик документа создан."
+      );
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "Не удалось завершить обучение"
+      );
+    }
+  }
+
   function handleStartEdit(enrollment) {
     setError("");
     setSuccessMessage("");
@@ -1075,6 +1107,16 @@ export function AdminEnrollmentsPage() {
                           >
                             Документы
                           </Link>
+
+                          {enrollment.status !== "completed" && enrollment.status !== "cancelled" && (
+                            <button
+                              type="button"
+                              onClick={() => handleCompleteEnrollment(enrollment)}
+                              className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                            >
+                              Завершить обучение
+                            </button>
+                          )}
 
                           <button
                             type="button"
