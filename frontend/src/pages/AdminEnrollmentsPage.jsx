@@ -257,11 +257,8 @@ export function AdminEnrollmentsPage() {
   );
 
   const visibleEnrollments = useMemo(
-    () =>
-      enrollments.filter((enrollment) => (
-        !filterGroupId || enrollment.learning_group_id === filterGroupId
-      )),
-    [enrollments, filterGroupId]
+    () => enrollments,
+    [enrollments]
   );
 
   function buildFilters(overrides = {}) {
@@ -270,6 +267,7 @@ export function AdminEnrollmentsPage() {
       user_id: overrides.user_id ?? filterUserId,
       course_id: overrides.course_id ?? filterCourseId,
       status: overrides.status ?? filterStatus,
+      learning_group_id: overrides.learning_group_id ?? filterGroupId,
     };
   }
 

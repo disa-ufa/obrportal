@@ -3552,6 +3552,84 @@ def test_admin_can_list_admin_enrollments() -> None:
     assert isinstance(payload, list)
 
 
+
+def test_admin_can_filter_admin_enrollments_by_learning_group() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    organization_id = create_test_organization(token)
+
+    first_group = create_test_learning_group(
+        token,
+        organization_id,
+        name=f"Enrollment filter group A {unique_group_code()}",
+        code=unique_group_code(),
+    )
+    second_group = create_test_learning_group(
+        token,
+        organization_id,
+        name=f"Enrollment filter group B {unique_group_code()}",
+        code=unique_group_code(),
+    )
+
+    first_group_id = str(first_group["id"])
+    second_group_id = str(second_group["id"])
+
+    first_course = create_test_course_in_db(title="Enrollment Filter Course A")
+    second_course = create_test_course_in_db(title="Enrollment Filter Course B")
+
+    status, first_enrollment = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=token,
+        body={
+            "user_id": user_id,
+            "course_id": first_course["id"],
+            "organization_id": organization_id,
+            "learning_group_id": first_group_id,
+            "status": "assigned",
+        },
+    )
+
+    assert status == 201
+    assert isinstance(first_enrollment, dict)
+    assert first_enrollment["learning_group_id"] == first_group_id
+    assert first_enrollment["learning_group_name"] == first_group["name"]
+
+    status, second_enrollment = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=token,
+        body={
+            "user_id": user_id,
+            "course_id": second_course["id"],
+            "organization_id": organization_id,
+            "learning_group_id": second_group_id,
+            "status": "active",
+        },
+    )
+
+    assert status == 201
+    assert isinstance(second_enrollment, dict)
+    assert second_enrollment["learning_group_id"] == second_group_id
+
+    status, filtered = request_json(
+        "GET",
+        f"/api/v1/admin/enrollments?learning_group_id={first_group_id}&limit=300",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(filtered, list)
+    assert any(item["id"] == first_enrollment["id"] for item in filtered)
+    assert all(item["learning_group_id"] == first_group_id for item in filtered)
+    assert all(item["id"] != second_enrollment["id"] for item in filtered)
+
+
 def test_admin_can_create_update_and_delete_enrollment() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 

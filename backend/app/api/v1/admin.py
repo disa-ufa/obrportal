@@ -2904,6 +2904,7 @@ async def ensure_enrollment_can_be_deleted(
 async def list_admin_enrollments(
     user_id: str | None = Query(default=None, max_length=64),
     course_id: str | None = Query(default=None, max_length=64),
+    learning_group_id: str | None = Query(default=None, max_length=64),
     status_filter: str | None = Query(default=None, alias="status", max_length=32),
     q: str | None = Query(default=None, max_length=255),
     limit: int = Query(default=100, ge=1, le=300),
@@ -2942,6 +2943,9 @@ async def list_admin_enrollments(
 
     if course_id:
         query = query.where(Enrollment.course_id == course_id.strip())
+
+    if learning_group_id:
+        query = query.where(Enrollment.learning_group_id == learning_group_id.strip())
 
     if status_filter:
         query = query.where(Enrollment.status == normalize_enrollment_status(status_filter))
