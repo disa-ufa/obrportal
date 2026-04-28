@@ -1697,6 +1697,26 @@ def main() -> int:
     assert filtered_completion_admin_documents[0]["enrollment_id"] == self_enrollment["enrollment_id"]
     checks.append("admin documents filter by enrollment ok")
 
+    frontend_filtered_documents_path = "/admin/documents?enrollment_id=" + quote(
+        str(self_enrollment["enrollment_id"]),
+        safe="",
+    )
+    status, frontend_filtered_documents_html, frontend_filtered_documents_headers = request_frontend_text(
+        frontend_filtered_documents_path
+    )
+    assert_status(status, 200, "frontend direct filtered documents route")
+    frontend_filtered_documents_content_type = next(
+        (
+            value
+            for key, value in frontend_filtered_documents_headers.items()
+            if key.lower() == "content-type"
+        ),
+        "",
+    )
+    assert "html" in frontend_filtered_documents_content_type.lower()
+    assert "root" in frontend_filtered_documents_html
+    checks.append("frontend direct filtered documents route ok")
+
     status, draft_download_payload = request_json(
         "GET",
         "/api/v1/account/documents/" + str(completion_documents[0]["id"]) + "/download",
