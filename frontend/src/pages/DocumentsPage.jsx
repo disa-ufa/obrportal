@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   createAdminDocument,
   deleteAdminDocument,
@@ -121,6 +122,10 @@ function getEnrollmentOptionLabel(enrollment) {
   return `${courseTitle} · ${status}${group}${organization}`;
 }
 
+function getEnrollmentIdFromSearch(search) {
+  return new URLSearchParams(search).get("enrollment_id") || "";
+}
+
 function getCourseOptionLabel(course) {
   const title = course.title || "Программа без названия";
   const hours = course.hours ? ` / ${course.hours} ч.` : "";
@@ -189,12 +194,16 @@ function EmptyState({ onReset }) {
 }
 
 export function DocumentsPage() {
+  const location = useLocation();
   const [documents, setDocuments] = useState([]);
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
 
   const [filterUserId, setFilterUserId] = useState("");
+  const [filterEnrollmentId, setFilterEnrollmentId] = useState(() =>
+    getEnrollmentIdFromSearch(location.search)
+  );
   const [filterStatus, setFilterStatus] = useState("");
   const [filterDocumentType, setFilterDocumentType] = useState("");
   const [filterQuery, setFilterQuery] = useState("");
@@ -255,6 +264,7 @@ export function DocumentsPage() {
   function buildDocumentFilters(overrides = {}) {
     return {
       user_id: overrides.user_id ?? filterUserId,
+      enrollment_id: overrides.enrollment_id ?? filterEnrollmentId,
       status: overrides.status ?? filterStatus,
       document_type: overrides.document_type ?? filterDocumentType,
       q: overrides.q ?? filterQuery,
@@ -564,6 +574,7 @@ export function DocumentsPage() {
 
   async function handleResetFilter() {
     setFilterUserId("");
+    setFilterEnrollmentId("");
     setFilterStatus("");
     setFilterDocumentType("");
     setFilterQuery("");
