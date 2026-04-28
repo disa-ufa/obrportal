@@ -819,12 +819,12 @@ export function DocumentsPage() {
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <div className="font-semibold">
-                    ??????? ?????? ?? ??????????
+                    Включён фильтр по назначению
                   </div>
                   <div className="mt-1 text-blue-800">
                     {selectedFilterEnrollment
-                      ? `${selectedFilterEnrollment.user_email} ? ${selectedFilterEnrollment.course_title}`
-                      : `ID ??????????: ${filterEnrollmentId}`}
+                      ? `${selectedFilterEnrollment.user_email} → ${selectedFilterEnrollment.course_title}`
+                      : `ID назначения: ${filterEnrollmentId}`}
                   </div>
                 </div>
 
@@ -833,7 +833,7 @@ export function DocumentsPage() {
                   onClick={handleClearEnrollmentFilter}
                   className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
                 >
-                  ???????? ??? ?????????
+                  Показать все документы
                 </button>
               </div>
             </div>
