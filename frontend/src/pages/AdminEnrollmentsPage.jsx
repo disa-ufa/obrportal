@@ -6,6 +6,7 @@ import {
   getAdminEnrollments,
   getAdminOrganizations,
   getAdminUsers,
+  getOrgLearningGroups,
   updateAdminEnrollment,
 } from "../api/client";
 import { Alert } from "../components/ui/Alert";
@@ -17,6 +18,21 @@ const ENROLLMENT_STATUSES = [
   { value: "completed", label: "Завершен" },
   { value: "cancelled", label: "Отменен" },
 ];
+
+const INPUT_CLASS =
+  "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
+
+const BUTTON_PRIMARY_CLASS =
+  "rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60";
+
+const BUTTON_DARK_CLASS =
+  "rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60";
+
+const BUTTON_LIGHT_CLASS =
+  "rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60";
+
+const BUTTON_RED_CLASS =
+  "rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60";
 
 function getStatusLabel(value) {
   return ENROLLMENT_STATUSES.find((item) => item.value === value)?.label || value;
@@ -60,7 +76,7 @@ function buildUserLabel(user) {
     return "";
   }
 
-  return `${user.email}${user.full_name ? ` — ${user.full_name}` : ""}`;
+  return `${user.email}${user.full_name ? ` - ${user.full_name}` : ""}`;
 }
 
 function buildCourseLabel(course) {
@@ -68,7 +84,44 @@ function buildCourseLabel(course) {
     return "";
   }
 
-  return `${course.title}${course.slug ? ` — ${course.slug}` : ""}`;
+  return `${course.title}${course.slug ? ` - ${course.slug}` : ""}`;
+}
+
+function buildOrganizationsMap(organizations) {
+  return organizations.reduce((acc, organization) => {
+    acc[organization.id] = organization;
+    return acc;
+  }, {});
+}
+
+function buildGroupsMap(groups) {
+  return groups.reduce((acc, group) => {
+    acc[group.id] = group;
+    return acc;
+  }, {});
+}
+
+function buildGroupLabel(group, organizationsById = {}) {
+  if (!group) {
+    return "";
+  }
+
+  const organization = organizationsById[group.organization_id];
+  const code = group.code ? ` - ${group.code}` : "";
+  const organizationName = organization?.name ? ` (${organization.name})` : "";
+
+  return `${group.name}${code}${organizationName}`;
+}
+
+function sortByLabel(left, right, getLabel) {
+  return getLabel(left).localeCompare(getLabel(right), "ru-RU");
+}
+
+function getAvailableGroups(groups, organizationId, selectedGroupId = "") {
+  return groups
+    .filter((group) => group.is_active || group.id === selectedGroupId)
+    .filter((group) => !organizationId || group.organization_id === organizationId)
+    .sort((left, right) => left.name.localeCompare(right.name, "ru-RU"));
 }
 
 function buildEditForm(enrollment) {
@@ -87,6 +140,17 @@ function normalizeDateTime(value) {
   }
 
   return new Date(value).toISOString();
+}
+
+function Field({ label, children }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </span>
+      <div className="mt-2">{children}</div>
+    </label>
+  );
 }
 
 function EmptyState({ onReset }) {
@@ -112,11 +176,13 @@ export function AdminEnrollmentsPage() {
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [organizations, setOrganizations] = useState([]);
+  const [groups, setGroups] = useState([]);
 
   const [filterQuery, setFilterQuery] = useState("");
   const [filterUserId, setFilterUserId] = useState("");
   const [filterCourseId, setFilterCourseId] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterGroupId, setFilterGroupId] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -148,6 +214,56 @@ export function AdminEnrollmentsPage() {
     [courses]
   );
 
+  const organizationsById = useMemo(
+    () => buildOrganizationsMap(organizations),
+    [organizations]
+  );
+
+  const groupsById = useMemo(
+    () => buildGroupsMap(groups),
+    [groups]
+  );
+
+  const sortedUsers = useMemo(
+    () => [...users].sort((left, right) => sortByLabel(left, right, buildUserLabel)),
+    [users]
+  );
+
+  const sortedCourses = useMemo(
+    () => [...courses].sort((left, right) => sortByLabel(left, right, buildCourseLabel)),
+    [courses]
+  );
+
+  const sortedOrganizations = useMemo(
+    () => [...organizations].sort((left, right) => left.name.localeCompare(right.name, "ru-RU")),
+    [organizations]
+  );
+
+  const sortedGroups = useMemo(
+    () => [...groups].sort((left, right) =>
+      buildGroupLabel(left, organizationsById).localeCompare(buildGroupLabel(right, organizationsById), "ru-RU")
+    ),
+    [groups, organizationsById]
+  );
+
+  const createFormGroups = useMemo(
+    () => getAvailableGroups(groups, form.organization_id, form.learning_group_id),
+    [groups, form.organization_id, form.learning_group_id]
+  );
+
+  const editFormGroups = useMemo(
+    () => getAvailableGroups(groups, editForm.organization_id, editForm.learning_group_id),
+    [groups, editForm.organization_id, editForm.learning_group_id]
+  );
+
+  const visibleEnrollments = useMemo(
+    () =>
+      enrollments.filter((enrollment) => (
+        !filterGroupId || enrollment.learning_group_id === filterGroupId
+      )),
+    [enrollments, filterGroupId]
+  );
+
   function buildFilters(overrides = {}) {
     return {
       q: overrides.q ?? filterQuery,
@@ -162,18 +278,25 @@ export function AdminEnrollmentsPage() {
       setLoading(true);
       setError("");
 
-      const [enrollmentsResponse, usersResponse, coursesResponse, organizationsResponse] =
-        await Promise.all([
-          getAdminEnrollments(filters ?? buildFilters()),
-          getAdminUsers(),
-          getAdminCourses({ limit: 300 }),
-          getAdminOrganizations(),
-        ]);
+      const [
+        enrollmentsResponse,
+        usersResponse,
+        coursesResponse,
+        organizationsResponse,
+        groupsResponse,
+      ] = await Promise.all([
+        getAdminEnrollments(filters ?? buildFilters()),
+        getAdminUsers(),
+        getAdminCourses({ limit: 300 }),
+        getAdminOrganizations(),
+        getOrgLearningGroups(),
+      ]);
 
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setOrganizations(Array.isArray(organizationsResponse) ? organizationsResponse : []);
+      setGroups(Array.isArray(groupsResponse) ? groupsResponse : []);
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось загрузить назначения."}`.trim());
     } finally {
@@ -187,17 +310,57 @@ export function AdminEnrollmentsPage() {
   }, []);
 
   function updateField(field, value) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setForm((current) => {
+      const next = {
+        ...current,
+        [field]: value,
+      };
+
+      if (field === "organization_id") {
+        const selectedGroup = groupsById[next.learning_group_id];
+
+        if (!value || (selectedGroup && selectedGroup.organization_id !== value)) {
+          next.learning_group_id = "";
+        }
+      }
+
+      if (field === "learning_group_id") {
+        const selectedGroup = groupsById[value];
+
+        if (selectedGroup) {
+          next.organization_id = selectedGroup.organization_id;
+        }
+      }
+
+      return next;
+    });
   }
 
   function updateEditField(field, value) {
-    setEditForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setEditForm((current) => {
+      const next = {
+        ...current,
+        [field]: value,
+      };
+
+      if (field === "organization_id") {
+        const selectedGroup = groupsById[next.learning_group_id];
+
+        if (!value || (selectedGroup && selectedGroup.organization_id !== value)) {
+          next.learning_group_id = "";
+        }
+      }
+
+      if (field === "learning_group_id") {
+        const selectedGroup = groupsById[value];
+
+        if (selectedGroup) {
+          next.organization_id = selectedGroup.organization_id;
+        }
+      }
+
+      return next;
+    });
   }
 
   function resetForm() {
@@ -228,7 +391,7 @@ export function AdminEnrollmentsPage() {
       user_id: values.user_id,
       course_id: values.course_id,
       organization_id: values.organization_id || null,
-      learning_group_id: values.learning_group_id.trim() || null,
+      learning_group_id: values.learning_group_id || null,
       status: values.status,
       started_at: normalizeDateTime(values.started_at),
       completed_at: normalizeDateTime(values.completed_at),
@@ -238,11 +401,19 @@ export function AdminEnrollmentsPage() {
   function buildUpdatePayload(values) {
     return {
       organization_id: values.organization_id || null,
-      learning_group_id: values.learning_group_id.trim() || null,
+      learning_group_id: values.learning_group_id || null,
       status: values.status,
       started_at: normalizeDateTime(values.started_at),
       completed_at: normalizeDateTime(values.completed_at),
     };
+  }
+
+  function getEnrollmentGroupName(enrollment) {
+    if (enrollment.learning_group_name) {
+      return enrollment.learning_group_name;
+    }
+
+    return groupsById[enrollment.learning_group_id]?.name || "-";
   }
 
   async function handleSubmit(event) {
@@ -341,6 +512,7 @@ export function AdminEnrollmentsPage() {
     setFilterUserId("");
     setFilterCourseId("");
     setFilterStatus("");
+    setFilterGroupId("");
     await loadData({});
   }
 
@@ -355,7 +527,7 @@ export function AdminEnrollmentsPage() {
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
           Управление связкой пользователь → программа: назначение обучения,
-          изменение статуса, привязка к организации и контроль записей в личном кабинете.
+          изменение статуса, привязка к организации и учебной группе.
         </p>
       </section>
 
@@ -375,32 +547,26 @@ export function AdminEnrollmentsPage() {
         <SectionCard title="Создать назначение" subtitle="POST /api/v1/admin/enrollments">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4">
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Пользователь
-                </span>
+              <Field label="Пользователь">
                 <select
                   value={form.user_id}
                   onChange={(event) => updateField("user_id", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className={INPUT_CLASS}
                 >
                   <option value="">Выберите пользователя</option>
-                  {users.map((user) => (
+                  {sortedUsers.map((user) => (
                     <option key={user.id} value={user.id}>
                       {buildUserLabel(user)}
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
 
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Программа
-                </span>
+              <Field label="Программа">
                 <select
                   value={form.course_id}
                   onChange={(event) => updateField("course_id", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className={INPUT_CLASS}
                 >
                   <option value="">Выберите программу</option>
                   {activeCourses.map((course) => (
@@ -409,34 +575,46 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
 
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Организация
-                </span>
+              <Field label="Организация">
                 <select
                   value={form.organization_id}
                   onChange={(event) => updateField("organization_id", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className={INPUT_CLASS}
                 >
                   <option value="">Без организации</option>
-                  {organizations.map((organization) => (
+                  {sortedOrganizations.map((organization) => (
                     <option key={organization.id} value={organization.id}>
                       {organization.name}
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
 
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Статус
-                </span>
+              <Field label="Учебная группа">
+                <select
+                  value={form.learning_group_id}
+                  onChange={(event) => updateField("learning_group_id", event.target.value)}
+                  className={INPUT_CLASS}
+                  disabled={groups.length === 0}
+                >
+                  <option value="">
+                    {groups.length === 0 ? "Групп пока нет" : "Без группы"}
+                  </option>
+                  {createFormGroups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {buildGroupLabel(group, organizationsById)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Статус">
                 <select
                   value={form.status}
                   onChange={(event) => updateField("status", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className={INPUT_CLASS}
                 >
                   {ENROLLMENT_STATUSES.map((statusItem) => (
                     <option key={statusItem.value} value={statusItem.value}>
@@ -444,50 +622,35 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Начато
-                  </span>
+                <Field label="Начато">
                   <input
                     type="datetime-local"
                     value={form.started_at}
                     onChange={(event) => updateField("started_at", event.target.value)}
-                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    className={INPUT_CLASS}
                   />
-                </label>
+                </Field>
 
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Завершено
-                  </span>
+                <Field label="Завершено">
                   <input
                     type="datetime-local"
                     value={form.completed_at}
                     onChange={(event) => updateField("completed_at", event.target.value)}
-                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    className={INPUT_CLASS}
                   />
-                </label>
+                </Field>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
+              <button type="submit" disabled={saving} className={BUTTON_PRIMARY_CLASS}>
                 {saving ? "Сохраняем..." : "Создать назначение"}
               </button>
 
-              <button
-                type="button"
-                onClick={resetForm}
-                disabled={saving}
-                className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
+              <button type="button" onClick={resetForm} disabled={saving} className={BUTTON_LIGHT_CLASS}>
                 Очистить
               </button>
             </div>
@@ -495,22 +658,22 @@ export function AdminEnrollmentsPage() {
         </SectionCard>
 
         <SectionCard title="Список назначений" subtitle="GET /api/v1/admin/enrollments">
-          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr_1fr_auto_auto]">
+          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.15fr_1fr_1fr_1fr_1fr_auto_auto]">
             <input
               type="search"
               value={filterQuery}
               onChange={(event) => setFilterQuery(event.target.value)}
               placeholder="Поиск: e-mail, ФИО, курс, группа"
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className={INPUT_CLASS}
             />
 
             <select
               value={filterUserId}
               onChange={(event) => setFilterUserId(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className={INPUT_CLASS}
             >
               <option value="">Все пользователи</option>
-              {users.map((user) => (
+              {sortedUsers.map((user) => (
                 <option key={user.id} value={user.id}>
                   {buildUserLabel(user)}
                 </option>
@@ -520,10 +683,10 @@ export function AdminEnrollmentsPage() {
             <select
               value={filterCourseId}
               onChange={(event) => setFilterCourseId(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className={INPUT_CLASS}
             >
               <option value="">Все программы</option>
-              {courses.map((course) => (
+              {sortedCourses.map((course) => (
                 <option key={course.id} value={course.id}>
                   {buildCourseLabel(course)}
                 </option>
@@ -533,7 +696,7 @@ export function AdminEnrollmentsPage() {
             <select
               value={filterStatus}
               onChange={(event) => setFilterStatus(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className={INPUT_CLASS}
             >
               <option value="">Все статусы</option>
               {ENROLLMENT_STATUSES.map((statusItem) => (
@@ -543,18 +706,24 @@ export function AdminEnrollmentsPage() {
               ))}
             </select>
 
-            <button
-              type="submit"
-              className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            <select
+              value={filterGroupId}
+              onChange={(event) => setFilterGroupId(event.target.value)}
+              className={INPUT_CLASS}
             >
+              <option value="">Все группы</option>
+              {sortedGroups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {buildGroupLabel(group, organizationsById)}
+                </option>
+              ))}
+            </select>
+
+            <button type="submit" className={BUTTON_DARK_CLASS}>
               Применить
             </button>
 
-            <button
-              type="button"
-              onClick={handleResetFilter}
-              className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-            >
+            <button type="button" onClick={handleResetFilter} className={BUTTON_LIGHT_CLASS}>
               Сбросить
             </button>
           </form>
@@ -563,11 +732,11 @@ export function AdminEnrollmentsPage() {
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
               Загружаем назначения...
             </div>
-          ) : enrollments.length === 0 ? (
+          ) : visibleEnrollments.length === 0 ? (
             <EmptyState onReset={handleResetFilter} />
           ) : (
             <div className="space-y-4">
-              {enrollments.map((enrollment) => {
+              {visibleEnrollments.map((enrollment) => {
                 const isEditing = editingEnrollmentId === enrollment.id;
                 const isActionRunning = actionEnrollmentId === enrollment.id;
 
@@ -594,7 +763,7 @@ export function AdminEnrollmentsPage() {
                           </h2>
                           <div className="mt-1 text-sm text-slate-500">
                             {enrollment.user_email}
-                            {enrollment.user_full_name ? ` — ${enrollment.user_full_name}` : ""}
+                            {enrollment.user_full_name ? ` - ${enrollment.user_full_name}` : ""}
                           </div>
                         </div>
 
@@ -613,7 +782,7 @@ export function AdminEnrollmentsPage() {
                               Группа
                             </div>
                             <div className="mt-2 font-semibold text-slate-900">
-                              {enrollment.learning_group_name || "-"}
+                              {getEnrollmentGroupName(enrollment)}
                             </div>
                           </div>
 
@@ -650,7 +819,7 @@ export function AdminEnrollmentsPage() {
                             type="button"
                             onClick={() => handleDelete(enrollment)}
                             disabled={isActionRunning}
-                            className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={BUTTON_RED_CLASS}
                           >
                             {isActionRunning ? "Удаляем..." : "Удалить"}
                           </button>
@@ -662,32 +831,44 @@ export function AdminEnrollmentsPage() {
                         className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
                       >
                         <div className="grid gap-4 md:grid-cols-2">
-                          <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Организация
-                            </span>
+                          <Field label="Организация">
                             <select
                               value={editForm.organization_id}
                               onChange={(event) => updateEditField("organization_id", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className={INPUT_CLASS}
                             >
                               <option value="">Без организации</option>
-                              {organizations.map((organization) => (
+                              {sortedOrganizations.map((organization) => (
                                 <option key={organization.id} value={organization.id}>
                                   {organization.name}
                                 </option>
                               ))}
                             </select>
-                          </label>
+                          </Field>
 
-                          <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Статус
-                            </span>
+                          <Field label="Учебная группа">
+                            <select
+                              value={editForm.learning_group_id}
+                              onChange={(event) => updateEditField("learning_group_id", event.target.value)}
+                              className={INPUT_CLASS}
+                              disabled={groups.length === 0}
+                            >
+                              <option value="">
+                                {groups.length === 0 ? "Групп пока нет" : "Без группы"}
+                              </option>
+                              {editFormGroups.map((group) => (
+                                <option key={group.id} value={group.id}>
+                                  {buildGroupLabel(group, organizationsById)}
+                                </option>
+                              ))}
+                            </select>
+                          </Field>
+
+                          <Field label="Статус">
                             <select
                               value={editForm.status}
                               onChange={(event) => updateEditField("status", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className={INPUT_CLASS}
                             >
                               {ENROLLMENT_STATUSES.map((statusItem) => (
                                 <option key={statusItem.value} value={statusItem.value}>
@@ -695,31 +876,25 @@ export function AdminEnrollmentsPage() {
                                 </option>
                               ))}
                             </select>
-                          </label>
+                          </Field>
 
-                          <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Начато
-                            </span>
+                          <Field label="Начато">
                             <input
                               type="datetime-local"
                               value={editForm.started_at}
                               onChange={(event) => updateEditField("started_at", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className={INPUT_CLASS}
                             />
-                          </label>
+                          </Field>
 
-                          <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Завершено
-                            </span>
+                          <Field label="Завершено">
                             <input
                               type="datetime-local"
                               value={editForm.completed_at}
                               onChange={(event) => updateEditField("completed_at", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className={INPUT_CLASS}
                             />
-                          </label>
+                          </Field>
                         </div>
 
                         <div className="flex flex-wrap gap-3">
