@@ -1684,6 +1684,19 @@ def main() -> int:
     assert completion_documents[0]["file_available"] is True
     assert completion_documents[0]["download_available"] is False
     checks.append("learner course completion creates draft document")
+
+    status, filtered_completion_admin_documents = request_json(
+        "GET",
+        "/api/v1/admin/documents?enrollment_id=" + quote(str(self_enrollment["enrollment_id"]), safe=""),
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin documents filter by enrollment")
+    assert isinstance(filtered_completion_admin_documents, list)
+    assert len(filtered_completion_admin_documents) == 1
+    assert str(filtered_completion_admin_documents[0]["id"]) == str(completion_documents[0]["id"])
+    assert filtered_completion_admin_documents[0]["enrollment_id"] == self_enrollment["enrollment_id"]
+    checks.append("admin documents filter by enrollment ok")
+
     status, draft_download_payload = request_json(
         "GET",
         "/api/v1/account/documents/" + str(completion_documents[0]["id"]) + "/download",

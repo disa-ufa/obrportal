@@ -1853,6 +1853,7 @@ async def get_admin_document_row_or_404(
 @router.get("/documents", response_model=list[AdminDocumentItem])
 async def list_admin_documents(
     user_id: str | None = Query(default=None, max_length=64),
+    enrollment_id: str | None = Query(default=None, max_length=64),
     status_filter: str | None = Query(default=None, alias="status", max_length=32),
     document_type: str | None = Query(default=None, max_length=128),
     q: str | None = Query(default=None, max_length=255),
@@ -1894,6 +1895,9 @@ async def list_admin_documents(
 
     if user_id:
         query = query.where(DocumentRecord.user_id == user_id.strip())
+
+    if enrollment_id and enrollment_id.strip():
+        query = query.where(DocumentRecord.enrollment_id == enrollment_id.strip())
 
     if status_filter:
         query = query.where(DocumentRecord.status == normalize_document_status(status_filter))
