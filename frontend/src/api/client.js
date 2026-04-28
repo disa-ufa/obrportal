@@ -300,6 +300,23 @@ export async function deleteOrgLearningGroup(groupId) {
   });
 }
 
+export async function getOrgLearningGroupMembers(groupId) {
+  return request(`/api/v1/org/groups/${groupId}/members`);
+}
+
+export async function addOrgLearningGroupMember(groupId, payload) {
+  return request(`/api/v1/org/groups/${groupId}/members`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function removeOrgLearningGroupMember(groupId, userId) {
+  return request(`/api/v1/org/groups/${groupId}/members/${userId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getAdminRoles() {
   return request("/api/v1/admin/roles");
 }

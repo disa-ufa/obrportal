@@ -1,4 +1,10 @@
-import { useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
+import {
+  addOrgLearningGroupMember,
+  getAdminUsers,
+  getOrgLearningGroupMembers,
+  removeOrgLearningGroupMember,
+} from "../api/client";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
@@ -57,6 +63,15 @@ function buildOrganizationsMap(organizations) {
   }, {});
 }
 
+function buildUserLabel(user) {
+  if (!user) {
+    return "";
+  }
+
+  const name = user.full_name ? `${user.full_name} — ` : "";
+  return `${name}${user.email}`;
+}
+
 function groupMatchesSearch(group, query, organizationName) {
   const normalizedQuery = normalizeSearchValue(query);
 
@@ -69,7 +84,7 @@ function groupMatchesSearch(group, query, organizationName) {
     group.code,
     group.description,
     organizationName,
-    group.is_active ? "active" : "inactive",
+    group.is_active ? "active активная" : "inactive неактивная",
   ]
     .map(normalizeSearchValue)
     .some((value) => value.includes(normalizedQuery));
@@ -248,6 +263,241 @@ function LearningGroupForm({
   );
 }
 
+function LearningGroupMembersPanel({ groupDetail }) {
+  const [members, setMembers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  async function reloadMemberData() {
+    if (!groupDetail?.id) {
+      setMembers([]);
+      setUsers([]);
+      setSelectedUserId("");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const [loadedMembers, loadedUsers] = await Promise.all([
+        getOrgLearningGroupMembers(groupDetail.id),
+        getAdminUsers(),
+      ]);
+
+      setMembers(Array.isArray(loadedMembers) ? loadedMembers : []);
+      setUsers(Array.isArray(loadedUsers) ? loadedUsers : []);
+      setSelectedUserId("");
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message}`.trim());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    reloadMemberData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupDetail?.id]);
+
+  const memberUserIds = useMemo(
+    () => new Set(members.map((member) => member.user_id)),
+    [members]
+  );
+
+  const availableUsers = useMemo(
+    () =>
+      users
+        .filter((item) => !memberUserIds.has(item.id))
+        .sort((left, right) => buildUserLabel(left).localeCompare(buildUserLabel(right), "ru-RU")),
+    [users, memberUserIds]
+  );
+
+  async function handleAddMember(event) {
+    event.preventDefault();
+
+    if (!selectedUserId || !groupDetail?.id) {
+      return;
+    }
+
+    setActionLoading("add");
+    setError("");
+    setSuccess("");
+
+    try {
+      const created = await addOrgLearningGroupMember(groupDetail.id, {
+        user_id: selectedUserId,
+      });
+
+      setMembers((current) =>
+        [...current.filter((member) => member.user_id !== created.user_id), created].sort((left, right) =>
+          left.user_email.localeCompare(right.user_email, "ru-RU")
+        )
+      );
+      setSelectedUserId("");
+      setSuccess("Участник добавлен в группу.");
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message}`.trim());
+    } finally {
+      setActionLoading("");
+    }
+  }
+
+  async function handleRemoveMember(userId, userEmail) {
+    const confirmed = window.confirm(
+      `Удалить участника ${userEmail || userId} из группы?`
+    );
+
+    if (!confirmed || !groupDetail?.id) {
+      return;
+    }
+
+    setActionLoading(userId);
+    setError("");
+    setSuccess("");
+
+    try {
+      await removeOrgLearningGroupMember(groupDetail.id, userId);
+      setMembers((current) => current.filter((member) => member.user_id !== userId));
+      setSuccess("Участник удалён из группы.");
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message}`.trim());
+    } finally {
+      setActionLoading("");
+    }
+  }
+
+  if (!groupDetail) {
+    return null;
+  }
+
+  return (
+    <SectionCard
+      title="Участники группы"
+      subtitle="Список пользователей, закреплённых за выбранной учебной группой."
+    >
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <form onSubmit={handleAddMember} className="grid flex-1 gap-3 md:grid-cols-[1fr_auto]">
+            <Field label="Добавить пользователя">
+              <select
+                value={selectedUserId}
+                onChange={(event) => {
+                  setSelectedUserId(event.target.value);
+                  setError("");
+                  setSuccess("");
+                }}
+                className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
+                disabled={loading || actionLoading === "add" || availableUsers.length === 0}
+              >
+                <option value="">
+                  {availableUsers.length === 0
+                    ? "Нет доступных пользователей для добавления"
+                    : "Выберите пользователя"}
+                </option>
+                {availableUsers.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {buildUserLabel(item)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <ActionButton
+              type="submit"
+              tone="blue"
+              disabled={loading || actionLoading === "add" || !selectedUserId}
+            >
+              {actionLoading === "add" ? "Добавляем..." : "Добавить участника"}
+            </ActionButton>
+          </form>
+
+          <ActionButton
+            type="button"
+            tone="light"
+            onClick={reloadMemberData}
+            disabled={loading || Boolean(actionLoading)}
+          >
+            Обновить
+          </ActionButton>
+        </div>
+
+        {error && (
+          <Alert title="Не удалось выполнить действие с участниками" tone="red">
+            {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert title="Готово" tone="blue">
+            {success}
+          </Alert>
+        )}
+
+        {loading ? (
+          <LoadingBlock text="Загружаем участников группы..." />
+        ) : (
+          <SmallTable
+            emptyText="В этой группе пока нет участников."
+            rows={members}
+            minWidth="820px"
+            columns={[
+              {
+                key: "user",
+                title: "Пользователь",
+                render: (row) => (
+                  <div>
+                    <div className="font-medium text-slate-900">{row.user_email}</div>
+                    <div className="text-xs text-slate-500">{row.user_id}</div>
+                  </div>
+                ),
+              },
+              {
+                key: "full_name",
+                title: "ФИО",
+                render: (row) => row.user_full_name || "—",
+              },
+              {
+                key: "status",
+                title: "Статус",
+                render: (row) => (
+                  <StatusBadge tone={row.user_is_active ? "green" : "gray"}>
+                    {row.user_is_active ? "active" : "inactive"}
+                  </StatusBadge>
+                ),
+              },
+              {
+                key: "created_at",
+                title: "Добавлен",
+                render: (row) => formatDetailDate(row.created_at),
+              },
+              {
+                key: "actions",
+                title: "Действия",
+                render: (row) => (
+                  <ActionButton
+                    type="button"
+                    tone="red"
+                    onClick={() => handleRemoveMember(row.user_id, row.user_email)}
+                    disabled={Boolean(actionLoading)}
+                  >
+                    {actionLoading === row.user_id ? "Удаляем..." : "Удалить"}
+                  </ActionButton>
+                ),
+              },
+            ]}
+          />
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
 function LearningGroupDetailPanel({
   groupDetail,
   organizations,
@@ -358,6 +608,7 @@ function LearningGroupDetailPanel({
               {actionError}
             </Alert>
           )}
+
           {isEditing ? (
             <LearningGroupForm
               organizations={organizations}
@@ -570,6 +821,10 @@ export function GroupsPage({
           onUpdateGroup={onUpdateGroup}
           onDeleteGroup={onDeleteGroup}
         />
+      )}
+
+      {user && selectedGroup && !selectedGroupLoading && !selectedGroupError && (
+        <LearningGroupMembersPanel groupDetail={selectedGroup} />
       )}
     </div>
   );
