@@ -69,6 +69,32 @@ def find_role_permission_id(
     return None
 
 
+
+def request_frontend_direct_route(path: str) -> tuple[int, str]:
+    frontend_base_url = (
+        os.environ.get("FRONTEND_URL")
+        or os.environ.get("VITE_FRONTEND_URL")
+        or "http://localhost:5173"
+    ).rstrip("/")
+
+    frontend_request = Request(f"{frontend_base_url}{path}", method="GET")
+
+    try:
+        with urlopen(frontend_request, timeout=20) as response:
+            body = response.read().decode("utf-8", errors="replace")
+            return response.status, body
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        return exc.code, body
+
+
+def assert_frontend_shell(body: str, label: str) -> None:
+    normalized_body = body.lower()
+
+    if "<html" not in normalized_body and 'id="root"' not in normalized_body:
+        raise AssertionError(f"{label}: frontend shell was not returned")
+
+
 def request_json(
     method: str,
     path: str,
@@ -1053,6 +1079,21 @@ def main() -> int:
         assert deleted_bulk_grouped_enrollment["id"] == bulk_created_enrollment_id
 
     checks.append("admin bulk grouped enrollment cleanup delete ok")
+
+    status, frontend_admin_groups_body = request_frontend_direct_route("/admin/groups")
+    assert_status(status, 200, "frontend direct admin groups route")
+    assert_frontend_shell(frontend_admin_groups_body, "frontend direct admin groups route")
+    checks.append("frontend direct admin groups route ok")
+
+    status, frontend_filtered_enrollments_body = request_frontend_direct_route(
+        f"/admin/enrollments?learning_group_id={created_group_id}"
+    )
+    assert_status(status, 200, "frontend direct filtered enrollments route")
+    assert_frontend_shell(
+        frontend_filtered_enrollments_body,
+        "frontend direct filtered enrollments route",
+    )
+    checks.append("frontend direct filtered enrollments route ok")
 
     status, group_members_after_add = request_json(
         "GET",
