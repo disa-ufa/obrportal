@@ -3553,6 +3553,108 @@ def test_admin_can_list_admin_enrollments() -> None:
 
 
 
+
+def test_admin_rejects_enrollment_group_when_user_is_not_member() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    organization_id = create_test_organization(token)
+    group = create_test_learning_group(token, organization_id)
+    group_id = str(group["id"])
+    course = create_test_course_in_db(title="Enrollment Group Membership Course")
+
+    status, rejected = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=token,
+        body={
+            "user_id": user_id,
+            "course_id": course["id"],
+            "organization_id": organization_id,
+            "learning_group_id": group_id,
+            "status": "assigned",
+        },
+    )
+
+    assert status == 400
+    assert isinstance(rejected, dict)
+    assert rejected["detail"] == "User is not a member of learning group"
+
+    status, member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{group_id}/members",
+        token=token,
+        body={"user_id": user_id},
+    )
+    assert status == 201
+    assert isinstance(member, dict)
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=token,
+        body={
+            "user_id": user_id,
+            "course_id": course["id"],
+            "organization_id": organization_id,
+            "learning_group_id": group_id,
+            "status": "assigned",
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created, dict)
+    assert created["learning_group_id"] == group_id
+    assert created["learning_group_name"] == group["name"]
+
+
+def test_admin_rejects_enrollment_group_from_another_organization() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    first_organization_id = create_test_organization(token)
+    second_organization_id = create_test_organization(token)
+
+    group = create_test_learning_group(token, first_organization_id)
+    group_id = str(group["id"])
+
+    status, member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{group_id}/members",
+        token=token,
+        body={"user_id": user_id},
+    )
+    assert status == 201
+    assert isinstance(member, dict)
+
+    course = create_test_course_in_db(title="Enrollment Group Organization Mismatch Course")
+
+    status, rejected = request_json(
+        "POST",
+        "/api/v1/admin/enrollments",
+        token=token,
+        body={
+            "user_id": user_id,
+            "course_id": course["id"],
+            "organization_id": second_organization_id,
+            "learning_group_id": group_id,
+            "status": "assigned",
+        },
+    )
+
+    assert status == 400
+    assert isinstance(rejected, dict)
+    assert rejected["detail"] == "Learning group belongs to another organization"
+
+
 def test_admin_can_filter_admin_enrollments_by_learning_group() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
@@ -3578,6 +3680,24 @@ def test_admin_can_filter_admin_enrollments_by_learning_group() -> None:
 
     first_group_id = str(first_group["id"])
     second_group_id = str(second_group["id"])
+
+    status, first_member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{first_group_id}/members",
+        token=token,
+        body={"user_id": user_id},
+    )
+    assert status == 201
+    assert isinstance(first_member, dict)
+
+    status, second_member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{second_group_id}/members",
+        token=token,
+        body={"user_id": user_id},
+    )
+    assert status == 201
+    assert isinstance(second_member, dict)
 
     first_course = create_test_course_in_db(title="Enrollment Filter Course A")
     second_course = create_test_course_in_db(title="Enrollment Filter Course B")

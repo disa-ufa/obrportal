@@ -19,7 +19,7 @@ from app.models.audit_event import AuditEvent
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
-from app.models.learning_group import LearningGroup
+from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
@@ -2857,6 +2857,47 @@ async def get_admin_enrollment_row_or_404(
     return row
 
 
+async def ensure_learning_group_assignment_is_valid(
+    *,
+    user_id: str,
+    organization_id: str | None,
+    learning_group_id: str | None,
+    session: AsyncSession,
+) -> None:
+    if learning_group_id is None:
+        return
+
+    group_result = await session.execute(
+        select(LearningGroup).where(LearningGroup.id == learning_group_id)
+    )
+    learning_group = group_result.scalar_one_or_none()
+
+    if learning_group is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Learning group not found",
+        )
+
+    if organization_id is not None and str(learning_group.organization_id) != str(organization_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Learning group belongs to another organization",
+        )
+
+    member_result = await session.execute(
+        select(LearningGroupMember.id)
+        .where(LearningGroupMember.learning_group_id == learning_group_id)
+        .where(LearningGroupMember.user_id == user_id)
+        .limit(1)
+    )
+
+    if member_result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not a member of learning group",
+        )
+
+
 async def ensure_enrollment_references_exist(
     *,
     user_id: str,
@@ -2871,16 +2912,12 @@ async def ensure_enrollment_references_exist(
     if organization_id is not None:
         await get_admin_organization_or_404(organization_id, session)
 
-    if learning_group_id is not None:
-        result = await session.execute(
-            select(LearningGroup).where(LearningGroup.id == learning_group_id)
-        )
-
-        if result.scalar_one_or_none() is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Learning group not found",
-            )
+    await ensure_learning_group_assignment_is_valid(
+        user_id=user_id,
+        organization_id=organization_id,
+        learning_group_id=learning_group_id,
+        session=session,
+    )
 
 
 async def ensure_enrollment_can_be_deleted(
@@ -3073,23 +3110,20 @@ async def update_admin_enrollment(
         enrollment.organization_id = organization_id
 
     if "learning_group_id" in data:
-        learning_group_id = normalize_optional_reference(data["learning_group_id"])
-        if learning_group_id is not None:
-            result = await session.execute(
-                select(LearningGroup).where(LearningGroup.id == learning_group_id)
-            )
-            if result.scalar_one_or_none() is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Learning group not found",
-                )
-        enrollment.learning_group_id = learning_group_id
+        enrollment.learning_group_id = normalize_optional_reference(data["learning_group_id"])
 
     if "started_at" in data:
         enrollment.started_at = data["started_at"]
 
     if "completed_at" in data:
         enrollment.completed_at = data["completed_at"]
+
+    await ensure_learning_group_assignment_is_valid(
+        user_id=str(enrollment.user_id),
+        organization_id=str(enrollment.organization_id) if enrollment.organization_id else None,
+        learning_group_id=str(enrollment.learning_group_id) if enrollment.learning_group_id else None,
+        session=session,
+    )
 
     await session.flush()
 
