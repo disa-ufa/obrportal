@@ -3,6 +3,7 @@ import {
   createAdminDocument,
   deleteAdminDocument,
   downloadAdminDocument,
+  getAdminCourses,
   getAdminDocuments,
   getAdminEnrollments,
   getAdminUsers,
@@ -120,8 +121,18 @@ function getEnrollmentOptionLabel(enrollment) {
   return `${courseTitle} · ${status}${group}${organization}`;
 }
 
+function getCourseOptionLabel(course) {
+  const title = course.title || "Программа без названия";
+  const hours = course.hours ? ` ? ${course.hours} ч.` : "";
+  const format = course.format ? ` ? ${course.format}` : "";
+  const documentType = course.document_type ? ` ? ${course.document_type}` : "";
+
+  return `${title}${hours}${format}${documentType}`;
+}
+
 function getEnrollmentStatusLabel(status) {
   const labels = {
+    active: "В процессе",
     assigned: "Назначен",
     in_progress: "В процессе",
     completed: "Завершён",
@@ -154,6 +165,7 @@ function buildEditForm(documentItem) {
     document_type: documentItem.document_type || "",
     document_number: documentItem.document_number || "",
     status: documentItem.status || "available",
+    course_id: documentItem.course_id || "",
     enrollment_id: documentItem.enrollment_id || "",
   };
 }
@@ -179,6 +191,7 @@ function EmptyState({ onReset }) {
 export function DocumentsPage() {
   const [documents, setDocuments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
 
   const [filterUserId, setFilterUserId] = useState("");
@@ -202,6 +215,7 @@ export function DocumentsPage() {
     document_type: "Сертификат",
     document_number: "",
     status: "available",
+    course_id: "",
     enrollment_id: "",
   });
   const [file, setFile] = useState(null);
@@ -212,6 +226,7 @@ export function DocumentsPage() {
     document_type: "",
     document_number: "",
     status: "available",
+    course_id: "",
     enrollment_id: "",
   });
   const [editFile, setEditFile] = useState(null);
@@ -224,6 +239,17 @@ export function DocumentsPage() {
     () => enrollments.filter((enrollment) => enrollment.user_id === form.user_id),
     [enrollments, form.user_id]
   );
+
+  const selectedEnrollment = useMemo(
+    () => enrollments.find((enrollment) => enrollment.id === form.enrollment_id) || null,
+    [enrollments, form.enrollment_id]
+  );
+
+  const selectedCourse = useMemo(() => {
+    const selectedCourseId = selectedEnrollment?.course_id || form.course_id;
+
+    return courses.find((course) => course.id === selectedCourseId) || null;
+  }, [courses, form.course_id, selectedEnrollment]);
 
 
   function buildDocumentFilters(overrides = {}) {
@@ -242,14 +268,16 @@ export function DocumentsPage() {
 
       const filters = nextFilters ?? buildDocumentFilters();
 
-      const [documentsResponse, usersResponse, enrollmentsResponse] = await Promise.all([
+      const [documentsResponse, usersResponse, coursesResponse, enrollmentsResponse] = await Promise.all([
         getAdminDocuments(filters),
         getAdminUsers(),
+        getAdminCourses({ limit: 300 }),
         getAdminEnrollments({ limit: 300 }),
       ]);
 
       setDocuments(Array.isArray(documentsResponse) ? documentsResponse : []);
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
+      setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось загрузить документы."}`.trim());
@@ -264,18 +292,46 @@ export function DocumentsPage() {
   }, []);
 
   function updateField(field, value) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-      ...(field === "user_id" ? { enrollment_id: "" } : {}),
-    }));
+    setForm((current) => {
+      const next = {
+        ...current,
+        [field]: value,
+      };
+
+      if (field === "user_id") {
+        next.course_id = "";
+        next.enrollment_id = "";
+      }
+
+      if (field === "enrollment_id" && value) {
+        const enrollment = enrollments.find((item) => item.id === value);
+
+        if (enrollment?.course_id) {
+          next.course_id = enrollment.course_id;
+        }
+      }
+
+      return next;
+    });
   }
 
   function updateEditField(field, value) {
-    setEditForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setEditForm((current) => {
+      const next = {
+        ...current,
+        [field]: value,
+      };
+
+      if (field === "enrollment_id" && value) {
+        const enrollment = enrollments.find((item) => item.id === value);
+
+        if (enrollment?.course_id) {
+          next.course_id = enrollment.course_id;
+        }
+      }
+
+      return next;
+    });
   }
 
   function resetForm() {
@@ -285,6 +341,7 @@ export function DocumentsPage() {
       document_type: "Сертификат",
       document_number: "",
       status: "available",
+      course_id: "",
       enrollment_id: "",
     });
     setFile(null);
@@ -302,6 +359,7 @@ export function DocumentsPage() {
       document_type: "",
       document_number: "",
       status: "available",
+      course_id: "",
       enrollment_id: "",
     });
     setEditFile(null);
@@ -340,6 +398,10 @@ export function DocumentsPage() {
       payload.append("title", form.title.trim());
       payload.append("document_type", form.document_type.trim());
       payload.append("status", form.status);
+
+      if (form.course_id) {
+        payload.append("course_id", form.course_id);
+      }
 
       if (form.enrollment_id) {
         payload.append("enrollment_id", form.enrollment_id);
@@ -401,6 +463,7 @@ export function DocumentsPage() {
       payload.append("document_type", editForm.document_type.trim());
       payload.append("document_number", editForm.document_number.trim());
       payload.append("status", editForm.status);
+      payload.append("course_id", editForm.course_id);
       payload.append("enrollment_id", editForm.enrollment_id);
 
       if (editFile) {
@@ -582,6 +645,32 @@ export function DocumentsPage() {
                 {selectedUserEnrollments.length === 0 && (
                   <span className="mt-2 block text-xs text-amber-700">
                     У выбранного пользователя пока нет назначенных программ.
+                  </span>
+                )}
+              </label>
+            )}
+
+            {selectedUser && (
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Программа / курс
+                </span>
+                <select
+                  value={form.course_id}
+                  onChange={(event) => updateField("course_id", event.target.value)}
+                  disabled={Boolean(form.enrollment_id)}
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                >
+                  <option value="">Без привязки к курсу</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {getCourseOptionLabel(course)}
+                    </option>
+                  ))}
+                </select>
+                {form.enrollment_id && selectedCourse && (
+                  <span className="mt-2 block text-xs text-slate-500">
+                    Курс выбран автоматически по назначенной программе: {selectedCourse.title}
                   </span>
                 )}
               </label>
@@ -1071,6 +1160,30 @@ export function DocumentsPage() {
                                   </option>
                                 ))}
                             </select>
+                          </label>
+
+                          <label className="block md:col-span-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Программа / курс
+                            </span>
+                            <select
+                              value={editForm.course_id}
+                              onChange={(event) => updateEditField("course_id", event.target.value)}
+                              disabled={Boolean(editForm.enrollment_id)}
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                            >
+                              <option value="">Без привязки к курсу</option>
+                              {courses.map((course) => (
+                                <option key={course.id} value={course.id}>
+                                  {getCourseOptionLabel(course)}
+                                </option>
+                              ))}
+                            </select>
+                            {editForm.enrollment_id && (
+                              <span className="mt-2 block text-xs text-slate-500">
+                                Курс синхронизируется с выбранной назначенной программой.
+                              </span>
+                            )}
                           </label>
 
                           <label className="block md:col-span-2">
