@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   createAdminEnrollment,
   createAdminGroupEnrollments,
@@ -38,6 +39,10 @@ const BUTTON_RED_CLASS =
 
 function getStatusLabel(value) {
   return ENROLLMENT_STATUSES.find((item) => item.value === value)?.label || value;
+}
+
+function getLearningGroupIdFromSearch(search) {
+  return new URLSearchParams(search).get("learning_group_id") || "";
 }
 
 function getStatusTone(value) {
@@ -195,6 +200,8 @@ function EmptyState({ onReset }) {
 }
 
 export function AdminEnrollmentsPage() {
+  const location = useLocation();
+
   const [enrollments, setEnrollments] = useState([]);
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -206,7 +213,9 @@ export function AdminEnrollmentsPage() {
   const [filterUserId, setFilterUserId] = useState("");
   const [filterCourseId, setFilterCourseId] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [filterGroupId, setFilterGroupId] = useState("");
+  const [filterGroupId, setFilterGroupId] = useState(() =>
+    getLearningGroupIdFromSearch(location.search)
+  );
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -380,9 +389,12 @@ export function AdminEnrollmentsPage() {
   }
 
   useEffect(() => {
-    loadData({});
+    const queryGroupId = getLearningGroupIdFromSearch(location.search);
+
+    setFilterGroupId(queryGroupId);
+    loadData(queryGroupId ? { learning_group_id: queryGroupId } : {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.search]);
 
   function updateField(field, value) {
     setForm((current) => {

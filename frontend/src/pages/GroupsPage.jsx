@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   addOrgLearningGroupMember,
   getAdminUsers,
@@ -27,6 +28,13 @@ const EMPTY_GROUP = {
   description: "",
   is_active: true,
 };
+
+const ENROLLMENTS_LINK_CLASS =
+  "inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800";
+
+function buildGroupEnrollmentsHref(groupId) {
+  return `/admin/enrollments?learning_group_id=${encodeURIComponent(groupId)}`;
+}
 
 const TEXTAREA_CLASS =
   "min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-500";
@@ -593,6 +601,15 @@ function LearningGroupDetailPanel({
                 </ActionButton>
               )}
 
+              {!isEditing && (
+                <Link
+                  to={buildGroupEnrollmentsHref(groupDetail.id)}
+                  className={ENROLLMENTS_LINK_CLASS}
+                >
+                  ??????????
+                </Link>
+              )}
+
               <ActionButton
                 type="button"
                 tone="light"
@@ -796,12 +813,21 @@ export function GroupsPage({
                     key: "actions",
                     title: "Действия",
                     render: (row) => (
-                      <ActionButton
-                        onClick={() => onOpenGroup(row.id)}
-                        disabled={selectedGroupLoading}
-                      >
-                        {selectedGroup?.id === row.id ? "Открыто" : "Открыть"}
-                      </ActionButton>
+                      <div className="flex flex-wrap gap-2">
+                        <ActionButton
+                          onClick={() => onOpenGroup(row.id)}
+                          disabled={selectedGroupLoading}
+                        >
+                          {selectedGroup?.id === row.id ? "???????" : "???????"}
+                        </ActionButton>
+
+                        <Link
+                          to={buildGroupEnrollmentsHref(row.id)}
+                          className={ENROLLMENTS_LINK_CLASS}
+                        >
+                          ??????????
+                        </Link>
+                      </div>
                     ),
                   },
                 ]}
