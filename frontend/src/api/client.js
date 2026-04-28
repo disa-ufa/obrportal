@@ -553,6 +553,13 @@ export async function createAdminEnrollment(payload) {
   });
 }
 
+export async function createAdminGroupEnrollments(payload) {
+  return request("/api/v1/admin/enrollments/group", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function updateAdminEnrollment(enrollmentId, payload) {
   return request(`/api/v1/admin/enrollments/${enrollmentId}`, {
     method: "PATCH",

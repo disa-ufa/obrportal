@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   createAdminEnrollment,
+  createAdminGroupEnrollments,
   deleteAdminEnrollment,
   getAdminCourses,
   getAdminEnrollments,
@@ -209,6 +210,7 @@ export function AdminEnrollmentsPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [actionEnrollmentId, setActionEnrollmentId] = useState("");
   const [editingEnrollmentId, setEditingEnrollmentId] = useState("");
   const [error, setError] = useState("");
@@ -219,6 +221,14 @@ export function AdminEnrollmentsPage() {
     course_id: "",
     organization_id: "",
     learning_group_id: "",
+    status: "assigned",
+    started_at: "",
+    completed_at: "",
+  });
+
+  const [bulkForm, setBulkForm] = useState({
+    learning_group_id: "",
+    course_id: "",
     status: "assigned",
     started_at: "",
     completed_at: "",
@@ -267,6 +277,14 @@ export function AdminEnrollmentsPage() {
       buildGroupLabel(left, organizationsById).localeCompare(buildGroupLabel(right, organizationsById), "ru-RU")
     ),
     [groups, organizationsById]
+  );
+
+  const bulkFormGroups = useMemo(
+    () =>
+      [...groups]
+        .filter((group) => group.is_active)
+        .sort((left, right) => left.name.localeCompare(right.name, "ru-RU")),
+    [groups]
   );
 
   const editingEnrollment = useMemo(
@@ -514,6 +532,78 @@ export function AdminEnrollmentsPage() {
     }
   }
 
+  function resetBulkForm() {
+    setBulkForm({
+      learning_group_id: "",
+      course_id: "",
+      status: "assigned",
+      started_at: "",
+      completed_at: "",
+    });
+  }
+
+  function updateBulkField(field, value) {
+    setBulkForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  function buildBulkCreatePayload(values) {
+    return {
+      learning_group_id: values.learning_group_id,
+      course_id: values.course_id,
+      status: values.status,
+      started_at: normalizeDateTime(values.started_at),
+      completed_at: normalizeDateTime(values.completed_at),
+    };
+  }
+
+  async function handleBulkSubmit(event) {
+    event.preventDefault();
+
+    if (!bulkForm.learning_group_id) {
+      setError("Выберите учебную группу.");
+      return;
+    }
+
+    if (!bulkForm.course_id) {
+      setError("Выберите программу.");
+      return;
+    }
+
+    try {
+      setBulkSaving(true);
+      setError("");
+      setSuccessMessage("");
+
+      const result = await createAdminGroupEnrollments(buildBulkCreatePayload(bulkForm));
+      const nextGroupId = result.learning_group_id || bulkForm.learning_group_id;
+      const nextCourseId = result.course_id || bulkForm.course_id;
+
+      setSuccessMessage(
+        `Массовое назначение завершено: создано ${result.created_count || 0}, пропущено ${result.skipped_count || 0}.`
+      );
+
+      setFilterQuery("");
+      setFilterUserId("");
+      setFilterCourseId(nextCourseId);
+      setFilterStatus("");
+      setFilterGroupId(nextGroupId);
+      resetBulkForm();
+
+      await loadData({
+        course_id: nextCourseId,
+        learning_group_id: nextGroupId,
+      });
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message || "Не удалось выполнить массовое назначение."}`.trim());
+    } finally {
+      setBulkSaving(false);
+    }
+  }
+
+
   function handleStartEdit(enrollment) {
     setError("");
     setSuccessMessage("");
@@ -612,6 +702,7 @@ export function AdminEnrollmentsPage() {
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)]">
+        <div className="space-y-6">
         <SectionCard title="Создать назначение" subtitle="POST /api/v1/admin/enrollments">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4">
@@ -669,10 +760,10 @@ export function AdminEnrollmentsPage() {
                 >
                   <option value="">
                     {!form.user_id
-                      ? "??????? ???????? ????????????"
+                      ? "Сначала выберите пользователя"
                       : groups.length === 0
-                        ? "????? ???? ???"
-                        : "??? ??????"}
+                        ? "Групп пока нет"
+                        : "Без группы"}
                   </option>
                   {createFormGroups.map((group) => (
                     <option key={group.id} value={group.id}>
@@ -728,6 +819,94 @@ export function AdminEnrollmentsPage() {
             </div>
           </form>
         </SectionCard>
+
+        <SectionCard title="Массовое назначение группе" subtitle="POST /api/v1/admin/enrollments/group">
+          <form onSubmit={handleBulkSubmit} className="space-y-4">
+            <p className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100">
+              Выберите учебную группу и программу. Система создаст назначения для всех участников группы, а дубликаты пропустит.
+            </p>
+
+            <div className="grid gap-4">
+              <Field label="Учебная группа">
+                <select
+                  value={bulkForm.learning_group_id}
+                  onChange={(event) => updateBulkField("learning_group_id", event.target.value)}
+                  className={INPUT_CLASS}
+                  disabled={bulkFormGroups.length === 0}
+                >
+                  <option value="">
+                    {bulkFormGroups.length === 0 ? "Групп пока нет" : "Выберите группу"}
+                  </option>
+                  {bulkFormGroups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {buildGroupLabel(group, organizationsById)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Программа">
+                <select
+                  value={bulkForm.course_id}
+                  onChange={(event) => updateBulkField("course_id", event.target.value)}
+                  className={INPUT_CLASS}
+                >
+                  <option value="">Выберите программу</option>
+                  {activeCourses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {buildCourseLabel(course)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Статус">
+                <select
+                  value={bulkForm.status}
+                  onChange={(event) => updateBulkField("status", event.target.value)}
+                  className={INPUT_CLASS}
+                >
+                  {ENROLLMENT_STATUSES.map((statusItem) => (
+                    <option key={statusItem.value} value={statusItem.value}>
+                      {statusItem.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Начато">
+                  <input
+                    type="datetime-local"
+                    value={bulkForm.started_at}
+                    onChange={(event) => updateBulkField("started_at", event.target.value)}
+                    className={INPUT_CLASS}
+                  />
+                </Field>
+
+                <Field label="Завершено">
+                  <input
+                    type="datetime-local"
+                    value={bulkForm.completed_at}
+                    onChange={(event) => updateBulkField("completed_at", event.target.value)}
+                    className={INPUT_CLASS}
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button type="submit" disabled={bulkSaving} className={BUTTON_DARK_CLASS}>
+                {bulkSaving ? "Назначаем..." : "Назначить группе"}
+              </button>
+
+              <button type="button" onClick={resetBulkForm} disabled={bulkSaving} className={BUTTON_LIGHT_CLASS}>
+                Очистить
+              </button>
+            </div>
+          </form>
+        </SectionCard>
+        </div>
 
         <SectionCard title="Список назначений" subtitle="GET /api/v1/admin/enrollments">
           <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.15fr_1fr_1fr_1fr_1fr_auto_auto]">
