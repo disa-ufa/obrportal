@@ -606,7 +606,7 @@ function LearningGroupDetailPanel({
                   to={buildGroupEnrollmentsHref(groupDetail.id)}
                   className={ENROLLMENTS_LINK_CLASS}
                 >
-                  ??????????
+                  Назначения
                 </Link>
               )}
 
@@ -825,7 +825,7 @@ export function GroupsPage({
                           to={buildGroupEnrollmentsHref(row.id)}
                           className={ENROLLMENTS_LINK_CLASS}
                         >
-                          ??????????
+                          Назначения
                         </Link>
                       </div>
                     ),
