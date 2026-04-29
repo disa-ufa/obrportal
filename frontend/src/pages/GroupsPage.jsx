@@ -818,7 +818,7 @@ export function GroupsPage({
                           onClick={() => onOpenGroup(row.id)}
                           disabled={selectedGroupLoading}
                         >
-                          {selectedGroup?.id === row.id ? "???????" : "???????"}
+                          {selectedGroup?.id === row.id ? "Открыта" : "Открыть"}
                         </ActionButton>
 
                         <Link
