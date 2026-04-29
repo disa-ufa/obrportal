@@ -78,12 +78,71 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+const USER_ROLE_LABELS = {
+  admin: "Администратор",
+  learner_fl: "Физлицо",
+  learner_org: "Слушатель ЮЛ",
+  org_rep: "Представитель ЮЛ",
+  teacher: "Преподаватель",
+  methodist: "Методист",
+  finance_operator: "Финансы",
+  edo_operator: "ЭДО",
+  frdo_operator: "ФРДО",
+};
+
+function getUserRoleCodes(user) {
+  if (!user || !Array.isArray(user.roles)) {
+    return [];
+  }
+
+  return user.roles.map((role) => role.code).filter(Boolean);
+}
+
+function isLearnerUser(user) {
+  const roleCodes = getUserRoleCodes(user);
+
+  return (
+    user?.email === "learner@obrportal.local" ||
+    roleCodes.includes("learner_fl") ||
+    roleCodes.includes("learner_org")
+  );
+}
+
+function isAdminUser(user) {
+  return user?.email === "admin@obrportal.local" || getUserRoleCodes(user).includes("admin");
+}
+
+function getUserRoleLabel(user) {
+  const roleCodes = getUserRoleCodes(user);
+
+  if (roleCodes.length === 0) {
+    return "без роли";
+  }
+
+  return roleCodes.map((code) => USER_ROLE_LABELS[code] || code).join(", ");
+}
+
+function getUserSortRank(user) {
+  if (isLearnerUser(user)) {
+    return 0;
+  }
+
+  if (isAdminUser(user)) {
+    return 2;
+  }
+
+  return 1;
+}
+
 function buildUserLabel(user) {
   if (!user) {
     return "";
   }
 
-  return `${user.email}${user.full_name ? ` - ${user.full_name}` : ""}`;
+  const fullName = user.full_name ? ` - ${user.full_name}` : "";
+  const roles = getUserRoleLabel(user);
+
+  return `${user.email}${fullName} [${roles}]`;
 }
 
 function buildCourseLabel(course) {
@@ -267,8 +326,25 @@ export function AdminEnrollmentsPage() {
   );
 
   const sortedUsers = useMemo(
-    () => [...users].sort((left, right) => sortByLabel(left, right, buildUserLabel)),
+    () =>
+      [...users].sort((left, right) => {
+        const rankDiff = getUserSortRank(left) - getUserSortRank(right);
+
+        if (rankDiff !== 0) {
+          return rankDiff;
+        }
+
+        return sortByLabel(left, right, buildUserLabel);
+      }),
     [users]
+  );
+
+  const preferredCreateUser = useMemo(
+    () =>
+      sortedUsers.find((user) => user.email === "learner@obrportal.local") ||
+      sortedUsers.find(isLearnerUser) ||
+      null,
+    [sortedUsers]
   );
 
   const sortedCourses = useMemo(
@@ -395,6 +471,62 @@ export function AdminEnrollmentsPage() {
     loadData(queryGroupId ? { learning_group_id: queryGroupId } : {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
+
+  // Автозаполнение формы назначения для чистой demo-базы.
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    setForm((current) => {
+      if (
+        current.user_id ||
+        current.course_id ||
+        current.organization_id ||
+        current.learning_group_id ||
+        current.started_at ||
+        current.completed_at
+      ) {
+        return current;
+      }
+
+      const next = { ...current };
+
+      if (preferredCreateUser) {
+        next.user_id = preferredCreateUser.id;
+      }
+
+      if (activeCourses.length === 1) {
+        next.course_id = activeCourses[0].id;
+      }
+
+      if (sortedOrganizations.length === 1) {
+        next.organization_id = sortedOrganizations[0].id;
+      }
+
+      const availableGroups = getAvailableGroups(
+        groups,
+        next.organization_id,
+        "",
+        next.user_id,
+        groupMembersByGroupId
+      );
+
+      if (availableGroups.length === 1) {
+        next.learning_group_id = availableGroups[0].id;
+        next.organization_id = availableGroups[0].organization_id;
+      }
+
+      return next;
+    });
+  }, [
+    loading,
+    preferredCreateUser,
+    activeCourses,
+    sortedOrganizations,
+    groups,
+    groupMembersByGroupId,
+  ]);
 
   function updateField(field, value) {
     setForm((current) => {
@@ -763,6 +895,9 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Слушатели отображаются выше администраторов. В demo-режиме автоматически подставляется learner@obrportal.local.
+                </p>
               </Field>
 
               <Field label="Программа">
