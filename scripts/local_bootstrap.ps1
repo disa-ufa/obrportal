@@ -1,7 +1,8 @@
-﻿param(
+param(
     [switch]$ResetVolumes,
     [switch]$NoBuild,
-    [switch]$SkipSmoke
+    [switch]$SkipSmoke,
+    [switch]$WithDemoLearning
 )
 
 $ErrorActionPreference = "Stop"
@@ -204,6 +205,13 @@ Invoke-Compose @("exec", "-T", "backend", "python", "-m", "app.db.seed_admin")
 Invoke-Compose @("exec", "-T", "backend", "python", "-m", "app.db.seed_demo_user")
 Invoke-Compose @("exec", "-T", "backend", "python", "-m", "app.db.seed_org")
 
+if ($WithDemoLearning) {
+    Write-Step "Run demo learning seed"
+    Invoke-Compose @("exec", "-T", "backend", "python", "-m", "app.db.seed_demo_learning")
+} else {
+    Write-Host "Demo learning seed skipped. Use -WithDemoLearning to create Demo Course and Demo Group."
+}
+
 Write-Step "Verify API after seeds"
 Wait-HttpOk -Url "http://127.0.0.1:8000/health" -Label "health"
 Wait-HttpOk -Url "http://127.0.0.1:8000/api/v1/ready" -Label "ready"
@@ -220,3 +228,7 @@ Write-Host "Local bootstrap completed successfully." -ForegroundColor Green
 Write-Host "Frontend: http://localhost:5173"
 Write-Host "Backend docs: http://localhost:8000/docs"
 Write-Host "Admin login: admin@obrportal.local / Admin123Local2026!"
+
+if ($WithDemoLearning) {
+    Write-Host "Demo learning data: Demo Course / Demo Group"
+}
