@@ -19,6 +19,9 @@ class CompletionDocumentTemplateContext:
     organization_name: str | None = None
     organization_short_name: str | None = None
     organization_address: str | None = None
+    organization_inn: str | None = None
+    organization_kpp: str | None = None
+    organization_ogrn: str | None = None
     organization_license: str | None = None
     signer_position: str | None = None
     signer_full_name: str | None = None
@@ -85,19 +88,46 @@ def render_completion_document_html(context: CompletionDocumentTemplateContext) 
     )
     completed_date = escape(format_document_date(context.completed_at))
     organization_name = escape(
-        normalize_document_text(context.organization_name, fallback="??????????????? ???????????")
+        normalize_document_text(
+            context.organization_name,
+            fallback="\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f",
+        )
     )
-    organization_license = escape(
-        normalize_document_text(context.organization_license, fallback="?")
+    organization_short_name = escape(
+        normalize_document_text(context.organization_short_name, fallback="")
     )
-    organization_address = escape(
-        normalize_document_text(context.organization_address, fallback="?")
+    organization_license_raw = normalize_document_text(context.organization_license, fallback="")
+    organization_address_raw = normalize_document_text(context.organization_address, fallback="")
+    organization_inn_raw = normalize_document_text(context.organization_inn, fallback="")
+    organization_kpp_raw = normalize_document_text(context.organization_kpp, fallback="")
+    organization_ogrn_raw = normalize_document_text(context.organization_ogrn, fallback="")
+
+    organization_identity = escape(
+        " \u00b7 ".join(
+            item
+            for item in (
+                f"\u0418\u041d\u041d {organization_inn_raw}" if organization_inn_raw else "",
+                f"\u041a\u041f\u041f {organization_kpp_raw}" if organization_kpp_raw else "",
+                f"\u041e\u0413\u0420\u041d {organization_ogrn_raw}" if organization_ogrn_raw else "",
+            )
+            if item
+        )
+    )
+    organization_meta = escape(
+        " \u00b7 ".join(
+            item
+            for item in (organization_license_raw, organization_address_raw)
+            if item
+        )
     )
     signer_position = escape(
-        normalize_document_text(context.signer_position, fallback="????????????? ????")
+        normalize_document_text(
+            context.signer_position,
+            fallback="\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u043e\u0435 \u043b\u0438\u0446\u043e",
+        )
     )
     signer_full_name = escape(
-        normalize_document_text(context.signer_full_name, fallback="?")
+        normalize_document_text(context.signer_full_name, fallback="")
     )
 
     if context.course_hours is None:

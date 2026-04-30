@@ -216,7 +216,11 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     )
     organization_name = normalize_document_text(
         context.organization_name,
-        fallback="??????????????? ???????????",
+        fallback="\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f",
+    )
+    organization_short_name = normalize_document_text(
+        context.organization_short_name,
+        fallback="",
     )
     organization_license = normalize_document_text(
         context.organization_license,
@@ -226,17 +230,46 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
         context.organization_address,
         fallback="",
     )
+    organization_inn = normalize_document_text(
+        context.organization_inn,
+        fallback="",
+    )
+    organization_kpp = normalize_document_text(
+        context.organization_kpp,
+        fallback="",
+    )
+    organization_ogrn = normalize_document_text(
+        context.organization_ogrn,
+        fallback="",
+    )
     signer_position = normalize_document_text(
         context.signer_position,
-        fallback="????????????? ????",
+        fallback="\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u043e\u0435 \u043b\u0438\u0446\u043e",
     )
     signer_full_name = normalize_document_text(
         context.signer_full_name,
         fallback="",
     )
-    organization_meta = " \u00b7 ".join(
-        item for item in (organization_license, organization_address) if item
+
+    organization_identity = " \u00b7 ".join(
+        item
+        for item in (
+            f"\u0418\u041d\u041d {organization_inn}" if organization_inn else "",
+            f"\u041a\u041f\u041f {organization_kpp}" if organization_kpp else "",
+            f"\u041e\u0413\u0420\u041d {organization_ogrn}" if organization_ogrn else "",
+        )
+        if item
     )
+    organization_meta = " \u00b7 ".join(
+        item
+        for item in (
+            organization_identity,
+            organization_license,
+            organization_address,
+        )
+        if item
+    )
+
     completed_date = format_document_date(context.completed_at)
 
     if context.course_hours is None:
@@ -434,4 +467,3 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     pdf.save()
 
     return buffer.getvalue()
-

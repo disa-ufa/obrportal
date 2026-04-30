@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import app.services.document_pdf as document_pdf
+
 from app.services.document_pdf import (
     build_verification_qr_drawing,
     PDF_FONT_NAME,
@@ -165,21 +167,102 @@ def test_render_completion_document_pdf_uses_clean_russian_text_constants() -> N
 def test_render_completion_document_pdf_accepts_organization_and_signer_metadata() -> None:
     pdf_bytes = render_completion_document_pdf(
         CompletionDocumentTemplateContext(
-            learner_full_name="?????? ???? ????????",
-            course_title="?????? ???????????? ? ??????????????? ???????????",
-            document_type="??????????",
+            learner_full_name="",
+            course_title="",
+            document_type="",
             document_number="AUTO-ORG-META",
             verification_code="DOCV-ORG-META",
             course_hours=72,
             verification_url="http://localhost:5173/verify-document?code=DOCV-ORG-META",
-            organization_name="???? ????",
-            organization_address="?????????? ????????????, ?. ???",
-            organization_license="???????? ?? ????????????? ??????????????? ????????????",
-            signer_position="????????",
-            signer_full_name="????????????? ????",
+            organization_name="",
+            organization_address=" ??, ?. ???",
+            organization_license=" ?? ??? ????? ??",
+            signer_position="",
+            signer_full_name="??? ????",
         )
     )
 
     assert pdf_bytes.startswith(b"%PDF")
     assert len(pdf_bytes) > 1000
 
+
+
+
+def test_render_completion_document_pdf_draws_expected_visible_metadata(monkeypatch) -> None:
+    drawn_text: list[str] = []
+
+    class FakeCanvas:
+        def __init__(self, buffer, pagesize):
+            self.buffer = buffer
+
+        def setTitle(self, *args, **kwargs): pass
+        def setAuthor(self, *args, **kwargs): pass
+        def setSubject(self, *args, **kwargs): pass
+        def setStrokeColor(self, *args, **kwargs): pass
+        def setLineWidth(self, *args, **kwargs): pass
+        def rect(self, *args, **kwargs): pass
+        def setFillColor(self, *args, **kwargs): pass
+        def setFont(self, *args, **kwargs): pass
+        def line(self, *args, **kwargs): pass
+        def showPage(self, *args, **kwargs): pass
+
+        def drawCentredString(self, _x, _y, text):
+            drawn_text.append(str(text))
+
+        def drawString(self, _x, _y, text):
+            drawn_text.append(str(text))
+
+        def drawRightString(self, _x, _y, text):
+            drawn_text.append(str(text))
+
+        def save(self):
+            self.buffer.write(b"%PDF-fake\n%%EOF")
+
+    monkeypatch.setattr(document_pdf.canvas, "Canvas", FakeCanvas)
+    monkeypatch.setattr(document_pdf, "draw_verification_qr", lambda *args, **kwargs: True)
+
+    pdf_bytes = document_pdf.render_completion_document_pdf(
+        CompletionDocumentTemplateContext(
+            learner_full_name="\u0418\u0432\u0430\u043d\u043e\u0432 \u0418\u0432\u0430\u043d \u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
+            course_title="\u041e\u0441\u043d\u043e\u0432\u044b \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f \u043d\u0430 Python",
+            document_type="\u0423\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u0435\u043d\u0438\u0435",
+            document_number="AUTO-DRAW",
+            verification_code="DOCV-DRAW",
+            completed_at=datetime(2026, 12, 31, 12, 0, tzinfo=timezone.utc),
+            course_hours=72,
+            verification_url="https://obrportal.example.ru/verify/DOCV-DRAW",
+            organization_name="\u0413\u0411\u041e\u0423 \u0420\u0426\u0414\u041e",
+            organization_address="\u0420\u0435\u0441\u043f\u0443\u0431\u043b\u0438\u043a\u0430 \u0411\u0430\u0448\u043a\u043e\u0440\u0442\u043e\u0441\u0442\u0430\u043d, \u0433. \u0423\u0444\u0430",
+            organization_license="\u041b\u0438\u0446\u0435\u043d\u0437\u0438\u044f \u043d\u0430 \u043e\u0441\u0443\u0449\u0435\u0441\u0442\u0432\u043b\u0435\u043d\u0438\u0435 \u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u0434\u0435\u044f\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u0438",
+            organization_inn="0278000001",
+            organization_kpp="027801001",
+            organization_ogrn="1020200000001",
+            signer_position="\u0414\u0438\u0440\u0435\u043a\u0442\u043e\u0440",
+            signer_full_name="\u041f\u0435\u0442\u0440\u043e\u0432 \u041f.\u041f.",
+        )
+    )
+
+    assert pdf_bytes.startswith(b"%PDF-")
+
+    combined = "\n".join(drawn_text)
+    expected = [
+        "\u0413\u0411\u041e\u0423 \u0420\u0426\u0414\u041e",
+        "\u0418\u041d\u041d 0278000001",
+        "\u041a\u041f\u041f 027801001",
+        "\u041e\u0413\u0420\u041d 1020200000001",
+        "\u041b\u0438\u0446\u0435\u043d\u0437\u0438\u044f",
+        "\u0420\u0435\u0441\u043f\u0443\u0431\u043b\u0438\u043a\u0430 \u0411\u0430\u0448\u043a\u043e\u0440\u0442\u043e\u0441\u0442\u0430\u043d",
+        "\u0423\u0414\u041e\u0421\u0422\u041e\u0412\u0415\u0420\u0415\u041d\u0418\u0415",
+        "\u2116 AUTO-DRAW",
+        "\u0418\u0432\u0430\u043d\u043e\u0432 \u0418\u0432\u0430\u043d \u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
+        "\u041e\u0441\u043d\u043e\u0432\u044b \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f",
+        "72 \u0430\u043a. \u0447.",
+        "31.12.2026",
+        "DOCV-DRAW",
+        "https://obrportal.example.ru/verify/DOCV-DRAW",
+        "\u0414\u0438\u0440\u0435\u043a\u0442\u043e\u0440",
+        "\u041f\u0435\u0442\u0440\u043e\u0432 \u041f.\u041f.",
+    ]
+
+    missing = [value for value in expected if value not in combined]
+    assert missing == []
