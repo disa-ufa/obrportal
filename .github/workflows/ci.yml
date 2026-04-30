@@ -105,6 +105,10 @@ jobs:
         run: |
           docker compose exec -T frontend npm run build
 
+      - name: Run frontend bundle text encoding guard
+        run: |
+          python scripts/check_frontend_bundle_encoding.py
+
       - name: Show logs on failure
         if: failure()
         run: |
