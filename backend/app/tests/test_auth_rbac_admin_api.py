@@ -2658,6 +2658,13 @@ def test_public_can_verify_document() -> None:
     assert "course_hours" in payload
     assert "course_format" in payload
     assert "completed_at" in payload
+    assert payload["issuer_name"]
+    assert payload["issuer_short_name"]
+    assert payload["issuer_address"]
+    assert payload["issuer_license"]
+    assert "issuer_inn" in payload
+    assert "issuer_kpp" in payload
+    assert "issuer_ogrn" in payload
     assert payload["registry_status"] == "available"
     assert payload["verification_status"] == "Документ подтверждён"
     status, code_payload = request_json(
@@ -5605,6 +5612,13 @@ def test_public_can_verify_published_generated_completion_pdf() -> None:
     assert verify_by_number["course_hours"] == created_course["hours"]
     assert verify_by_number["course_format"] == created_course["format"]
     assert verify_by_number["completed_at"] is not None
+    assert verify_by_number["issuer_name"]
+    assert verify_by_number["issuer_short_name"]
+    assert verify_by_number["issuer_address"]
+    assert verify_by_number["issuer_license"]
+    assert "issuer_inn" in verify_by_number
+    assert "issuer_kpp" in verify_by_number
+    assert "issuer_ogrn" in verify_by_number
     assert verify_by_number["registry_status"] == "available"
     assert verify_by_number["verification_status"] == "Документ подтверждён"
 

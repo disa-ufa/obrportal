@@ -48,6 +48,14 @@ const RU = {
   program: "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430",
   courseHours: "\u041e\u0431\u044a\u0451\u043c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b",
   courseFormat: "\u0424\u043e\u0440\u043c\u0430\u0442 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f",
+  issuerTitle: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f-\u0438\u0437\u0434\u0430\u0442\u0435\u043b\u044c",
+  issuerName: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f",
+  issuerShortName: "\u041a\u0440\u0430\u0442\u043a\u043e\u0435 \u043d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435",
+  issuerAddress: "\u0410\u0434\u0440\u0435\u0441",
+  issuerLicense: "\u041b\u0438\u0446\u0435\u043d\u0437\u0438\u044f",
+  issuerInn: "\u0418\u041d\u041d",
+  issuerKpp: "\u041a\u041f\u041f",
+  issuerOgrn: "\u041e\u0413\u0420\u041d",
   academicHours: "\u0430\u043a. \u0447.",
   qrTitle: "\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u0441\u0441\u044b\u043b\u043a\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
   qrDescription:
@@ -185,6 +193,21 @@ function ResultCard({ result, onReset, onPageChange }) {
         <FieldCard label={RU.program} value={result.course_title || result.title} />
         <FieldCard label={RU.courseHours} value={hoursValue} />
         <FieldCard label={RU.courseFormat} value={result.course_format || "-"} />
+
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 md:col-span-2">
+          <div className="text-xs uppercase tracking-wide text-slate-500">
+            {RU.issuerTitle}
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <FieldCard label={RU.issuerName} value={result.issuer_name} />
+            <FieldCard label={RU.issuerShortName} value={result.issuer_short_name} />
+            <FieldCard label={RU.issuerAddress} value={result.issuer_address} />
+            <FieldCard label={RU.issuerLicense} value={result.issuer_license} />
+            <FieldCard label={RU.issuerInn} value={result.issuer_inn || "-"} />
+            <FieldCard label={RU.issuerKpp} value={result.issuer_kpp || "-"} />
+            <FieldCard label={RU.issuerOgrn} value={result.issuer_ogrn || "-"} />
+          </div>
+        </div>
 
         <DocumentVerificationQrBlock
           code={result.verification_code}

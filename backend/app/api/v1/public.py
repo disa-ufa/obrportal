@@ -5,6 +5,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
@@ -170,6 +171,13 @@ async def verify_document(
         completed_at=row.completed_at,
         course_hours=row.course_hours,
         course_format=row.course_format,
+        issuer_name=settings.document_org_name,
+        issuer_short_name=settings.document_org_short_name,
+        issuer_address=settings.document_org_address,
+        issuer_license=settings.document_org_license,
+        issuer_inn=settings.document_org_inn,
+        issuer_kpp=settings.document_org_kpp,
+        issuer_ogrn=settings.document_org_ogrn,
         registry_status=row.registry_status,
         verification_status=verification_status,
     )

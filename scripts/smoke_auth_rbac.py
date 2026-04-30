@@ -1909,6 +1909,13 @@ def main() -> int:
     assert generated_public_verify_by_number["course_hours"] == self_enroll_course["hours"]
     assert generated_public_verify_by_number["course_format"] == self_enroll_course["format"]
     assert generated_public_verify_by_number["completed_at"] is not None
+    assert generated_public_verify_by_number["issuer_name"]
+    assert generated_public_verify_by_number["issuer_short_name"]
+    assert generated_public_verify_by_number["issuer_address"]
+    assert generated_public_verify_by_number["issuer_license"]
+    assert "issuer_inn" in generated_public_verify_by_number
+    assert "issuer_kpp" in generated_public_verify_by_number
+    assert "issuer_ogrn" in generated_public_verify_by_number
     assert generated_public_verify_by_number["registry_status"] == "available"
     assert generated_public_verify_by_number["verification_status"] == "Документ подтверждён"
     checks.append("public verify generated completion document by number ok")

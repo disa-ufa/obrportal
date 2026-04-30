@@ -16,6 +16,13 @@ class PublicDocumentVerifyResponse(BaseModel):
     completed_at: datetime | None = None
     course_hours: int | None = None
     course_format: str | None = None
+    issuer_name: str | None = None
+    issuer_short_name: str | None = None
+    issuer_address: str | None = None
+    issuer_license: str | None = None
+    issuer_inn: str | None = None
+    issuer_kpp: str | None = None
+    issuer_ogrn: str | None = None
     registry_status: str
     verification_status: str
 
