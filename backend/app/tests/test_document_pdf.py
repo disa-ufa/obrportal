@@ -175,10 +175,10 @@ def test_render_completion_document_pdf_accepts_organization_and_signer_metadata
             course_hours=72,
             verification_url="http://localhost:5173/verify-document?code=DOCV-ORG-META",
             organization_name="",
-            organization_address=" ??, ?. ???",
-            organization_license=" ?? ??? ????? ??",
+            organization_address="Республика Башкортостан, г. Уфа",
+            organization_license="Лицензия на осуществление образовательной деятельности",
             signer_position="",
-            signer_full_name="??? ????",
+            signer_full_name="Ответственное лицо",
         )
     )
 
