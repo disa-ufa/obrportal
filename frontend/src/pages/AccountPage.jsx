@@ -120,28 +120,38 @@ function getAccountDocumentNotice(documentItem) {
   };
 }
 
+function isGeneratedPdfDocument(documentItem) {
+  const documentNumber = String(documentItem.document_number || "");
+
+  return Boolean(
+    documentItem.enrollment_id &&
+      documentItem.file_available &&
+      documentNumber.startsWith("AUTO-")
+  );
+}
+
 function getAccountDocumentDownloadLabel(documentItem) {
   if (canDownloadDocument(documentItem)) {
-    return "Скачать документ";
+    return isGeneratedPdfDocument(documentItem) ? "??????? PDF" : "??????? ????????";
   }
 
   if (documentItem.status === "draft" && documentItem.file_available) {
-    return "Ожидает публикации";
+    return "??????? ??????????";
   }
 
   if (documentItem.status === "draft") {
-    return "Документ готовится";
+    return "???????? ?????????";
   }
 
   if (documentItem.status === "revoked") {
-    return "Документ отозван";
+    return "???????? ???????";
   }
 
   if (documentItem.file_available) {
-    return "Недоступен";
+    return "??????????";
   }
 
-  return "Файл недоступен";
+  return "???? ??????????";
 }
 
 function formatDateTime(value) {
@@ -622,6 +632,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
               const downloadAvailable = canDownloadDocument(documentItem);
               const documentNotice = getAccountDocumentNotice(documentItem);
               const showPublicVerification = canShowPublicDocumentVerification(documentItem);
+              const isGeneratedPdf = isGeneratedPdfDocument(documentItem);
 
               return (
                 <article
@@ -642,7 +653,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   </span>
 
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
-                    {documentItem.file_available ? "Файл сформирован" : "Файл не сформирован"}
+                    {isGeneratedPdf ? "PDF сформирован" : documentItem.file_available ? "Файл сформирован" : "Файл не сформирован"}
                   </span>
 
                   <span

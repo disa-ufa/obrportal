@@ -115,13 +115,23 @@ function extractDownloadFilename(response, fallback = "document.bin") {
   return fallback;
 }
 
+function normalizeDownloadedFilename(filename, blob) {
+  const safeFilename = filename || "document.bin";
+
+  if (blob?.type === "application/pdf" && !safeFilename.toLowerCase().endsWith(".pdf")) {
+    return safeFilename.replace(/\.[^./\\]+$/, "") + ".pdf";
+  }
+
+  return safeFilename;
+}
+
 export async function downloadAccountDocument(documentId) {
   const token = getStoredToken();
 
   const response = await fetch(`${API_BASE_URL}/api/v1/account/documents/${documentId}/download`, {
     method: "GET",
     headers: {
-      "Accept": "application/octet-stream",
+      "Accept": "application/pdf, application/octet-stream",
       ...(token ? { "Authorization": `Bearer ${token}` } : {}),
     },
   });
@@ -144,7 +154,10 @@ export async function downloadAccountDocument(documentId) {
   }
 
   const blob = await response.blob();
-  const filename = extractDownloadFilename(response, `document-${documentId}.bin`);
+  const filename = normalizeDownloadedFilename(
+    extractDownloadFilename(response, `document-${documentId}.bin`),
+    blob
+  );
   const objectUrl = window.URL.createObjectURL(blob);
 
   try {
@@ -432,7 +445,7 @@ export async function downloadAdminDocument(documentId) {
   const response = await fetch(`${API_BASE_URL}/api/v1/admin/documents/${documentId}/download`, {
     method: "GET",
     headers: {
-      "Accept": "application/octet-stream",
+      "Accept": "application/pdf, application/octet-stream",
       ...(token ? { "Authorization": `Bearer ${token}` } : {}),
     },
   });
@@ -455,7 +468,10 @@ export async function downloadAdminDocument(documentId) {
   }
 
   const blob = await response.blob();
-  const filename = extractDownloadFilename(response, `admin-document-${documentId}.bin`);
+  const filename = normalizeDownloadedFilename(
+    extractDownloadFilename(response, `admin-document-${documentId}.bin`),
+    blob
+  );
   const objectUrl = window.URL.createObjectURL(blob);
 
   try {

@@ -81,6 +81,14 @@ function canPublishGeneratedCompletionDocument(documentItem) {
   return documentItem.status === "draft" && isGeneratedCompletionDocument(documentItem);
 }
 
+function getAdminDocumentDownloadLabel(documentItem) {
+  if (isGeneratedCompletionDocument(documentItem)) {
+    return "??????? PDF";
+  }
+
+  return "??????? ????";
+}
+
 function getGeneratedCompletionNotice(documentItem) {
   if (canPublishGeneratedCompletionDocument(documentItem)) {
     return {
@@ -944,7 +952,7 @@ export function DocumentsPage() {
                       </span>
 
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
-                        {documentItem.file_available ? "Файл загружен" : "Без файла"}
+                        {isGeneratedCompletion ? "PDF сформирован" : documentItem.file_available ? "Файл загружен" : "Без файла"}
                       </span>
 
                       <span
@@ -1106,7 +1114,7 @@ export function DocumentsPage() {
                             disabled={!documentItem.file_available || isDownloadSaving || isDeleteSaving}
                             className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            {isDownloadSaving ? "Скачиваем..." : "Скачать"}
+                            {isDownloadSaving ? "Скачиваем..." : getAdminDocumentDownloadLabel(documentItem)}
                           </button>
 
                           {documentItem.status !== "available" && (
