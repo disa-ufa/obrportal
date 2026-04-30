@@ -102,3 +102,63 @@ def test_build_verification_qr_drawing_skips_empty_values() -> None:
     assert build_verification_qr_drawing("", 96) is None
     assert build_verification_qr_drawing("   ", 96) is None
     assert build_verification_qr_drawing("-", 96) is None
+
+
+def test_render_completion_document_pdf_uses_clean_russian_text_constants() -> None:
+    from types import CodeType
+
+    def collect_string_constants(code: CodeType) -> list[str]:
+        values: list[str] = []
+
+        for constant in code.co_consts:
+            if isinstance(constant, str):
+                values.append(constant)
+            elif isinstance(constant, CodeType):
+                values.extend(collect_string_constants(constant))
+
+        return values
+
+    constants = collect_string_constants(render_completion_document_pdf.__code__)
+    combined = "\n".join(constants)
+
+    expected_strings = [
+        "\u0424\u0418\u041e \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0435\u0433\u043e\u0441\u044f",
+        "\u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430",
+        "\u0421\u0435\u0440\u0442\u0438\u0444\u0438\u043a\u0430\u0442",
+        "\u2116 ",
+        "\u041d\u0430\u0441\u0442\u043e\u044f\u0449\u0438\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0430\u0435\u0442, \u0447\u0442\u043e",
+        "\u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043b(\u0430) \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435",
+        "\u041e\u0431\u044a\u0451\u043c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b",
+        "\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f",
+        "\u0430\u043a. \u0447.",
+        "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
+        "\u0421\u0442\u0430\u0442\u0443\u0441",
+        "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0432 ObrPortal",
+        "\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u043e\u0435 \u043b\u0438\u0446\u043e",
+        "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u0434\u043b\u0438\u043d\u043d\u043e\u0441\u0442\u0438:",
+    ]
+
+    mojibake_markers = [
+        "\u0420\u00a4",
+        "\u0420\u0098",
+        "\u0420\u009d",
+        "\u0420\u040e",
+        "\u0420\u040b",
+        "\u0420\u0459",
+        "\u0420\u0452",
+        "\u0420\u045c",
+        "\u0421\u0453",
+        "\u0421\u2021",
+        "\u0421\u20ac",
+        "\u0421\u2039",
+        "\u0421\u040e",
+        "\u0421\u040f",
+        "\u0432\u201e\u2013",
+    ]
+
+    missing = [value for value in expected_strings if value not in combined]
+    bad = [marker for marker in mojibake_markers if marker in combined]
+
+    assert missing == []
+    assert bad == []
+
