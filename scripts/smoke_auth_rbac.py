@@ -1730,7 +1730,7 @@ def main() -> int:
             "description": "Smoke course for admin completion document generation",
             "hours": 16,
             "format": "online",
-            "document_type": "??????????",
+            "document_type": "?????????????",
             "is_active": True,
         },
     )
@@ -1868,7 +1868,34 @@ def main() -> int:
 
     assert "application/pdf" in generated_pdf_content_type.lower()
     assert completion_documents[0]["document_number"].lower() in generated_pdf_disposition.lower()
+    assert ".pdf" in generated_pdf_disposition.lower()
+    assert ".bin" not in generated_pdf_disposition.lower()
     checks.append("learner generated completion PDF download ok")
+
+    status, admin_generated_pdf_body, admin_generated_pdf_headers = request_binary(
+        "GET",
+        f"/api/v1/admin/documents/{completion_document_id}/download",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin generated completion PDF download")
+    assert admin_generated_pdf_body.startswith(b"%PDF-")
+    assert b"%%EOF" in admin_generated_pdf_body
+    assert len(admin_generated_pdf_body) > 2_500
+
+    admin_generated_pdf_content_type = (
+        admin_generated_pdf_headers.get("Content-Type", "")
+        or admin_generated_pdf_headers.get("content-type", "")
+    )
+    admin_generated_pdf_disposition = (
+        admin_generated_pdf_headers.get("Content-Disposition", "")
+        or admin_generated_pdf_headers.get("content-disposition", "")
+    )
+
+    assert "application/pdf" in admin_generated_pdf_content_type.lower()
+    assert completion_documents[0]["document_number"].lower() in admin_generated_pdf_disposition.lower()
+    assert ".pdf" in admin_generated_pdf_disposition.lower()
+    assert ".bin" not in admin_generated_pdf_disposition.lower()
+    checks.append("admin generated completion PDF download ok")
 
     status, generated_public_verify_by_number = request_json(
         "GET",
