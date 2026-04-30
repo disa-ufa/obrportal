@@ -78,8 +78,13 @@ def delete_private_storage_file(storage_path: str | Path | PurePosixPath | None)
 def build_document_download_filename(
     document_number: str,
     storage_path: str | Path | PurePosixPath | None,
+    *,
+    fallback_suffix: str = ".bin",
 ) -> str:
-    suffix = PurePosixPath(str(storage_path or "")).suffix or ".bin"
+    suffix = PurePosixPath(str(storage_path or "")).suffix.lower()
+
+    if not suffix or (suffix == ".bin" and fallback_suffix != ".bin"):
+        suffix = fallback_suffix
 
     safe_stem = "".join(
         ch if ch.isalnum() or ch in ("-", "_") else "_"

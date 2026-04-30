@@ -5600,3 +5600,32 @@ def test_public_can_verify_published_generated_completion_pdf() -> None:
     assert verify_by_code["verification_code"] == draft_document["verification_code"]
     assert verify_by_code["registry_status"] == "available"
     assert verify_by_code["verification_status"] == "Документ подтверждён"
+
+
+def test_admin_document_download_detects_pdf_content_when_storage_suffix_is_bin() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Generated PDF stored with bin suffix",
+        storage_content=b"%PDF-1.4\n% generated test pdf content",
+        storage_extension=".bin",
+    )
+
+    response = get_admin_document_download_response(
+        token=token,
+        document_id=document["id"],
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
+
+    content_disposition = response.headers.get("content-disposition", "")
+    assert ".pdf" in content_disposition
+    assert ".bin" not in content_disposition
+

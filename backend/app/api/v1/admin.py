@@ -2323,10 +2323,23 @@ def resolve_admin_document_storage_path(storage_path: str) -> Path | None:
     return resolve_private_storage_path(storage_path)
 
 
-def build_admin_document_download_filename(document: DocumentRecord) -> str:
+def build_admin_document_download_filename(document: DocumentRecord, resolved_path: Path | None = None) -> str:
+    fallback_suffix = ".bin"
+
+    if resolved_path and resolved_path.exists() and resolved_path.is_file():
+        try:
+            with resolved_path.open("rb") as file:
+                header = file.read(8)
+
+            if header.startswith(b"%PDF"):
+                fallback_suffix = ".pdf"
+        except OSError:
+            fallback_suffix = ".bin"
+
     return build_document_download_filename(
         document.document_number,
         document.storage_path,
+        fallback_suffix=fallback_suffix,
     )
 
 
@@ -2353,7 +2366,17 @@ async def download_admin_document(
         )
 
     media_type = guess_type(resolved_path.name)[0] or "application/octet-stream"
-    filename = build_admin_document_download_filename(document)
+
+    try:
+        with resolved_path.open("rb") as file:
+            header = file.read(8)
+
+        if header.startswith(b"%PDF"):
+            media_type = "application/pdf"
+    except OSError:
+        pass
+
+    filename = build_admin_document_download_filename(document, resolved_path)
 
     return FileResponse(
         path=resolved_path,
