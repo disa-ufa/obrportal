@@ -7,6 +7,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Disable Docker Compose Bake for stable Docker Desktop builds on Windows.
+# Some Compose/Desktop versions fail with: failed to execute bake: read |0: file already closed.
+$env:COMPOSE_BAKE = "false"
+
 function Write-Step {
     param([string]$Message)
     Write-Host ""
