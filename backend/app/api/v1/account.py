@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from mimetypes import guess_type
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,6 +19,7 @@ from app.models.user import User
 from app.services.completion_documents import ensure_completion_document_for_enrollment
 from app.services.document_storage import (
     build_document_download_filename,
+    detect_document_download_metadata,
     resolve_private_storage_path,
 )
 from app.schemas.account import (
@@ -221,8 +221,11 @@ async def get_account_document_download(
             detail="Document file is not available",
         )
 
-    media_type = guess_type(resolved_path.name)[0] or "application/octet-stream"
-    filename = _build_download_filename(row.document_number, row.storage_path)
+    media_type, filename = detect_document_download_metadata(
+        resolved_path=resolved_path,
+        storage_path=row.storage_path,
+        document_number=row.document_number,
+    )
 
     return FileResponse(
         path=resolved_path,

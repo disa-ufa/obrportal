@@ -3165,6 +3165,19 @@ def get_admin_document_download_response(
     )
 
 
+
+def get_account_document_download_response(
+    *,
+    token: str,
+    document_id: str,
+):
+    import httpx
+
+    return httpx.get(
+        f"http://127.0.0.1:8000/api/v1/account/documents/{document_id}/download",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=20.0,
+    )
 def test_admin_can_download_admin_document() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
@@ -5618,6 +5631,34 @@ def test_admin_document_download_detects_pdf_content_when_storage_suffix_is_bin(
     )
 
     response = get_admin_document_download_response(
+        token=token,
+        document_id=document["id"],
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
+
+    content_disposition = response.headers.get("content-disposition", "")
+    assert ".pdf" in content_disposition
+    assert ".bin" not in content_disposition
+
+
+def test_account_document_download_detects_pdf_content_when_storage_suffix_is_bin() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Account generated PDF stored with bin suffix",
+        storage_content=b"%PDF-1.4\n% generated account test pdf content",
+        storage_extension=".bin",
+    )
+
+    response = get_account_document_download_response(
         token=token,
         document_id=document["id"],
     )

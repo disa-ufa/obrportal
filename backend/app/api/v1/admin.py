@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from mimetypes import guess_type
 from pathlib import Path
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -26,6 +25,7 @@ from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.services.document_storage import (
     build_document_download_filename,
+    detect_document_download_metadata,
     delete_private_storage_file,
     resolve_private_storage_path,
     write_private_storage_file,
@@ -2323,24 +2323,23 @@ def resolve_admin_document_storage_path(storage_path: str) -> Path | None:
     return resolve_private_storage_path(storage_path)
 
 
-def build_admin_document_download_filename(document: DocumentRecord, resolved_path: Path | None = None) -> str:
-    fallback_suffix = ".bin"
+def build_admin_document_download_filename(
+    document: DocumentRecord,
+    resolved_path: Path | None = None,
+) -> str:
+    if resolved_path is None:
+        return build_document_download_filename(
+            document.document_number,
+            document.storage_path,
+        )
 
-    if resolved_path and resolved_path.exists() and resolved_path.is_file():
-        try:
-            with resolved_path.open("rb") as file:
-                header = file.read(8)
-
-            if header.startswith(b"%PDF"):
-                fallback_suffix = ".pdf"
-        except OSError:
-            fallback_suffix = ".bin"
-
-    return build_document_download_filename(
-        document.document_number,
-        document.storage_path,
-        fallback_suffix=fallback_suffix,
+    _, filename = detect_document_download_metadata(
+        resolved_path=resolved_path,
+        storage_path=document.storage_path,
+        document_number=document.document_number,
     )
+
+    return filename
 
 
 @router.get("/documents/{document_id}/download")
@@ -2365,18 +2364,11 @@ async def download_admin_document(
             detail="Document file is not available",
         )
 
-    media_type = guess_type(resolved_path.name)[0] or "application/octet-stream"
-
-    try:
-        with resolved_path.open("rb") as file:
-            header = file.read(8)
-
-        if header.startswith(b"%PDF"):
-            media_type = "application/pdf"
-    except OSError:
-        pass
-
-    filename = build_admin_document_download_filename(document, resolved_path)
+    media_type, filename = detect_document_download_metadata(
+        resolved_path=resolved_path,
+        storage_path=document.storage_path,
+        document_number=document.document_number,
+    )
 
     return FileResponse(
         path=resolved_path,

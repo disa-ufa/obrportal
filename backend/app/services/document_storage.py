@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from mimetypes import guess_type
+
 from pathlib import Path, PurePosixPath
 
 from app.core.config import settings
@@ -95,3 +97,32 @@ def build_document_download_filename(
         safe_stem = "document"
 
     return f"{safe_stem}{suffix}"
+
+
+def detect_document_download_metadata(
+    *,
+    resolved_path: Path,
+    storage_path: str | Path | PurePosixPath | None,
+    document_number: str,
+) -> tuple[str, str]:
+    media_type = guess_type(resolved_path.name)[0] or "application/octet-stream"
+    fallback_suffix = ".bin"
+
+    try:
+        with resolved_path.open("rb") as file:
+            header = file.read(8)
+
+        if header.startswith(b"%PDF"):
+            media_type = "application/pdf"
+            fallback_suffix = ".pdf"
+    except OSError:
+        pass
+
+    filename = build_document_download_filename(
+        document_number,
+        storage_path,
+        fallback_suffix=fallback_suffix,
+    )
+
+    return media_type, filename
+
