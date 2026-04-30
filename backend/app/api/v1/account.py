@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from mimetypes import guess_type
 from datetime import datetime, timezone
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
@@ -11,7 +10,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import build_current_user_response, get_current_user
-from app.core.config import settings
 from app.db.session import get_db
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
@@ -19,16 +17,10 @@ from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup
 from app.models.organization import Organization
 from app.models.user import User
-from app.services.document_pdf import render_completion_document_pdf
+from app.services.completion_documents import ensure_completion_document_for_enrollment
 from app.services.document_storage import (
     build_document_download_filename,
     resolve_private_storage_path,
-    write_private_storage_file,
-)
-from app.services.document_templates import (
-    CompletionDocumentTemplateContext,
-    build_completion_document_title,
-    build_document_verification_url,
 )
 from app.schemas.account import (
     AccountCourseItemResponse,
@@ -395,97 +387,6 @@ async def start_account_course_learning(
 
 
 
-def write_completion_document_pdf_to_storage(
-    *,
-    enrollment: Enrollment,
-    document: DocumentRecord,
-    course: Course | None,
-    learner: User | None,
-) -> str:
-    course_title = course.title if course and course.title else "образовательная программа"
-    document_type = document.document_type or "Сертификат"
-    learner_full_name = learner.full_name if learner and learner.full_name else "ФИО обучающегося"
-
-    verification_url = build_document_verification_url(
-        public_base_url=None,
-        verification_code=document.verification_code,
-    )
-
-    pdf_bytes = render_completion_document_pdf(
-        CompletionDocumentTemplateContext(
-            learner_full_name=learner_full_name,
-            course_title=course_title,
-            document_type=document_type,
-            document_number=document.document_number,
-            verification_code=document.verification_code,
-            completed_at=enrollment.completed_at,
-            course_hours=course.hours if course else None,
-            verification_url=verification_url,
-        )
-    )
-
-    relative_path = Path("generated") / "completion" / f"{document.document_number}.pdf"
-
-    return write_private_storage_file(relative_path, pdf_bytes)
-
-
-async def ensure_account_completion_document(
-    enrollment: Enrollment,
-    session: AsyncSession,
-) -> None:
-    existing_result = await session.execute(
-        select(DocumentRecord)
-        .where(DocumentRecord.enrollment_id == enrollment.id)
-        .limit(1)
-    )
-    existing_document = existing_result.scalar_one_or_none()
-
-    if existing_document is not None:
-        if (
-            str(existing_document.user_id) != str(enrollment.user_id)
-            or str(existing_document.course_id) != str(enrollment.course_id)
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Existing document does not match enrollment",
-            )
-
-        return
-
-    course_result = await session.execute(
-        select(Course).where(Course.id == enrollment.course_id)
-    )
-    course = course_result.scalar_one_or_none()
-
-    learner_result = await session.execute(
-        select(User).where(User.id == enrollment.user_id)
-    )
-    learner = learner_result.scalar_one_or_none()
-
-    document_type = course.document_type if course and course.document_type else "Сертификат"
-    course_title = course.title if course and course.title else "образовательная программа"
-
-    document = DocumentRecord(
-        user_id=enrollment.user_id,
-        course_id=enrollment.course_id,
-        enrollment_id=enrollment.id,
-        document_number=f"AUTO-{str(enrollment.id).replace('-', '')[:16].upper()}",
-        document_type=document_type,
-        title=build_completion_document_title(
-            document_type=document_type,
-            course_title=course_title,
-        ),
-        status="draft",
-    )
-    session.add(document)
-    await session.flush()
-
-    document.storage_path = write_completion_document_pdf_to_storage(
-        enrollment=enrollment,
-        document=document,
-        course=course,
-        learner=learner,
-    )
 
 @router.post("/courses/{enrollment_id}/complete", response_model=AccountCourseItemResponse)
 async def complete_account_course_learning(
@@ -511,7 +412,7 @@ async def complete_account_course_learning(
     enrollment.status = "completed"
     enrollment.completed_at = datetime.now(timezone.utc)
 
-    await ensure_account_completion_document(enrollment, session)
+    await ensure_completion_document_for_enrollment(enrollment, session)
 
     await session.commit()
 
