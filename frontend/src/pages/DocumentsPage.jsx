@@ -83,10 +83,10 @@ function canPublishGeneratedCompletionDocument(documentItem) {
 
 function getAdminDocumentDownloadLabel(documentItem) {
   if (isGeneratedCompletionDocument(documentItem)) {
-    return "??????? PDF";
+    return "Скачать PDF";
   }
 
-  return "??????? ????";
+  return "Скачать файл";
 }
 
 function getGeneratedCompletionNotice(documentItem) {
