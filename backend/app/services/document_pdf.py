@@ -214,6 +214,29 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
         context.verification_url,
         fallback="-",
     )
+    organization_name = normalize_document_text(
+        context.organization_name,
+        fallback="??????????????? ???????????",
+    )
+    organization_license = normalize_document_text(
+        context.organization_license,
+        fallback="",
+    )
+    organization_address = normalize_document_text(
+        context.organization_address,
+        fallback="",
+    )
+    signer_position = normalize_document_text(
+        context.signer_position,
+        fallback="????????????? ????",
+    )
+    signer_full_name = normalize_document_text(
+        context.signer_full_name,
+        fallback="",
+    )
+    organization_meta = " \u00b7 ".join(
+        item for item in (organization_license, organization_address) if item
+    )
     completed_date = format_document_date(context.completed_at)
 
     if context.course_hours is None:
@@ -238,7 +261,37 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
         height - 2 * (margin + 6 * mm),
     )
 
-    y = height - 48 * mm
+    y = height - 32 * mm
+
+    pdf.setFillColor(colors.HexColor("#111827"))
+    pdf.setFont(bold_font, 9)
+    y = _draw_centered_wrapped_text(
+        pdf,
+        text=organization_name,
+        y=y,
+        max_width=width - 70 * mm,
+        font_name=bold_font,
+        font_size=9,
+        leading=11,
+        max_lines=2,
+    )
+
+    if organization_meta:
+        y -= 1 * mm
+        pdf.setFillColor(colors.HexColor("#4b5563"))
+        pdf.setFont(regular_font, 7)
+        y = _draw_centered_wrapped_text(
+            pdf,
+            text=organization_meta,
+            y=y,
+            max_width=width - 70 * mm,
+            font_name=regular_font,
+            font_size=7,
+            leading=9,
+            max_lines=2,
+        )
+
+    y -= 7 * mm
 
     pdf.setFillColor(colors.HexColor("#1d4ed8"))
     pdf.setFont(bold_font, 28)
@@ -343,13 +396,16 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     pdf.setLineWidth(0.8)
     pdf.line(margin + 18 * mm, footer_y, margin + 75 * mm, footer_y)
 
+    signature_center_x = margin + 46.5 * mm
+
     pdf.setFillColor(colors.HexColor("#4b5563"))
-    pdf.setFont(regular_font, 9)
-    pdf.drawCentredString(
-        margin + 46.5 * mm,
-        footer_y - 6 * mm,
-        "\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u043e\u0435 \u043b\u0438\u0446\u043e",
-    )
+    pdf.setFont(regular_font, 8)
+    pdf.drawCentredString(signature_center_x, footer_y - 6 * mm, signer_position)
+
+    if signer_full_name:
+        pdf.setFillColor(colors.HexColor("#111827"))
+        pdf.setFont(bold_font, 8)
+        pdf.drawCentredString(signature_center_x, footer_y - 11 * mm, signer_full_name)
 
     pdf.setFont(regular_font, 8)
     pdf.drawRightString(

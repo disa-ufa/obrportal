@@ -83,6 +83,12 @@ def write_completion_document_pdf_to_storage(
             completed_at=enrollment.completed_at,
             course_hours=course.hours if course else None,
             verification_url=verification_url,
+            organization_name=settings.document_org_name,
+            organization_short_name=settings.document_org_short_name,
+            organization_address=settings.document_org_address,
+            organization_license=settings.document_org_license,
+            signer_position=settings.document_signer_position,
+            signer_full_name=settings.document_signer_full_name,
         )
     )
 

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,6 +16,12 @@ class CompletionDocumentTemplateContext:
     completed_at: datetime | None = None
     course_hours: int | None = None
     verification_url: str | None = None
+    organization_name: str | None = None
+    organization_short_name: str | None = None
+    organization_address: str | None = None
+    organization_license: str | None = None
+    signer_position: str | None = None
+    signer_full_name: str | None = None
 
 
 def normalize_document_text(value: str | None, fallback: str = "—") -> str:
@@ -78,6 +84,21 @@ def render_completion_document_html(context: CompletionDocumentTemplateContext) 
         normalize_document_text(context.verification_code, fallback="—")
     )
     completed_date = escape(format_document_date(context.completed_at))
+    organization_name = escape(
+        normalize_document_text(context.organization_name, fallback="??????????????? ???????????")
+    )
+    organization_license = escape(
+        normalize_document_text(context.organization_license, fallback="?")
+    )
+    organization_address = escape(
+        normalize_document_text(context.organization_address, fallback="?")
+    )
+    signer_position = escape(
+        normalize_document_text(context.signer_position, fallback="????????????? ????")
+    )
+    signer_full_name = escape(
+        normalize_document_text(context.signer_full_name, fallback="?")
+    )
 
     if context.course_hours is None:
         course_hours = "—"
@@ -126,6 +147,20 @@ def render_completion_document_html(context: CompletionDocumentTemplateContext) 
 
     .header {{
       text-align: center;
+    }}
+
+    .organization-name {{
+      margin: 0 0 6px;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+    }}
+
+    .organization-meta {{
+      margin-bottom: 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
     }}
 
     .document-type {{
