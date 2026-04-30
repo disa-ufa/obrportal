@@ -192,15 +192,15 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
 
     learner_full_name = normalize_document_text(
         context.learner_full_name,
-        fallback="ФИО обучающегося",
+        fallback="\u0424\u0418\u041e \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0435\u0433\u043e\u0441\u044f",
     )
     course_title = normalize_document_text(
         context.course_title,
-        fallback="образовательная программа",
+        fallback="\u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430",
     )
     document_type = normalize_document_text(
         context.document_type,
-        fallback="Сертификат",
+        fallback="\u0421\u0435\u0440\u0442\u0438\u0444\u0438\u043a\u0430\u0442",
     )
     document_number = normalize_document_text(
         context.document_number,
@@ -231,7 +231,12 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
 
     pdf.setStrokeColor(colors.HexColor("#1d4ed8"))
     pdf.setLineWidth(1.2)
-    pdf.rect(margin + 6 * mm, margin + 6 * mm, width - 2 * (margin + 6 * mm), height - 2 * (margin + 6 * mm))
+    pdf.rect(
+        margin + 6 * mm,
+        margin + 6 * mm,
+        width - 2 * (margin + 6 * mm),
+        height - 2 * (margin + 6 * mm),
+    )
 
     y = height - 48 * mm
 
@@ -251,13 +256,17 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     y -= 3 * mm
     pdf.setFillColor(colors.HexColor("#4b5563"))
     pdf.setFont(regular_font, 11)
-    pdf.drawCentredString(width / 2, y, f"№ {document_number}")
+    pdf.drawCentredString(width / 2, y, f"\u2116 {document_number}")
 
     y -= 38 * mm
 
     pdf.setFillColor(colors.HexColor("#4b5563"))
     pdf.setFont(regular_font, 14)
-    pdf.drawCentredString(width / 2, y, "Настоящий документ подтверждает, что")
+    pdf.drawCentredString(
+        width / 2,
+        y,
+        "\u041d\u0430\u0441\u0442\u043e\u044f\u0449\u0438\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0430\u0435\u0442, \u0447\u0442\u043e",
+    )
 
     y -= 15 * mm
     pdf.setFillColor(colors.HexColor("#111827"))
@@ -276,7 +285,11 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     y -= 7 * mm
     pdf.setFillColor(colors.HexColor("#4b5563"))
     pdf.setFont(regular_font, 14)
-    pdf.drawCentredString(width / 2, y, "успешно завершил(а) обучение по программе")
+    pdf.drawCentredString(
+        width / 2,
+        y,
+        "\u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043b(\u0430) \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435",
+    )
 
     y -= 16 * mm
     pdf.setFillColor(colors.HexColor("#111827"))
@@ -300,25 +313,29 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
 
     pdf.setFillColor(colors.HexColor("#4b5563"))
     pdf.setFont(regular_font, 10)
-    pdf.drawString(left_x, row_y, "Объём программы")
-    pdf.drawString(right_x, row_y, "Дата завершения")
+    pdf.drawString(left_x, row_y, "\u041e\u0431\u044a\u0451\u043c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b")
+    pdf.drawString(right_x, row_y, "\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f")
 
     pdf.setFillColor(colors.HexColor("#111827"))
     pdf.setFont(bold_font, 13)
-    pdf.drawString(left_x, row_y - 7 * mm, f"{course_hours} ак. ч.")
+    pdf.drawString(left_x, row_y - 7 * mm, f"{course_hours} \u0430\u043a. \u0447.")
     pdf.drawString(right_x, row_y - 7 * mm, completed_date)
 
     row_y -= 22 * mm
 
     pdf.setFillColor(colors.HexColor("#4b5563"))
     pdf.setFont(regular_font, 10)
-    pdf.drawString(left_x, row_y, "Код проверки")
-    pdf.drawString(right_x, row_y, "Статус")
+    pdf.drawString(left_x, row_y, "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438")
+    pdf.drawString(right_x, row_y, "\u0421\u0442\u0430\u0442\u0443\u0441")
 
     pdf.setFillColor(colors.HexColor("#111827"))
     pdf.setFont(bold_font, 13)
     pdf.drawString(left_x, row_y - 7 * mm, verification_code)
-    pdf.drawString(right_x, row_y - 7 * mm, "Документ сформирован в ObrPortal")
+    pdf.drawString(
+        right_x,
+        row_y - 7 * mm,
+        "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0432 ObrPortal",
+    )
 
     footer_y = margin + 34 * mm
 
@@ -328,10 +345,18 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
 
     pdf.setFillColor(colors.HexColor("#4b5563"))
     pdf.setFont(regular_font, 9)
-    pdf.drawCentredString(margin + 46.5 * mm, footer_y - 6 * mm, "Ответственное лицо")
+    pdf.drawCentredString(
+        margin + 46.5 * mm,
+        footer_y - 6 * mm,
+        "\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u043e\u0435 \u043b\u0438\u0446\u043e",
+    )
 
     pdf.setFont(regular_font, 8)
-    pdf.drawRightString(width - margin - 18 * mm, footer_y + 4 * mm, "Проверка подлинности:")
+    pdf.drawRightString(
+        width - margin - 18 * mm,
+        footer_y + 4 * mm,
+        "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u0434\u043b\u0438\u043d\u043d\u043e\u0441\u0442\u0438:",
+    )
     pdf.drawRightString(width - margin - 18 * mm, footer_y - 2 * mm, verification_url)
 
     qr_size = 24 * mm
@@ -353,3 +378,4 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     pdf.save()
 
     return buffer.getvalue()
+
