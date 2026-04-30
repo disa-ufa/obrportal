@@ -1730,7 +1730,7 @@ def main() -> int:
             "description": "Smoke course for admin completion document generation",
             "hours": 16,
             "format": "online",
-            "document_type": "?????????????",
+            "document_type": "Удостоверение",
             "is_active": True,
         },
     )
