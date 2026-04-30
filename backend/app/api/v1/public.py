@@ -8,6 +8,7 @@ from fastapi import Depends
 from app.db.session import get_db
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
+from app.models.enrollment import Enrollment
 from app.models.user import User
 from app.schemas.public import PublicCourseDetailResponse, PublicCourseItemResponse, PublicDocumentVerifyResponse
 
@@ -116,9 +117,13 @@ async def verify_document(
             DocumentRecord.storage_path.label("storage_path"),
             User.full_name.label("holder_name"),
             Course.title.label("course_title"),
+            Course.hours.label("course_hours"),
+            Course.format.label("course_format"),
+            Enrollment.completed_at.label("completed_at"),
         )
         .join(User, User.id == DocumentRecord.user_id)
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
         .where(
             or_(
                 func.lower(DocumentRecord.document_number) == normalized_number.lower(),
@@ -162,6 +167,9 @@ async def verify_document(
         holder_name=row.holder_name,
         course_title=row.course_title,
         issued_at=row.issued_at,
+        completed_at=row.completed_at,
+        course_hours=row.course_hours,
+        course_format=row.course_format,
         registry_status=row.registry_status,
         verification_status=verification_status,
     )

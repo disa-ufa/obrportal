@@ -62,7 +62,7 @@ function sanitizeQrFilename(value) {
   return (value || "document-verification")
     .toString()
     .trim()
-    .replace(/[^a-zA-Z0-9а-яА-ЯёЁ._-]+/g, "_")
+    .replace(/[^a-zA-Z0-9\u0430-\u044f\u0410-\u042f\u0451\u0401._-]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 120) || "document-verification";
 }

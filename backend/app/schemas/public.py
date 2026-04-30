@@ -13,6 +13,9 @@ class PublicDocumentVerifyResponse(BaseModel):
     holder_name: str | None = None
     course_title: str | None = None
     issued_at: datetime | None = None
+    completed_at: datetime | None = None
+    course_hours: int | None = None
+    course_format: str | None = None
     registry_status: str
     verification_status: str
 

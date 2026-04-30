@@ -1905,6 +1905,10 @@ def main() -> int:
     assert isinstance(generated_public_verify_by_number, dict)
     assert generated_public_verify_by_number["document_number"] == completion_documents[0]["document_number"]
     assert generated_public_verify_by_number["verification_code"] == completion_documents[0]["verification_code"]
+    assert generated_public_verify_by_number["course_title"] == self_enroll_course["title"]
+    assert generated_public_verify_by_number["course_hours"] == self_enroll_course["hours"]
+    assert generated_public_verify_by_number["course_format"] == self_enroll_course["format"]
+    assert generated_public_verify_by_number["completed_at"] is not None
     assert generated_public_verify_by_number["registry_status"] == "available"
     assert generated_public_verify_by_number["verification_status"] == "Документ подтверждён"
     checks.append("public verify generated completion document by number ok")
