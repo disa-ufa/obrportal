@@ -5690,3 +5690,116 @@ def test_account_document_download_detects_pdf_content_when_storage_suffix_is_bi
     assert ".pdf" in content_disposition
     assert ".bin" not in content_disposition
 
+
+def test_admin_revoke_document_sets_revocation_metadata() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Revocation metadata certificate",
+        document_type="Certificate",
+        status="available",
+        storage_content=b"revocation metadata certificate",
+        storage_extension=".pdf",
+    )
+
+    response = patch_multipart_admin_document(
+        token=token,
+        document_id=document["id"],
+        fields={
+            "status": "revoked",
+            "revocation_reason": "Incorrect document data",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == document["id"]
+    assert payload["status"] == "revoked"
+    assert payload["revoked_at"] is not None
+    assert payload["revoked_by_user_id"] == user_id
+    assert payload["revocation_reason"] == "Incorrect document data"
+
+
+def test_admin_unrevoke_document_clears_revocation_metadata() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Unrevoke metadata certificate",
+        document_type="Certificate",
+        status="available",
+        storage_content=b"unrevoke metadata certificate",
+        storage_extension=".pdf",
+    )
+
+    revoke_response = patch_multipart_admin_document(
+        token=token,
+        document_id=document["id"],
+        fields={
+            "status": "revoked",
+            "revocation_reason": "Temporary revoke",
+        },
+    )
+
+    assert revoke_response.status_code == 200
+    revoked_payload = revoke_response.json()
+    assert revoked_payload["status"] == "revoked"
+    assert revoked_payload["revoked_at"] is not None
+    assert revoked_payload["revoked_by_user_id"] == user_id
+    assert revoked_payload["revocation_reason"] == "Temporary revoke"
+
+    restore_response = patch_multipart_admin_document(
+        token=token,
+        document_id=document["id"],
+        fields={
+            "status": "available",
+        },
+    )
+
+    assert restore_response.status_code == 200
+    restored_payload = restore_response.json()
+    assert restored_payload["id"] == document["id"]
+    assert restored_payload["status"] == "available"
+    assert restored_payload["revoked_at"] is None
+    assert restored_payload["revoked_by_user_id"] is None
+    assert restored_payload["revocation_reason"] is None
+
+
+def test_admin_rejects_revocation_reason_for_available_document() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    document = create_test_document_record_in_db(
+        user_id=str(me_payload["id"]),
+        title="Invalid revocation reason certificate",
+        document_type="Certificate",
+        status="available",
+        storage_content=b"invalid revocation reason certificate",
+        storage_extension=".pdf",
+    )
+
+    response = patch_multipart_admin_document(
+        token=token,
+        document_id=document["id"],
+        fields={
+            "status": "available",
+            "revocation_reason": "Reason without revoked status",
+        },
+    )
+
+    assert response.status_code == 422
+

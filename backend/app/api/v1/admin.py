@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 from fastapi.responses import FileResponse
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.rbac import get_user_permission_codes, require_permission
@@ -1703,6 +1704,11 @@ def build_admin_document_item(row) -> AdminDocumentItem:
         document_type=row.document_type,
         title=row.title,
         status=row.status,
+        revoked_at=row.revoked_at,
+        revoked_by_user_id=str(row.revoked_by_user_id) if row.revoked_by_user_id else None,
+        revoked_by_user_email=row.revoked_by_user_email,
+        revoked_by_user_full_name=row.revoked_by_user_full_name,
+        revocation_reason=row.revocation_reason,
         user_id=str(row.user_id),
         user_email=row.user_email,
         user_full_name=row.user_full_name,
@@ -1745,6 +1751,47 @@ def normalize_document_status(value: str) -> str:
         )
 
     return normalized
+
+
+def normalize_revocation_reason(value: str | None) -> str | None:
+    return normalize_optional_text(value)
+
+
+def ensure_revocation_reason_allowed(
+    *,
+    document_status: str,
+    revocation_reason: str | None,
+) -> None:
+    if document_status != "revoked" and revocation_reason:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Revocation reason is allowed only for revoked documents",
+        )
+
+
+def apply_document_status_metadata(
+    document: DocumentRecord,
+    document_status: str,
+    actor_user: User,
+    revocation_reason: str | None = None,
+) -> None:
+    previous_status = document.status
+    document.status = document_status
+
+    if document_status == "revoked":
+        if previous_status != "revoked" or document.revoked_at is None:
+            document.revoked_at = datetime.now(timezone.utc)
+
+        document.revoked_by_user_id = actor_user.id
+
+        if revocation_reason is not None:
+            document.revocation_reason = revocation_reason
+
+        return
+
+    document.revoked_at = None
+    document.revoked_by_user_id = None
+    document.revocation_reason = None
 
 
 def normalize_uploaded_extension(filename: str | None) -> str:
@@ -1811,6 +1858,8 @@ async def get_admin_document_row_or_404(
     document_id: str,
     session: AsyncSession,
 ):
+    revoked_by_user = aliased(User)
+
     result = await session.execute(
         select(
             DocumentRecord.id.label("id"),
@@ -1819,6 +1868,9 @@ async def get_admin_document_row_or_404(
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("status"),
+            DocumentRecord.revoked_at.label("revoked_at"),
+            DocumentRecord.revoked_by_user_id.label("revoked_by_user_id"),
+            DocumentRecord.revocation_reason.label("revocation_reason"),
             DocumentRecord.user_id.label("user_id"),
             DocumentRecord.course_id.label("course_id"),
             DocumentRecord.enrollment_id.label("enrollment_id"),
@@ -1827,6 +1879,8 @@ async def get_admin_document_row_or_404(
             DocumentRecord.updated_at.label("updated_at"),
             User.email.label("user_email"),
             User.full_name.label("user_full_name"),
+            revoked_by_user.email.label("revoked_by_user_email"),
+            revoked_by_user.full_name.label("revoked_by_user_full_name"),
             Course.title.label("course_title"),
             Enrollment.status.label("enrollment_status"),
             Enrollment.organization_id.label("organization_id"),
@@ -1835,6 +1889,7 @@ async def get_admin_document_row_or_404(
             LearningGroup.name.label("learning_group_name"),
         )
         .join(User, User.id == DocumentRecord.user_id)
+        .outerjoin(revoked_by_user, revoked_by_user.id == DocumentRecord.revoked_by_user_id)
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
         .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
         .outerjoin(Organization, Organization.id == Enrollment.organization_id)
@@ -1863,6 +1918,8 @@ async def list_admin_documents(
     _: User = Depends(require_permission("admin.users.read")),
     session: AsyncSession = Depends(get_db),
 ) -> list[AdminDocumentItem]:
+    revoked_by_user = aliased(User)
+
     query = (
         select(
             DocumentRecord.id.label("id"),
@@ -1871,6 +1928,9 @@ async def list_admin_documents(
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("status"),
+            DocumentRecord.revoked_at.label("revoked_at"),
+            DocumentRecord.revoked_by_user_id.label("revoked_by_user_id"),
+            DocumentRecord.revocation_reason.label("revocation_reason"),
             DocumentRecord.user_id.label("user_id"),
             DocumentRecord.course_id.label("course_id"),
             DocumentRecord.enrollment_id.label("enrollment_id"),
@@ -1879,6 +1939,8 @@ async def list_admin_documents(
             DocumentRecord.updated_at.label("updated_at"),
             User.email.label("user_email"),
             User.full_name.label("user_full_name"),
+            revoked_by_user.email.label("revoked_by_user_email"),
+            revoked_by_user.full_name.label("revoked_by_user_full_name"),
             Course.title.label("course_title"),
             Enrollment.status.label("enrollment_status"),
             Enrollment.organization_id.label("organization_id"),
@@ -1887,6 +1949,7 @@ async def list_admin_documents(
             LearningGroup.name.label("learning_group_name"),
         )
         .join(User, User.id == DocumentRecord.user_id)
+        .outerjoin(revoked_by_user, revoked_by_user.id == DocumentRecord.revoked_by_user_id)
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
         .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
         .outerjoin(Organization, Organization.id == Enrollment.organization_id)
@@ -1936,6 +1999,7 @@ async def create_admin_document(
     document_type: str = Form(...),
     document_number: str | None = Form(default=None),
     doc_status: str = Form(default="available", alias="status"),
+    revocation_reason: str | None = Form(default=None),
     course_id: str | None = Form(default=None),
     enrollment_id: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
@@ -1960,6 +2024,11 @@ async def create_admin_document(
         )
 
     normalized_status = normalize_document_status(doc_status)
+    normalized_revocation_reason = normalize_revocation_reason(revocation_reason)
+    ensure_revocation_reason_allowed(
+        document_status=normalized_status,
+        revocation_reason=normalized_revocation_reason,
+    )
     normalized_number = normalize_document_number(document_number)
 
     normalized_course_id = course_id.strip() if course_id and course_id.strip() else None
@@ -2015,6 +2084,15 @@ async def create_admin_document(
         title=normalized_title,
         status=normalized_status,
     )
+
+    if normalized_status == "revoked":
+        apply_document_status_metadata(
+            document,
+            "revoked",
+            current_user,
+            normalized_revocation_reason,
+        )
+
     session.add(document)
 
     try:
@@ -2067,6 +2145,9 @@ def document_record_snapshot(document: DocumentRecord) -> dict:
         "document_type": document.document_type,
         "title": document.title,
         "status": document.status,
+        "revoked_at": document.revoked_at.isoformat() if document.revoked_at else None,
+        "revoked_by_user_id": str(document.revoked_by_user_id) if document.revoked_by_user_id else None,
+        "revocation_reason": document.revocation_reason,
         "user_id": str(document.user_id),
         "course_id": str(document.course_id) if document.course_id else None,
         "enrollment_id": str(document.enrollment_id) if document.enrollment_id else None,
@@ -2105,6 +2186,7 @@ async def update_admin_document(
     document_type: str | None = Form(default=None),
     document_number: str | None = Form(default=None),
     doc_status: str | None = Form(default=None, alias="status"),
+    revocation_reason: str | None = Form(default=None),
     course_id: str | None = Form(default=None),
     enrollment_id: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
@@ -2116,7 +2198,7 @@ async def update_admin_document(
     has_file = file is not None and bool(file.filename)
     has_changes = any(
         value is not None
-        for value in [title, document_type, document_number, doc_status, course_id, enrollment_id]
+        for value in [title, document_type, document_number, doc_status, revocation_reason, course_id, enrollment_id]
     ) or has_file
 
     if not has_changes:
@@ -2129,6 +2211,11 @@ async def update_admin_document(
     old_storage_path = document.storage_path
     new_storage_path_to_cleanup = None
     old_storage_path_to_delete = None
+    normalized_revocation_reason = (
+        normalize_revocation_reason(revocation_reason)
+        if revocation_reason is not None
+        else None
+    )
 
     if title is not None:
         normalized_title = title.strip()
@@ -2156,7 +2243,25 @@ async def update_admin_document(
         document.document_number = normalize_document_number(document_number)
 
     if doc_status is not None:
-        document.status = normalize_document_status(doc_status)
+        normalized_status = normalize_document_status(doc_status)
+        ensure_revocation_reason_allowed(
+            document_status=normalized_status,
+            revocation_reason=normalized_revocation_reason,
+        )
+        apply_document_status_metadata(
+            document,
+            normalized_status,
+            current_user,
+            normalized_revocation_reason if revocation_reason is not None else document.revocation_reason,
+        )
+    elif revocation_reason is not None:
+        if document.status != "revoked":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Revocation reason is allowed only for revoked documents",
+            )
+
+        document.revocation_reason = normalized_revocation_reason
 
     normalized_course_id = None
     normalized_enrollment_id = None

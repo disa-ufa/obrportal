@@ -164,6 +164,11 @@ class AdminDocumentItem(BaseModel):
     document_type: str
     title: str
     status: str
+    revoked_at: datetime | None = None
+    revoked_by_user_id: str | None = None
+    revoked_by_user_email: str | None = None
+    revoked_by_user_full_name: str | None = None
+    revocation_reason: str | None = None
     user_id: str
     user_email: str
     user_full_name: str | None = None
