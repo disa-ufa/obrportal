@@ -1932,6 +1932,64 @@ def main() -> int:
     assert generated_public_verify_by_code["verification_status"] == "Документ подтверждён"
     checks.append("public verify generated completion document by code ok")
 
+
+    status, revocation_actor = request_json(
+        "GET",
+        "/api/v1/auth/me",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin revocation actor /auth/me")
+    assert isinstance(revocation_actor, dict)
+    revocation_actor_id = str(revocation_actor["id"])
+
+    revocation_reason = "Smoke revocation lifecycle check"
+
+    status, revoked_completion_document = request_form(
+        "PATCH",
+        f"/api/v1/admin/documents/{completion_document_id}",
+        {
+            "status": "revoked",
+            "revocation_reason": revocation_reason,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin revoke generated completion document")
+    assert isinstance(revoked_completion_document, dict)
+    assert revoked_completion_document["id"] == completion_document_id
+    assert revoked_completion_document["status"] == "revoked"
+    assert revoked_completion_document["revoked_at"] is not None
+    assert str(revoked_completion_document["revoked_by_user_id"]) == revocation_actor_id
+    assert revoked_completion_document["revocation_reason"] == revocation_reason
+    checks.append("admin revoke generated completion document ok")
+
+    status, revoked_public_verify = request_json(
+        "GET",
+        f"/api/v1/public/documents/verify?number={completion_documents[0]['verification_code']}",
+    )
+    assert_status(status, 200, "public verify revoked generated completion document")
+    assert isinstance(revoked_public_verify, dict)
+    assert revoked_public_verify["document_number"] == completion_documents[0]["document_number"]
+    assert revoked_public_verify["verification_code"] == completion_documents[0]["verification_code"]
+    assert revoked_public_verify["registry_status"] == "revoked"
+    checks.append("public verify revoked generated completion document ok")
+
+    status, restored_completion_document = request_form(
+        "PATCH",
+        f"/api/v1/admin/documents/{completion_document_id}",
+        {
+            "status": "available",
+        },
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin restore generated completion document")
+    assert isinstance(restored_completion_document, dict)
+    assert restored_completion_document["id"] == completion_document_id
+    assert restored_completion_document["status"] == "available"
+    assert restored_completion_document["revoked_at"] is None
+    assert restored_completion_document["revoked_by_user_id"] is None
+    assert restored_completion_document["revocation_reason"] is None
+    checks.append("admin restore generated completion document ok")
+
     frontend_verify_path = "/verify/" + quote(str(completion_documents[0]["verification_code"]), safe="")
     status, frontend_verify_html, frontend_verify_headers = request_frontend_text(frontend_verify_path)
     assert_status(status, 200, "frontend direct generated document verification route")
