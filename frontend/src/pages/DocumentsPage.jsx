@@ -172,12 +172,25 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+
+function getRevocationActorLabel(documentItem) {
+  const name = documentItem.revoked_by_user_full_name || "";
+  const email = documentItem.revoked_by_user_email || "";
+
+  if (name && email) {
+    return `${name} / ${email}`;
+  }
+
+  return name || email || "-";
+}
+
 function buildEditForm(documentItem) {
   return {
     title: documentItem.title || "",
     document_type: documentItem.document_type || "",
     document_number: documentItem.document_number || "",
     status: documentItem.status || "available",
+    revocation_reason: documentItem.revocation_reason || "",
     course_id: documentItem.course_id || "",
     enrollment_id: documentItem.enrollment_id || "",
   };
@@ -233,6 +246,7 @@ export function DocumentsPage() {
     document_type: "Сертификат",
     document_number: "",
     status: "available",
+    revocation_reason: "",
     course_id: "",
     enrollment_id: "",
   });
@@ -244,6 +258,7 @@ export function DocumentsPage() {
     document_type: "",
     document_number: "",
     status: "available",
+    revocation_reason: "",
     course_id: "",
     enrollment_id: "",
   });
@@ -346,6 +361,10 @@ export function DocumentsPage() {
         }
       }
 
+      if (field === "status" && value !== "revoked") {
+        next.revocation_reason = "";
+      }
+
       return next;
     });
   }
@@ -365,6 +384,10 @@ export function DocumentsPage() {
         }
       }
 
+      if (field === "status" && value !== "revoked") {
+        next.revocation_reason = "";
+      }
+
       return next;
     });
   }
@@ -376,6 +399,7 @@ export function DocumentsPage() {
       document_type: "Сертификат",
       document_number: "",
       status: "available",
+      revocation_reason: "",
       course_id: "",
       enrollment_id: "",
     });
@@ -394,6 +418,7 @@ export function DocumentsPage() {
       document_type: "",
       document_number: "",
       status: "available",
+      revocation_reason: "",
       course_id: "",
       enrollment_id: "",
     });
@@ -423,6 +448,11 @@ export function DocumentsPage() {
       return;
     }
 
+    if (form.status === "revoked" && !form.revocation_reason.trim()) {
+      setError("\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.");
+      return;
+    }
+
     try {
       setSaving(true);
       setError("");
@@ -433,6 +463,10 @@ export function DocumentsPage() {
       payload.append("title", form.title.trim());
       payload.append("document_type", form.document_type.trim());
       payload.append("status", form.status);
+
+      if (form.status === "revoked" && form.revocation_reason.trim()) {
+        payload.append("revocation_reason", form.revocation_reason.trim());
+      }
 
       if (form.course_id) {
         payload.append("course_id", form.course_id);
@@ -488,6 +522,11 @@ export function DocumentsPage() {
       return;
     }
 
+    if (editForm.status === "revoked" && !editForm.revocation_reason.trim()) {
+      setError("\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.");
+      return;
+    }
+
     try {
       setEditSavingId(documentId);
       setError("");
@@ -498,6 +537,10 @@ export function DocumentsPage() {
       payload.append("document_type", editForm.document_type.trim());
       payload.append("document_number", editForm.document_number.trim());
       payload.append("status", editForm.status);
+
+      if (editForm.status === "revoked" && editForm.revocation_reason.trim()) {
+        payload.append("revocation_reason", editForm.revocation_reason.trim());
+      }
       payload.append("course_id", editForm.course_id);
       payload.append("enrollment_id", editForm.enrollment_id);
 
@@ -523,6 +566,23 @@ export function DocumentsPage() {
       return;
     }
 
+    let revocationReason = "";
+
+    if (nextStatus === "revoked") {
+      const reason = window.prompt("\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430:");
+
+      if (reason === null) {
+        return;
+      }
+
+      revocationReason = reason.trim();
+
+      if (!revocationReason) {
+        setError("\u041e\u0442\u0437\u044b\u0432 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043f\u0440\u0438\u0447\u0438\u043d\u0443.");
+        return;
+      }
+    }
+
     try {
       setStatusSavingKey(`${documentItem.id}:${nextStatus}`);
       setError("");
@@ -530,6 +590,10 @@ export function DocumentsPage() {
 
       const payload = new FormData();
       payload.append("status", nextStatus);
+
+      if (nextStatus === "revoked") {
+        payload.append("revocation_reason", revocationReason);
+      }
 
       const updated = await updateAdminDocument(documentItem.id, payload);
 
@@ -771,6 +835,25 @@ export function DocumentsPage() {
                 </select>
               </label>
             </div>
+
+            {form.status === "revoked" && (
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u043e\u0442\u0437\u044b\u0432\u0430"}
+                </span>
+                <textarea
+                  value={form.revocation_reason}
+                  onChange={(event) => updateField("revocation_reason", event.target.value)}
+                  rows={3}
+                  placeholder={"\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435, \u043f\u043e\u0447\u0435\u043c\u0443 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
+                  className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                />
+                <span className="mt-2 block text-xs text-slate-500">
+                  {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u043d\u0430 \u0432 \u0430\u0434\u043c\u0438\u043d\u0441\u043a\u043e\u043c \u0440\u0435\u0435\u0441\u0442\u0440\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432."}
+                </span>
+              </label>
+            )}
+
 
             <label className="block">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1016,6 +1099,44 @@ export function DocumentsPage() {
                           </div>
                         )}
 
+                        {documentItem.status === "revoked" && (
+                          <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+                            <div className="font-semibold">
+                              {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
+                            </div>
+                            <div className="mt-3 grid gap-3 md:grid-cols-3">
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-red-600">
+                                  {"\u0414\u0430\u0442\u0430 \u043e\u0442\u0437\u044b\u0432\u0430"}
+                                </div>
+                                <div className="mt-1 font-semibold">
+                                  {formatDateTime(documentItem.revoked_at)}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-red-600">
+                                  {"\u041a\u0442\u043e \u043e\u0442\u043e\u0437\u0432\u0430\u043b"}
+                                </div>
+                                <div className="mt-1 font-semibold">
+                                  {getRevocationActorLabel(documentItem)}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-red-600">
+                                  {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430"}
+                                </div>
+                                <div className="mt-1 font-semibold">
+                                  {documentItem.revocation_reason || "-"}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+
+
                         <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
                           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                             <div className="text-xs uppercase tracking-wide text-slate-500">
@@ -1117,7 +1238,18 @@ export function DocumentsPage() {
                             {isDownloadSaving ? "Скачиваем..." : getAdminDocumentDownloadLabel(documentItem)}
                           </button>
 
-                          {documentItem.status !== "available" && (
+                          {documentItem.status === "revoked" && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickStatusUpdate(documentItem, "available")}
+                              disabled={!documentItem.file_available || isPublishing || isDeleteSaving}
+                              className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isPublishing ? "\u0412\u043e\u0441\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u043c..." : "\u0412\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c"}
+                            </button>
+                          )}
+
+                          {documentItem.status !== "available" && documentItem.status !== "revoked" && (
                             <button
                               type="button"
                               onClick={() => handleQuickStatusUpdate(documentItem, "available")}
@@ -1206,6 +1338,22 @@ export function DocumentsPage() {
                               ))}
                             </select>
                           </label>
+
+                          {editForm.status === "revoked" && (
+                            <label className="block md:col-span-2">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u043e\u0442\u0437\u044b\u0432\u0430"}
+                              </span>
+                              <textarea
+                                value={editForm.revocation_reason}
+                                onChange={(event) => updateEditField("revocation_reason", event.target.value)}
+                                rows={3}
+                                placeholder={"\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435, \u043f\u043e\u0447\u0435\u043c\u0443 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
+                                className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              />
+                            </label>
+                          )}
+
 
                           <label className="block md:col-span-2">
                             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
