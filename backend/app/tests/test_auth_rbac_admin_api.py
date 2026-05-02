@@ -5803,3 +5803,91 @@ def test_admin_rejects_revocation_reason_for_available_document() -> None:
 
     assert response.status_code == 422
 
+
+def test_admin_document_revocation_writes_specific_audit_events() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Audit revocation certificate",
+        document_type="Certificate",
+        status="available",
+        storage_content=b"audit revocation certificate",
+        storage_extension=".pdf",
+    )
+
+    revoke_response = patch_multipart_admin_document(
+        token=token,
+        document_id=document["id"],
+        fields={
+            "status": "revoked",
+            "revocation_reason": "Audit revoke reason",
+        },
+    )
+    assert revoke_response.status_code == 200
+
+    restore_response = patch_multipart_admin_document(
+        token=token,
+        document_id=document["id"],
+        fields={
+            "status": "available",
+        },
+    )
+    assert restore_response.status_code == 200
+
+    status, audit_events = request_json(
+        "GET",
+        f"/api/v1/admin/audit-events?entity_type=document&entity_id={document['id']}&limit=20",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(audit_events, list)
+
+    revoked_event = next(
+        event
+        for event in audit_events
+        if event["action"] == "admin.document_revoked"
+    )
+    restored_event = next(
+        event
+        for event in audit_events
+        if event["action"] == "admin.document_restored"
+    )
+
+    assert revoked_event["entity_type"] == "document"
+    assert revoked_event["entity_id"] == document["id"]
+    assert revoked_event["payload"]["before"]["status"] == "available"
+    assert revoked_event["payload"]["after"]["status"] == "revoked"
+    assert revoked_event["payload"]["after"]["revoked_at"] is not None
+    assert revoked_event["payload"]["after"]["revoked_by_user_id"] == user_id
+    assert revoked_event["payload"]["after"]["revocation_reason"] == "Audit revoke reason"
+    assert revoked_event["payload"]["status_transition"] == {
+        "from": "available",
+        "to": "revoked",
+    }
+    assert "status" in revoked_event["payload"]["changed_fields"]
+    assert "revoked_at" in revoked_event["payload"]["changed_fields"]
+    assert "revoked_by_user_id" in revoked_event["payload"]["changed_fields"]
+    assert "revocation_reason" in revoked_event["payload"]["changed_fields"]
+
+    assert restored_event["entity_type"] == "document"
+    assert restored_event["entity_id"] == document["id"]
+    assert restored_event["payload"]["before"]["status"] == "revoked"
+    assert restored_event["payload"]["after"]["status"] == "available"
+    assert restored_event["payload"]["after"]["revoked_at"] is None
+    assert restored_event["payload"]["after"]["revoked_by_user_id"] is None
+    assert restored_event["payload"]["after"]["revocation_reason"] is None
+    assert restored_event["payload"]["status_transition"] == {
+        "from": "revoked",
+        "to": "available",
+    }
+    assert "status" in restored_event["payload"]["changed_fields"]
+    assert "revoked_at" in restored_event["payload"]["changed_fields"]
+    assert "revoked_by_user_id" in restored_event["payload"]["changed_fields"]
+    assert "revocation_reason" in restored_event["payload"]["changed_fields"]
+

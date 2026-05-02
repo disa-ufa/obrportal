@@ -2156,6 +2156,29 @@ def document_record_snapshot(document: DocumentRecord) -> dict:
     }
 
 
+def get_document_update_audit_action(before: dict, after: dict) -> str:
+    before_status = before.get("status")
+    after_status = after.get("status")
+
+    if before_status != "revoked" and after_status == "revoked":
+        return "admin.document_revoked"
+
+    if before_status == "revoked" and after_status != "revoked":
+        return "admin.document_restored"
+
+    return "admin.document_updated"
+
+
+def get_changed_snapshot_fields(before: dict, after: dict) -> list[str]:
+    keys = set(before) | set(after)
+
+    return sorted(
+        key
+        for key in keys
+        if before.get(key) != after.get(key)
+    )
+
+
 def delete_admin_document_file(storage_path: str | None) -> None:
     delete_private_storage_file(storage_path)
 
@@ -2356,15 +2379,23 @@ async def update_admin_document(
 
         await session.flush()
 
+        after = document_record_snapshot(document)
+        audit_action = get_document_update_audit_action(before, after)
+
         await create_admin_audit_event(
             session,
             actor_user=current_user,
-            action="admin.document_updated",
+            action=audit_action,
             entity_type="document",
             entity_id=str(document.id),
             payload={
                 "before": before,
-                "after": document_record_snapshot(document),
+                "after": after,
+                "changed_fields": get_changed_snapshot_fields(before, after),
+                "status_transition": {
+                    "from": before.get("status"),
+                    "to": after.get("status"),
+                },
             },
             request=request,
         )

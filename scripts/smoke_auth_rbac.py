@@ -1975,6 +1975,26 @@ def main() -> int:
     assert revoked_public_verify["revocation_reason"] == revocation_reason
     checks.append("public verify revoked generated completion document ok")
 
+    status, document_revoked_audit_events = request_json(
+        "GET",
+        f"/api/v1/admin/audit-events?action=admin.document_revoked&entity_type=document&entity_id={completion_document_id}&limit=5",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin document revoked audit event")
+    assert isinstance(document_revoked_audit_events, list)
+    assert len(document_revoked_audit_events) >= 1
+    document_revoked_audit_event = document_revoked_audit_events[0]
+    assert document_revoked_audit_event["action"] == "admin.document_revoked"
+    assert document_revoked_audit_event["entity_type"] == "document"
+    assert document_revoked_audit_event["entity_id"] == completion_document_id
+    assert document_revoked_audit_event["payload"]["before"]["status"] == "available"
+    assert document_revoked_audit_event["payload"]["after"]["status"] == "revoked"
+    assert document_revoked_audit_event["payload"]["status_transition"] == {
+        "from": "available",
+        "to": "revoked",
+    }
+    checks.append("admin document revoked audit event ok")
+
     status, learner_documents_after_revoke = request_json(
         "GET",
         "/api/v1/account/documents",
@@ -2019,6 +2039,26 @@ def main() -> int:
     assert restored_completion_document["revoked_by_user_id"] is None
     assert restored_completion_document["revocation_reason"] is None
     checks.append("admin restore generated completion document ok")
+
+    status, document_restored_audit_events = request_json(
+        "GET",
+        f"/api/v1/admin/audit-events?action=admin.document_restored&entity_type=document&entity_id={completion_document_id}&limit=5",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin document restored audit event")
+    assert isinstance(document_restored_audit_events, list)
+    assert len(document_restored_audit_events) >= 1
+    document_restored_audit_event = document_restored_audit_events[0]
+    assert document_restored_audit_event["action"] == "admin.document_restored"
+    assert document_restored_audit_event["entity_type"] == "document"
+    assert document_restored_audit_event["entity_id"] == completion_document_id
+    assert document_restored_audit_event["payload"]["before"]["status"] == "revoked"
+    assert document_restored_audit_event["payload"]["after"]["status"] == "available"
+    assert document_restored_audit_event["payload"]["status_transition"] == {
+        "from": "revoked",
+        "to": "available",
+    }
+    checks.append("admin document restored audit event ok")
 
     frontend_verify_path = "/verify/" + quote(str(completion_documents[0]["verification_code"]), safe="")
     status, frontend_verify_html, frontend_verify_headers = request_frontend_text(frontend_verify_path)
