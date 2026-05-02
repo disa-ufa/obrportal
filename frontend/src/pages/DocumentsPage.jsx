@@ -290,6 +290,30 @@ export function DocumentsPage() {
     [enrollments, filterEnrollmentId]
   );
 
+  useEffect(() => {
+    if (!filterEnrollmentId || !selectedFilterEnrollment) {
+      return;
+    }
+
+    setForm((current) => {
+      const hasManualDocumentData =
+        Boolean(current.title.trim()) ||
+        Boolean(current.document_number.trim()) ||
+        Boolean(file);
+
+      if (hasManualDocumentData && current.enrollment_id !== filterEnrollmentId) {
+        return current;
+      }
+
+      return {
+        ...current,
+        user_id: selectedFilterEnrollment.user_id || current.user_id,
+        enrollment_id: selectedFilterEnrollment.id,
+        course_id: selectedFilterEnrollment.course_id || current.course_id,
+      };
+    });
+  }, [filterEnrollmentId, selectedFilterEnrollment, file]);
+
   function buildDocumentFilters(overrides = {}) {
     return {
       user_id: overrides.user_id ?? filterUserId,
