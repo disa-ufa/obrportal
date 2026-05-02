@@ -17,13 +17,22 @@ export function AppShell({
   children,
 }) {
   function getCount(key) {
-    if (key === "users") return counts.users;
-    if (key === "organizations") return counts.organizations;
-    if (key === "groups") return counts.groups;
-    if (key === "roles") return counts.roles;
-    if (key === "permissions") return counts.permissions;
-    if (key === "audit") return counts.auditEvents;
-    return null;
+    const countMap = {
+      users: counts?.users,
+      organizations: counts?.organizations,
+      groups: counts?.groups,
+      courses: counts?.courses,
+      enrollments: counts?.enrollments,
+      documents: counts?.documents,
+      roles: counts?.roles,
+      permissions: counts?.permissions,
+      audit: counts?.auditEvents,
+      "audit-events": counts?.auditEvents,
+    };
+
+    return Object.prototype.hasOwnProperty.call(countMap, key)
+      ? countMap[key] ?? 0
+      : null;
   }
 
   const currentPageLabel =
@@ -51,7 +60,7 @@ export function AppShell({
                 ObrPortal · Stage 6
               </p>
               <h1 className="mt-2 text-3xl font-bold">
-                Admin layout shell
+                Административная панель
               </h1>
               <p className="mt-3 max-w-3xl text-slate-600">
                 Рабочий back-office каркас: auth, JWT, RBAC, admin API,
