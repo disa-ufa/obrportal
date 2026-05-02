@@ -35,6 +35,18 @@ export function AppShell({
       : null;
   }
 
+  function formatCountBadge(value) {
+    if (typeof value !== "number") {
+      return value;
+    }
+
+    if (value > 999) {
+      return "999+";
+    }
+
+    return value;
+  }
+
   const currentPageLabel =
     ADMIN_ROUTE_ITEMS.find((item) => item.key === currentPage)?.label || "Раздел";
 
@@ -117,13 +129,14 @@ export function AppShell({
                     <span>{item.label}</span>
                     {count !== null && (
                       <span
+                        title={`Всего: ${count}`}
                         className={`rounded-full px-2 py-0.5 text-xs ${
                           isActive
                             ? "bg-white/20 text-white"
                             : "bg-white text-slate-500 ring-1 ring-slate-200"
                         }`}
                       >
-                        {count}
+                        {formatCountBadge(count)}
                       </span>
                     )}
                   </Link>
