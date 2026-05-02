@@ -56,6 +56,7 @@ import { ContactsPage } from "./pages/ContactsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { AdminCoursesPage } from "./pages/AdminCoursesPage";
 import { AdminEnrollmentsPage } from "./pages/AdminEnrollmentsPage";
+import { AdminNotFoundPage } from "./pages/AdminNotFoundPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { FaqPage } from "./pages/FaqPage";
 import { GroupsPage } from "./pages/GroupsPage";
@@ -1278,11 +1279,19 @@ export default function App() {
     );
   }
 
-  const adminPageContent = renderCurrentPage();
-
-  const activeAdminPage = getAdminPageFromPathname(location.pathname) || currentPage;
-  const currentPublicPage = getPublicPageFromPathname(location.pathname);
   const isAdminRoute = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+  const adminRoutePage = getAdminPageFromPathname(location.pathname);
+  const isUnknownAdminRoute = isAdminRoute && !adminRoutePage;
+
+  const adminPageContent = isUnknownAdminRoute ? (
+    <AdminNotFoundPage
+      pathname={location.pathname}
+      onOpenDashboard={() => handleNavigateAdminPage("dashboard")}
+    />
+  ) : renderCurrentPage();
+
+  const activeAdminPage = adminRoutePage || currentPage;
+  const currentPublicPage = getPublicPageFromPathname(location.pathname);
   const isAdmin = userHasRole(user, "admin");
   const authBadgeText = initializingAuth
     ? "initializing"

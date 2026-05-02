@@ -475,6 +475,11 @@ def main() -> int:
         assert_frontend_shell(frontend_body, f"frontend direct admin route {route}")
         checks.append(f"frontend direct admin route {label} ok")
 
+    status, unknown_admin_body, unknown_admin_headers = request_frontend_text("/admin/unknown-route")
+    assert_status(status, 200, "frontend unknown admin route shell")
+    assert_frontend_shell(unknown_admin_body, "frontend unknown admin route shell")
+    checks.append("frontend unknown admin route shell ok")
+
     status, users = request_json("GET", "/api/v1/admin/users", token=admin_token)
     assert_status(status, 200, "admin users")
     assert isinstance(users, list)
