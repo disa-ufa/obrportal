@@ -465,6 +465,11 @@ def main() -> int:
     assert first_user.get("id")
     checks.append("admin users ok")
 
+    status, frontend_admin_users_html, frontend_admin_users_headers = request_frontend_text("/admin/users")
+    assert_status(status, 200, "frontend direct admin users route")
+    assert isinstance(frontend_admin_users_html, str)
+    checks.append("frontend direct admin users route ok")
+
 
     learner_user = next(
         (item for item in users if isinstance(item, dict) and item.get("email") == LEARNER_EMAIL),

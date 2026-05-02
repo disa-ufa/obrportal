@@ -1123,7 +1123,7 @@ export default function App() {
     if (currentPage === "enrollments" || location.pathname === "/admin/enrollments") {
       return <AdminEnrollmentsPage />;
     }
-    if (currentPage === "users") {
+    if (currentPage === "users" || location.pathname === "/admin/users") {
       return (
         <UsersPage
           user={user}
@@ -1270,7 +1270,9 @@ export default function App() {
 
   const adminPageContent = renderCurrentPage();
 
-  const activeAdminPage = location.pathname === "/admin/audit-events"
+  const activeAdminPage = location.pathname === "/admin/users"
+    ? "users"
+    : location.pathname === "/admin/audit-events"
     ? "audit"
     : location.pathname === "/admin/documents"
       ? "documents"
