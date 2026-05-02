@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   activateAdminCourse,
   createAdminCourse,
@@ -41,6 +42,71 @@ function normalizeHoursInput(value) {
   return parsed;
 }
 
+const COURSE_ACTIVE_FILTERS = [
+  { value: "", label: "Все" },
+  { value: "true", label: "Активные" },
+  { value: "false", label: "Неактивные" },
+];
+
+function getCourseFiltersFromSearch(search) {
+  const params = new URLSearchParams(search);
+
+  return {
+    q: params.get("q") || "",
+    is_active: params.get("is_active") || "",
+  };
+}
+
+function buildCoursesPath(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+
+  return query ? `/admin/courses?${query}` : "/admin/courses";
+}
+
+function buildEnrollmentsPath(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+
+  return query ? `/admin/enrollments?${query}` : "/admin/enrollments";
+}
+
+function calculateCourseCounts(items) {
+  const counts = {
+    all: Array.isArray(items) ? items.length : 0,
+    active: 0,
+    inactive: 0,
+  };
+
+  if (!Array.isArray(items)) {
+    return counts;
+  }
+
+  items.forEach((course) => {
+    if (course.is_active) {
+      counts.active += 1;
+    } else {
+      counts.inactive += 1;
+    }
+  });
+
+  return counts;
+}
+
 function buildEditForm(course) {
   return {
     slug: course.slug || "",
@@ -67,6 +133,45 @@ function EmptyState({ onReset }) {
       >
         Сбросить фильтры
       </button>
+    </div>
+  );
+}
+
+function QuickActiveFilters({ activeValue, counts, disabled, onChange }) {
+  return (
+    <div className="mb-5 flex flex-wrap gap-2">
+      {COURSE_ACTIVE_FILTERS.map((item) => {
+        const isActive = activeValue === item.value;
+        const count =
+          item.value === "true"
+            ? counts.active || 0
+            : item.value === "false"
+              ? counts.inactive || 0
+              : counts.all || 0;
+
+        return (
+          <button
+            key={item.value || "all"}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(item.value)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isActive
+                ? "bg-slate-900 text-white ring-slate-900"
+                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>{item.label}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -168,9 +273,18 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
 }
 
 export function AdminCoursesPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialFilters = getCourseFiltersFromSearch(location.search);
+
   const [courses, setCourses] = useState([]);
-  const [filterQuery, setFilterQuery] = useState("");
-  const [filterActive, setFilterActive] = useState("");
+  const [courseCounts, setCourseCounts] = useState({
+    all: 0,
+    active: 0,
+    inactive: 0,
+  });
+  const [filterQuery, setFilterQuery] = useState(initialFilters.q);
+  const [filterActive, setFilterActive] = useState(initialFilters.is_active);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actionCourseId, setActionCourseId] = useState("");
@@ -205,24 +319,50 @@ export function AdminCoursesPage() {
     };
   }
 
+  async function navigateToCourseFilters(filters, options = {}) {
+    const nextPath = buildCoursesPath(filters);
+    const currentPath = `${location.pathname}${location.search}`;
+
+    if (currentPath === nextPath) {
+      await loadData(filters);
+      return;
+    }
+
+    navigate(nextPath, options);
+  }
+
   async function loadData(filters = null) {
     try {
       setLoading(true);
       setError("");
 
-      const response = await getAdminCourses(filters ?? buildFilters());
+      const activeFilters = { limit: 300, ...(filters ?? buildFilters()) };
+      const countFilters = { ...activeFilters, is_active: "" };
+
+      const [response, countResponse] = await Promise.all([
+        getAdminCourses(activeFilters),
+        getAdminCourses(countFilters),
+      ]);
+
       setCourses(Array.isArray(response) ? response : []);
+      setCourseCounts(calculateCourseCounts(Array.isArray(countResponse) ? countResponse : []));
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось загрузить программы."}`.trim());
+      setCourseCounts({ all: 0, active: 0, inactive: 0 });
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadData({});
+    const nextFilters = getCourseFiltersFromSearch(location.search);
+
+    setFilterQuery(nextFilters.q);
+    setFilterActive(nextFilters.is_active);
+
+    loadData(nextFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.search]);
 
   function updateField(field, value) {
     setForm((current) => ({
@@ -397,13 +537,18 @@ export function AdminCoursesPage() {
 
   async function handleApplyFilter(event) {
     event.preventDefault();
-    await loadData(buildFilters());
+    await navigateToCourseFilters(buildFilters());
+  }
+
+  async function handleQuickActiveFilter(nextActive) {
+    setFilterActive(nextActive);
+    await navigateToCourseFilters(buildFilters({ is_active: nextActive }));
   }
 
   async function handleResetFilter() {
     setFilterQuery("");
     setFilterActive("");
-    await loadData({});
+    await navigateToCourseFilters({}, { replace: true });
   }
 
   return (
@@ -495,6 +640,18 @@ export function AdminCoursesPage() {
             </button>
           </form>
 
+          <QuickActiveFilters
+            activeValue={filterActive}
+            counts={courseCounts}
+            disabled={loading}
+            onChange={handleQuickActiveFilter}
+          />
+
+          <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
+            <span>Показано программ: {courses.length}</span>
+            <span>Всего по текущему поиску: {courseCounts.all || 0}</span>
+          </div>
+
           {loading ? (
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
               Загружаем программы...
@@ -582,6 +739,22 @@ export function AdminCoursesPage() {
                         </div>
 
                         <div className="mt-5 flex flex-wrap gap-3">
+                          {course.slug && (
+                            <Link
+                              to={`/courses/${encodeURIComponent(course.slug)}`}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Публичная карточка
+                            </Link>
+                          )}
+
+                          <Link
+                            to={buildEnrollmentsPath({ course_id: course.id })}
+                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                          >
+                            Назначения курса
+                          </Link>
+
                           <button
                             type="button"
                             onClick={() => handleStartEdit(course)}
