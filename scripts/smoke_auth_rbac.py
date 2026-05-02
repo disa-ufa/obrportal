@@ -456,6 +456,25 @@ def main() -> int:
     assert rbac["has_permission"] is True
     checks.append("admin rbac-check ok")
 
+    admin_direct_frontend_routes = [
+        ("/admin", "dashboard"),
+        ("/admin/users", "users"),
+        ("/admin/organizations", "organizations"),
+        ("/admin/groups", "groups"),
+        ("/admin/courses", "courses"),
+        ("/admin/enrollments", "enrollments"),
+        ("/admin/documents", "documents"),
+        ("/admin/roles", "roles"),
+        ("/admin/permissions", "permissions"),
+        ("/admin/audit-events", "audit-events"),
+    ]
+
+    for route, label in admin_direct_frontend_routes:
+        status, frontend_body, frontend_headers = request_frontend_text(route)
+        assert_status(status, 200, f"frontend direct admin route {route}")
+        assert_frontend_shell(frontend_body, f"frontend direct admin route {route}")
+        checks.append(f"frontend direct admin route {label} ok")
+
     status, users = request_json("GET", "/api/v1/admin/users", token=admin_token)
     assert_status(status, 200, "admin users")
     assert isinstance(users, list)
