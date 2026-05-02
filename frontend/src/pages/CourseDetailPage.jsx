@@ -9,6 +9,69 @@ function formatCoursePrice(course) {
   return course?.price || "Стоимость уточняется";
 }
 
+function getEnrollmentStatusLabel(status) {
+  switch (status) {
+    case "assigned":
+      return "Назначен";
+    case "active":
+      return "В процессе";
+    case "completed":
+      return "Завершён";
+    case "cancelled":
+      return "Отменён";
+    default:
+      return "Не записан";
+  }
+}
+
+function getEnrollmentStatusTone(status) {
+  switch (status) {
+    case "assigned":
+      return "bg-blue-50 text-blue-700 ring-blue-200";
+    case "active":
+      return "bg-green-50 text-green-700 ring-green-200";
+    case "completed":
+      return "bg-slate-100 text-slate-700 ring-slate-200";
+    case "cancelled":
+      return "bg-red-50 text-red-700 ring-red-200";
+    default:
+      return "bg-white text-slate-600 ring-slate-200";
+  }
+}
+
+function getPrimaryActionLabel(enrollment, user) {
+  if (!user) {
+    return "Зарегистрироваться и записаться";
+  }
+
+  if (!enrollment) {
+    return "Записаться";
+  }
+
+  if (enrollment.status === "completed") {
+    return "Посмотреть документы в кабинете";
+  }
+
+  return "Открыть личный кабинет";
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user }) {
   const [course, setCourse] = useState(null);
   const [relatedCourses, setRelatedCourses] = useState([]);
@@ -197,8 +260,57 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         )}
 
         {existingEnrollment && (
-          <div className="mt-6 rounded-2xl bg-blue-50 p-4 text-sm text-blue-700 ring-1 ring-blue-200">
-            Вы уже записаны на эту программу. Перейдите в личный кабинет, чтобы открыть назначенный курс.
+          <div className="mt-6 rounded-2xl bg-blue-50 p-5 text-sm text-blue-800 ring-1 ring-blue-200">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold">
+                Вы уже записаны на эту программу.
+              </span>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getEnrollmentStatusTone(
+                  existingEnrollment.status
+                )}`}
+              >
+                {getEnrollmentStatusLabel(existingEnrollment.status)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
+              <div className="rounded-2xl bg-white/70 p-4 ring-1 ring-blue-100">
+                <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                  Организация
+                </div>
+                <div className="mt-2 font-semibold text-slate-900">
+                  {existingEnrollment.organization_name || "—"}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white/70 p-4 ring-1 ring-blue-100">
+                <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                  Группа
+                </div>
+                <div className="mt-2 font-semibold text-slate-900">
+                  {existingEnrollment.learning_group_name || "—"}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white/70 p-4 ring-1 ring-blue-100">
+                <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                  Начато
+                </div>
+                <div className="mt-2 font-semibold text-slate-900">
+                  {formatDateTime(existingEnrollment.started_at)}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white/70 p-4 ring-1 ring-blue-100">
+                <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                  Завершено
+                </div>
+                <div className="mt-2 font-semibold text-slate-900">
+                  {formatDateTime(existingEnrollment.completed_at)}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -244,7 +356,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
             disabled={enrollLoading}
             className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {enrollLoading ? "Записываем..." : existingEnrollment ? "Открыть личный кабинет" : user ? "Записаться" : "Зарегистрироваться и записаться"}
+            {enrollLoading ? "Записываем..." : getPrimaryActionLabel(existingEnrollment, user)}
           </button>
 
           <button
