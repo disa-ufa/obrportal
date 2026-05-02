@@ -181,6 +181,9 @@ export function DashboardPage({
   const users = asArray(adminData?.users);
   const organizations = asArray(adminData?.organizations);
   const groups = asArray(adminData?.groups);
+  const courses = asArray(adminData?.courses);
+  const enrollments = asArray(adminData?.enrollments);
+  const documents = asArray(adminData?.documents);
   const roles = asArray(adminData?.roles);
   const permissions = asArray(adminData?.permissions);
   const auditEvents = asArray(adminData?.auditEvents);
@@ -189,6 +192,14 @@ export function DashboardPage({
   const inactiveUsersCount = countWhere(users, (item) => item.is_active === false);
   const activeGroupsCount = countWhere(groups, (item) => item.is_active !== false);
   const inactiveGroupsCount = countWhere(groups, (item) => item.is_active === false);
+  const activeCoursesCount = countWhere(courses, (item) => item.is_active !== false);
+  const inactiveCoursesCount = countWhere(courses, (item) => item.is_active === false);
+  const assignedEnrollmentsCount = countWhere(enrollments, (item) => item.status === "assigned");
+  const activeEnrollmentsCount = countWhere(enrollments, (item) => item.status === "active");
+  const completedEnrollmentsCount = countWhere(enrollments, (item) => item.status === "completed");
+  const availableDocumentsCount = countWhere(documents, (item) => item.status === "available");
+  const draftDocumentsCount = countWhere(documents, (item) => item.status === "draft");
+  const revokedDocumentsCount = countWhere(documents, (item) => item.status === "revoked");
   const systemRolesCount = countWhere(roles, (item) => item.is_system || item.is_builtin);
 
   return (
@@ -235,15 +246,24 @@ export function DashboardPage({
               <MetricCard label="Пользователи" value={users.length} hint="Все учётные записи" to="/admin/users" />
               <MetricCard label="Организации" value={organizations.length} hint="Юридические лица" to="/admin/organizations" />
               <MetricCard label="Группы" value={groups.length} hint="Учебные группы" to="/admin/groups" />
+              <MetricCard label="Курсы" value={courses.length} hint="Образовательные программы" to="/admin/courses" />
+              <MetricCard label="Назначения" value={enrollments.length} hint="Слушатель → программа" to="/admin/enrollments" />
+              <MetricCard label="Документы" value={documents.length} hint="Реестр и файлы" to="/admin/documents" />
               <MetricCard label="Роли" value={roles.length} hint="Ролевая модель" to="/admin/roles" />
               <MetricCard label="Права" value={permissions.length} hint="Разрешения RBAC" to="/admin/permissions" />
               <MetricCard label="Аудит" value={auditEvents.length} hint="Последние события" to="/admin/audit-events" />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Активные пользователи" value={activeUsersCount} hint="is_active не выключен" />
-              <MetricCard label="Неактивные пользователи" value={inactiveUsersCount} hint="Заблокированы или отключены" />
-              <MetricCard label="Активные группы" value={activeGroupsCount} hint={`Неактивных групп: ${inactiveGroupsCount}`} />
+              <MetricCard label="Активные пользователи" value={activeUsersCount} hint={`Неактивных: ${inactiveUsersCount}`} />
+              <MetricCard label="Активные группы" value={activeGroupsCount} hint={`Неактивных: ${inactiveGroupsCount}`} />
+              <MetricCard label="Активные курсы" value={activeCoursesCount} hint={`Неактивных: ${inactiveCoursesCount}`} />
+              <MetricCard label="Назначены" value={assignedEnrollmentsCount} hint="Ожидают старта" />
+              <MetricCard label="В процессе" value={activeEnrollmentsCount} hint="Текущие обучения" />
+              <MetricCard label="Завершены" value={completedEnrollmentsCount} hint="Созданы/ожидают документы" />
+              <MetricCard label="Документы доступны" value={availableDocumentsCount} hint="Опубликованы" />
+              <MetricCard label="Черновики" value={draftDocumentsCount} hint="Скрыты от скачивания" />
+              <MetricCard label="Отозваны" value={revokedDocumentsCount} hint="Недействующие документы" />
               <MetricCard label="Системные роли" value={systemRolesCount} hint="Защищённые роли платформы" />
             </div>
           </div>
