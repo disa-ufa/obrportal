@@ -2012,6 +2012,8 @@ def main() -> int:
     assert len(revoked_learner_documents) == 1
     assert revoked_learner_documents[0]["status"] == "revoked"
     assert revoked_learner_documents[0]["download_available"] is False
+    assert revoked_learner_documents[0]["revoked_at"] is not None
+    assert revoked_learner_documents[0]["revocation_reason"] == revocation_reason
     checks.append("learner revoked generated document becomes non-downloadable")
 
     status, revoked_download_payload = request_json(

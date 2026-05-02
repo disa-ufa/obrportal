@@ -43,6 +43,8 @@ class AccountDocumentItemResponse(BaseModel):
     document_type: str
     title: str
     status: str
+    revoked_at: datetime | None = None
+    revocation_reason: str | None = None
     course_id: str | None = None
     course_slug: str | None = None
     course_title: str | None = None

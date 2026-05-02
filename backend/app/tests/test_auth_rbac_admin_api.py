@@ -5891,3 +5891,52 @@ def test_admin_document_revocation_writes_specific_audit_events() -> None:
     assert "revoked_by_user_id" in restored_event["payload"]["changed_fields"]
     assert "revocation_reason" in restored_event["payload"]["changed_fields"]
 
+
+def test_learner_account_documents_include_revocation_metadata() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    learner_user_id = get_user_id_by_email(admin_token, LEARNER_EMAIL)
+
+    reason = "Learner account revoked metadata"
+
+    document = create_test_document_record_in_db(
+        user_id=learner_user_id,
+        title="Learner revoked certificate",
+        document_type="Certificate",
+        status="available",
+        storage_content=b"learner revoked certificate",
+        storage_extension=".pdf",
+    )
+
+    response = patch_multipart_admin_document(
+        token=admin_token,
+        document_id=document["id"],
+        fields={
+            "status": "revoked",
+            "revocation_reason": reason,
+        },
+    )
+    assert response.status_code == 200
+
+    status, account_documents = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+    assert status == 200
+    assert isinstance(account_documents, dict)
+
+    matches = [
+        item
+        for item in account_documents["items"]
+        if item["id"] == document["id"]
+    ]
+
+    assert len(matches) == 1
+
+    item = matches[0]
+    assert item["status"] == "revoked"
+    assert item["file_available"] is True
+    assert item["download_available"] is False
+    assert item["revoked_at"] is not None
+    assert item["revocation_reason"] == reason

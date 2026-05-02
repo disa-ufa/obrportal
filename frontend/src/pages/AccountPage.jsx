@@ -705,6 +705,28 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   </div>
                 </div>
 
+                {documentItem.status === "revoked" && (
+                  <div className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+                    <div className="rounded-2xl bg-red-50 p-4 text-red-800 ring-1 ring-red-200">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-red-600">
+                        {"\u0414\u0430\u0442\u0430 \u043e\u0442\u0437\u044b\u0432\u0430"}
+                      </div>
+                      <div className="mt-2 font-semibold">
+                        {formatDateTime(documentItem.revoked_at)}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-red-50 p-4 text-red-800 ring-1 ring-red-200">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-red-600">
+                        {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u043e\u0442\u0437\u044b\u0432\u0430"}
+                      </div>
+                      <div className="mt-2 font-semibold">
+                        {documentItem.revocation_reason || "-"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {showPublicVerification && (
                   <DocumentVerificationQrBlock
                     code={documentItem.verification_code}
