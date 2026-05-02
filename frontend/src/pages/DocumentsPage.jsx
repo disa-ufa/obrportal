@@ -38,6 +38,27 @@ function getDocumentStatusTone(status) {
   }
 }
 
+function calculateDocumentStatusCounts(items) {
+  const counts = {
+    all: Array.isArray(items) ? items.length : 0,
+    available: 0,
+    draft: 0,
+    revoked: 0,
+  };
+
+  if (!Array.isArray(items)) {
+    return counts;
+  }
+
+  items.forEach((item) => {
+    if (Object.prototype.hasOwnProperty.call(counts, item.status)) {
+      counts[item.status] += 1;
+    }
+  });
+
+  return counts;
+}
+
 function getLearnerVisibilityLabel(documentItem) {
   if (documentItem.status === "available" && documentItem.file_available) {
     return "Слушатель может скачать";
@@ -218,6 +239,12 @@ export function DocumentsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
+  const [documentStatusCounts, setDocumentStatusCounts] = useState({
+    all: 0,
+    available: 0,
+    draft: 0,
+    revoked: 0,
+  });
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
@@ -331,14 +358,27 @@ export function DocumentsPage() {
 
       const filters = nextFilters ?? buildDocumentFilters();
 
-      const [documentsResponse, usersResponse, coursesResponse, enrollmentsResponse] = await Promise.all([
+      const counterFilters = {
+        ...filters,
+        status: "",
+      };
+
+      const [
+        documentsResponse,
+        usersResponse,
+        coursesResponse,
+        enrollmentsResponse,
+        counterDocumentsResponse,
+      ] = await Promise.all([
         getAdminDocuments(filters),
         getAdminUsers(),
         getAdminCourses({ limit: 300 }),
         getAdminEnrollments({ limit: 300 }),
+        getAdminDocuments(counterFilters),
       ]);
 
       setDocuments(Array.isArray(documentsResponse) ? documentsResponse : []);
+      setDocumentStatusCounts(calculateDocumentStatusCounts(counterDocumentsResponse));
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
@@ -685,6 +725,11 @@ export function DocumentsPage() {
     await loadData(buildDocumentFilters());
   }
 
+  async function handleQuickStatusFilter(nextStatus) {
+    setFilterStatus(nextStatus);
+    await loadData(buildDocumentFilters({ status: nextStatus }));
+  }
+
   async function handleClearEnrollmentFilter() {
     setFilterEnrollmentId("");
 
@@ -953,6 +998,40 @@ export function DocumentsPage() {
               </div>
             </div>
           )}
+
+          <div className="mb-5 flex flex-wrap gap-2">
+            {[
+              { value: "", label: "Все", count: documentStatusCounts.all },
+              ...DOCUMENT_STATUSES.map((statusItem) => ({
+                ...statusItem,
+                count: documentStatusCounts[statusItem.value] || 0,
+              })),
+            ].map((item) => {
+              const isActive = filterStatus === item.value;
+
+              return (
+                <button
+                  key={item.value || "all"}
+                  type="button"
+                  onClick={() => handleQuickStatusFilter(item.value)}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
+                    isActive
+                      ? "bg-slate-900 text-white ring-slate-900"
+                      : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  <span>{item.label}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs ${
+                      isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {item.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
           <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr_1fr_auto_auto]">
             <input
