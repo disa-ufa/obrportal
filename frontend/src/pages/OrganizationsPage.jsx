@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { OrganizationDetailPanel } from "../components/admin/OrganizationDetailPanel";
 import { OrganizationForm } from "../components/admin/OrganizationForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
@@ -53,6 +54,135 @@ function organizationMatchesScope(organization, scope) {
   return true;
 }
 
+const ORGANIZATION_SCOPE_FILTERS = [
+  { value: "all", label: "Все" },
+  { value: "with_kpp", label: "С КПП" },
+  { value: "without_kpp", label: "Без КПП" },
+  { value: "with_ogrn", label: "С ОГРН" },
+  { value: "without_ogrn", label: "Без ОГРН" },
+];
+
+function getOrganizationFiltersFromSearch(search) {
+  const params = new URLSearchParams(search);
+
+  return {
+    q: params.get("q") || "",
+    scope: params.get("scope") || "all",
+  };
+}
+
+function buildOrganizationsPath(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (!value) {
+      return;
+    }
+
+    if (key === "scope" && value === "all") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return query ? `/admin/organizations?${query}` : "/admin/organizations";
+}
+
+function buildGroupsPath(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+
+  return query ? `/admin/groups?${query}` : "/admin/groups";
+}
+
+function buildEnrollmentsPath(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+
+  return query ? `/admin/enrollments?${query}` : "/admin/enrollments";
+}
+
+function calculateOrganizationCounts(items) {
+  const counts = {
+    all: Array.isArray(items) ? items.length : 0,
+    with_kpp: 0,
+    without_kpp: 0,
+    with_ogrn: 0,
+    without_ogrn: 0,
+  };
+
+  if (!Array.isArray(items)) {
+    return counts;
+  }
+
+  items.forEach((organization) => {
+    if (organization.kpp) {
+      counts.with_kpp += 1;
+    } else {
+      counts.without_kpp += 1;
+    }
+
+    if (organization.ogrn) {
+      counts.with_ogrn += 1;
+    } else {
+      counts.without_ogrn += 1;
+    }
+  });
+
+  return counts;
+}
+
+function QuickScopeFilters({ activeValue, counts, disabled, onChange }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {ORGANIZATION_SCOPE_FILTERS.map((item) => {
+        const isActive = activeValue === item.value;
+        const count = counts[item.value] ?? counts.all ?? 0;
+
+        return (
+          <button
+            key={item.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(item.value)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isActive
+                ? "bg-slate-900 text-white ring-slate-900"
+                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>{item.label}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function OrganizationsPage({
   user,
   organizations,
@@ -67,24 +197,75 @@ export function OrganizationsPage({
   onDeleteOrganization,
   onRefreshAdminData,
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialFilters = getOrganizationFiltersFromSearch(location.search);
+
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [scopeFilter, setScopeFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState(initialFilters.q);
+  const [scopeFilter, setScopeFilter] = useState(initialFilters.scope);
+
+  useEffect(() => {
+    const nextFilters = getOrganizationFiltersFromSearch(location.search);
+
+    setSearchQuery(nextFilters.q);
+    setScopeFilter(nextFilters.scope);
+  }, [location.search]);
+
+  const baseFilteredOrganizations = useMemo(
+    () => organizations.filter((organization) =>
+      organizationMatchesSearch(organization, searchQuery)
+    ),
+    [organizations, searchQuery]
+  );
+
+  const organizationCounts = useMemo(
+    () => calculateOrganizationCounts(baseFilteredOrganizations),
+    [baseFilteredOrganizations]
+  );
 
   const filteredOrganizations = useMemo(
-    () => organizations.filter((organization) => (
-      organizationMatchesSearch(organization, searchQuery)
-      && organizationMatchesScope(organization, scopeFilter)
-    )),
-    [organizations, searchQuery, scopeFilter]
+    () => baseFilteredOrganizations.filter((organization) =>
+      organizationMatchesScope(organization, scopeFilter)
+    ),
+    [baseFilteredOrganizations, scopeFilter]
   );
+
+  const hasActiveFilters = Boolean(searchQuery.trim()) || scopeFilter !== "all";
+
+  function buildOrganizationFilters(overrides = {}) {
+    return {
+      q: overrides.q ?? searchQuery,
+      scope: overrides.scope ?? scopeFilter,
+    };
+  }
+
+  function navigateToOrganizationFilters(filters, options = { replace: true }) {
+    const nextPath = buildOrganizationsPath(filters);
+    const currentPath = `${location.pathname}${location.search}`;
+
+    if (currentPath === nextPath) {
+      return;
+    }
+
+    navigate(nextPath, options);
+  }
+
+  function handleSearchChange(value) {
+    setSearchQuery(value);
+    navigateToOrganizationFilters(buildOrganizationFilters({ q: value }));
+  }
+
+  function handleScopeChange(value) {
+    setScopeFilter(value);
+    navigateToOrganizationFilters(buildOrganizationFilters({ scope: value }));
+  }
 
   function resetFilters() {
     setSearchQuery("");
     setScopeFilter("all");
+    navigateToOrganizationFilters({}, { replace: true });
   }
-
-  const hasActiveFilters = Boolean(searchQuery.trim()) || scopeFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -131,7 +312,7 @@ export function OrganizationsPage({
                 <input
                   type="search"
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(event) => handleSearchChange(event.target.value)}
                   placeholder="Название, ИНН, КПП, ОГРН или адрес"
                   className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 />
@@ -140,7 +321,7 @@ export function OrganizationsPage({
               <AdminFilterField label="Данные" className="block space-y-2">
                 <select
                   value={scopeFilter}
-                  onChange={(event) => setScopeFilter(event.target.value)}
+                  onChange={(event) => handleScopeChange(event.target.value)}
                   className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 >
                   <option value="all">Все организации</option>
@@ -151,6 +332,18 @@ export function OrganizationsPage({
                 </select>
               </AdminFilterField>
             </AdminFilterPanel>
+
+            <QuickScopeFilters
+              activeValue={scopeFilter}
+              counts={organizationCounts}
+              disabled={loading}
+              onChange={handleScopeChange}
+            />
+
+            <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+              <span>Показано организаций: {filteredOrganizations.length}</span>
+              <span>Всего по текущему поиску: {organizationCounts.all || 0}</span>
+            </div>
 
             {loading ? (
               <LoadingBlock text="Загружаем организации..." />
@@ -163,7 +356,7 @@ export function OrganizationsPage({
                 )}
                 rows={filteredOrganizations}
                 selectedRowId={selectedOrganization?.id}
-                minWidth="860px"
+                minWidth="980px"
                 columns={[
                   { key: "name", title: "Название" },
                   { key: "inn", title: "ИНН" },
@@ -188,12 +381,28 @@ export function OrganizationsPage({
                     key: "actions",
                     title: "Действия",
                     render: (row) => (
-                      <ActionButton
-                        onClick={() => onOpenOrganization(row.id)}
-                        disabled={selectedOrganizationLoading}
-                      >
-                        {selectedOrganization?.id === row.id ? "Открыто" : "Открыть"}
-                      </ActionButton>
+                      <div className="flex flex-wrap gap-2">
+                        <ActionButton
+                          onClick={() => onOpenOrganization(row.id)}
+                          disabled={selectedOrganizationLoading}
+                        >
+                          {selectedOrganization?.id === row.id ? "Открыто" : "Открыть"}
+                        </ActionButton>
+
+                        <Link
+                          to={buildGroupsPath({ organization_id: row.id })}
+                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                        >
+                          Группы
+                        </Link>
+
+                        <Link
+                          to={buildEnrollmentsPath({ q: row.name })}
+                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                        >
+                          Назначения
+                        </Link>
+                      </div>
                     ),
                   },
                 ]}
