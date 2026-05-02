@@ -1973,6 +1973,34 @@ def main() -> int:
     assert revoked_public_verify["registry_status"] == "revoked"
     checks.append("public verify revoked generated completion document ok")
 
+    status, learner_documents_after_revoke = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner documents after generated document revoke")
+    assert isinstance(learner_documents_after_revoke, dict)
+
+    revoked_learner_documents = [
+        item
+        for item in learner_documents_after_revoke["items"]
+        if item["id"] == completion_document_id
+    ]
+
+    assert len(revoked_learner_documents) == 1
+    assert revoked_learner_documents[0]["status"] == "revoked"
+    assert revoked_learner_documents[0]["download_available"] is False
+    checks.append("learner revoked generated document becomes non-downloadable")
+
+    status, revoked_download_payload = request_json(
+        "GET",
+        f"/api/v1/account/documents/{completion_document_id}/download",
+        token=learner_token,
+    )
+    assert_status(status, 409, "learner revoked generated document download blocked")
+    assert isinstance(revoked_download_payload, dict)
+    checks.append("learner revoked generated document download blocked")
+
     status, restored_completion_document = request_form(
         "PATCH",
         f"/api/v1/admin/documents/{completion_document_id}",
