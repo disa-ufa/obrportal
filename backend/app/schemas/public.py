@@ -25,6 +25,8 @@ class PublicDocumentVerifyResponse(BaseModel):
     issuer_ogrn: str | None = None
     registry_status: str
     verification_status: str
+    revoked_at: datetime | None = None
+    revocation_reason: str | None = None
 
 
 class PublicCourseItemResponse(BaseModel):

@@ -1971,6 +1971,8 @@ def main() -> int:
     assert revoked_public_verify["document_number"] == completion_documents[0]["document_number"]
     assert revoked_public_verify["verification_code"] == completion_documents[0]["verification_code"]
     assert revoked_public_verify["registry_status"] == "revoked"
+    assert revoked_public_verify["revoked_at"] is not None
+    assert revoked_public_verify["revocation_reason"] == revocation_reason
     checks.append("public verify revoked generated completion document ok")
 
     status, learner_documents_after_revoke = request_json(

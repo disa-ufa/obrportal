@@ -114,6 +114,8 @@ async def verify_document(
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("registry_status"),
+            DocumentRecord.revoked_at.label("revoked_at"),
+            DocumentRecord.revocation_reason.label("revocation_reason"),
             DocumentRecord.created_at.label("issued_at"),
             DocumentRecord.storage_path.label("storage_path"),
             User.full_name.label("holder_name"),
@@ -180,4 +182,6 @@ async def verify_document(
         issuer_ogrn=settings.document_org_ogrn,
         registry_status=row.registry_status,
         verification_status=verification_status,
+        revoked_at=row.revoked_at,
+        revocation_reason=row.revocation_reason,
     )
