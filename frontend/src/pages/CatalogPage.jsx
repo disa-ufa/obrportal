@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getPublicCourses } from "../api/client";
+import { getAccountCourses, getPublicCourses } from "../api/client";
 
 function formatCourseDocument(course) {
   return course.document_type || course.document || "Итоговый документ";
@@ -7,6 +7,66 @@ function formatCourseDocument(course) {
 
 function formatCoursePrice(course) {
   return course.price || "Стоимость уточняется";
+}
+
+function getEnrollmentStatusLabel(status) {
+  switch (status) {
+    case "assigned":
+      return "Назначен";
+    case "active":
+      return "В процессе";
+    case "completed":
+      return "Завершён";
+    case "cancelled":
+      return "Отменён";
+    default:
+      return "Не записан";
+  }
+}
+
+function getEnrollmentStatusTone(status) {
+  switch (status) {
+    case "assigned":
+      return "bg-blue-50 text-blue-700 ring-blue-200";
+    case "active":
+      return "bg-green-50 text-green-700 ring-green-200";
+    case "completed":
+      return "bg-slate-100 text-slate-700 ring-slate-200";
+    case "cancelled":
+      return "bg-red-50 text-red-700 ring-red-200";
+    default:
+      return "bg-white text-slate-600 ring-slate-200";
+  }
+}
+
+function buildEnrollmentMap(accountCourses) {
+  return accountCourses.reduce((acc, enrollment) => {
+    if (enrollment.course_id) {
+      acc.byCourseId[enrollment.course_id] = enrollment;
+    }
+
+    if (enrollment.course_slug) {
+      acc.byCourseSlug[enrollment.course_slug] = enrollment;
+    }
+
+    return acc;
+  }, { byCourseId: {}, byCourseSlug: {} });
+}
+
+function getCourseEnrollment(course, enrollmentMap) {
+  return enrollmentMap.byCourseId[course.id] || enrollmentMap.byCourseSlug[course.slug] || null;
+}
+
+function getCourseActionLabel(enrollment) {
+  if (!enrollment) {
+    return "Подробнее / записаться";
+  }
+
+  if (enrollment.status === "completed") {
+    return "Программа завершена";
+  }
+
+  return "Открыть в кабинете";
 }
 
 function getFormatOptions(courses) {
@@ -17,14 +77,16 @@ function getFormatOptions(courses) {
   return Array.from(new Set(formats)).sort();
 }
 
-export function CatalogPage({ onPageChange, onOpenCourse }) {
+export function CatalogPage({ onPageChange, onOpenCourse, user }) {
   const [courses, setCourses] = useState([]);
+  const [accountCourses, setAccountCourses] = useState([]);
   const [query, setQuery] = useState("");
   const [formatFilter, setFormatFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const formatOptions = useMemo(() => getFormatOptions(courses), [courses]);
+  const enrollmentMap = useMemo(() => buildEnrollmentMap(accountCourses), [accountCourses]);
 
   const filteredCourses = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -59,13 +121,19 @@ export function CatalogPage({ onPageChange, onOpenCourse }) {
         setLoading(true);
         setError("");
 
-        const response = await getPublicCourses({ limit: 300 });
+        const [coursesResponse, accountCoursesResponse] = await Promise.all([
+          getPublicCourses({ limit: 300 }),
+          user ? getAccountCourses() : Promise.resolve(null),
+        ]);
 
         if (!isMounted) {
           return;
         }
 
-        setCourses(Array.isArray(response) ? response : []);
+        setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
+        setAccountCourses(
+          Array.isArray(accountCoursesResponse?.items) ? accountCoursesResponse.items : []
+        );
       } catch (err) {
         if (!isMounted) {
           return;
@@ -73,6 +141,7 @@ export function CatalogPage({ onPageChange, onOpenCourse }) {
 
         setError(`${err.status || ""} ${err.message || "Не удалось загрузить каталог программ."}`.trim());
         setCourses([]);
+        setAccountCourses([]);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -85,7 +154,7 @@ export function CatalogPage({ onPageChange, onOpenCourse }) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?.id]);
 
   function resetFilters() {
     setQuery("");
@@ -139,8 +208,9 @@ export function CatalogPage({ onPageChange, onOpenCourse }) {
           </button>
         </div>
 
-        <div className="mt-4 text-sm text-slate-500">
-          Найдено программ: {filteredCourses.length}
+        <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-500">
+          <span>Найдено программ: {filteredCourses.length}</span>
+          {user && <span>Мои записи в каталоге: {accountCourses.length}</span>}
         </div>
       </section>
 
@@ -168,7 +238,10 @@ export function CatalogPage({ onPageChange, onOpenCourse }) {
         </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {filteredCourses.map((course) => (
+          {filteredCourses.map((course) => {
+            const enrollment = getCourseEnrollment(course, enrollmentMap);
+
+            return (
             <article
               key={course.id}
               className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
@@ -182,6 +255,15 @@ export function CatalogPage({ onPageChange, onOpenCourse }) {
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-200">
                   {formatCourseDocument(course)}
                 </span>
+                {user && (
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getEnrollmentStatusTone(
+                      enrollment?.status
+                    )}`}
+                  >
+                    {getEnrollmentStatusLabel(enrollment?.status)}
+                  </span>
+                )}
               </div>
 
               <h2 className="mt-4 text-xl font-bold text-slate-900">
@@ -206,13 +288,14 @@ export function CatalogPage({ onPageChange, onOpenCourse }) {
 
               <button
                 type="button"
-                onClick={() => onOpenCourse(course.slug)}
+                onClick={() => (enrollment ? onPageChange("account") : onOpenCourse(course.slug))}
                 className="mt-6 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
-                Открыть программу
+                {getCourseActionLabel(enrollment)}
               </button>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

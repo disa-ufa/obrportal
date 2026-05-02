@@ -1076,7 +1076,7 @@ export default function App() {
     }
 
     if (page === "catalog") {
-      return <CatalogPage onPageChange={handleNavigatePublicPage} onOpenCourse={handleOpenPublicCourse} />;
+      return <CatalogPage onPageChange={handleNavigatePublicPage} onOpenCourse={handleOpenPublicCourse} user={user} />;
     }
 
     if (page === "course-detail") {
@@ -1369,6 +1369,7 @@ export default function App() {
             <CatalogPage
               onPageChange={handleNavigatePublicPage}
               onOpenCourse={handleOpenPublicCourse}
+              user={user}
             />
           }
         />
