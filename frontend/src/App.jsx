@@ -46,7 +46,7 @@ import {
   updateOrgLearningGroup,
 } from "./api/client";
 import { PUBLIC_COURSES } from "./data/publicCourses";
-import { getAdminPageFromPathname } from "./utils/adminRoutes";
+import { getAdminPageFromPathname, getAdminPathForPage } from "./utils/adminRoutes";
 import { AuditPage } from "./pages/AuditPage";
 import { AccountPage } from "./pages/AccountPage";
 import { AuthPage } from "./pages/AuthPage";
@@ -442,6 +442,13 @@ export default function App() {
     }
 
     navigate(PUBLIC_ROUTE_MAP[pageKey] || "/");
+  }
+
+  function handleNavigateAdminPage(pageKey) {
+    const path = getAdminPathForPage(pageKey);
+
+    setCurrentPage(pageKey);
+    navigate(path);
   }
 
   function handleOpenPublicCourse(courseSlug) {
@@ -1313,7 +1320,7 @@ export default function App() {
         authBadgeText={authBadgeText}
         authBadgeTone={authBadgeTone}
         currentPage={activeAdminPage}
-        onPageChange={setCurrentPage}
+        onPageChange={handleNavigateAdminPage}
         adminLoading={adminLoading}
         adminDataLoadedAt={adminDataLoadedAt}
         counts={{
