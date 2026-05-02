@@ -656,6 +656,11 @@ def main() -> int:
     assert first_org.get("inn")
     checks.append("admin organizations ok")
 
+    status, frontend_admin_organizations_html, frontend_admin_organizations_headers = request_frontend_text("/admin/organizations")
+    assert_status(status, 200, "frontend direct admin organizations route")
+    assert isinstance(frontend_admin_organizations_html, str)
+    checks.append("frontend direct admin organizations route ok")
+
     organization_id = str(first_org["id"])
     status, organization_detail = request_json(
         "GET",
