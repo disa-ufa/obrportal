@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   completeAccountCourse,
   downloadAccountDocument,
@@ -19,6 +19,8 @@ function getStatusLabel(status) {
       return "Назначена";
     case "completed":
       return "Завершена";
+    case "cancelled":
+      return "Отменена";
     default:
       return status || "—";
   }
@@ -32,9 +34,81 @@ function getStatusTone(status) {
       return "bg-blue-50 text-blue-700 ring-blue-200";
     case "completed":
       return "bg-slate-100 text-slate-700 ring-slate-200";
+    case "cancelled":
+      return "bg-red-50 text-red-700 ring-red-200";
     default:
       return "bg-slate-100 text-slate-700 ring-slate-200";
   }
+}
+
+const ACCOUNT_COURSE_FILTERS = [
+  { value: "", label: "Все" },
+  { value: "assigned", label: "Назначены" },
+  { value: "active", label: "В процессе" },
+  { value: "completed", label: "Завершены" },
+  { value: "cancelled", label: "Отменены" },
+];
+
+const ACCOUNT_DOCUMENT_FILTERS = [
+  { value: "", label: "Все" },
+  { value: "available", label: "Доступные" },
+  { value: "draft", label: "Черновики" },
+  { value: "revoked", label: "Отозванные" },
+];
+
+function calculateStatusCounts(items, getStatus) {
+  const counts = {
+    all: Array.isArray(items) ? items.length : 0,
+  };
+
+  if (!Array.isArray(items)) {
+    return counts;
+  }
+
+  items.forEach((item) => {
+    const status = getStatus(item);
+
+    if (!status) {
+      return;
+    }
+
+    counts[status] = (counts[status] || 0) + 1;
+  });
+
+  return counts;
+}
+
+function QuickFilterButtons({ items, activeValue, counts, onChange }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => {
+        const isActive = activeValue === item.value;
+        const count = item.value ? counts[item.value] || 0 : counts.all || 0;
+
+        return (
+          <button
+            key={item.value || "all"}
+            type="button"
+            onClick={() => onChange(item.value)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
+              isActive
+                ? "bg-slate-900 text-white ring-slate-900"
+                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>{item.label}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function getDocumentStatusLabel(status) {
@@ -184,6 +258,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [downloadLoadingId, setDownloadLoadingId] = useState("");
   const [courseActionError, setCourseActionError] = useState("");
   const [courseActionLoadingKey, setCourseActionLoadingKey] = useState("");
+  const [courseStatusFilter, setCourseStatusFilter] = useState("");
+  const [documentStatusFilter, setDocumentStatusFilter] = useState("");
   const [accountNotice, setAccountNotice] = useState(null);
 
   useEffect(() => {
@@ -302,6 +378,32 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const profile = summary?.profile || user;
   const courses = coursesResponse?.items || [];
   const documents = documentsResponse?.items || [];
+
+  const courseStatusCounts = useMemo(
+    () => calculateStatusCounts(courses, (course) => course.status),
+    [courses]
+  );
+
+  const documentStatusCounts = useMemo(
+    () => calculateStatusCounts(documents, (documentItem) => documentItem.status),
+    [documents]
+  );
+
+  const visibleCourses = useMemo(
+    () =>
+      courseStatusFilter
+        ? courses.filter((course) => course.status === courseStatusFilter)
+        : courses,
+    [courses, courseStatusFilter]
+  );
+
+  const visibleDocuments = useMemo(
+    () =>
+      documentStatusFilter
+        ? documents.filter((documentItem) => documentItem.status === documentStatusFilter)
+        : documents,
+    [documents, documentStatusFilter]
+  );
 
   return (
     <div className="space-y-6">
@@ -477,7 +579,22 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
           </div>
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
-            {courses.map((course) => (
+            <div className="xl:col-span-2">
+              <QuickFilterButtons
+                items={ACCOUNT_COURSE_FILTERS}
+                activeValue={courseStatusFilter}
+                counts={courseStatusCounts}
+                onChange={setCourseStatusFilter}
+              />
+            </div>
+
+            {visibleCourses.length === 0 && (
+              <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200 xl:col-span-2">
+                Нет программ с выбранным статусом.
+              </div>
+            )}
+
+            {visibleCourses.map((course) => (
               <article
                 key={course.enrollment_id}
                 className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
@@ -628,7 +745,22 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
           </div>
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
-            {documents.map((documentItem) => {
+            <div className="xl:col-span-2">
+              <QuickFilterButtons
+                items={ACCOUNT_DOCUMENT_FILTERS}
+                activeValue={documentStatusFilter}
+                counts={documentStatusCounts}
+                onChange={setDocumentStatusFilter}
+              />
+            </div>
+
+            {visibleDocuments.length === 0 && (
+              <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200 xl:col-span-2">
+                Нет документов с выбранным статусом.
+              </div>
+            )}
+
+            {visibleDocuments.map((documentItem) => {
               const downloadAvailable = canDownloadDocument(documentItem);
               const documentNotice = getAccountDocumentNotice(documentItem);
               const showPublicVerification = canShowPublicDocumentVerification(documentItem);
