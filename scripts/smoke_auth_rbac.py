@@ -2062,6 +2062,52 @@ def main() -> int:
     }
     checks.append("admin document restored audit event ok")
 
+    status, restored_public_verify = request_json(
+        "GET",
+        f"/api/v1/public/documents/verify?number={completion_documents[0]['verification_code']}",
+    )
+    assert_status(status, 200, "public verify restored generated completion document")
+    assert isinstance(restored_public_verify, dict)
+    assert restored_public_verify["document_number"] == completion_documents[0]["document_number"]
+    assert restored_public_verify["verification_code"] == completion_documents[0]["verification_code"]
+    assert restored_public_verify["registry_status"] == "available"
+    assert restored_public_verify["verification_status"] == "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d"
+    assert restored_public_verify["revoked_at"] is None
+    assert restored_public_verify["revocation_reason"] is None
+    checks.append("public verify restored generated completion document ok")
+
+    status, learner_documents_after_restore = request_json(
+        "GET",
+        "/api/v1/account/documents",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner documents after generated document restore")
+    assert isinstance(learner_documents_after_restore, dict)
+
+    restored_learner_documents = [
+        item
+        for item in learner_documents_after_restore["items"]
+        if item["id"] == completion_document_id
+    ]
+
+    assert len(restored_learner_documents) == 1
+    assert restored_learner_documents[0]["status"] == "available"
+    assert restored_learner_documents[0]["download_available"] is True
+    assert restored_learner_documents[0]["revoked_at"] is None
+    assert restored_learner_documents[0]["revocation_reason"] is None
+    checks.append("learner restored generated document becomes downloadable")
+
+    status, restored_generated_pdf_body, restored_generated_pdf_headers = request_binary(
+        "GET",
+        f"/api/v1/account/documents/{completion_document_id}/download",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner restored generated completion PDF download")
+    assert restored_generated_pdf_body.startswith(b"%PDF-")
+    assert b"%%EOF" in restored_generated_pdf_body
+    assert len(restored_generated_pdf_body) > 2_500
+    checks.append("learner restored generated completion PDF download ok")
+
     frontend_verify_path = "/verify/" + quote(str(completion_documents[0]["verification_code"]), safe="")
     status, frontend_verify_html, frontend_verify_headers = request_frontend_text(frontend_verify_path)
     assert_status(status, 200, "frontend direct generated document verification route")
