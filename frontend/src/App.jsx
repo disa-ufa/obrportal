@@ -1231,7 +1231,7 @@ export default function App() {
 
     }
 
-    if (currentPage === "audit") {
+    if (currentPage === "audit" || location.pathname === "/admin/audit-events") {
       return (
         <AuditPage
           user={user}
@@ -1270,8 +1270,10 @@ export default function App() {
 
   const adminPageContent = renderCurrentPage();
 
-  const activeAdminPage = location.pathname === "/admin/documents"
-    ? "documents"
+  const activeAdminPage = location.pathname === "/admin/audit-events"
+    ? "audit"
+    : location.pathname === "/admin/documents"
+      ? "documents"
     : location.pathname === "/admin/courses"
       ? "courses"
       : location.pathname === "/admin/enrollments"
@@ -1317,7 +1319,7 @@ export default function App() {
         isAdmin={isAdmin}
         authBadgeText={authBadgeText}
         authBadgeTone={authBadgeTone}
-        currentPage={currentPage}
+        currentPage={activeAdminPage}
         onPageChange={setCurrentPage}
         adminLoading={adminLoading}
         adminDataLoadedAt={adminDataLoadedAt}

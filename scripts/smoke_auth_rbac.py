@@ -1584,6 +1584,11 @@ def main() -> int:
         raise AssertionError("admin audit-events filter returned wrong action")
     checks.append("admin audit-events filter ok")
 
+    status, frontend_audit_html, frontend_audit_headers = request_frontend_text("/admin/audit-events")
+    assert_status(status, 200, "frontend direct admin audit-events route")
+    assert isinstance(frontend_audit_html, str)
+    checks.append("frontend direct admin audit-events route ok")
+
     status, missing_audit_event = request_json(
         "GET",
         "/api/v1/admin/audit-events/00000000-0000-0000-0000-000000000000",
