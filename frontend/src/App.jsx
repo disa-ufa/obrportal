@@ -46,6 +46,7 @@ import {
   updateOrgLearningGroup,
 } from "./api/client";
 import { PUBLIC_COURSES } from "./data/publicCourses";
+import { getAdminPageFromPathname } from "./utils/adminRoutes";
 import { AuditPage } from "./pages/AuditPage";
 import { AccountPage } from "./pages/AccountPage";
 import { AuthPage } from "./pages/AuthPage";
@@ -124,23 +125,6 @@ const PUBLIC_ROUTE_MAP = {
   register: "/register",
   account: "/account",
 };
-
-const ADMIN_ROUTE_PAGE_MAP = {
-  "/admin": "dashboard",
-  "/admin/users": "users",
-  "/admin/organizations": "organizations",
-  "/admin/groups": "groups",
-  "/admin/courses": "courses",
-  "/admin/enrollments": "enrollments",
-  "/admin/documents": "documents",
-  "/admin/roles": "roles",
-  "/admin/permissions": "permissions",
-  "/admin/audit-events": "audit",
-};
-
-function getAdminPageFromPathname(pathname) {
-  return ADMIN_ROUTE_PAGE_MAP[pathname] || null;
-}
 
 function getPublicPageFromPathname(pathname) {
   if (pathname === "/") return "home";

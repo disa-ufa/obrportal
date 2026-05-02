@@ -1,18 +1,6 @@
 import { Link } from "react-router-dom";
 import { StatusBadge } from "../ui/StatusBadge";
-
-const NAV_ITEMS = [
-  { key: "dashboard", label: "Обзор", path: "/admin" },
-  { key: "users", label: "Пользователи", path: "/admin/users" },
-  { key: "organizations", label: "Организации", path: "/admin/organizations" },
-  { key: "groups", label: "Группы", path: "/admin/groups" },
-  { key: "courses", label: "Программы", path: "/admin/courses" },
-  { key: "enrollments", label: "Назначения", path: "/admin/enrollments" },
-  { key: "documents", label: "Документы", path: "/admin/documents" },
-  { key: "roles", label: "Роли", path: "/admin/roles" },
-  { key: "permissions", label: "Права", path: "/admin/permissions" },
-  { key: "audit", label: "Аудит", path: "/admin/audit-events" },
-];
+import { ADMIN_ROUTE_ITEMS } from "../../utils/adminRoutes";
 
 export function AppShell({
   health,
@@ -39,7 +27,7 @@ export function AppShell({
   }
 
   const currentPageLabel =
-    NAV_ITEMS.find((item) => item.key === currentPage)?.label || "Раздел";
+    ADMIN_ROUTE_ITEMS.find((item) => item.key === currentPage)?.label || "Раздел";
 
   const adminApiStatus = adminLoading
     ? "loading"
@@ -101,7 +89,7 @@ export function AppShell({
             </div>
 
             <nav className="grid grid-cols-2 gap-2 lg:block lg:space-y-2">
-              {NAV_ITEMS.map((item) => {
+              {ADMIN_ROUTE_ITEMS.map((item) => {
                 const count = getCount(item.key);
                 const isActive = currentPage === item.key;
 
