@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   createAdminDocument,
   deleteAdminDocument,
@@ -151,8 +151,44 @@ function getEnrollmentOptionLabel(enrollment) {
   return `${courseTitle} · ${status}${group}${organization}`;
 }
 
-function getEnrollmentIdFromSearch(search) {
-  return new URLSearchParams(search).get("enrollment_id") || "";
+function getDocumentFiltersFromSearch(search) {
+  const params = new URLSearchParams(search);
+
+  return {
+    user_id: params.get("user_id") || "",
+    enrollment_id: params.get("enrollment_id") || "",
+    status: params.get("status") || "",
+    document_type: params.get("document_type") || "",
+    q: params.get("q") || "",
+  };
+}
+
+function buildDocumentsPath(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+
+  return query ? `/admin/documents?${query}` : "/admin/documents";
+}
+
+function buildEnrollmentsPath(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+
+  return query ? `/admin/enrollments?${query}` : "/admin/enrollments";
 }
 
 function getCourseOptionLabel(course) {
@@ -238,6 +274,7 @@ function EmptyState({ onReset }) {
 export function DocumentsPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const initialFilters = getDocumentFiltersFromSearch(location.search);
   const [documents, setDocuments] = useState([]);
   const [documentStatusCounts, setDocumentStatusCounts] = useState({
     all: 0,
@@ -249,13 +286,11 @@ export function DocumentsPage() {
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
 
-  const [filterUserId, setFilterUserId] = useState("");
-  const [filterEnrollmentId, setFilterEnrollmentId] = useState(() =>
-    getEnrollmentIdFromSearch(location.search)
-  );
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterDocumentType, setFilterDocumentType] = useState("");
-  const [filterQuery, setFilterQuery] = useState("");
+  const [filterUserId, setFilterUserId] = useState(initialFilters.user_id);
+  const [filterEnrollmentId, setFilterEnrollmentId] = useState(initialFilters.enrollment_id);
+  const [filterStatus, setFilterStatus] = useState(initialFilters.status);
+  const [filterDocumentType, setFilterDocumentType] = useState(initialFilters.document_type);
+  const [filterQuery, setFilterQuery] = useState(initialFilters.q);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -351,6 +386,29 @@ export function DocumentsPage() {
     };
   }
 
+  function getDocumentFilterPath(overrides = {}) {
+    return buildDocumentsPath({
+      ...buildDocumentFilters(),
+      ...overrides,
+    });
+  }
+
+  function getEnrollmentFilterPath(filters = {}) {
+    return buildEnrollmentsPath(filters);
+  }
+
+  async function navigateToDocumentFilters(filters, options = {}) {
+    const nextPath = buildDocumentsPath(filters);
+    const currentPath = `${location.pathname}${location.search}`;
+
+    if (currentPath === nextPath) {
+      await loadData(filters);
+      return;
+    }
+
+    navigate(nextPath, options);
+  }
+
   async function loadData(nextFilters = null) {
     try {
       setLoading(true);
@@ -390,18 +448,15 @@ export function DocumentsPage() {
   }
 
   useEffect(() => {
-    loadData({});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const nextFilters = getDocumentFiltersFromSearch(location.search);
 
-  useEffect(() => {
-    const nextEnrollmentId = getEnrollmentIdFromSearch(location.search);
+    setFilterUserId(nextFilters.user_id);
+    setFilterEnrollmentId(nextFilters.enrollment_id);
+    setFilterStatus(nextFilters.status);
+    setFilterDocumentType(nextFilters.document_type);
+    setFilterQuery(nextFilters.q);
 
-    setFilterEnrollmentId(nextEnrollmentId);
-
-    if (nextEnrollmentId) {
-      loadData({ enrollment_id: nextEnrollmentId });
-    }
+    loadData(nextFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
@@ -722,23 +777,17 @@ export function DocumentsPage() {
 
   async function handleApplyFilter(event) {
     event.preventDefault();
-    await loadData(buildDocumentFilters());
+    await navigateToDocumentFilters(buildDocumentFilters());
   }
 
   async function handleQuickStatusFilter(nextStatus) {
     setFilterStatus(nextStatus);
-    await loadData(buildDocumentFilters({ status: nextStatus }));
+    await navigateToDocumentFilters(buildDocumentFilters({ status: nextStatus }));
   }
 
   async function handleClearEnrollmentFilter() {
     setFilterEnrollmentId("");
-
-    if (location.pathname === "/admin/documents" && location.search) {
-      navigate("/admin/documents", { replace: true });
-      return;
-    }
-
-    await loadData({ enrollment_id: "" });
+    await navigateToDocumentFilters(buildDocumentFilters({ enrollment_id: "" }), { replace: true });
   }
 
   async function handleResetFilter() {
@@ -747,12 +796,7 @@ export function DocumentsPage() {
     setFilterStatus("");
     setFilterDocumentType("");
     setFilterQuery("");
-    if (location.pathname === "/admin/documents" && location.search) {
-      navigate("/admin/documents", { replace: true });
-      return;
-    }
-
-    await loadData({});
+    await navigateToDocumentFilters({}, { replace: true });
   }
 
   return (
@@ -1092,6 +1136,11 @@ export function DocumentsPage() {
             </button>
           </form>
 
+          <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
+            <span>Показано документов: {documents.length}</span>
+            <span>Всего по текущим фильтрам: {documentStatusCounts.all || 0}</span>
+          </div>
+
           {loading ? (
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
               Загружаем документы...
@@ -1118,6 +1167,8 @@ export function DocumentsPage() {
                 const verificationPath = verificationTarget
                   ? buildDocumentVerificationPath(verificationTarget)
                   : "";
+                const documentCourse =
+                  courses.find((course) => course.id === documentItem.course_id) || null;
 
                 return (
                   <article
@@ -1340,6 +1391,67 @@ export function DocumentsPage() {
                           >
                             {isDownloadSaving ? "Скачиваем..." : getAdminDocumentDownloadLabel(documentItem)}
                           </button>
+
+                          {documentItem.user_id && (
+                            <Link
+                              to={getDocumentFilterPath({
+                                user_id: documentItem.user_id,
+                                enrollment_id: "",
+                                status: "",
+                                document_type: "",
+                                q: "",
+                              })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Документы слушателя
+                            </Link>
+                          )}
+
+                          {documentItem.enrollment_id && (
+                            <Link
+                              to={getDocumentFilterPath({
+                                user_id: "",
+                                enrollment_id: documentItem.enrollment_id,
+                                status: "",
+                                document_type: "",
+                                q: "",
+                              })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Документы назначения
+                            </Link>
+                          )}
+
+                          {documentItem.user_id && (
+                            <Link
+                              to={getEnrollmentFilterPath({
+                                user_id: documentItem.user_id,
+                              })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Назначения слушателя
+                            </Link>
+                          )}
+
+                          {documentItem.course_id && (
+                            <Link
+                              to={getEnrollmentFilterPath({
+                                course_id: documentItem.course_id,
+                              })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Назначения курса
+                            </Link>
+                          )}
+
+                          {documentCourse?.slug && (
+                            <Link
+                              to={`/courses/${encodeURIComponent(documentCourse.slug)}`}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Курс
+                            </Link>
+                          )}
 
                           {documentItem.status === "revoked" && (
                             <button
