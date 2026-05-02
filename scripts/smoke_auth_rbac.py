@@ -321,6 +321,19 @@ def main() -> int:
     assert isinstance(public_courses, list)
     checks.append("public courses list ok")
 
+    public_frontend_routes = [
+        ("/", "home"),
+        ("/catalog", "catalog"),
+        ("/verify-document", "verify-document"),
+        ("/account", "account"),
+    ]
+
+    for route, label in public_frontend_routes:
+        status, frontend_body, frontend_headers = request_frontend_text(route)
+        assert_status(status, 200, f"frontend public route {route}")
+        assert_frontend_shell(frontend_body, f"frontend public route {route}")
+        checks.append(f"frontend public route {label} ok")
+
     status, missing_public_course = request_json(
         "GET",
         "/api/v1/public/courses/missing-public-course",
@@ -1667,6 +1680,17 @@ def main() -> int:
     assert_status(status, 201, "self enroll course create")
     assert isinstance(self_enroll_course, dict)
     checks.append("self enrollment course create ok")
+
+    frontend_self_enroll_course_path = "/courses/" + quote(str(self_enroll_course["slug"]), safe="")
+    status, frontend_self_enroll_course_html, frontend_self_enroll_course_headers = request_frontend_text(
+        frontend_self_enroll_course_path
+    )
+    assert_status(status, 200, "frontend public course detail route")
+    assert_frontend_shell(
+        frontend_self_enroll_course_html,
+        "frontend public course detail route",
+    )
+    checks.append("frontend public course detail route ok")
 
     self_enroll_url = "/api/v1/account/courses/" + str(self_enroll_course["id"]) + "/enroll"
 
