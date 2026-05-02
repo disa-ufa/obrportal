@@ -125,6 +125,23 @@ const PUBLIC_ROUTE_MAP = {
   account: "/account",
 };
 
+const ADMIN_ROUTE_PAGE_MAP = {
+  "/admin": "dashboard",
+  "/admin/users": "users",
+  "/admin/organizations": "organizations",
+  "/admin/groups": "groups",
+  "/admin/courses": "courses",
+  "/admin/enrollments": "enrollments",
+  "/admin/documents": "documents",
+  "/admin/roles": "roles",
+  "/admin/permissions": "permissions",
+  "/admin/audit-events": "audit",
+};
+
+function getAdminPageFromPathname(pathname) {
+  return ADMIN_ROUTE_PAGE_MAP[pathname] || null;
+}
+
 function getPublicPageFromPathname(pathname) {
   if (pathname === "/") return "home";
   if (pathname === "/catalog") return "catalog";
@@ -1060,15 +1077,17 @@ export default function App() {
   }
 
   function renderCurrentPage() {
-    if (currentPage === "home") {
+    const page = getAdminPageFromPathname(location.pathname) || currentPage;
+
+    if (page === "home") {
       return <HomePage onPageChange={handleNavigatePublicPage} onOpenCourse={handleOpenPublicCourse} />;
     }
 
-    if (currentPage === "catalog") {
+    if (page === "catalog") {
       return <CatalogPage onPageChange={handleNavigatePublicPage} onOpenCourse={handleOpenPublicCourse} />;
     }
 
-    if (currentPage === "course-detail") {
+    if (page === "course-detail") {
       return (
         <CourseDetailPage
           courseSlug={null}
@@ -1078,31 +1097,31 @@ export default function App() {
       );
     }
 
-    if (currentPage === "organization-info") {
+    if (page === "organization-info") {
       return <OrganizationInfoPage onPageChange={handleNavigatePublicPage} />;
     }
 
-    if (currentPage === "verify-document") {
+    if (page === "verify-document") {
       return <VerifyDocumentPage onPageChange={handleNavigatePublicPage} />;
     }
 
-    if (currentPage === "contacts") {
+    if (page === "contacts") {
       return <ContactsPage onPageChange={handleNavigatePublicPage} />;
     }
 
-    if (currentPage === "faq") {
+    if (page === "faq") {
       return <FaqPage onPageChange={handleNavigatePublicPage} />;
     }
 
-    if (currentPage === "privacy") {
+    if (page === "privacy") {
       return <PrivacyPage onPageChange={handleNavigatePublicPage} />;
     }
 
-    if (currentPage === "offer") {
+    if (page === "offer") {
       return <OfferPage onPageChange={handleNavigatePublicPage} />;
     }
 
-    if (currentPage === "login") {
+    if (page === "login") {
       return (
         <AuthPage
           email={email}
@@ -1117,13 +1136,13 @@ export default function App() {
         />
       );
     }
-    if (currentPage === "courses" || location.pathname === "/admin/courses") {
+    if (page === "courses") {
       return <AdminCoursesPage />;
     }
-    if (currentPage === "enrollments" || location.pathname === "/admin/enrollments") {
+    if (page === "enrollments") {
       return <AdminEnrollmentsPage />;
     }
-    if (currentPage === "users" || location.pathname === "/admin/users") {
+    if (page === "users") {
       return (
         <UsersPage
           user={user}
@@ -1148,7 +1167,7 @@ export default function App() {
       );
     }
 
-    if (currentPage === "organizations" || location.pathname === "/admin/organizations") {
+    if (page === "organizations") {
       return (
         <OrganizationsPage
           user={user}
@@ -1167,7 +1186,7 @@ export default function App() {
       );
     }
 
-    if (currentPage === "groups" || location.pathname === "/admin/groups") {
+    if (page === "groups") {
       return (
         <GroupsPage
           user={user}
@@ -1187,7 +1206,7 @@ export default function App() {
       );
     }
 
-    if (currentPage === "roles" || location.pathname === "/admin/roles") {
+    if (page === "roles") {
       return (
         <RolesPage
           user={user}
@@ -1209,7 +1228,7 @@ export default function App() {
       );
     }
 
-    if (currentPage === "permissions" || location.pathname === "/admin/permissions") {
+    if (page === "permissions") {
       return (
         <PermissionsPage
           user={user}
@@ -1225,13 +1244,13 @@ export default function App() {
       );
     }
 
-    if (currentPage === "documents" || location.pathname === "/admin/documents") {
+    if (page === "documents") {
 
       return <DocumentsPage />;
 
     }
 
-    if (currentPage === "audit" || location.pathname === "/admin/audit-events") {
+    if (page === "audit") {
       return (
         <AuditPage
           user={user}
@@ -1270,25 +1289,7 @@ export default function App() {
 
   const adminPageContent = renderCurrentPage();
 
-  const activeAdminPage = location.pathname === "/admin/permissions"
-    ? "permissions"
-    : location.pathname === "/admin/roles"
-    ? "roles"
-    : location.pathname === "/admin/organizations"
-    ? "organizations"
-    : location.pathname === "/admin/users"
-    ? "users"
-    : location.pathname === "/admin/audit-events"
-    ? "audit"
-    : location.pathname === "/admin/documents"
-      ? "documents"
-    : location.pathname === "/admin/courses"
-      ? "courses"
-      : location.pathname === "/admin/enrollments"
-        ? "enrollments"
-        : location.pathname === "/admin/groups"
-          ? "groups"
-          : currentPage;
+  const activeAdminPage = getAdminPageFromPathname(location.pathname) || currentPage;
   const currentPublicPage = getPublicPageFromPathname(location.pathname);
   const isAdminRoute = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
   const isAdmin = userHasRole(user, "admin");
