@@ -1,16 +1,17 @@
+import { Link } from "react-router-dom";
 import { StatusBadge } from "../ui/StatusBadge";
 
 const NAV_ITEMS = [
-  { key: "dashboard", label: "Обзор" },
-  { key: "users", label: "Пользователи" },
-  { key: "organizations", label: "Организации" },
-  { key: "groups", label: "Группы" },
-  { key: "courses", label: "Программы" },
-  { key: "enrollments", label: "Назначения" },
-  { key: "documents", label: "Документы" },
-  { key: "roles", label: "Роли" },
-  { key: "permissions", label: "Права" },
-  { key: "audit", label: "Аудит" },
+  { key: "dashboard", label: "Обзор", path: "/admin" },
+  { key: "users", label: "Пользователи", path: "/admin/users" },
+  { key: "organizations", label: "Организации", path: "/admin/organizations" },
+  { key: "groups", label: "Группы", path: "/admin/groups" },
+  { key: "courses", label: "Программы", path: "/admin/courses" },
+  { key: "enrollments", label: "Назначения", path: "/admin/enrollments" },
+  { key: "documents", label: "Документы", path: "/admin/documents" },
+  { key: "roles", label: "Роли", path: "/admin/roles" },
+  { key: "permissions", label: "Права", path: "/admin/permissions" },
+  { key: "audit", label: "Аудит", path: "/admin/audit-events" },
 ];
 
 export function AppShell({
@@ -105,9 +106,10 @@ export function AppShell({
                 const isActive = currentPage === item.key;
 
                 return (
-                  <button
+                  <Link
                     key={item.key}
-                    type="button"
+                    to={item.path}
+                    aria-current={isActive ? "page" : undefined}
                     onClick={() => onPageChange(item.key)}
                     className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-semibold ${
                       isActive
@@ -127,7 +129,7 @@ export function AppShell({
                         {count}
                       </span>
                     )}
-                  </button>
+                  </Link>
                 );
               })}
             </nav>
