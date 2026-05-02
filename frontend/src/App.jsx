@@ -1209,7 +1209,7 @@ export default function App() {
       );
     }
 
-    if (currentPage === "permissions") {
+    if (currentPage === "permissions" || location.pathname === "/admin/permissions") {
       return (
         <PermissionsPage
           user={user}
@@ -1270,7 +1270,9 @@ export default function App() {
 
   const adminPageContent = renderCurrentPage();
 
-  const activeAdminPage = location.pathname === "/admin/roles"
+  const activeAdminPage = location.pathname === "/admin/permissions"
+    ? "permissions"
+    : location.pathname === "/admin/roles"
     ? "roles"
     : location.pathname === "/admin/organizations"
     ? "organizations"

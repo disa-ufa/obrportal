@@ -1443,6 +1443,11 @@ def main() -> int:
     assert first_permission.get("id")
     checks.append("admin permissions ok")
 
+    status, frontend_admin_permissions_html, frontend_admin_permissions_headers = request_frontend_text("/admin/permissions")
+    assert_status(status, 200, "frontend direct admin permissions route")
+    assert isinstance(frontend_admin_permissions_html, str)
+    checks.append("frontend direct admin permissions route ok")
+
     payments_permission = next(
         (item for item in permissions if isinstance(item, dict) and item.get("code") == "payments.write"),
         None,
