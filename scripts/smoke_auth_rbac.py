@@ -1231,6 +1231,11 @@ def main() -> int:
     assert first_role.get("id")
     checks.append("admin roles ok")
 
+    status, frontend_admin_roles_html, frontend_admin_roles_headers = request_frontend_text("/admin/roles")
+    assert_status(status, 200, "frontend direct admin roles route")
+    assert isinstance(frontend_admin_roles_html, str)
+    checks.append("frontend direct admin roles route ok")
+
     created_role_code = unique_role_code()
     status, created_role = request_json(
         "POST",
