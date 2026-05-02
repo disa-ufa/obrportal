@@ -22,6 +22,14 @@ const ENROLLMENT_STATUSES = [
   { value: "cancelled", label: "Отменен" },
 ];
 
+const ENROLLMENT_STATUS_FILTERS = [
+  { value: "", label: "Все" },
+  { value: "assigned", label: "Назначены" },
+  { value: "active", label: "В процессе" },
+  { value: "completed", label: "Завершены" },
+  { value: "cancelled", label: "Отменены" },
+];
+
 const INPUT_CLASS =
   "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
 
@@ -41,8 +49,30 @@ function getStatusLabel(value) {
   return ENROLLMENT_STATUSES.find((item) => item.value === value)?.label || value;
 }
 
-function getLearningGroupIdFromSearch(search) {
-  return new URLSearchParams(search).get("learning_group_id") || "";
+function getEnrollmentFiltersFromSearch(search) {
+  const params = new URLSearchParams(search);
+
+  return {
+    q: params.get("q") || "",
+    user_id: params.get("user_id") || "",
+    course_id: params.get("course_id") || "",
+    status: params.get("status") || "",
+    learning_group_id: params.get("learning_group_id") || "",
+  };
+}
+
+function buildEnrollmentsPath(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+
+  return query ? `/admin/enrollments?${query}` : "/admin/enrollments";
 }
 
 function getStatusTone(value) {
@@ -76,6 +106,26 @@ function formatDateTime(value) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(date);
+}
+
+function calculateStatusCounts(items) {
+  const counts = {
+    all: Array.isArray(items) ? items.length : 0,
+  };
+
+  if (!Array.isArray(items)) {
+    return counts;
+  }
+
+  items.forEach((item) => {
+    if (!item.status) {
+      return;
+    }
+
+    counts[item.status] = (counts[item.status] || 0) + 1;
+  });
+
+  return counts;
 }
 
 const USER_ROLE_LABELS = {
@@ -258,8 +308,43 @@ function EmptyState({ onReset }) {
   );
 }
 
+function QuickStatusFilters({ activeValue, counts, disabled, onChange }) {
+  return (
+    <div className="mb-5 flex flex-wrap gap-2">
+      {ENROLLMENT_STATUS_FILTERS.map((item) => {
+        const isActive = activeValue === item.value;
+        const count = item.value ? counts[item.value] || 0 : counts.all || 0;
+
+        return (
+          <button
+            key={item.value || "all"}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(item.value)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isActive
+                ? "bg-slate-900 text-white ring-slate-900"
+                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>{item.label}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AdminEnrollmentsPage() {
   const location = useLocation();
+  const initialFilters = getEnrollmentFiltersFromSearch(location.search);
 
   const [enrollments, setEnrollments] = useState([]);
   const [users, setUsers] = useState([]);
@@ -268,13 +353,12 @@ export function AdminEnrollmentsPage() {
   const [groups, setGroups] = useState([]);
   const [groupMembersByGroupId, setGroupMembersByGroupId] = useState({});
 
-  const [filterQuery, setFilterQuery] = useState("");
-  const [filterUserId, setFilterUserId] = useState("");
-  const [filterCourseId, setFilterCourseId] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterGroupId, setFilterGroupId] = useState(() =>
-    getLearningGroupIdFromSearch(location.search)
-  );
+  const [filterQuery, setFilterQuery] = useState(initialFilters.q);
+  const [filterUserId, setFilterUserId] = useState(initialFilters.user_id);
+  const [filterCourseId, setFilterCourseId] = useState(initialFilters.course_id);
+  const [filterStatus, setFilterStatus] = useState(initialFilters.status);
+  const [filterGroupId, setFilterGroupId] = useState(initialFilters.learning_group_id);
+  const [statusCounts, setStatusCounts] = useState({ all: 0 });
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -427,14 +511,19 @@ export function AdminEnrollmentsPage() {
       setLoading(true);
       setError("");
 
+      const activeFilters = { limit: 300, ...(filters ?? buildFilters()) };
+      const countFilters = { ...activeFilters, status: "" };
+
       const [
         enrollmentsResponse,
+        countEnrollmentsResponse,
         usersResponse,
         coursesResponse,
         organizationsResponse,
         groupsResponse,
       ] = await Promise.all([
-        getAdminEnrollments(filters ?? buildFilters()),
+        getAdminEnrollments(activeFilters),
+        getAdminEnrollments(countFilters),
         getAdminUsers(),
         getAdminCourses({ limit: 300 }),
         getAdminOrganizations(),
@@ -452,6 +541,11 @@ export function AdminEnrollmentsPage() {
       );
 
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
+      setStatusCounts(
+        calculateStatusCounts(
+          Array.isArray(countEnrollmentsResponse) ? countEnrollmentsResponse : []
+        )
+      );
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setOrganizations(Array.isArray(organizationsResponse) ? organizationsResponse : []);
@@ -459,24 +553,29 @@ export function AdminEnrollmentsPage() {
       setGroupMembersByGroupId(loadedGroupMembersByGroupId);
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось загрузить назначения."}`.trim());
+      setStatusCounts({ all: 0 });
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    const queryGroupId = getLearningGroupIdFromSearch(location.search);
+    const queryFilters = getEnrollmentFiltersFromSearch(location.search);
 
-    setFilterGroupId(queryGroupId);
+    setFilterQuery(queryFilters.q);
+    setFilterUserId(queryFilters.user_id);
+    setFilterCourseId(queryFilters.course_id);
+    setFilterStatus(queryFilters.status);
+    setFilterGroupId(queryFilters.learning_group_id);
 
-    if (queryGroupId) {
+    if (queryFilters.learning_group_id) {
       setBulkForm((current) => ({
         ...current,
-        learning_group_id: queryGroupId,
+        learning_group_id: queryFilters.learning_group_id,
       }));
     }
 
-    loadData(queryGroupId ? { learning_group_id: queryGroupId } : {});
+    loadData(queryFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
@@ -652,6 +751,13 @@ export function AdminEnrollmentsPage() {
     }
 
     return groupsById[enrollment.learning_group_id]?.name || "-";
+  }
+
+  function getEnrollmentFilterPath(overrides = {}) {
+    return buildEnrollmentsPath({
+      ...buildFilters(),
+      ...overrides,
+    });
   }
 
   async function handleSubmit(event) {
@@ -847,6 +953,11 @@ export function AdminEnrollmentsPage() {
   async function handleApplyFilter(event) {
     event.preventDefault();
     await loadData(buildFilters());
+  }
+
+  async function handleQuickStatusFilter(status) {
+    setFilterStatus(status);
+    await loadData(buildFilters({ status }));
   }
 
   async function handleResetFilter() {
@@ -1166,6 +1277,18 @@ export function AdminEnrollmentsPage() {
             </button>
           </form>
 
+          <QuickStatusFilters
+            activeValue={filterStatus}
+            counts={statusCounts}
+            disabled={loading}
+            onChange={handleQuickStatusFilter}
+          />
+
+          <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
+            <span>Показано назначений: {visibleEnrollments.length}</span>
+            <span>Всего по текущим фильтрам: {statusCounts.all || 0}</span>
+          </div>
+
           {loading ? (
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
               Загружаем назначения...
@@ -1250,6 +1373,60 @@ export function AdminEnrollmentsPage() {
                           >
                             Документы
                           </Link>
+
+                          {enrollment.course_slug && (
+                            <Link
+                              to={`/courses/${encodeURIComponent(enrollment.course_slug)}`}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Курс
+                            </Link>
+                          )}
+
+                          {enrollment.user_id && (
+                            <Link
+                              to={getEnrollmentFilterPath({
+                                q: "",
+                                user_id: enrollment.user_id,
+                                course_id: "",
+                                status: "",
+                                learning_group_id: "",
+                              })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Назначения слушателя
+                            </Link>
+                          )}
+
+                          {enrollment.course_id && (
+                            <Link
+                              to={getEnrollmentFilterPath({
+                                q: "",
+                                user_id: "",
+                                course_id: enrollment.course_id,
+                                status: "",
+                                learning_group_id: "",
+                              })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Назначения курса
+                            </Link>
+                          )}
+
+                          {enrollment.learning_group_id && (
+                            <Link
+                              to={getEnrollmentFilterPath({
+                                q: "",
+                                user_id: "",
+                                course_id: "",
+                                status: "",
+                                learning_group_id: enrollment.learning_group_id,
+                              })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Назначения группы
+                            </Link>
+                          )}
 
                           {enrollment.status !== "completed" && enrollment.status !== "cancelled" && (
                             <button
