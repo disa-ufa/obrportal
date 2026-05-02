@@ -468,6 +468,14 @@ export function AdminEnrollmentsPage() {
     const queryGroupId = getLearningGroupIdFromSearch(location.search);
 
     setFilterGroupId(queryGroupId);
+
+    if (queryGroupId) {
+      setBulkForm((current) => ({
+        ...current,
+        learning_group_id: queryGroupId,
+      }));
+    }
+
     loadData(queryGroupId ? { learning_group_id: queryGroupId } : {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
