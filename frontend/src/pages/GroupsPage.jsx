@@ -22,6 +22,7 @@ import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
 import { AdminTextInput as TextInput } from "../components/admin/AdminTextInput";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
+import { AdminFormField as Field } from "../components/admin/AdminFormField";
 import {
   TABLE_LINK_CLASS,
   buildDocumentsPath,
@@ -167,17 +168,6 @@ function calculateGroupCounts(items) {
   });
 
   return counts;
-}
-
-function Field({ label, required = false, children }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}{required ? " *" : ""}
-      </span>
-      <div className="mt-1">{children}</div>
-    </label>
-  );
 }
 
 function LearningGroupForm({

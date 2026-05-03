@@ -18,6 +18,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
+import { AdminFormField } from "../components/admin/AdminFormField";
 import {
   buildCoursesPath,
   buildDocumentsPath,
@@ -256,17 +257,6 @@ function normalizeDateTime(value) {
   }
 
   return new Date(value).toISOString();
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </span>
-      <div className="mt-2">{children}</div>
-    </label>
-  );
 }
 
 function EnrollmentSummaryCards({ statusCounts, users, courses, groups }) {
@@ -1025,7 +1015,7 @@ export function AdminEnrollmentsPage() {
         <SectionCard title="Создать назначение" subtitle="POST /api/v1/admin/enrollments">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4">
-              <Field label="Пользователь">
+              <AdminFormField contentClassName="mt-2" label="Пользователь">
                 <select
                   value={form.user_id}
                   onChange={(event) => updateField("user_id", event.target.value)}
@@ -1041,9 +1031,9 @@ export function AdminEnrollmentsPage() {
                 <p className="mt-2 text-xs leading-5 text-slate-500">
                   Слушатели отображаются выше администраторов. В demo-режиме автоматически подставляется learner@obrportal.local.
                 </p>
-              </Field>
+              </AdminFormField>
 
-              <Field label="Программа">
+              <AdminFormField contentClassName="mt-2" label="Программа">
                 <select
                   value={form.course_id}
                   onChange={(event) => updateField("course_id", event.target.value)}
@@ -1056,9 +1046,9 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
-              </Field>
+              </AdminFormField>
 
-              <Field label="Организация">
+              <AdminFormField contentClassName="mt-2" label="Организация">
                 <select
                   value={form.organization_id}
                   onChange={(event) => updateField("organization_id", event.target.value)}
@@ -1071,9 +1061,9 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
-              </Field>
+              </AdminFormField>
 
-              <Field label="Учебная группа">
+              <AdminFormField contentClassName="mt-2" label="Учебная группа">
                 <select
                   value={form.learning_group_id}
                   onChange={(event) => updateField("learning_group_id", event.target.value)}
@@ -1093,9 +1083,9 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
-              </Field>
+              </AdminFormField>
 
-              <Field label="Статус">
+              <AdminFormField contentClassName="mt-2" label="Статус">
                 <select
                   value={form.status}
                   onChange={(event) => updateField("status", event.target.value)}
@@ -1107,26 +1097,26 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
-              </Field>
+              </AdminFormField>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Начато">
+                <AdminFormField contentClassName="mt-2" label="Начато">
                   <input
                     type="datetime-local"
                     value={form.started_at}
                     onChange={(event) => updateField("started_at", event.target.value)}
                     className={INPUT_CLASS}
                   />
-                </Field>
+                </AdminFormField>
 
-                <Field label="Завершено">
+                <AdminFormField contentClassName="mt-2" label="Завершено">
                   <input
                     type="datetime-local"
                     value={form.completed_at}
                     onChange={(event) => updateField("completed_at", event.target.value)}
                     className={INPUT_CLASS}
                   />
-                </Field>
+                </AdminFormField>
               </div>
             </div>
 
@@ -1149,7 +1139,7 @@ export function AdminEnrollmentsPage() {
             </p>
 
             <div className="grid gap-4">
-              <Field label="Учебная группа">
+              <AdminFormField contentClassName="mt-2" label="Учебная группа">
                 <select
                   value={bulkForm.learning_group_id}
                   onChange={(event) => updateBulkField("learning_group_id", event.target.value)}
@@ -1165,9 +1155,9 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
-              </Field>
+              </AdminFormField>
 
-              <Field label="Программа">
+              <AdminFormField contentClassName="mt-2" label="Программа">
                 <select
                   value={bulkForm.course_id}
                   onChange={(event) => updateBulkField("course_id", event.target.value)}
@@ -1180,9 +1170,9 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
-              </Field>
+              </AdminFormField>
 
-              <Field label="Статус">
+              <AdminFormField contentClassName="mt-2" label="Статус">
                 <select
                   value={bulkForm.status}
                   onChange={(event) => updateBulkField("status", event.target.value)}
@@ -1194,26 +1184,26 @@ export function AdminEnrollmentsPage() {
                     </option>
                   ))}
                 </select>
-              </Field>
+              </AdminFormField>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Начато">
+                <AdminFormField contentClassName="mt-2" label="Начато">
                   <input
                     type="datetime-local"
                     value={bulkForm.started_at}
                     onChange={(event) => updateBulkField("started_at", event.target.value)}
                     className={INPUT_CLASS}
                   />
-                </Field>
+                </AdminFormField>
 
-                <Field label="Завершено">
+                <AdminFormField contentClassName="mt-2" label="Завершено">
                   <input
                     type="datetime-local"
                     value={bulkForm.completed_at}
                     onChange={(event) => updateBulkField("completed_at", event.target.value)}
                     className={INPUT_CLASS}
                   />
-                </Field>
+                </AdminFormField>
               </div>
             </div>
 
@@ -1493,7 +1483,7 @@ export function AdminEnrollmentsPage() {
                         className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
                       >
                         <div className="grid gap-4 md:grid-cols-2">
-                          <Field label="Организация">
+                          <AdminFormField contentClassName="mt-2" label="Организация">
                             <select
                               value={editForm.organization_id}
                               onChange={(event) => updateEditField("organization_id", event.target.value)}
@@ -1506,9 +1496,9 @@ export function AdminEnrollmentsPage() {
                                 </option>
                               ))}
                             </select>
-                          </Field>
+                          </AdminFormField>
 
-                          <Field label="Учебная группа">
+                          <AdminFormField contentClassName="mt-2" label="Учебная группа">
                             <select
                               value={editForm.learning_group_id}
                               onChange={(event) => updateEditField("learning_group_id", event.target.value)}
@@ -1524,9 +1514,9 @@ export function AdminEnrollmentsPage() {
                                 </option>
                               ))}
                             </select>
-                          </Field>
+                          </AdminFormField>
 
-                          <Field label="Статус">
+                          <AdminFormField contentClassName="mt-2" label="Статус">
                             <select
                               value={editForm.status}
                               onChange={(event) => updateEditField("status", event.target.value)}
@@ -1538,25 +1528,25 @@ export function AdminEnrollmentsPage() {
                                 </option>
                               ))}
                             </select>
-                          </Field>
+                          </AdminFormField>
 
-                          <Field label="Начато">
+                          <AdminFormField contentClassName="mt-2" label="Начато">
                             <input
                               type="datetime-local"
                               value={editForm.started_at}
                               onChange={(event) => updateEditField("started_at", event.target.value)}
                               className={INPUT_CLASS}
                             />
-                          </Field>
+                          </AdminFormField>
 
-                          <Field label="Завершено">
+                          <AdminFormField contentClassName="mt-2" label="Завершено">
                             <input
                               type="datetime-local"
                               value={editForm.completed_at}
                               onChange={(event) => updateEditField("completed_at", event.target.value)}
                               className={INPUT_CLASS}
                             />
-                          </Field>
+                          </AdminFormField>
                         </div>
 
                         <div className="flex flex-wrap gap-3">
