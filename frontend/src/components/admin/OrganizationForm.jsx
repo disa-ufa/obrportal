@@ -5,6 +5,7 @@ import {
   AdminFormTextArea as TextArea,
   AdminFormTextInput as TextInput,
 } from "./AdminTextInput";
+import { AdminFormField as Field } from "./AdminFormField";
 
 const EMPTY_ORGANIZATION = {
   inn: "",
@@ -41,17 +42,6 @@ function buildPayload(values) {
     legal_address: nullableTrim(values.legal_address),
     actual_address: nullableTrim(values.actual_address),
   };
-}
-
-function Field({ label, required = false, children }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}{required ? " *" : ""}
-      </span>
-      <div className="mt-1">{children}</div>
-    </label>
-  );
 }
 
 export function OrganizationForm({

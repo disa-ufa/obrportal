@@ -2,6 +2,7 @@
 import { ActionButton } from "../ui/ActionButton";
 import { Alert } from "../ui/Alert";
 import { AdminFormTextInput as TextInput } from "./AdminTextInput";
+import { AdminFormField as Field } from "./AdminFormField";
 
 function normalizeInitialValues(initialValues, mode) {
   return {
@@ -41,17 +42,6 @@ function buildPayload(values, mode) {
     is_active: values.is_active,
     ...basePayload,
   };
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </span>
-      <div className="mt-1">{children}</div>
-    </label>
-  );
 }
 
 export function UserForm({

@@ -7,27 +7,8 @@ import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
 import { AdminFormTextInput as TextInput } from "./AdminTextInput";
-
-function Field({ label, children, hint }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </span>
-      <div className="mt-1">{children}</div>
-      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
-    </label>
-  );
-}
-
-function SelectInput(props) {
-  return (
-    <select
-      {...props}
-      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-50 disabled:text-slate-500"
-    />
-  );
-}
+import { AdminFormField as Field } from "./AdminFormField";
+import { AdminFormSelectInput as SelectInput } from "./AdminTextInput";
 
 function roleBadgeTone(roleCode) {
   if (roleCode === "admin") {

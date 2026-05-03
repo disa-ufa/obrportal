@@ -5,6 +5,7 @@ import {
   AdminFormTextArea as TextArea,
   AdminFormTextInput as TextInput,
 } from "./AdminTextInput";
+import { AdminFormField as Field } from "./AdminFormField";
 
 const EMPTY_ROLE = {
   code: "",
@@ -37,18 +38,6 @@ function buildPayload(values, mode) {
   }
 
   return payload;
-}
-
-function Field({ label, required = false, children, hint }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}{required ? " *" : ""}
-      </span>
-      <div className="mt-1">{children}</div>
-      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
-    </label>
-  );
 }
 
 export function RoleForm({

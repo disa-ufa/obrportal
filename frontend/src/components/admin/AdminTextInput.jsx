@@ -9,6 +9,9 @@ const ADMIN_FORM_TEXT_INPUT_CLASS =
 const ADMIN_FORM_TEXT_AREA_CLASS =
   "min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-50 disabled:text-slate-500";
 
+const ADMIN_FORM_SELECT_INPUT_CLASS =
+  "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-50 disabled:text-slate-500";
+
 const VARIANT_CLASS_NAMES = {
   soft: ADMIN_FILTER_CONTROL_SOFT_CLASS,
   subtleDisabled: ADMIN_FILTER_CONTROL_SUBTLE_DISABLED_CLASS,
@@ -36,4 +39,12 @@ export function AdminFormTextArea({ className = "", ...props }) {
     : ADMIN_FORM_TEXT_AREA_CLASS;
 
   return <textarea {...props} className={mergedClassName} />;
+}
+
+export function AdminFormSelectInput({ className = "", ...props }) {
+  const mergedClassName = className
+    ? `${ADMIN_FORM_SELECT_INPUT_CLASS} ${className}`
+    : ADMIN_FORM_SELECT_INPUT_CLASS;
+
+  return <select {...props} className={mergedClassName} />;
 }
