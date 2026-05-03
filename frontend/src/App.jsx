@@ -133,6 +133,7 @@ export default function App() {
     selectedAuditEventError,
     setSelectedAuditEventError,
     clearSelectedAuditEvent,
+    clearAllSelections,
   } = useAdminSelections();
 
   const navigate = useNavigate();
@@ -242,12 +243,7 @@ export default function App() {
       setRbac(null);
       setAdminData(EMPTY_ADMIN_DATA);
       setAdminDataLoadedAt("");
-      clearSelectedUser();
-      clearSelectedOrganization();
-      clearSelectedGroup();
-      clearSelectedRole();
-      clearSelectedPermission();
-      clearSelectedAuditEvent();
+      clearAllSelections();
     } finally {
       setInitializingAuth(false);
     }
@@ -397,12 +393,7 @@ export default function App() {
     setAuthLoading(true);
     setError("");
     setRbac(null);
-    clearSelectedUser();
-    clearSelectedOrganization();
-    clearSelectedGroup();
-    clearSelectedRole();
-    clearSelectedPermission();
-    clearSelectedAuditEvent();
+    clearAllSelections();
 
     try {
       await login(email, password);
@@ -806,12 +797,7 @@ export default function App() {
     setAuthLoading(false);
     setAdminLoading(false);
     setInitializingAuth(false);
-    clearSelectedUser();
-    clearSelectedOrganization();
-    clearSelectedGroup();
-    clearSelectedRole();
-    clearSelectedPermission();
-    clearSelectedAuditEvent();
+    clearAllSelections();
   }
 
   const isAdminRoute = isAdminPathname(location.pathname);

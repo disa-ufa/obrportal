@@ -61,6 +61,15 @@ export function useAdminSelections() {
     setSelectedAuditEventError("");
   }
 
+  function clearAllSelections() {
+    clearSelectedUser();
+    clearSelectedOrganization();
+    clearSelectedGroup();
+    clearSelectedRole();
+    clearSelectedPermission();
+    clearSelectedAuditEvent();
+  }
+
   async function openSelection({ setValue, setLoading, setError, load }) {
     setValue(null);
     setError("");
@@ -82,6 +91,7 @@ export function useAdminSelections() {
 
   return {
     openSelection,
+    clearAllSelections,
     selectedUser,
     setSelectedUser,
     selectedUserLoading,
