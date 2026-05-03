@@ -5,7 +5,19 @@ import { RbacResult } from "../components/admin/RbacResult";
 import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
-import { LINK_PILL_CLASS, buildAuditPath, buildEntityAdminPath } from "../utils/adminLinks";
+import {
+  LINK_PILL_CLASS,
+  buildAuditPath,
+  buildCoursesPath,
+  buildDocumentsPath,
+  buildEnrollmentsPath,
+  buildEntityAdminPath,
+  buildGroupsPath,
+  buildOrganizationsPath,
+  buildPermissionsPath,
+  buildRolesPath,
+  buildUsersPath,
+} from "../utils/adminLinks";
 
 const SYSTEM_ROLE_CODES = new Set([
   "admin",
@@ -23,55 +35,55 @@ const ADMIN_LINKS = [
   {
     label: "Пользователи",
     description: "Учётные записи, роли, активация и сброс пароля.",
-    path: "/admin/users",
+    path: buildUsersPath(),
     countKey: "users",
   },
   {
     label: "Организации",
     description: "Юридические лица, реквизиты и привязка пользователей.",
-    path: "/admin/organizations",
+    path: buildOrganizationsPath(),
     countKey: "organizations",
   },
   {
     label: "Группы",
     description: "Учебные группы организаций и участники групп.",
-    path: "/admin/groups",
+    path: buildGroupsPath(),
     countKey: "groups",
   },
   {
     label: "Курсы",
     description: "Программы обучения, часы, формат и итоговый документ.",
-    path: "/admin/courses",
+    path: buildCoursesPath(),
     countKey: "courses",
   },
   {
     label: "Назначения",
     description: "Связка слушатель → программа, статусы обучения.",
-    path: "/admin/enrollments",
+    path: buildEnrollmentsPath(),
     countKey: "enrollments",
   },
   {
     label: "Документы",
     description: "Сертификаты, удостоверения, PDF, QR и публикация.",
-    path: "/admin/documents",
+    path: buildDocumentsPath(),
     countKey: "documents",
   },
   {
     label: "Роли",
     description: "Ролевая модель и назначение прав.",
-    path: "/admin/roles",
+    path: buildRolesPath(),
     countKey: "roles",
   },
   {
     label: "Права",
     description: "Справочник разрешений системы.",
-    path: "/admin/permissions",
+    path: buildPermissionsPath(),
     countKey: "permissions",
   },
   {
     label: "Аудит",
     description: "Журнал действий администраторов и системных событий.",
-    path: "/admin/audit-events",
+    path: buildAuditPath(),
     countKey: "auditEvents",
   },
 ];
@@ -299,7 +311,7 @@ function AuditPreview({ auditEvents }) {
       })}
 
       <Link
-        to="/admin/audit-events"
+        to={buildAuditPath()}
         className="inline-flex rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
       >
         Открыть весь аудит
@@ -378,63 +390,63 @@ export function DashboardPage({
       label: "Пользователи",
       value: users.length,
       hint: `${activeUsersCount} активных / ${inactiveUsersCount} неактивных`,
-      to: "/admin/users",
+      to: buildUsersPath(),
       tone: "blue",
     },
     {
       label: "Организации",
       value: organizations.length,
       hint: `${organizationsWithoutKppCount} без КПП`,
-      to: "/admin/organizations",
+      to: buildOrganizationsPath(),
       tone: "violet",
     },
     {
       label: "Группы",
       value: groups.length,
       hint: `${activeGroupsCount} активных / ${inactiveGroupsCount} неактивных`,
-      to: "/admin/groups",
+      to: buildGroupsPath(),
       tone: "green",
     },
     {
       label: "Курсы",
       value: courses.length,
       hint: `${activeCoursesCount} активных / ${inactiveCoursesCount} неактивных`,
-      to: "/admin/courses",
+      to: buildCoursesPath(),
       tone: "blue",
     },
     {
       label: "Назначения",
       value: enrollments.length,
       hint: `${completionRate}% завершено`,
-      to: "/admin/enrollments",
+      to: buildEnrollmentsPath(),
       tone: "amber",
     },
     {
       label: "Документы",
       value: documents.length,
       hint: `${publishedDocumentsRate}% опубликовано`,
-      to: "/admin/documents",
+      to: buildDocumentsPath(),
       tone: "green",
     },
     {
       label: "Роли",
       value: roles.length,
       hint: `${systemRolesCount} системных / ${customRolesCount} пользовательских`,
-      to: "/admin/roles",
+      to: buildRolesPath(),
       tone: "violet",
     },
     {
       label: "Права",
       value: permissions.length,
       hint: "Разрешения RBAC",
-      to: "/admin/permissions",
+      to: buildPermissionsPath(),
       tone: "blue",
     },
     {
       label: "Аудит",
       value: auditEvents.length,
       hint: `${auditWithActorCount} событий с actor`,
-      to: "/admin/audit-events",
+      to: buildAuditPath(),
       tone: "amber",
     },
   ];
@@ -497,35 +509,35 @@ export function DashboardPage({
                 title="Неактивные пользователи"
                 value={inactiveUsersCount}
                 hint="Проверить доступы и блокировки"
-                to="/admin/users?activity=inactive"
+                to={buildUsersPath({ activity: "inactive" })}
                 tone={inactiveUsersCount ? "amber" : "green"}
               />
               <SignalCard
                 title="Черновики документов"
                 value={draftDocumentsCount}
                 hint="Ожидают публикации"
-                to="/admin/documents?status=draft"
+                to={buildDocumentsPath({ status: "draft" })}
                 tone={draftDocumentsCount ? "amber" : "green"}
               />
               <SignalCard
                 title="Отозванные документы"
                 value={revokedDocumentsCount}
                 hint="Недействующие документы"
-                to="/admin/documents?status=revoked"
+                to={buildDocumentsPath({ status: "revoked" })}
                 tone={revokedDocumentsCount ? "red" : "green"}
               />
               <SignalCard
                 title="Назначения в работе"
                 value={activeEnrollmentsCount}
                 hint="Текущие обучения"
-                to="/admin/enrollments?status=active"
+                to={buildEnrollmentsPath({ status: "active" })}
                 tone="blue"
               />
               <SignalCard
                 title="Пользовательские роли"
                 value={customRolesCount}
                 hint="Проверить RBAC-настройки"
-                to="/admin/roles?type=custom"
+                to={buildRolesPath({ type: "custom" })}
                 tone={customRolesCount ? "violet" : "green"}
               />
             </div>
@@ -543,10 +555,10 @@ export function DashboardPage({
               title="Пользовательский контур"
               description="Создание учётных записей, назначение ролей и проверка активных пользователей."
               links={[
-                { label: "Пользователи", to: "/admin/users" },
-                { label: "Активные", to: "/admin/users?activity=active" },
-                { label: "Неактивные", to: "/admin/users?activity=inactive" },
-                { label: "Роли", to: "/admin/roles" },
+                { label: "Пользователи", to: buildUsersPath() },
+                { label: "Активные", to: buildUsersPath({ activity: "active" }) },
+                { label: "Неактивные", to: buildUsersPath({ activity: "inactive" }) },
+                { label: "Роли", to: buildRolesPath() },
               ]}
             />
 
@@ -554,10 +566,10 @@ export function DashboardPage({
               title="Организации и группы"
               description="Ведение организаций, учебных групп и переход к групповым назначениям."
               links={[
-                { label: "Организации", to: "/admin/organizations" },
-                { label: "Группы", to: "/admin/groups" },
-                { label: "Активные группы", to: "/admin/groups?status=active" },
-                { label: "Назначения", to: "/admin/enrollments?status=assigned" },
+                { label: "Организации", to: buildOrganizationsPath() },
+                { label: "Группы", to: buildGroupsPath() },
+                { label: "Активные группы", to: buildGroupsPath({ is_active: "true" }) },
+                { label: "Назначения", to: buildEnrollmentsPath({ status: "assigned" }) },
               ]}
             />
 
@@ -565,10 +577,10 @@ export function DashboardPage({
               title="Курсы и обучение"
               description="Контроль программ, назначений и статусов прохождения обучения."
               links={[
-                { label: "Курсы", to: "/admin/courses" },
-                { label: "Активные курсы", to: "/admin/courses?is_active=true" },
-                { label: "В процессе", to: "/admin/enrollments?status=active" },
-                { label: "Завершены", to: "/admin/enrollments?status=completed" },
+                { label: "Курсы", to: buildCoursesPath() },
+                { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
+                { label: "В процессе", to: buildEnrollmentsPath({ status: "active" }) },
+                { label: "Завершены", to: buildEnrollmentsPath({ status: "completed" }) },
               ]}
             />
 
@@ -576,10 +588,10 @@ export function DashboardPage({
               title="Документы и реестр"
               description="Публикация PDF, контроль черновиков, отзыв и восстановление документов."
               links={[
-                { label: "Все документы", to: "/admin/documents" },
-                { label: "Черновики", to: "/admin/documents?status=draft" },
-                { label: "Доступные", to: "/admin/documents?status=available" },
-                { label: "Отозванные", to: "/admin/documents?status=revoked" },
+                { label: "Все документы", to: buildDocumentsPath() },
+                { label: "Черновики", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Доступные", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Отозванные", to: buildDocumentsPath({ status: "revoked" }) },
               ]}
             />
 
@@ -587,10 +599,10 @@ export function DashboardPage({
               title="RBAC"
               description="Системные роли, пользовательские роли и справочник permissions."
               links={[
-                { label: "Системные роли", to: "/admin/roles?type=system" },
-                { label: "Пользовательские роли", to: "/admin/roles?type=custom" },
-                { label: "Права", to: "/admin/permissions" },
-                { label: "Admin-права", to: "/admin/permissions?group=admin" },
+                { label: "Системные роли", to: buildRolesPath({ type: "system" }) },
+                { label: "Пользовательские роли", to: buildRolesPath({ type: "custom" }) },
+                { label: "Права", to: buildPermissionsPath() },
+                { label: "Admin-права", to: buildPermissionsPath({ group: "admin" }) },
               ]}
             />
 
@@ -598,10 +610,10 @@ export function DashboardPage({
               title="Аудит и расследование"
               description="Проверка действий администраторов, истории сущностей и событий actor."
               links={[
-                { label: "Последние 25", to: "/admin/audit-events?limit=25" },
-                { label: "Пользователи", to: "/admin/audit-events?entity_type=user" },
-                { label: "Документы", to: "/admin/audit-events?entity_type=document" },
-                { label: "Создание пользователей", to: "/admin/audit-events?action=admin.user_created" },
+                { label: "Последние 25", to: buildAuditPath({ limit: "25" }) },
+                { label: "Пользователи", to: buildAuditPath({ entity_type: "user" }) },
+                { label: "Документы", to: buildAuditPath({ entity_type: "document" }) },
+                { label: "Создание пользователей", to: buildAuditPath({ action: "admin.user_created" }) },
               ]}
             />
           </div>
