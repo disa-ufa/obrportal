@@ -50,6 +50,15 @@ import {
 } from "./api/client";
 import { PUBLIC_COURSES } from "./data/publicCourses";
 import { getAdminPageFromPathname, getAdminPathForPage, isAdminPathname } from "./utils/adminRoutes";
+import {
+  EMPTY_ADMIN_DATA,
+  getNowLabel,
+  sortGroups,
+  sortOrganizations,
+  sortRoles,
+  sortUsers,
+  userHasRole,
+} from "./utils/adminState";
 import { AuditPage } from "./pages/AuditPage";
 import { AccountPage } from "./pages/AccountPage";
 import { AuthPage } from "./pages/AuthPage";
@@ -74,50 +83,6 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { RolesPage } from "./pages/RolesPage";
 import { UsersPage } from "./pages/UsersPage";
 import { VerifyDocumentPage } from "./pages/VerifyDocumentPage";
-
-const EMPTY_ADMIN_DATA = {
-  users: [],
-  organizations: [],
-  groups: [],
-  courses: [],
-  enrollments: [],
-  documents: [],
-  roles: [],
-  permissions: [],
-  auditEvents: [],
-};
-
-function userHasRole(user, roleCode) {
-  return user?.roles?.some((role) => role.code === roleCode) || false;
-}
-
-function getNowLabel() {
-  return new Date().toLocaleString("ru-RU");
-}
-
-function sortOrganizations(organizations) {
-  return [...organizations].sort((left, right) =>
-    left.name.localeCompare(right.name, "ru-RU")
-  );
-}
-
-function sortGroups(groups) {
-  return [...groups].sort((left, right) =>
-    left.name.localeCompare(right.name, "ru-RU")
-  );
-}
-
-function sortUsers(users) {
-  return [...users].sort((left, right) =>
-    left.email.localeCompare(right.email, "ru-RU")
-  );
-}
-
-function sortRoles(roles) {
-  return [...roles].sort((left, right) =>
-    left.code.localeCompare(right.code, "ru-RU")
-  );
-}
 
 const PUBLIC_ROUTE_MAP = {
   home: "/",
