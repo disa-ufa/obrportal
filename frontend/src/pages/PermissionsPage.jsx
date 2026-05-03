@@ -12,6 +12,7 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
+import { TABLE_LINK_CLASS, buildPermissionsPath, buildRolesPath } from "../utils/adminLinks";
 
 const ALL_PERMISSION_GROUPS = "all";
 
@@ -46,41 +47,6 @@ function getPermissionGroupTone(group) {
   }
 
   return "gray";
-}
-
-const TABLE_LINK_CLASS =
-  "rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
-
-function buildPath(pathname, filters = {}, defaults = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (!value) {
-      return;
-    }
-
-    if (defaults[key] !== undefined && value === defaults[key]) {
-      return;
-    }
-
-    params.set(key, value);
-  });
-
-  const query = params.toString();
-
-  return query ? `${pathname}?${query}` : pathname;
-}
-
-function buildPermissionsPath(filters = {}) {
-  return buildPath("/admin/permissions", filters, {
-    group: ALL_PERMISSION_GROUPS,
-  });
-}
-
-function buildRolesPath(filters = {}) {
-  return buildPath("/admin/roles", filters, {
-    type: "all",
-  });
 }
 
 function getPermissionFiltersFromSearch(search) {

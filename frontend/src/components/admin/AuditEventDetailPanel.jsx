@@ -5,69 +5,7 @@ import { JsonBlock } from "../ui/JsonBlock";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
-
-const PANEL_LINK_CLASS =
-  "rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
-
-function buildPath(pathname, filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-
-  return query ? `${pathname}?${query}` : pathname;
-}
-
-function buildAuditPath(filters = {}) {
-  return buildPath("/admin/audit-events", filters);
-}
-
-function buildEntityAdminPath(event) {
-  if (!event?.entity_type || !event?.entity_id) {
-    return "";
-  }
-
-  const query = event.entity_id;
-
-  if (event.entity_type === "user") {
-    return buildPath("/admin/users", { q: query });
-  }
-
-  if (event.entity_type === "organization") {
-    return buildPath("/admin/organizations", { q: query });
-  }
-
-  if (event.entity_type === "learning_group") {
-    return buildPath("/admin/groups", { q: query });
-  }
-
-  if (event.entity_type === "course") {
-    return buildPath("/admin/courses", { q: query });
-  }
-
-  if (event.entity_type === "enrollment") {
-    return buildPath("/admin/enrollments", { q: query });
-  }
-
-  if (event.entity_type === "document") {
-    return buildPath("/admin/documents", { q: query });
-  }
-
-  if (event.entity_type === "role") {
-    return buildPath("/admin/roles", { q: query });
-  }
-
-  if (event.entity_type === "permission") {
-    return buildPath("/admin/permissions", { q: query });
-  }
-
-  return "";
-}
+import { PANEL_LINK_CLASS, buildAuditPath, buildEntityAdminPath } from "../../utils/adminLinks";
 
 export function AuditEventDetailPanel({
   auditEventDetail,

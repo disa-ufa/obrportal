@@ -5,6 +5,7 @@ import { RbacResult } from "../components/admin/RbacResult";
 import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
+import { LINK_PILL_CLASS, buildAuditPath, buildEntityAdminPath } from "../utils/adminLinks";
 
 const SYSTEM_ROLE_CODES = new Set([
   "admin",
@@ -75,9 +76,6 @@ const ADMIN_LINKS = [
   },
 ];
 
-const LINK_PILL_CLASS =
-  "inline-flex items-center rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
-
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -101,74 +99,6 @@ function formatDateTime(value) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(date);
-}
-
-function buildPath(pathname, filters = {}, defaults = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (!value) {
-      return;
-    }
-
-    if (defaults[key] !== undefined && String(value) === String(defaults[key])) {
-      return;
-    }
-
-    params.set(key, value);
-  });
-
-  const query = params.toString();
-
-  return query ? `${pathname}?${query}` : pathname;
-}
-
-function buildAuditPath(filters = {}) {
-  return buildPath("/admin/audit-events", filters, {
-    limit: "50",
-  });
-}
-
-function buildEntityAdminPath(event) {
-  if (!event?.entity_type || !event?.entity_id) {
-    return "";
-  }
-
-  const query = event.entity_id;
-
-  if (event.entity_type === "user") {
-    return buildPath("/admin/users", { q: query });
-  }
-
-  if (event.entity_type === "organization") {
-    return buildPath("/admin/organizations", { q: query });
-  }
-
-  if (event.entity_type === "learning_group") {
-    return buildPath("/admin/groups", { q: query });
-  }
-
-  if (event.entity_type === "course") {
-    return buildPath("/admin/courses", { q: query });
-  }
-
-  if (event.entity_type === "enrollment") {
-    return buildPath("/admin/enrollments", { q: query });
-  }
-
-  if (event.entity_type === "document") {
-    return buildPath("/admin/documents", { q: query });
-  }
-
-  if (event.entity_type === "role") {
-    return buildPath("/admin/roles", { q: query });
-  }
-
-  if (event.entity_type === "permission") {
-    return buildPath("/admin/permissions", { q: query });
-  }
-
-  return "";
 }
 
 function getToneClasses(tone) {
