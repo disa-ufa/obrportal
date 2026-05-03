@@ -515,6 +515,7 @@ def main() -> int:
         ("/admin/roles?q=admin", "roles search"),
         ("/admin/roles?type=system", "roles system"),
         ("/admin/roles?type=custom", "roles custom"),
+        ("/admin/roles?type=admin", "roles admin"),
         ("/admin/permissions?q=admin", "permissions search"),
         ("/admin/permissions?group=admin", "permissions admin group"),
         ("/admin/audit-events?action=admin.user_created", "audit action"),
