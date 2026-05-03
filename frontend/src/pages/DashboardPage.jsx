@@ -1,4 +1,4 @@
-﻿import { Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { AuthPanel } from "../components/auth/AuthPanel";
 import { CurrentUserCard } from "../components/auth/CurrentUserCard";
 import { RbacResult } from "../components/admin/RbacResult";
@@ -6,53 +6,77 @@ import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 
+const SYSTEM_ROLE_CODES = new Set([
+  "admin",
+  "learner_fl",
+  "learner_org",
+  "org_rep",
+  "teacher",
+  "methodist",
+  "finance_operator",
+  "edo_operator",
+  "frdo_operator",
+]);
+
 const ADMIN_LINKS = [
   {
     label: "Пользователи",
     description: "Учётные записи, роли, активация и сброс пароля.",
     path: "/admin/users",
+    countKey: "users",
   },
   {
     label: "Организации",
     description: "Юридические лица, реквизиты и привязка пользователей.",
     path: "/admin/organizations",
+    countKey: "organizations",
   },
   {
     label: "Группы",
     description: "Учебные группы организаций и участники групп.",
     path: "/admin/groups",
+    countKey: "groups",
   },
   {
     label: "Курсы",
     description: "Программы обучения, часы, формат и итоговый документ.",
     path: "/admin/courses",
+    countKey: "courses",
   },
   {
     label: "Назначения",
     description: "Связка слушатель → программа, статусы обучения.",
     path: "/admin/enrollments",
+    countKey: "enrollments",
   },
   {
     label: "Документы",
     description: "Сертификаты, удостоверения, PDF, QR и публикация.",
     path: "/admin/documents",
+    countKey: "documents",
   },
   {
     label: "Роли",
     description: "Ролевая модель и назначение прав.",
     path: "/admin/roles",
+    countKey: "roles",
   },
   {
     label: "Права",
     description: "Справочник разрешений системы.",
     path: "/admin/permissions",
+    countKey: "permissions",
   },
   {
     label: "Аудит",
     description: "Журнал действий администраторов и системных событий.",
     path: "/admin/audit-events",
+    countKey: "auditEvents",
   },
 ];
+
+const LINK_PILL_CLASS =
+  "inline-flex items-center rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -79,12 +103,130 @@ function formatDateTime(value) {
   }).format(date);
 }
 
-function MetricCard({ label, value, hint, to }) {
+function buildPath(pathname, filters = {}, defaults = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (!value) {
+      return;
+    }
+
+    if (defaults[key] !== undefined && String(value) === String(defaults[key])) {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+function buildAuditPath(filters = {}) {
+  return buildPath("/admin/audit-events", filters, {
+    limit: "50",
+  });
+}
+
+function buildEntityAdminPath(event) {
+  if (!event?.entity_type || !event?.entity_id) {
+    return "";
+  }
+
+  const query = event.entity_id;
+
+  if (event.entity_type === "user") {
+    return buildPath("/admin/users", { q: query });
+  }
+
+  if (event.entity_type === "organization") {
+    return buildPath("/admin/organizations", { q: query });
+  }
+
+  if (event.entity_type === "learning_group") {
+    return buildPath("/admin/groups", { q: query });
+  }
+
+  if (event.entity_type === "course") {
+    return buildPath("/admin/courses", { q: query });
+  }
+
+  if (event.entity_type === "enrollment") {
+    return buildPath("/admin/enrollments", { q: query });
+  }
+
+  if (event.entity_type === "document") {
+    return buildPath("/admin/documents", { q: query });
+  }
+
+  if (event.entity_type === "role") {
+    return buildPath("/admin/roles", { q: query });
+  }
+
+  if (event.entity_type === "permission") {
+    return buildPath("/admin/permissions", { q: query });
+  }
+
+  return "";
+}
+
+function getToneClasses(tone) {
+  if (tone === "green") {
+    return "bg-emerald-50 text-emerald-800 ring-emerald-200";
+  }
+
+  if (tone === "amber") {
+    return "bg-amber-50 text-amber-800 ring-amber-200";
+  }
+
+  if (tone === "red") {
+    return "bg-red-50 text-red-800 ring-red-200";
+  }
+
+  if (tone === "violet") {
+    return "bg-violet-50 text-violet-800 ring-violet-200";
+  }
+
+  return "bg-blue-50 text-blue-800 ring-blue-200";
+}
+
+function getActionTone(action) {
+  const normalized = String(action || "").toLowerCase();
+
+  if (normalized.includes("delete") || normalized.includes("deleted") || normalized.includes("revoked")) {
+    return "red";
+  }
+
+  if (normalized.includes("create") || normalized.includes("created") || normalized.includes("restore")) {
+    return "green";
+  }
+
+  if (normalized.includes("update") || normalized.includes("assign") || normalized.includes("remove")) {
+    return "amber";
+  }
+
+  return "blue";
+}
+
+function isSystemRole(role) {
+  return Boolean(role?.is_system || role?.is_builtin || SYSTEM_ROLE_CODES.has(role?.code));
+}
+
+function percent(part, total) {
+  if (!total) {
+    return 0;
+  }
+
+  return Math.round((part / total) * 100);
+}
+
+function MetricCard({ label, value, hint, to, tone = "blue" }) {
   const content = (
-    <div className="h-full rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200 transition hover:bg-white hover:shadow-sm">
-      <div className="text-sm text-slate-500">{label}</div>
-      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
-      {hint && <div className="mt-1 text-xs leading-5 text-slate-500">{hint}</div>}
+    <div className={`h-full rounded-2xl p-5 ring-1 transition hover:bg-white hover:shadow-sm ${getToneClasses(tone)}`}>
+      <div className="text-sm font-semibold opacity-80">{label}</div>
+      <div className="mt-2 text-3xl font-bold">{value}</div>
+      {hint && <div className="mt-1 text-xs leading-5 opacity-80">{hint}</div>}
     </div>
   );
 
@@ -99,21 +241,63 @@ function MetricCard({ label, value, hint, to }) {
   );
 }
 
-function QuickLinkCard({ label, description, path }) {
+function QuickLinkCard({ label, description, path, count }) {
   return (
     <Link
       to={path}
       className="block rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200 transition hover:bg-white hover:shadow-sm"
     >
-      <div className="font-semibold text-slate-900">{label}</div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="font-semibold text-slate-900">{label}</div>
+        <div className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+          {count}
+        </div>
+      </div>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
       <div className="mt-3 text-sm font-semibold text-blue-700">Открыть →</div>
     </Link>
   );
 }
 
+function WorkflowCard({ title, description, links }) {
+  return (
+    <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
+      <div className="text-base font-bold text-slate-900">{title}</div>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {links.map((link) => (
+          <Link key={link.to} to={link.to} className={LINK_PILL_CLASS}>
+            {link.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SignalCard({ title, value, hint, to, tone = "blue" }) {
+  const body = (
+    <div className={`rounded-2xl p-4 ring-1 ${getToneClasses(tone)}`}>
+      <div className="text-sm font-semibold opacity-80">{title}</div>
+      <div className="mt-2 text-2xl font-bold">{value}</div>
+      <div className="mt-1 text-xs leading-5 opacity-80">{hint}</div>
+    </div>
+  );
+
+  if (!to) {
+    return body;
+  }
+
+  return (
+    <Link to={to} className="block">
+      {body}
+    </Link>
+  );
+}
+
 function AuditPreview({ auditEvents }) {
-  const events = asArray(auditEvents).slice(0, 5);
+  const events = asArray(auditEvents).slice(0, 6);
 
   if (events.length === 0) {
     return (
@@ -125,31 +309,64 @@ function AuditPreview({ auditEvents }) {
 
   return (
     <div className="space-y-3">
-      {events.map((event) => (
-        <div
-          key={event.id || `${event.action}-${event.created_at}`}
-          className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
-              {event.action || "event"}
-            </span>
-            <span className="text-xs text-slate-500">
-              {formatDateTime(event.created_at)}
-            </span>
-          </div>
+      {events.map((event) => {
+        const entityAdminPath = buildEntityAdminPath(event);
 
-          <div className="mt-2 text-sm font-semibold text-slate-900">
-            {event.actor_email || event.user_email || "Системное событие"}
-          </div>
-
-          {(event.entity_type || event.entity_id) && (
-            <div className="mt-1 break-all text-xs text-slate-500">
-              {[event.entity_type, event.entity_id].filter(Boolean).join(" / ")}
+        return (
+          <div
+            key={event.id || `${event.action}-${event.created_at}`}
+            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getToneClasses(getActionTone(event.action))}`}>
+                {event.action || "event"}
+              </span>
+              <span className="text-xs text-slate-500">
+                {formatDateTime(event.created_at)}
+              </span>
             </div>
-          )}
-        </div>
-      ))}
+
+            <div className="mt-2 text-sm font-semibold text-slate-900">
+              {event.actor_email || event.user_email || event.actor_user_id || "Системное событие"}
+            </div>
+
+            {(event.entity_type || event.entity_id) && (
+              <div className="mt-1 break-all text-xs text-slate-500">
+                {[event.entity_type, event.entity_id].filter(Boolean).join(" / ")}
+              </div>
+            )}
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {event.entity_type && event.entity_id && (
+                <Link
+                  to={buildAuditPath({
+                    entity_type: event.entity_type,
+                    entity_id: event.entity_id,
+                  })}
+                  className={LINK_PILL_CLASS}
+                >
+                  История
+                </Link>
+              )}
+
+              {event.actor_user_id && (
+                <Link
+                  to={buildAuditPath({ actor_user_id: event.actor_user_id })}
+                  className={LINK_PILL_CLASS}
+                >
+                  Actor
+                </Link>
+              )}
+
+              {entityAdminPath && (
+                <Link to={entityAdminPath} className={LINK_PILL_CLASS}>
+                  Раздел
+                </Link>
+              )}
+            </div>
+          </div>
+        );
+      })}
 
       <Link
         to="/admin/audit-events"
@@ -188,19 +405,109 @@ export function DashboardPage({
   const permissions = asArray(adminData?.permissions);
   const auditEvents = asArray(adminData?.auditEvents);
 
+  const counts = {
+    users: users.length,
+    organizations: organizations.length,
+    groups: groups.length,
+    courses: courses.length,
+    enrollments: enrollments.length,
+    documents: documents.length,
+    roles: roles.length,
+    permissions: permissions.length,
+    auditEvents: auditEvents.length,
+  };
+
   const activeUsersCount = countWhere(users, (item) => item.is_active !== false);
   const inactiveUsersCount = countWhere(users, (item) => item.is_active === false);
+
   const activeGroupsCount = countWhere(groups, (item) => item.is_active !== false);
   const inactiveGroupsCount = countWhere(groups, (item) => item.is_active === false);
+
   const activeCoursesCount = countWhere(courses, (item) => item.is_active !== false);
   const inactiveCoursesCount = countWhere(courses, (item) => item.is_active === false);
+
   const assignedEnrollmentsCount = countWhere(enrollments, (item) => item.status === "assigned");
   const activeEnrollmentsCount = countWhere(enrollments, (item) => item.status === "active");
   const completedEnrollmentsCount = countWhere(enrollments, (item) => item.status === "completed");
+
   const availableDocumentsCount = countWhere(documents, (item) => item.status === "available");
   const draftDocumentsCount = countWhere(documents, (item) => item.status === "draft");
   const revokedDocumentsCount = countWhere(documents, (item) => item.status === "revoked");
-  const systemRolesCount = countWhere(roles, (item) => item.is_system || item.is_builtin);
+
+  const systemRolesCount = countWhere(roles, isSystemRole);
+  const customRolesCount = Math.max(roles.length - systemRolesCount, 0);
+
+  const organizationsWithoutKppCount = countWhere(organizations, (item) => !item.kpp);
+  const auditWithActorCount = countWhere(auditEvents, (item) => item.actor_user_id);
+
+  const completionRate = percent(completedEnrollmentsCount, enrollments.length);
+  const publishedDocumentsRate = percent(availableDocumentsCount, documents.length);
+
+  const primaryMetrics = [
+    {
+      label: "Пользователи",
+      value: users.length,
+      hint: `${activeUsersCount} активных / ${inactiveUsersCount} неактивных`,
+      to: "/admin/users",
+      tone: "blue",
+    },
+    {
+      label: "Организации",
+      value: organizations.length,
+      hint: `${organizationsWithoutKppCount} без КПП`,
+      to: "/admin/organizations",
+      tone: "violet",
+    },
+    {
+      label: "Группы",
+      value: groups.length,
+      hint: `${activeGroupsCount} активных / ${inactiveGroupsCount} неактивных`,
+      to: "/admin/groups",
+      tone: "green",
+    },
+    {
+      label: "Курсы",
+      value: courses.length,
+      hint: `${activeCoursesCount} активных / ${inactiveCoursesCount} неактивных`,
+      to: "/admin/courses",
+      tone: "blue",
+    },
+    {
+      label: "Назначения",
+      value: enrollments.length,
+      hint: `${completionRate}% завершено`,
+      to: "/admin/enrollments",
+      tone: "amber",
+    },
+    {
+      label: "Документы",
+      value: documents.length,
+      hint: `${publishedDocumentsRate}% опубликовано`,
+      to: "/admin/documents",
+      tone: "green",
+    },
+    {
+      label: "Роли",
+      value: roles.length,
+      hint: `${systemRolesCount} системных / ${customRolesCount} пользовательских`,
+      to: "/admin/roles",
+      tone: "violet",
+    },
+    {
+      label: "Права",
+      value: permissions.length,
+      hint: "Разрешения RBAC",
+      to: "/admin/permissions",
+      tone: "blue",
+    },
+    {
+      label: "Аудит",
+      value: auditEvents.length,
+      hint: `${auditWithActorCount} событий с actor`,
+      to: "/admin/audit-events",
+      tone: "amber",
+    },
+  ];
 
   return (
     <>
@@ -231,7 +538,7 @@ export function DashboardPage({
       </div>
 
       <SectionCard
-        title="Сводка Admin API"
+        title="Центр управления Admin API"
         subtitle={adminDataLoadedAt ? `Последнее обновление: ${adminDataLoadedAt}` : "Данные ещё не загружены."}
       >
         {!user ? (
@@ -243,32 +550,133 @@ export function DashboardPage({
         ) : (
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-              <MetricCard label="Пользователи" value={users.length} hint="Все учётные записи" to="/admin/users" />
-              <MetricCard label="Организации" value={organizations.length} hint="Юридические лица" to="/admin/organizations" />
-              <MetricCard label="Группы" value={groups.length} hint="Учебные группы" to="/admin/groups" />
-              <MetricCard label="Курсы" value={courses.length} hint="Образовательные программы" to="/admin/courses" />
-              <MetricCard label="Назначения" value={enrollments.length} hint="Слушатель → программа" to="/admin/enrollments" />
-              <MetricCard label="Документы" value={documents.length} hint="Реестр и файлы" to="/admin/documents" />
-              <MetricCard label="Роли" value={roles.length} hint="Ролевая модель" to="/admin/roles" />
-              <MetricCard label="Права" value={permissions.length} hint="Разрешения RBAC" to="/admin/permissions" />
-              <MetricCard label="Аудит" value={auditEvents.length} hint="Последние события" to="/admin/audit-events" />
+              {primaryMetrics.map((metric) => (
+                <MetricCard
+                  key={metric.label}
+                  label={metric.label}
+                  value={metric.value}
+                  hint={metric.hint}
+                  to={metric.to}
+                  tone={metric.tone}
+                />
+              ))}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Активные пользователи" value={activeUsersCount} hint={`Неактивных: ${inactiveUsersCount}`} />
-              <MetricCard label="Активные группы" value={activeGroupsCount} hint={`Неактивных: ${inactiveGroupsCount}`} />
-              <MetricCard label="Активные курсы" value={activeCoursesCount} hint={`Неактивных: ${inactiveCoursesCount}`} />
-              <MetricCard label="Назначены" value={assignedEnrollmentsCount} hint="Ожидают старта" />
-              <MetricCard label="В процессе" value={activeEnrollmentsCount} hint="Текущие обучения" />
-              <MetricCard label="Завершены" value={completedEnrollmentsCount} hint="Созданы/ожидают документы" />
-              <MetricCard label="Документы доступны" value={availableDocumentsCount} hint="Опубликованы" />
-              <MetricCard label="Черновики" value={draftDocumentsCount} hint="Скрыты от скачивания" />
-              <MetricCard label="Отозваны" value={revokedDocumentsCount} hint="Недействующие документы" />
-              <MetricCard label="Системные роли" value={systemRolesCount} hint="Защищённые роли платформы" />
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+              <SignalCard
+                title="Неактивные пользователи"
+                value={inactiveUsersCount}
+                hint="Проверить доступы и блокировки"
+                to="/admin/users?activity=inactive"
+                tone={inactiveUsersCount ? "amber" : "green"}
+              />
+              <SignalCard
+                title="Черновики документов"
+                value={draftDocumentsCount}
+                hint="Ожидают публикации"
+                to="/admin/documents?status=draft"
+                tone={draftDocumentsCount ? "amber" : "green"}
+              />
+              <SignalCard
+                title="Отозванные документы"
+                value={revokedDocumentsCount}
+                hint="Недействующие документы"
+                to="/admin/documents?status=revoked"
+                tone={revokedDocumentsCount ? "red" : "green"}
+              />
+              <SignalCard
+                title="Назначения в работе"
+                value={activeEnrollmentsCount}
+                hint="Текущие обучения"
+                to="/admin/enrollments?status=active"
+                tone="blue"
+              />
+              <SignalCard
+                title="Пользовательские роли"
+                value={customRolesCount}
+                hint="Проверить RBAC-настройки"
+                to="/admin/roles?type=custom"
+                tone={customRolesCount ? "violet" : "green"}
+              />
             </div>
           </div>
         )}
       </SectionCard>
+
+      {user && !adminLoading && (
+        <SectionCard
+          title="Рабочие сценарии"
+          subtitle="Быстрые цепочки для типовых административных действий."
+        >
+          <div className="grid gap-4 xl:grid-cols-3">
+            <WorkflowCard
+              title="Пользовательский контур"
+              description="Создание учётных записей, назначение ролей и проверка активных пользователей."
+              links={[
+                { label: "Пользователи", to: "/admin/users" },
+                { label: "Активные", to: "/admin/users?activity=active" },
+                { label: "Неактивные", to: "/admin/users?activity=inactive" },
+                { label: "Роли", to: "/admin/roles" },
+              ]}
+            />
+
+            <WorkflowCard
+              title="Организации и группы"
+              description="Ведение организаций, учебных групп и переход к групповым назначениям."
+              links={[
+                { label: "Организации", to: "/admin/organizations" },
+                { label: "Группы", to: "/admin/groups" },
+                { label: "Активные группы", to: "/admin/groups?status=active" },
+                { label: "Назначения", to: "/admin/enrollments?status=assigned" },
+              ]}
+            />
+
+            <WorkflowCard
+              title="Курсы и обучение"
+              description="Контроль программ, назначений и статусов прохождения обучения."
+              links={[
+                { label: "Курсы", to: "/admin/courses" },
+                { label: "Активные курсы", to: "/admin/courses?is_active=true" },
+                { label: "В процессе", to: "/admin/enrollments?status=active" },
+                { label: "Завершены", to: "/admin/enrollments?status=completed" },
+              ]}
+            />
+
+            <WorkflowCard
+              title="Документы и реестр"
+              description="Публикация PDF, контроль черновиков, отзыв и восстановление документов."
+              links={[
+                { label: "Все документы", to: "/admin/documents" },
+                { label: "Черновики", to: "/admin/documents?status=draft" },
+                { label: "Доступные", to: "/admin/documents?status=available" },
+                { label: "Отозванные", to: "/admin/documents?status=revoked" },
+              ]}
+            />
+
+            <WorkflowCard
+              title="RBAC"
+              description="Системные роли, пользовательские роли и справочник permissions."
+              links={[
+                { label: "Системные роли", to: "/admin/roles?type=system" },
+                { label: "Пользовательские роли", to: "/admin/roles?type=custom" },
+                { label: "Права", to: "/admin/permissions" },
+                { label: "Admin-права", to: "/admin/permissions?group=admin" },
+              ]}
+            />
+
+            <WorkflowCard
+              title="Аудит и расследование"
+              description="Проверка действий администраторов, истории сущностей и событий actor."
+              links={[
+                { label: "Последние 25", to: "/admin/audit-events?limit=25" },
+                { label: "Пользователи", to: "/admin/audit-events?entity_type=user" },
+                { label: "Документы", to: "/admin/audit-events?entity_type=document" },
+                { label: "Создание пользователей", to: "/admin/audit-events?action=admin.user_created" },
+              ]}
+            />
+          </div>
+        </SectionCard>
+      )}
 
       {user && !adminLoading && (
         <SectionCard
@@ -282,6 +690,7 @@ export function DashboardPage({
                 label={item.label}
                 description={item.description}
                 path={item.path}
+                count={counts[item.countKey] || 0}
               />
             ))}
           </div>
