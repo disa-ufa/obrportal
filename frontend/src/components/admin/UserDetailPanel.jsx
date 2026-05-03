@@ -6,6 +6,7 @@ import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
+import { AdminFormTextInput as TextInput } from "./AdminTextInput";
 
 function Field({ label, children, hint }) {
   return (
@@ -22,15 +23,6 @@ function Field({ label, children, hint }) {
 function SelectInput(props) {
   return (
     <select
-      {...props}
-      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-50 disabled:text-slate-500"
-    />
-  );
-}
-
-function TextInput(props) {
-  return (
-    <input
       {...props}
       className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-50 disabled:text-slate-500"
     />
@@ -56,7 +48,6 @@ function buildRoleAssignmentInitialValues(roles, organizations) {
     organization_id: organizations?.[0]?.id || "",
   };
 }
-
 
 function UserPasswordResetForm({ onReset }) {
   const [password, setPassword] = useState("");

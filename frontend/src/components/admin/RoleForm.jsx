@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ActionButton } from "../ui/ActionButton";
 import { Alert } from "../ui/Alert";
+import { AdminFormTextInput as TextInput } from "./AdminTextInput";
 
 const EMPTY_ROLE = {
   code: "",
@@ -44,15 +45,6 @@ function Field({ label, required = false, children, hint }) {
       <div className="mt-1">{children}</div>
       {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
     </label>
-  );
-}
-
-function TextInput(props) {
-  return (
-    <input
-      {...props}
-      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-50 disabled:text-slate-500"
-    />
   );
 }
 
