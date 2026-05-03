@@ -10,7 +10,7 @@ import {
 } from "../api/client";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
-import { buildEnrollmentsPath } from "../utils/adminLinks";
+import { buildCoursesPath, buildEnrollmentsPath } from "../utils/adminLinks";
 
 function formatDateTime(value) {
   if (!value) {
@@ -56,20 +56,6 @@ function getCourseFiltersFromSearch(search) {
     q: params.get("q") || "",
     is_active: params.get("is_active") || "",
   };
-}
-
-function buildCoursesPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/courses?${query}` : "/admin/courses";
 }
 
 function calculateCourseCounts(items) {
