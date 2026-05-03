@@ -746,21 +746,21 @@ export function AdminCoursesPage() {
               title="Всего программ"
               value={courseCounts.all || 0}
               hint="По текущему поиску без фильтра активности"
-              to="/admin/courses"
+              to={buildCoursesPath()}
               tone="blue"
             />
             <MetricCard
               title="Активные"
               value={activeCount}
               hint="Доступны в каталоге и назначениях"
-              to="/admin/courses?is_active=true"
+              to={buildCoursesPath({ is_active: "true" })}
               tone="green"
             />
             <MetricCard
               title="Неактивные"
               value={inactiveCount}
               hint="Скрыты или временно отключены"
-              to="/admin/courses?is_active=false"
+              to={buildCoursesPath({ is_active: "false" })}
               tone={inactiveCount ? "amber" : "gray"}
             />
           </div>
