@@ -67,6 +67,7 @@ import {
 import { AdminNotFoundPage } from "./pages/AdminNotFoundPage";
 import { PublicRoutes } from "./routes/PublicRoutes";
 import { AdminPageRenderer } from "./routes/AdminPageRenderer";
+import { useAdminSelections } from "./hooks/useAdminSelections";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -83,29 +84,55 @@ export default function App() {
   const [adminLoading, setAdminLoading] = useState(false);
   const [initializingAuth, setInitializingAuth] = useState(true);
 
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedUserLoading, setSelectedUserLoading] = useState(false);
-  const [selectedUserError, setSelectedUserError] = useState("");
+  const {
+    selectedUser,
+    setSelectedUser,
+    selectedUserLoading,
+    setSelectedUserLoading,
+    selectedUserError,
+    setSelectedUserError,
+    clearSelectedUser,
 
-  const [selectedOrganization, setSelectedOrganization] = useState(null);
-  const [selectedOrganizationLoading, setSelectedOrganizationLoading] = useState(false);
-  const [selectedOrganizationError, setSelectedOrganizationError] = useState("");
+    selectedOrganization,
+    setSelectedOrganization,
+    selectedOrganizationLoading,
+    setSelectedOrganizationLoading,
+    selectedOrganizationError,
+    setSelectedOrganizationError,
+    clearSelectedOrganization,
 
-  const [selectedGroup, setSelectedGroup] = useState(null);
-  const [selectedGroupLoading, setSelectedGroupLoading] = useState(false);
-  const [selectedGroupError, setSelectedGroupError] = useState("");
+    selectedGroup,
+    setSelectedGroup,
+    selectedGroupLoading,
+    setSelectedGroupLoading,
+    selectedGroupError,
+    setSelectedGroupError,
+    clearSelectedGroup,
 
-  const [selectedRole, setSelectedRole] = useState(null);
-  const [selectedRoleLoading, setSelectedRoleLoading] = useState(false);
-  const [selectedRoleError, setSelectedRoleError] = useState("");
+    selectedRole,
+    setSelectedRole,
+    selectedRoleLoading,
+    setSelectedRoleLoading,
+    selectedRoleError,
+    setSelectedRoleError,
+    clearSelectedRole,
 
-  const [selectedPermission, setSelectedPermission] = useState(null);
-  const [selectedPermissionLoading, setSelectedPermissionLoading] = useState(false);
-  const [selectedPermissionError, setSelectedPermissionError] = useState("");
+    selectedPermission,
+    setSelectedPermission,
+    selectedPermissionLoading,
+    setSelectedPermissionLoading,
+    selectedPermissionError,
+    setSelectedPermissionError,
+    clearSelectedPermission,
 
-  const [selectedAuditEvent, setSelectedAuditEvent] = useState(null);
-  const [selectedAuditEventLoading, setSelectedAuditEventLoading] = useState(false);
-  const [selectedAuditEventError, setSelectedAuditEventError] = useState("");
+    selectedAuditEvent,
+    setSelectedAuditEvent,
+    selectedAuditEventLoading,
+    setSelectedAuditEventLoading,
+    selectedAuditEventError,
+    setSelectedAuditEventError,
+    clearSelectedAuditEvent,
+  } = useAdminSelections();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -801,42 +828,6 @@ export default function App() {
     } finally {
       setAdminLoading(false);
     }
-  }
-
-  function clearSelectedUser() {
-    setSelectedUser(null);
-    setSelectedUserLoading(false);
-    setSelectedUserError("");
-  }
-
-  function clearSelectedOrganization() {
-    setSelectedOrganization(null);
-    setSelectedOrganizationLoading(false);
-    setSelectedOrganizationError("");
-  }
-
-  function clearSelectedGroup() {
-    setSelectedGroup(null);
-    setSelectedGroupLoading(false);
-    setSelectedGroupError("");
-  }
-
-  function clearSelectedRole() {
-    setSelectedRole(null);
-    setSelectedRoleLoading(false);
-    setSelectedRoleError("");
-  }
-
-  function clearSelectedPermission() {
-    setSelectedPermission(null);
-    setSelectedPermissionLoading(false);
-    setSelectedPermissionError("");
-  }
-
-  function clearSelectedAuditEvent() {
-    setSelectedAuditEvent(null);
-    setSelectedAuditEventLoading(false);
-    setSelectedAuditEventError("");
   }
 
   function handleLogout() {
