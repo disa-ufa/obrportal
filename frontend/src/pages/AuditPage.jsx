@@ -9,18 +9,9 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { ADMIN_FILTER_CONTROL_SUBTLE_DISABLED_CLASS } from "../utils/adminClasses";
 import { TABLE_LINK_CLASS, buildAuditPath, buildEntityAdminPath } from "../utils/adminLinks";
 import { formatRuDateTimeNativeUnsafe as formatDate } from "../utils/dateFormat";
-
-function TextInput(props) {
-  return (
-    <input
-      {...props}
-      className={ADMIN_FILTER_CONTROL_SUBTLE_DISABLED_CLASS}
-    />
-  );
-}
+import { AdminSubtleTextInput as TextInput } from "../components/admin/AdminTextInput";
 
 const DEFAULT_FILTERS = {
   action: "",

@@ -20,6 +20,7 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
+import { AdminTextInput as TextInput } from "../components/admin/AdminTextInput";
 import {
   TABLE_LINK_CLASS,
   buildDocumentsPath,
@@ -215,10 +216,6 @@ function Field({ label, required = false, children }) {
       <div className="mt-1">{children}</div>
     </label>
   );
-}
-
-function TextInput(props) {
-  return <input {...props} className={ADMIN_FILTER_CONTROL_SOFT_CLASS} />;
 }
 
 function LearningGroupForm({
