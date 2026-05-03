@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { RoleDetailPanel } from "../components/admin/RoleDetailPanel";
 import { RoleForm } from "../components/admin/RoleForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
@@ -35,10 +36,15 @@ function roleMatchesSearch(role, query) {
     return true;
   }
 
+  const permissionsText = (role.permissions || [])
+    .map((permission) => `${permission.code || ""} ${permission.name || ""}`)
+    .join(" ");
+
   const haystack = buildSearchText([
     role.code,
     role.name,
     role.description,
+    permissionsText,
   ]);
 
   return haystack.includes(query);
@@ -60,6 +66,122 @@ function roleMatchesType(role, filter) {
   return true;
 }
 
+const ROLE_TYPE_FILTERS = [
+  { value: "all", label: "Все" },
+  { value: "system", label: "Системные" },
+  { value: "custom", label: "Пользовательские" },
+  { value: "admin", label: "Admin" },
+];
+
+const TABLE_LINK_CLASS =
+  "rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
+
+function buildPath(pathname, filters = {}, defaults = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (!value) {
+      return;
+    }
+
+    if (defaults[key] !== undefined && value === defaults[key]) {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+function buildRolesPath(filters = {}) {
+  return buildPath("/admin/roles", filters, {
+    type: "all",
+  });
+}
+
+function buildUsersPath(filters = {}) {
+  return buildPath("/admin/users", filters, {
+    activity: "all",
+  });
+}
+
+function buildPermissionsPath(filters = {}) {
+  return buildPath("/admin/permissions", filters);
+}
+
+function getRoleFiltersFromSearch(search) {
+  const params = new URLSearchParams(search);
+
+  return {
+    q: params.get("q") || "",
+    type: params.get("type") || "all",
+  };
+}
+
+function calculateRoleCounts(items) {
+  const counts = {
+    all: Array.isArray(items) ? items.length : 0,
+    system: 0,
+    custom: 0,
+    admin: 0,
+  };
+
+  if (!Array.isArray(items)) {
+    return counts;
+  }
+
+  items.forEach((role) => {
+    if (isSystemRole(role)) {
+      counts.system += 1;
+    } else {
+      counts.custom += 1;
+    }
+
+    if (role.code === "admin") {
+      counts.admin += 1;
+    }
+  });
+
+  return counts;
+}
+
+function QuickRoleTypeFilters({ activeValue, counts, disabled, onChange }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {ROLE_TYPE_FILTERS.map((item) => {
+        const isActive = activeValue === item.value;
+        const count = counts[item.value] ?? counts.all ?? 0;
+
+        return (
+          <button
+            key={item.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(item.value)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isActive
+                ? "bg-slate-900 text-white ring-slate-900"
+                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>{item.label}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function RolesPage({
   user,
   roles,
@@ -77,25 +199,69 @@ export function RolesPage({
   onAssignRolePermission,
   onRemoveRolePermission,
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialFilters = getRoleFiltersFromSearch(location.search);
+
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [roleTypeFilter, setRoleTypeFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState(initialFilters.q);
+  const [roleTypeFilter, setRoleTypeFilter] = useState(initialFilters.type);
+
+  useEffect(() => {
+    const nextFilters = getRoleFiltersFromSearch(location.search);
+
+    setSearchQuery(nextFilters.q);
+    setRoleTypeFilter(nextFilters.type);
+  }, [location.search]);
 
   const normalizedSearchQuery = normalizeSearchValue(searchQuery);
 
-  const filteredRoles = useMemo(
-    () => roles.filter((role) =>
-      roleMatchesSearch(role, normalizedSearchQuery) &&
-      roleMatchesType(role, roleTypeFilter)
-    ),
-    [roles, normalizedSearchQuery, roleTypeFilter]
+  const baseFilteredRoles = useMemo(
+    () => roles.filter((role) => roleMatchesSearch(role, normalizedSearchQuery)),
+    [roles, normalizedSearchQuery]
   );
 
-  const hasActiveFilters = normalizedSearchQuery || roleTypeFilter !== "all";
+  const roleCounts = useMemo(() => calculateRoleCounts(baseFilteredRoles), [baseFilteredRoles]);
+
+  const filteredRoles = useMemo(
+    () => baseFilteredRoles.filter((role) => roleMatchesType(role, roleTypeFilter)),
+    [baseFilteredRoles, roleTypeFilter]
+  );
+
+  const hasActiveFilters = Boolean(normalizedSearchQuery) || roleTypeFilter !== "all";
+
+  function buildRoleFilters(overrides = {}) {
+    return {
+      q: overrides.q ?? searchQuery,
+      type: overrides.type ?? roleTypeFilter,
+    };
+  }
+
+  function navigateToRoleFilters(filters, options = { replace: true }) {
+    const nextPath = buildRolesPath(filters);
+    const currentPath = `${location.pathname}${location.search}`;
+
+    if (currentPath === nextPath) {
+      return;
+    }
+
+    navigate(nextPath, options);
+  }
+
+  function handleSearchChange(value) {
+    setSearchQuery(value);
+    navigateToRoleFilters(buildRoleFilters({ q: value }));
+  }
+
+  function handleRoleTypeChange(value) {
+    setRoleTypeFilter(value);
+    navigateToRoleFilters(buildRoleFilters({ type: value }));
+  }
 
   function resetFilters() {
     setSearchQuery("");
     setRoleTypeFilter("all");
+    navigateToRoleFilters({}, { replace: true });
   }
 
   async function handleCreateRole(payload) {
@@ -151,7 +317,7 @@ export function RolesPage({
                 <input
                   type="search"
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(event) => handleSearchChange(event.target.value)}
                   placeholder="Код, название или описание"
                   className={ADMIN_FILTER_CONTROL_SUBTLE_CLASS}
                 />
@@ -160,7 +326,7 @@ export function RolesPage({
               <AdminFilterField label="Тип роли" className="block space-y-2" labelClassName="tracking-[0.2em]">
                 <select
                   value={roleTypeFilter}
-                  onChange={(event) => setRoleTypeFilter(event.target.value)}
+                  onChange={(event) => handleRoleTypeChange(event.target.value)}
                   className={ADMIN_FILTER_CONTROL_SUBTLE_CLASS}
                 >
                   <option value="all">Все роли</option>
@@ -170,6 +336,18 @@ export function RolesPage({
                 </select>
               </AdminFilterField>
             </AdminFilterPanel>
+
+            <QuickRoleTypeFilters
+              activeValue={roleTypeFilter}
+              counts={roleCounts}
+              disabled={loading}
+              onChange={handleRoleTypeChange}
+            />
+
+            <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+              <span>Показано ролей: {filteredRoles.length}</span>
+              <span>Всего по текущему поиску: {roleCounts.all || 0}</span>
+            </div>
 
             {loading ? (
               <LoadingBlock text="Загружаем роли..." />
@@ -182,7 +360,7 @@ export function RolesPage({
                 )}
                 rows={filteredRoles}
                 selectedRowId={selectedRole?.id}
-                minWidth="860px"
+                minWidth="980px"
                 columns={[
                   {
                     key: "code",
@@ -208,12 +386,28 @@ export function RolesPage({
                     key: "actions",
                     title: "Действия",
                     render: (row) => (
-                      <ActionButton
-                        onClick={() => onOpenRole(row.id)}
-                        disabled={selectedRoleLoading}
-                      >
-                        {selectedRole?.id === row.id ? "Открыто" : "Открыть"}
-                      </ActionButton>
+                      <div className="flex flex-wrap gap-2">
+                        <ActionButton
+                          onClick={() => onOpenRole(row.id)}
+                          disabled={selectedRoleLoading}
+                        >
+                          {selectedRole?.id === row.id ? "Открыто" : "Открыть"}
+                        </ActionButton>
+
+                        <Link
+                          to={buildUsersPath({ role_id: row.id })}
+                          className={TABLE_LINK_CLASS}
+                        >
+                          Пользователи
+                        </Link>
+
+                        <Link
+                          to={buildPermissionsPath({ q: row.code })}
+                          className={TABLE_LINK_CLASS}
+                        >
+                          Права
+                        </Link>
+                      </div>
                     ),
                   },
                 ]}
