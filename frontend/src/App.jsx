@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { PublicShell } from "./components/layout/PublicShell";
 import {
@@ -68,7 +68,6 @@ import { AuditPage } from "./pages/AuditPage";
 import { AccountPage } from "./pages/AccountPage";
 import { AuthPage } from "./pages/AuthPage";
 import { CatalogPage } from "./pages/CatalogPage";
-import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { ContactsPage } from "./pages/ContactsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { AdminCoursesPage } from "./pages/AdminCoursesPage";
@@ -87,27 +86,7 @@ import { PrivacyPage } from "./pages/PrivacyPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { RolesPage } from "./pages/RolesPage";
 import { UsersPage } from "./pages/UsersPage";
-import { VerifyDocumentPage } from "./pages/VerifyDocumentPage";
-
-function CourseDetailPublicRoute({ onPageChange, onOpenCourse, user }) {
-  const { slug } = useParams();
-
-  return (
-    <CourseDetailPage
-      courseSlug={slug}
-      onPageChange={onPageChange}
-      onOpenCourse={onOpenCourse}
-      user={user}
-    />
-  );
-}
-
-
-function VerifyDocumentCodeRoute({ onPageChange }) {
-  const { code } = useParams();
-
-  return <VerifyDocumentPage onPageChange={onPageChange} initialCode={code || ""} />;
-}
+import { CourseDetailPublicRoute, VerifyDocumentCodeRoute } from "./routes/PublicRouteComponents";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
