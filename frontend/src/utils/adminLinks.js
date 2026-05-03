@@ -40,7 +40,9 @@ export function buildUsersPath(filters = {}) {
 }
 
 export function buildOrganizationsPath(filters = {}) {
-  return buildPath("/admin/organizations", filters);
+  return buildPath("/admin/organizations", filters, {
+    scope: "all",
+  });
 }
 
 export function buildGroupsPath(filters = {}) {

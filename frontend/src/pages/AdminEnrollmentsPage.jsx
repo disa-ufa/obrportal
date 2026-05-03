@@ -14,6 +14,7 @@ import {
 } from "../api/client";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
+import { buildEnrollmentsPath } from "../utils/adminLinks";
 
 const ENROLLMENT_STATUSES = [
   { value: "assigned", label: "Назначен" },
@@ -59,20 +60,6 @@ function getEnrollmentFiltersFromSearch(search) {
     status: params.get("status") || "",
     learning_group_id: params.get("learning_group_id") || "",
   };
-}
-
-function buildEnrollmentsPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/enrollments?${query}` : "/admin/enrollments";
 }
 
 function getStatusTone(value) {

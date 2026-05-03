@@ -14,6 +14,7 @@ import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 import { buildDocumentVerificationPath } from "../utils/documentVerification";
+import { buildDocumentsPath, buildEnrollmentsPath } from "../utils/adminLinks";
 
 const DOCUMENT_STATUSES = [
   { value: "available", label: "Доступен" },
@@ -161,34 +162,6 @@ function getDocumentFiltersFromSearch(search) {
     document_type: params.get("document_type") || "",
     q: params.get("q") || "",
   };
-}
-
-function buildDocumentsPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/documents?${query}` : "/admin/documents";
-}
-
-function buildEnrollmentsPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/enrollments?${query}` : "/admin/enrollments";
 }
 
 function getCourseOptionLabel(course) {

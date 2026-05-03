@@ -14,6 +14,7 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
+import { buildEnrollmentsPath, buildGroupsPath, buildOrganizationsPath } from "../utils/adminLinks";
 
 function organizationMatchesSearch(organization, query) {
   const normalizedQuery = normalizeSearchValue(query);
@@ -69,54 +70,6 @@ function getOrganizationFiltersFromSearch(search) {
     q: params.get("q") || "",
     scope: params.get("scope") || "all",
   };
-}
-
-function buildOrganizationsPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (!value) {
-      return;
-    }
-
-    if (key === "scope" && value === "all") {
-      return;
-    }
-
-    params.set(key, value);
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/organizations?${query}` : "/admin/organizations";
-}
-
-function buildGroupsPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/groups?${query}` : "/admin/groups";
-}
-
-function buildEnrollmentsPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/enrollments?${query}` : "/admin/enrollments";
 }
 
 function calculateOrganizationCounts(items) {

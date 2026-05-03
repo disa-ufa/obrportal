@@ -14,6 +14,7 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildSearchText, normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 import { ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS } from "../utils/adminClasses";
+import { buildDocumentsPath, buildEnrollmentsPath, buildUsersPath } from "../utils/adminLinks";
 
 function userMatchesSearch(user, query) {
   if (!query) {
@@ -68,54 +69,6 @@ function getUserFiltersFromSearch(search) {
     activity: params.get("activity") || "all",
     role_id: params.get("role_id") || "",
   };
-}
-
-function buildUsersPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (!value) {
-      return;
-    }
-
-    if (key === "activity" && value === "all") {
-      return;
-    }
-
-    params.set(key, value);
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/users?${query}` : "/admin/users";
-}
-
-function buildDocumentsPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/documents?${query}` : "/admin/documents";
-}
-
-function buildEnrollmentsPath(filters = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-
-  return query ? `/admin/enrollments?${query}` : "/admin/enrollments";
 }
 
 function calculateUserCounts(items) {
