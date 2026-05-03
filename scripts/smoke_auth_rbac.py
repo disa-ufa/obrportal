@@ -518,6 +518,7 @@ def main() -> int:
         ("/admin/roles?type=admin", "roles admin"),
         ("/admin/permissions?q=admin", "permissions search"),
         ("/admin/permissions?group=admin", "permissions admin group"),
+        ("/admin/permissions?group=audit", "permissions audit group"),
         ("/admin/audit-events?action=admin.user_created", "audit action"),
         ("/admin/audit-events?entity_type=user", "audit entity type"),
         ("/admin/audit-events?actor_user_id=00000000-0000-0000-0000-000000000000", "audit actor"),
