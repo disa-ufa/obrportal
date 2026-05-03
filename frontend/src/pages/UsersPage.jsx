@@ -5,6 +5,7 @@ import { UserForm } from "../components/admin/UserForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
+import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
@@ -91,45 +92,6 @@ function calculateUserCounts(items) {
   });
 
   return counts;
-}
-
-function QuickActivityFilters({ activeValue, counts, disabled, onChange }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {USER_ACTIVITY_FILTERS.map((item) => {
-        const isActive = activeValue === item.value;
-        const count =
-          item.value === "active"
-            ? counts.active || 0
-            : item.value === "inactive"
-              ? counts.inactive || 0
-              : counts.all || 0;
-
-        return (
-          <button
-            key={item.value}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(item.value)}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-              isActive
-                ? "bg-slate-900 text-white ring-slate-900"
-                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            <span>{item.label}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {count}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 export function UsersPage({
@@ -293,11 +255,18 @@ export function UsersPage({
               </AdminFilterField>
             </AdminFilterPanel>
 
-            <QuickActivityFilters
+            <AdminQuickFilterButtons
+              items={USER_ACTIVITY_FILTERS}
               activeValue={activityFilter}
               counts={userCounts}
               disabled={loading}
               onChange={handleActivityChange}
+              getCount={(item, counts) =>
+                item.value === "active"
+                  ? counts.active || 0
+                  : item.value === "inactive"
+                    ? counts.inactive || 0
+                    : counts.all || 0}
             />
 
             <div className="flex flex-wrap gap-3 text-sm text-slate-500">
