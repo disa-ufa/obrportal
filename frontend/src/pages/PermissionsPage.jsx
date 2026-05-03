@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { PermissionDetailPanel } from "../components/admin/PermissionDetailPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
@@ -22,11 +23,16 @@ function getPermissionGroup(permission) {
 }
 
 function getPermissionSearchText(permission) {
+  const rolesText = (permission.roles || [])
+    .map((role) => `${role.code || ""} ${role.name || ""}`)
+    .join(" ");
+
   return normalizeSearchValue([
     permission.code,
     permission.name,
     permission.description,
     getPermissionGroup(permission),
+    rolesText,
   ].filter(Boolean).join(" "));
 }
 
@@ -42,6 +48,106 @@ function getPermissionGroupTone(group) {
   return "gray";
 }
 
+const TABLE_LINK_CLASS =
+  "rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
+
+function buildPath(pathname, filters = {}, defaults = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (!value) {
+      return;
+    }
+
+    if (defaults[key] !== undefined && value === defaults[key]) {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+function buildPermissionsPath(filters = {}) {
+  return buildPath("/admin/permissions", filters, {
+    group: ALL_PERMISSION_GROUPS,
+  });
+}
+
+function buildRolesPath(filters = {}) {
+  return buildPath("/admin/roles", filters, {
+    type: "all",
+  });
+}
+
+function getPermissionFiltersFromSearch(search) {
+  const params = new URLSearchParams(search);
+
+  return {
+    q: params.get("q") || "",
+    group: params.get("group") || ALL_PERMISSION_GROUPS,
+  };
+}
+
+function calculatePermissionGroupCounts(items) {
+  const counts = {
+    [ALL_PERMISSION_GROUPS]: Array.isArray(items) ? items.length : 0,
+  };
+
+  if (!Array.isArray(items)) {
+    return counts;
+  }
+
+  items.forEach((permission) => {
+    const group = getPermissionGroup(permission);
+    counts[group] = (counts[group] || 0) + 1;
+  });
+
+  return counts;
+}
+
+function QuickPermissionGroupFilters({ activeValue, groups, counts, disabled, onChange }) {
+  const items = [
+    { value: ALL_PERMISSION_GROUPS, label: "Все" },
+    ...groups.map((group) => ({ value: group, label: group })),
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => {
+        const isActive = activeValue === item.value;
+        const count = counts[item.value] || 0;
+
+        return (
+          <button
+            key={item.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(item.value)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isActive
+                ? "bg-slate-900 text-white ring-slate-900"
+                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>{item.label}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function PermissionsPage({
   user,
   permissions,
@@ -53,8 +159,19 @@ export function PermissionsPage({
   onClosePermission,
   onRefreshAdminData,
 }) {
-  const [search, setSearch] = useState("");
-  const [groupFilter, setGroupFilter] = useState(ALL_PERMISSION_GROUPS);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialFilters = getPermissionFiltersFromSearch(location.search);
+
+  const [search, setSearch] = useState(initialFilters.q);
+  const [groupFilter, setGroupFilter] = useState(initialFilters.group);
+
+  useEffect(() => {
+    const nextFilters = getPermissionFiltersFromSearch(location.search);
+
+    setSearch(nextFilters.q);
+    setGroupFilter(nextFilters.group);
+  }, [location.search]);
 
   const permissionGroups = useMemo(() => {
     return Array.from(
@@ -62,23 +179,60 @@ export function PermissionsPage({
     ).sort((left, right) => left.localeCompare(right, "ru-RU"));
   }, [permissions]);
 
-  const filteredPermissions = useMemo(() => {
+  const baseFilteredPermissions = useMemo(() => {
     const query = normalizeSearchValue(search);
 
-    return permissions.filter((permission) => {
-      const matchesSearch = !query || getPermissionSearchText(permission).includes(query);
-      const matchesGroup = groupFilter === ALL_PERMISSION_GROUPS
-        || getPermissionGroup(permission) === groupFilter;
+    return permissions.filter(
+      (permission) => !query || getPermissionSearchText(permission).includes(query)
+    );
+  }, [permissions, search]);
 
-      return matchesSearch && matchesGroup;
-    });
-  }, [permissions, search, groupFilter]);
+  const permissionGroupCounts = useMemo(
+    () => calculatePermissionGroupCounts(baseFilteredPermissions),
+    [baseFilteredPermissions]
+  );
+
+  const filteredPermissions = useMemo(() => {
+    return baseFilteredPermissions.filter(
+      (permission) =>
+        groupFilter === ALL_PERMISSION_GROUPS || getPermissionGroup(permission) === groupFilter
+    );
+  }, [baseFilteredPermissions, groupFilter]);
 
   const hasActiveFilters = Boolean(search.trim()) || groupFilter !== ALL_PERMISSION_GROUPS;
+
+  function buildPermissionFilters(overrides = {}) {
+    return {
+      q: overrides.q ?? search,
+      group: overrides.group ?? groupFilter,
+    };
+  }
+
+  function navigateToPermissionFilters(filters, options = { replace: true }) {
+    const nextPath = buildPermissionsPath(filters);
+    const currentPath = `${location.pathname}${location.search}`;
+
+    if (currentPath === nextPath) {
+      return;
+    }
+
+    navigate(nextPath, options);
+  }
+
+  function handleSearchChange(value) {
+    setSearch(value);
+    navigateToPermissionFilters(buildPermissionFilters({ q: value }));
+  }
+
+  function handleGroupChange(value) {
+    setGroupFilter(value);
+    navigateToPermissionFilters(buildPermissionFilters({ group: value }));
+  }
 
   function resetFilters() {
     setSearch("");
     setGroupFilter(ALL_PERMISSION_GROUPS);
+    navigateToPermissionFilters({}, { replace: true });
   }
 
   return (
@@ -109,7 +263,7 @@ export function PermissionsPage({
                 <input
                   type="search"
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => handleSearchChange(event.target.value)}
                   placeholder="Код, название или описание"
                   className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 />
@@ -118,7 +272,7 @@ export function PermissionsPage({
               <AdminFilterField label="Группа" className="block space-y-2" labelClassName="tracking-[0.18em]">
                 <select
                   value={groupFilter}
-                  onChange={(event) => setGroupFilter(event.target.value)}
+                  onChange={(event) => handleGroupChange(event.target.value)}
                   className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 >
                   <option value={ALL_PERMISSION_GROUPS}>Все группы</option>
@@ -130,6 +284,19 @@ export function PermissionsPage({
                 </select>
               </AdminFilterField>
             </AdminFilterPanel>
+
+            <QuickPermissionGroupFilters
+              activeValue={groupFilter}
+              groups={permissionGroups}
+              counts={permissionGroupCounts}
+              disabled={loading}
+              onChange={handleGroupChange}
+            />
+
+            <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+              <span>Показано прав: {filteredPermissions.length}</span>
+              <span>Всего по текущему поиску: {permissionGroupCounts[ALL_PERMISSION_GROUPS] || 0}</span>
+            </div>
 
             <SmallTable
               emptyText={getFilteredEmptyText(
@@ -169,12 +336,21 @@ export function PermissionsPage({
                   key: "actions",
                   title: "Действия",
                   render: (row) => (
-                    <ActionButton
-                      onClick={() => onOpenPermission(row.id)}
-                      disabled={selectedPermissionLoading}
-                    >
-                      {selectedPermission?.id === row.id ? "Открыто" : "Открыть"}
-                    </ActionButton>
+                    <div className="flex flex-wrap gap-2">
+                      <ActionButton
+                        onClick={() => onOpenPermission(row.id)}
+                        disabled={selectedPermissionLoading}
+                      >
+                        {selectedPermission?.id === row.id ? "Открыто" : "Открыть"}
+                      </ActionButton>
+
+                      <Link
+                        to={buildRolesPath({ q: row.code })}
+                        className={TABLE_LINK_CLASS}
+                      >
+                        Роли
+                      </Link>
+                    </div>
                   ),
                 },
               ]}
