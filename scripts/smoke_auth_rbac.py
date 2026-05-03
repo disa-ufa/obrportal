@@ -493,6 +493,28 @@ def main() -> int:
     assert_frontend_shell(unknown_admin_body, "frontend unknown admin route shell")
     checks.append("frontend unknown admin route shell ok")
 
+    admin_filtered_frontend_routes = [
+        ("/admin/users?q=admin", "users search"),
+        ("/admin/users?activity=active", "users active"),
+        ("/admin/users?role_id=00000000-0000-0000-0000-000000000000", "users role"),
+        ("/admin/organizations?q=smoke", "organizations search"),
+        ("/admin/organizations?scope=with_kpp", "organizations with kpp"),
+        ("/admin/groups?q=smoke", "groups search"),
+        ("/admin/groups?organization_id=00000000-0000-0000-0000-000000000000", "groups organization"),
+        ("/admin/groups?status=active", "groups active"),
+        ("/admin/courses?q=smoke", "courses search"),
+        ("/admin/courses?is_active=true", "courses active"),
+        ("/admin/enrollments?status=assigned", "enrollments status"),
+        ("/admin/documents?status=available", "documents status"),
+        ("/admin/documents?document_type=certificate", "documents type"),
+    ]
+
+    for route, label in admin_filtered_frontend_routes:
+        status, frontend_body, frontend_headers = request_frontend_text(route)
+        assert_status(status, 200, f"frontend direct filtered admin route {route}")
+        assert_frontend_shell(frontend_body, f"frontend direct filtered admin route {route}")
+        checks.append(f"frontend direct filtered admin route {label} ok")
+
     status, users = request_json("GET", "/api/v1/admin/users", token=admin_token)
     assert_status(status, 200, "admin users")
     assert isinstance(users, list)
