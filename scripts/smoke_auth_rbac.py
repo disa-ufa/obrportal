@@ -512,6 +512,10 @@ def main() -> int:
         ("/admin/roles?type=custom", "roles custom"),
         ("/admin/permissions?q=admin", "permissions search"),
         ("/admin/permissions?group=admin", "permissions admin group"),
+        ("/admin/audit-events?action=admin.user_created", "audit action"),
+        ("/admin/audit-events?entity_type=user", "audit entity type"),
+        ("/admin/audit-events?actor_user_id=00000000-0000-0000-0000-000000000000", "audit actor"),
+        ("/admin/audit-events?limit=25", "audit limit"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
