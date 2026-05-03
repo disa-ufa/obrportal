@@ -364,7 +364,6 @@ export default function App() {
     }
   }
 
-
   async function handleLogin(event) {
     event.preventDefault();
     setAuthLoading(true);
@@ -707,7 +706,6 @@ export default function App() {
     return updated;
   }
 
-
   async function handleDeleteRole(roleId) {
     const deleted = await deleteAdminRole(roleId);
 
@@ -864,81 +862,83 @@ export default function App() {
   const adminRoutePage = getAdminPageFromPathname(location.pathname);
   const isUnknownAdminRoute = isAdminRoute && !adminRoutePage;
 
+  const adminPageRendererProps = {
+    locationPathname: location.pathname,
+    currentPage,
+    email,
+    password,
+    authLoading,
+    initializingAuth,
+    adminLoading,
+    error,
+    user,
+    rbac,
+    adminData,
+    adminDataLoadedAt,
+    setEmail,
+    setPassword,
+    handleLogin,
+    handleLogout,
+    handleRbacCheck,
+    loadAdminData,
+    selectedUser,
+    selectedUserLoading,
+    selectedUserError,
+    handleOpenUser,
+    clearSelectedUser,
+    handleCreateUser,
+    handleUpdateUser,
+    handleResetUserPassword,
+    handleActivateUser,
+    handleDeactivateUser,
+    handleAssignUserRole,
+    handleRemoveUserRole,
+    selectedOrganization,
+    selectedOrganizationLoading,
+    selectedOrganizationError,
+    handleOpenOrganization,
+    clearSelectedOrganization,
+    handleCreateOrganization,
+    handleUpdateOrganization,
+    handleDeleteOrganization,
+    selectedGroup,
+    selectedGroupLoading,
+    selectedGroupError,
+    handleOpenGroup,
+    clearSelectedGroup,
+    handleCreateGroup,
+    handleUpdateGroup,
+    handleDeleteGroup,
+    selectedRole,
+    selectedRoleLoading,
+    selectedRoleError,
+    handleOpenRole,
+    clearSelectedRole,
+    handleCreateRole,
+    handleUpdateRole,
+    handleDeleteRole,
+    handleAssignRolePermission,
+    handleRemoveRolePermission,
+    selectedPermission,
+    selectedPermissionLoading,
+    selectedPermissionError,
+    handleOpenPermission,
+    clearSelectedPermission,
+    selectedAuditEvent,
+    selectedAuditEventLoading,
+    selectedAuditEventError,
+    handleOpenAuditEvent,
+    clearSelectedAuditEvent,
+    handleApplyAuditFilters,
+  };
+
   const adminPageContent = isUnknownAdminRoute ? (
     <AdminNotFoundPage
       pathname={location.pathname}
       onOpenDashboard={() => handleNavigateAdminPage("dashboard")}
     />
   ) : (
-    <AdminPageRenderer
-      locationPathname={location.pathname}
-      currentPage={currentPage}
-      email={email}
-      password={password}
-      authLoading={authLoading}
-      initializingAuth={initializingAuth}
-      adminLoading={adminLoading}
-      error={error}
-      user={user}
-      rbac={rbac}
-      adminData={adminData}
-      adminDataLoadedAt={adminDataLoadedAt}
-      setEmail={setEmail}
-      setPassword={setPassword}
-      handleLogin={handleLogin}
-      handleLogout={handleLogout}
-      handleRbacCheck={handleRbacCheck}
-      loadAdminData={loadAdminData}
-      selectedUser={selectedUser}
-      selectedUserLoading={selectedUserLoading}
-      selectedUserError={selectedUserError}
-      handleOpenUser={handleOpenUser}
-      clearSelectedUser={clearSelectedUser}
-      handleCreateUser={handleCreateUser}
-      handleUpdateUser={handleUpdateUser}
-      handleResetUserPassword={handleResetUserPassword}
-      handleActivateUser={handleActivateUser}
-      handleDeactivateUser={handleDeactivateUser}
-      handleAssignUserRole={handleAssignUserRole}
-      handleRemoveUserRole={handleRemoveUserRole}
-      selectedOrganization={selectedOrganization}
-      selectedOrganizationLoading={selectedOrganizationLoading}
-      selectedOrganizationError={selectedOrganizationError}
-      handleOpenOrganization={handleOpenOrganization}
-      clearSelectedOrganization={clearSelectedOrganization}
-      handleCreateOrganization={handleCreateOrganization}
-      handleUpdateOrganization={handleUpdateOrganization}
-      handleDeleteOrganization={handleDeleteOrganization}
-      selectedGroup={selectedGroup}
-      selectedGroupLoading={selectedGroupLoading}
-      selectedGroupError={selectedGroupError}
-      handleOpenGroup={handleOpenGroup}
-      clearSelectedGroup={clearSelectedGroup}
-      handleCreateGroup={handleCreateGroup}
-      handleUpdateGroup={handleUpdateGroup}
-      handleDeleteGroup={handleDeleteGroup}
-      selectedRole={selectedRole}
-      selectedRoleLoading={selectedRoleLoading}
-      selectedRoleError={selectedRoleError}
-      handleOpenRole={handleOpenRole}
-      clearSelectedRole={clearSelectedRole}
-      handleCreateRole={handleCreateRole}
-      handleUpdateRole={handleUpdateRole}
-      handleDeleteRole={handleDeleteRole}
-      handleAssignRolePermission={handleAssignRolePermission}
-      handleRemoveRolePermission={handleRemoveRolePermission}
-      selectedPermission={selectedPermission}
-      selectedPermissionLoading={selectedPermissionLoading}
-      selectedPermissionError={selectedPermissionError}
-      handleOpenPermission={handleOpenPermission}
-      clearSelectedPermission={clearSelectedPermission}
-      selectedAuditEvent={selectedAuditEvent}
-      selectedAuditEventLoading={selectedAuditEventLoading}
-      selectedAuditEventError={selectedAuditEventError}
-      handleOpenAuditEvent={handleOpenAuditEvent}
-      clearSelectedAuditEvent={clearSelectedAuditEvent}
-      handleApplyAuditFilters={handleApplyAuditFilters}
-    />
+    <AdminPageRenderer {...adminPageRendererProps} />
   );
 
   const activeAdminPage = adminRoutePage || currentPage;
