@@ -507,6 +507,11 @@ def main() -> int:
         ("/admin/enrollments?status=assigned", "enrollments status"),
         ("/admin/documents?status=available", "documents status"),
         ("/admin/documents?document_type=certificate", "documents type"),
+        ("/admin/roles?q=admin", "roles search"),
+        ("/admin/roles?type=system", "roles system"),
+        ("/admin/roles?type=custom", "roles custom"),
+        ("/admin/permissions?q=admin", "permissions search"),
+        ("/admin/permissions?group=admin", "permissions admin group"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
