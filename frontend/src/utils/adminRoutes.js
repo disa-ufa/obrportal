@@ -11,6 +11,11 @@ export const ADMIN_ROUTE_ITEMS = [
   { key: "audit", label: "\u0410\u0443\u0434\u0438\u0442", path: "/admin/audit-events" },
 ];
 
+
+export function isAdminPathname(pathname) {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
 export const ADMIN_ROUTE_PAGE_MAP = ADMIN_ROUTE_ITEMS.reduce((acc, item) => {
   acc[item.path] = item.key;
   return acc;

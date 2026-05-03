@@ -49,7 +49,7 @@ import {
   updateOrgLearningGroup,
 } from "./api/client";
 import { PUBLIC_COURSES } from "./data/publicCourses";
-import { getAdminPageFromPathname, getAdminPathForPage } from "./utils/adminRoutes";
+import { getAdminPageFromPathname, getAdminPathForPage, isAdminPathname } from "./utils/adminRoutes";
 import { AuditPage } from "./pages/AuditPage";
 import { AccountPage } from "./pages/AccountPage";
 import { AuthPage } from "./pages/AuthPage";
@@ -339,7 +339,7 @@ export default function App() {
   const location = useLocation();
 
   useEffect(() => {
-    const meta = location.pathname === "/admin" || location.pathname.startsWith("/admin/")
+    const meta = isAdminPathname(location.pathname)
       ? {
           title: "Административный контур — ObrPortal",
           description: "Административный контур образовательной платформы с управлением пользователями, организациями, группами и RBAC.",
@@ -1301,7 +1301,7 @@ export default function App() {
     );
   }
 
-  const isAdminRoute = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+  const isAdminRoute = isAdminPathname(location.pathname);
   const adminRoutePage = getAdminPageFromPathname(location.pathname);
   const isUnknownAdminRoute = isAdminRoute && !adminRoutePage;
 
@@ -1469,7 +1469,7 @@ export default function App() {
           element={
             user ? (
               isAdmin ? (
-                <Navigate to="/admin" replace />
+                <Navigate to={getAdminPathForPage("dashboard")} replace />
               ) : (
                 <AccountPage
                   user={user}
@@ -1484,7 +1484,7 @@ export default function App() {
           }
         />
           <Route
-            path="/admin/documents"
+            path={getAdminPathForPage("documents")}
             element={
               user ? (
                 isAdmin ? (
