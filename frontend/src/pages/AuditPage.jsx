@@ -205,6 +205,110 @@ function QuickValueFilters({
   );
 }
 
+
+function SummaryCard({ title, value, hint, to }) {
+  const body = (
+    <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {title}
+      </div>
+      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
+      {hint && <div className="mt-2 text-sm leading-5 text-slate-500">{hint}</div>}
+    </div>
+  );
+
+  if (!to) {
+    return body;
+  }
+
+  return (
+    <Link to={to} className="block">
+      {body}
+    </Link>
+  );
+}
+
+function AuditSummaryCards({ auditCounts, filters }) {
+  const actionsCount = Object.keys(auditCounts.actions || {}).length;
+  const entityTypesCount = Object.keys(auditCounts.entityTypes || {}).length;
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard
+        title="Событий"
+        value={auditCounts.all || 0}
+        hint="Количество событий в текущей выдаче."
+        to={buildAuditPath()}
+      />
+      <SummaryCard
+        title="Типы действий"
+        value={actionsCount}
+        hint="Уникальные action в загруженном наборе."
+      />
+      <SummaryCard
+        title="Типы сущностей"
+        value={entityTypesCount}
+        hint="Уникальные entity_type в загруженном наборе."
+      />
+      <SummaryCard
+        title="Событий с actor"
+        value={auditCounts.actors || 0}
+        hint={`Лимит текущей выдачи: ${filters.limit || DEFAULT_FILTERS.limit}.`}
+      />
+    </div>
+  );
+}
+
+function WorkflowLink({ title, description, to }) {
+  return (
+    <Link
+      to={to}
+      className="rounded-[2rem] bg-slate-50 p-5 text-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
+    >
+      <div className="font-semibold text-slate-900">{title}</div>
+      <div className="mt-2 leading-6 text-slate-600">{description}</div>
+    </Link>
+  );
+}
+
+function AuditWorkflowPanel({ auditCounts }) {
+  const userEventsCount = auditCounts.entityTypes.user || 0;
+  const documentEventsCount = auditCounts.entityTypes.document || 0;
+  const roleEventsCount = auditCounts.entityTypes.role || 0;
+  const permissionEventsCount = auditCounts.entityTypes.permission || 0;
+
+  return (
+    <SectionCard
+      title="Рабочие сценарии"
+      subtitle="Быстрые переходы для расследования событий, действий пользователей и изменений RBAC."
+    >
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <WorkflowLink
+          title="События пользователей"
+          description={`Открыть аудит по entity_type=user: ${userEventsCount}.`}
+          to={buildAuditPath({ entity_type: "user" })}
+        />
+        <WorkflowLink
+          title="События документов"
+          description={`Проверить выпуск, публикацию и отзыв документов: ${documentEventsCount}.`}
+          to={buildAuditPath({ entity_type: "document" })}
+        />
+        <WorkflowLink
+          title="RBAC изменения"
+          description={`Роли: ${roleEventsCount}, permissions: ${permissionEventsCount}.`}
+          to={buildAuditPath({ entity_type: "role" })}
+        />
+        <WorkflowLink
+          title="Расширенная выдача"
+          description="Показать последние 200 событий аудита."
+          to={buildAuditPath({ limit: "200" })}
+        />
+      </div>
+    </SectionCard>
+  );
+}
+
+
 export function AuditPage({
   user,
   auditEvents,
@@ -318,6 +422,19 @@ export function AuditPage({
 
   return (
     <div className="space-y-6">
+      {user && (
+        <>
+          <AuditSummaryCards
+            auditCounts={auditCounts}
+            filters={filters}
+          />
+
+          <AuditWorkflowPanel
+            auditCounts={auditCounts}
+          />
+        </>
+      )}
+
       <SectionCard
         title="Аудит"
         subtitle="Последние события audit_events с фильтрацией по action, entity и actor."
