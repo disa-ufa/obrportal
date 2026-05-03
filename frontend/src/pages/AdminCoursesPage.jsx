@@ -8,9 +8,47 @@ import {
   getAdminCourses,
   updateAdminCourse,
 } from "../api/client";
+import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
+import { AdminFilterField } from "../components/admin/AdminFilterField";
+import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
+import { AdminPageActions } from "../components/admin/AdminPageActions";
+import { ActionButton } from "../components/ui/ActionButton";
 import { Alert } from "../components/ui/Alert";
+import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
+import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildCoursesPath, buildEnrollmentsPath } from "../utils/adminLinks";
+import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
+import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
+
+const COURSE_ACTIVE_FILTERS = [
+  { value: "", label: "Все" },
+  { value: "true", label: "Активные" },
+  { value: "false", label: "Неактивные" },
+];
+
+const EMPTY_COURSE_FORM = {
+  slug: "",
+  title: "",
+  description: "",
+  hours: "",
+  format: "",
+  document_type: "Сертификат",
+  is_active: true,
+};
+
+const EMPTY_EDIT_FORM = {
+  slug: "",
+  title: "",
+  description: "",
+  hours: "",
+  format: "",
+  document_type: "",
+  is_active: true,
+};
+
+const CARD_LINK_CLASS =
+  "rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
 
 function formatDateTime(value) {
   if (!value) {
@@ -42,12 +80,6 @@ function normalizeHoursInput(value) {
 
   return parsed;
 }
-
-const COURSE_ACTIVE_FILTERS = [
-  { value: "", label: "Все" },
-  { value: "true", label: "Активные" },
-  { value: "false", label: "Неактивные" },
-];
 
 function getCourseFiltersFromSearch(search) {
   const params = new URLSearchParams(search);
@@ -92,27 +124,67 @@ function buildEditForm(course) {
   };
 }
 
-function EmptyState({ onReset }) {
+function getCourseStatusTone(course) {
+  return course.is_active ? "green" : "gray";
+}
+
+function getCourseStatusLabel(course) {
+  return course.is_active ? "active" : "inactive";
+}
+
+function MetricCard({ title, value, hint, tone = "blue", to }) {
+  const toneClass =
+    tone === "green"
+      ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+      : tone === "amber"
+        ? "bg-amber-50 text-amber-800 ring-amber-200"
+        : tone === "gray"
+          ? "bg-slate-50 text-slate-800 ring-slate-200"
+          : "bg-blue-50 text-blue-800 ring-blue-200";
+
+  const body = (
+    <div className={`rounded-2xl p-5 ring-1 transition hover:bg-white hover:shadow-sm ${toneClass}`}>
+      <div className="text-sm font-semibold opacity-80">{title}</div>
+      <div className="mt-2 text-3xl font-bold">{value}</div>
+      {hint && <div className="mt-1 text-xs leading-5 opacity-80">{hint}</div>}
+    </div>
+  );
+
+  if (!to) {
+    return body;
+  }
+
   return (
-    <div className="rounded-[2rem] bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
+    <Link to={to} className="block">
+      {body}
+    </Link>
+  );
+}
+
+function EmptyState({ hasActiveFilters, onReset }) {
+  return (
+    <div className="rounded-3xl bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
       <div className="font-semibold text-slate-900">Программы не найдены</div>
       <p className="mt-2 leading-6">
-        Попробуйте изменить фильтры или создайте первую образовательную программу.
+        {getFilteredEmptyText(
+          hasActiveFilters,
+          "Под текущие фильтры программы не подходят.",
+          "Создайте первую образовательную программу."
+        )}
       </p>
-      <button
-        type="button"
-        onClick={onReset}
-        className="mt-4 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-      >
-        Сбросить фильтры
-      </button>
+
+      {hasActiveFilters && (
+        <ActionButton type="button" tone="light" onClick={onReset} className="mt-4">
+          Сбросить фильтры
+        </ActionButton>
+      )}
     </div>
   );
 }
 
 function QuickActiveFilters({ activeValue, counts, disabled, onChange }) {
   return (
-    <div className="mb-5 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {COURSE_ACTIVE_FILTERS.map((item) => {
         const isActive = activeValue === item.value;
         const count =
@@ -245,6 +317,162 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
   );
 }
 
+function CourseCard({
+  course,
+  isEditing,
+  isActionRunning,
+  editForm,
+  onEditFieldChange,
+  onStartEdit,
+  onEditSubmit,
+  onCancelEdit,
+  onToggleActive,
+  onDelete,
+}) {
+  return (
+    <article className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusBadge tone={getCourseStatusTone(course)}>
+          {getCourseStatusLabel(course)}
+        </StatusBadge>
+
+        {course.format && (
+          <StatusBadge tone="blue">
+            {course.format}
+          </StatusBadge>
+        )}
+
+        {course.document_type && (
+          <StatusBadge tone="violet">
+            {course.document_type}
+          </StatusBadge>
+        )}
+      </div>
+
+      {!isEditing ? (
+        <>
+          <div className="mt-4">
+            <h2 className="text-xl font-bold text-slate-900">{course.title}</h2>
+            <div className="mt-1 break-all text-sm text-slate-500">
+              /courses/{course.slug}
+            </div>
+
+            {course.description && (
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                {course.description}
+              </p>
+            )}
+          </div>
+
+          <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Объем
+              </div>
+              <div className="mt-2 font-semibold text-slate-900">
+                {course.hours ? `${course.hours} ч.` : "-"}
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Создана
+              </div>
+              <div className="mt-2 font-semibold text-slate-900">
+                {formatDateTime(course.created_at)}
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Обновлена
+              </div>
+              <div className="mt-2 font-semibold text-slate-900">
+                {formatDateTime(course.updated_at)}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            {course.slug && (
+              <Link
+                to={`/courses/${encodeURIComponent(course.slug)}`}
+                className={CARD_LINK_CLASS}
+              >
+                Публичная карточка
+              </Link>
+            )}
+
+            <Link
+              to={buildEnrollmentsPath({ course_id: course.id })}
+              className={CARD_LINK_CLASS}
+            >
+              Назначения курса
+            </Link>
+
+            <ActionButton
+              type="button"
+              tone="blue"
+              onClick={() => onStartEdit(course)}
+              disabled={isActionRunning}
+            >
+              Редактировать
+            </ActionButton>
+
+            <ActionButton
+              type="button"
+              tone="light"
+              onClick={() => onToggleActive(course)}
+              disabled={isActionRunning}
+            >
+              {isActionRunning
+                ? "Выполняем..."
+                : course.is_active
+                  ? "Деактивировать"
+                  : "Активировать"}
+            </ActionButton>
+
+            <ActionButton
+              type="button"
+              tone="red"
+              onClick={() => onDelete(course)}
+              disabled={isActionRunning}
+            >
+              Удалить
+            </ActionButton>
+          </div>
+        </>
+      ) : (
+        <form
+          onSubmit={(event) => onEditSubmit(event, course.id)}
+          className="mt-5 space-y-4 rounded-3xl bg-white p-5 ring-1 ring-blue-100"
+        >
+          <CourseFormFields
+            values={editForm}
+            onChange={onEditFieldChange}
+            prefix="edit-"
+          />
+
+          <div className="flex flex-wrap gap-3">
+            <ActionButton type="submit" tone="blue" disabled={isActionRunning}>
+              {isActionRunning ? "Сохраняем..." : "Сохранить"}
+            </ActionButton>
+
+            <ActionButton
+              type="button"
+              tone="light"
+              onClick={onCancelEdit}
+              disabled={isActionRunning}
+            >
+              Отмена
+            </ActionButton>
+          </div>
+        </form>
+      )}
+    </article>
+  );
+}
+
 export function AdminCoursesPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -262,28 +490,16 @@ export function AdminCoursesPage() {
   const [saving, setSaving] = useState(false);
   const [actionCourseId, setActionCourseId] = useState("");
   const [editingCourseId, setEditingCourseId] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const [form, setForm] = useState({
-    slug: "",
-    title: "",
-    description: "",
-    hours: "",
-    format: "",
-    document_type: "Сертификат",
-    is_active: true,
-  });
+  const [form, setForm] = useState(EMPTY_COURSE_FORM);
+  const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
 
-  const [editForm, setEditForm] = useState({
-    slug: "",
-    title: "",
-    description: "",
-    hours: "",
-    format: "",
-    document_type: "",
-    is_active: true,
-  });
+  const hasActiveFilters = Boolean(filterQuery || filterActive);
+  const activeCount = courseCounts.active || 0;
+  const inactiveCount = courseCounts.inactive || 0;
 
   function buildFilters(overrides = {}) {
     return {
@@ -352,28 +568,12 @@ export function AdminCoursesPage() {
   }
 
   function resetForm() {
-    setForm({
-      slug: "",
-      title: "",
-      description: "",
-      hours: "",
-      format: "",
-      document_type: "Сертификат",
-      is_active: true,
-    });
+    setForm(EMPTY_COURSE_FORM);
   }
 
   function resetEditState() {
     setEditingCourseId("");
-    setEditForm({
-      slug: "",
-      title: "",
-      description: "",
-      hours: "",
-      format: "",
-      document_type: "",
-      is_active: true,
-    });
+    setEditForm(EMPTY_EDIT_FORM);
   }
 
   function buildPayload(values) {
@@ -410,6 +610,7 @@ export function AdminCoursesPage() {
 
       setSuccessMessage(`Программа создана: ${created.title}`);
       resetForm();
+      setShowCreateForm(false);
       await loadData(buildFilters());
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось создать программу."}`.trim());
@@ -526,92 +727,102 @@ export function AdminCoursesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
-        <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-          Администрирование
-        </div>
-        <h1 className="mt-2 text-4xl font-bold text-slate-900">
-          Программы обучения
-        </h1>
-        <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-          Управление курсами из backend: создание карточек программ, редактирование
-          объема, формата, итогового документа и активности для каталога.
-        </p>
-      </section>
-
-      {error && (
-        <Alert title="Ошибка" tone="red">
-          {error}
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert title="Готово" tone="green">
-          {successMessage}
-        </Alert>
-      )}
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)]">
-        <SectionCard title="Создать программу" subtitle="POST /api/v1/admin/courses">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <CourseFormFields values={form} onChange={updateField} prefix="create-" />
-
-            <div className="flex flex-wrap gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving ? "Сохраняем..." : "Создать программу"}
-              </button>
-
-              <button
-                type="button"
-                onClick={resetForm}
-                disabled={saving}
-                className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Очистить
-              </button>
-            </div>
-          </form>
-        </SectionCard>
-
-        <SectionCard title="Список программ" subtitle="GET /api/v1/admin/courses">
-          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 lg:grid-cols-[1fr_220px_auto_auto]">
-            <input
-              type="search"
-              value={filterQuery}
-              onChange={(event) => setFilterQuery(event.target.value)}
-              placeholder="Поиск: slug, название, формат, документ"
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+      <SectionCard
+        title="Программы обучения"
+        subtitle="Управление курсами, активностью, публичными карточками и переходом к назначениям."
+        action={
+          <AdminPageActions
+            loading={loading}
+            onRefresh={() => loadData(buildFilters())}
+            primaryLabel={showCreateForm ? "Скрыть форму" : "Добавить программу"}
+            primaryTone={showCreateForm ? "light" : "blue"}
+            onPrimaryClick={() => setShowCreateForm((current) => !current)}
+          />
+        }
+      >
+        <div className="space-y-5">
+          <div className="grid gap-4 md:grid-cols-3">
+            <MetricCard
+              title="Всего программ"
+              value={courseCounts.all || 0}
+              hint="По текущему поиску без фильтра активности"
+              to="/admin/courses"
+              tone="blue"
             />
+            <MetricCard
+              title="Активные"
+              value={activeCount}
+              hint="Доступны в каталоге и назначениях"
+              to="/admin/courses?is_active=true"
+              tone="green"
+            />
+            <MetricCard
+              title="Неактивные"
+              value={inactiveCount}
+              hint="Скрыты или временно отключены"
+              to="/admin/courses?is_active=false"
+              tone={inactiveCount ? "amber" : "gray"}
+            />
+          </div>
 
-            <select
-              value={filterActive}
-              onChange={(event) => setFilterActive(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          {showCreateForm && (
+            <AdminCreatePanel
+              title="Новая программа"
+              subtitle="Создаёт карточку образовательной программы в Admin API."
             >
-              <option value="">Все статусы</option>
-              <option value="true">Активные</option>
-              <option value="false">Неактивные</option>
-            </select>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <CourseFormFields values={form} onChange={updateField} prefix="create-" />
 
-            <button
-              type="submit"
-              className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Применить
-            </button>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <ActionButton type="submit" tone="blue" disabled={saving}>
+                    {saving ? "Сохраняем..." : "Создать программу"}
+                  </ActionButton>
 
-            <button
-              type="button"
-              onClick={handleResetFilter}
-              className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-            >
-              Сбросить
-            </button>
-          </form>
+                  <ActionButton
+                    type="button"
+                    tone="light"
+                    onClick={resetForm}
+                    disabled={saving}
+                  >
+                    Очистить
+                  </ActionButton>
+                </div>
+              </form>
+            </AdminCreatePanel>
+          )}
+
+          <AdminFilterPanel
+            columnsClassName="lg:grid-cols-[1fr_220px_auto]"
+            onReset={handleResetFilter}
+            resetDisabled={!hasActiveFilters}
+            summary={getShownSummary(courses.length, courseCounts.all || courses.length)}
+          >
+            <AdminFilterField label="Поиск" className="block space-y-2">
+              <input
+                type="search"
+                value={filterQuery}
+                onChange={(event) => setFilterQuery(event.target.value)}
+                placeholder="Slug, название, формат, документ"
+                className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
+              />
+            </AdminFilterField>
+
+            <AdminFilterField label="Статус" className="block space-y-2">
+              <select
+                value={filterActive}
+                onChange={(event) => setFilterActive(event.target.value)}
+                className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
+              >
+                <option value="">Все статусы</option>
+                <option value="true">Активные</option>
+                <option value="false">Неактивные</option>
+              </select>
+            </AdminFilterField>
+
+            <ActionButton type="button" tone="blue" onClick={handleApplyFilter} disabled={loading}>
+              {loading ? "Загружаем..." : "Применить"}
+            </ActionButton>
+          </AdminFilterPanel>
 
           <QuickActiveFilters
             activeValue={filterActive}
@@ -620,180 +831,48 @@ export function AdminCoursesPage() {
             onChange={handleQuickActiveFilter}
           />
 
-          <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
-            <span>Показано программ: {courses.length}</span>
-            <span>Всего по текущему поиску: {courseCounts.all || 0}</span>
-          </div>
-
-          {loading ? (
-            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-              Загружаем программы...
-            </div>
-          ) : courses.length === 0 ? (
-            <EmptyState onReset={handleResetFilter} />
-          ) : (
-            <div className="space-y-4">
-              {courses.map((course) => {
-                const isEditing = editingCourseId === course.id;
-                const isActionRunning = actionCourseId === course.id;
-
-                return (
-                  <article
-                    key={course.id}
-                    className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${
-                          course.is_active
-                            ? "bg-green-50 text-green-700 ring-green-200"
-                            : "bg-slate-100 text-slate-700 ring-slate-200"
-                        }`}
-                      >
-                        {course.is_active ? "Активна" : "Неактивна"}
-                      </span>
-
-                      {course.format && (
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
-                          {course.format}
-                        </span>
-                      )}
-
-                      {course.document_type && (
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
-                          {course.document_type}
-                        </span>
-                      )}
-                    </div>
-
-                    {!isEditing ? (
-                      <>
-                        <div className="mt-4">
-                          <h2 className="text-xl font-bold text-slate-900">
-                            {course.title}
-                          </h2>
-                          <div className="mt-1 text-sm text-slate-500">
-                            /courses/{course.slug}
-                          </div>
-                          {course.description && (
-                            <p className="mt-3 text-sm leading-6 text-slate-600">
-                              {course.description}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Объем
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {course.hours ? `${course.hours} ч.` : "-"}
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Создана
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {formatDateTime(course.created_at)}
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Обновлена
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {formatDateTime(course.updated_at)}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-5 flex flex-wrap gap-3">
-                          {course.slug && (
-                            <Link
-                              to={`/courses/${encodeURIComponent(course.slug)}`}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Публичная карточка
-                            </Link>
-                          )}
-
-                          <Link
-                            to={buildEnrollmentsPath({ course_id: course.id })}
-                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                          >
-                            Назначения курса
-                          </Link>
-
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(course)}
-                            disabled={isActionRunning}
-                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Редактировать
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleToggleActive(course)}
-                            disabled={isActionRunning}
-                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isActionRunning
-                              ? "Выполняем..."
-                              : course.is_active
-                                ? "Деактивировать"
-                                : "Активировать"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(course)}
-                            disabled={isActionRunning}
-                            className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Удалить
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <form
-                        onSubmit={(event) => handleEditSubmit(event, course.id)}
-                        className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
-                      >
-                        <CourseFormFields values={editForm} onChange={updateEditField} prefix="edit-" />
-
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            type="submit"
-                            disabled={isActionRunning}
-                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isActionRunning ? "Сохраняем..." : "Сохранить"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={resetEditState}
-                            disabled={isActionRunning}
-                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
+          {error && (
+            <Alert title="Ошибка" tone="red">
+              {error}
+            </Alert>
           )}
-        </SectionCard>
-      </div>
+
+          {successMessage && (
+            <Alert title="Готово" tone="green">
+              {successMessage}
+            </Alert>
+          )}
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Список программ"
+        subtitle="Карточки из GET /api/v1/admin/courses с быстрыми действиями."
+      >
+        {loading ? (
+          <LoadingBlock text="Загружаем программы..." />
+        ) : courses.length === 0 ? (
+          <EmptyState hasActiveFilters={hasActiveFilters} onReset={handleResetFilter} />
+        ) : (
+          <div className="space-y-4">
+            {courses.map((course) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                isEditing={editingCourseId === course.id}
+                isActionRunning={actionCourseId === course.id}
+                editForm={editForm}
+                onEditFieldChange={updateEditField}
+                onStartEdit={handleStartEdit}
+                onEditSubmit={handleEditSubmit}
+                onCancelEdit={resetEditState}
+                onToggleActive={handleToggleActive}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )}
+      </SectionCard>
     </div>
   );
 }
