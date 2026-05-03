@@ -20,6 +20,14 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
+import {
+  TABLE_LINK_CLASS,
+  buildDocumentsPath,
+  buildEnrollmentsPath,
+  buildGroupsPath,
+  buildOrganizationsPath,
+  buildUsersPath,
+} from "../utils/adminLinks";
 
 const EMPTY_GROUP = {
   organization_id: "",
@@ -35,61 +43,11 @@ const ENROLLMENTS_LINK_CLASS =
 const SECONDARY_LINK_CLASS =
   "inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
 
-const TABLE_LINK_CLASS =
-  "rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
-
 const GROUP_STATUS_FILTERS = [
   { value: "all", label: "Все" },
   { value: "active", label: "Активные" },
   { value: "inactive", label: "Неактивные" },
 ];
-
-function buildPath(pathname, filters = {}, defaults = {}) {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (!value) {
-      return;
-    }
-
-    if (defaults[key] !== undefined && value === defaults[key]) {
-      return;
-    }
-
-    params.set(key, value);
-  });
-
-  const query = params.toString();
-
-  return query ? `${pathname}?${query}` : pathname;
-}
-
-function buildGroupsPath(filters = {}) {
-  return buildPath("/admin/groups", filters, {
-    organization_id: "all",
-    status: "all",
-  });
-}
-
-function buildEnrollmentsPath(filters = {}) {
-  return buildPath("/admin/enrollments", filters);
-}
-
-function buildUsersPath(filters = {}) {
-  return buildPath("/admin/users", filters, {
-    activity: "all",
-  });
-}
-
-function buildDocumentsPath(filters = {}) {
-  return buildPath("/admin/documents", filters);
-}
-
-function buildOrganizationsPath(filters = {}) {
-  return buildPath("/admin/organizations", filters, {
-    scope: "all",
-  });
-}
 
 function buildGroupEnrollmentsHref(groupId) {
   return buildEnrollmentsPath({ learning_group_id: groupId });

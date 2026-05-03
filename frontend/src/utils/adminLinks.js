@@ -45,6 +45,7 @@ export function buildOrganizationsPath(filters = {}) {
 
 export function buildGroupsPath(filters = {}) {
   return buildPath("/admin/groups", filters, {
+    organization_id: "all",
     status: "all",
   });
 }
