@@ -5,6 +5,7 @@ import { RbacResult } from "../components/admin/RbacResult";
 import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
+import { AdminMetricCard } from "../components/admin/AdminWorkCenter";
 import {
   LINK_PILL_CLASS,
   buildAuditPath,
@@ -145,26 +146,6 @@ function percent(part, total) {
   }
 
   return Math.round((part / total) * 100);
-}
-
-function MetricCard({ label, value, hint, to, tone = "blue" }) {
-  const content = (
-    <div className={`h-full rounded-2xl p-5 ring-1 transition hover:bg-white hover:shadow-sm ${getToneClasses(tone)}`}>
-      <div className="text-sm font-semibold opacity-80">{label}</div>
-      <div className="mt-2 text-3xl font-bold">{value}</div>
-      {hint && <div className="mt-1 text-xs leading-5 opacity-80">{hint}</div>}
-    </div>
-  );
-
-  if (!to) {
-    return content;
-  }
-
-  return (
-    <Link to={to} className="block h-full">
-      {content}
-    </Link>
-  );
 }
 
 function QuickLinkCard({ label, description, path, count }) {
@@ -477,7 +458,9 @@ export function DashboardPage({
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
               {primaryMetrics.map((metric) => (
-                <MetricCard
+                <AdminMetricCard
+                  className="h-full"
+                  linkClassName="block h-full"
                   key={metric.label}
                   label={metric.label}
                   value={metric.value}

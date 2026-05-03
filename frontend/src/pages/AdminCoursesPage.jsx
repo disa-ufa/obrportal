@@ -11,6 +11,7 @@ import {
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminEmptyState } from "../components/admin/AdminEmptyState";
+import { AdminMetricCard } from "../components/admin/AdminWorkCenter";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
@@ -115,35 +116,6 @@ function getCourseStatusTone(course) {
 
 function getCourseStatusLabel(course) {
   return course.is_active ? "active" : "inactive";
-}
-
-function MetricCard({ title, value, hint, tone = "blue", to }) {
-  const toneClass =
-    tone === "green"
-      ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
-      : tone === "amber"
-        ? "bg-amber-50 text-amber-800 ring-amber-200"
-        : tone === "gray"
-          ? "bg-slate-50 text-slate-800 ring-slate-200"
-          : "bg-blue-50 text-blue-800 ring-blue-200";
-
-  const body = (
-    <div className={`rounded-2xl p-5 ring-1 transition hover:bg-white hover:shadow-sm ${toneClass}`}>
-      <div className="text-sm font-semibold opacity-80">{title}</div>
-      <div className="mt-2 text-3xl font-bold">{value}</div>
-      {hint && <div className="mt-1 text-xs leading-5 opacity-80">{hint}</div>}
-    </div>
-  );
-
-  if (!to) {
-    return body;
-  }
-
-  return (
-    <Link to={to} className="block">
-      {body}
-    </Link>
-  );
 }
 
 function QuickActiveFilters({ activeValue, counts, disabled, onChange }) {
@@ -706,21 +678,21 @@ export function AdminCoursesPage() {
       >
         <div className="space-y-5">
           <div className="grid gap-4 md:grid-cols-3">
-            <MetricCard
+            <AdminMetricCard
               title="Всего программ"
               value={courseCounts.all || 0}
               hint="По текущему поиску без фильтра активности"
               to={buildCoursesPath()}
               tone="blue"
             />
-            <MetricCard
+            <AdminMetricCard
               title="Активные"
               value={activeCount}
               hint="Доступны в каталоге и назначениях"
               to={buildCoursesPath({ is_active: "true" })}
               tone="green"
             />
-            <MetricCard
+            <AdminMetricCard
               title="Неактивные"
               value={inactiveCount}
               hint="Скрыты или временно отключены"
