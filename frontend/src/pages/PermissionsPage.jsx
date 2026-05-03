@@ -114,6 +114,111 @@ function QuickPermissionGroupFilters({ activeValue, groups, counts, disabled, on
   );
 }
 
+
+function SummaryCard({ title, value, hint, to }) {
+  const body = (
+    <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {title}
+      </div>
+      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
+      {hint && <div className="mt-2 text-sm leading-5 text-slate-500">{hint}</div>}
+    </div>
+  );
+
+  if (!to) {
+    return body;
+  }
+
+  return (
+    <Link to={to} className="block">
+      {body}
+    </Link>
+  );
+}
+
+function PermissionsSummaryCards({ permissions, permissionGroups, permissionGroupCounts }) {
+  const roleAssignmentsCount = permissions.reduce(
+    (total, permission) => total + (permission.roles || []).length,
+    0
+  );
+  const permissionsWithoutRolesCount = permissions.filter(
+    (permission) => (permission.roles || []).length === 0
+  ).length;
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard
+        title="Всего прав"
+        value={permissionGroupCounts[ALL_PERMISSION_GROUPS] || 0}
+        hint="Все permissions, доступные в RBAC."
+        to={buildPermissionsPath()}
+      />
+      <SummaryCard
+        title="Группы прав"
+        value={permissionGroups.length}
+        hint="Логические группы по префиксу кода."
+      />
+      <SummaryCard
+        title="Привязки к ролям"
+        value={roleAssignmentsCount}
+        hint="Сколько связей permission → role уже настроено."
+        to={buildRolesPath()}
+      />
+      <SummaryCard
+        title="Без ролей"
+        value={permissionsWithoutRolesCount}
+        hint="Права, которые пока не назначены ни одной роли."
+      />
+    </div>
+  );
+}
+
+function WorkflowLink({ title, description, to }) {
+  return (
+    <Link
+      to={to}
+      className="rounded-[2rem] bg-slate-50 p-5 text-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
+    >
+      <div className="font-semibold text-slate-900">{title}</div>
+      <div className="mt-2 leading-6 text-slate-600">{description}</div>
+    </Link>
+  );
+}
+
+function PermissionsWorkflowPanel({ permissionGroupCounts }) {
+  return (
+    <SectionCard
+      title="Рабочие сценарии"
+      subtitle="Быстрые переходы для аудита прав и связей RBAC."
+    >
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <WorkflowLink
+          title="Admin permissions"
+          description={`Проверить группу admin.*: ${permissionGroupCounts.admin || 0}.`}
+          to={buildPermissionsPath({ group: "admin" })}
+        />
+        <WorkflowLink
+          title="Audit permissions"
+          description={`Проверить группу audit.*: ${permissionGroupCounts.audit || 0}.`}
+          to={buildPermissionsPath({ group: "audit" })}
+        />
+        <WorkflowLink
+          title="Роли с admin.*"
+          description="Найти роли, в которых используются административные права."
+          to={buildRolesPath({ q: "admin." })}
+        />
+        <WorkflowLink
+          title="Все роли"
+          description="Перейти к настройке ролей и назначению permissions."
+          to={buildRolesPath()}
+        />
+      </div>
+    </SectionCard>
+  );
+}
+
+
 export function PermissionsPage({
   user,
   permissions,
@@ -203,6 +308,20 @@ export function PermissionsPage({
 
   return (
     <div className="space-y-6">
+      {user && (
+        <>
+          <PermissionsSummaryCards
+            permissions={permissions}
+            permissionGroups={permissionGroups}
+            permissionGroupCounts={permissionGroupCounts}
+          />
+
+          <PermissionsWorkflowPanel
+            permissionGroupCounts={permissionGroupCounts}
+          />
+        </>
+      )}
+
       <SectionCard
         title="Права"
         subtitle="Read-only список permissions."
