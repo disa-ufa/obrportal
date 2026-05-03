@@ -17,6 +17,7 @@ import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
 import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import { AdminEmptyState } from "../components/admin/AdminEmptyState";
+import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
 import {
   buildCoursesPath,
   buildDocumentsPath,
@@ -265,40 +266,6 @@ function Field({ label, children }) {
       </span>
       <div className="mt-2">{children}</div>
     </label>
-  );
-}
-
-function QuickStatusFilters({ activeValue, counts, disabled, onChange }) {
-  return (
-    <div className="mb-5 flex flex-wrap gap-2">
-      {ENROLLMENT_STATUS_FILTERS.map((item) => {
-        const isActive = activeValue === item.value;
-        const count = item.value ? counts[item.value] || 0 : counts.all || 0;
-
-        return (
-          <button
-            key={item.value || "all"}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(item.value)}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-              isActive
-                ? "bg-slate-900 text-white ring-slate-900"
-                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            <span>{item.label}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {count}
-            </span>
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -1334,12 +1301,14 @@ export function AdminEnrollmentsPage() {
             </button>
           </form>
 
-          <QuickStatusFilters
-            activeValue={filterStatus}
-            counts={statusCounts}
-            disabled={loading}
-            onChange={handleQuickStatusFilter}
-          />
+          <AdminQuickFilterButtons
+              items={ENROLLMENT_STATUS_FILTERS}
+              activeValue={filterStatus}
+              counts={statusCounts}
+              disabled={loading}
+              onChange={handleQuickStatusFilter}
+              className="mb-5 flex flex-wrap gap-2"
+            />
 
           <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
             <span>Показано назначений: {visibleEnrollments.length}</span>

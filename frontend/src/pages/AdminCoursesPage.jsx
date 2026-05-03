@@ -15,6 +15,7 @@ import { AdminMetricCard } from "../components/admin/AdminWorkCenter";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
+import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
 import { ActionButton } from "../components/ui/ActionButton";
 import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
@@ -116,45 +117,6 @@ function getCourseStatusTone(course) {
 
 function getCourseStatusLabel(course) {
   return course.is_active ? "active" : "inactive";
-}
-
-function QuickActiveFilters({ activeValue, counts, disabled, onChange }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {COURSE_ACTIVE_FILTERS.map((item) => {
-        const isActive = activeValue === item.value;
-        const count =
-          item.value === "true"
-            ? counts.active || 0
-            : item.value === "false"
-              ? counts.inactive || 0
-              : counts.all || 0;
-
-        return (
-          <button
-            key={item.value || "all"}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(item.value)}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-              isActive
-                ? "bg-slate-900 text-white ring-slate-900"
-                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            <span>{item.label}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {count}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 function CourseFormFields({ values, onChange, prefix = "" }) {
@@ -760,12 +722,19 @@ export function AdminCoursesPage() {
             </ActionButton>
           </AdminFilterPanel>
 
-          <QuickActiveFilters
-            activeValue={filterActive}
-            counts={courseCounts}
-            disabled={loading}
-            onChange={handleQuickActiveFilter}
-          />
+          <AdminQuickFilterButtons
+              items={COURSE_ACTIVE_FILTERS}
+              activeValue={filterActive}
+              counts={courseCounts}
+              disabled={loading}
+              onChange={handleQuickActiveFilter}
+              getCount={(item, counts) =>
+                item.value === "true"
+                  ? counts.active || 0
+                  : item.value === "false"
+                    ? counts.inactive || 0
+                    : counts.all || 0}
+            />
 
           {error && (
             <Alert title="Ошибка" tone="red">
