@@ -144,6 +144,129 @@ function QuickRoleTypeFilters({ activeValue, counts, disabled, onChange }) {
   );
 }
 
+
+function SummaryCard({ title, value, hint, to }) {
+  const body = (
+    <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {title}
+      </div>
+      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
+      {hint && <div className="mt-2 text-sm leading-5 text-slate-500">{hint}</div>}
+    </div>
+  );
+
+  if (!to) {
+    return body;
+  }
+
+  return (
+    <Link to={to} className="block">
+      {body}
+    </Link>
+  );
+}
+
+function RolesSummaryCards({ roles, permissions, roleCounts }) {
+  const assignedPermissionCodes = new Set();
+
+  roles.forEach((role) => {
+    (role.permissions || []).forEach((permission) => {
+      if (permission.code) {
+        assignedPermissionCodes.add(permission.code);
+      }
+    });
+  });
+
+  const unassignedPermissionsCount = permissions.filter(
+    (permission) => permission.code && !assignedPermissionCodes.has(permission.code)
+  ).length;
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard
+        title="Всего ролей"
+        value={roleCounts.all || 0}
+        hint="Системные и пользовательские роли RBAC."
+        to={buildRolesPath()}
+      />
+      <SummaryCard
+        title="Системные"
+        value={roleCounts.system || 0}
+        hint="Защищённые базовые роли платформы."
+        to={buildRolesPath({ type: "system" })}
+      />
+      <SummaryCard
+        title="Пользовательские"
+        value={roleCounts.custom || 0}
+        hint="Роли, которые можно настраивать под процессы."
+        to={buildRolesPath({ type: "custom" })}
+      />
+      <SummaryCard
+        title="Свободные права"
+        value={unassignedPermissionsCount}
+        hint="Permissions без привязки к ролям."
+        to={buildPermissionsPath()}
+      />
+    </div>
+  );
+}
+
+function WorkflowLink({ title, description, to }) {
+  return (
+    <Link
+      to={to}
+      className="rounded-[2rem] bg-slate-50 p-5 text-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
+    >
+      <div className="font-semibold text-slate-900">{title}</div>
+      <div className="mt-2 leading-6 text-slate-600">{description}</div>
+    </Link>
+  );
+}
+
+function RolesWorkflowPanel({ roles, permissions, roleCounts }) {
+  const adminRole = roles.find((role) => role.code === "admin");
+  const firstCustomRole = roles.find((role) => !isSystemRole(role));
+  const adminPermissionsCount = permissions.filter((permission) =>
+    String(permission.code || "").startsWith("admin.")
+  ).length;
+
+  return (
+    <SectionCard
+      title="Рабочие сценарии"
+      subtitle="Быстрые переходы для проверки ролей, пользователей и набора прав."
+    >
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <WorkflowLink
+          title="Проверить admin"
+          description={`Открыть admin-роль и связанные права: ${roleCounts.admin || 0}.`}
+          to={buildRolesPath({ type: "admin" })}
+        />
+        <WorkflowLink
+          title="Пользователи admin"
+          description="Посмотреть пользователей, которым назначена административная роль."
+          to={adminRole ? buildUsersPath({ role_id: adminRole.id }) : buildUsersPath({ q: "admin" })}
+        />
+        <WorkflowLink
+          title="Admin permissions"
+          description={`Проверить группу admin.*: ${adminPermissionsCount}.`}
+          to={buildPermissionsPath({ group: "admin" })}
+        />
+        <WorkflowLink
+          title="Настроить custom"
+          description={
+            firstCustomRole
+              ? `Открыть пользовательские роли: ${roleCounts.custom || 0}.`
+              : "Пока пользовательских ролей нет — можно создать первую."
+          }
+          to={buildRolesPath({ type: "custom" })}
+        />
+      </div>
+    </SectionCard>
+  );
+}
+
+
 export function RolesPage({
   user,
   roles,
@@ -235,6 +358,22 @@ export function RolesPage({
 
   return (
     <div className="space-y-6">
+      {user && (
+        <>
+          <RolesSummaryCards
+            roles={roles}
+            permissions={permissions}
+            roleCounts={roleCounts}
+          />
+
+          <RolesWorkflowPanel
+            roles={roles}
+            permissions={permissions}
+            roleCounts={roleCounts}
+          />
+        </>
+      )}
+
       <SectionCard
         title="Роли"
         subtitle="Базовые и пользовательские роли RBAC."
