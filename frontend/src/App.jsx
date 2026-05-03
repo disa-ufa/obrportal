@@ -64,29 +64,9 @@ import {
   sortUsers,
   userHasRole,
 } from "./utils/adminState";
-import { AuditPage } from "./pages/AuditPage";
-import { AccountPage } from "./pages/AccountPage";
-import { AuthPage } from "./pages/AuthPage";
-import { CatalogPage } from "./pages/CatalogPage";
-import { ContactsPage } from "./pages/ContactsPage";
-import { DashboardPage } from "./pages/DashboardPage";
-import { AdminCoursesPage } from "./pages/AdminCoursesPage";
-import { AdminEnrollmentsPage } from "./pages/AdminEnrollmentsPage";
 import { AdminNotFoundPage } from "./pages/AdminNotFoundPage";
-import { DocumentsPage } from "./pages/DocumentsPage";
-import { FaqPage } from "./pages/FaqPage";
-import { GroupsPage } from "./pages/GroupsPage";
-import { HomePage } from "./pages/HomePage";
-import { NotFoundPage } from "./pages/NotFoundPage";
-import { OfferPage } from "./pages/OfferPage";
-import { OrganizationInfoPage } from "./pages/OrganizationInfoPage";
-import { OrganizationsPage } from "./pages/OrganizationsPage";
-import { PermissionsPage } from "./pages/PermissionsPage";
-import { PrivacyPage } from "./pages/PrivacyPage";
-import { RegisterPage } from "./pages/RegisterPage";
-import { RolesPage } from "./pages/RolesPage";
-import { UsersPage } from "./pages/UsersPage";
 import { PublicRoutes } from "./routes/PublicRoutes";
+import { AdminPageRenderer } from "./routes/AdminPageRenderer";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -383,7 +363,6 @@ export default function App() {
       setAuthLoading(false);
     }
   }
-
 
 
   async function handleLogin(event) {
@@ -729,7 +708,6 @@ export default function App() {
   }
 
 
-
   async function handleDeleteRole(roleId) {
     const deleted = await deleteAdminRole(roleId);
 
@@ -882,217 +860,6 @@ export default function App() {
     clearSelectedAuditEvent();
   }
 
-  function renderCurrentPage() {
-    const page = getAdminPageFromPathname(location.pathname) || currentPage;
-
-    if (page === "home") {
-      return <HomePage onPageChange={handleNavigatePublicPage} onOpenCourse={handleOpenPublicCourse} />;
-    }
-
-    if (page === "catalog") {
-      return <CatalogPage onPageChange={handleNavigatePublicPage} onOpenCourse={handleOpenPublicCourse} user={user} />;
-    }
-
-    if (page === "course-detail") {
-      return (
-        <CourseDetailPage
-          courseSlug={null}
-          onPageChange={handleNavigatePublicPage}
-          onOpenCourse={handleOpenPublicCourse}
-        />
-      );
-    }
-
-    if (page === "organization-info") {
-      return <OrganizationInfoPage onPageChange={handleNavigatePublicPage} />;
-    }
-
-    if (page === "verify-document") {
-      return <VerifyDocumentPage onPageChange={handleNavigatePublicPage} />;
-    }
-
-    if (page === "contacts") {
-      return <ContactsPage onPageChange={handleNavigatePublicPage} />;
-    }
-
-    if (page === "faq") {
-      return <FaqPage onPageChange={handleNavigatePublicPage} />;
-    }
-
-    if (page === "privacy") {
-      return <PrivacyPage onPageChange={handleNavigatePublicPage} />;
-    }
-
-    if (page === "offer") {
-      return <OfferPage onPageChange={handleNavigatePublicPage} />;
-    }
-
-    if (page === "login") {
-      return (
-        <AuthPage
-          email={email}
-          password={password}
-          loading={authLoading || initializingAuth}
-          error={error}
-          user={user}
-          onEmailChange={setEmail}
-          onPasswordChange={setPassword}
-          onLogin={handleLogin}
-          onLogout={handleLogout}
-        />
-      );
-    }
-    if (page === "courses") {
-      return <AdminCoursesPage />;
-    }
-    if (page === "enrollments") {
-      return <AdminEnrollmentsPage />;
-    }
-    if (page === "users") {
-      return (
-        <UsersPage
-          user={user}
-          users={adminData.users}
-          roles={adminData.roles}
-          organizations={adminData.organizations}
-          loading={adminLoading}
-          selectedUser={selectedUser}
-          selectedUserLoading={selectedUserLoading}
-          selectedUserError={selectedUserError}
-          onOpenUser={handleOpenUser}
-          onCloseUser={clearSelectedUser}
-          onCreateUser={handleCreateUser}
-          onUpdateUser={handleUpdateUser}
-          onResetUserPassword={handleResetUserPassword}
-          onActivateUser={handleActivateUser}
-          onDeactivateUser={handleDeactivateUser}
-          onAssignUserRole={handleAssignUserRole}
-          onRemoveUserRole={handleRemoveUserRole}
-          onRefreshAdminData={loadAdminData}
-        />
-      );
-    }
-
-    if (page === "organizations") {
-      return (
-        <OrganizationsPage
-          user={user}
-          organizations={adminData.organizations}
-          loading={adminLoading}
-          selectedOrganization={selectedOrganization}
-          selectedOrganizationLoading={selectedOrganizationLoading}
-          selectedOrganizationError={selectedOrganizationError}
-          onOpenOrganization={handleOpenOrganization}
-          onCloseOrganization={clearSelectedOrganization}
-          onCreateOrganization={handleCreateOrganization}
-          onUpdateOrganization={handleUpdateOrganization}
-          onDeleteOrganization={handleDeleteOrganization}
-          onRefreshAdminData={loadAdminData}
-        />
-      );
-    }
-
-    if (page === "groups") {
-      return (
-        <GroupsPage
-          user={user}
-          groups={adminData.groups}
-          organizations={adminData.organizations}
-          loading={adminLoading}
-          selectedGroup={selectedGroup}
-          selectedGroupLoading={selectedGroupLoading}
-          selectedGroupError={selectedGroupError}
-          onOpenGroup={handleOpenGroup}
-          onCloseGroup={clearSelectedGroup}
-          onCreateGroup={handleCreateGroup}
-          onUpdateGroup={handleUpdateGroup}
-          onDeleteGroup={handleDeleteGroup}
-          onRefreshAdminData={loadAdminData}
-        />
-      );
-    }
-
-    if (page === "roles") {
-      return (
-        <RolesPage
-          user={user}
-          roles={adminData.roles}
-          permissions={adminData.permissions}
-          loading={adminLoading}
-          selectedRole={selectedRole}
-          selectedRoleLoading={selectedRoleLoading}
-          selectedRoleError={selectedRoleError}
-          onOpenRole={handleOpenRole}
-          onCloseRole={clearSelectedRole}
-          onCreateRole={handleCreateRole}
-          onUpdateRole={handleUpdateRole}
-          onDeleteRole={handleDeleteRole}
-          onRefreshAdminData={loadAdminData}
-          onAssignRolePermission={handleAssignRolePermission}
-          onRemoveRolePermission={handleRemoveRolePermission}
-        />
-      );
-    }
-
-    if (page === "permissions") {
-      return (
-        <PermissionsPage
-          user={user}
-          permissions={adminData.permissions}
-          loading={adminLoading}
-          selectedPermission={selectedPermission}
-          selectedPermissionLoading={selectedPermissionLoading}
-          selectedPermissionError={selectedPermissionError}
-          onOpenPermission={handleOpenPermission}
-          onClosePermission={clearSelectedPermission}
-          onRefreshAdminData={loadAdminData}
-        />
-      );
-    }
-
-    if (page === "documents") {
-
-      return <DocumentsPage />;
-
-    }
-
-    if (page === "audit") {
-      return (
-        <AuditPage
-          user={user}
-          auditEvents={adminData.auditEvents}
-          loading={adminLoading}
-          selectedAuditEvent={selectedAuditEvent}
-          selectedAuditEventLoading={selectedAuditEventLoading}
-          selectedAuditEventError={selectedAuditEventError}
-          onOpenAuditEvent={handleOpenAuditEvent}
-          onCloseAuditEvent={clearSelectedAuditEvent}
-          onApplyAuditFilters={handleApplyAuditFilters}
-        />
-      );
-    }
-
-    return (
-      <DashboardPage
-        email={email}
-        password={password}
-        loading={authLoading || initializingAuth}
-        adminLoading={adminLoading}
-        error={error}
-        user={user}
-        rbac={rbac}
-        adminData={adminData}
-        adminDataLoadedAt={adminDataLoadedAt}
-        onEmailChange={setEmail}
-        onPasswordChange={setPassword}
-        onLogin={handleLogin}
-        onLogout={handleLogout}
-        onRbacCheck={handleRbacCheck}
-        onRefreshAdminData={loadAdminData}
-      />
-    );
-  }
-
   const isAdminRoute = isAdminPathname(location.pathname);
   const adminRoutePage = getAdminPageFromPathname(location.pathname);
   const isUnknownAdminRoute = isAdminRoute && !adminRoutePage;
@@ -1102,7 +869,77 @@ export default function App() {
       pathname={location.pathname}
       onOpenDashboard={() => handleNavigateAdminPage("dashboard")}
     />
-  ) : renderCurrentPage();
+  ) : (
+    <AdminPageRenderer
+      locationPathname={location.pathname}
+      currentPage={currentPage}
+      email={email}
+      password={password}
+      authLoading={authLoading}
+      initializingAuth={initializingAuth}
+      adminLoading={adminLoading}
+      error={error}
+      user={user}
+      rbac={rbac}
+      adminData={adminData}
+      adminDataLoadedAt={adminDataLoadedAt}
+      setEmail={setEmail}
+      setPassword={setPassword}
+      handleLogin={handleLogin}
+      handleLogout={handleLogout}
+      handleRbacCheck={handleRbacCheck}
+      loadAdminData={loadAdminData}
+      selectedUser={selectedUser}
+      selectedUserLoading={selectedUserLoading}
+      selectedUserError={selectedUserError}
+      handleOpenUser={handleOpenUser}
+      clearSelectedUser={clearSelectedUser}
+      handleCreateUser={handleCreateUser}
+      handleUpdateUser={handleUpdateUser}
+      handleResetUserPassword={handleResetUserPassword}
+      handleActivateUser={handleActivateUser}
+      handleDeactivateUser={handleDeactivateUser}
+      handleAssignUserRole={handleAssignUserRole}
+      handleRemoveUserRole={handleRemoveUserRole}
+      selectedOrganization={selectedOrganization}
+      selectedOrganizationLoading={selectedOrganizationLoading}
+      selectedOrganizationError={selectedOrganizationError}
+      handleOpenOrganization={handleOpenOrganization}
+      clearSelectedOrganization={clearSelectedOrganization}
+      handleCreateOrganization={handleCreateOrganization}
+      handleUpdateOrganization={handleUpdateOrganization}
+      handleDeleteOrganization={handleDeleteOrganization}
+      selectedGroup={selectedGroup}
+      selectedGroupLoading={selectedGroupLoading}
+      selectedGroupError={selectedGroupError}
+      handleOpenGroup={handleOpenGroup}
+      clearSelectedGroup={clearSelectedGroup}
+      handleCreateGroup={handleCreateGroup}
+      handleUpdateGroup={handleUpdateGroup}
+      handleDeleteGroup={handleDeleteGroup}
+      selectedRole={selectedRole}
+      selectedRoleLoading={selectedRoleLoading}
+      selectedRoleError={selectedRoleError}
+      handleOpenRole={handleOpenRole}
+      clearSelectedRole={clearSelectedRole}
+      handleCreateRole={handleCreateRole}
+      handleUpdateRole={handleUpdateRole}
+      handleDeleteRole={handleDeleteRole}
+      handleAssignRolePermission={handleAssignRolePermission}
+      handleRemoveRolePermission={handleRemoveRolePermission}
+      selectedPermission={selectedPermission}
+      selectedPermissionLoading={selectedPermissionLoading}
+      selectedPermissionError={selectedPermissionError}
+      handleOpenPermission={handleOpenPermission}
+      clearSelectedPermission={clearSelectedPermission}
+      selectedAuditEvent={selectedAuditEvent}
+      selectedAuditEventLoading={selectedAuditEventLoading}
+      selectedAuditEventError={selectedAuditEventError}
+      handleOpenAuditEvent={handleOpenAuditEvent}
+      clearSelectedAuditEvent={clearSelectedAuditEvent}
+      handleApplyAuditFilters={handleApplyAuditFilters}
+    />
+  );
 
   const activeAdminPage = adminRoutePage || currentPage;
   const currentPublicPage = getPublicPageFromPathname(location.pathname);
