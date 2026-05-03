@@ -16,6 +16,7 @@ import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
 import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
+import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import {
   buildCoursesPath,
   buildDocumentsPath,
@@ -264,24 +265,6 @@ function Field({ label, children }) {
       </span>
       <div className="mt-2">{children}</div>
     </label>
-  );
-}
-
-function EmptyState({ onReset }) {
-  return (
-    <div className="rounded-[2rem] bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
-      <div className="font-semibold text-slate-900">Назначения не найдены</div>
-      <p className="mt-2 leading-6">
-        Измените фильтры или назначьте пользователя на образовательную программу.
-      </p>
-      <button
-        type="button"
-        onClick={onReset}
-        className="mt-4 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-      >
-        Сбросить фильтры
-      </button>
-    </div>
   );
 }
 
@@ -1368,7 +1351,11 @@ export function AdminEnrollmentsPage() {
               Загружаем назначения...
             </div>
           ) : visibleEnrollments.length === 0 ? (
-            <EmptyState onReset={handleResetFilter} />
+            <AdminEmptyState
+              title="Назначения не найдены"
+              description="Измените фильтры или назначьте пользователя на образовательную программу."
+              onReset={handleResetFilter}
+            />
           ) : (
             <div className="space-y-4">
               {visibleEnrollments.map((enrollment) => {

@@ -10,6 +10,7 @@ import {
 } from "../api/client";
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
+import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
@@ -142,27 +143,6 @@ function MetricCard({ title, value, hint, tone = "blue", to }) {
     <Link to={to} className="block">
       {body}
     </Link>
-  );
-}
-
-function EmptyState({ hasActiveFilters, onReset }) {
-  return (
-    <div className="rounded-3xl bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
-      <div className="font-semibold text-slate-900">Программы не найдены</div>
-      <p className="mt-2 leading-6">
-        {getFilteredEmptyText(
-          hasActiveFilters,
-          "Под текущие фильтры программы не подходят.",
-          "Создайте первую образовательную программу."
-        )}
-      </p>
-
-      {hasActiveFilters && (
-        <ActionButton type="button" tone="light" onClick={onReset} className="mt-4">
-          Сбросить фильтры
-        </ActionButton>
-      )}
-    </div>
   );
 }
 
@@ -836,7 +816,16 @@ export function AdminCoursesPage() {
         {loading ? (
           <LoadingBlock text="Загружаем программы..." />
         ) : courses.length === 0 ? (
-          <EmptyState hasActiveFilters={hasActiveFilters} onReset={handleResetFilter} />
+          <AdminEmptyState
+            title="Программы не найдены"
+            description={getFilteredEmptyText(
+              hasActiveFilters,
+              "Под текущие фильтры программы не подходят.",
+              "Создайте первую образовательную программу."
+            )}
+            onReset={handleResetFilter}
+            showReset={hasActiveFilters}
+          />
         ) : (
           <div className="space-y-4">
             {courses.map((course) => (

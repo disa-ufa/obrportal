@@ -15,6 +15,7 @@ import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
+import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import { buildDocumentVerificationPath } from "../utils/documentVerification";
 import {
   buildCoursesPath,
@@ -212,24 +213,6 @@ function buildEditForm(documentItem) {
     course_id: documentItem.course_id || "",
     enrollment_id: documentItem.enrollment_id || "",
   };
-}
-
-function EmptyState({ onReset }) {
-  return (
-    <div className="rounded-[2rem] bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
-      <div className="font-semibold text-slate-900">Документы не найдены</div>
-      <p className="mt-2 leading-6">
-        Попробуйте снять фильтр по пользователю, статусу, типу документа или загрузите первый документ.
-      </p>
-      <button
-        type="button"
-        onClick={onReset}
-        className="mt-4 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-      >
-        Сбросить фильтр
-      </button>
-    </div>
-  );
 }
 
 function DocumentsSummaryCards({ documentStatusCounts, documents, courses, enrollments }) {
@@ -1201,7 +1184,12 @@ export function DocumentsPage() {
               Загружаем документы...
             </div>
           ) : documents.length === 0 ? (
-            <EmptyState onReset={handleResetFilter} />
+            <AdminEmptyState
+              title="Документы не найдены"
+              description="Попробуйте снять фильтр по пользователю, статусу, типу документа или загрузите первый документ."
+              resetLabel="Сбросить фильтр"
+              onReset={handleResetFilter}
+            />
           ) : (
             <div className="space-y-4">
               {documents.map((documentItem) => {
