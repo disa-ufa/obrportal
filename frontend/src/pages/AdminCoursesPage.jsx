@@ -8,6 +8,7 @@ import {
   getAdminCourses,
   updateAdminCourse,
 } from "../api/client";
+import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
@@ -49,23 +50,6 @@ const EMPTY_EDIT_FORM = {
 
 const CARD_LINK_CLASS =
   "rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
-
-function formatDateTime(value) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}
 
 function normalizeHoursInput(value) {
   if (`${value}`.trim() === "") {

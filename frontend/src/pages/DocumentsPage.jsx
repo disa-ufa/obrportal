@@ -10,6 +10,7 @@ import {
   getAdminUsers,
   updateAdminDocument,
 } from "../api/client";
+import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -189,24 +190,6 @@ function getEnrollmentStatusLabel(status) {
 
   return labels[status] || status || "-";
 }
-
-function formatDateTime(value) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}
-
 
 function getRevocationActorLabel(documentItem) {
   const name = documentItem.revoked_by_user_full_name || "";

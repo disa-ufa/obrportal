@@ -18,6 +18,7 @@ import {
   buildRolesPath,
   buildUsersPath,
 } from "../utils/adminLinks";
+import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 
 const SYSTEM_ROLE_CODES = new Set([
   "admin",
@@ -94,23 +95,6 @@ function asArray(value) {
 
 function countWhere(items, predicate) {
   return asArray(items).filter(predicate).length;
-}
-
-function formatDateTime(value) {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
 }
 
 function getToneClasses(tone) {

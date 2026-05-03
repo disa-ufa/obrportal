@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { verifyPublicDocument } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
+import { formatRuLongDate as formatDate } from "../utils/dateFormat";
 
 const RU = {
   available: "\u0414\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
@@ -73,22 +74,6 @@ const RU = {
   ifNotFoundText:
     "\u0412\u043e\u0437\u043c\u043e\u0436\u043d\u044b\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u044b: \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0435\u0449\u0451 \u043d\u0435 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d, \u0431\u044b\u043b \u0441\u043a\u0440\u044b\u0442 \u0438\u0437 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u0439 \u0432\u044b\u0434\u0430\u0447\u0438, \u0432\u0432\u0435\u0434\u0451\u043d \u043d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043d\u043e\u043c\u0435\u0440 \u0438\u043b\u0438 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0443\u0441\u0442\u0430\u0440\u0435\u0432\u0448\u0430\u044f \u0441\u0441\u044b\u043b\u043a\u0430.",
 };
-
-function formatDate(value) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "long",
-  }).format(date);
-}
 
 function getRegistryStatusLabel(status) {
   const labels = {

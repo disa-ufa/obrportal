@@ -7,6 +7,7 @@ import {
   getAccountSummary,
   startAccountCourse,
 } from "../api/client";
+import { formatRuDateTimeNative as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -228,19 +229,6 @@ function getAccountDocumentDownloadLabel(documentItem) {
   return "Файл отсутствует";
 }
 
-function formatDateTime(value) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return date.toLocaleString("ru-RU");
-}
 function canDownloadDocument(documentItem) {
   return Boolean(
     documentItem.download_available ??

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { enrollAccountCourse, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
+import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 
 function formatCourseDocument(course) {
   return course?.document_type || course?.document || "Итоговый документ";
@@ -53,23 +54,6 @@ function getPrimaryActionLabel(enrollment, user) {
   }
 
   return "Открыть личный кабинет";
-}
-
-function formatDateTime(value) {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
 }
 
 export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user }) {

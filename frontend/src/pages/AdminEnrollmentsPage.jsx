@@ -12,6 +12,7 @@ import {
   getOrgLearningGroups,
   updateAdminEnrollment,
 } from "../api/client";
+import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
 import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
@@ -82,23 +83,6 @@ function getStatusTone(value) {
   }
 
   return "bg-slate-100 text-slate-700 ring-slate-200";
-}
-
-function formatDateTime(value) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
 }
 
 function calculateStatusCounts(items) {
