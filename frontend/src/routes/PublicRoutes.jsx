@@ -4,7 +4,6 @@ import { AccountPage } from "../pages/AccountPage";
 import { AuthPage } from "../pages/AuthPage";
 import { CatalogPage } from "../pages/CatalogPage";
 import { ContactsPage } from "../pages/ContactsPage";
-import { DocumentsPage } from "../pages/DocumentsPage";
 import { FaqPage } from "../pages/FaqPage";
 import { HomePage } from "../pages/HomePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
@@ -138,20 +137,6 @@ export function PublicRoutes({
             )
           }
         />
-          <Route
-            path={getAdminPathForPage("documents")}
-            element={
-              user ? (
-                isAdmin ? (
-                  <DocumentsPage />
-                ) : (
-                  <Navigate to="/account" replace />
-                )
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
         <Route path="*" element={<NotFoundPage onPageChange={handleNavigatePublicPage} />} />
       </Routes>
   );
