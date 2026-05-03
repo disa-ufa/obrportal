@@ -68,6 +68,11 @@ import { AdminNotFoundPage } from "./pages/AdminNotFoundPage";
 import { PublicRoutes } from "./routes/PublicRoutes";
 import { AdminPageRenderer } from "./routes/AdminPageRenderer";
 import { useAdminSelections } from "./hooks/useAdminSelections";
+import {
+  removeAdminCollectionItem,
+  replaceAdminCollectionItem,
+  upsertAdminCollectionItem,
+} from "./utils/adminCollectionState";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -448,14 +453,7 @@ export default function App() {
   async function handleCreateUser(payload) {
     const created = await createAdminUser(payload);
 
-    setAdminData((current) => ({
-      ...current,
-      users: sortUsers([
-        ...current.users.filter((item) => item.id !== created.id),
-        created,
-      ]),
-    }));
-
+    upsertAdminCollectionItem(setAdminData, "users", created, sortUsers);
     setSelectedUser(created);
 
     return created;
@@ -464,15 +462,7 @@ export default function App() {
   async function handleUpdateUser(userId, payload) {
     const updated = await updateAdminUser(userId, payload);
 
-    setAdminData((current) => ({
-      ...current,
-      users: sortUsers(
-        current.users.map((item) =>
-          item.id === updated.id ? updated : item
-        )
-      ),
-    }));
-
+    replaceAdminCollectionItem(setAdminData, "users", updated, sortUsers);
     setSelectedUser(updated);
 
     return updated;
@@ -481,15 +471,7 @@ export default function App() {
   async function handleResetUserPassword(userId, password) {
     const updated = await resetAdminUserPassword(userId, password);
 
-    setAdminData((current) => ({
-      ...current,
-      users: sortUsers(
-        current.users.map((item) =>
-          item.id === updated.id ? updated : item
-        )
-      ),
-    }));
-
+    replaceAdminCollectionItem(setAdminData, "users", updated, sortUsers);
     setSelectedUser(updated);
 
     return updated;
@@ -498,15 +480,7 @@ export default function App() {
   async function handleActivateUser(userId) {
     const updated = await activateAdminUser(userId);
 
-    setAdminData((current) => ({
-      ...current,
-      users: sortUsers(
-        current.users.map((item) =>
-          item.id === updated.id ? updated : item
-        )
-      ),
-    }));
-
+    replaceAdminCollectionItem(setAdminData, "users", updated, sortUsers);
     setSelectedUser(updated);
 
     return updated;
@@ -515,15 +489,7 @@ export default function App() {
   async function handleDeactivateUser(userId) {
     const updated = await deactivateAdminUser(userId);
 
-    setAdminData((current) => ({
-      ...current,
-      users: sortUsers(
-        current.users.map((item) =>
-          item.id === updated.id ? updated : item
-        )
-      ),
-    }));
-
+    replaceAdminCollectionItem(setAdminData, "users", updated, sortUsers);
     setSelectedUser(updated);
 
     return updated;
@@ -532,15 +498,7 @@ export default function App() {
   async function handleAssignUserRole(userId, payload) {
     const updated = await assignAdminUserRole(userId, payload);
 
-    setAdminData((current) => ({
-      ...current,
-      users: sortUsers(
-        current.users.map((item) =>
-          item.id === updated.id ? updated : item
-        )
-      ),
-    }));
-
+    replaceAdminCollectionItem(setAdminData, "users", updated, sortUsers);
     setSelectedUser(updated);
 
     return updated;
@@ -549,15 +507,7 @@ export default function App() {
   async function handleRemoveUserRole(userId, userRoleId) {
     const updated = await removeAdminUserRole(userId, userRoleId);
 
-    setAdminData((current) => ({
-      ...current,
-      users: sortUsers(
-        current.users.map((item) =>
-          item.id === updated.id ? updated : item
-        )
-      ),
-    }));
-
+    replaceAdminCollectionItem(setAdminData, "users", updated, sortUsers);
     setSelectedUser(updated);
 
     return updated;
@@ -575,13 +525,7 @@ export default function App() {
   async function handleCreateOrganization(payload) {
     const created = await createAdminOrganization(payload);
 
-    setAdminData((current) => ({
-      ...current,
-      organizations: sortOrganizations([
-        ...current.organizations.filter((organization) => organization.id !== created.id),
-        created,
-      ]),
-    }));
+    upsertAdminCollectionItem(setAdminData, "organizations", created, sortOrganizations);
     setSelectedOrganization(created);
 
     return created;
@@ -590,15 +534,7 @@ export default function App() {
   async function handleUpdateOrganization(organizationId, payload) {
     const updated = await updateAdminOrganization(organizationId, payload);
 
-    setAdminData((current) => ({
-      ...current,
-      organizations: sortOrganizations(
-        current.organizations.map((organization) =>
-          organization.id === updated.id ? updated : organization
-        )
-      ),
-    }));
-
+    replaceAdminCollectionItem(setAdminData, "organizations", updated, sortOrganizations);
     setSelectedOrganization(updated);
 
     return updated;
@@ -607,11 +543,7 @@ export default function App() {
   async function handleDeleteOrganization(organizationId) {
     const deleted = await deleteAdminOrganization(organizationId);
 
-    setAdminData((current) => ({
-      ...current,
-      organizations: current.organizations.filter((organization) => organization.id !== organizationId),
-    }));
-
+    removeAdminCollectionItem(setAdminData, "organizations", organizationId);
     clearSelectedOrganization();
 
     return deleted;
@@ -629,14 +561,7 @@ export default function App() {
   async function handleCreateGroup(payload) {
     const created = await createOrgLearningGroup(payload);
 
-    setAdminData((current) => ({
-      ...current,
-      groups: sortGroups([
-        ...current.groups.filter((group) => group.id !== created.id),
-        created,
-      ]),
-    }));
-
+    upsertAdminCollectionItem(setAdminData, "groups", created, sortGroups);
     setSelectedGroup(created);
 
     return created;
@@ -645,15 +570,7 @@ export default function App() {
   async function handleUpdateGroup(groupId, payload) {
     const updated = await updateOrgLearningGroup(groupId, payload);
 
-    setAdminData((current) => ({
-      ...current,
-      groups: sortGroups(
-        current.groups.map((group) =>
-          group.id === updated.id ? updated : group
-        )
-      ),
-    }));
-
+    replaceAdminCollectionItem(setAdminData, "groups", updated, sortGroups);
     setSelectedGroup(updated);
 
     return updated;
@@ -662,10 +579,7 @@ export default function App() {
   async function handleDeleteGroup(groupId) {
     const deleted = await deleteOrgLearningGroup(groupId);
 
-    setAdminData((current) => ({
-      ...current,
-      groups: sortGroups(current.groups.filter((group) => group.id !== groupId)),
-    }));
+    removeAdminCollectionItem(setAdminData, "groups", groupId, sortGroups);
 
     if (selectedGroup?.id === groupId) {
       clearSelectedGroup();
@@ -677,14 +591,7 @@ export default function App() {
   async function handleCreateRole(payload) {
     const created = await createAdminRole(payload);
 
-    setAdminData((current) => ({
-      ...current,
-      roles: sortRoles([
-        ...current.roles.filter((role) => role.id !== created.id),
-        created,
-      ]),
-    }));
-
+    upsertAdminCollectionItem(setAdminData, "roles", created, sortRoles);
     setSelectedRole(created);
 
     return created;
@@ -693,15 +600,7 @@ export default function App() {
   async function handleUpdateRole(roleId, payload) {
     const updated = await updateAdminRole(roleId, payload);
 
-    setAdminData((current) => ({
-      ...current,
-      roles: sortRoles(
-        current.roles.map((role) =>
-          role.id === updated.id ? updated : role
-        )
-      ),
-    }));
-
+    replaceAdminCollectionItem(setAdminData, "roles", updated, sortRoles);
     setSelectedRole(updated);
 
     return updated;
@@ -710,10 +609,7 @@ export default function App() {
   async function handleDeleteRole(roleId) {
     const deleted = await deleteAdminRole(roleId);
 
-    setAdminData((current) => ({
-      ...current,
-      roles: sortRoles(current.roles.filter((role) => role.id !== roleId)),
-    }));
+    removeAdminCollectionItem(setAdminData, "roles", roleId, sortRoles);
 
     if (selectedRole?.id === roleId) {
       clearSelectedRole();
