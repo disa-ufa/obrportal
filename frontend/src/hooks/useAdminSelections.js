@@ -61,7 +61,27 @@ export function useAdminSelections() {
     setSelectedAuditEventError("");
   }
 
+  async function openSelection({ setValue, setLoading, setError, load }) {
+    setValue(null);
+    setError("");
+    setLoading(true);
+
+    try {
+      const detail = await load();
+      setValue(detail);
+
+      return detail;
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message}`);
+
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return {
+    openSelection,
     selectedUser,
     setSelectedUser,
     selectedUserLoading,

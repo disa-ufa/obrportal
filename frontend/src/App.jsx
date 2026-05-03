@@ -85,6 +85,7 @@ export default function App() {
   const [initializingAuth, setInitializingAuth] = useState(true);
 
   const {
+    openSelection,
     selectedUser,
     setSelectedUser,
     selectedUserLoading,
@@ -445,18 +446,12 @@ export default function App() {
   }
 
   async function handleOpenUser(userId) {
-    setSelectedUser(null);
-    setSelectedUserError("");
-    setSelectedUserLoading(true);
-
-    try {
-      const detail = await getAdminUserDetail(userId);
-      setSelectedUser(detail);
-    } catch (err) {
-      setSelectedUserError(`${err.status || ""} ${err.message}`);
-    } finally {
-      setSelectedUserLoading(false);
-    }
+    return openSelection({
+      setValue: setSelectedUser,
+      setLoading: setSelectedUserLoading,
+      setError: setSelectedUserError,
+      load: () => getAdminUserDetail(userId),
+    });
   }
 
   async function handleCreateUser(payload) {
@@ -578,18 +573,12 @@ export default function App() {
   }
 
   async function handleOpenOrganization(organizationId) {
-    setSelectedOrganization(null);
-    setSelectedOrganizationError("");
-    setSelectedOrganizationLoading(true);
-
-    try {
-      const detail = await getAdminOrganizationDetail(organizationId);
-      setSelectedOrganization(detail);
-    } catch (err) {
-      setSelectedOrganizationError(`${err.status || ""} ${err.message}`);
-    } finally {
-      setSelectedOrganizationLoading(false);
-    }
+    return openSelection({
+      setValue: setSelectedOrganization,
+      setLoading: setSelectedOrganizationLoading,
+      setError: setSelectedOrganizationError,
+      load: () => getAdminOrganizationDetail(organizationId),
+    });
   }
 
   async function handleCreateOrganization(payload) {
@@ -638,18 +627,12 @@ export default function App() {
   }
 
   async function handleOpenGroup(groupId) {
-    setSelectedGroup(null);
-    setSelectedGroupError("");
-    setSelectedGroupLoading(true);
-
-    try {
-      const detail = await getOrgLearningGroupDetail(groupId);
-      setSelectedGroup(detail);
-    } catch (err) {
-      setSelectedGroupError(`${err.status || ""} ${err.message}`);
-    } finally {
-      setSelectedGroupLoading(false);
-    }
+    return openSelection({
+      setValue: setSelectedGroup,
+      setLoading: setSelectedGroupLoading,
+      setError: setSelectedGroupError,
+      load: () => getOrgLearningGroupDetail(groupId),
+    });
   }
 
   async function handleCreateGroup(payload) {
@@ -749,18 +732,12 @@ export default function App() {
   }
 
   async function handleOpenRole(roleId) {
-    setSelectedRole(null);
-    setSelectedRoleError("");
-    setSelectedRoleLoading(true);
-
-    try {
-      const detail = await getAdminRoleDetail(roleId);
-      setSelectedRole(detail);
-    } catch (err) {
-      setSelectedRoleError(`${err.status || ""} ${err.message}`);
-    } finally {
-      setSelectedRoleLoading(false);
-    }
+    return openSelection({
+      setValue: setSelectedRole,
+      setLoading: setSelectedRoleLoading,
+      setError: setSelectedRoleError,
+      load: () => getAdminRoleDetail(roleId),
+    });
   }
 
   async function handleAssignRolePermission(roleId, payload) {
@@ -778,33 +755,21 @@ export default function App() {
   }
 
   async function handleOpenPermission(permissionId) {
-    setSelectedPermission(null);
-    setSelectedPermissionError("");
-    setSelectedPermissionLoading(true);
-
-    try {
-      const detail = await getAdminPermissionDetail(permissionId);
-      setSelectedPermission(detail);
-    } catch (err) {
-      setSelectedPermissionError(`${err.status || ""} ${err.message}`);
-    } finally {
-      setSelectedPermissionLoading(false);
-    }
+    return openSelection({
+      setValue: setSelectedPermission,
+      setLoading: setSelectedPermissionLoading,
+      setError: setSelectedPermissionError,
+      load: () => getAdminPermissionDetail(permissionId),
+    });
   }
 
   async function handleOpenAuditEvent(auditEventId) {
-    setSelectedAuditEvent(null);
-    setSelectedAuditEventError("");
-    setSelectedAuditEventLoading(true);
-
-    try {
-      const detail = await getAdminAuditEventDetail(auditEventId);
-      setSelectedAuditEvent(detail);
-    } catch (err) {
-      setSelectedAuditEventError(`${err.status || ""} ${err.message}`);
-    } finally {
-      setSelectedAuditEventLoading(false);
-    }
+    return openSelection({
+      setValue: setSelectedAuditEvent,
+      setLoading: setSelectedAuditEventLoading,
+      setError: setSelectedAuditEventError,
+      load: () => getAdminAuditEventDetail(auditEventId),
+    });
   }
 
   async function handleApplyAuditFilters(filters) {
