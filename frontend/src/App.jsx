@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { PublicShell } from "./components/layout/PublicShell";
 import {
@@ -86,7 +86,7 @@ import { PrivacyPage } from "./pages/PrivacyPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { RolesPage } from "./pages/RolesPage";
 import { UsersPage } from "./pages/UsersPage";
-import { CourseDetailPublicRoute, VerifyDocumentCodeRoute } from "./routes/PublicRouteComponents";
+import { PublicRoutes } from "./routes/PublicRoutes";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -1170,127 +1170,22 @@ export default function App() {
       currentPage={currentPublicPage}
       onPageChange={handleNavigatePublicPage}
     >
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <HomePage
-              onPageChange={handleNavigatePublicPage}
-              onOpenCourse={handleOpenPublicCourse}
-            />
-          }
-        />
-        <Route
-          path="/catalog"
-          element={
-            <CatalogPage
-              onPageChange={handleNavigatePublicPage}
-              onOpenCourse={handleOpenPublicCourse}
-              user={user}
-            />
-          }
-        />
-        <Route
-          path="/courses/:slug"
-          element={
-            <CourseDetailPublicRoute
-              onPageChange={handleNavigatePublicPage}
-              onOpenCourse={handleOpenPublicCourse}
-              user={user}
-            />
-          }
-        />
-        <Route
-          path="/organization-info"
-          element={<OrganizationInfoPage onPageChange={handleNavigatePublicPage} />}
-        />
-        <Route
-          path="/verify/:code"
-          element={<VerifyDocumentCodeRoute onPageChange={handleNavigatePublicPage} />}
-        />
-        <Route
-          path="/verify-document"
-          element={<VerifyDocumentPage onPageChange={handleNavigatePublicPage} />}
-        />
-        <Route
-          path="/contacts"
-          element={<ContactsPage onPageChange={handleNavigatePublicPage} />}
-        />
-        <Route
-          path="/faq"
-          element={<FaqPage onPageChange={handleNavigatePublicPage} />}
-        />
-        <Route
-          path="/privacy"
-          element={<PrivacyPage onPageChange={handleNavigatePublicPage} />}
-        />
-        <Route
-          path="/offer"
-          element={<OfferPage onPageChange={handleNavigatePublicPage} />}
-        />
-        <Route
-          path="/login"
-          element={
-            <AuthPage
-              email={email}
-              password={password}
-              loading={authLoading || initializingAuth}
-              error={error}
-              user={user}
-              onEmailChange={setEmail}
-              onPasswordChange={setPassword}
-              onLogin={handleLogin}
-              onLogout={handleLogout}
-              onPageChange={handleNavigatePublicPage}
-            />
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <RegisterPage
-              onPageChange={handleNavigatePublicPage}
-              onRegister={handleRegister}
-              loading={authLoading || initializingAuth}
-              error={error}
-            />
-          }
-        />
-        <Route
-          path="/account"
-          element={
-            user ? (
-              isAdmin ? (
-                <Navigate to={getAdminPathForPage("dashboard")} replace />
-              ) : (
-                <AccountPage
-                  user={user}
-                  onPageChange={handleNavigatePublicPage}
-                  onLogout={handleLogout}
-                  onOpenCourse={handleOpenPublicCourse}
-                />
-              )
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-          <Route
-            path={getAdminPathForPage("documents")}
-            element={
-              user ? (
-                isAdmin ? (
-                  <DocumentsPage />
-                ) : (
-                  <Navigate to="/account" replace />
-                )
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-        <Route path="*" element={<NotFoundPage onPageChange={handleNavigatePublicPage} />} />
-      </Routes>
+      <PublicRoutes
+        email={email}
+        password={password}
+        error={error}
+        authLoading={authLoading}
+        initializingAuth={initializingAuth}
+        user={user}
+        isAdmin={isAdmin}
+        setEmail={setEmail}
+        setPassword={setPassword}
+        handleLogin={handleLogin}
+        handleLogout={handleLogout}
+        handleRegister={handleRegister}
+        handleNavigatePublicPage={handleNavigatePublicPage}
+        handleOpenPublicCourse={handleOpenPublicCourse}
+      />
     </PublicShell>
   );
 }
