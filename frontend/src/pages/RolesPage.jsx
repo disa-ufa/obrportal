@@ -9,6 +9,7 @@ import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
+import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildSearchText, normalizeSearchValue } from "../utils/search";
@@ -144,29 +145,6 @@ function QuickRoleTypeFilters({ activeValue, counts, disabled, onChange }) {
   );
 }
 
-
-function SummaryCard({ title, value, hint, to }) {
-  const body = (
-    <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {title}
-      </div>
-      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
-      {hint && <div className="mt-2 text-sm leading-5 text-slate-500">{hint}</div>}
-    </div>
-  );
-
-  if (!to) {
-    return body;
-  }
-
-  return (
-    <Link to={to} className="block">
-      {body}
-    </Link>
-  );
-}
-
 function RolesSummaryCards({ roles, permissions, roleCounts }) {
   const assignedPermissionCodes = new Set();
 
@@ -184,43 +162,31 @@ function RolesSummaryCards({ roles, permissions, roleCounts }) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <SummaryCard
+      <AdminSummaryCard
         title="Всего ролей"
         value={roleCounts.all || 0}
         hint="Системные и пользовательские роли RBAC."
         to={buildRolesPath()}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Системные"
         value={roleCounts.system || 0}
         hint="Защищённые базовые роли платформы."
         to={buildRolesPath({ type: "system" })}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Пользовательские"
         value={roleCounts.custom || 0}
         hint="Роли, которые можно настраивать под процессы."
         to={buildRolesPath({ type: "custom" })}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Свободные права"
         value={unassignedPermissionsCount}
         hint="Permissions без привязки к ролям."
         to={buildPermissionsPath()}
       />
     </div>
-  );
-}
-
-function WorkflowLink({ title, description, to }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-[2rem] bg-slate-50 p-5 text-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
-    >
-      <div className="font-semibold text-slate-900">{title}</div>
-      <div className="mt-2 leading-6 text-slate-600">{description}</div>
-    </Link>
   );
 }
 
@@ -237,22 +203,22 @@ function RolesWorkflowPanel({ roles, permissions, roleCounts }) {
       subtitle="Быстрые переходы для проверки ролей, пользователей и набора прав."
     >
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Проверить admin"
           description={`Открыть admin-роль и связанные права: ${roleCounts.admin || 0}.`}
           to={buildRolesPath({ type: "admin" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Пользователи admin"
           description="Посмотреть пользователей, которым назначена административная роль."
           to={adminRole ? buildUsersPath({ role_id: adminRole.id }) : buildUsersPath({ q: "admin" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Admin permissions"
           description={`Проверить группу admin.*: ${adminPermissionsCount}.`}
           to={buildPermissionsPath({ group: "admin" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Настроить custom"
           description={
             firstCustomRole

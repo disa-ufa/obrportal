@@ -6,6 +6,7 @@ import { ActionButton } from "../components/ui/ActionButton";
 import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
+import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { ADMIN_FILTER_CONTROL_SUBTLE_DISABLED_CLASS } from "../utils/adminClasses";
@@ -205,69 +206,34 @@ function QuickValueFilters({
   );
 }
 
-
-function SummaryCard({ title, value, hint, to }) {
-  const body = (
-    <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {title}
-      </div>
-      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
-      {hint && <div className="mt-2 text-sm leading-5 text-slate-500">{hint}</div>}
-    </div>
-  );
-
-  if (!to) {
-    return body;
-  }
-
-  return (
-    <Link to={to} className="block">
-      {body}
-    </Link>
-  );
-}
-
 function AuditSummaryCards({ auditCounts, filters }) {
   const actionsCount = Object.keys(auditCounts.actions || {}).length;
   const entityTypesCount = Object.keys(auditCounts.entityTypes || {}).length;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <SummaryCard
+      <AdminSummaryCard
         title="Событий"
         value={auditCounts.all || 0}
         hint="Количество событий в текущей выдаче."
         to={buildAuditPath()}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Типы действий"
         value={actionsCount}
         hint="Уникальные action в загруженном наборе."
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Типы сущностей"
         value={entityTypesCount}
         hint="Уникальные entity_type в загруженном наборе."
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Событий с actor"
         value={auditCounts.actors || 0}
         hint={`Лимит текущей выдачи: ${filters.limit || DEFAULT_FILTERS.limit}.`}
       />
     </div>
-  );
-}
-
-function WorkflowLink({ title, description, to }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-[2rem] bg-slate-50 p-5 text-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
-    >
-      <div className="font-semibold text-slate-900">{title}</div>
-      <div className="mt-2 leading-6 text-slate-600">{description}</div>
-    </Link>
   );
 }
 
@@ -283,22 +249,22 @@ function AuditWorkflowPanel({ auditCounts }) {
       subtitle="Быстрые переходы для расследования событий, действий пользователей и изменений RBAC."
     >
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <WorkflowLink
+        <AdminWorkflowLink
           title="События пользователей"
           description={`Открыть аудит по entity_type=user: ${userEventsCount}.`}
           to={buildAuditPath({ entity_type: "user" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="События документов"
           description={`Проверить выпуск, публикацию и отзыв документов: ${documentEventsCount}.`}
           to={buildAuditPath({ entity_type: "document" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="RBAC изменения"
           description={`Роли: ${roleEventsCount}, permissions: ${permissionEventsCount}.`}
           to={buildAuditPath({ entity_type: "role" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Расширенная выдача"
           description="Показать последние 200 событий аудита."
           to={buildAuditPath({ limit: "200" })}

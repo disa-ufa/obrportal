@@ -13,6 +13,7 @@ import {
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { SectionCard } from "../components/ui/SectionCard";
+import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import { buildDocumentVerificationPath } from "../utils/documentVerification";
 import {
   buildCoursesPath,
@@ -248,29 +249,6 @@ function EmptyState({ onReset }) {
   );
 }
 
-
-function SummaryCard({ title, value, hint, to }) {
-  const body = (
-    <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {title}
-      </div>
-      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
-      {hint && <div className="mt-2 text-sm leading-5 text-slate-500">{hint}</div>}
-    </div>
-  );
-
-  if (!to) {
-    return body;
-  }
-
-  return (
-    <Link to={to} className="block">
-      {body}
-    </Link>
-  );
-}
-
 function DocumentsSummaryCards({ documentStatusCounts, documents, courses, enrollments }) {
   const filesCount = documents.filter((documentItem) => documentItem.file_available).length;
   const completedEnrollmentsCount = enrollments.filter(
@@ -280,42 +258,30 @@ function DocumentsSummaryCards({ documentStatusCounts, documents, courses, enrol
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <SummaryCard
+      <AdminSummaryCard
         title="Всего документов"
         value={documentStatusCounts.all || 0}
         hint="По текущему набору фильтров без учёта статуса."
         to={buildDocumentsPath()}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Доступные"
         value={documentStatusCounts.available || 0}
         hint="Опубликованы для слушателей."
         to={buildDocumentsPath({ status: "available" })}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Черновики"
         value={documentStatusCounts.draft || 0}
         hint="Требуют проверки или публикации."
         to={buildDocumentsPath({ status: "draft" })}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Файлы / курсы / завершения"
         value={`${filesCount}/${activeCoursesCount}/${completedEnrollmentsCount}`}
         hint="Видимые файлы / активные курсы / completed назначения."
       />
     </div>
-  );
-}
-
-function WorkflowLink({ title, description, to }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-[2rem] bg-slate-50 p-5 text-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
-    >
-      <div className="font-semibold text-slate-900">{title}</div>
-      <div className="mt-2 leading-6 text-slate-600">{description}</div>
-    </Link>
   );
 }
 
@@ -331,22 +297,22 @@ function DocumentsWorkflowPanel({ documentStatusCounts, courses, enrollments }) 
       subtitle="Быстрые переходы для публикации, проверки и выпуска документов."
     >
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Опубликовать черновики"
           description={`Открыть draft документы: ${documentStatusCounts.draft || 0}.`}
           to={buildDocumentsPath({ status: "draft" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Проверить доступные"
           description={`Открыть документы, видимые слушателям: ${documentStatusCounts.available || 0}.`}
           to={buildDocumentsPath({ status: "available" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Разобрать отозванные"
           description={`Открыть revoked документы: ${documentStatusCounts.revoked || 0}.`}
           to={buildDocumentsPath({ status: "revoked" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Завершённые назначения"
           description="Перейти к назначениям, из которых выпускаются итоговые документы."
           to={

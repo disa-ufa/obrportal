@@ -7,6 +7,7 @@ import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
+import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
@@ -114,29 +115,6 @@ function QuickPermissionGroupFilters({ activeValue, groups, counts, disabled, on
   );
 }
 
-
-function SummaryCard({ title, value, hint, to }) {
-  const body = (
-    <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {title}
-      </div>
-      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
-      {hint && <div className="mt-2 text-sm leading-5 text-slate-500">{hint}</div>}
-    </div>
-  );
-
-  if (!to) {
-    return body;
-  }
-
-  return (
-    <Link to={to} className="block">
-      {body}
-    </Link>
-  );
-}
-
 function PermissionsSummaryCards({ permissions, permissionGroups, permissionGroupCounts }) {
   const roleAssignmentsCount = permissions.reduce(
     (total, permission) => total + (permission.roles || []).length,
@@ -148,41 +126,29 @@ function PermissionsSummaryCards({ permissions, permissionGroups, permissionGrou
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <SummaryCard
+      <AdminSummaryCard
         title="Всего прав"
         value={permissionGroupCounts[ALL_PERMISSION_GROUPS] || 0}
         hint="Все permissions, доступные в RBAC."
         to={buildPermissionsPath()}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Группы прав"
         value={permissionGroups.length}
         hint="Логические группы по префиксу кода."
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Привязки к ролям"
         value={roleAssignmentsCount}
         hint="Сколько связей permission → role уже настроено."
         to={buildRolesPath()}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Без ролей"
         value={permissionsWithoutRolesCount}
         hint="Права, которые пока не назначены ни одной роли."
       />
     </div>
-  );
-}
-
-function WorkflowLink({ title, description, to }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-[2rem] bg-slate-50 p-5 text-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
-    >
-      <div className="font-semibold text-slate-900">{title}</div>
-      <div className="mt-2 leading-6 text-slate-600">{description}</div>
-    </Link>
   );
 }
 
@@ -193,22 +159,22 @@ function PermissionsWorkflowPanel({ permissionGroupCounts }) {
       subtitle="Быстрые переходы для аудита прав и связей RBAC."
     >
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Admin permissions"
           description={`Проверить группу admin.*: ${permissionGroupCounts.admin || 0}.`}
           to={buildPermissionsPath({ group: "admin" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Audit permissions"
           description={`Проверить группу audit.*: ${permissionGroupCounts.audit || 0}.`}
           to={buildPermissionsPath({ group: "audit" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Роли с admin.*"
           description="Найти роли, в которых используются административные права."
           to={buildRolesPath({ q: "admin." })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Все роли"
           description="Перейти к настройке ролей и назначению permissions."
           to={buildRolesPath()}

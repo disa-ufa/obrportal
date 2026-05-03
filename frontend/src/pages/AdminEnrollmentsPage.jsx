@@ -14,6 +14,7 @@ import {
 } from "../api/client";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
+import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import {
   buildCoursesPath,
   buildDocumentsPath,
@@ -334,70 +335,36 @@ function QuickStatusFilters({ activeValue, counts, disabled, onChange }) {
   );
 }
 
-function SummaryCard({ title, value, hint, to }) {
-  const body = (
-    <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {title}
-      </div>
-      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
-      {hint && <div className="mt-2 text-sm leading-5 text-slate-500">{hint}</div>}
-    </div>
-  );
-
-  if (!to) {
-    return body;
-  }
-
-  return (
-    <Link to={to} className="block">
-      {body}
-    </Link>
-  );
-}
-
 function EnrollmentSummaryCards({ statusCounts, users, courses, groups }) {
   const activeCoursesCount = courses.filter((course) => course.is_active).length;
   const activeGroupsCount = groups.filter((group) => group.is_active).length;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <SummaryCard
+      <AdminSummaryCard
         title="Всего назначений"
         value={statusCounts.all || 0}
         hint="По текущему набору фильтров."
         to={buildEnrollmentsPath()}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="В процессе"
         value={statusCounts.active || 0}
         hint="Назначения со статусом active."
         to={buildEnrollmentsPath({ status: "active" })}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Завершено"
         value={statusCounts.completed || 0}
         hint="Готовы к документам и проверке."
         to={buildEnrollmentsPath({ status: "completed" })}
       />
-      <SummaryCard
+      <AdminSummaryCard
         title="Справочники"
         value={`${users.length}/${activeCoursesCount}/${activeGroupsCount}`}
         hint="Пользователи / активные программы / активные группы."
       />
     </div>
-  );
-}
-
-function WorkflowLink({ title, description, to }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-[2rem] bg-slate-50 p-5 text-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
-    >
-      <div className="font-semibold text-slate-900">{title}</div>
-      <div className="mt-2 leading-6 text-slate-600">{description}</div>
-    </Link>
   );
 }
 
@@ -411,22 +378,22 @@ function EnrollmentWorkflowPanel({ statusCounts, courses, groups }) {
       subtitle="Быстрые переходы для администратора учебных назначений."
     >
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Новые назначения"
           description={`Проверить назначенные записи: ${statusCounts.assigned || 0}.`}
           to={buildEnrollmentsPath({ status: "assigned" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Завершённые обучения"
           description={`Открыть записи completed: ${statusCounts.completed || 0}.`}
           to={buildEnrollmentsPath({ status: "completed" })}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Программы"
           description="Перейти к рабочему центру курсов и активным программам."
           to={buildCoursesPath(firstActiveCourse ? { q: firstActiveCourse.slug || firstActiveCourse.title } : {})}
         />
-        <WorkflowLink
+        <AdminWorkflowLink
           title="Группы"
           description="Проверить учебные группы перед массовым назначением."
           to={buildGroupsPath(firstActiveGroup ? { organization_id: firstActiveGroup.organization_id } : {})}
