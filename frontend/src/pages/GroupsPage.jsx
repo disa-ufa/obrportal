@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   addOrgLearningGroupMember,
   getAdminUsers,
@@ -32,8 +32,77 @@ const EMPTY_GROUP = {
 const ENROLLMENTS_LINK_CLASS =
   "inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800";
 
+const SECONDARY_LINK_CLASS =
+  "inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
+
+const TABLE_LINK_CLASS =
+  "rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
+
+const GROUP_STATUS_FILTERS = [
+  { value: "all", label: "Все" },
+  { value: "active", label: "Активные" },
+  { value: "inactive", label: "Неактивные" },
+];
+
+function buildPath(pathname, filters = {}, defaults = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (!value) {
+      return;
+    }
+
+    if (defaults[key] !== undefined && value === defaults[key]) {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+function buildGroupsPath(filters = {}) {
+  return buildPath("/admin/groups", filters, {
+    organization_id: "all",
+    status: "all",
+  });
+}
+
+function buildEnrollmentsPath(filters = {}) {
+  return buildPath("/admin/enrollments", filters);
+}
+
+function buildUsersPath(filters = {}) {
+  return buildPath("/admin/users", filters, {
+    activity: "all",
+  });
+}
+
+function buildDocumentsPath(filters = {}) {
+  return buildPath("/admin/documents", filters);
+}
+
+function buildOrganizationsPath(filters = {}) {
+  return buildPath("/admin/organizations", filters, {
+    scope: "all",
+  });
+}
+
 function buildGroupEnrollmentsHref(groupId) {
-  return `/admin/enrollments?learning_group_id=${encodeURIComponent(groupId)}`;
+  return buildEnrollmentsPath({ learning_group_id: groupId });
+}
+
+function getGroupFiltersFromSearch(search) {
+  const params = new URLSearchParams(search);
+
+  return {
+    q: params.get("q") || "",
+    organization_id: params.get("organization_id") || "all",
+    status: params.get("status") || "all",
+  };
 }
 
 const TEXTAREA_CLASS =
@@ -104,6 +173,79 @@ function groupMatchesOrganization(group, organizationFilter) {
   }
 
   return group.organization_id === organizationFilter;
+}
+
+function groupMatchesStatus(group, statusFilter) {
+  if (statusFilter === "active") {
+    return group.is_active;
+  }
+
+  if (statusFilter === "inactive") {
+    return !group.is_active;
+  }
+
+  return true;
+}
+
+function calculateGroupCounts(items) {
+  const counts = {
+    all: Array.isArray(items) ? items.length : 0,
+    active: 0,
+    inactive: 0,
+  };
+
+  if (!Array.isArray(items)) {
+    return counts;
+  }
+
+  items.forEach((group) => {
+    if (group.is_active) {
+      counts.active += 1;
+    } else {
+      counts.inactive += 1;
+    }
+  });
+
+  return counts;
+}
+
+function QuickStatusFilters({ activeValue, counts, disabled, onChange }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {GROUP_STATUS_FILTERS.map((item) => {
+        const isActive = activeValue === item.value;
+        const count =
+          item.value === "active"
+            ? counts.active || 0
+            : item.value === "inactive"
+              ? counts.inactive || 0
+              : counts.all || 0;
+
+        return (
+          <button
+            key={item.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(item.value)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isActive
+                ? "bg-slate-900 text-white ring-slate-900"
+                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>{item.label}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function Field({ label, required = false, children }) {
@@ -488,14 +630,37 @@ function LearningGroupMembersPanel({ groupDetail }) {
                 key: "actions",
                 title: "Действия",
                 render: (row) => (
-                  <ActionButton
-                    type="button"
-                    tone="red"
-                    onClick={() => handleRemoveMember(row.user_id, row.user_email)}
-                    disabled={Boolean(actionLoading)}
-                  >
-                    {actionLoading === row.user_id ? "Удаляем..." : "Удалить"}
-                  </ActionButton>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      to={buildUsersPath({ q: row.user_email })}
+                      className={TABLE_LINK_CLASS}
+                    >
+                      Пользователь
+                    </Link>
+
+                    <Link
+                      to={buildDocumentsPath({ user_id: row.user_id })}
+                      className={TABLE_LINK_CLASS}
+                    >
+                      Документы
+                    </Link>
+
+                    <Link
+                      to={buildEnrollmentsPath({ user_id: row.user_id })}
+                      className={TABLE_LINK_CLASS}
+                    >
+                      Назначения
+                    </Link>
+
+                    <ActionButton
+                      type="button"
+                      tone="red"
+                      onClick={() => handleRemoveMember(row.user_id, row.user_email)}
+                      disabled={Boolean(actionLoading)}
+                    >
+                      {actionLoading === row.user_id ? "Удаляем..." : "Удалить"}
+                    </ActionButton>
+                  </div>
                 ),
               },
             ]}
@@ -603,6 +768,17 @@ function LearningGroupDetailPanel({
 
               {!isEditing && (
                 <Link
+                  to={buildOrganizationsPath({
+                    q: organizationsMap[groupDetail.organization_id] || groupDetail.organization_id,
+                  })}
+                  className={SECONDARY_LINK_CLASS}
+                >
+                  Организация
+                </Link>
+              )}
+
+              {!isEditing && (
+                <Link
                   to={buildGroupEnrollmentsHref(groupDetail.id)}
                   className={ENROLLMENTS_LINK_CLASS}
                 >
@@ -684,9 +860,14 @@ export function GroupsPage({
   onDeleteGroup,
   onRefreshAdminData,
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialFilters = getGroupFiltersFromSearch(location.search);
+
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [organizationFilter, setOrganizationFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState(initialFilters.q);
+  const [organizationFilter, setOrganizationFilter] = useState(initialFilters.organization_id);
+  const [statusFilter, setStatusFilter] = useState(initialFilters.status);
 
   const organizationsMap = useMemo(() => buildOrganizationsMap(organizations), [organizations]);
   const sortedOrganizations = useMemo(
@@ -694,7 +875,15 @@ export function GroupsPage({
     [organizations]
   );
 
-  const filteredGroups = useMemo(
+  useEffect(() => {
+    const nextFilters = getGroupFiltersFromSearch(location.search);
+
+    setSearchQuery(nextFilters.q);
+    setOrganizationFilter(nextFilters.organization_id);
+    setStatusFilter(nextFilters.status);
+  }, [location.search]);
+
+  const baseFilteredGroups = useMemo(
     () => groups.filter((group) => (
       groupMatchesSearch(group, searchQuery, organizationsMap[group.organization_id] || "")
       && groupMatchesOrganization(group, organizationFilter)
@@ -702,12 +891,56 @@ export function GroupsPage({
     [groups, searchQuery, organizationFilter, organizationsMap]
   );
 
+  const groupCounts = useMemo(() => calculateGroupCounts(baseFilteredGroups), [baseFilteredGroups]);
+
+  const filteredGroups = useMemo(
+    () => baseFilteredGroups.filter((group) => groupMatchesStatus(group, statusFilter)),
+    [baseFilteredGroups, statusFilter]
+  );
+
+  const hasActiveFilters =
+    Boolean(searchQuery.trim()) || organizationFilter !== "all" || statusFilter !== "all";
+
+  function buildGroupFilters(overrides = {}) {
+    return {
+      q: overrides.q ?? searchQuery,
+      organization_id: overrides.organization_id ?? organizationFilter,
+      status: overrides.status ?? statusFilter,
+    };
+  }
+
+  function navigateToGroupFilters(filters, options = { replace: true }) {
+    const nextPath = buildGroupsPath(filters);
+    const currentPath = `${location.pathname}${location.search}`;
+
+    if (currentPath === nextPath) {
+      return;
+    }
+
+    navigate(nextPath, options);
+  }
+
+  function handleSearchChange(value) {
+    setSearchQuery(value);
+    navigateToGroupFilters(buildGroupFilters({ q: value }));
+  }
+
+  function handleOrganizationChange(value) {
+    setOrganizationFilter(value);
+    navigateToGroupFilters(buildGroupFilters({ organization_id: value }));
+  }
+
+  function handleStatusChange(value) {
+    setStatusFilter(value);
+    navigateToGroupFilters(buildGroupFilters({ status: value }));
+  }
+
   function resetFilters() {
     setSearchQuery("");
     setOrganizationFilter("all");
+    setStatusFilter("all");
+    navigateToGroupFilters({}, { replace: true });
   }
-
-  const hasActiveFilters = Boolean(searchQuery.trim()) || organizationFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -746,7 +979,7 @@ export function GroupsPage({
             )}
 
             <AdminFilterPanel
-              columnsClassName="lg:grid-cols-[1fr_320px_auto]"
+              columnsClassName="lg:grid-cols-[1fr_300px_220px_auto]"
               onReset={resetFilters}
               resetDisabled={!hasActiveFilters}
               summary={getShownSummary(filteredGroups.length, groups.length)}
@@ -755,7 +988,7 @@ export function GroupsPage({
                 <input
                   type="search"
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(event) => handleSearchChange(event.target.value)}
                   placeholder="Название, код, описание или организация"
                   className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 />
@@ -764,7 +997,7 @@ export function GroupsPage({
               <AdminFilterField label="Организация" className="block space-y-2">
                 <select
                   value={organizationFilter}
-                  onChange={(event) => setOrganizationFilter(event.target.value)}
+                  onChange={(event) => handleOrganizationChange(event.target.value)}
                   className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
                 >
                   <option value="all">Все организации</option>
@@ -775,7 +1008,31 @@ export function GroupsPage({
                   ))}
                 </select>
               </AdminFilterField>
+
+              <AdminFilterField label="Статус" className="block space-y-2">
+                <select
+                  value={statusFilter}
+                  onChange={(event) => handleStatusChange(event.target.value)}
+                  className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
+                >
+                  <option value="all">Все статусы</option>
+                  <option value="active">Только активные</option>
+                  <option value="inactive">Только неактивные</option>
+                </select>
+              </AdminFilterField>
             </AdminFilterPanel>
+
+            <QuickStatusFilters
+              activeValue={statusFilter}
+              counts={groupCounts}
+              disabled={loading}
+              onChange={handleStatusChange}
+            />
+
+            <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+              <span>Показано групп: {filteredGroups.length}</span>
+              <span>Всего по текущему поиску и организации: {groupCounts.all || 0}</span>
+            </div>
 
             {loading ? (
               <LoadingBlock text="Загружаем группы..." />
@@ -788,7 +1045,7 @@ export function GroupsPage({
                 )}
                 rows={filteredGroups}
                 selectedRowId={selectedGroup?.id}
-                minWidth="860px"
+                minWidth="980px"
                 columns={[
                   { key: "name", title: "Название" },
                   {
@@ -820,6 +1077,15 @@ export function GroupsPage({
                         >
                           {selectedGroup?.id === row.id ? "Открыта" : "Открыть"}
                         </ActionButton>
+
+                        <Link
+                          to={buildOrganizationsPath({
+                            q: organizationsMap[row.organization_id] || row.organization_id,
+                          })}
+                          className={TABLE_LINK_CLASS}
+                        >
+                          Организация
+                        </Link>
 
                         <Link
                           to={buildGroupEnrollmentsHref(row.id)}
