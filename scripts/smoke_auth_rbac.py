@@ -516,6 +516,12 @@ def main() -> int:
         ("/admin/audit-events?entity_type=user", "audit entity type"),
         ("/admin/audit-events?actor_user_id=00000000-0000-0000-0000-000000000000", "audit actor"),
         ("/admin/audit-events?limit=25", "audit limit"),
+        ("/admin/users?activity=inactive", "dashboard users inactive"),
+        ("/admin/documents?status=draft", "dashboard documents draft"),
+        ("/admin/documents?status=revoked", "dashboard documents revoked"),
+        ("/admin/enrollments?status=active", "dashboard enrollments active"),
+        ("/admin/enrollments?status=completed", "dashboard enrollments completed"),
+        ("/admin/audit-events?entity_type=document", "dashboard audit documents"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
