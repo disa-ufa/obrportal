@@ -7,6 +7,7 @@ import {
   getAccountSummary,
   startAccountCourse,
 } from "../api/client";
+import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
 import { formatRuDateTimeNative as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
@@ -77,39 +78,6 @@ function calculateStatusCounts(items, getStatus) {
   });
 
   return counts;
-}
-
-function QuickFilterButtons({ items, activeValue, counts, onChange }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((item) => {
-        const isActive = activeValue === item.value;
-        const count = item.value ? counts[item.value] || 0 : counts.all || 0;
-
-        return (
-          <button
-            key={item.value || "all"}
-            type="button"
-            onClick={() => onChange(item.value)}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
-              isActive
-                ? "bg-slate-900 text-white ring-slate-900"
-                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            <span>{item.label}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {count}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 function getDocumentStatusLabel(status) {
@@ -568,7 +536,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="xl:col-span-2">
-              <QuickFilterButtons
+              <AdminQuickFilterButtons
                 items={ACCOUNT_COURSE_FILTERS}
                 activeValue={courseStatusFilter}
                 counts={courseStatusCounts}
@@ -734,7 +702,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="xl:col-span-2">
-              <QuickFilterButtons
+              <AdminQuickFilterButtons
                 items={ACCOUNT_DOCUMENT_FILTERS}
                 activeValue={documentStatusFilter}
                 counts={documentStatusCounts}

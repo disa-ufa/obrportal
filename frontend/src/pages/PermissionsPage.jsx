@@ -14,6 +14,7 @@ import { normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
 import { TABLE_LINK_CLASS, buildPermissionsPath, buildRolesPath } from "../utils/adminLinks";
+import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
 
 const ALL_PERMISSION_GROUPS = "all";
 
@@ -74,45 +75,6 @@ function calculatePermissionGroupCounts(items) {
   });
 
   return counts;
-}
-
-function QuickPermissionGroupFilters({ activeValue, groups, counts, disabled, onChange }) {
-  const items = [
-    { value: ALL_PERMISSION_GROUPS, label: "Все" },
-    ...groups.map((group) => ({ value: group, label: group })),
-  ];
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((item) => {
-        const isActive = activeValue === item.value;
-        const count = counts[item.value] || 0;
-
-        return (
-          <button
-            key={item.value}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(item.value)}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-              isActive
-                ? "bg-slate-900 text-white ring-slate-900"
-                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            <span>{item.label}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {count}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 function PermissionsSummaryCards({ permissions, permissionGroups, permissionGroupCounts }) {
@@ -336,9 +298,12 @@ export function PermissionsPage({
               </AdminFilterField>
             </AdminFilterPanel>
 
-            <QuickPermissionGroupFilters
+            <AdminQuickFilterButtons
+              items={[
+                { value: ALL_PERMISSION_GROUPS, label: "Все" },
+                ...permissionGroups.map((group) => ({ value: group, label: group })),
+              ]}
               activeValue={groupFilter}
-              groups={permissionGroups}
               counts={permissionGroupCounts}
               disabled={loading}
               onChange={handleGroupChange}
