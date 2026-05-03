@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   createAdminEnrollment,
   createAdminGroupEnrollments,
@@ -14,7 +14,12 @@ import {
 } from "../api/client";
 import { Alert } from "../components/ui/Alert";
 import { SectionCard } from "../components/ui/SectionCard";
-import { buildEnrollmentsPath } from "../utils/adminLinks";
+import {
+  buildCoursesPath,
+  buildDocumentsPath,
+  buildEnrollmentsPath,
+  buildGroupsPath,
+} from "../utils/adminLinks";
 
 const ENROLLMENT_STATUSES = [
   { value: "assigned", label: "Назначен" },
@@ -329,8 +334,111 @@ function QuickStatusFilters({ activeValue, counts, disabled, onChange }) {
   );
 }
 
+function SummaryCard({ title, value, hint, to }) {
+  const body = (
+    <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {title}
+      </div>
+      <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
+      {hint && <div className="mt-2 text-sm leading-5 text-slate-500">{hint}</div>}
+    </div>
+  );
+
+  if (!to) {
+    return body;
+  }
+
+  return (
+    <Link to={to} className="block">
+      {body}
+    </Link>
+  );
+}
+
+function EnrollmentSummaryCards({ statusCounts, users, courses, groups }) {
+  const activeCoursesCount = courses.filter((course) => course.is_active).length;
+  const activeGroupsCount = groups.filter((group) => group.is_active).length;
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard
+        title="Всего назначений"
+        value={statusCounts.all || 0}
+        hint="По текущему набору фильтров."
+        to={buildEnrollmentsPath()}
+      />
+      <SummaryCard
+        title="В процессе"
+        value={statusCounts.active || 0}
+        hint="Назначения со статусом active."
+        to={buildEnrollmentsPath({ status: "active" })}
+      />
+      <SummaryCard
+        title="Завершено"
+        value={statusCounts.completed || 0}
+        hint="Готовы к документам и проверке."
+        to={buildEnrollmentsPath({ status: "completed" })}
+      />
+      <SummaryCard
+        title="Справочники"
+        value={`${users.length}/${activeCoursesCount}/${activeGroupsCount}`}
+        hint="Пользователи / активные программы / активные группы."
+      />
+    </div>
+  );
+}
+
+function WorkflowLink({ title, description, to }) {
+  return (
+    <Link
+      to={to}
+      className="rounded-[2rem] bg-slate-50 p-5 text-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
+    >
+      <div className="font-semibold text-slate-900">{title}</div>
+      <div className="mt-2 leading-6 text-slate-600">{description}</div>
+    </Link>
+  );
+}
+
+function EnrollmentWorkflowPanel({ statusCounts, courses, groups }) {
+  const firstActiveCourse = courses.find((course) => course.is_active);
+  const firstActiveGroup = groups.find((group) => group.is_active);
+
+  return (
+    <SectionCard
+      title="Рабочие сценарии"
+      subtitle="Быстрые переходы для администратора учебных назначений."
+    >
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <WorkflowLink
+          title="Новые назначения"
+          description={`Проверить назначенные записи: ${statusCounts.assigned || 0}.`}
+          to={buildEnrollmentsPath({ status: "assigned" })}
+        />
+        <WorkflowLink
+          title="Завершённые обучения"
+          description={`Открыть записи completed: ${statusCounts.completed || 0}.`}
+          to={buildEnrollmentsPath({ status: "completed" })}
+        />
+        <WorkflowLink
+          title="Программы"
+          description="Перейти к рабочему центру курсов и активным программам."
+          to={buildCoursesPath(firstActiveCourse ? { q: firstActiveCourse.slug || firstActiveCourse.title } : {})}
+        />
+        <WorkflowLink
+          title="Группы"
+          description="Проверить учебные группы перед массовым назначением."
+          to={buildGroupsPath(firstActiveGroup ? { organization_id: firstActiveGroup.organization_id } : {})}
+        />
+      </div>
+    </SectionCard>
+  );
+}
+
 export function AdminEnrollmentsPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const initialFilters = getEnrollmentFiltersFromSearch(location.search);
 
   const [enrollments, setEnrollments] = useState([]);
@@ -491,6 +599,18 @@ export function AdminEnrollmentsPage() {
       status: overrides.status ?? filterStatus,
       learning_group_id: overrides.learning_group_id ?? filterGroupId,
     };
+  }
+
+  async function navigateToEnrollmentFilters(filters, options = {}) {
+    const nextPath = buildEnrollmentsPath(filters);
+    const currentPath = `${location.pathname}${location.search}`;
+
+    if (currentPath === nextPath) {
+      await loadData(filters);
+      return;
+    }
+
+    navigate(nextPath, options);
   }
 
   async function loadData(filters = null) {
@@ -837,10 +957,13 @@ export function AdminEnrollmentsPage() {
       setFilterGroupId(nextGroupId);
       resetBulkForm();
 
-      await loadData({
-        course_id: nextCourseId,
-        learning_group_id: nextGroupId,
-      });
+      await navigateToEnrollmentFilters(
+        {
+          course_id: nextCourseId,
+          learning_group_id: nextGroupId,
+        },
+        { replace: true }
+      );
     } catch (err) {
       setError(`${err.status || ""} ${err.message || "Не удалось выполнить массовое назначение."}`.trim());
     } finally {
@@ -939,12 +1062,12 @@ export function AdminEnrollmentsPage() {
 
   async function handleApplyFilter(event) {
     event.preventDefault();
-    await loadData(buildFilters());
+    await navigateToEnrollmentFilters(buildFilters());
   }
 
   async function handleQuickStatusFilter(status) {
     setFilterStatus(status);
-    await loadData(buildFilters({ status }));
+    await navigateToEnrollmentFilters(buildFilters({ status }));
   }
 
   async function handleResetFilter() {
@@ -953,7 +1076,7 @@ export function AdminEnrollmentsPage() {
     setFilterCourseId("");
     setFilterStatus("");
     setFilterGroupId("");
-    await loadData({});
+    await navigateToEnrollmentFilters({}, { replace: true });
   }
 
   return (
@@ -982,6 +1105,19 @@ export function AdminEnrollmentsPage() {
           {successMessage}
         </Alert>
       )}
+
+      <EnrollmentSummaryCards
+        statusCounts={statusCounts}
+        users={users}
+        courses={courses}
+        groups={groups}
+      />
+
+      <EnrollmentWorkflowPanel
+        statusCounts={statusCounts}
+        courses={courses}
+        groups={groups}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)]">
         <div className="space-y-6">
@@ -1355,7 +1491,7 @@ export function AdminEnrollmentsPage() {
 
                         <div className="mt-5 flex flex-wrap gap-3">
                           <Link
-                            to={`/admin/documents?enrollment_id=${encodeURIComponent(enrollment.id)}`}
+                            to={buildDocumentsPath({ enrollment_id: enrollment.id })}
                             className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
                           >
                             Документы
