@@ -5,7 +5,7 @@ import { RbacResult } from "../components/admin/RbacResult";
 import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
-import { AdminMetricCard } from "../components/admin/AdminWorkCenter";
+import { AdminMetricCard, AdminSignalCard, getAdminToneClasses } from "../components/admin/AdminWorkCenter";
 import {
   LINK_PILL_CLASS,
   buildAuditPath,
@@ -98,26 +98,6 @@ function countWhere(items, predicate) {
   return asArray(items).filter(predicate).length;
 }
 
-function getToneClasses(tone) {
-  if (tone === "green") {
-    return "bg-emerald-50 text-emerald-800 ring-emerald-200";
-  }
-
-  if (tone === "amber") {
-    return "bg-amber-50 text-amber-800 ring-amber-200";
-  }
-
-  if (tone === "red") {
-    return "bg-red-50 text-red-800 ring-red-200";
-  }
-
-  if (tone === "violet") {
-    return "bg-violet-50 text-violet-800 ring-violet-200";
-  }
-
-  return "bg-blue-50 text-blue-800 ring-blue-200";
-}
-
 function getActionTone(action) {
   const normalized = String(action || "").toLowerCase();
 
@@ -183,26 +163,6 @@ function WorkflowCard({ title, description, links }) {
   );
 }
 
-function SignalCard({ title, value, hint, to, tone = "blue" }) {
-  const body = (
-    <div className={`rounded-2xl p-4 ring-1 ${getToneClasses(tone)}`}>
-      <div className="text-sm font-semibold opacity-80">{title}</div>
-      <div className="mt-2 text-2xl font-bold">{value}</div>
-      <div className="mt-1 text-xs leading-5 opacity-80">{hint}</div>
-    </div>
-  );
-
-  if (!to) {
-    return body;
-  }
-
-  return (
-    <Link to={to} className="block">
-      {body}
-    </Link>
-  );
-}
-
 function AuditPreview({ auditEvents }) {
   const events = asArray(auditEvents).slice(0, 6);
 
@@ -225,7 +185,7 @@ function AuditPreview({ auditEvents }) {
             className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getToneClasses(getActionTone(event.action))}`}>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getAdminToneClasses(getActionTone(event.action))}`}>
                 {event.action || "event"}
               </span>
               <span className="text-xs text-slate-500">
@@ -472,35 +432,35 @@ export function DashboardPage({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              <SignalCard
+              <AdminSignalCard
                 title="Неактивные пользователи"
                 value={inactiveUsersCount}
                 hint="Проверить доступы и блокировки"
                 to={buildUsersPath({ activity: "inactive" })}
                 tone={inactiveUsersCount ? "amber" : "green"}
               />
-              <SignalCard
+              <AdminSignalCard
                 title="Черновики документов"
                 value={draftDocumentsCount}
                 hint="Ожидают публикации"
                 to={buildDocumentsPath({ status: "draft" })}
                 tone={draftDocumentsCount ? "amber" : "green"}
               />
-              <SignalCard
+              <AdminSignalCard
                 title="Отозванные документы"
                 value={revokedDocumentsCount}
                 hint="Недействующие документы"
                 to={buildDocumentsPath({ status: "revoked" })}
                 tone={revokedDocumentsCount ? "red" : "green"}
               />
-              <SignalCard
+              <AdminSignalCard
                 title="Назначения в работе"
                 value={activeEnrollmentsCount}
                 hint="Текущие обучения"
                 to={buildEnrollmentsPath({ status: "active" })}
                 tone="blue"
               />
-              <SignalCard
+              <AdminSignalCard
                 title="Пользовательские роли"
                 value={customRolesCount}
                 hint="Проверить RBAC-настройки"

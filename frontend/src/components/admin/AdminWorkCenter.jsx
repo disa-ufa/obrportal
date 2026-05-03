@@ -62,6 +62,42 @@ export function AdminMetricCard({
   );
 }
 
+export function AdminSignalCard({
+  title,
+  value,
+  hint,
+  to,
+  tone = "blue",
+  className = "",
+  linkClassName = "block",
+}) {
+  const bodyClassName = [
+    "rounded-2xl p-4 ring-1",
+    getAdminToneClasses(tone),
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const body = (
+    <div className={bodyClassName}>
+      <div className="text-sm font-semibold opacity-80">{title}</div>
+      <div className="mt-2 text-2xl font-bold">{value}</div>
+      <div className="mt-1 text-xs leading-5 opacity-80">{hint}</div>
+    </div>
+  );
+
+  if (!to) {
+    return body;
+  }
+
+  return (
+    <Link to={to} className={linkClassName}>
+      {body}
+    </Link>
+  );
+}
+
 export function AdminSummaryCard({ title, value, hint, to }) {
   const body = (
     <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300">
