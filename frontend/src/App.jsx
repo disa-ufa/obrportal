@@ -46,6 +46,7 @@ import { AdminPageRenderer } from "./routes/AdminPageRenderer";
 import { useAdminSelections } from "./hooks/useAdminSelections";
 import { useAdminEntityActions } from "./hooks/useAdminEntityActions";
 import { useAdminDetailActions } from "./hooks/useAdminDetailActions";
+import { useAdminAuditActions } from "./hooks/useAdminAuditActions";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -147,6 +148,17 @@ export default function App() {
     setSelectedAuditEvent,
     setSelectedAuditEventLoading,
     setSelectedAuditEventError,
+  });
+
+  const {
+    handleApplyAuditFilters,
+  } = useAdminAuditActions({
+    setAdminData,
+    setAdminDataLoadedAt,
+    setAdminLoading,
+    setError,
+    clearSelectedAuditEvent,
+    getNowLabel,
   });
 
   const {
@@ -481,29 +493,6 @@ export default function App() {
       setRbac(null);
     } finally {
       setAuthLoading(false);
-    }
-  }
-
-  async function handleApplyAuditFilters(filters) {
-    setAdminLoading(true);
-    setError("");
-    clearSelectedAuditEvent();
-
-    try {
-      const auditEvents = await getAdminAuditEvents(filters);
-
-      setAdminData((current) => ({
-        ...current,
-        auditEvents,
-      }));
-      setAdminDataLoadedAt(getNowLabel());
-
-      return auditEvents;
-    } catch (err) {
-      setError(`${err.status || ""} ${err.message}`);
-      throw err;
-    } finally {
-      setAdminLoading(false);
     }
   }
 

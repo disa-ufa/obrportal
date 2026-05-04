@@ -1,0 +1,38 @@
+import { getAdminAuditEvents } from "../api/client";
+
+export function useAdminAuditActions({
+  setAdminData,
+  setAdminDataLoadedAt,
+  setAdminLoading,
+  setError,
+  clearSelectedAuditEvent,
+  getNowLabel,
+}) {
+  async function handleApplyAuditFilters(filters) {
+    setAdminLoading(true);
+    setError("");
+    clearSelectedAuditEvent();
+
+    try {
+      const auditEvents = await getAdminAuditEvents(filters);
+
+      setAdminData((current) => ({
+        ...current,
+        auditEvents,
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+
+      return auditEvents;
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message}`);
+
+      throw err;
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  return {
+    handleApplyAuditFilters,
+  };
+}
