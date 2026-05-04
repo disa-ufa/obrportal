@@ -1,0 +1,167 @@
+import { useNavigate } from "react-router-dom";
+
+import {
+  checkAdminRbac,
+  clearToken,
+  getCurrentUser,
+  getStoredToken,
+  login,
+  registerUser,
+  storeToken,
+} from "../api/client";
+import { EMPTY_ADMIN_DATA, userHasRole } from "../utils/adminState";
+
+export function useAuthFlow({
+  email,
+  password,
+  setUser,
+  setRbac,
+  setAdminData,
+  setAdminDataLoadedAt,
+  setCurrentPage,
+  setError,
+  setAuthLoading,
+  setAdminLoading,
+  setInitializingAuth,
+  clearAllSelections,
+  loadAdminData,
+  completePendingEnrollmentIfNeeded,
+}) {
+  const navigate = useNavigate();
+
+  async function bootstrapAuthState() {
+    setInitializingAuth(true);
+
+    const token = getStoredToken();
+
+    if (!token) {
+      setUser(null);
+      setAdminData(EMPTY_ADMIN_DATA);
+      setAdminDataLoadedAt("");
+      setInitializingAuth(false);
+      return;
+    }
+
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+
+      if (userHasRole(currentUser, "admin")) {
+        setCurrentPage("dashboard");
+        await loadAdminData();
+      } else {
+        setCurrentPage("account");
+      }
+    } catch {
+      clearToken();
+      setUser(null);
+      setRbac(null);
+      setAdminData(EMPTY_ADMIN_DATA);
+      setAdminDataLoadedAt("");
+      clearAllSelections();
+    } finally {
+      setInitializingAuth(false);
+    }
+  }
+
+  async function handleRegister(payload) {
+    setAuthLoading(true);
+    setError("");
+
+    try {
+      const tokenResponse = await registerUser(payload);
+      storeToken(tokenResponse.access_token);
+
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+
+      if (userHasRole(currentUser, "admin")) {
+        setCurrentPage("dashboard");
+        await loadAdminData();
+        navigate("/admin", { replace: true });
+      } else {
+        setAdminData(EMPTY_ADMIN_DATA);
+        setAdminDataLoadedAt("");
+        await completePendingEnrollmentIfNeeded();
+        navigate("/account", { replace: true });
+      }
+
+      return currentUser;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleLogin(event) {
+    event.preventDefault();
+    setAuthLoading(true);
+    setError("");
+    setRbac(null);
+    clearAllSelections();
+
+    try {
+      await login(email, password);
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+
+      if (userHasRole(currentUser, "admin")) {
+        setCurrentPage("dashboard");
+        await loadAdminData();
+        navigate("/admin", { replace: true });
+      } else {
+        setAdminData(EMPTY_ADMIN_DATA);
+        setAdminDataLoadedAt("");
+        await completePendingEnrollmentIfNeeded();
+        navigate("/account", { replace: true });
+      }
+    } catch (err) {
+      setError(err.message);
+      setUser(null);
+      setAdminData(EMPTY_ADMIN_DATA);
+      setAdminDataLoadedAt("");
+    } finally {
+      setAuthLoading(false);
+      setInitializingAuth(false);
+    }
+  }
+
+  async function handleRbacCheck() {
+    setAuthLoading(true);
+    setError("");
+
+    try {
+      const data = await checkAdminRbac();
+      setRbac(data);
+    } catch (err) {
+      setError(`${err.status || ""} ${err.message}`);
+      setRbac(null);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    clearToken();
+    setUser(null);
+    setRbac(null);
+    setAdminData(EMPTY_ADMIN_DATA);
+    setAdminDataLoadedAt("");
+    setCurrentPage("dashboard");
+    setError("");
+    setAuthLoading(false);
+    setAdminLoading(false);
+    setInitializingAuth(false);
+    clearAllSelections();
+  }
+
+  return {
+    bootstrapAuthState,
+    handleRegister,
+    handleLogin,
+    handleRbacCheck,
+    handleLogout,
+  };
+}

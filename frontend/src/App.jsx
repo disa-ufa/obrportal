@@ -2,15 +2,6 @@ import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { PublicShell } from "./components/layout/PublicShell";
-import {
-  checkAdminRbac,
-  clearToken,
-  getCurrentUser,
-  getStoredToken,
-  storeToken,
-  login,
-  registerUser,
-} from "./api/client";
 import { getAdminPageFromPathname, getAdminPathForPage, isAdminPathname } from "./utils/adminRoutes";
 import {
   buildPublicMeta,
@@ -36,6 +27,7 @@ import { useAdminAuditActions } from "./hooks/useAdminAuditActions";
 import { useSystemStatus } from "./hooks/useSystemStatus";
 import { useAdminDataLoader } from "./hooks/useAdminDataLoader";
 import { usePendingEnrollment } from "./hooks/usePendingEnrollment";
+import { useAuthFlow } from "./hooks/useAuthFlow";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -123,6 +115,29 @@ export default function App() {
     clearSelectedAuditEvent,
     clearAllSelections,
   } = useAdminSelections();
+
+  const {
+    bootstrapAuthState,
+    handleRegister,
+    handleLogin,
+    handleRbacCheck,
+    handleLogout,
+  } = useAuthFlow({
+    email,
+    password,
+    setUser,
+    setRbac,
+    setAdminData,
+    setAdminDataLoadedAt,
+    setCurrentPage,
+    setError,
+    setAuthLoading,
+    setAdminLoading,
+    setInitializingAuth,
+    clearAllSelections,
+    loadAdminData,
+    completePendingEnrollmentIfNeeded,
+  });
 
   const {
     handleOpenUser,
@@ -221,41 +236,6 @@ export default function App() {
     metaDescriptionTag.setAttribute("content", meta.description);
   }, [location.pathname]);
 
-  async function bootstrapAuthState() {
-    setInitializingAuth(true);
-
-    const token = getStoredToken();
-
-    if (!token) {
-      setUser(null);
-      setAdminData(EMPTY_ADMIN_DATA);
-      setAdminDataLoadedAt("");
-      setInitializingAuth(false);
-      return;
-    }
-
-    try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-
-      if (userHasRole(currentUser, "admin")) {
-        setCurrentPage("dashboard");
-        await loadAdminData();
-      } else {
-        setCurrentPage("account");
-      }
-    } catch {
-      clearToken();
-      setUser(null);
-      setRbac(null);
-      setAdminData(EMPTY_ADMIN_DATA);
-      setAdminDataLoadedAt("");
-      clearAllSelections();
-    } finally {
-      setInitializingAuth(false);
-    }
-  }
-
   useEffect(() => {
     loadSystemStatus();
     bootstrapAuthState();
@@ -279,99 +259,6 @@ export default function App() {
 
   function handleOpenPublicCourse(courseSlug) {
     navigate(`/courses/${courseSlug}`);
-  }
-
-  async function handleRegister(payload) {
-    setAuthLoading(true);
-    setError("");
-
-    try {
-      const tokenResponse = await registerUser(payload);
-      storeToken(tokenResponse.access_token);
-
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-
-      if (userHasRole(currentUser, "admin")) {
-        setCurrentPage("dashboard");
-        await loadAdminData();
-        navigate("/admin", { replace: true });
-      } else {
-        setAdminData(EMPTY_ADMIN_DATA);
-        setAdminDataLoadedAt("");
-        await completePendingEnrollmentIfNeeded();
-        navigate("/account", { replace: true });
-      }
-
-      return currentUser;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
-  async function handleLogin(event) {
-    event.preventDefault();
-    setAuthLoading(true);
-    setError("");
-    setRbac(null);
-    clearAllSelections();
-
-    try {
-      await login(email, password);
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-
-      if (userHasRole(currentUser, "admin")) {
-        setCurrentPage("dashboard");
-        await loadAdminData();
-        navigate("/admin", { replace: true });
-      } else {
-        setAdminData(EMPTY_ADMIN_DATA);
-        setAdminDataLoadedAt("");
-        await completePendingEnrollmentIfNeeded();
-        navigate("/account", { replace: true });
-      }
-    } catch (err) {
-      setError(err.message);
-      setUser(null);
-      setAdminData(EMPTY_ADMIN_DATA);
-      setAdminDataLoadedAt("");
-    } finally {
-      setAuthLoading(false);
-      setInitializingAuth(false);
-    }
-  }
-
-  async function handleRbacCheck() {
-    setAuthLoading(true);
-    setError("");
-
-    try {
-      const data = await checkAdminRbac();
-      setRbac(data);
-    } catch (err) {
-      setError(`${err.status || ""} ${err.message}`);
-      setRbac(null);
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
-  function handleLogout() {
-    clearToken();
-    setUser(null);
-    setRbac(null);
-    setAdminData(EMPTY_ADMIN_DATA);
-    setAdminDataLoadedAt("");
-    setCurrentPage("dashboard");
-    setError("");
-    setAuthLoading(false);
-    setAdminLoading(false);
-    setInitializingAuth(false);
-    clearAllSelections();
   }
 
   const isAdminRoute = isAdminPathname(location.pathname);
