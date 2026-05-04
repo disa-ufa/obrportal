@@ -6,22 +6,16 @@ import {
   checkAdminRbac,
   clearToken,
   enrollAccountCourse,
-  getAdminAuditEventDetail,
   getAdminAuditEvents,
   getAdminCourses,
   getAdminDocuments,
   getAdminEnrollments,
-  getAdminOrganizationDetail,
   getAdminOrganizations,
-  getAdminPermissionDetail,
   getAdminPermissions,
-  getAdminRoleDetail,
   getAdminRoles,
-  getAdminUserDetail,
   getAdminUsers,
   getCurrentUser,
   getHealth,
-  getOrgLearningGroupDetail,
   getOrgLearningGroups,
   getPublicCourseDetail,
   getReady,
@@ -51,6 +45,7 @@ import { PublicRoutes } from "./routes/PublicRoutes";
 import { AdminPageRenderer } from "./routes/AdminPageRenderer";
 import { useAdminSelections } from "./hooks/useAdminSelections";
 import { useAdminEntityActions } from "./hooks/useAdminEntityActions";
+import { useAdminDetailActions } from "./hooks/useAdminDetailActions";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -118,6 +113,41 @@ export default function App() {
     clearSelectedAuditEvent,
     clearAllSelections,
   } = useAdminSelections();
+
+  const {
+    handleOpenUser,
+    handleOpenOrganization,
+    handleOpenGroup,
+    handleOpenRole,
+    handleOpenPermission,
+    handleOpenAuditEvent,
+  } = useAdminDetailActions({
+    openSelection,
+
+    setSelectedUser,
+    setSelectedUserLoading,
+    setSelectedUserError,
+
+    setSelectedOrganization,
+    setSelectedOrganizationLoading,
+    setSelectedOrganizationError,
+
+    setSelectedGroup,
+    setSelectedGroupLoading,
+    setSelectedGroupError,
+
+    setSelectedRole,
+    setSelectedRoleLoading,
+    setSelectedRoleError,
+
+    setSelectedPermission,
+    setSelectedPermissionLoading,
+    setSelectedPermissionError,
+
+    setSelectedAuditEvent,
+    setSelectedAuditEventLoading,
+    setSelectedAuditEventError,
+  });
 
   const {
     handleCreateUser,
@@ -452,60 +482,6 @@ export default function App() {
     } finally {
       setAuthLoading(false);
     }
-  }
-
-  async function handleOpenUser(userId) {
-    return openSelection({
-      setValue: setSelectedUser,
-      setLoading: setSelectedUserLoading,
-      setError: setSelectedUserError,
-      load: () => getAdminUserDetail(userId),
-    });
-  }
-
-  async function handleOpenOrganization(organizationId) {
-    return openSelection({
-      setValue: setSelectedOrganization,
-      setLoading: setSelectedOrganizationLoading,
-      setError: setSelectedOrganizationError,
-      load: () => getAdminOrganizationDetail(organizationId),
-    });
-  }
-
-  async function handleOpenGroup(groupId) {
-    return openSelection({
-      setValue: setSelectedGroup,
-      setLoading: setSelectedGroupLoading,
-      setError: setSelectedGroupError,
-      load: () => getOrgLearningGroupDetail(groupId),
-    });
-  }
-
-  async function handleOpenRole(roleId) {
-    return openSelection({
-      setValue: setSelectedRole,
-      setLoading: setSelectedRoleLoading,
-      setError: setSelectedRoleError,
-      load: () => getAdminRoleDetail(roleId),
-    });
-  }
-
-  async function handleOpenPermission(permissionId) {
-    return openSelection({
-      setValue: setSelectedPermission,
-      setLoading: setSelectedPermissionLoading,
-      setError: setSelectedPermissionError,
-      load: () => getAdminPermissionDetail(permissionId),
-    });
-  }
-
-  async function handleOpenAuditEvent(auditEventId) {
-    return openSelection({
-      setValue: setSelectedAuditEvent,
-      setLoading: setSelectedAuditEventLoading,
-      setError: setSelectedAuditEventError,
-      load: () => getAdminAuditEventDetail(auditEventId),
-    });
   }
 
   async function handleApplyAuditFilters(filters) {
