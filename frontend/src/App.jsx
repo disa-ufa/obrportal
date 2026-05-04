@@ -6,16 +6,7 @@ import {
   checkAdminRbac,
   clearToken,
   enrollAccountCourse,
-  getAdminAuditEvents,
-  getAdminCourses,
-  getAdminDocuments,
-  getAdminEnrollments,
-  getAdminOrganizations,
-  getAdminPermissions,
-  getAdminRoles,
-  getAdminUsers,
   getCurrentUser,
-  getOrgLearningGroups,
   getPublicCourseDetail,
   getStoredToken,
   storeToken,
@@ -32,7 +23,6 @@ import {
 import {
   EMPTY_ADMIN_DATA,
   getNowLabel,
-  sortGroups,
   sortOrganizations,
   sortRoles,
   sortUsers,
@@ -46,6 +36,7 @@ import { useAdminEntityActions } from "./hooks/useAdminEntityActions";
 import { useAdminDetailActions } from "./hooks/useAdminDetailActions";
 import { useAdminAuditActions } from "./hooks/useAdminAuditActions";
 import { useSystemStatus } from "./hooks/useSystemStatus";
+import { useAdminDataLoader } from "./hooks/useAdminDataLoader";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -64,6 +55,15 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
   const [initializingAuth, setInitializingAuth] = useState(true);
+
+  const {
+    loadAdminData,
+  } = useAdminDataLoader({
+    setAdminData,
+    setAdminDataLoadedAt,
+    setAdminLoading,
+    setError,
+  });
 
   const {
     openSelection,
@@ -213,54 +213,6 @@ export default function App() {
     const metaDescriptionTag = ensureMetaDescriptionTag();
     metaDescriptionTag.setAttribute("content", meta.description);
   }, [location.pathname]);
-
-  async function loadAdminData() {
-    setAdminLoading(true);
-    setError("");
-
-    try {
-      const [
-        users,
-        organizations,
-        groups,
-        courses,
-        enrollments,
-        documents,
-        roles,
-        permissions,
-        auditEvents,
-      ] = await Promise.all([
-        getAdminUsers(),
-        getAdminOrganizations(),
-        getOrgLearningGroups(),
-        getAdminCourses({ limit: 300 }),
-        getAdminEnrollments({ limit: 300 }),
-        getAdminDocuments({ limit: 300 }),
-        getAdminRoles(),
-        getAdminPermissions(),
-        getAdminAuditEvents(),
-      ]);
-
-      setAdminData({
-        users,
-        organizations,
-        groups: sortGroups(groups),
-        courses,
-        enrollments,
-        documents,
-        roles,
-        permissions,
-        auditEvents,
-      });
-      setAdminDataLoadedAt(getNowLabel());
-    } catch (err) {
-      setError(`${err.status || ""} ${err.message}`);
-      setAdminData(EMPTY_ADMIN_DATA);
-      setAdminDataLoadedAt("");
-    } finally {
-      setAdminLoading(false);
-    }
-  }
 
   async function bootstrapAuthState() {
     setInitializingAuth(true);
