@@ -5,9 +5,7 @@ import { PublicShell } from "./components/layout/PublicShell";
 import {
   checkAdminRbac,
   clearToken,
-  enrollAccountCourse,
   getCurrentUser,
-  getPublicCourseDetail,
   getStoredToken,
   storeToken,
   login,
@@ -37,6 +35,7 @@ import { useAdminDetailActions } from "./hooks/useAdminDetailActions";
 import { useAdminAuditActions } from "./hooks/useAdminAuditActions";
 import { useSystemStatus } from "./hooks/useSystemStatus";
 import { useAdminDataLoader } from "./hooks/useAdminDataLoader";
+import { usePendingEnrollment } from "./hooks/usePendingEnrollment";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -47,6 +46,13 @@ export default function App() {
     ready,
     loadSystemStatus,
   } = useSystemStatus();
+
+  const {
+    completePendingEnrollmentIfNeeded,
+  } = usePendingEnrollment({
+    setError,
+  });
+
   const [rbac, setRbac] = useState(null);
   const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
   const [adminDataLoadedAt, setAdminDataLoadedAt] = useState("");
@@ -272,89 +278,6 @@ export default function App() {
 
   function handleOpenPublicCourse(courseSlug) {
     navigate(`/courses/${courseSlug}`);
-  }
-
-  function getPendingEnrollmentSlug() {
-    try {
-      return localStorage.getItem("obrportal_pending_enrollment_slug") || "";
-    } catch {
-      return "";
-    }
-  }
-
-  function clearPendingEnrollmentSlug() {
-    try {
-      localStorage.removeItem("obrportal_pending_enrollment_slug");
-    } catch {
-      // localStorage может быть недоступен в приватном режиме или тестовой среде
-    }
-  }
-
-  function setAccountEnrollmentNotice(notice) {
-    try {
-      sessionStorage.setItem("obrportal_account_notice", JSON.stringify(notice));
-    } catch {
-      // sessionStorage может быть недоступен в приватном режиме или тестовой среде
-    }
-  }
-
-  async function completePendingEnrollmentIfNeeded() {
-    const pendingSlug = getPendingEnrollmentSlug();
-
-    if (!pendingSlug) {
-      return null;
-    }
-
-    try {
-      const course = await getPublicCourseDetail(pendingSlug);
-      await enrollAccountCourse(course.id);
-      clearPendingEnrollmentSlug();
-      setAccountEnrollmentNotice({
-        tone: "green",
-        title: "Запись на курс",
-        message: "Вы успешно записаны на выбранную программу. Курс добавлен в личный кабинет.",
-      });
-
-      return {
-        status: "created",
-        slug: pendingSlug,
-      };
-    } catch (err) {
-      if (err.status === 409) {
-        clearPendingEnrollmentSlug();
-        setAccountEnrollmentNotice({
-          tone: "green",
-          title: "Курс уже назначен",
-          message: "Вы уже были записаны на выбранную программу. Курс доступен в личном кабинете.",
-        });
-
-        return {
-          status: "already_enrolled",
-          slug: pendingSlug,
-        };
-      }
-
-      if (err.status === 404) {
-        clearPendingEnrollmentSlug();
-        setAccountEnrollmentNotice({
-          tone: "red",
-          title: "Курс не найден",
-          message: "Выбранная программа больше не опубликована или была отключена администратором.",
-        });
-
-        return {
-          status: "not_found",
-          slug: pendingSlug,
-        };
-      }
-
-      setError(`${err.status || ""} ${err.message || "Не удалось автоматически записать на выбранную программу."}`.trim());
-
-      return {
-        status: "failed",
-        slug: pendingSlug,
-      };
-    }
   }
 
   async function handleRegister(payload) {
