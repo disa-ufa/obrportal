@@ -15,10 +15,8 @@ import {
   getAdminRoles,
   getAdminUsers,
   getCurrentUser,
-  getHealth,
   getOrgLearningGroups,
   getPublicCourseDetail,
-  getReady,
   getStoredToken,
   storeToken,
   login,
@@ -47,13 +45,17 @@ import { useAdminSelections } from "./hooks/useAdminSelections";
 import { useAdminEntityActions } from "./hooks/useAdminEntityActions";
 import { useAdminDetailActions } from "./hooks/useAdminDetailActions";
 import { useAdminAuditActions } from "./hooks/useAdminAuditActions";
+import { useSystemStatus } from "./hooks/useSystemStatus";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
   const [password, setPassword] = useState("Admin123Local2026!");
   const [user, setUser] = useState(null);
-  const [health, setHealth] = useState(null);
-  const [ready, setReady] = useState(null);
+  const {
+    health,
+    ready,
+    loadSystemStatus,
+  } = useSystemStatus();
   const [rbac, setRbac] = useState(null);
   const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
   const [adminDataLoadedAt, setAdminDataLoadedAt] = useState("");
@@ -211,20 +213,6 @@ export default function App() {
     const metaDescriptionTag = ensureMetaDescriptionTag();
     metaDescriptionTag.setAttribute("content", meta.description);
   }, [location.pathname]);
-
-  async function loadSystemStatus() {
-    try {
-      const [healthData, readyData] = await Promise.all([
-        getHealth(),
-        getReady(),
-      ]);
-
-      setHealth(healthData);
-      setReady(readyData);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
 
   async function loadAdminData() {
     setAdminLoading(true);
