@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { PublicShell } from "./components/layout/PublicShell";
-import { getAdminPageFromPathname, getAdminPathForPage, isAdminPathname } from "./utils/adminRoutes";
+import { getAdminPageFromPathname, isAdminPathname } from "./utils/adminRoutes";
 import {
   buildPublicMeta,
   ensureMetaDescriptionTag,
   getPublicPageFromPathname,
-  PUBLIC_ROUTE_MAP,
 } from "./utils/publicRoutes";
 import {
   EMPTY_ADMIN_DATA,
@@ -28,6 +27,7 @@ import { useSystemStatus } from "./hooks/useSystemStatus";
 import { useAdminDataLoader } from "./hooks/useAdminDataLoader";
 import { usePendingEnrollment } from "./hooks/usePendingEnrollment";
 import { useAuthFlow } from "./hooks/useAuthFlow";
+import { useAppNavigation } from "./hooks/useAppNavigation";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -54,6 +54,14 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
   const [initializingAuth, setInitializingAuth] = useState(true);
+
+  const {
+    handleNavigatePublicPage,
+    handleNavigateAdminPage,
+    handleOpenPublicCourse,
+  } = useAppNavigation({
+    setCurrentPage,
+  });
 
   const {
     loadAdminData,
@@ -220,7 +228,6 @@ export default function App() {
     clearSelectedOrganization,
   });
 
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
@@ -240,26 +247,6 @@ export default function App() {
     loadSystemStatus();
     bootstrapAuthState();
   }, []);
-
-  function handleNavigatePublicPage(pageKey) {
-    if (pageKey === "dashboard" || pageKey === "admin") {
-      navigate("/admin");
-      return;
-    }
-
-    navigate(PUBLIC_ROUTE_MAP[pageKey] || "/");
-  }
-
-  function handleNavigateAdminPage(pageKey) {
-    const path = getAdminPathForPage(pageKey);
-
-    setCurrentPage(pageKey);
-    navigate(path);
-  }
-
-  function handleOpenPublicCourse(courseSlug) {
-    navigate(`/courses/${courseSlug}`);
-  }
 
   const isAdminRoute = isAdminPathname(location.pathname);
   const adminRoutePage = getAdminPageFromPathname(location.pathname);
