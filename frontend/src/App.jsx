@@ -47,17 +47,18 @@ export default function App() {
     loadSystemStatus,
   } = useSystemStatus();
 
+  const [rbac, setRbac] = useState(null);
+  const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
+  const [adminDataLoadedAt, setAdminDataLoadedAt] = useState("");
+  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [error, setError] = useState("");
+
   const {
     completePendingEnrollmentIfNeeded,
   } = usePendingEnrollment({
     setError,
   });
 
-  const [rbac, setRbac] = useState(null);
-  const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
-  const [adminDataLoadedAt, setAdminDataLoadedAt] = useState("");
-  const [currentPage, setCurrentPage] = useState("dashboard");
-  const [error, setError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
   const [initializingAuth, setInitializingAuth] = useState(true);
