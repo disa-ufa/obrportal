@@ -2,17 +2,12 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { PublicShell } from "./components/layout/PublicShell";
-import { getAdminPageFromPathname, isAdminPathname } from "./utils/adminRoutes";
-import {
-  getPublicPageFromPathname,
-} from "./utils/publicRoutes";
 import {
   EMPTY_ADMIN_DATA,
   getNowLabel,
   sortOrganizations,
   sortRoles,
   sortUsers,
-  userHasRole,
 } from "./utils/adminState";
 import { AdminNotFoundPage } from "./pages/AdminNotFoundPage";
 import { PublicRoutes } from "./routes/PublicRoutes";
@@ -27,6 +22,7 @@ import { usePendingEnrollment } from "./hooks/usePendingEnrollment";
 import { useAuthFlow } from "./hooks/useAuthFlow";
 import { useAppNavigation } from "./hooks/useAppNavigation";
 import { usePageMeta } from "./hooks/usePageMeta";
+import { useAppRouteState } from "./hooks/useAppRouteState";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -234,9 +230,21 @@ export default function App() {
     bootstrapAuthState();
   }, []);
 
-  const isAdminRoute = isAdminPathname(location.pathname);
-  const adminRoutePage = getAdminPageFromPathname(location.pathname);
-  const isUnknownAdminRoute = isAdminRoute && !adminRoutePage;
+  const {
+    isAdminRoute,
+    adminRoutePage,
+    isUnknownAdminRoute,
+    activeAdminPage,
+    currentPublicPage,
+    isAdmin,
+    authBadgeText,
+    authBadgeTone,
+  } = useAppRouteState({
+    pathname: location.pathname,
+    currentPage,
+    user,
+    initializingAuth,
+  });
 
   const adminPageRendererProps = {
     locationPathname: location.pathname,
@@ -316,21 +324,6 @@ export default function App() {
   ) : (
     <AdminPageRenderer {...adminPageRendererProps} />
   );
-
-  const activeAdminPage = adminRoutePage || currentPage;
-  const currentPublicPage = getPublicPageFromPathname(location.pathname);
-  const isAdmin = userHasRole(user, "admin");
-  const authBadgeText = initializingAuth
-    ? "initializing"
-    : user
-      ? "authenticated"
-      : "guest";
-
-  const authBadgeTone = initializingAuth
-    ? "amber"
-    : user
-      ? "blue"
-      : "gray";
 
   if (isAdminRoute) {
     if (initializingAuth) {
