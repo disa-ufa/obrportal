@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { PublicShell } from "./components/layout/PublicShell";
 import { getAdminPageFromPathname, isAdminPathname } from "./utils/adminRoutes";
 import {
-  buildPublicMeta,
-  ensureMetaDescriptionTag,
   getPublicPageFromPathname,
 } from "./utils/publicRoutes";
 import {
@@ -28,6 +26,7 @@ import { useAdminDataLoader } from "./hooks/useAdminDataLoader";
 import { usePendingEnrollment } from "./hooks/usePendingEnrollment";
 import { useAuthFlow } from "./hooks/useAuthFlow";
 import { useAppNavigation } from "./hooks/useAppNavigation";
+import { usePageMeta } from "./hooks/usePageMeta";
 
 export default function App() {
   const [email, setEmail] = useState("admin@obrportal.local");
@@ -228,20 +227,7 @@ export default function App() {
     clearSelectedOrganization,
   });
 
-  const location = useLocation();
-
-  useEffect(() => {
-    const meta = isAdminPathname(location.pathname)
-      ? {
-          title: "Административный контур — ObrPortal",
-          description: "Административный контур образовательной платформы с управлением пользователями, организациями, группами и RBAC.",
-        }
-      : buildPublicMeta(location.pathname);
-
-    document.title = meta.title;
-    const metaDescriptionTag = ensureMetaDescriptionTag();
-    metaDescriptionTag.setAttribute("content", meta.description);
-  }, [location.pathname]);
+  const location = usePageMeta();
 
   useEffect(() => {
     loadSystemStatus();
