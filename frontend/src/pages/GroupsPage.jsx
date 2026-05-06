@@ -52,6 +52,90 @@ const GROUP_STATUS_FILTERS = [
   { value: "inactive", label: "Неактивные" },
 ];
 
+const GROUP_API_ERROR_MESSAGES = {
+  saveFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443.",
+  createFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443.",
+  updateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443.",
+  deleteFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443.",
+  membersLoadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432 \u0433\u0440\u0443\u043f\u043f\u044b.",
+  addMemberFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430 \u0432 \u0433\u0440\u0443\u043f\u043f\u0443.",
+  removeMemberFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430 \u0438\u0437 \u0433\u0440\u0443\u043f\u043f\u044b.",
+  accessDenied: "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432 \u0434\u043b\u044f \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0443\u0447\u0435\u0431\u043d\u044b\u043c\u0438 \u0433\u0440\u0443\u043f\u043f\u0430\u043c\u0438.",
+  groupNotFound: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430.",
+  organizationNotFound: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f \u0434\u043b\u044f \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u044b \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430.",
+  userNotFound: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
+  memberNotFound: "\u0423\u0447\u0430\u0441\u0442\u043d\u0438\u043a \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u044b \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
+  duplicateName: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u0441 \u0442\u0430\u043a\u0438\u043c \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435\u043c \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442 \u0432 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0439 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438.",
+  duplicateCode: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u0441 \u0442\u0430\u043a\u0438\u043c \u043a\u043e\u0434\u043e\u043c \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.",
+  duplicateMember: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u0443\u0436\u0435 \u0441\u043e\u0441\u0442\u043e\u0438\u0442 \u0432 \u044d\u0442\u043e\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u0435.",
+  duplicate: "\u0422\u0430\u043a\u0430\u044f \u0443\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.",
+  deleteHasRelations: "\u041d\u0435\u043b\u044c\u0437\u044f \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u0443\u044e \u0433\u0440\u0443\u043f\u043f\u0443, \u0442\u0430\u043a \u043a\u0430\u043a \u043e\u043d\u0430 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0432 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u0445 \u0438\u043b\u0438 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0445 \u0434\u0430\u043d\u043d\u044b\u0445.",
+  invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u044b.",
+};
+
+function getApiErrorMessage(err) {
+  const rawMessage = err?.detail || err?.message || "";
+
+  if (Array.isArray(rawMessage)) {
+    return rawMessage
+      .map((item) => item?.msg || item?.message || JSON.stringify(item))
+      .join("; ");
+  }
+
+  if (rawMessage && typeof rawMessage === "object") {
+    return rawMessage.detail || rawMessage.message || JSON.stringify(rawMessage);
+  }
+
+  return `${rawMessage || ""}`.trim();
+}
+
+function formatGroupApiError(err, fallback) {
+  const status = err?.status ? `${err.status}` : "";
+  const message = getApiErrorMessage(err);
+  const normalizedMessage = message.toLowerCase();
+
+  let readableMessage = fallback;
+
+  if (status === "403") {
+    readableMessage = GROUP_API_ERROR_MESSAGES.accessDenied;
+  } else if (status === "404" && normalizedMessage.includes("organization")) {
+    readableMessage = GROUP_API_ERROR_MESSAGES.organizationNotFound;
+  } else if (status === "404" && normalizedMessage.includes("user")) {
+    readableMessage = GROUP_API_ERROR_MESSAGES.userNotFound;
+  } else if (status === "404" && normalizedMessage.includes("member")) {
+    readableMessage = GROUP_API_ERROR_MESSAGES.memberNotFound;
+  } else if (status === "404") {
+    readableMessage = GROUP_API_ERROR_MESSAGES.groupNotFound;
+  } else if (status === "409" && normalizedMessage.includes("name")) {
+    readableMessage = GROUP_API_ERROR_MESSAGES.duplicateName;
+  } else if (status === "409" && normalizedMessage.includes("code")) {
+    readableMessage = GROUP_API_ERROR_MESSAGES.duplicateCode;
+  } else if (status === "409" && normalizedMessage.includes("member")) {
+    readableMessage = GROUP_API_ERROR_MESSAGES.duplicateMember;
+  } else if (status === "409") {
+    readableMessage = GROUP_API_ERROR_MESSAGES.duplicate;
+  } else if (
+    status === "400" &&
+    (
+      normalizedMessage.includes("enrollment") ||
+      normalizedMessage.includes("document") ||
+      normalizedMessage.includes("relation") ||
+      normalizedMessage.includes("foreign key") ||
+      normalizedMessage.includes("used")
+    )
+  ) {
+    readableMessage = GROUP_API_ERROR_MESSAGES.deleteHasRelations;
+  } else if (status === "422") {
+    readableMessage = GROUP_API_ERROR_MESSAGES.invalidRequest;
+  } else if (message) {
+    readableMessage = message;
+  }
+
+  return `${status} ${readableMessage}`.trim();
+}
+
+
+
 function buildGroupEnrollmentsHref(groupId) {
   return buildEnrollmentsPath({ learning_group_id: groupId });
 }
@@ -175,6 +259,7 @@ function LearningGroupForm({
   initialValues = EMPTY_GROUP,
   submitLabel = "Сохранить",
   successMessage = "Группа сохранена.",
+  errorMessage = GROUP_API_ERROR_MESSAGES.saveFailed,
   onSubmit,
   onCancel,
   onSuccess,
@@ -214,7 +299,7 @@ function LearningGroupForm({
         onSuccess(result);
       }
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`.trim());
+      setError(formatGroupApiError(err, errorMessage));
     } finally {
       setLoading(false);
     }
@@ -351,7 +436,7 @@ function LearningGroupMembersPanel({ groupDetail }) {
       setUsers(Array.isArray(loadedUsers) ? loadedUsers : []);
       setSelectedUserId("");
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`.trim());
+      setError(formatGroupApiError(err, GROUP_API_ERROR_MESSAGES.membersLoadFailed));
     } finally {
       setLoading(false);
     }
@@ -399,7 +484,7 @@ function LearningGroupMembersPanel({ groupDetail }) {
       setSelectedUserId("");
       setSuccess("Участник добавлен в группу.");
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`.trim());
+      setError(formatGroupApiError(err, GROUP_API_ERROR_MESSAGES.addMemberFailed));
     } finally {
       setActionLoading("");
     }
@@ -423,7 +508,7 @@ function LearningGroupMembersPanel({ groupDetail }) {
       setMembers((current) => current.filter((member) => member.user_id !== userId));
       setSuccess("Участник удалён из группы.");
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`.trim());
+      setError(formatGroupApiError(err, GROUP_API_ERROR_MESSAGES.removeMemberFailed));
     } finally {
       setActionLoading("");
     }
@@ -614,7 +699,7 @@ function LearningGroupDetailPanel({
       await onDeleteGroup(groupDetail.id);
       setIsEditing(false);
     } catch (err) {
-      setActionError(`${err.status || ""} ${err.message}`.trim());
+      setActionError(formatGroupApiError(err, GROUP_API_ERROR_MESSAGES.deleteFailed));
     } finally {
       setDeleting(false);
     }
@@ -715,6 +800,7 @@ function LearningGroupDetailPanel({
               initialValues={groupDetail}
               submitLabel="Сохранить изменения"
               successMessage="Группа обновлена."
+              errorMessage={GROUP_API_ERROR_MESSAGES.updateFailed}
               onSubmit={(payload) => onUpdateGroup(groupDetail.id, payload)}
               onCancel={() => setIsEditing(false)}
               onSuccess={() => setIsEditing(false)}
@@ -878,6 +964,7 @@ export function GroupsPage({
                   organizations={organizations}
                   submitLabel="Создать группу"
                   successMessage="Группа создана."
+                  errorMessage={GROUP_API_ERROR_MESSAGES.createFailed}
                   onSubmit={onCreateGroup}
                   onCancel={() => setShowCreateForm(false)}
                   onSuccess={() => setShowCreateForm(false)}
