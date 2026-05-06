@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { UserDetailPanel } from "../components/admin/UserDetailPanel";
-import { UserForm } from "../components/admin/UserForm";
+import {
+  UserForm,
+  USER_API_ERROR_MESSAGES,
+} from "../components/admin/UserForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
@@ -362,6 +365,7 @@ export function UsersPage({
             mode="create"
             submitLabel="Создать пользователя"
             successMessage="Пользователь создан. Теперь можно назначить ему роль."
+            errorMessage={USER_API_ERROR_MESSAGES.createFailed}
             onSubmit={onCreateUser}
             onCancel={() => setIsCreating(false)}
             onSuccess={() => setIsCreating(false)}

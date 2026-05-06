@@ -4,6 +4,92 @@ import { Alert } from "../ui/Alert";
 import { AdminFormTextInput as TextInput } from "./AdminTextInput";
 import { AdminFormField as Field } from "./AdminFormField";
 
+export const USER_API_ERROR_MESSAGES = {
+  saveFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+  createFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+  updateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+  passwordResetFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043f\u0430\u0440\u043e\u043b\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+  activateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+  deactivateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0434\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+  assignRoleFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0438\u0442\u044c \u0440\u043e\u043b\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044e.",
+  removeRoleFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043d\u044f\u0442\u044c \u0440\u043e\u043b\u044c \u0441 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+  loadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+  accessDenied: "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432 \u0434\u043b\u044f \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f\u043c\u0438.",
+  userNotFound: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
+  roleNotFound: "\u0420\u043e\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430.",
+  organizationNotFound: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430.",
+  roleAssignmentNotFound: "\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u0440\u043e\u043b\u0438 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u043e.",
+  duplicateEmailOrPhone: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u0441 \u0442\u0430\u043a\u0438\u043c email \u0438\u043b\u0438 \u0442\u0435\u043b\u0435\u0444\u043e\u043d\u043e\u043c \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.",
+  duplicatePhone: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u0441 \u0442\u0430\u043a\u0438\u043c \u0442\u0435\u043b\u0435\u0444\u043e\u043d\u043e\u043c \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.",
+  duplicateRoleAssignment: "\u0422\u0430\u043a\u0430\u044f \u0440\u043e\u043b\u044c \u0443\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0430 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044e.",
+  lastAdminDeactivate: "\u041d\u0435\u043b\u044c\u0437\u044f \u0434\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0435\u0433\u043e \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0433\u043e \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430.",
+  lastAdminRoleRemove: "\u041d\u0435\u043b\u044c\u0437\u044f \u0441\u043d\u044f\u0442\u044c \u0440\u043e\u043b\u044c \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430 \u0443 \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0435\u0433\u043e \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0433\u043e \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430.",
+  noFields: "\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+  invalidPassword: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u043f\u0430\u0440\u043e\u043b\u044c: \u043e\u043d \u0434\u043e\u043b\u0436\u0435\u043d \u0441\u043e\u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u043e\u0432\u0430\u0442\u044c \u0442\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u044f\u043c \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u0438.",
+  invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f.",
+};
+
+function getApiErrorMessage(err) {
+  const rawMessage = err?.detail || err?.message || "";
+
+  if (Array.isArray(rawMessage)) {
+    return rawMessage
+      .map((item) => item?.msg || item?.message || JSON.stringify(item))
+      .join("; ");
+  }
+
+  if (rawMessage && typeof rawMessage === "object") {
+    return rawMessage.detail || rawMessage.message || JSON.stringify(rawMessage);
+  }
+
+  return `${rawMessage || ""}`.trim();
+}
+
+export function formatUserApiError(err, fallback) {
+  const status = err?.status ? `${err.status}` : "";
+  const message = getApiErrorMessage(err);
+  const normalizedMessage = message.toLowerCase();
+
+  let readableMessage = fallback;
+
+  if (status === "403") {
+    readableMessage = USER_API_ERROR_MESSAGES.accessDenied;
+  } else if (status === "404" && normalizedMessage.includes("role assignment")) {
+    readableMessage = USER_API_ERROR_MESSAGES.roleAssignmentNotFound;
+  } else if (status === "404" && normalizedMessage.includes("role")) {
+    readableMessage = USER_API_ERROR_MESSAGES.roleNotFound;
+  } else if (status === "404" && normalizedMessage.includes("organization")) {
+    readableMessage = USER_API_ERROR_MESSAGES.organizationNotFound;
+  } else if (status === "404") {
+    readableMessage = USER_API_ERROR_MESSAGES.userNotFound;
+  } else if (status === "409" && normalizedMessage.includes("role assignment")) {
+    readableMessage = USER_API_ERROR_MESSAGES.duplicateRoleAssignment;
+  } else if (status === "409" && normalizedMessage.includes("phone")) {
+    readableMessage = USER_API_ERROR_MESSAGES.duplicatePhone;
+  } else if (status === "409") {
+    readableMessage = USER_API_ERROR_MESSAGES.duplicateEmailOrPhone;
+  } else if (status === "400" && normalizedMessage.includes("last active admin")) {
+    readableMessage = USER_API_ERROR_MESSAGES.lastAdminDeactivate;
+  } else if (status === "400" && normalizedMessage.includes("last admin role")) {
+    readableMessage = USER_API_ERROR_MESSAGES.lastAdminRoleRemove;
+  } else if (status === "400" && normalizedMessage.includes("no fields")) {
+    readableMessage = USER_API_ERROR_MESSAGES.noFields;
+  } else if (
+    (status === "400" || status === "422") &&
+    normalizedMessage.includes("password")
+  ) {
+    readableMessage = USER_API_ERROR_MESSAGES.invalidPassword;
+  } else if (status === "422") {
+    readableMessage = USER_API_ERROR_MESSAGES.invalidRequest;
+  } else if (message) {
+    readableMessage = message;
+  }
+
+  return `${status} ${readableMessage}`.trim();
+}
+
+
+
 function normalizeInitialValues(initialValues, mode) {
   return {
     email: initialValues?.email || "",
@@ -49,6 +135,7 @@ export function UserForm({
   initialValues,
   submitLabel = "Сохранить",
   successMessage = "Пользователь сохранён.",
+  errorMessage = USER_API_ERROR_MESSAGES.saveFailed,
   onSubmit,
   onCancel,
   onSuccess,
@@ -88,7 +175,7 @@ export function UserForm({
         onSuccess(result);
       }
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`.trim());
+      setError(formatUserApiError(err, errorMessage));
     } finally {
       setLoading(false);
     }

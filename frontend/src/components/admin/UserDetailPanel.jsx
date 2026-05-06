@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
-import { UserForm } from "./UserForm";
+import {
+  UserForm,
+  USER_API_ERROR_MESSAGES,
+  formatUserApiError,
+} from "./UserForm";
 import { ActionButton } from "../ui/ActionButton";
 import { Alert } from "../ui/Alert";
 import { DetailField, formatDetailDate } from "../ui/DetailField";
@@ -69,7 +73,7 @@ function UserPasswordResetForm({ onReset }) {
       setConfirmation("");
       setSuccess("Пароль пользователя обновлён.");
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`.trim());
+      setError(formatUserApiError(err, USER_API_ERROR_MESSAGES.passwordResetFailed));
     } finally {
       setLoading(false);
     }
@@ -174,7 +178,7 @@ function UserRoleAssignmentForm({
 
       setSuccess("Роль назначена пользователю.");
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`.trim());
+      setError(formatUserApiError(err, USER_API_ERROR_MESSAGES.assignRoleFailed));
     } finally {
       setLoading(false);
     }
@@ -312,7 +316,7 @@ export function UserDetailPanel({
     try {
       await onActivateUser(userDetail.id);
     } catch (err) {
-      setActionError(`${err.status || ""} ${err.message}`.trim());
+      setActionError(formatUserApiError(err, USER_API_ERROR_MESSAGES.activateFailed));
     } finally {
       setActionLoading(false);
     }
@@ -325,7 +329,7 @@ export function UserDetailPanel({
     try {
       await onDeactivateUser(userDetail.id);
     } catch (err) {
-      setActionError(`${err.status || ""} ${err.message}`.trim());
+      setActionError(formatUserApiError(err, USER_API_ERROR_MESSAGES.deactivateFailed));
     } finally {
       setActionLoading(false);
     }
@@ -342,7 +346,7 @@ export function UserDetailPanel({
     try {
       await onRemoveUserRole(userDetail.id, userRoleId);
     } catch (err) {
-      setActionError(`${err.status || ""} ${err.message}`.trim());
+      setActionError(formatUserApiError(err, USER_API_ERROR_MESSAGES.removeRoleFailed));
     } finally {
       setRemovingRoleId("");
     }
@@ -433,6 +437,7 @@ export function UserDetailPanel({
               initialValues={userDetail}
               submitLabel="Сохранить изменения"
               successMessage="Пользователь обновлён."
+              errorMessage={USER_API_ERROR_MESSAGES.updateFailed}
               onSubmit={(payload) => onUpdateUser(userDetail.id, payload)}
               onCancel={() => setIsEditing(false)}
               onSuccess={() => setIsEditing(false)}
