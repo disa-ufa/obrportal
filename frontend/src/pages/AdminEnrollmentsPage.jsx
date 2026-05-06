@@ -56,8 +56,81 @@ const BUTTON_LIGHT_CLASS =
 const BUTTON_RED_CLASS =
   "rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60";
 
+const ENROLLMENT_API_ERROR_MESSAGES = {
+  loadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f.",
+  createFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
+  bulkCreateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u043c\u0430\u0441\u0441\u043e\u0432\u043e\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
+  updateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
+  completeFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435.",
+  deleteFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
+  accessDenied: "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432 \u0434\u043b\u044f \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u043c\u0438.",
+  notFound: "\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u0438\u043b\u0438 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0439 \u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
+  duplicate: "\u0422\u0430\u043a\u043e\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442 \u0434\u043b\u044f \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0433\u043e \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0438 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b.",
+  invalidStatus: "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f.",
+  noFields: "\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f.",
+  groupNotFound: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430.",
+  groupEmpty: "\u0412 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u0435 \u043d\u0435\u0442 \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432.",
+  groupWrongOrganization: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u043e\u0442\u043d\u043e\u0441\u0438\u0442\u0441\u044f \u043a \u0434\u0440\u0443\u0433\u043e\u0439 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438.",
+  userNotInGroup: "\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u0441\u043e\u0441\u0442\u043e\u0438\u0442 \u0432 \u0443\u043a\u0430\u0437\u0430\u043d\u043d\u043e\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u0435.",
+  deleteHasDocuments: "\u041d\u0435\u043b\u044c\u0437\u044f \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435, \u043a \u043a\u043e\u0442\u043e\u0440\u043e\u043c\u0443 \u0443\u0436\u0435 \u043f\u0440\u0438\u0432\u044f\u0437\u0430\u043d\u044b \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b.",
+  invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f.",
+};
+
+
 function getStatusLabel(value) {
   return ENROLLMENT_STATUSES.find((item) => item.value === value)?.label || value;
+}
+
+function getApiErrorMessage(err) {
+  const rawMessage = err?.detail || err?.message || "";
+
+  if (Array.isArray(rawMessage)) {
+    return rawMessage
+      .map((item) => item?.msg || item?.message || JSON.stringify(item))
+      .join("; ");
+  }
+
+  if (rawMessage && typeof rawMessage === "object") {
+    return rawMessage.detail || rawMessage.message || JSON.stringify(rawMessage);
+  }
+
+  return `${rawMessage || ""}`.trim();
+}
+
+function formatEnrollmentApiError(err, fallback) {
+  const status = err?.status ? `${err.status}` : "";
+  const message = getApiErrorMessage(err);
+  const normalizedMessage = message.toLowerCase();
+
+  let readableMessage = fallback;
+
+  if (status === "403") {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.accessDenied;
+  } else if (status === "404") {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.notFound;
+  } else if (status === "409") {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.duplicate;
+  } else if (status === "422" && normalizedMessage.includes("status")) {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.invalidStatus;
+  } else if (status === "422") {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.invalidRequest;
+  } else if (status === "400" && normalizedMessage.includes("no fields")) {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.noFields;
+  } else if (status === "400" && normalizedMessage.includes("no members")) {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.groupEmpty;
+  } else if (status === "400" && normalizedMessage.includes("another organization")) {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.groupWrongOrganization;
+  } else if (status === "400" && normalizedMessage.includes("not a member")) {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.userNotInGroup;
+  } else if (status === "400" && normalizedMessage.includes("documents")) {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.deleteHasDocuments;
+  } else if (normalizedMessage.includes("learning group not found")) {
+    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.groupNotFound;
+  } else if (message) {
+    readableMessage = message;
+  }
+
+  return `${status} ${readableMessage}`.trim();
 }
 
 function getEnrollmentFiltersFromSearch(search) {
@@ -550,7 +623,7 @@ export function AdminEnrollmentsPage() {
       setGroups(loadedGroups);
       setGroupMembersByGroupId(loadedGroupMembersByGroupId);
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось загрузить назначения."}`.trim());
+      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.loadFailed));
       setStatusCounts({ all: 0 });
     } finally {
       setLoading(false);
@@ -782,7 +855,7 @@ export function AdminEnrollmentsPage() {
       resetForm();
       await loadData(buildFilters());
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось создать назначение."}`.trim());
+      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.createFailed));
     } finally {
       setSaving(false);
     }
@@ -856,7 +929,7 @@ export function AdminEnrollmentsPage() {
         { replace: true }
       );
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось выполнить массовое назначение."}`.trim());
+      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.bulkCreateFailed));
     } finally {
       setBulkSaving(false);
     }
@@ -877,21 +950,23 @@ export function AdminEnrollmentsPage() {
     }
 
     try {
-      await updateAdminEnrollment(enrollment.id, {
+      setActionEnrollmentId(enrollment.id);
+      setError("");
+      setSuccessMessage("");
+
+      const updated = await updateAdminEnrollment(enrollment.id, {
         status: "completed",
       });
 
-      await loadData();
+      await loadData(buildFilters());
 
-      window.alert(
-        "Обучение завершено. Черновик документа создан."
+      setSuccessMessage(
+        `Обучение завершено: ${updated.user_email} → ${updated.course_title}. Черновик документа создан.`
       );
-    } catch (error) {
-      window.alert(
-        error instanceof Error
-          ? error.message
-          : "Не удалось завершить обучение"
-      );
+    } catch (err) {
+      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.completeFailed));
+    } finally {
+      setActionEnrollmentId("");
     }
   }
 
@@ -916,7 +991,7 @@ export function AdminEnrollmentsPage() {
       resetEditState();
       await loadData(buildFilters());
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось обновить назначение."}`.trim());
+      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.updateFailed));
     } finally {
       setActionEnrollmentId("");
     }
@@ -945,7 +1020,7 @@ export function AdminEnrollmentsPage() {
       setSuccessMessage(`Назначение удалено: ${enrollment.user_email} → ${enrollment.course_title}`);
       await loadData(buildFilters());
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось удалить назначение."}`.trim());
+      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.deleteFailed));
     } finally {
       setActionEnrollmentId("");
     }
