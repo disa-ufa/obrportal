@@ -3523,6 +3523,49 @@ def test_admin_cannot_delete_course_with_enrollment() -> None:
     assert isinstance(payload, dict)
 
 
+def test_admin_cannot_delete_course_with_document() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+
+    course = create_test_course_in_db(
+        title="Course with document delete guard",
+        description="Course should not be deleted while document exists",
+    )
+
+    document = create_test_document_record_in_db(
+        user_id=str(me_payload["id"]),
+        course_id=course["id"],
+        title="Course delete guard document",
+        document_type="Сертификат",
+        status="available",
+    )
+
+    assert document["course_id"] == course["id"]
+
+    status, payload = request_json(
+        "DELETE",
+        f'/api/v1/admin/courses/{course["id"]}',
+        token=token,
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+    assert payload["detail"] == "Cannot delete course with documents"
+
+    status, still_existing = request_json(
+        "GET",
+        f'/api/v1/admin/courses/{course["id"]}',
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(still_existing, dict)
+    assert still_existing["id"] == course["id"]
+
+
 def test_admin_course_missing_returns_404() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
