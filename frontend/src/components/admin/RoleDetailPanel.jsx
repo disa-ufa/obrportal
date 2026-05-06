@@ -5,7 +5,11 @@ import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
-import { RoleForm } from "./RoleForm";
+import {
+  RoleForm,
+  ROLE_API_ERROR_MESSAGES,
+  formatRoleApiError,
+} from "./RoleForm";
 import { AdminFormField as Field } from "./AdminFormField";
 import { AdminFormSelectInput as SelectInput } from "./AdminTextInput";
 
@@ -52,7 +56,7 @@ function RolePermissionAssignmentForm({ permissions, assignedPermissions, onAssi
       setPermissionId("");
       setSuccess("Право добавлено к роли.");
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`.trim());
+      setError(formatRoleApiError(err, ROLE_API_ERROR_MESSAGES.addPermissionFailed));
     } finally {
       setLoading(false);
     }
@@ -175,7 +179,7 @@ export function RoleDetailPanel({
     try {
       await onDeleteRole(roleDetail.id);
     } catch (err) {
-      setActionError(`${err.status || ""} ${err.message}`.trim());
+      setActionError(formatRoleApiError(err, ROLE_API_ERROR_MESSAGES.deleteFailed));
     } finally {
       setDeletingRole(false);
     }
@@ -188,7 +192,7 @@ export function RoleDetailPanel({
     try {
       await onRemovePermission(roleDetail.id, rolePermissionId);
     } catch (err) {
-      setActionError(`${err.status || ""} ${err.message}`.trim());
+      setActionError(formatRoleApiError(err, ROLE_API_ERROR_MESSAGES.removePermissionFailed));
     } finally {
       setRemovingPermissionId("");
     }
@@ -317,6 +321,7 @@ export function RoleDetailPanel({
                 initialValues={roleDetail}
                 submitLabel="Сохранить роль"
                 successMessage="Роль обновлена."
+              errorMessage={ROLE_API_ERROR_MESSAGES.updateFailed}
                 onSubmit={handleUpdateRole}
                 onCancel={() => setEditingMetadata(false)}
               />

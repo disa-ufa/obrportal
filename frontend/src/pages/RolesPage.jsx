@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { RoleDetailPanel } from "../components/admin/RoleDetailPanel";
-import { RoleForm } from "../components/admin/RoleForm";
+import {
+  RoleForm,
+  ROLE_API_ERROR_MESSAGES,
+} from "../components/admin/RoleForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
@@ -335,6 +338,7 @@ export function RolesPage({
                 <RoleForm
                   submitLabel="Создать роль"
                   successMessage="Роль создана."
+            errorMessage={ROLE_API_ERROR_MESSAGES.createFailed}
                   onSubmit={handleCreateRole}
                   onCancel={() => setShowCreateForm(false)}
                 />
