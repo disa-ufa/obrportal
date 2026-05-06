@@ -29,8 +29,86 @@ const DOCUMENT_STATUSES = [
   { value: "revoked", label: "Отозван" },
 ];
 
+const DOCUMENT_API_ERROR_MESSAGES = {
+  loadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b.",
+  createFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442.",
+  updateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442.",
+  statusChangeFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0438\u0437\u043c\u0435\u043d\u0438\u0442\u044c \u0441\u0442\u0430\u0442\u0443\u0441 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.",
+  downloadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442.",
+  deleteFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442.",
+  accessDenied: "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432 \u0434\u043b\u044f \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c\u0438.",
+  notFound: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0438\u043b\u0438 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0439 \u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
+  duplicateNumber: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441 \u0442\u0430\u043a\u0438\u043c \u043d\u043e\u043c\u0435\u0440\u043e\u043c \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.",
+  invalidStatus: "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.",
+  invalidRevocationReason: "\u041f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u043c\u043e\u0436\u043d\u043e \u0443\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0434\u043b\u044f \u043e\u0442\u043e\u0437\u0432\u0430\u043d\u043d\u044b\u0445 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432.",
+  revocationReasonRequired: "\u0414\u043b\u044f \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0443\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443.",
+  fileRequiredForPublish: "\u041d\u0435\u043b\u044c\u0437\u044f \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0431\u0435\u0437 \u0444\u0430\u0439\u043b\u0430. \u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0444\u0430\u0439\u043b.",
+  fileNotFound: "\u0424\u0430\u0439\u043b \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d \u0432 \u0445\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435.",
+  fileTypeNotAllowed: "\u041d\u0435\u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0439 \u0442\u0438\u043f \u0444\u0430\u0439\u043b\u0430. \u0420\u0430\u0437\u0440\u0435\u0448\u0435\u043d\u044b PDF, DOC, DOCX, JPG, JPEG \u0438 PNG.",
+  invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.",
+};
+
+
 function getDocumentStatusLabel(status) {
   return DOCUMENT_STATUSES.find((item) => item.value === status)?.label || status || "-";
+}
+
+function getApiErrorMessage(err) {
+  const rawMessage = err?.detail || err?.message || "";
+
+  if (Array.isArray(rawMessage)) {
+    return rawMessage
+      .map((item) => item?.msg || item?.message || JSON.stringify(item))
+      .join("; ");
+  }
+
+  if (rawMessage && typeof rawMessage === "object") {
+    return rawMessage.detail || rawMessage.message || JSON.stringify(rawMessage);
+  }
+
+  return `${rawMessage || ""}`.trim();
+}
+
+function formatDocumentApiError(err, fallback) {
+  const status = err?.status ? `${err.status}` : "";
+  const message = getApiErrorMessage(err);
+  const normalizedMessage = message.toLowerCase();
+
+  let readableMessage = fallback;
+
+  if (status === "403") {
+    readableMessage = DOCUMENT_API_ERROR_MESSAGES.accessDenied;
+  } else if (status === "404") {
+    readableMessage = normalizedMessage.includes("file")
+      ? DOCUMENT_API_ERROR_MESSAGES.fileNotFound
+      : DOCUMENT_API_ERROR_MESSAGES.notFound;
+  } else if (status === "409" && normalizedMessage.includes("number")) {
+    readableMessage = DOCUMENT_API_ERROR_MESSAGES.duplicateNumber;
+  } else if (status === "422" && normalizedMessage.includes("status")) {
+    readableMessage = DOCUMENT_API_ERROR_MESSAGES.invalidStatus;
+  } else if (
+    normalizedMessage.includes("revocation reason is allowed only for revoked documents")
+  ) {
+    readableMessage = DOCUMENT_API_ERROR_MESSAGES.invalidRevocationReason;
+  } else if (
+    status === "422" &&
+    normalizedMessage.includes("revocation") &&
+    normalizedMessage.includes("reason")
+  ) {
+    readableMessage = DOCUMENT_API_ERROR_MESSAGES.revocationReasonRequired;
+  } else if (
+    normalizedMessage.includes("extension") ||
+    normalizedMessage.includes("file type") ||
+    normalizedMessage.includes("allowed")
+  ) {
+    readableMessage = DOCUMENT_API_ERROR_MESSAGES.fileTypeNotAllowed;
+  } else if (status === "422") {
+    readableMessage = DOCUMENT_API_ERROR_MESSAGES.invalidRequest;
+  } else if (message) {
+    readableMessage = message;
+  }
+
+  return `${status} ${readableMessage}`.trim();
 }
 
 function getDocumentStatusTone(status) {
@@ -466,7 +544,7 @@ export function DocumentsPage() {
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось загрузить документы."}`.trim());
+      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.loadFailed));
     } finally {
       setLoading(false);
     }
@@ -634,7 +712,7 @@ export function DocumentsPage() {
       resetForm();
       await loadData(buildDocumentFilters());
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось создать документ."}`.trim());
+      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.createFailed));
     } finally {
       setSaving(false);
     }
@@ -698,7 +776,7 @@ export function DocumentsPage() {
       resetEditState();
       await loadData(buildDocumentFilters());
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось обновить документ."}`.trim());
+      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.updateFailed));
     } finally {
       setEditSavingId("");
     }
@@ -746,7 +824,7 @@ export function DocumentsPage() {
       );
       await loadData(buildDocumentFilters());
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось изменить статус документа."}`.trim());
+      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.statusChangeFailed));
     } finally {
       setStatusSavingKey("");
     }
@@ -765,7 +843,7 @@ export function DocumentsPage() {
 
       await downloadAdminDocument(documentItem.id);
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось скачать документ."}`.trim());
+      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.downloadFailed));
     } finally {
       setDownloadSavingId("");
     }
@@ -794,7 +872,7 @@ export function DocumentsPage() {
       setSuccessMessage(`Документ удалён: ${documentItem.document_number}`);
       await loadData(buildDocumentFilters());
     } catch (err) {
-      setError(`${err.status || ""} ${err.message || "Не удалось удалить документ."}`.trim());
+      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.deleteFailed));
     } finally {
       setDeleteSavingId("");
     }
