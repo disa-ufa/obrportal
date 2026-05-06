@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { OrganizationForm } from "./OrganizationForm";
+import {
+  OrganizationForm,
+  ORGANIZATION_API_ERROR_MESSAGES,
+  formatOrganizationApiError,
+} from "./OrganizationForm";
 import { ActionButton } from "../ui/ActionButton";
 import { Alert } from "../ui/Alert";
 import { DetailField, formatDetailDate } from "../ui/DetailField";
@@ -41,7 +45,7 @@ export function OrganizationDetailPanel({
       await onDeleteOrganization(organizationDetail.id);
       setIsEditing(false);
     } catch (err) {
-      setActionError(`${err.status || ""} ${err.message}`.trim());
+      setActionError(formatOrganizationApiError(err, ORGANIZATION_API_ERROR_MESSAGES.deleteFailed));
     } finally {
       setDeleting(false);
     }
@@ -121,6 +125,7 @@ export function OrganizationDetailPanel({
               initialValues={organizationDetail}
               submitLabel="Сохранить изменения"
               successMessage="Организация обновлена."
+              errorMessage={ORGANIZATION_API_ERROR_MESSAGES.updateFailed}
               onSubmit={(payload) => onUpdateOrganization(organizationDetail.id, payload)}
               onCancel={() => setIsEditing(false)}
               onSuccess={() => setIsEditing(false)}

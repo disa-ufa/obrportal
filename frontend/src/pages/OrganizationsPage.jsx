@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { OrganizationDetailPanel } from "../components/admin/OrganizationDetailPanel";
-import { OrganizationForm } from "../components/admin/OrganizationForm";
+import {
+  OrganizationForm,
+  ORGANIZATION_API_ERROR_MESSAGES,
+} from "../components/admin/OrganizationForm";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
@@ -215,6 +218,7 @@ export function OrganizationsPage({
                 <OrganizationForm
                   submitLabel="Создать организацию"
                   successMessage="Организация создана."
+                  errorMessage={ORGANIZATION_API_ERROR_MESSAGES.createFailed}
                   onSubmit={onCreateOrganization}
                   onCancel={() => setShowCreateForm(false)}
                   onSuccess={() => setShowCreateForm(false)}
