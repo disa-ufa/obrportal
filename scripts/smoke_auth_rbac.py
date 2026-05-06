@@ -417,6 +417,129 @@ def main() -> int:
     assert isinstance(missing_admin_course, dict)
     checks.append("admin missing course returns 404")
 
+    course_crud_slug = f"smoke-course-crud-{uuid4().hex[:12]}"
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        body={
+            "slug": course_crud_slug,
+            "title": "Smoke CRUD Course",
+            "description": "Smoke course for admin CRUD coverage",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Certificate",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin course create")
+    assert isinstance(created_course, dict)
+    assert created_course["id"]
+    assert created_course["slug"] == course_crud_slug
+    assert created_course["title"] == "Smoke CRUD Course"
+    assert created_course["hours"] == 72
+    assert created_course["is_active"] is True
+    course_crud_id = str(created_course["id"])
+    checks.append("admin course create ok")
+
+    status, duplicate_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        body={
+            "slug": course_crud_slug,
+            "title": "Smoke Duplicate CRUD Course",
+            "description": "Duplicate smoke course",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Certificate",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 409, "admin duplicate course create")
+    assert isinstance(duplicate_course, dict)
+    checks.append("admin duplicate course create returns 409")
+
+    status, course_detail = request_json(
+        "GET",
+        f"/api/v1/admin/courses/{course_crud_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course detail")
+    assert isinstance(course_detail, dict)
+    assert course_detail["id"] == course_crud_id
+    assert course_detail["slug"] == course_crud_slug
+    checks.append("admin course detail ok")
+
+    updated_course_slug = f"{course_crud_slug}-updated"
+    status, updated_course = request_json(
+        "PATCH",
+        f"/api/v1/admin/courses/{course_crud_id}",
+        body={
+            "slug": updated_course_slug,
+            "title": "Smoke CRUD Course Updated",
+            "description": None,
+            "hours": 96,
+            "format": "mixed",
+            "document_type": "Diploma",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course update")
+    assert isinstance(updated_course, dict)
+    assert updated_course["id"] == course_crud_id
+    assert updated_course["slug"] == updated_course_slug
+    assert updated_course["title"] == "Smoke CRUD Course Updated"
+    assert updated_course["description"] is None
+    assert updated_course["hours"] == 96
+    assert updated_course["format"] == "mixed"
+    assert updated_course["document_type"] == "Diploma"
+    checks.append("admin course update ok")
+
+    status, deactivated_course = request_json(
+        "POST",
+        f"/api/v1/admin/courses/{course_crud_id}/deactivate",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course deactivate")
+    assert isinstance(deactivated_course, dict)
+    assert deactivated_course["id"] == course_crud_id
+    assert deactivated_course["is_active"] is False
+    checks.append("admin course deactivate ok")
+
+    status, activated_course = request_json(
+        "POST",
+        f"/api/v1/admin/courses/{course_crud_id}/activate",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course activate")
+    assert isinstance(activated_course, dict)
+    assert activated_course["id"] == course_crud_id
+    assert activated_course["is_active"] is True
+    checks.append("admin course activate ok")
+
+    status, deleted_course = request_json(
+        "DELETE",
+        f"/api/v1/admin/courses/{course_crud_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course delete")
+    assert isinstance(deleted_course, dict)
+    assert deleted_course["status"] == "deleted"
+    assert deleted_course["id"] == course_crud_id
+    checks.append("admin course delete ok")
+
+    status, deleted_course_detail = request_json(
+        "GET",
+        f"/api/v1/admin/courses/{course_crud_id}",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin deleted course detail")
+    assert isinstance(deleted_course_detail, dict)
+    checks.append("admin deleted course detail returns 404")
+
     status, admin_enrollments = request_json(
         "GET",
         "/api/v1/admin/enrollments?limit=5",
@@ -2273,6 +2396,68 @@ def main() -> int:
     status, _ = request_json("GET", "/api/v1/admin/users", token=learner_token)
     assert_status(status, 403, "learner admin API")
     checks.append("learner admin API returns 403")
+
+    status, _ = request_json("GET", "/api/v1/admin/courses", token=learner_token)
+    assert_status(status, 403, "learner admin courses")
+    checks.append("learner courses returns 403")
+
+    status, _ = request_json(
+        "GET",
+        f"/api/v1/admin/courses/{self_enroll_course['id']}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin course detail")
+    checks.append("learner course detail returns 403")
+
+    status, _ = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        body={
+            "slug": f"forbidden-course-{uuid4().hex[:10]}",
+            "title": "Forbidden learner course",
+            "description": "Forbidden learner course create",
+            "hours": 16,
+            "format": "online",
+            "document_type": "Certificate",
+            "is_active": True,
+        },
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin course create")
+    checks.append("learner course create returns 403")
+
+    status, _ = request_json(
+        "PATCH",
+        f"/api/v1/admin/courses/{self_enroll_course['id']}",
+        body={"title": "Forbidden learner course update"},
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin course update")
+    checks.append("learner course update returns 403")
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/courses/{self_enroll_course['id']}/deactivate",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin course deactivate")
+    checks.append("learner course deactivate returns 403")
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/courses/{self_enroll_course['id']}/activate",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin course activate")
+    checks.append("learner course activate returns 403")
+
+    status, _ = request_json(
+        "DELETE",
+        f"/api/v1/admin/courses/{self_enroll_course['id']}",
+        token=learner_token,
+    )
+    assert_status(status, 403, "learner admin course delete")
+    checks.append("learner course delete returns 403")
 
     status, _ = request_json("GET", f"/api/v1/admin/users/{user_id}", token=learner_token)
     assert_status(status, 403, "learner admin user detail")
