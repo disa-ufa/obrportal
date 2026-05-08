@@ -1,4 +1,4 @@
-﻿export function formatDetailDate(value) {
+export function formatDetailDate(value) {
   if (!value) {
     return "-";
   }

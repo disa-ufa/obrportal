@@ -1,4 +1,4 @@
-﻿import { Alert } from "../ui/Alert";
+import { Alert } from "../ui/Alert";
 import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";

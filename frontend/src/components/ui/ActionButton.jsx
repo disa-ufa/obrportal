@@ -1,4 +1,4 @@
-﻿export function ActionButton({
+export function ActionButton({
   children,
   onClick,
   type = "button",

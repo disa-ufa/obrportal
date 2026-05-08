@@ -1,4 +1,4 @@
-﻿import { SectionCard } from "../ui/SectionCard";
+import { SectionCard } from "../ui/SectionCard";
 
 export function AuthPanel({
   email,

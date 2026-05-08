@@ -1,4 +1,4 @@
-﻿export function SectionCard({ title, subtitle, action, children }) {
+export function SectionCard({ title, subtitle, action, children }) {
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">

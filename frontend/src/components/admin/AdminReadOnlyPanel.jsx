@@ -1,4 +1,4 @@
-﻿import { SectionCard } from "../ui/SectionCard";
+import { SectionCard } from "../ui/SectionCard";
 import { SmallTable } from "../ui/SmallTable";
 
 export function AdminReadOnlyPanel({

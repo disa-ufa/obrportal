@@ -1,4 +1,4 @@
-﻿export function LoadingBlock({ text = "Загрузка..." }) {
+export function LoadingBlock({ text = "Загрузка..." }) {
   return (
     <div className="rounded-2xl bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
       <div className="flex items-center gap-3">

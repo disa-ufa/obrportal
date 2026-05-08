@@ -1,4 +1,4 @@
-﻿export function StatusBadge({ children, tone = "gray" }) {
+export function StatusBadge({ children, tone = "gray" }) {
   const tones = {
     green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
     red: "bg-red-50 text-red-700 ring-red-200",
