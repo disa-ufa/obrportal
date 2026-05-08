@@ -9,6 +9,7 @@ from app.api.v1.rbac import require_permission
 from app.db.session import get_db
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
+from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.schemas.org import (
     OrgLearningGroupCreate,
@@ -21,6 +22,9 @@ from app.schemas.org import (
 
 
 router = APIRouter(prefix="/org", tags=["org"])
+
+
+GLOBAL_ORG_SCOPE_ROLE_CODES = {"admin"}
 
 
 def model_to_dict(model, **kwargs) -> dict:
@@ -152,13 +156,67 @@ async def get_user_or_404(
     return user
 
 
+async def get_organization_scope_for_permission(
+    current_user: User,
+    permission_code: str,
+    session: AsyncSession,
+) -> set[str] | None:
+    result = await session.execute(
+        select(Role.code, UserRole.organization_id)
+        .join(RolePermission, RolePermission.role_id == Role.id)
+        .join(Permission, Permission.id == RolePermission.permission_id)
+        .join(UserRole, UserRole.role_id == Role.id)
+        .where(
+            UserRole.user_id == current_user.id,
+            Permission.code == permission_code,
+        )
+    )
+
+    organization_ids: set[str] = set()
+
+    for role_code, organization_id in result.all():
+        if organization_id is None and role_code in GLOBAL_ORG_SCOPE_ROLE_CODES:
+            return None
+
+        if organization_id is not None:
+            organization_ids.add(str(organization_id))
+
+    return organization_ids
+
+
+def ensure_organization_in_scope_or_404(
+    organization_id: str,
+    allowed_organization_ids: set[str] | None,
+) -> None:
+    if allowed_organization_ids is None:
+        return
+
+    if str(organization_id) not in allowed_organization_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found",
+        )
+
+
 async def get_learning_group_or_404(
     group_id: str,
     session: AsyncSession,
+    allowed_organization_ids: set[str] | None = None,
 ) -> LearningGroup:
-    result = await session.execute(
-        select(LearningGroup).where(LearningGroup.id == group_id)
-    )
+    query = select(LearningGroup).where(LearningGroup.id == group_id)
+
+    if allowed_organization_ids is not None:
+        if not allowed_organization_ids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Learning group not found",
+            )
+
+        query = query.where(
+            LearningGroup.organization_id.in_(list(allowed_organization_ids))
+        )
+
+    result = await session.execute(query)
     group = result.scalar_one_or_none()
 
     if group is None:
@@ -246,15 +304,32 @@ async def learning_group_member_exists(
 @router.get("/groups", response_model=list[OrgLearningGroupItem])
 async def list_learning_groups(
     organization_id: str | None = Query(default=None),
-    _: User = Depends(require_permission("org.groups.read")),
+    current_user: User = Depends(require_permission("org.groups.read")),
     session: AsyncSession = Depends(get_db),
 ) -> list[OrgLearningGroupItem]:
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.read",
+        session,
+    )
+
     query = select(LearningGroup).order_by(LearningGroup.name)
 
     if organization_id:
         normalized_organization_id = organization_id.strip()
+        ensure_organization_in_scope_or_404(
+            normalized_organization_id,
+            allowed_organization_ids,
+        )
         await get_organization_or_404(normalized_organization_id, session)
         query = query.where(LearningGroup.organization_id == normalized_organization_id)
+    elif allowed_organization_ids is not None:
+        if not allowed_organization_ids:
+            return []
+
+        query = query.where(
+            LearningGroup.organization_id.in_(list(allowed_organization_ids))
+        )
 
     result = await session.execute(query)
     groups = result.scalars().all()
@@ -269,11 +344,20 @@ async def list_learning_groups(
 )
 async def create_learning_group(
     payload: OrgLearningGroupCreate,
-    _: User = Depends(require_permission("org.groups.write")),
+    current_user: User = Depends(require_permission("org.groups.write")),
     session: AsyncSession = Depends(get_db),
 ) -> OrgLearningGroupDetail:
     data = normalize_learning_group_create_data(payload)
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.write",
+        session,
+    )
 
+    ensure_organization_in_scope_or_404(
+        data["organization_id"],
+        allowed_organization_ids,
+    )
     await get_organization_or_404(data["organization_id"], session)
 
     group = LearningGroup(**data)
@@ -295,10 +379,19 @@ async def create_learning_group(
 @router.get("/groups/{group_id}", response_model=OrgLearningGroupDetail)
 async def get_learning_group_detail(
     group_id: str,
-    _: User = Depends(require_permission("org.groups.read")),
+    current_user: User = Depends(require_permission("org.groups.read")),
     session: AsyncSession = Depends(get_db),
 ) -> OrgLearningGroupDetail:
-    group = await get_learning_group_or_404(group_id, session)
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.read",
+        session,
+    )
+    group = await get_learning_group_or_404(
+        group_id,
+        session,
+        allowed_organization_ids,
+    )
     return build_learning_group_detail(group)
 
 
@@ -306,10 +399,19 @@ async def get_learning_group_detail(
 async def update_learning_group(
     group_id: str,
     payload: OrgLearningGroupUpdate,
-    _: User = Depends(require_permission("org.groups.write")),
+    current_user: User = Depends(require_permission("org.groups.write")),
     session: AsyncSession = Depends(get_db),
 ) -> OrgLearningGroupDetail:
-    group = await get_learning_group_or_404(group_id, session)
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.write",
+        session,
+    )
+    group = await get_learning_group_or_404(
+        group_id,
+        session,
+        allowed_organization_ids,
+    )
     data = normalize_learning_group_update_data(payload)
 
     if not data:
@@ -341,10 +443,19 @@ async def update_learning_group(
 )
 async def delete_learning_group(
     group_id: str,
-    _: User = Depends(require_permission("org.groups.write")),
+    current_user: User = Depends(require_permission("org.groups.write")),
     session: AsyncSession = Depends(get_db),
 ) -> Response:
-    group = await get_learning_group_or_404(group_id, session)
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.write",
+        session,
+    )
+    group = await get_learning_group_or_404(
+        group_id,
+        session,
+        allowed_organization_ids,
+    )
     await session.delete(group)
     await session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -356,10 +467,19 @@ async def delete_learning_group(
 )
 async def list_learning_group_members(
     group_id: str,
-    _: User = Depends(require_permission("org.groups.read")),
+    current_user: User = Depends(require_permission("org.groups.read")),
     session: AsyncSession = Depends(get_db),
 ) -> list[OrgLearningGroupMemberItem]:
-    await get_learning_group_or_404(group_id, session)
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.read",
+        session,
+    )
+    await get_learning_group_or_404(
+        group_id,
+        session,
+        allowed_organization_ids,
+    )
 
     result = await session.execute(
         select(
@@ -388,10 +508,19 @@ async def list_learning_group_members(
 async def add_learning_group_member(
     group_id: str,
     payload: OrgLearningGroupMemberCreate,
-    _: User = Depends(require_permission("org.groups.write")),
+    current_user: User = Depends(require_permission("org.groups.write")),
     session: AsyncSession = Depends(get_db),
 ) -> OrgLearningGroupMemberItem:
-    group = await get_learning_group_or_404(group_id, session)
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.write",
+        session,
+    )
+    group = await get_learning_group_or_404(
+        group_id,
+        session,
+        allowed_organization_ids,
+    )
     user = await get_user_or_404(payload.user_id.strip(), session)
 
     if await learning_group_member_exists(
@@ -436,10 +565,19 @@ async def add_learning_group_member(
 async def remove_learning_group_member(
     group_id: str,
     user_id: str,
-    _: User = Depends(require_permission("org.groups.write")),
+    current_user: User = Depends(require_permission("org.groups.write")),
     session: AsyncSession = Depends(get_db),
 ) -> Response:
-    await get_learning_group_or_404(group_id, session)
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.write",
+        session,
+    )
+    await get_learning_group_or_404(
+        group_id,
+        session,
+        allowed_organization_ids,
+    )
 
     member = await get_learning_group_member_or_404(
         group_id,

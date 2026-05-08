@@ -2094,6 +2094,223 @@ def test_admin_delete_learning_group_not_found_returns_404() -> None:
     assert isinstance(payload, dict)
 
 
+
+
+def test_org_rep_learning_groups_are_limited_to_assigned_organization() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+
+    first_group = create_test_learning_group(
+        admin_token,
+        first_organization_id,
+        name=f"Scoped own group {unique_group_code()}",
+        code=unique_group_code(),
+    )
+    second_group = create_test_learning_group(
+        admin_token,
+        second_organization_id,
+        name=f"Scoped foreign group {unique_group_code()}",
+        code=unique_group_code(),
+    )
+
+    first_group_id = str(first_group["id"])
+    second_group_id = str(second_group["id"])
+
+    org_rep_email = f"org_rep_scope_{uuid4().hex[:12]}@example.com"
+    org_rep_password = "OrgRepScope123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Scoped organization representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+    org_rep_user_id = str(org_rep_user["id"])
+
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    status, scoped_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user_id}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(scoped_user, dict)
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, groups = request_json("GET", "/api/v1/org/groups", token=org_rep_token)
+    assert status == 200
+    assert isinstance(groups, list)
+    assert any(group["id"] == first_group_id for group in groups)
+    assert all(group["organization_id"] == first_organization_id for group in groups)
+    assert all(group["id"] != second_group_id for group in groups)
+
+    status, own_filtered_groups = request_json(
+        "GET",
+        f"/api/v1/org/groups?organization_id={first_organization_id}",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(own_filtered_groups, list)
+    assert any(group["id"] == first_group_id for group in own_filtered_groups)
+    assert all(
+        group["organization_id"] == first_organization_id
+        for group in own_filtered_groups
+    )
+
+    status, foreign_filtered_groups = request_json(
+        "GET",
+        f"/api/v1/org/groups?organization_id={second_organization_id}",
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_filtered_groups, dict)
+
+    status, own_detail = request_json(
+        "GET",
+        f"/api/v1/org/groups/{first_group_id}",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(own_detail, dict)
+    assert own_detail["id"] == first_group_id
+    assert own_detail["organization_id"] == first_organization_id
+
+    status, foreign_detail = request_json(
+        "GET",
+        f"/api/v1/org/groups/{second_group_id}",
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_detail, dict)
+
+    status, created_own_group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": first_organization_id,
+            "name": f"Scoped created own group {unique_group_code()}",
+            "code": unique_group_code(),
+        },
+        token=org_rep_token,
+    )
+    assert status == 201
+    assert isinstance(created_own_group, dict)
+    created_own_group_id = str(created_own_group["id"])
+    assert created_own_group["organization_id"] == first_organization_id
+
+    status, created_foreign_group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": second_organization_id,
+            "name": f"Scoped created foreign group {unique_group_code()}",
+            "code": unique_group_code(),
+        },
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(created_foreign_group, dict)
+
+    status, updated_own_group = request_json(
+        "PATCH",
+        f"/api/v1/org/groups/{created_own_group_id}",
+        {
+            "name": f"Scoped updated own group {unique_group_code()}",
+            "is_active": False,
+        },
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(updated_own_group, dict)
+    assert updated_own_group["id"] == created_own_group_id
+    assert updated_own_group["is_active"] is False
+
+    status, updated_foreign_group = request_json(
+        "PATCH",
+        f"/api/v1/org/groups/{second_group_id}",
+        {"name": f"Scoped forbidden update {unique_group_code()}"},
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(updated_foreign_group, dict)
+
+    status, own_members = request_json(
+        "GET",
+        f"/api/v1/org/groups/{first_group_id}/members",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(own_members, list)
+
+    status, foreign_members = request_json(
+        "GET",
+        f"/api/v1/org/groups/{second_group_id}/members",
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_members, dict)
+
+    status, added_member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{first_group_id}/members",
+        {"user_id": org_rep_user_id},
+        token=org_rep_token,
+    )
+    assert status == 201
+    assert isinstance(added_member, dict)
+    assert added_member["learning_group_id"] == first_group_id
+    assert added_member["user_id"] == org_rep_user_id
+
+    status, foreign_member_add = request_json(
+        "POST",
+        f"/api/v1/org/groups/{second_group_id}/members",
+        {"user_id": org_rep_user_id},
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_member_add, dict)
+
+    status, removed_member = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{first_group_id}/members/{org_rep_user_id}",
+        token=org_rep_token,
+    )
+    assert status == 204
+    assert removed_member is None
+
+    status, deleted_own_group = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{created_own_group_id}",
+        token=org_rep_token,
+    )
+    assert status == 204
+    assert deleted_own_group is None
+
+    status, deleted_foreign_group = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{second_group_id}",
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(deleted_foreign_group, dict)
+
+
 def test_learner_cannot_delete_learning_group() -> None:
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
