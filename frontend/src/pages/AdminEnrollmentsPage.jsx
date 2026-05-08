@@ -1,3 +1,4 @@
+import { getApiErrorMessage } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -80,23 +81,6 @@ const ENROLLMENT_API_ERROR_MESSAGES = {
 function getStatusLabel(value) {
   return ENROLLMENT_STATUSES.find((item) => item.value === value)?.label || value;
 }
-
-function getApiErrorMessage(err) {
-  const rawMessage = err?.detail || err?.message || "";
-
-  if (Array.isArray(rawMessage)) {
-    return rawMessage
-      .map((item) => item?.msg || item?.message || JSON.stringify(item))
-      .join("; ");
-  }
-
-  if (rawMessage && typeof rawMessage === "object") {
-    return rawMessage.detail || rawMessage.message || JSON.stringify(rawMessage);
-  }
-
-  return `${rawMessage || ""}`.trim();
-}
-
 function formatEnrollmentApiError(err, fallback) {
   const status = err?.status ? `${err.status}` : "";
   const message = getApiErrorMessage(err);

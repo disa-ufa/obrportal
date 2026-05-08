@@ -1,3 +1,4 @@
+import { getApiErrorMessage } from "../../utils/apiErrors";
 ﻿import { useState } from "react";
 import { ActionButton } from "../ui/ActionButton";
 import { Alert } from "../ui/Alert";
@@ -29,23 +30,6 @@ export const ORGANIZATION_API_ERROR_MESSAGES = {
   noFields: "\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438.",
   invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438.",
 };
-
-function getApiErrorMessage(err) {
-  const rawMessage = err?.detail || err?.message || "";
-
-  if (Array.isArray(rawMessage)) {
-    return rawMessage
-      .map((item) => item?.msg || item?.message || JSON.stringify(item))
-      .join("; ");
-  }
-
-  if (rawMessage && typeof rawMessage === "object") {
-    return rawMessage.detail || rawMessage.message || JSON.stringify(rawMessage);
-  }
-
-  return `${rawMessage || ""}`.trim();
-}
-
 export function formatOrganizationApiError(err, fallback) {
   const status = err?.status ? `${err.status}` : "";
   const message = getApiErrorMessage(err);

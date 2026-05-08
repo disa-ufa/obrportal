@@ -1,3 +1,4 @@
+import { getApiErrorMessage } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -52,23 +53,6 @@ const DOCUMENT_API_ERROR_MESSAGES = {
 function getDocumentStatusLabel(status) {
   return DOCUMENT_STATUSES.find((item) => item.value === status)?.label || status || "-";
 }
-
-function getApiErrorMessage(err) {
-  const rawMessage = err?.detail || err?.message || "";
-
-  if (Array.isArray(rawMessage)) {
-    return rawMessage
-      .map((item) => item?.msg || item?.message || JSON.stringify(item))
-      .join("; ");
-  }
-
-  if (rawMessage && typeof rawMessage === "object") {
-    return rawMessage.detail || rawMessage.message || JSON.stringify(rawMessage);
-  }
-
-  return `${rawMessage || ""}`.trim();
-}
-
 function formatDocumentApiError(err, fallback) {
   const status = err?.status ? `${err.status}` : "";
   const message = getApiErrorMessage(err);

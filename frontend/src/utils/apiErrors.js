@@ -8,7 +8,7 @@ export const COMMON_API_ERROR_MESSAGES = {
   serverError: "\u0421\u0435\u0440\u0432\u0435\u0440 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435 \u0441\u043c\u043e\u0433 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u0442\u044c \u0437\u0430\u043f\u0440\u043e\u0441.",
 };
 
-function getApiErrorMessage(err) {
+export function getApiErrorMessage(err) {
   const rawMessage = err?.detail || err?.message || "";
 
   if (Array.isArray(rawMessage)) {

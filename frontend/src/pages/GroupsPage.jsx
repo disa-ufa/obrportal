@@ -1,3 +1,4 @@
+import { getApiErrorMessage } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -72,23 +73,6 @@ const GROUP_API_ERROR_MESSAGES = {
   deleteHasRelations: "\u041d\u0435\u043b\u044c\u0437\u044f \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u0443\u044e \u0433\u0440\u0443\u043f\u043f\u0443, \u0442\u0430\u043a \u043a\u0430\u043a \u043e\u043d\u0430 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0432 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u0445 \u0438\u043b\u0438 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0445 \u0434\u0430\u043d\u043d\u044b\u0445.",
   invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u044b.",
 };
-
-function getApiErrorMessage(err) {
-  const rawMessage = err?.detail || err?.message || "";
-
-  if (Array.isArray(rawMessage)) {
-    return rawMessage
-      .map((item) => item?.msg || item?.message || JSON.stringify(item))
-      .join("; ");
-  }
-
-  if (rawMessage && typeof rawMessage === "object") {
-    return rawMessage.detail || rawMessage.message || JSON.stringify(rawMessage);
-  }
-
-  return `${rawMessage || ""}`.trim();
-}
-
 function formatGroupApiError(err, fallback) {
   const status = err?.status ? `${err.status}` : "";
   const message = getApiErrorMessage(err);
