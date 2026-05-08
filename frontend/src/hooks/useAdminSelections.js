@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useState } from "react";
 
 export function useAdminSelections() {
@@ -81,7 +82,7 @@ export function useAdminSelections() {
 
       return detail;
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`);
+      setError(formatApiError(err, "Не удалось загрузить выбранную запись."));
 
       return null;
     } finally {

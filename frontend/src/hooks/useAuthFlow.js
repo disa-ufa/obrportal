@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -136,7 +137,7 @@ export function useAuthFlow({
       const data = await checkAdminRbac();
       setRbac(data);
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`);
+      setError(formatApiError(err, "Не удалось проверить права доступа."));
       setRbac(null);
     } finally {
       setAuthLoading(false);

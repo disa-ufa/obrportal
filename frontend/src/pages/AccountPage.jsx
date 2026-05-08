@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import {
   completeAccountCourse,
@@ -252,7 +253,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(`${err.status || ""} ${err.message}`.trim());
+          setError(formatApiError(err, "Не удалось загрузить данные личного кабинета."));
         }
       } finally {
         if (!cancelled) {

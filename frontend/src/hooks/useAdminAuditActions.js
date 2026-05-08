@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { getAdminAuditEvents } from "../api/client";
 
 export function useAdminAuditActions({
@@ -24,7 +25,7 @@ export function useAdminAuditActions({
 
       return auditEvents;
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`);
+      setError(formatApiError(err, "Не удалось загрузить журнал аудита."));
 
       throw err;
     } finally {

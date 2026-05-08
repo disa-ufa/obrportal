@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import {
   getAdminAuditEvents,
   getAdminCourses,
@@ -61,7 +62,7 @@ export function useAdminDataLoader({
       });
       setAdminDataLoadedAt(getNowLabel());
     } catch (err) {
-      setError(`${err.status || ""} ${err.message}`);
+      setError(formatApiError(err, "Не удалось загрузить административные данные."));
       setAdminData(EMPTY_ADMIN_DATA);
       setAdminDataLoadedAt("");
     } finally {

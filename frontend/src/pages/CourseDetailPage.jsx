@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { enrollAccountCourse, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
@@ -119,7 +120,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         setCourse(null);
         setRelatedCourses([]);
         setExistingEnrollment(null);
-        setError(`${err.status || ""} ${err.message || "Программа не найдена."}`.trim());
+        setError(formatApiError(err, "Программа не найдена."));
       } finally {
         if (isMounted) {
           setLoading(false);

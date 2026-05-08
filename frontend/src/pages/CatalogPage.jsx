@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { getAccountCourses, getPublicCourses } from "../api/client";
 
@@ -139,7 +140,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
           return;
         }
 
-        setError(`${err.status || ""} ${err.message || "Не удалось загрузить каталог программ."}`.trim());
+        setError(formatApiError(err, "Не удалось загрузить каталог программ."));
         setCourses([]);
         setAccountCourses([]);
       } finally {

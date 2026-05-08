@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import {
   enrollAccountCourse,
   getPublicCourseDetail,
@@ -78,7 +79,7 @@ export function usePendingEnrollment({ setError }) {
         };
       }
 
-      setError(`${err.status || ""} ${err.message || "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438 \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c \u043d\u0430 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u0443\u044e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443."}`.trim());
+      setError(formatApiError(err, "Не удалось автоматически записать на выбранную программу."));
 
       return {
         status: "failed",
