@@ -338,7 +338,7 @@ export function RolesPage({
                 <RoleForm
                   submitLabel="Создать роль"
                   successMessage="Роль создана."
-            errorMessage={ROLE_API_ERROR_MESSAGES.createFailed}
+                  errorMessage={ROLE_API_ERROR_MESSAGES.createFailed}
                   onSubmit={handleCreateRole}
                   onCancel={() => setShowCreateForm(false)}
                 />

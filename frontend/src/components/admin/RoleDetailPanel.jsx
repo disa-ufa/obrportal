@@ -321,7 +321,7 @@ export function RoleDetailPanel({
                 initialValues={roleDetail}
                 submitLabel="Сохранить роль"
                 successMessage="Роль обновлена."
-              errorMessage={ROLE_API_ERROR_MESSAGES.updateFailed}
+                errorMessage={ROLE_API_ERROR_MESSAGES.updateFailed}
                 onSubmit={handleUpdateRole}
                 onCancel={() => setEditingMetadata(false)}
               />
