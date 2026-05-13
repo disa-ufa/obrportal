@@ -70,45 +70,43 @@ export function OrganizationSelectedGroupAside({
       />
 
       {hasSelectedGroup && (
-        <LearningGroupEditForm
-          group={selectedGroup}
-          onSave={handleSaveGroup}
-        />
-      )}
+        <>
+          <LearningGroupEditForm
+            group={selectedGroup}
+            onSave={handleSaveGroup}
+          />
 
-      {hasSelectedGroup && (
-        <OrganizationGroupCourseAssignmentForm
-          handleCreateGroupEnrollments={handleCreateGroupEnrollments}
-          courseSearchQuery={courseSearchQuery}
-          handleCourseSearchQueryChange={handleCourseSearchQueryChange}
-          handleSearchCourseCandidates={handleSearchCourseCandidates}
-          courseSearchLoading={courseSearchLoading}
-          courseSearchResults={courseSearchResults}
-          handleSelectCourse={handleSelectCourse}
-          groupEnrollmentForm={groupEnrollmentForm}
-          handleGroupEnrollmentFormChange={handleGroupEnrollmentFormChange}
-          assigningGroupCourse={assigningGroupCourse}
-          groupEnrollmentError={groupEnrollmentError}
-          groupEnrollmentResult={groupEnrollmentResult}
-        />
-      )}
+          <OrganizationGroupCourseAssignmentForm
+            handleCreateGroupEnrollments={handleCreateGroupEnrollments}
+            courseSearchQuery={courseSearchQuery}
+            handleCourseSearchQueryChange={handleCourseSearchQueryChange}
+            handleSearchCourseCandidates={handleSearchCourseCandidates}
+            courseSearchLoading={courseSearchLoading}
+            courseSearchResults={courseSearchResults}
+            handleSelectCourse={handleSelectCourse}
+            groupEnrollmentForm={groupEnrollmentForm}
+            handleGroupEnrollmentFormChange={handleGroupEnrollmentFormChange}
+            assigningGroupCourse={assigningGroupCourse}
+            groupEnrollmentError={groupEnrollmentError}
+            groupEnrollmentResult={groupEnrollmentResult}
+          />
 
-      {hasSelectedGroup && (
-        <OrganizationGroupEnrollmentsSection
-          groupEnrollmentsLoading={groupEnrollmentsLoading}
-          groupEnrollmentsError={groupEnrollmentsError}
-          groupEnrollmentDeleteMessage={groupEnrollmentDeleteMessage}
-          groupEnrollmentSearchQuery={groupEnrollmentSearchQuery}
-          setGroupEnrollmentSearchQuery={setGroupEnrollmentSearchQuery}
-          groupEnrollmentStatusFilter={groupEnrollmentStatusFilter}
-          setGroupEnrollmentStatusFilter={setGroupEnrollmentStatusFilter}
-          groupEnrollmentFiltersActive={groupEnrollmentFiltersActive}
-          setGroupEnrollmentsRefreshKey={setGroupEnrollmentsRefreshKey}
-          groupEnrollments={groupEnrollments}
-          visibleGroupEnrollments={visibleGroupEnrollments}
-          deletingGroupEnrollmentId={deletingGroupEnrollmentId}
-          handleDeleteGroupEnrollment={handleDeleteGroupEnrollment}
-        />
+          <OrganizationGroupEnrollmentsSection
+            groupEnrollmentsLoading={groupEnrollmentsLoading}
+            groupEnrollmentsError={groupEnrollmentsError}
+            groupEnrollmentDeleteMessage={groupEnrollmentDeleteMessage}
+            groupEnrollmentSearchQuery={groupEnrollmentSearchQuery}
+            setGroupEnrollmentSearchQuery={setGroupEnrollmentSearchQuery}
+            groupEnrollmentStatusFilter={groupEnrollmentStatusFilter}
+            setGroupEnrollmentStatusFilter={setGroupEnrollmentStatusFilter}
+            groupEnrollmentFiltersActive={groupEnrollmentFiltersActive}
+            setGroupEnrollmentsRefreshKey={setGroupEnrollmentsRefreshKey}
+            groupEnrollments={groupEnrollments}
+            visibleGroupEnrollments={visibleGroupEnrollments}
+            deletingGroupEnrollmentId={deletingGroupEnrollmentId}
+            handleDeleteGroupEnrollment={handleDeleteGroupEnrollment}
+          />
+        </>
       )}
 
       <OrganizationGroupMembersSection

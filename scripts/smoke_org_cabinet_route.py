@@ -138,6 +138,7 @@ def main() -> None:
         [
             "export function OrganizationSelectedGroupAside",
             "hasSelectedGroup",
+            "<>",
             "OrganizationSelectedGroupPanelHeader",
             "LearningGroupEditForm",
             "OrganizationGroupCourseAssignmentForm",
