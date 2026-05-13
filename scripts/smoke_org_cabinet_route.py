@@ -371,12 +371,9 @@ def main() -> None:
         [
             "export function OrganizationGroupMemberAddForm",
             "OrganizationGroupMemberCandidateCard",
-            "organizationLabel",
-            "roleLabel",
             "Добавить участника",
             "Email или ФИО пользователя",
             "Добавить в группу",
-            "candidate.roles",
         ],
     )
 
