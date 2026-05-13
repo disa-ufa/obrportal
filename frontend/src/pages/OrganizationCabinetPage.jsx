@@ -716,6 +716,13 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   async function handleSearchMemberCandidates() {
     const normalizedQuery = memberSearchQuery.trim();
 
+    if (!selectedGroupId) {
+      setMemberActionError("Выберите учебную группу.");
+      setMemberSearchResults([]);
+      setMemberUserId("");
+      return;
+    }
+
     if (!normalizedQuery) {
       setMemberActionError("Введите email или ФИО пользователя для поиска.");
       setMemberSearchResults([]);
@@ -732,6 +739,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       const results = await searchOrgUsers({
         q: normalizedQuery,
         limit: 20,
+        exclude_group_id: selectedGroupId,
       });
 
       const items = Array.isArray(results) ? results : [];

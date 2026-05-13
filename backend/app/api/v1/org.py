@@ -475,6 +475,7 @@ async def learning_group_member_exists(
 async def search_org_users(
     q: str | None = Query(default=None, max_length=255),
     limit: int = Query(default=20, ge=1, le=50),
+    exclude_group_id: str | None = Query(default=None, max_length=64),
     current_user: User = Depends(require_permission("org.groups.write")),
     session: AsyncSession = Depends(get_db),
 ) -> list[OrgUserSearchItem]:
@@ -486,6 +487,23 @@ async def search_org_users(
 
     if allowed_organization_ids is not None and not allowed_organization_ids:
         return []
+
+    excluded_user_ids: set[str] = set()
+    normalized_exclude_group_id = (exclude_group_id or "").strip()
+
+    if normalized_exclude_group_id:
+        group = await get_learning_group_or_404(normalized_exclude_group_id, session)
+        ensure_organization_in_scope_or_404(
+            str(group.organization_id),
+            allowed_organization_ids,
+        )
+
+        members_result = await session.execute(
+            select(LearningGroupMember.user_id).where(
+                LearningGroupMember.learning_group_id == normalized_exclude_group_id
+            )
+        )
+        excluded_user_ids = {str(user_id) for user_id in members_result.scalars().all()}
 
     query = (
         select(User, UserRole.organization_id)
@@ -511,6 +529,9 @@ async def search_org_users(
                 func.lower(User.full_name).like(search_pattern),
             )
         )
+
+    if excluded_user_ids:
+        query = query.where(User.id.not_in(excluded_user_ids))
 
     result = await session.execute(query)
     return build_org_user_search_items(result.all(), limit)

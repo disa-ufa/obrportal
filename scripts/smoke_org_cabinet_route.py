@@ -109,6 +109,7 @@ def main() -> None:
             "Редактировать группу",
             "Сохранить группу",
             "handleSearchMemberCandidates",
+            "exclude_group_id",
             "handleAddMember",
             "handleDeleteMember",
             "Добавить участника",

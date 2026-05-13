@@ -6743,3 +6743,140 @@ def test_org_group_member_add_rejects_user_from_foreign_organization() -> None:
     )
     assert status == 404
     assert isinstance(scoped_foreign_member, dict)
+
+
+
+def test_org_user_search_excludes_existing_group_members() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+
+    learner_role_id = get_role_id_by_code(admin_token, "learner_fl")
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    user_email = f"org_search_exclude_{uuid4().hex[:12]}@example.com"
+
+    status, user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": user_email,
+            "password": "OrgSearchExclude123!",
+            "full_name": "Org Search Exclude User",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{user['id']}/roles",
+        {
+            "role_id": learner_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    group_code = unique_group_code()
+    status, group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": first_organization_id,
+            "name": f"User search exclude group {group_code}",
+            "code": group_code,
+            "description": "User search exclude existing members",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(group, dict)
+
+    foreign_group_code = unique_group_code()
+    status, foreign_group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": second_organization_id,
+            "name": f"User search foreign exclude group {foreign_group_code}",
+            "code": foreign_group_code,
+            "description": "Foreign exclude group",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(foreign_group, dict)
+
+    org_rep_email = f"org_search_exclude_rep_{uuid4().hex[:12]}@example.com"
+    org_rep_password = "OrgSearchExcludeRep123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Org Search Exclude Representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user['id']}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, before_add = request_json(
+        "GET",
+        f"/api/v1/org/users?q={user_email}&exclude_group_id={group['id']}",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(before_add, list)
+    assert [item["id"] for item in before_add] == [user["id"]]
+
+    status, member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{group['id']}/members",
+        {"user_id": user["id"]},
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(member, dict)
+
+    status, after_add = request_json(
+        "GET",
+        f"/api/v1/org/users?q={user_email}&exclude_group_id={group['id']}",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(after_add, list)
+    assert after_add == []
+
+    status, foreign_exclude = request_json(
+        "GET",
+        f"/api/v1/org/users?q={user_email}&exclude_group_id={foreign_group['id']}",
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_exclude, dict)
