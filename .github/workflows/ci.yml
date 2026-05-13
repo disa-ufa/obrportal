@@ -105,6 +105,7 @@ jobs:
       - name: Run auth RBAC smoke check
         run: |
           python scripts/smoke_auth_rbac.py
+          python scripts/smoke_org_cabinet_route.py
 
       - name: Build frontend
         run: |
