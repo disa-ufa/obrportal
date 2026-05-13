@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { addOrgLearningGroupMember, createOrgGroupEnrollments, createOrgLearningGroup, getOrgGroupEnrollments, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, getPublicCourses, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
+import { addOrgLearningGroupMember, createOrgGroupEnrollments, createOrgLearningGroup, deleteOrgGroupEnrollment, getOrgGroupEnrollments, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, getPublicCourses, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -610,6 +610,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groupEnrollmentsRefreshKey, setGroupEnrollmentsRefreshKey] = useState(0);
   const [groupEnrollmentSearchQuery, setGroupEnrollmentSearchQuery] = useState("");
   const [groupEnrollmentStatusFilter, setGroupEnrollmentStatusFilter] = useState("");
+  const [deletingGroupEnrollmentId, setDeletingGroupEnrollmentId] = useState("");
+  const [groupEnrollmentDeleteMessage, setGroupEnrollmentDeleteMessage] = useState("");
   const [groupDeleteError, setGroupDeleteError] = useState("");
   const [groupDeleteMessage, setGroupDeleteMessage] = useState("");
   const [deletingGroupId, setDeletingGroupId] = useState("");
@@ -777,6 +779,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     setCourseSearchResults([]);
     setGroupEnrollmentSearchQuery("");
     setGroupEnrollmentStatusFilter("");
+    setGroupEnrollmentDeleteMessage("");
   }, [selectedGroupId]);
 
   useEffect(() => {
@@ -896,6 +899,37 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     );
 
     return updated;
+  }
+
+
+  async function handleDeleteGroupEnrollment(enrollment) {
+    if (!selectedGroupId || !enrollment?.id) {
+      return;
+    }
+
+    const courseTitle = enrollment.course_title || "курс";
+    const learnerName = enrollment.user_full_name || enrollment.user_email || "участника";
+
+    if (!window.confirm(`Снять назначение курса "${courseTitle}" для ${learnerName}?`)) {
+      return;
+    }
+
+    try {
+      setDeletingGroupEnrollmentId(enrollment.id);
+      setGroupEnrollmentsError("");
+      setGroupEnrollmentDeleteMessage("");
+
+      await deleteOrgGroupEnrollment(selectedGroupId, enrollment.id);
+
+      setGroupEnrollments((current) =>
+        current.filter((item) => item.id !== enrollment.id)
+      );
+      setGroupEnrollmentDeleteMessage("Назначение курса снято.");
+    } catch (err) {
+      setGroupEnrollmentsError(formatApiError(err, "Не удалось снять назначение курса."));
+    } finally {
+      setDeletingGroupEnrollmentId("");
+    }
   }
 
   async function handleDeleteGroup(group) {
@@ -1687,6 +1721,12 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                     Сбросить
                   </button>
                 </div>
+
+                {groupEnrollmentDeleteMessage && (
+                  <div className="mt-4 rounded-2xl bg-green-50 p-4 text-sm text-green-800 ring-1 ring-green-200">
+                    {groupEnrollmentDeleteMessage}
+                  </div>
+                )}
 
                 {groupEnrollmentsError && (
                   <div className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
