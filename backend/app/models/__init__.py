@@ -1,4 +1,4 @@
-﻿from app.models.audit_event import AuditEvent
+from app.models.audit_event import AuditEvent
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
