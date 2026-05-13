@@ -592,6 +592,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [organizationUsersQuery, setOrganizationUsersQuery] = useState("");
   const [organizationUsersLoading, setOrganizationUsersLoading] = useState(false);
   const [organizationUsersError, setOrganizationUsersError] = useState("");
+  const [organizationUsersMessage, setOrganizationUsersMessage] = useState("");
+  const [addingOrganizationUserId, setAddingOrganizationUserId] = useState("");
   const [memberActionError, setMemberActionError] = useState("");
   const [memberActionMessage, setMemberActionMessage] = useState("");
   const [addingMember, setAddingMember] = useState(false);
@@ -998,6 +1000,33 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   }
 
 
+  async function handleAddOrganizationUserToSelectedGroup(userItem) {
+    if (!selectedGroupId) {
+      setOrganizationUsersError("Выберите учебную группу, в которую нужно добавить пользователя.");
+      return;
+    }
+
+    try {
+      setAddingOrganizationUserId(userItem.id);
+      setOrganizationUsersError("");
+      setOrganizationUsersMessage("");
+
+      const created = await addOrgLearningGroupMember(selectedGroupId, {
+        user_id: userItem.id,
+      });
+
+      setMembers((current) => sortMembers([...current, created]));
+      setOrganizationUsers((current) => current.filter((item) => item.id !== userItem.id));
+      setMemberSearchResults((current) => current.filter((item) => item.id !== userItem.id));
+      setOrganizationUsersMessage("Пользователь добавлен в выбранную группу.");
+    } catch (err) {
+      setOrganizationUsersError(formatApiError(err, "Не удалось добавить пользователя в выбранную группу."));
+    } finally {
+      setAddingOrganizationUserId("");
+    }
+  }
+
+
   async function handleSearchMemberCandidates() {
     const normalizedQuery = memberSearchQuery.trim();
 
@@ -1369,6 +1398,12 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
             </div>
           )}
 
+          {organizationUsersMessage && (
+            <div className="mt-4 rounded-2xl bg-green-50 p-4 text-sm text-green-800 ring-1 ring-green-200">
+              {organizationUsersMessage}
+            </div>
+          )}
+
           {organizationUsers.length === 0 ? (
             <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
               Пользователи пока не загружены. Нажмите «Загрузить список» или выполните поиск.
@@ -1397,15 +1432,25 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                         </div>
                       )}
                     </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        item.is_active
-                          ? "bg-green-50 text-green-700 ring-1 ring-green-200"
-                          : "bg-slate-100 text-slate-500 ring-1 ring-slate-200"
-                      }`}
-                    >
-                      {item.is_active ? "Активен" : "Неактивен"}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          item.is_active
+                            ? "bg-green-50 text-green-700 ring-1 ring-green-200"
+                            : "bg-slate-100 text-slate-500 ring-1 ring-slate-200"
+                        }`}
+                      >
+                        {item.is_active ? "Активен" : "Неактивен"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleAddOrganizationUserToSelectedGroup(item)}
+                        disabled={!selectedGroupId || addingOrganizationUserId === item.id}
+                        className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50 disabled:text-slate-400 disabled:ring-slate-200"
+                      >
+                        {addingOrganizationUserId === item.id ? "Добавляем..." : "Добавить в группу"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
