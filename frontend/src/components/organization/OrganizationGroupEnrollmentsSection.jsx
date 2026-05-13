@@ -19,8 +19,7 @@ export function OrganizationGroupEnrollmentsSection({
   handleDeleteGroupEnrollment,
 }) {
   return (
-    <>
-      <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="text-sm font-bold text-slate-950">Назначения группы</div>
@@ -128,7 +127,6 @@ export function OrganizationGroupEnrollmentsSection({
             ))}
           </div>
         )}
-      </div>
-    </>
+    </div>
   );
 }
