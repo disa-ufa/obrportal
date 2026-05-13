@@ -79,6 +79,10 @@ def main() -> None:
             "getOrgProfile",
             "getOrgLearningGroups",
             "getOrgLearningGroupMembers",
+            "OrganizationProfileCard",
+            "Реквизиты организации",
+            "Юридический адрес",
+            "Фактический адрес",
             "Кабинет организации",
         ],
     )
