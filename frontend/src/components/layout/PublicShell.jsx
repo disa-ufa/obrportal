@@ -1,3 +1,4 @@
+import { userHasRole } from "../../utils/adminState";
 const PUBLIC_NAV_ITEMS = [
   { key: "home", label: "Главная" },
   { key: "catalog", label: "Каталог" },
@@ -16,6 +17,8 @@ const FOOTER_LINKS = [
 ];
 
 function NavButton({ active, children, onClick }) {
+  const isOrgRepresentative = userHasRole(user, "org_rep");
+
   return (
     <button
       type="button"
@@ -76,6 +79,13 @@ export function PublicShell({
                 onClick={() => onPageChange("dashboard")}
               >
                 В админку
+              </NavButton>
+            ) : user && isOrgRepresentative ? (
+              <NavButton
+                active={currentPage === "organization"}
+                onClick={() => onPageChange("organization")}
+              >
+                Кабинет организации
               </NavButton>
             ) : user ? (
               <NavButton

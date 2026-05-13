@@ -86,12 +86,23 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "frontend/src/components/layout/PublicShell.jsx",
+        [
+            'userHasRole(user, "org_rep")',
+            'active={currentPage === "organization"}',
+            'onClick={() => onPageChange("organization")}',
+            "Кабинет организации",
+        ],
+    )
+
     fetch_frontend_route("/organization")
 
     print("Organization cabinet frontend smoke passed:")
     print(" - source route wiring ok")
     print(" - public route registry ok")
     print(" - org_rep auth redirect wiring ok")
+    print(" - org_rep public navigation ok")
     print(" - direct /organization frontend shell ok")
 
 
