@@ -238,7 +238,6 @@ def main() -> None:
             "OrganizationGroupEnrollmentsFilters",
             "OrganizationGroupEnrollmentsMessages",
             "OrganizationGroupEnrollmentCard",
-            "enrollment.status === \"assigned\"",
         ],
     )
 
