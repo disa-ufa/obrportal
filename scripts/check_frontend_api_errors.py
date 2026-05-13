@@ -3,6 +3,8 @@
 ROOT = Path("frontend/src")
 
 PATTERNS = [
+    "err.status ||",
+    "err.message ||",
     '`${err.status || ""} ${err.message}`.trim()',
     '`${err.status || ""} ${err.message}`',
     'setError(`',

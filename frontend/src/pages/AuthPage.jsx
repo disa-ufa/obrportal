@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { getPublicCourseDetail } from "../api/client";
 import { AuthPanel } from "../components/auth/AuthPanel";
@@ -58,7 +59,7 @@ export function AuthPage({
         if (!cancelled) {
           setPendingCourse(null);
           setPendingCourseError(
-            `${err.status || ""} ${err.message || "Не удалось загрузить выбранную программу."}`.trim()
+            formatApiError(err, "Не удалось загрузить выбранную программу.")
           );
         }
       } finally {

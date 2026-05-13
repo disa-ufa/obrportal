@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { verifyPublicDocument } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
@@ -284,7 +285,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
       if (err.status === 404) {
         setNotFound(true);
       } else {
-        setError(err.message || RU.verificationFailedMessage);
+        setError(formatApiError(err, RU.verificationFailedMessage));
       }
     } finally {
       setLoading(false);

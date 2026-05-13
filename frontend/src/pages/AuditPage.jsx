@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuditEventDetailPanel } from "../components/admin/AuditEventDetailPanel";
@@ -253,7 +254,7 @@ export function AuditPage({
       await onApplyAuditFilters(payload);
       setFilterError("");
     } catch (err) {
-      setFilterError(`${err.status || ""} ${err.message || err}`.trim());
+      setFilterError(formatApiError(err, "Не удалось применить фильтры журнала аудита."));
     }
   }
 
@@ -293,7 +294,7 @@ export function AuditPage({
     try {
       getLimitNumber(filters);
     } catch (err) {
-      setFilterError(err.message);
+      setFilterError(formatApiError(err, "Некорректные параметры фильтра журнала аудита."));
       return;
     }
 

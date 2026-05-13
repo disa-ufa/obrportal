@@ -295,7 +295,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         message: "Статус программы обновлён. Теперь курс находится в работе.",
       });
     } catch (err) {
-      setCourseActionError(`${err.status || ""} ${err.message || "Не удалось начать обучение."}`.trim());
+      setCourseActionError(formatApiError(err, "Не удалось начать обучение."));
     } finally {
       setCourseActionLoadingKey("");
     }
@@ -315,7 +315,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         message: "Статус программы обновлён. Курс отмечен как завершённый, черновик итогового документа добавлен в раздел документов.",
       });
     } catch (err) {
-      setCourseActionError(`${err.status || ""} ${err.message || "Не удалось завершить обучение."}`.trim());
+      setCourseActionError(formatApiError(err, "Не удалось завершить обучение."));
     } finally {
       setCourseActionLoadingKey("");
     }
@@ -326,7 +326,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       setDownloadLoadingId(documentId);
       await downloadAccountDocument(documentId);
     } catch (err) {
-      setDownloadError(`${err.status || ""} ${err.message || "Не удалось подготовить документ."}`.trim());
+      setDownloadError(formatApiError(err, "Не удалось подготовить документ."));
     } finally {
       setDownloadLoadingId("");
     }

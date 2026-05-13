@@ -178,7 +178,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         return;
       }
 
-      setEnrollError(`${err.status || ""} ${err.message || "Не удалось записаться на программу."}`.trim());
+      setEnrollError(formatApiError(err, "Не удалось записаться на программу."));
     } finally {
       setEnrollLoading(false);
     }

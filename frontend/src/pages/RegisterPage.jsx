@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { getPublicCourseDetail } from "../api/client";
 import { Alert } from "../components/ui/Alert";
@@ -53,7 +54,7 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
         if (!cancelled) {
           setPendingCourse(null);
           setPendingCourseError(
-            `${err.status || ""} ${err.message || "Не удалось загрузить выбранную программу."}`.trim()
+            formatApiError(err, "Не удалось загрузить выбранную программу.")
           );
         }
       } finally {

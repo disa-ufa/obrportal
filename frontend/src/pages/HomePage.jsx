@@ -1,3 +1,4 @@
+import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { getPublicCourses } from "../api/client";
 
@@ -34,7 +35,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
           return;
         }
 
-        setCoursesError(`${err.status || ""} ${err.message || "Не удалось загрузить программы."}`.trim());
+        setCoursesError(formatApiError(err, "Не удалось загрузить программы."));
         setFeaturedCourses([]);
       } finally {
         if (isMounted) {
