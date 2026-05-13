@@ -149,6 +149,10 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupCourseAssignmentForm.jsx",
         [
             "export function OrganizationGroupCourseAssignmentForm",
+            "selectedCourseLabel",
+            "canAssignCourse",
+            "visibleSkippedEnrollments",
+            "hasSkippedEnrollments",
             "Назначить курс группе",
             "Название, код или описание курса",
             "Найти курс",

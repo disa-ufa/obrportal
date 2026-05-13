@@ -14,6 +14,15 @@ export function OrganizationGroupCourseAssignmentForm({
   groupEnrollmentError,
   groupEnrollmentResult,
 }) {
+  const selectedCourseLabel =
+    courseSearchQuery || shortId(groupEnrollmentForm.course_id);
+  const canAssignCourse = Boolean(groupEnrollmentForm.course_id) && !assigningGroupCourse;
+  const skippedEnrollments = Array.isArray(groupEnrollmentResult?.skipped)
+    ? groupEnrollmentResult.skipped
+    : [];
+  const visibleSkippedEnrollments = skippedEnrollments.slice(0, 5);
+  const hasSkippedEnrollments = visibleSkippedEnrollments.length > 0;
+
   return (
     <form
       onSubmit={handleCreateGroupEnrollments}
@@ -77,7 +86,7 @@ export function OrganizationGroupCourseAssignmentForm({
           <div className="rounded-2xl bg-white px-4 py-3 text-xs text-blue-900 ring-1 ring-blue-100">
             Выбранный курс:{" "}
             <span className="font-semibold">
-              {courseSearchQuery || shortId(groupEnrollmentForm.course_id)}
+              {selectedCourseLabel}
             </span>
           </div>
         )}
@@ -96,7 +105,7 @@ export function OrganizationGroupCourseAssignmentForm({
 
           <button
             type="submit"
-            disabled={assigningGroupCourse || !groupEnrollmentForm.course_id}
+            disabled={!canAssignCourse}
             className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
           >
             {assigningGroupCourse ? "Назначаем..." : "Назначить"}
@@ -128,14 +137,13 @@ export function OrganizationGroupCourseAssignmentForm({
             </div>
           </div>
 
-          {Array.isArray(groupEnrollmentResult.skipped) &&
-            groupEnrollmentResult.skipped.length > 0 && (
+          {hasSkippedEnrollments && (
               <div className="mt-3 rounded-2xl bg-slate-50 p-3">
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Пропущенные участники
                 </div>
                 <div className="mt-2 grid gap-2">
-                  {groupEnrollmentResult.skipped.slice(0, 5).map((item) => (
+                  {visibleSkippedEnrollments.map((item) => (
                     <div key={item.user_id} className="text-xs text-slate-600">
                       {item.user_full_name || item.user_email || item.user_id} — уже назначен
                     </div>
