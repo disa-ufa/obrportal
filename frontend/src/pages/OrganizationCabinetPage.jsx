@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { addOrgLearningGroupMember, createOrgLearningGroup, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
+import { addOrgLearningGroupMember, createOrgGroupEnrollments, createOrgLearningGroup, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -127,6 +127,15 @@ function sortMembers(items) {
       "ru"
     )
   );
+}
+
+
+
+function buildEmptyGroupEnrollmentForm() {
+  return {
+    course_id: "",
+    status: "assigned",
+  };
 }
 
 
@@ -520,6 +529,10 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [groupActionError, setGroupActionError] = useState("");
   const [groupActionMessage, setGroupActionMessage] = useState("");
+  const [groupEnrollmentForm, setGroupEnrollmentForm] = useState(() => buildEmptyGroupEnrollmentForm());
+  const [assigningGroupCourse, setAssigningGroupCourse] = useState(false);
+  const [groupEnrollmentError, setGroupEnrollmentError] = useState("");
+  const [groupEnrollmentResult, setGroupEnrollmentResult] = useState(null);
   const [groupDeleteError, setGroupDeleteError] = useState("");
   const [groupDeleteMessage, setGroupDeleteMessage] = useState("");
   const [deletingGroupId, setDeletingGroupId] = useState("");
@@ -661,6 +674,12 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       };
     });
   }, [organizations]);
+
+  useEffect(() => {
+    setGroupEnrollmentError("");
+    setGroupEnrollmentResult(null);
+    setGroupEnrollmentForm(buildEmptyGroupEnrollmentForm());
+  }, [selectedGroupId]);
 
   async function handleSaveOrganization(organizationId, payload) {
     const updated = await updateOrgProfile(organizationId, payload);
@@ -823,6 +842,50 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       setMemberActionError(formatApiError(err, "Не удалось выполнить поиск пользователей."));
     } finally {
       setMemberSearchLoading(false);
+    }
+  }
+
+  function handleGroupEnrollmentFormChange(event) {
+    const { name, value } = event.target;
+
+    setGroupEnrollmentForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  async function handleCreateGroupEnrollments(event) {
+    event.preventDefault();
+
+    if (!selectedGroupId) {
+      setGroupEnrollmentError("Выберите учебную группу.");
+      return;
+    }
+
+    const normalizedCourseId = groupEnrollmentForm.course_id.trim();
+
+    if (!normalizedCourseId) {
+      setGroupEnrollmentError("Укажите ID курса.");
+      return;
+    }
+
+    try {
+      setAssigningGroupCourse(true);
+      setGroupEnrollmentError("");
+      setGroupEnrollmentResult(null);
+
+      const result = await createOrgGroupEnrollments({
+        learning_group_id: selectedGroupId,
+        course_id: normalizedCourseId,
+        status: groupEnrollmentForm.status,
+      });
+
+      setGroupEnrollmentResult(result);
+      setGroupEnrollmentForm(buildEmptyGroupEnrollmentForm());
+    } catch (err) {
+      setGroupEnrollmentError(formatApiError(err, "Не удалось назначить курс группе."));
+    } finally {
+      setAssigningGroupCourse(false);
     }
   }
 
@@ -1231,6 +1294,89 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                 group={selectedGroup}
                 onSave={handleSaveGroup}
               />
+            )}
+
+            {selectedGroup && (
+              <form
+                onSubmit={handleCreateGroupEnrollments}
+                className="mt-4 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100"
+              >
+                <div className="text-sm font-bold text-slate-950">Назначить курс группе</div>
+                <div className="mt-1 text-xs leading-5 text-slate-600">
+                  Курс будет назначен всем активным участникам выбранной группы. Уже существующие назначения будут пропущены.
+                </div>
+
+                <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_180px_auto]">
+                  <input
+                    name="course_id"
+                    value={groupEnrollmentForm.course_id}
+                    onChange={handleGroupEnrollmentFormChange}
+                    className="min-w-0 rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    placeholder="ID курса"
+                  />
+
+                  <select
+                    name="status"
+                    value={groupEnrollmentForm.status}
+                    onChange={handleGroupEnrollmentFormChange}
+                    className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  >
+                    <option value="assigned">Назначен</option>
+                    <option value="in_progress">В процессе</option>
+                    <option value="completed">Завершён</option>
+                  </select>
+
+                  <button
+                    type="submit"
+                    disabled={assigningGroupCourse}
+                    className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
+                  >
+                    {assigningGroupCourse ? "Назначаем..." : "Назначить"}
+                  </button>
+                </div>
+
+                {groupEnrollmentError && (
+                  <div className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
+                    {groupEnrollmentError}
+                  </div>
+                )}
+
+                {groupEnrollmentResult && (
+                  <div className="mt-3 rounded-2xl bg-white p-4 text-sm text-slate-700 ring-1 ring-blue-100">
+                    <div className="font-semibold text-slate-950">Результат назначения</div>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <span className="text-slate-500">Создано:</span>{" "}
+                        <span className="font-semibold text-slate-950">
+                          {groupEnrollmentResult.created_count}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Пропущено:</span>{" "}
+                        <span className="font-semibold text-slate-950">
+                          {groupEnrollmentResult.skipped_count}
+                        </span>
+                      </div>
+                    </div>
+
+                    {Array.isArray(groupEnrollmentResult.skipped) &&
+                      groupEnrollmentResult.skipped.length > 0 && (
+                        <div className="mt-3 rounded-2xl bg-slate-50 p-3">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Пропущенные участники
+                          </div>
+                          <div className="mt-2 grid gap-2">
+                            {groupEnrollmentResult.skipped.slice(0, 5).map((item) => (
+                              <div key={item.user_id} className="text-xs text-slate-600">
+                                {item.user_full_name || item.user_email || item.user_id} — уже назначен
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                )}
+              </form>
             )}
 
             {selectedGroup && (
