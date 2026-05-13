@@ -1,7 +1,7 @@
 import { OrganizationGroupEnrollmentsHeader } from "./OrganizationGroupEnrollmentsHeader";
 import { OrganizationGroupEnrollmentsFilters } from "./OrganizationGroupEnrollmentsFilters";
 import { OrganizationGroupEnrollmentsMessages } from "./OrganizationGroupEnrollmentsMessages";
-import { OrganizationGroupEnrollmentCard } from "./OrganizationGroupEnrollmentCard";
+import { OrganizationGroupEnrollmentsList } from "./OrganizationGroupEnrollmentsList";
 
 export function OrganizationGroupEnrollmentsSection({
   groupEnrollmentsLoading,
@@ -40,28 +40,13 @@ export function OrganizationGroupEnrollmentsSection({
         groupEnrollmentsError={groupEnrollmentsError}
       />
 
-    {groupEnrollmentsLoading ? (
-      <div className="mt-3 text-sm text-slate-500">Загружаем назначения...</div>
-    ) : groupEnrollments.length === 0 ? (
-      <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
-        У выбранной группы пока нет назначенных курсов.
-      </div>
-    ) : visibleGroupEnrollments.length === 0 ? (
-      <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
-        По заданным фильтрам назначений не найдено.
-      </div>
-    ) : (
-      <div className="mt-3 grid gap-2">
-        {visibleGroupEnrollments.map((enrollment) => (
-          <OrganizationGroupEnrollmentCard
-            key={enrollment.id}
-            enrollment={enrollment}
-            deletingGroupEnrollmentId={deletingGroupEnrollmentId}
-            handleDeleteGroupEnrollment={handleDeleteGroupEnrollment}
-          />
-        ))}
-      </div>
-    )}
+      <OrganizationGroupEnrollmentsList
+        groupEnrollmentsLoading={groupEnrollmentsLoading}
+        groupEnrollments={groupEnrollments}
+        visibleGroupEnrollments={visibleGroupEnrollments}
+        deletingGroupEnrollmentId={deletingGroupEnrollmentId}
+        handleDeleteGroupEnrollment={handleDeleteGroupEnrollment}
+      />
     </div>
   );
 }

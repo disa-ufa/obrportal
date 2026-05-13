@@ -237,7 +237,7 @@ def main() -> None:
             "OrganizationGroupEnrollmentsHeader",
             "OrganizationGroupEnrollmentsFilters",
             "OrganizationGroupEnrollmentsMessages",
-            "OrganizationGroupEnrollmentCard",
+            "OrganizationGroupEnrollmentsList",
         ],
     )
 
@@ -279,6 +279,18 @@ def main() -> None:
             "text-green-800",
             "bg-red-50",
             "text-red-800",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupEnrollmentsList.jsx",
+        [
+            "export function OrganizationGroupEnrollmentsList",
+            "OrganizationGroupEnrollmentCard",
+            "Загружаем назначения",
+            "У выбранной группы пока нет назначенных курсов",
+            "По заданным фильтрам назначений не найдено",
+            "visibleGroupEnrollments.map((enrollment) =>",
         ],
     )
 
