@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { addOrgLearningGroupMember, createOrgGroupEnrollments, createOrgLearningGroup, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
+import { addOrgLearningGroupMember, createOrgGroupEnrollments, createOrgLearningGroup, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, getPublicCourses, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -530,6 +530,9 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groupActionError, setGroupActionError] = useState("");
   const [groupActionMessage, setGroupActionMessage] = useState("");
   const [groupEnrollmentForm, setGroupEnrollmentForm] = useState(() => buildEmptyGroupEnrollmentForm());
+  const [courseSearchQuery, setCourseSearchQuery] = useState("");
+  const [courseSearchResults, setCourseSearchResults] = useState([]);
+  const [courseSearchLoading, setCourseSearchLoading] = useState(false);
   const [assigningGroupCourse, setAssigningGroupCourse] = useState(false);
   const [groupEnrollmentError, setGroupEnrollmentError] = useState("");
   const [groupEnrollmentResult, setGroupEnrollmentResult] = useState(null);
@@ -679,6 +682,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     setGroupEnrollmentError("");
     setGroupEnrollmentResult(null);
     setGroupEnrollmentForm(buildEmptyGroupEnrollmentForm());
+    setCourseSearchQuery("");
+    setCourseSearchResults([]);
   }, [selectedGroupId]);
 
   async function handleSaveOrganization(organizationId, payload) {
@@ -854,6 +859,68 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }));
   }
 
+  function handleCourseSearchQueryChange(event) {
+    setCourseSearchQuery(event.target.value);
+    setCourseSearchResults([]);
+    setGroupEnrollmentForm((current) => ({
+      ...current,
+      course_id: "",
+    }));
+    setGroupEnrollmentResult(null);
+  }
+
+  async function handleSearchCourseCandidates() {
+    const normalizedQuery = courseSearchQuery.trim();
+
+    if (!normalizedQuery) {
+      setGroupEnrollmentError("Введите название, код или описание курса для поиска.");
+      setCourseSearchResults([]);
+      setGroupEnrollmentForm((current) => ({
+        ...current,
+        course_id: "",
+      }));
+      return;
+    }
+
+    try {
+      setCourseSearchLoading(true);
+      setGroupEnrollmentError("");
+      setGroupEnrollmentResult(null);
+      setGroupEnrollmentForm((current) => ({
+        ...current,
+        course_id: "",
+      }));
+
+      const results = await getPublicCourses({
+        q: normalizedQuery,
+        limit: 20,
+      });
+
+      const items = Array.isArray(results) ? results : [];
+      setCourseSearchResults(items);
+
+      if (items.length === 0) {
+        setGroupEnrollmentError("Активные курсы не найдены.");
+      }
+    } catch (err) {
+      setCourseSearchResults([]);
+      setGroupEnrollmentError(formatApiError(err, "Не удалось выполнить поиск курсов."));
+    } finally {
+      setCourseSearchLoading(false);
+    }
+  }
+
+  function handleSelectCourse(course) {
+    setGroupEnrollmentForm((current) => ({
+      ...current,
+      course_id: course.id,
+    }));
+    setCourseSearchQuery(course.title || course.slug || course.id);
+    setCourseSearchResults([]);
+    setGroupEnrollmentError("");
+    setGroupEnrollmentResult(null);
+  }
+
   async function handleCreateGroupEnrollments(event) {
     event.preventDefault();
 
@@ -865,7 +932,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     const normalizedCourseId = groupEnrollmentForm.course_id.trim();
 
     if (!normalizedCourseId) {
-      setGroupEnrollmentError("Укажите ID курса.");
+      setGroupEnrollmentError("Выберите курс из результатов поиска.");
       return;
     }
 
@@ -882,6 +949,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
       setGroupEnrollmentResult(result);
       setGroupEnrollmentForm(buildEmptyGroupEnrollmentForm());
+      setCourseSearchQuery("");
+      setCourseSearchResults([]);
     } catch (err) {
       setGroupEnrollmentError(formatApiError(err, "Не удалось назначить курс группе."));
     } finally {
@@ -1306,33 +1375,84 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                   Курс будет назначен всем активным участникам выбранной группы. Уже существующие назначения будут пропущены.
                 </div>
 
-                <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_180px_auto]">
-                  <input
-                    name="course_id"
-                    value={groupEnrollmentForm.course_id}
-                    onChange={handleGroupEnrollmentFormChange}
-                    className="min-w-0 rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                    placeholder="ID курса"
-                  />
+                <div className="mt-3 space-y-3">
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      value={courseSearchQuery}
+                      onChange={handleCourseSearchQueryChange}
+                      className="min-w-0 flex-1 rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                      placeholder="Название, код или описание курса"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSearchCourseCandidates}
+                      disabled={courseSearchLoading}
+                      className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:bg-slate-300"
+                    >
+                      {courseSearchLoading ? "Ищем..." : "Найти курс"}
+                    </button>
+                  </div>
 
-                  <select
-                    name="status"
-                    value={groupEnrollmentForm.status}
-                    onChange={handleGroupEnrollmentFormChange}
-                    className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                  >
-                    <option value="assigned">Назначен</option>
-                    <option value="in_progress">В процессе</option>
-                    <option value="completed">Завершён</option>
-                  </select>
+                  {courseSearchResults.length > 0 && (
+                    <div className="grid gap-2">
+                      {courseSearchResults.map((course) => {
+                        const active = groupEnrollmentForm.course_id === course.id;
 
-                  <button
-                    type="submit"
-                    disabled={assigningGroupCourse}
-                    className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
-                  >
-                    {assigningGroupCourse ? "Назначаем..." : "Назначить"}
-                  </button>
+                        return (
+                          <button
+                            key={course.id}
+                            type="button"
+                            onClick={() => handleSelectCourse(course)}
+                            className={`rounded-2xl px-4 py-3 text-left text-sm ring-1 transition ${
+                              active
+                                ? "bg-blue-100 text-blue-950 ring-blue-300"
+                                : "bg-white text-slate-700 ring-blue-100 hover:bg-blue-50"
+                            }`}
+                          >
+                            <span className="block font-semibold">
+                              {course.title || course.slug || course.id}
+                            </span>
+                            <span className="mt-1 block text-xs text-slate-500">
+                              {course.slug || shortId(course.id)}
+                              {course.hours ? ` · ${course.hours} ч.` : ""}
+                              {course.format ? ` · ${course.format}` : ""}
+                              {course.document_type ? ` · ${course.document_type}` : ""}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {groupEnrollmentForm.course_id && (
+                    <div className="rounded-2xl bg-white px-4 py-3 text-xs text-blue-900 ring-1 ring-blue-100">
+                      Выбранный курс:{" "}
+                      <span className="font-semibold">
+                        {courseSearchQuery || shortId(groupEnrollmentForm.course_id)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <select
+                      name="status"
+                      value={groupEnrollmentForm.status}
+                      onChange={handleGroupEnrollmentFormChange}
+                      className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    >
+                      <option value="assigned">Назначен</option>
+                      <option value="in_progress">В процессе</option>
+                      <option value="completed">Завершён</option>
+                    </select>
+
+                    <button
+                      type="submit"
+                      disabled={assigningGroupCourse || !groupEnrollmentForm.course_id}
+                      className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
+                    >
+                      {assigningGroupCourse ? "Назначаем..." : "Назначить"}
+                    </button>
+                  </div>
                 </div>
 
                 {groupEnrollmentError && (
