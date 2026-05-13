@@ -230,6 +230,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     (summary.groups_count ?? groups.length) - (summary.active_groups_count ?? activeGroupsCount),
     0
   );
+  const hasGroups = groups.length > 0;
+  const heroUserLabel = user?.full_name || user?.email || "Пользователь";
 
   useEffect(() => {
     if (organizations.length === 0) {
@@ -773,7 +775,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
             <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-200">
               <span className="rounded-full bg-white/10 px-4 py-2 ring-1 ring-white/15">
-                {user?.full_name || user?.email || "Пользователь"}
+                {heroUserLabel}
               </span>
               <span className="rounded-full bg-white/10 px-4 py-2 ring-1 ring-white/15">
                 Роль: представитель ЮЛ
@@ -852,7 +854,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         <div className="rounded-3xl bg-white p-8 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
           Загружаем кабинет организации...
         </div>
-      ) : groups.length === 0 ? (
+      ) : !hasGroups ? (
         <EmptyState
           title="Учебные группы пока не созданы"
           text="После добавления групп они появятся в этом кабинете. Представитель ЮЛ будет видеть только группы организаций, к которым привязана его роль."

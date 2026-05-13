@@ -461,6 +461,8 @@ def main() -> None:
         "frontend/src/pages/OrganizationCabinetPage.jsx",
         [
             "export function OrganizationCabinetPage",
+            "hasGroups",
+            "heroUserLabel",
             "from \"../components/organization/OrganizationCabinetForms\";",
             "from \"../utils/organizationCabinet\";",
             "addOrgLearningGroupMember",
