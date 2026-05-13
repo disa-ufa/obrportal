@@ -31,6 +31,11 @@ export function OrganizationSelectedGroupContent({
   deletingGroupEnrollmentId,
   handleDeleteGroupEnrollment,
 }) {
+  const groupEditProps = {
+    group: selectedGroup,
+    onSave: handleSaveGroup,
+  };
+
   const courseAssignmentProps = {
     handleCreateGroupEnrollments,
     courseSearchQuery,
@@ -64,10 +69,7 @@ export function OrganizationSelectedGroupContent({
 
   return (
     <>
-      <LearningGroupEditForm
-        group={selectedGroup}
-        onSave={handleSaveGroup}
-      />
+      <LearningGroupEditForm {...groupEditProps} />
 
       <OrganizationGroupCourseAssignmentForm {...courseAssignmentProps} />
 
