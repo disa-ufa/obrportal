@@ -148,6 +148,10 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationSelectedGroupContent.jsx",
         [
             "export function OrganizationSelectedGroupContent",
+            "courseAssignmentProps",
+            "groupEnrollmentsProps",
+            "<OrganizationGroupCourseAssignmentForm {...courseAssignmentProps} />",
+            "<OrganizationGroupEnrollmentsSection {...groupEnrollmentsProps} />",
             "LearningGroupEditForm",
             "OrganizationGroupCourseAssignmentForm",
             "OrganizationGroupEnrollmentsSection",
