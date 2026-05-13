@@ -4,11 +4,15 @@ export function OrganizationGroupCourseAssignmentActions({
   assigningGroupCourse,
   canAssignCourse,
 }) {
+  const selectedStatus = groupEnrollmentForm.status;
+  const isSubmitDisabled = !canAssignCourse;
+  const submitLabel = assigningGroupCourse ? "Назначаем..." : "Назначить";
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <select
         name="status"
-        value={groupEnrollmentForm.status}
+        value={selectedStatus}
         onChange={handleGroupEnrollmentFormChange}
         className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
       >
@@ -19,10 +23,10 @@ export function OrganizationGroupCourseAssignmentActions({
 
       <button
         type="submit"
-        disabled={!canAssignCourse}
+        disabled={isSubmitDisabled}
         className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
       >
-        {assigningGroupCourse ? "Назначаем..." : "Назначить"}
+        {submitLabel}
       </button>
     </div>
   );

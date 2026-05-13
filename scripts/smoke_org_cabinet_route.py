@@ -161,6 +161,9 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupCourseAssignmentActions.jsx",
         [
             "export function OrganizationGroupCourseAssignmentActions",
+            "selectedStatus",
+            "isSubmitDisabled",
+            "submitLabel",
             "groupEnrollmentForm.status",
             "handleGroupEnrollmentFormChange",
             "assigningGroupCourse",
