@@ -212,6 +212,9 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupMemberCard.jsx",
         [
             "export function OrganizationGroupMemberCard",
+            "organizationLabel",
+            "roleLabel",
+            "isDeleting",
             "member.user_roles",
             "formatDate",
             "formatUserOrganizations",
