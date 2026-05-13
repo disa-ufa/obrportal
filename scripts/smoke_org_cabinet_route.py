@@ -260,6 +260,9 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupEnrollmentsFilters.jsx",
         [
             "export function OrganizationGroupEnrollmentsFilters",
+            "handleSearchQueryChange",
+            "handleStatusFilterChange",
+            "handleResetFilters",
             "Поиск по курсу, участнику или email",
             "Все статусы",
             "Назначен",
