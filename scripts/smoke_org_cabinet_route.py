@@ -229,7 +229,6 @@ def main() -> None:
             "deletingGroupEnrollmentId",
             "groupEnrollmentDeleteMessage",
             "handleDeleteGroupEnrollment",
-            "enrollment.status === \"assigned\"",
             
             "handleSearchMemberCandidates",
             "exclude_group_id",
