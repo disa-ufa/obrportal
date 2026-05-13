@@ -189,6 +189,9 @@ def main() -> None:
             "formatDate",
             "formatUserOrganizations",
             "formatUserRoles",
+            "handleDeleteMember(member)",
+            "deletingMemberId === member.id",
+            "Удалить",
         ],
     )
 
