@@ -138,19 +138,19 @@ export function OrganizationGroupCourseAssignmentForm({
           </div>
 
           {hasSkippedEnrollments && (
-              <div className="mt-3 rounded-2xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Пропущенные участники
-                </div>
-                <div className="mt-2 grid gap-2">
-                  {visibleSkippedEnrollments.map((item) => (
-                    <div key={item.user_id} className="text-xs text-slate-600">
-                      {item.user_full_name || item.user_email || item.user_id} — уже назначен
-                    </div>
-                  ))}
-                </div>
+            <div className="mt-3 rounded-2xl bg-slate-50 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Пропущенные участники
               </div>
-            )}
+              <div className="mt-2 grid gap-2">
+                {visibleSkippedEnrollments.map((item) => (
+                  <div key={item.user_id} className="text-xs text-slate-600">
+                    {item.user_full_name || item.user_email || item.user_id} — уже назначен
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </form>
