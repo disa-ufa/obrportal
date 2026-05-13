@@ -7,6 +7,12 @@ export function OrganizationGroupMembersList({
   deletingMemberId,
   handleDeleteMember,
 }) {
+  const hasMembers = members.length > 0;
+  const memberCardProps = {
+    deletingMemberId,
+    handleDeleteMember,
+  };
+
   return (
     <>
       {membersError && (
@@ -19,7 +25,7 @@ export function OrganizationGroupMembersList({
         <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
           Загружаем участников...
         </div>
-      ) : members.length === 0 ? (
+      ) : !hasMembers ? (
         <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
           В выбранной группе пока нет участников.
         </div>
@@ -29,8 +35,7 @@ export function OrganizationGroupMembersList({
             <OrganizationGroupMemberCard
               key={member.id}
               member={member}
-              deletingMemberId={deletingMemberId}
-              handleDeleteMember={handleDeleteMember}
+              {...memberCardProps}
             />
           ))}
         </div>

@@ -359,6 +359,9 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupMembersList.jsx",
         [
             "export function OrganizationGroupMembersList",
+            "hasMembers",
+            "memberCardProps",
+            "{...memberCardProps}",
             "OrganizationGroupMemberCard",
             "Загружаем участников",
             "В выбранной группе пока нет участников",
