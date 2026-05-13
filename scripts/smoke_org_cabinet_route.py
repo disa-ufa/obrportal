@@ -146,6 +146,8 @@ def main() -> None:
             "deletingGroupEnrollmentId",
             "groupEnrollmentDeleteMessage",
             "handleDeleteGroupEnrollment",
+            "onClick={() => handleDeleteGroupEnrollment(enrollment)}",
+            "enrollment.status === \"assigned\"",
             "Снять назначение",
             "Сбросить",
             "Поиск по курсу, участнику или email",
