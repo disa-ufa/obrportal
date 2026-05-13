@@ -152,6 +152,7 @@ def main() -> None:
             "selectedCourseLabel",
             "canAssignCourse",
             "OrganizationGroupCourseAssignmentResult",
+            "OrganizationGroupCourseOption",
             "Назначить курс группе",
             "Название, код или описание курса",
             "Найти курс",
@@ -170,6 +171,19 @@ def main() -> None:
             "created_count",
             "skipped_count",
             "Пропущенные участники",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupCourseOption.jsx",
+        [
+            "export function OrganizationGroupCourseOption",
+            "onSelect(course)",
+            "course.title || course.slug || course.id",
+            "course.slug || shortId(course.id)",
+            "course.hours",
+            "course.format",
+            "course.document_type",
         ],
     )
 
