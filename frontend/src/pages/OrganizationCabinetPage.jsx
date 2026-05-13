@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getOrgLearningGroupMembers, getOrgLearningGroups } from "../api/client";
+import { getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -25,7 +25,19 @@ function shortId(value) {
   return `${value.slice(0, 8)}…`;
 }
 
-function buildOrganizationOptions(groups) {
+function buildOrganizationOptions(profileOrganizations = [], groups = []) {
+  if (Array.isArray(profileOrganizations) && profileOrganizations.length > 0) {
+    return profileOrganizations.map((organization) => ({
+      id: organization.id,
+      label: organization.name || shortId(organization.id),
+      inn: organization.inn,
+      kpp: organization.kpp,
+      ogrn: organization.ogrn,
+      legal_address: organization.legal_address,
+      actual_address: organization.actual_address,
+    }));
+  }
+
   const uniqueIds = [];
 
   groups.forEach((group) => {
@@ -73,6 +85,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [members, setMembers] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [membersLoading, setMembersLoading] = useState(false);
   const [error, setError] = useState("");
@@ -86,19 +99,24 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         setLoading(true);
         setError("");
 
-        const response = await getOrgLearningGroups();
-        const items = Array.isArray(response) ? response : [];
+        const [profileResponse, groupsResponse] = await Promise.all([
+          getOrgProfile(),
+          getOrgLearningGroups(),
+        ]);
+        const items = Array.isArray(groupsResponse) ? groupsResponse : [];
 
         if (cancelled) {
           return;
         }
 
         setGroups(items);
+        setProfile(profileResponse && typeof profileResponse === "object" ? profileResponse : null);
         setSelectedGroupId((current) => current || items[0]?.id || "");
       } catch (err) {
         if (!cancelled) {
           setError(formatApiError(err, "Не удалось загрузить данные организации."));
           setGroups([]);
+          setProfile(null);
           setSelectedGroupId("");
         }
       } finally {
@@ -153,7 +171,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     };
   }, [selectedGroupId]);
 
-  const organizations = useMemo(() => buildOrganizationOptions(groups), [groups]);
+  const organizations = useMemo(() => buildOrganizationOptions(profile?.organizations || [], groups), [profile, groups]);
   const selectedGroup = useMemo(
     () => groups.find((group) => group.id === selectedGroupId) || null,
     [groups, selectedGroupId]
@@ -164,7 +182,17 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     [groups]
   );
 
-  const inactiveGroupsCount = Math.max(groups.length - activeGroupsCount, 0);
+  const summary = profile?.summary || {
+    organizations_count: organizations.length,
+    groups_count: groups.length,
+    active_groups_count: activeGroupsCount,
+    members_count: 0,
+  };
+
+  const inactiveGroupsCount = Math.max(
+    (summary.groups_count ?? groups.length) - (summary.active_groups_count ?? activeGroupsCount),
+    0
+  );
 
   return (
     <div className="space-y-6">
@@ -221,13 +249,13 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard
           label="Организаций в доступе"
-          value={organizations.length}
+          value={summary.organizations_count ?? organizations.length}
           hint="По scope назначенной роли"
         />
         <SummaryCard
           label="Учебных групп"
-          value={groups.length}
-          hint={`${activeGroupsCount} активных / ${inactiveGroupsCount} неактивных`}
+          value={summary.groups_count ?? groups.length}
+          hint={`${summary.active_groups_count ?? activeGroupsCount} активных / ${inactiveGroupsCount} неактивных`}
         />
         <SummaryCard
           label="Участников выбранной группы"

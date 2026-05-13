@@ -47,3 +47,28 @@ class OrgLearningGroupMemberItem(BaseModel):
 
 class OrgLearningGroupMemberCreate(BaseModel):
     user_id: str = Field(min_length=1, max_length=64)
+
+
+
+class OrgProfileOrganizationItem(BaseModel):
+    id: str
+    inn: str
+    kpp: str | None = None
+    ogrn: str | None = None
+    name: str
+    legal_address: str | None = None
+    actual_address: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class OrgProfileSummary(BaseModel):
+    organizations_count: int
+    groups_count: int
+    active_groups_count: int
+    members_count: int
+
+
+class OrgProfile(BaseModel):
+    organizations: list[OrgProfileOrganizationItem]
+    summary: OrgProfileSummary

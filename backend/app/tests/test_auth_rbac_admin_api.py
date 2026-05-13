@@ -6200,3 +6200,149 @@ def test_learner_account_documents_include_revocation_metadata() -> None:
     assert item["download_available"] is False
     assert item["revoked_at"] is not None
     assert item["revocation_reason"] == reason
+
+
+
+def test_org_profile_scope_for_admin_org_rep_and_unscoped_user() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+
+    first_group_code = unique_group_code()
+    status, first_group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": first_organization_id,
+            "name": f"Org profile first group {first_group_code}",
+            "code": first_group_code,
+            "description": "Org profile scoped group",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(first_group, dict)
+    first_group_id = str(first_group["id"])
+
+    second_group_code = unique_group_code()
+    status, second_group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": second_organization_id,
+            "name": f"Org profile second group {second_group_code}",
+            "code": second_group_code,
+            "description": "Org profile foreign scoped group",
+            "is_active": False,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(second_group, dict)
+
+    org_rep_email = f"org_profile_rep_{uuid4().hex[:12]}@example.com"
+    org_rep_password = "OrgProfileRep123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Org profile representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+    org_rep_user_id = str(org_rep_user["id"])
+
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    status, scoped_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user_id}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(scoped_user, dict)
+
+    status, member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{first_group_id}/members",
+        {"user_id": org_rep_user_id},
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(member, dict)
+
+    status, admin_profile = request_json(
+        "GET",
+        "/api/v1/org/profile",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(admin_profile, dict)
+    admin_organization_ids = {
+        str(organization["id"])
+        for organization in admin_profile["organizations"]
+    }
+    assert first_organization_id in admin_organization_ids
+    assert second_organization_id in admin_organization_ids
+    assert admin_profile["summary"]["organizations_count"] >= 2
+    assert admin_profile["summary"]["groups_count"] >= 2
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, org_rep_profile = request_json(
+        "GET",
+        "/api/v1/org/profile",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(org_rep_profile, dict)
+    assert org_rep_profile["summary"] == {
+        "organizations_count": 1,
+        "groups_count": 1,
+        "active_groups_count": 1,
+        "members_count": 1,
+    }
+    assert len(org_rep_profile["organizations"]) == 1
+    assert org_rep_profile["organizations"][0]["id"] == first_organization_id
+    assert org_rep_profile["organizations"][0]["name"]
+
+    unscoped_email = f"org_profile_unscoped_{uuid4().hex[:12]}@example.com"
+    unscoped_password = "OrgProfileNoRole123!"
+
+    status, unscoped_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": unscoped_email,
+            "password": unscoped_password,
+            "full_name": "Org profile unscoped user",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(unscoped_user, dict)
+
+    unscoped_token = login(unscoped_email, unscoped_password)
+
+    status, forbidden_payload = request_json(
+        "GET",
+        "/api/v1/org/profile",
+        token=unscoped_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_payload, dict)

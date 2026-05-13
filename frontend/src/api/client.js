@@ -273,6 +273,10 @@ export async function deleteAdminOrganization(organizationId) {
   });
 }
 
+export async function getOrgProfile() {
+  return request("/api/v1/org/profile");
+}
+
 export async function getOrgLearningGroups(filters = {}) {
   const params = new URLSearchParams();
 

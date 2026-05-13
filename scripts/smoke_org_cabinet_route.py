@@ -64,12 +64,30 @@ def fetch_frontend_route(path: str) -> str:
 
 def main() -> None:
     require_contains(
+        "backend/app/api/v1/org.py",
+        [
+            '@router.get("/profile", response_model=OrgProfile)',
+            '"org.profile.read"',
+            "build_org_profile_summary",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/OrganizationCabinetPage.jsx",
         [
             "export function OrganizationCabinetPage",
+            "getOrgProfile",
             "getOrgLearningGroups",
             "getOrgLearningGroupMembers",
             "Кабинет организации",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/api/client.js",
+        [
+            "export async function getOrgProfile()",
+            "/api/v1/org/profile",
         ],
     )
 

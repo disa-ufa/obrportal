@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +18,9 @@ from app.schemas.org import (
     OrgLearningGroupMemberCreate,
     OrgLearningGroupMemberItem,
     OrgLearningGroupUpdate,
+    OrgProfile,
+    OrgProfileOrganizationItem,
+    OrgProfileSummary,
 )
 
 
@@ -119,6 +122,82 @@ def build_learning_group_member_item(row) -> OrgLearningGroupMemberItem:
         user_is_active=bool(row.user_is_active),
         created_at=row.created_at,
         updated_at=row.updated_at,
+    )
+
+
+def build_org_profile_organization_item(
+    organization: Organization,
+) -> OrgProfileOrganizationItem:
+    return OrgProfileOrganizationItem(
+        id=str(organization.id),
+        inn=organization.inn,
+        kpp=organization.kpp,
+        ogrn=organization.ogrn,
+        name=organization.name,
+        legal_address=organization.legal_address,
+        actual_address=organization.actual_address,
+        created_at=organization.created_at,
+        updated_at=organization.updated_at,
+    )
+
+
+async def get_org_profile_organizations(
+    current_user: User,
+    session: AsyncSession,
+) -> list[Organization]:
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.profile.read",
+        session,
+    )
+
+    if allowed_organization_ids is not None and not allowed_organization_ids:
+        return []
+
+    query = select(Organization).order_by(Organization.name)
+
+    if allowed_organization_ids is not None:
+        query = query.where(Organization.id.in_(list(allowed_organization_ids)))
+
+    result = await session.execute(query)
+    return list(result.scalars().all())
+
+
+async def build_org_profile_summary(
+    organization_ids: list[str],
+    session: AsyncSession,
+) -> OrgProfileSummary:
+    if not organization_ids:
+        return OrgProfileSummary(
+            organizations_count=0,
+            groups_count=0,
+            active_groups_count=0,
+            members_count=0,
+        )
+
+    groups_result = await session.execute(
+        select(LearningGroup.id, LearningGroup.is_active).where(
+            LearningGroup.organization_id.in_(organization_ids)
+        )
+    )
+    group_rows = groups_result.all()
+    group_ids = [str(row.id) for row in group_rows]
+
+    members_count = 0
+
+    if group_ids:
+        members_result = await session.execute(
+            select(func.count(LearningGroupMember.id)).where(
+                LearningGroupMember.learning_group_id.in_(group_ids)
+            )
+        )
+        members_count = int(members_result.scalar_one() or 0)
+
+    return OrgProfileSummary(
+        organizations_count=len(organization_ids),
+        groups_count=len(group_rows),
+        active_groups_count=sum(1 for row in group_rows if row.is_active),
+        members_count=members_count,
     )
 
 
@@ -299,6 +378,24 @@ async def learning_group_member_exists(
     )
 
     return result.scalar_one_or_none() is not None
+
+
+@router.get("/profile", response_model=OrgProfile)
+async def get_org_profile(
+    current_user: User = Depends(require_permission("org.profile.read")),
+    session: AsyncSession = Depends(get_db),
+) -> OrgProfile:
+    organizations = await get_org_profile_organizations(current_user, session)
+    organization_ids = [str(organization.id) for organization in organizations]
+    summary = await build_org_profile_summary(organization_ids, session)
+
+    return OrgProfile(
+        organizations=[
+            build_org_profile_organization_item(organization)
+            for organization in organizations
+        ],
+        summary=summary,
+    )
 
 
 @router.get("/groups", response_model=list[OrgLearningGroupItem])
