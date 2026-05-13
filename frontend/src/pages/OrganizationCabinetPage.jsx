@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
+import { addOrgLearningGroupMember, createOrgLearningGroup, deleteOrgLearningGroupMember, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -92,6 +92,17 @@ function EmptyState({ title, text }) {
 }
 
 
+
+
+
+function sortMembers(items) {
+  return [...items].sort((left, right) =>
+    (left.user_full_name || left.user_email || left.user_id).localeCompare(
+      right.user_full_name || right.user_email || right.user_id,
+      "ru"
+    )
+  );
+}
 
 
 function buildEmptyGroupForm(organizationId = "") {
@@ -471,6 +482,11 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [members, setMembers] = useState([]);
+  const [memberUserId, setMemberUserId] = useState("");
+  const [memberActionError, setMemberActionError] = useState("");
+  const [memberActionMessage, setMemberActionMessage] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [deletingMemberId, setDeletingMemberId] = useState("");
   const [profile, setProfile] = useState(null);
   const [groupForm, setGroupForm] = useState(() => buildEmptyGroupForm());
   const [creatingGroup, setCreatingGroup] = useState(false);
@@ -532,17 +548,23 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       if (!selectedGroupId) {
         setMembers([]);
         setMembersError("");
+        setMemberActionError("");
+        setMemberActionMessage("");
+        setMemberUserId("");
         return;
       }
 
       try {
         setMembersLoading(true);
         setMembersError("");
+        setMemberActionError("");
+        setMemberActionMessage("");
+        setMemberUserId("");
 
         const response = await getOrgLearningGroupMembers(selectedGroupId);
 
         if (!cancelled) {
-          setMembers(Array.isArray(response) ? response : []);
+          setMembers(Array.isArray(response) ? sortMembers(response) : []);
         }
       } catch (err) {
         if (!cancelled) {
@@ -682,6 +704,68 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     );
 
     return updated;
+  }
+
+  async function handleAddMember(event) {
+    event.preventDefault();
+
+    const normalizedUserId = memberUserId.trim();
+
+    if (!selectedGroupId) {
+      setMemberActionError("Выберите учебную группу.");
+      return;
+    }
+
+    if (!normalizedUserId) {
+      setMemberActionError("Укажите ID пользователя.");
+      return;
+    }
+
+    try {
+      setAddingMember(true);
+      setMemberActionError("");
+      setMemberActionMessage("");
+
+      const created = await addOrgLearningGroupMember(selectedGroupId, {
+        user_id: normalizedUserId,
+      });
+
+      setMembers((current) => sortMembers([...current, created]));
+      setMemberUserId("");
+      setMemberActionMessage("Участник добавлен в группу.");
+    } catch (err) {
+      setMemberActionError(formatApiError(err, "Не удалось добавить участника в группу."));
+    } finally {
+      setAddingMember(false);
+    }
+  }
+
+  async function handleDeleteMember(member) {
+    if (!selectedGroupId) {
+      setMemberActionError("Выберите учебную группу.");
+      return;
+    }
+
+    const displayName = member.user_full_name || member.user_email || member.user_id;
+
+    if (!window.confirm(`Удалить участника "${displayName}" из группы?`)) {
+      return;
+    }
+
+    try {
+      setDeletingMemberId(member.id);
+      setMemberActionError("");
+      setMemberActionMessage("");
+
+      await deleteOrgLearningGroupMember(selectedGroupId, member.user_id);
+
+      setMembers((current) => current.filter((item) => item.id !== member.id));
+      setMemberActionMessage("Участник удалён из группы.");
+    } catch (err) {
+      setMemberActionError(formatApiError(err, "Не удалось удалить участника из группы."));
+    } finally {
+      setDeletingMemberId("");
+    }
   }
 
   return (
@@ -992,6 +1076,46 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                 group={selectedGroup}
                 onSave={handleSaveGroup}
               />
+            )}
+
+            {selectedGroup && (
+              <form
+                onSubmit={handleAddMember}
+                className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+              >
+                <div className="text-sm font-bold text-slate-950">Добавить участника</div>
+                <div className="mt-1 text-xs leading-5 text-slate-500">
+                  Сейчас добавление выполняется по ID пользователя. Позже можно заменить поле на поиск по email.
+                </div>
+
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                  <input
+                    value={memberUserId}
+                    onChange={(event) => setMemberUserId(event.target.value)}
+                    className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                    placeholder="ID пользователя"
+                  />
+                  <button
+                    type="submit"
+                    disabled={addingMember}
+                    className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
+                  >
+                    {addingMember ? "Добавляем..." : "Добавить"}
+                  </button>
+                </div>
+
+                {memberActionError && (
+                  <div className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
+                    {memberActionError}
+                  </div>
+                )}
+
+                {memberActionMessage && (
+                  <div className="mt-3 rounded-2xl bg-green-50 p-3 text-sm text-green-800 ring-1 ring-green-200">
+                    {memberActionMessage}
+                  </div>
+                )}
+              </form>
             )}
 
             {membersError && (

@@ -335,6 +335,12 @@ export async function addOrgLearningGroupMember(groupId, payload) {
   });
 }
 
+export async function deleteOrgLearningGroupMember(groupId, userId) {
+  return request(`/api/v1/org/groups/${groupId}/members/${userId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function removeOrgLearningGroupMember(groupId, userId) {
   return request(`/api/v1/org/groups/${groupId}/members/${userId}`, {
     method: "DELETE",
