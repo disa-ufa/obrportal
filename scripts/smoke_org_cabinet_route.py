@@ -85,6 +85,7 @@ def main() -> None:
         "frontend/src/pages/OrganizationCabinetPage.jsx",
         [
             "export function OrganizationCabinetPage",
+            "createOrgLearningGroup",
             "getOrgProfile",
             "updateOrgProfile",
             "getOrgLearningGroups",
@@ -95,6 +96,9 @@ def main() -> None:
             "Фактический адрес",
             "Редактировать",
             "Сохранить реквизиты",
+            "Создать учебную группу",
+            "Создать группу",
+            "handleCreateGroup",
             "Кабинет организации",
         ],
     )
@@ -106,6 +110,8 @@ def main() -> None:
             "export async function updateOrgProfile",
             "/api/v1/org/profile",
             "/api/v1/org/profile/${organizationId}",
+            "export async function createOrgLearningGroup",
+            "/api/v1/org/groups",
         ],
     )
 

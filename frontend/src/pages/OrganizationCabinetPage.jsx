@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, updateOrgProfile } from "../api/client";
+import { createOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -91,6 +91,18 @@ function EmptyState({ title, text }) {
   );
 }
 
+
+
+
+function buildEmptyGroupForm(organizationId = "") {
+  return {
+    organization_id: organizationId,
+    name: "",
+    code: "",
+    description: "",
+    is_active: true,
+  };
+}
 
 
 function buildOrganizationProfileFormData(organization) {
@@ -287,6 +299,10 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [members, setMembers] = useState([]);
   const [profile, setProfile] = useState(null);
+  const [groupForm, setGroupForm] = useState(() => buildEmptyGroupForm());
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [groupActionError, setGroupActionError] = useState("");
+  const [groupActionMessage, setGroupActionMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [membersLoading, setMembersLoading] = useState(false);
   const [error, setError] = useState("");
@@ -299,6 +315,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       try {
         setLoading(true);
         setError("");
+        setGroupActionError("");
+        setGroupActionMessage("");
 
         const [profileResponse, groupsResponse] = await Promise.all([
           getOrgProfile(),
@@ -395,6 +413,23 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     0
   );
 
+  useEffect(() => {
+    if (organizations.length === 0) {
+      return;
+    }
+
+    setGroupForm((current) => {
+      if (current.organization_id) {
+        return current;
+      }
+
+      return {
+        ...current,
+        organization_id: organizations[0].id,
+      };
+    });
+  }, [organizations]);
+
   async function handleSaveOrganization(organizationId, payload) {
     const updated = await updateOrgProfile(organizationId, payload);
 
@@ -412,6 +447,56 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     });
 
     return updated;
+  }
+
+  function handleGroupFormChange(event) {
+    const { checked, name, type, value } = event.target;
+
+    setGroupForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  }
+
+  async function handleCreateGroup(event) {
+    event.preventDefault();
+
+    if (!groupForm.organization_id) {
+      setGroupActionError("Выберите организацию для учебной группы.");
+      return;
+    }
+
+    if (!groupForm.name.trim()) {
+      setGroupActionError("Укажите название учебной группы.");
+      return;
+    }
+
+    try {
+      setCreatingGroup(true);
+      setGroupActionError("");
+      setGroupActionMessage("");
+
+      const created = await createOrgLearningGroup({
+        organization_id: groupForm.organization_id,
+        name: groupForm.name,
+        code: groupForm.code,
+        description: groupForm.description,
+        is_active: groupForm.is_active,
+      });
+
+      setGroups((current) =>
+        [...current, created].sort((left, right) =>
+          left.name.localeCompare(right.name, "ru")
+        )
+      );
+      setSelectedGroupId(created.id);
+      setGroupForm(buildEmptyGroupForm(created.organization_id));
+      setGroupActionMessage("Учебная группа создана.");
+    } catch (err) {
+      setGroupActionError(formatApiError(err, "Не удалось создать учебную группу."));
+    } finally {
+      setCreatingGroup(false);
+    }
   }
 
   return (
@@ -509,6 +594,107 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
               ))}
             </div>
           </div>
+        </section>
+      )}
+
+      {organizations.length > 0 && (
+        <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-950">Создать учебную группу</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Группа будет создана только в организации, доступной текущему представителю.
+              </p>
+            </div>
+          </div>
+
+          {groupActionError && (
+            <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+              {groupActionError}
+            </div>
+          )}
+
+          {groupActionMessage && (
+            <div className="mt-4 rounded-2xl bg-green-50 p-4 text-sm text-green-800 ring-1 ring-green-200">
+              {groupActionMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleCreateGroup} className="mt-5 grid gap-4 lg:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-500">Организация</span>
+              <select
+                name="organization_id"
+                value={groupForm.organization_id}
+                onChange={handleGroupFormChange}
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              >
+                {organizations.map((organization) => (
+                  <option key={organization.id} value={organization.id}>
+                    {organization.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-500">Название группы</span>
+              <input
+                name="name"
+                value={groupForm.name}
+                onChange={handleGroupFormChange}
+                maxLength={255}
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                placeholder="Например: Сотрудники филиала №1"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-500">Код группы</span>
+              <input
+                name="code"
+                value={groupForm.code}
+                onChange={handleGroupFormChange}
+                maxLength={64}
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                placeholder="Например: FILIAL-1-2026"
+              />
+            </label>
+
+            <label className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-100">
+              <input
+                name="is_active"
+                type="checkbox"
+                checked={groupForm.is_active}
+                onChange={handleGroupFormChange}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span className="text-sm font-semibold text-slate-700">Группа активна</span>
+            </label>
+
+            <label className="block lg:col-span-2">
+              <span className="text-xs font-semibold text-slate-500">Описание</span>
+              <textarea
+                name="description"
+                value={groupForm.description}
+                onChange={handleGroupFormChange}
+                maxLength={1024}
+                rows={3}
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                placeholder="Комментарий для внутренней навигации по группе"
+              />
+            </label>
+
+            <div className="lg:col-span-2">
+              <button
+                type="submit"
+                disabled={creatingGroup}
+                className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
+              >
+                {creatingGroup ? "Создаём..." : "Создать группу"}
+              </button>
+            </div>
+          </form>
         </section>
       )}
 
