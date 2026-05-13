@@ -278,6 +278,9 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupEnrollmentsMessages.jsx",
         [
             "export function OrganizationGroupEnrollmentsMessages",
+            "hasDeleteMessage",
+            "hasErrorMessage",
+            "return null",
             "groupEnrollmentDeleteMessage",
             "groupEnrollmentsError",
             "bg-green-50",
