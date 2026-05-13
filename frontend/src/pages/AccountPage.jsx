@@ -55,7 +55,7 @@ const ACCOUNT_COURSE_FILTERS = [
 const ACCOUNT_DOCUMENT_FILTERS = [
   { value: "", label: "Все" },
   { value: "available", label: "Доступные" },
-  { value: "draft", label: "Черновики" },
+  { value: "draft", label: "Ожидают публикации" },
   { value: "revoked", label: "Отозванные" },
 ];
 
@@ -86,7 +86,7 @@ function getDocumentStatusLabel(status) {
     case "available":
       return "Доступен";
     case "draft":
-      return "Черновик";
+      return "Ожидает публикации";
     case "revoked":
       return "Отозван";
     default:
@@ -136,7 +136,7 @@ function getAccountDocumentNotice(documentItem) {
   if (documentItem.status === "draft" && documentItem.file_available) {
     return {
       title: "Документ сформирован и ожидает публикации",
-      text: "Итоговый PDF уже создан, но пока скрыт от скачивания и публичного подтверждения. После публикации администратором появятся скачивание и публичная проверка.",
+      text: "Итоговый документ подготовлен и ожидает публикации администратором. После публикации он станет доступен для скачивания и публичной проверки.",
       toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
     };
   }
@@ -144,7 +144,7 @@ function getAccountDocumentNotice(documentItem) {
   if (documentItem.status === "draft") {
     return {
       title: "Документ готовится",
-      text: "Документ находится в черновике. Скачивание и публичная проверка станут доступны после формирования файла и публикации.",
+      text: "Документ подготавливается. После формирования и публикации он станет доступен для скачивания и публичной проверки.",
       toneClass: "bg-slate-100 text-slate-700 ring-slate-200",
     };
   }
@@ -524,7 +524,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         ) : courses.length === 0 ? (
           <div className="space-y-4">
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-              У пользователя пока нет назначенных программ.
+              У вас пока нет назначенных программ.
             </div>
             <button
               type="button"
@@ -698,7 +698,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
           </div>
         ) : documents.length === 0 ? (
           <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-            У пользователя пока нет доступных документов.
+            У вас пока нет доступных документов.
           </div>
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">

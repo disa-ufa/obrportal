@@ -112,7 +112,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
           </div>
         ) : featuredCourses.length === 0 ? (
           <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-            Пока нет опубликованных активных программ. Создайте и активируйте курс в админке.
+            Сейчас нет доступных программ. Пожалуйста, загляните позже.
           </div>
         ) : (
           <div className="mt-6 grid gap-4 md:grid-cols-3">
