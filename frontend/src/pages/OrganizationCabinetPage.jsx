@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { addOrgLearningGroupMember, createOrgLearningGroup, deleteOrgLearningGroupMember, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
+import { addOrgLearningGroupMember, createOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, removeOrgLearningGroupMember, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -757,7 +757,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       setMemberActionError("");
       setMemberActionMessage("");
 
-      await deleteOrgLearningGroupMember(selectedGroupId, member.user_id);
+      await removeOrgLearningGroupMember(selectedGroupId, member.user_id);
 
       setMembers((current) => current.filter((item) => item.id !== member.id));
       setMemberActionMessage("Участник удалён из группы.");

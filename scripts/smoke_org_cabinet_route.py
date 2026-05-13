@@ -86,7 +86,7 @@ def main() -> None:
         [
             "export function OrganizationCabinetPage",
             "addOrgLearningGroupMember",
-            "deleteOrgLearningGroupMember",
+            "removeOrgLearningGroupMember",
             "createOrgLearningGroup",
             "updateOrgLearningGroup",
             "getOrgProfile",
@@ -124,7 +124,7 @@ def main() -> None:
             "/api/v1/org/profile/${organizationId}",
             "export async function createOrgLearningGroup",
             "export async function addOrgLearningGroupMember",
-            "export async function deleteOrgLearningGroupMember",
+            "export async function removeOrgLearningGroupMember",
             "export async function updateOrgLearningGroup",
             "/api/v1/org/groups",
             "/api/v1/org/groups/${groupId}",
