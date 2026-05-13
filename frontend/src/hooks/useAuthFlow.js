@@ -89,7 +89,7 @@ export function useAuthFlow({
 
       return currentUser;
     } catch (err) {
-      setError(err.message);
+      setError(formatApiError(err, "Не удалось завершить регистрацию."));
       throw err;
     } finally {
       setAuthLoading(false);
@@ -119,7 +119,7 @@ export function useAuthFlow({
         navigate("/account", { replace: true });
       }
     } catch (err) {
-      setError(err.message);
+      setError(formatApiError(err, "Не удалось войти."));
       setUser(null);
       setAdminData(EMPTY_ADMIN_DATA);
       setAdminDataLoadedAt("");
