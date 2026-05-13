@@ -227,15 +227,9 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
         <div className="rounded-[2rem] bg-white p-8 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
           <div className="font-semibold text-slate-900">Программы не найдены</div>
           <p className="mt-2 leading-6">
-            Измените фильтры или создайте активные программы в разделе администрирования.
+            По выбранным условиям ничего не найдено. Попробуйте изменить фильтры
+            или вернуться к полному списку программ.
           </p>
-          <button
-            type="button"
-            onClick={() => onPageChange("admin")}
-            className="mt-5 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Перейти в админку
-          </button>
         </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
