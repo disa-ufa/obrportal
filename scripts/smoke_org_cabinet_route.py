@@ -406,6 +406,11 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupMemberCard.jsx",
         [
             "export function OrganizationGroupMemberCard",
+            "memberTitle",
+            "memberEmail",
+            "createdAtLabel",
+            "deleteButtonLabel",
+            "handleDeleteClick",
             "organizationLabel",
             "roleLabel",
             "isDeleting",
