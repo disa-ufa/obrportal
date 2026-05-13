@@ -235,10 +235,8 @@ def main() -> None:
         [
             "export function OrganizationGroupEnrollmentsSection",
             "OrganizationGroupEnrollmentsHeader",
+            "OrganizationGroupEnrollmentsFilters",
             "Снять назначение",
-            "Сбросить",
-            "Поиск по курсу, участнику или email",
-            "Все статусы",
             "formatEnrollmentStatus",
             "enrollment.status === \"assigned\"",
             "onClick={() => handleDeleteGroupEnrollment(enrollment)}",
@@ -255,6 +253,21 @@ def main() -> None:
             "groupEnrollmentsLoading ? \"Обновляем...\" : \"Обновить\"",
             "visibleGroupEnrollments.length",
             "groupEnrollments.length",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupEnrollmentsFilters.jsx",
+        [
+            "export function OrganizationGroupEnrollmentsFilters",
+            "Поиск по курсу, участнику или email",
+            "Все статусы",
+            "Назначен",
+            "В процессе",
+            "Завершён",
+            "setGroupEnrollmentSearchQuery(\"\")",
+            "setGroupEnrollmentStatusFilter(\"\")",
+            "Сбросить",
         ],
     )
 
