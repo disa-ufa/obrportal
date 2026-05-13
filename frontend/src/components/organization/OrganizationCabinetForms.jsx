@@ -357,6 +357,15 @@ export function EmptyState({ title, text }) {
 }
 
 
+export function OrganizationCabinetHero({ children }) {
+  return (
+    <section className="rounded-[2rem] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-6 text-white shadow-sm md:p-8">
+      {children}
+    </section>
+  );
+}
+
+
 export function SummaryCard({ label, value, hint }) {
   return (
     <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">

@@ -1,9 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-import { addOrgLearningGroupMember, createOrgGroupEnrollments, createOrgLearningGroup, deleteOrgGroupEnrollment, getOrgGroupEnrollments, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, getPublicCourses, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
+import {
+  addOrgLearningGroupMember,
+  createOrgGroupEnrollments,
+  createOrgLearningGroup,
+  deleteOrgGroupEnrollment,
+  deleteOrgLearningGroup,
+  getOrgGroupEnrollments,
+  getOrgLearningGroupMembers,
+  getOrgLearningGroups,
+  getOrgProfile,
+  getPublicCourses,
+  removeOrgLearningGroupMember,
+  searchOrgUsers,
+  updateOrgLearningGroup,
+  updateOrgProfile,
+} from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 import {
   EmptyState,
   LearningGroupEditForm,
+  OrganizationCabinetHero,
   OrganizationProfileCard,
   SummaryCard,
 } from "../components/organization/OrganizationCabinetForms";
@@ -736,7 +752,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-6 text-white shadow-sm md:p-8">
+      <OrganizationCabinetHero>
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-200">
           Кабинет организации
         </div>
@@ -778,7 +794,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
             </button>
           </div>
         </div>
-      </section>
+      </OrganizationCabinetHero>
 
       {error && (
         <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200">
