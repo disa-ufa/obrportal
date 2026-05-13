@@ -140,20 +140,12 @@ def main() -> None:
             "OrganizationSelectedGroupPanelHeader",
             "LearningGroupEditForm",
             "OrganizationGroupCourseAssignmentForm",
-            "Назначения группы",
-            "Снять назначение",
-            "Сбросить",
-            "Поиск по курсу, участнику или email",
-            "Все статусы",
-            "Обновить",
+            "OrganizationGroupEnrollmentsSection",
             "Добавить участника",
             "Email или ФИО пользователя",
             "Добавить в группу",
             "candidate.roles",
             "member.user_roles",
-            "formatEnrollmentStatus",
-            "enrollment.status === \"assigned\"",
-            "onClick={() => handleDeleteGroupEnrollment(enrollment)}",
         ],
     )
 
@@ -168,6 +160,22 @@ def main() -> None:
             "created_count",
             "skipped_count",
             "shortId",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupEnrollmentsSection.jsx",
+        [
+            "export function OrganizationGroupEnrollmentsSection",
+            "Назначения группы",
+            "Снять назначение",
+            "Сбросить",
+            "Поиск по курсу, участнику или email",
+            "Все статусы",
+            "Обновить",
+            "formatEnrollmentStatus",
+            "enrollment.status === \"assigned\"",
+            "onClick={() => handleDeleteGroupEnrollment(enrollment)}",
         ],
     )
 
