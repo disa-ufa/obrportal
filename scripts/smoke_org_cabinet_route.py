@@ -234,15 +234,27 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupEnrollmentsSection.jsx",
         [
             "export function OrganizationGroupEnrollmentsSection",
-            "Назначения группы",
+            "OrganizationGroupEnrollmentsHeader",
             "Снять назначение",
             "Сбросить",
             "Поиск по курсу, участнику или email",
             "Все статусы",
-            "Обновить",
             "formatEnrollmentStatus",
             "enrollment.status === \"assigned\"",
             "onClick={() => handleDeleteGroupEnrollment(enrollment)}",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupEnrollmentsHeader.jsx",
+        [
+            "export function OrganizationGroupEnrollmentsHeader",
+            "Назначения группы",
+            "Курсы, уже назначенные участникам выбранной учебной группы",
+            "setGroupEnrollmentsRefreshKey((current) => current + 1)",
+            "groupEnrollmentsLoading ? \"Обновляем...\" : \"Обновить\"",
+            "visibleGroupEnrollments.length",
+            "groupEnrollments.length",
         ],
     )
 
