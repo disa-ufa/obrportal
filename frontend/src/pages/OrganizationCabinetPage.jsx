@@ -978,6 +978,14 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }
   }
 
+  useEffect(() => {
+    setOrganizationUsers([]);
+    setOrganizationUsersError("");
+    setOrganizationUsersMessage("");
+    setAddingOrganizationUserId("");
+  }, [selectedGroupId]);
+
+
   async function handleSearchOrganizationUsers(event) {
     event?.preventDefault?.();
 
@@ -985,10 +993,16 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       setOrganizationUsersLoading(true);
       setOrganizationUsersError("");
 
-      const results = await searchOrgUsers({
+      const filters = {
         q: organizationUsersQuery,
         limit: 50,
-      });
+      };
+
+      if (selectedGroupId) {
+        filters.exclude_group_id = selectedGroupId;
+      }
+
+      const results = await searchOrgUsers(filters);
 
       setOrganizationUsers(Array.isArray(results) ? results : []);
     } catch (err) {
@@ -1407,6 +1421,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
           {organizationUsers.length === 0 ? (
             <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
               Пользователи пока не загружены. Нажмите «Загрузить список» или выполните поиск.
+              Если выбрана учебная группа, уже добавленные в неё пользователи будут скрыты.
             </div>
           ) : (
             <div className="mt-4 grid gap-3">

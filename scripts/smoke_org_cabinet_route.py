@@ -119,6 +119,8 @@ def main() -> None:
             "organizationUsers",
             "handleSearchOrganizationUsers",
             "handleAddOrganizationUserToSelectedGroup",
+            "filters.exclude_group_id = selectedGroupId",
+            "setOrganizationUsers([])",
             "addingOrganizationUserId",
             "Добавить в группу",
             "Загрузить список",
