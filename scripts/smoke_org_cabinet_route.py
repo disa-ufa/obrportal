@@ -141,11 +141,7 @@ def main() -> None:
             "LearningGroupEditForm",
             "OrganizationGroupCourseAssignmentForm",
             "OrganizationGroupEnrollmentsSection",
-            "Добавить участника",
-            "Email или ФИО пользователя",
-            "Добавить в группу",
-            "candidate.roles",
-            "member.user_roles",
+            "OrganizationGroupMembersSection",
         ],
     )
 
@@ -176,6 +172,23 @@ def main() -> None:
             "formatEnrollmentStatus",
             "enrollment.status === \"assigned\"",
             "onClick={() => handleDeleteGroupEnrollment(enrollment)}",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupMembersSection.jsx",
+        [
+            "export function OrganizationGroupMembersSection",
+            "Добавить участника",
+            "Email или ФИО пользователя",
+            "Добавить в группу",
+            "candidate.roles",
+            "member.user_roles",
+            "Загружаем участников",
+            "В выбранной группе пока нет участников",
+            "formatDate",
+            "formatUserOrganizations",
+            "formatUserRoles",
         ],
     )
 
