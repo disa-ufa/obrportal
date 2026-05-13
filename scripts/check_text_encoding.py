@@ -32,6 +32,7 @@ CRITICAL_FILES = [
     Path("frontend/src/components/admin/RoleForm.jsx"),
     Path("frontend/src/pages/DocumentsPage.jsx"),
     Path("frontend/src/pages/VerifyDocumentPage.jsx"),
+    Path("frontend/src/hooks/usePendingEnrollment.js"),
     Path("frontend/src/components/documents/DocumentVerificationQrBlock.jsx"),
     Path("frontend/src/utils/documentVerification.js"),
 ]
