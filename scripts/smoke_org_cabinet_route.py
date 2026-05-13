@@ -199,6 +199,8 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupMemberAddForm.jsx",
         [
             "export function OrganizationGroupMemberAddForm",
+            "organizationLabel",
+            "roleLabel",
             "Добавить участника",
             "Email или ФИО пользователя",
             "Добавить в группу",

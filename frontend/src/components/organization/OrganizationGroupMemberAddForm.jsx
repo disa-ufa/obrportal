@@ -47,6 +47,11 @@ export function OrganizationGroupMemberAddForm({
         <div className="mt-3 grid gap-2">
           {memberSearchResults.map((candidate) => {
             const active = memberUserId === candidate.id;
+            const organizationLabel = formatUserOrganizations(
+              candidate.organizations,
+              candidate.organization_ids,
+            );
+            const roleLabel = formatUserRoles(candidate.roles);
 
             return (
               <button
@@ -65,14 +70,14 @@ export function OrganizationGroupMemberAddForm({
                 <span className="mt-1 block text-xs text-slate-500">
                   {candidate.email}
                 </span>
-                {formatUserOrganizations(candidate.organizations, candidate.organization_ids) && (
+                {organizationLabel && (
                   <span className="mt-2 block text-xs text-slate-500">
-                    Организация: {formatUserOrganizations(candidate.organizations, candidate.organization_ids)}
+                    Организация: {organizationLabel}
                   </span>
                 )}
-                {formatUserRoles(candidate.roles) && (
+                {roleLabel && (
                   <span className="mt-1 block text-xs text-slate-500">
-                    Роли: {formatUserRoles(candidate.roles)}
+                    Роли: {roleLabel}
                   </span>
                 )}
               </button>
