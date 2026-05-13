@@ -92,9 +92,37 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/utils/organizationCabinet.js",
+        [
+            "export function formatDate",
+            "export function formatOptional",
+            "export function shortId",
+            "export function formatUserOrganizations",
+            "export function formatUserRoles",
+            "export function buildOrganizationOptions",
+            "export function getOrganizationLabel",
+            "export function getGroupStatus",
+            "export function sortEnrollments",
+            "export function formatEnrollmentStatus",
+            "export function mergeUniqueEnrollments",
+            "export function enrollmentMatchesFilters",
+            "export function hasActiveEnrollmentFilters",
+            "export function sortOrganizationUsers",
+            "export function buildOrganizationUserFromMember",
+            "export function organizationUserMatchesQuery",
+            "export function sortMembers",
+            "export function buildEmptyGroupEnrollmentForm",
+            "export function buildEmptyGroupForm",
+            "export function buildLearningGroupFormData",
+            "export function buildOrganizationProfileFormData",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/OrganizationCabinetPage.jsx",
         [
             "export function OrganizationCabinetPage",
+            "from \"../utils/organizationCabinet\";",
             "addOrgLearningGroupMember",
             "removeOrgLearningGroupMember",
             "searchOrgUsers",
