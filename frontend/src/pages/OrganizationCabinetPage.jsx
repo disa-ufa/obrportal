@@ -20,8 +20,8 @@ import {
   EmptyState,
   LearningGroupEditForm,
   OrganizationCabinetHero,
+  OrganizationCabinetStats,
   OrganizationProfileCard,
-  SummaryCard,
 } from "../components/organization/OrganizationCabinetForms";
 import {
   buildEmptyGroupEnrollmentForm,
@@ -802,23 +802,16 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <SummaryCard
-          label="Организаций в доступе"
-          value={summary.organizations_count ?? organizations.length}
-          hint="По scope назначенной роли"
-        />
-        <SummaryCard
-          label="Учебных групп"
-          value={summary.groups_count ?? groups.length}
-          hint={`${summary.active_groups_count ?? activeGroupsCount} активных / ${inactiveGroupsCount} неактивных`}
-        />
-        <SummaryCard
-          label="Участников выбранной группы"
-          value={selectedGroupId ? members.length : "—"}
-          hint={selectedGroup ? selectedGroup.name : "Выберите группу"}
-        />
-      </div>
+      <OrganizationCabinetStats
+        summary={summary}
+        organizations={organizations}
+        groups={groups}
+        activeGroupsCount={activeGroupsCount}
+        inactiveGroupsCount={inactiveGroupsCount}
+        selectedGroup={selectedGroup}
+        selectedGroupId={selectedGroupId}
+        members={members}
+      />
 
       {organizations.length > 0 && (
         <section className="rounded-[2rem] bg-slate-50 p-1">

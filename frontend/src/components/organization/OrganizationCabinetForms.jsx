@@ -366,6 +366,38 @@ export function OrganizationCabinetHero({ children }) {
 }
 
 
+export function OrganizationCabinetStats({
+  summary,
+  organizations,
+  groups,
+  activeGroupsCount,
+  inactiveGroupsCount,
+  selectedGroup,
+  selectedGroupId,
+  members,
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      <SummaryCard
+        label="Организаций в доступе"
+        value={summary.organizations_count ?? organizations.length}
+        hint="По scope назначенной роли"
+      />
+      <SummaryCard
+        label="Учебных групп"
+        value={summary.groups_count ?? groups.length}
+        hint={`${summary.active_groups_count ?? activeGroupsCount} активных / ${inactiveGroupsCount} неактивных`}
+      />
+      <SummaryCard
+        label="Участников выбранной группы"
+        value={selectedGroupId ? members.length : "—"}
+        hint={selectedGroup ? selectedGroup.name : "Выберите группу"}
+      />
+    </div>
+  );
+}
+
+
 export function SummaryCard({ label, value, hint }) {
   return (
     <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">

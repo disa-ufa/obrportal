@@ -96,6 +96,7 @@ def main() -> None:
         [
             "export function EmptyState",
             "export function OrganizationCabinetHero",
+            "export function OrganizationCabinetStats",
             "export function SummaryCard",
             "export function OrganizationProfileCard",
             "export function LearningGroupEditForm",
