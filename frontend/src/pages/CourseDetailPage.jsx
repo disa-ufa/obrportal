@@ -395,7 +395,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">Похожие программы</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Быстрый переход к другим опубликованным программам из backend.
+            Быстрый переход к другим доступным программам из каталога.
           </p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">

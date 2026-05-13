@@ -248,8 +248,8 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
           )}
 
           <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            Следом можно будет добавить человеко-понятные ошибки, подтверждение e-mail
-            и полноценную анкету слушателя.
+            После регистрации в личном кабинете будут доступны выбранные программы,
+            статусы обучения и итоговые документы.
           </div>
         </div>
       </SectionCard>

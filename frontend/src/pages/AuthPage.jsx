@@ -80,7 +80,7 @@ export function AuthPage({
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <SectionCard
         title="Вход в систему"
-        subtitle="Публичная точка входа для перехода к обучению и служебным контурам."
+        subtitle="Вход для слушателей, организаций и администраторов."
       >
         {error && (
           <Alert title="Не удалось выполнить вход" tone="red">
@@ -131,12 +131,12 @@ export function AuthPage({
 
       <SectionCard
         title="Что будет дальше"
-        subtitle="Публичный auth-flow под сценарии слушателя и служебных ролей."
+        subtitle="После входа система откроет подходящий раздел."
       >
         <div className="space-y-4 text-sm leading-6 text-slate-600">
           <p>
-            После входа пользователь попадает только в допустимый для своей роли
-            контур: публичный, пользовательский, корпоративный или служебный.
+            После входа вы увидите только доступные вам разделы: личный кабинет
+            слушателя или панель администрирования.
           </p>
 
           <div className="grid gap-3 md:grid-cols-2">
@@ -147,9 +147,9 @@ export function AuthPage({
               </div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              <div className="font-semibold text-slate-900">Для back-office</div>
+              <div className="font-semibold text-slate-900">Для администраторов</div>
               <div className="mt-1">
-                RBAC, администрирование пользователей, программ, назначений и документов.
+                Управление пользователями, программами, назначениями и документами.
               </div>
             </div>
           </div>

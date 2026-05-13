@@ -89,7 +89,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Популярные программы</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Карточки загружаются из backend через публичный API курсов.
+              Выберите программу, изучите условия и перейдите к записи на обучение.
             </p>
           </div>
 
