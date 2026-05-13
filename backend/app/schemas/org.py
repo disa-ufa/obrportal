@@ -34,6 +34,18 @@ class OrgLearningGroupUpdate(BaseModel):
     is_active: bool | None = None
 
 
+
+class OrgUserSearchOrganizationItem(BaseModel):
+    id: str
+    name: str | None = None
+
+
+class OrgUserSearchRoleItem(BaseModel):
+    code: str
+    name: str
+    organization_id: str | None = None
+
+
 class OrgLearningGroupMemberItem(BaseModel):
     id: str
     learning_group_id: str
@@ -41,6 +53,8 @@ class OrgLearningGroupMemberItem(BaseModel):
     user_email: str
     user_full_name: str | None = None
     user_is_active: bool
+    user_organizations: list[OrgUserSearchOrganizationItem] = Field(default_factory=list)
+    user_roles: list[OrgUserSearchRoleItem] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
@@ -52,6 +66,8 @@ class OrgUserSearchItem(BaseModel):
     full_name: str | None = None
     is_active: bool
     organization_ids: list[str]
+    organizations: list[OrgUserSearchOrganizationItem] = Field(default_factory=list)
+    roles: list[OrgUserSearchRoleItem] = Field(default_factory=list)
 
 
 class OrgLearningGroupMemberCreate(BaseModel):

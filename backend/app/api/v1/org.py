@@ -23,6 +23,8 @@ from app.schemas.org import (
     OrgProfileSummary,
     OrgProfileUpdate,
     OrgUserSearchItem,
+    OrgUserSearchOrganizationItem,
+    OrgUserSearchRoleItem,
 )
 
 
@@ -114,14 +116,22 @@ def build_learning_group_detail(group: LearningGroup) -> OrgLearningGroupDetail:
     )
 
 
-def build_learning_group_member_item(row) -> OrgLearningGroupMemberItem:
+def build_learning_group_member_item(
+    row,
+    user_scope_by_user_id: dict[str, dict] | None = None,
+) -> OrgLearningGroupMemberItem:
+    user_id = str(row.user_id)
+    scope = (user_scope_by_user_id or {}).get(user_id, {})
+
     return OrgLearningGroupMemberItem(
         id=str(row.id),
         learning_group_id=str(row.learning_group_id),
-        user_id=str(row.user_id),
+        user_id=user_id,
         user_email=row.user_email,
         user_full_name=row.user_full_name,
         user_is_active=bool(row.user_is_active),
+        user_organizations=scope.get("organizations", []),
+        user_roles=scope.get("roles", []),
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -228,23 +238,118 @@ async def build_org_profile_summary(
     )
 
 
+async def build_user_scope_map(
+    user_ids: list[str],
+    session: AsyncSession,
+) -> dict[str, dict]:
+    unique_user_ids = list(dict.fromkeys(user_ids))
+
+    if not unique_user_ids:
+        return {}
+
+    scope_by_user_id: dict[str, dict] = {
+        user_id: {
+            "organizations": [],
+            "roles": [],
+            "organization_ids": set(),
+            "role_keys": set(),
+        }
+        for user_id in unique_user_ids
+    }
+
+    result = await session.execute(
+        select(
+            UserRole.user_id,
+            UserRole.organization_id,
+            Organization.name.label("organization_name"),
+            Role.code.label("role_code"),
+            Role.name.label("role_name"),
+        )
+        .join(Role, Role.id == UserRole.role_id)
+        .outerjoin(Organization, Organization.id == UserRole.organization_id)
+        .where(UserRole.user_id.in_(unique_user_ids))
+        .order_by(Role.name, Organization.name)
+    )
+
+    for user_id, organization_id, organization_name, role_code, role_name in result.all():
+        normalized_user_id = str(user_id)
+        scope = scope_by_user_id.setdefault(
+            normalized_user_id,
+            {
+                "organizations": [],
+                "roles": [],
+                "organization_ids": set(),
+                "role_keys": set(),
+            },
+        )
+
+        normalized_organization_id = str(organization_id) if organization_id is not None else None
+
+        if normalized_organization_id and normalized_organization_id not in scope["organization_ids"]:
+            scope["organization_ids"].add(normalized_organization_id)
+            scope["organizations"].append(
+                OrgUserSearchOrganizationItem(
+                    id=normalized_organization_id,
+                    name=organization_name,
+                )
+            )
+
+        role_key = (role_code, normalized_organization_id)
+
+        if role_code and role_key not in scope["role_keys"]:
+            scope["role_keys"].add(role_key)
+            scope["roles"].append(
+                OrgUserSearchRoleItem(
+                    code=role_code,
+                    name=role_name,
+                    organization_id=normalized_organization_id,
+                )
+            )
+
+    for scope in scope_by_user_id.values():
+        scope.pop("organization_ids", None)
+        scope.pop("role_keys", None)
+
+    return scope_by_user_id
+
+
 def build_org_user_search_items(rows, limit: int) -> list[OrgUserSearchItem]:
     users_by_id: dict[str, dict] = {}
 
-    for user, organization_id in rows:
+    for user, organization_id, organization_name, role_code, role_name in rows:
         user_id = str(user.id)
 
         if user_id not in users_by_id:
             users_by_id[user_id] = {
                 "user": user,
                 "organization_ids": [],
+                "organizations": [],
+                "roles": [],
+                "role_keys": set(),
             }
 
-        if organization_id is not None:
-            normalized_organization_id = str(organization_id)
+        normalized_organization_id = str(organization_id) if organization_id is not None else None
 
-            if normalized_organization_id not in users_by_id[user_id]["organization_ids"]:
-                users_by_id[user_id]["organization_ids"].append(normalized_organization_id)
+        if normalized_organization_id and normalized_organization_id not in users_by_id[user_id]["organization_ids"]:
+            users_by_id[user_id]["organization_ids"].append(normalized_organization_id)
+            users_by_id[user_id]["organizations"].append(
+                OrgUserSearchOrganizationItem(
+                    id=normalized_organization_id,
+                    name=organization_name,
+                )
+            )
+
+        role_key = (role_code, normalized_organization_id)
+
+        if role_code and role_key not in users_by_id[user_id]["role_keys"]:
+            users_by_id[user_id]["role_keys"].add(role_key)
+            users_by_id[user_id]["roles"].append(
+                OrgUserSearchRoleItem(
+                    code=role_code,
+                    name=role_name,
+                    organization_id=normalized_organization_id,
+                )
+            )
 
     items: list[OrgUserSearchItem] = []
 
@@ -257,6 +362,8 @@ def build_org_user_search_items(rows, limit: int) -> list[OrgUserSearchItem]:
                 full_name=user.full_name,
                 is_active=user.is_active,
                 organization_ids=item["organization_ids"],
+                organizations=item["organizations"],
+                roles=item["roles"],
             )
         )
 
@@ -506,8 +613,16 @@ async def search_org_users(
         excluded_user_ids = {str(user_id) for user_id in members_result.scalars().all()}
 
     query = (
-        select(User, UserRole.organization_id)
+        select(
+            User,
+            UserRole.organization_id,
+            Organization.name.label("organization_name"),
+            Role.code.label("role_code"),
+            Role.name.label("role_name"),
+        )
         .join(UserRole, UserRole.user_id == User.id)
+        .join(Role, Role.id == UserRole.role_id)
+        .outerjoin(Organization, Organization.id == UserRole.organization_id)
         .where(
             User.is_active.is_(True),
             UserRole.organization_id.is_not(None),
@@ -782,7 +897,16 @@ async def list_learning_group_members(
         .order_by(User.email.asc())
     )
 
-    return [build_learning_group_member_item(row) for row in result.all()]
+    rows = result.all()
+    user_scope_by_user_id = await build_user_scope_map(
+        [str(row.user_id) for row in rows],
+        session,
+    )
+
+    return [
+        build_learning_group_member_item(row, user_scope_by_user_id)
+        for row in rows
+    ]
 
 
 @router.post(
@@ -844,8 +968,9 @@ async def add_learning_group_member(
         str(user.id),
         session,
     )
+    user_scope_by_user_id = await build_user_scope_map([str(user.id)], session)
 
-    return build_learning_group_member_item(row)
+    return build_learning_group_member_item(row, user_scope_by_user_id)
 
 
 @router.delete(

@@ -6563,6 +6563,8 @@ def test_org_user_search_is_limited_to_assigned_organization() -> None:
     assert isinstance(scoped_results, list)
     assert [item["id"] for item in scoped_results] == [first_user["id"]]
     assert scoped_results[0]["organization_ids"] == [first_organization_id]
+    assert scoped_results[0]["organizations"][0]["id"] == first_organization_id
+    assert any(role["code"] == "learner_fl" for role in scoped_results[0]["roles"])
 
     status, foreign_results = request_json(
         "GET",
@@ -6694,6 +6696,8 @@ def test_org_group_member_add_rejects_user_from_foreign_organization() -> None:
     assert status == 201
     assert isinstance(first_member, dict)
     assert first_member["user_id"] == first_user["id"]
+    assert any(item["id"] == first_organization_id for item in first_member["user_organizations"])
+    assert any(role["code"] == "learner_fl" for role in first_member["user_roles"])
 
     status, foreign_member = request_json(
         "POST",

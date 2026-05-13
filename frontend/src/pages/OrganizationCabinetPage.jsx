@@ -27,6 +27,31 @@ function formatOptional(value) {
 }
 
 
+
+function formatUserOrganizations(organizations = [], organizationIds = []) {
+  if (Array.isArray(organizations) && organizations.length > 0) {
+    return organizations
+      .map((organization) => organization.name || shortId(organization.id))
+      .join(", ");
+  }
+
+  if (Array.isArray(organizationIds) && organizationIds.length > 0) {
+    return organizationIds.map((id) => shortId(id)).join(", ");
+  }
+
+  return "";
+}
+
+
+function formatUserRoles(roles = []) {
+  if (!Array.isArray(roles) || roles.length === 0) {
+    return "";
+  }
+
+  return roles.map((role) => role.name || role.code).join(", ");
+}
+
+
 function shortId(value) {
   if (!value) {
     return "—";
@@ -1179,6 +1204,16 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                           <span className="mt-1 block text-xs text-slate-500">
                             {candidate.email}
                           </span>
+                          {formatUserOrganizations(candidate.organizations, candidate.organization_ids) && (
+                            <span className="mt-2 block text-xs text-slate-500">
+                              Организация: {formatUserOrganizations(candidate.organizations, candidate.organization_ids)}
+                            </span>
+                          )}
+                          {formatUserRoles(candidate.roles) && (
+                            <span className="mt-1 block text-xs text-slate-500">
+                              Роли: {formatUserRoles(candidate.roles)}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -1239,6 +1274,16 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                     <div className="mt-2 text-xs text-slate-500">
                       Добавлен: {formatDate(member.created_at)}
                     </div>
+                    {formatUserOrganizations(member.user_organizations) && (
+                      <div className="mt-2 text-xs text-slate-500">
+                        Организация: {formatUserOrganizations(member.user_organizations)}
+                      </div>
+                    )}
+                    {formatUserRoles(member.user_roles) && (
+                      <div className="mt-1 text-xs text-slate-500">
+                        Роли: {formatUserRoles(member.user_roles)}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
