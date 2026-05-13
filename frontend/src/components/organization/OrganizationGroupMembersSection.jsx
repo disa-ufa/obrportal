@@ -20,31 +20,37 @@ export function OrganizationGroupMembersSection({
   deletingMemberId,
   handleDeleteMember,
 }) {
+  const hasSelectedGroup = Boolean(selectedGroup);
+
+  const memberAddFormProps = {
+    handleAddMember,
+    memberSearchQuery,
+    setMemberSearchQuery,
+    memberSearchLoading,
+    handleSearchMemberCandidates,
+    memberSearchResults,
+    memberUserId,
+    setMemberUserId,
+    addingMember,
+    memberActionError,
+    memberActionMessage,
+  };
+
+  const membersListProps = {
+    membersLoading,
+    membersError,
+    members,
+    deletingMemberId,
+    handleDeleteMember,
+  };
+
   return (
     <>
-      {selectedGroup && (
-        <OrganizationGroupMemberAddForm
-          handleAddMember={handleAddMember}
-          memberSearchQuery={memberSearchQuery}
-          setMemberSearchQuery={setMemberSearchQuery}
-          memberSearchLoading={memberSearchLoading}
-          handleSearchMemberCandidates={handleSearchMemberCandidates}
-          memberSearchResults={memberSearchResults}
-          memberUserId={memberUserId}
-          setMemberUserId={setMemberUserId}
-          addingMember={addingMember}
-          memberActionError={memberActionError}
-          memberActionMessage={memberActionMessage}
-        />
+      {hasSelectedGroup && (
+        <OrganizationGroupMemberAddForm {...memberAddFormProps} />
       )}
 
-      <OrganizationGroupMembersList
-        membersLoading={membersLoading}
-        membersError={membersError}
-        members={members}
-        deletingMemberId={deletingMemberId}
-        handleDeleteMember={handleDeleteMember}
-      />
+      <OrganizationGroupMembersList {...membersListProps} />
     </>
   );
 }

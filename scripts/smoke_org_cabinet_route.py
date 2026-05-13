@@ -345,6 +345,11 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupMembersSection.jsx",
         [
             "export function OrganizationGroupMembersSection",
+            "hasSelectedGroup",
+            "memberAddFormProps",
+            "membersListProps",
+            "<OrganizationGroupMemberAddForm {...memberAddFormProps} />",
+            "<OrganizationGroupMembersList {...membersListProps} />",
             "OrganizationGroupMemberAddForm",
             "OrganizationGroupMembersList",
         ],
