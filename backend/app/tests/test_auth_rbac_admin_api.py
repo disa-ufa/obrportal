@@ -6602,3 +6602,144 @@ def test_org_user_search_is_limited_to_assigned_organization() -> None:
     )
     assert status == 403
     assert isinstance(forbidden_payload, dict)
+
+
+
+def test_org_group_member_add_rejects_user_from_foreign_organization() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+
+    learner_role_id = get_role_id_by_code(admin_token, "learner_fl")
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    first_user_email = f"org_member_first_{uuid4().hex[:12]}@example.com"
+    second_user_email = f"org_member_second_{uuid4().hex[:12]}@example.com"
+
+    status, first_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": first_user_email,
+            "password": "OrgMemberFirst123!",
+            "full_name": "Org Member First User",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(first_user, dict)
+
+    status, second_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": second_user_email,
+            "password": "OrgMemberSecond123!",
+            "full_name": "Org Member Second User",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(second_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{first_user['id']}/roles",
+        {
+            "role_id": learner_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{second_user['id']}/roles",
+        {
+            "role_id": learner_role_id,
+            "organization_id": second_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    group_code = unique_group_code()
+    status, group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": first_organization_id,
+            "name": f"Foreign member guard group {group_code}",
+            "code": group_code,
+            "description": "Group member foreign organization guard",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(group, dict)
+
+    status, first_member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{group['id']}/members",
+        {"user_id": first_user["id"]},
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(first_member, dict)
+    assert first_member["user_id"] == first_user["id"]
+
+    status, foreign_member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{group['id']}/members",
+        {"user_id": second_user["id"]},
+        token=admin_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_member, dict)
+
+    org_rep_email = f"org_member_rep_{uuid4().hex[:12]}@example.com"
+    org_rep_password = "OrgMemberRep123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Org Member Representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user['id']}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, scoped_foreign_member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{group['id']}/members",
+        {"user_id": second_user["id"]},
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(scoped_foreign_member, dict)

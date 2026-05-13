@@ -300,6 +300,32 @@ async def get_user_or_404(
     return user
 
 
+async def ensure_user_belongs_to_group_organization_or_404(
+    *,
+    user_id: str,
+    organization_id: str,
+    session: AsyncSession,
+) -> None:
+    result = await session.execute(
+        select(UserRole.organization_id).where(
+            UserRole.user_id == user_id,
+            UserRole.organization_id.is_not(None),
+        )
+    )
+    scoped_organization_ids = {str(item) for item in result.scalars().all()}
+
+    if not scoped_organization_ids:
+        return
+
+    if organization_id in scoped_organization_ids:
+        return
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="User not found",
+    )
+
+
 async def get_organization_scope_for_permission(
     current_user: User,
     permission_code: str,
@@ -760,6 +786,12 @@ async def add_learning_group_member(
         allowed_organization_ids,
     )
     user = await get_user_or_404(payload.user_id.strip(), session)
+
+    await ensure_user_belongs_to_group_organization_or_404(
+        user_id=str(user.id),
+        organization_id=str(group.organization_id),
+        session=session,
+    )
 
     if await learning_group_member_exists(
         group_id=str(group.id),
