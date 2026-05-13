@@ -209,7 +209,6 @@ def main() -> None:
             "setOrganizationUsers([])",
             "setOrganizationUsers(Array.isArray(results) ? sortOrganizationUsers(results) : [])",
             "addingOrganizationUserId",
-            "Добавить в группу",
             "handleCreateGroup",
             "LearningGroupEditForm",
             "handleSaveGroup",
