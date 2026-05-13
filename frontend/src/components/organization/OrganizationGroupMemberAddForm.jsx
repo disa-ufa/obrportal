@@ -14,6 +14,15 @@ export function OrganizationGroupMemberAddForm({
   memberActionError,
   memberActionMessage,
 }) {
+  const hasMemberSearchResults = memberSearchResults.length > 0;
+  const isSubmitDisabled = addingMember || !memberUserId;
+  const searchButtonLabel = memberSearchLoading ? "Ищем..." : "Найти";
+  const submitButtonLabel = addingMember ? "Добавляем..." : "Добавить в группу";
+
+  function handleMemberSearchQueryChange(event) {
+    setMemberSearchQuery(event.target.value);
+  }
+
   return (
     <form
       onSubmit={handleAddMember}
@@ -27,7 +36,7 @@ export function OrganizationGroupMemberAddForm({
       <div className="mt-3 flex flex-col gap-3 sm:flex-row">
         <input
           value={memberSearchQuery}
-          onChange={(event) => setMemberSearchQuery(event.target.value)}
+          onChange={handleMemberSearchQueryChange}
           className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
           placeholder="Email или ФИО пользователя"
         />
@@ -37,11 +46,11 @@ export function OrganizationGroupMemberAddForm({
           disabled={memberSearchLoading}
           className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:bg-slate-300"
         >
-          {memberSearchLoading ? "Ищем..." : "Найти"}
+          {searchButtonLabel}
         </button>
       </div>
 
-      {memberSearchResults.length > 0 && (
+      {hasMemberSearchResults && (
         <div className="mt-3 grid gap-2">
           {memberSearchResults.map((candidate) => (
             <OrganizationGroupMemberCandidateCard
@@ -57,10 +66,10 @@ export function OrganizationGroupMemberAddForm({
       <div className="mt-3 flex flex-wrap gap-3">
         <button
           type="submit"
-          disabled={addingMember || !memberUserId}
+          disabled={isSubmitDisabled}
           className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
         >
-          {addingMember ? "Добавляем..." : "Добавить в группу"}
+          {submitButtonLabel}
         </button>
       </div>
 

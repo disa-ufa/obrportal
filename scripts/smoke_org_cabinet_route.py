@@ -370,6 +370,11 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupMemberAddForm.jsx",
         [
             "export function OrganizationGroupMemberAddForm",
+            "hasMemberSearchResults",
+            "isSubmitDisabled",
+            "searchButtonLabel",
+            "submitButtonLabel",
+            "handleMemberSearchQueryChange",
             "OrganizationGroupMemberCandidateCard",
             "Добавить участника",
             "Email или ФИО пользователя",
