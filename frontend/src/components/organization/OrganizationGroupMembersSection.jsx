@@ -1,5 +1,5 @@
 import { OrganizationGroupMemberAddForm } from "./OrganizationGroupMemberAddForm";
-import { OrganizationGroupMemberCard } from "./OrganizationGroupMemberCard";
+import { OrganizationGroupMembersList } from "./OrganizationGroupMembersList";
 
 export function OrganizationGroupMembersSection({
   selectedGroup,
@@ -38,32 +38,13 @@ export function OrganizationGroupMembersSection({
         />
       )}
 
-      {membersError && (
-        <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
-          {membersError}
-        </div>
-      )}
-
-      {membersLoading ? (
-        <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-          Загружаем участников...
-        </div>
-      ) : members.length === 0 ? (
-        <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-          В выбранной группе пока нет участников.
-        </div>
-      ) : (
-        <div className="mt-5 space-y-3">
-          {members.map((member) => (
-            <OrganizationGroupMemberCard
-              key={member.id}
-              member={member}
-              deletingMemberId={deletingMemberId}
-              handleDeleteMember={handleDeleteMember}
-            />
-          ))}
-        </div>
-      )}
+      <OrganizationGroupMembersList
+        membersLoading={membersLoading}
+        membersError={membersError}
+        members={members}
+        deletingMemberId={deletingMemberId}
+        handleDeleteMember={handleDeleteMember}
+      />
     </>
   );
 }

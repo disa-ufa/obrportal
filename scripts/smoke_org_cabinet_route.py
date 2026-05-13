@@ -180,9 +180,18 @@ def main() -> None:
         [
             "export function OrganizationGroupMembersSection",
             "OrganizationGroupMemberAddForm",
+            "OrganizationGroupMembersList",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupMembersList.jsx",
+        [
+            "export function OrganizationGroupMembersList",
             "OrganizationGroupMemberCard",
             "Загружаем участников",
             "В выбранной группе пока нет участников",
+            "members.map((member) =>",
         ],
     )
 
