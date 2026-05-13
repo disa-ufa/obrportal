@@ -37,6 +37,7 @@ jobs:
       - name: Run frontend API error guard
         run: |
           python scripts/check_frontend_api_errors.py
+          python scripts/check_frontend_mojibake.py
 
       - name: Show Docker versions
         run: |
