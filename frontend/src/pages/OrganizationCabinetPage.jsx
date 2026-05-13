@@ -22,6 +22,7 @@ import {
   OrganizationCabinetHero,
   OrganizationCabinetStats,
   OrganizationGroupCreateSection,
+  OrganizationGroupListSection,
   OrganizationProfileSection,
 } from "../components/organization/OrganizationCabinetForms";
 import {
@@ -956,70 +957,11 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         />
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-slate-950">Учебные группы</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Доступ ограничен организациями, назначенными текущему представителю.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 overflow-hidden rounded-3xl ring-1 ring-slate-200">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-4 py-3">Группа</th>
-                      <th className="px-4 py-3">Организация</th>
-                      <th className="px-4 py-3">Код</th>
-                      <th className="px-4 py-3">Статус</th>
-                      <th className="px-4 py-3">Действие</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {groups.map((group) => {
-                      const status = getGroupStatus(group);
-                      const isSelected = group.id === selectedGroupId;
-
-                      return (
-                        <tr key={group.id} className={isSelected ? "bg-blue-50/60" : ""}>
-                          <td className="px-4 py-3">
-                            <div className="font-semibold text-slate-950">{group.name}</div>
-                            {group.description && (
-                              <div className="mt-1 max-w-md text-xs leading-5 text-slate-500">
-                                {group.description}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-slate-600">
-                            {getOrganizationLabel(group.organization_id, organizations)}
-                          </td>
-                          <td className="px-4 py-3 text-slate-600">{group.code || "—"}</td>
-                          <td className="px-4 py-3">
-                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${status.className}`}>
-                              {status.label}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedGroupId(group.id)}
-                              className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:bg-slate-300"
-                              disabled={isSelected}
-                            >
-                              {isSelected ? "Открыта" : "Открыть"}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
+          <OrganizationGroupListSection
+            groups={groups}
+            selectedGroupId={selectedGroupId}
+            onSelectGroup={setSelectedGroupId}
+          />
 
           <aside className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h2 className="text-xl font-bold text-slate-950">Участники группы</h2>

@@ -366,6 +366,76 @@ export function OrganizationCabinetHero({ children }) {
 }
 
 
+
+export function OrganizationGroupListSection({
+  groups,
+  selectedGroupId,
+  onSelectGroup,
+}) {
+  return (
+    <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-slate-950">Учебные группы</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Выберите группу, чтобы посмотреть участников, настройки и назначения курсов.
+          </p>
+        </div>
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+          {groups.length}
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-3">
+        {groups.map((group) => {
+          const selected = group.id === selectedGroupId;
+          const statusText = group.is_active ? "Активна" : "Неактивна";
+
+          return (
+            <button
+              key={group.id}
+              type="button"
+              onClick={() => onSelectGroup(group.id)}
+              className={`rounded-2xl p-4 text-left ring-1 transition ${
+                selected
+                  ? "bg-blue-50 ring-blue-200"
+                  : "bg-slate-50 ring-slate-200 hover:bg-slate-100"
+              }`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="font-semibold text-slate-950">{group.name}</div>
+                  {group.code && (
+                    <div className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {group.code}
+                    </div>
+                  )}
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    group.is_active
+                      ? "bg-green-50 text-green-700 ring-1 ring-green-100"
+                      : "bg-slate-100 text-slate-500 ring-1 ring-slate-200"
+                  }`}
+                >
+                  {statusText}
+                </span>
+              </div>
+
+              {group.description && (
+                <div className="mt-2 text-sm leading-6 text-slate-600">
+                  {group.description}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+
 export function OrganizationGroupCreateSection({
   organizations,
   groupForm,
