@@ -100,6 +100,11 @@ def main() -> None:
             "export function OrganizationGroupCreateSection",
             "export function OrganizationGroupListSection",
             "export function OrganizationUsersSection",
+            "export function OrganizationSelectedGroupPanelHeader",
+            "Участники группы",
+            "Опасная зона",
+            "Удалить группу",
+            "getOrganizationLabel",
             "Обучающиеся организации",
             "Загрузить список",
             "Поиск по email или ФИО",
@@ -187,8 +192,6 @@ def main() -> None:
             "LearningGroupEditForm",
             "handleSaveGroup",
             "handleDeleteGroup",
-            "Опасная зона",
-            "Удалить группу",
             "handleCreateGroupEnrollments",
             "handleSearchCourseCandidates",
             "handleSelectCourse",
@@ -235,6 +238,7 @@ def main() -> None:
             "member.user_roles",
             "Удалить",
             "Кабинет организации",
+            "OrganizationSelectedGroupPanelHeader",
         ],
     )
 

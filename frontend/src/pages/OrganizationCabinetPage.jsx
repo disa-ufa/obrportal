@@ -23,6 +23,7 @@ import {
   OrganizationCabinetStats,
   OrganizationGroupCreateSection,
   OrganizationGroupListSection,
+  OrganizationSelectedGroupPanelHeader,
   OrganizationUsersSection,
   OrganizationProfileSection,
 } from "../components/organization/OrganizationCabinetForms";
@@ -865,66 +866,14 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
           />
 
           <aside className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-xl font-bold text-slate-950">Участники группы</h2>
-
-            {selectedGroup ? (
-              <div className="mt-2 text-sm text-slate-500">
-                {selectedGroup.name}
-              </div>
-            ) : (
-              <div className="mt-2 text-sm text-slate-500">Группа не выбрана.</div>
-            )}
-
-            {selectedGroup && (
-              <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-                <div>
-                  <span className="text-slate-500">Организация:</span>{" "}
-                  <span className="font-semibold text-slate-900">
-                    {getOrganizationLabel(selectedGroup.organization_id, organizations)}
-                  </span>
-                </div>
-                <div className="mt-1">
-                  <span className="text-slate-500">Создана:</span>{" "}
-                  <span className="font-semibold text-slate-900">
-                    {formatDate(selectedGroup.created_at)}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {selectedGroup && (
-              <div className="mt-4 rounded-2xl bg-red-50 p-4 ring-1 ring-red-100">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-bold text-red-950">Опасная зона</div>
-                    <div className="mt-1 text-xs leading-5 text-red-700">
-                      Удаление группы доступно только если это разрешено текущими связями и ограничениями backend.
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteGroup(selectedGroup)}
-                    disabled={deletingGroupId === selectedGroup.id}
-                    className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:text-slate-400 disabled:ring-slate-200"
-                  >
-                    {deletingGroupId === selectedGroup.id ? "Удаляем..." : "Удалить группу"}
-                  </button>
-                </div>
-
-                {groupDeleteError && (
-                  <div className="mt-3 rounded-2xl bg-white p-3 text-sm text-red-800 ring-1 ring-red-200">
-                    {groupDeleteError}
-                  </div>
-                )}
-
-                {groupDeleteMessage && (
-                  <div className="mt-3 rounded-2xl bg-white p-3 text-sm text-green-800 ring-1 ring-green-200">
-                    {groupDeleteMessage}
-                  </div>
-                )}
-              </div>
-            )}
-
+            <OrganizationSelectedGroupPanelHeader
+              selectedGroup={selectedGroup}
+              organizations={organizations}
+              deletingGroupId={deletingGroupId}
+              groupDeleteError={groupDeleteError}
+              groupDeleteMessage={groupDeleteMessage}
+              onDeleteGroup={handleDeleteGroup}
+            />
             {selectedGroup && (
               <LearningGroupEditForm
                 group={selectedGroup}
