@@ -756,6 +756,17 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }
   }
 
+  const cabinetStatsProps = {
+    summary,
+    organizations,
+    groups,
+    activeGroupsCount,
+    inactiveGroupsCount,
+    selectedGroup,
+    selectedGroupId,
+    members,
+  };
+
   const selectedGroupAsideProps = {
     selectedGroup,
     organizations,
@@ -859,16 +870,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         </div>
       )}
 
-      <OrganizationCabinetStats
-        summary={summary}
-        organizations={organizations}
-        groups={groups}
-        activeGroupsCount={activeGroupsCount}
-        inactiveGroupsCount={inactiveGroupsCount}
-        selectedGroup={selectedGroup}
-        selectedGroupId={selectedGroupId}
-        members={members}
-      />
+      <OrganizationCabinetStats {...cabinetStatsProps} />
 
       <OrganizationProfileSection
         organizations={organizations}
