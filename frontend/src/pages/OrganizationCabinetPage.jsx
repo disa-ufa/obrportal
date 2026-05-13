@@ -188,6 +188,47 @@ function hasActiveEnrollmentFilters(searchQuery, statusFilter) {
 }
 
 
+
+function sortOrganizationUsers(items) {
+  return [...items].sort((left, right) =>
+    (left.full_name || left.email || left.id).localeCompare(
+      right.full_name || right.email || right.id,
+      "ru"
+    )
+  );
+}
+
+
+function buildOrganizationUserFromMember(member) {
+  const organizations = Array.isArray(member.user_organizations)
+    ? member.user_organizations
+    : [];
+
+  return {
+    id: member.user_id,
+    email: member.user_email,
+    full_name: member.user_full_name,
+    is_active: member.user_is_active,
+    organization_ids: organizations.map((organization) => organization.id),
+    organizations,
+    roles: Array.isArray(member.user_roles) ? member.user_roles : [],
+  };
+}
+
+
+function organizationUserMatchesQuery(userItem, query) {
+  const normalizedQuery = (query || "").trim().toLowerCase();
+
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  return [userItem.email, userItem.full_name]
+    .filter(Boolean)
+    .some((value) => value.toLowerCase().includes(normalizedQuery));
+}
+
+
 function sortMembers(items) {
   return [...items].sort((left, right) =>
     (left.user_full_name || left.user_email || left.user_id).localeCompare(
@@ -1004,7 +1045,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
       const results = await searchOrgUsers(filters);
 
-      setOrganizationUsers(Array.isArray(results) ? results : []);
+      setOrganizationUsers(Array.isArray(results) ? sortOrganizationUsers(results) : []);
     } catch (err) {
       setOrganizationUsers([]);
       setOrganizationUsersError(formatApiError(err, "Не удалось загрузить пользователей организации."));
@@ -1251,7 +1292,30 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
       await removeOrgLearningGroupMember(selectedGroupId, member.user_id);
 
+      const restoredUser = buildOrganizationUserFromMember(member);
+
       setMembers((current) => current.filter((item) => item.id !== member.id));
+
+      if (organizationUserMatchesQuery(restoredUser, organizationUsersQuery)) {
+        setOrganizationUsers((current) => {
+          if (current.some((item) => item.id === restoredUser.id)) {
+            return current;
+          }
+
+          return sortOrganizationUsers([...current, restoredUser]);
+        });
+      }
+
+      if (memberSearchQuery.trim() && organizationUserMatchesQuery(restoredUser, memberSearchQuery)) {
+        setMemberSearchResults((current) => {
+          if (current.some((item) => item.id === restoredUser.id)) {
+            return current;
+          }
+
+          return sortOrganizationUsers([...current, restoredUser]);
+        });
+      }
+
       setMemberActionMessage("Участник удалён из группы.");
     } catch (err) {
       setMemberActionError(formatApiError(err, "Не удалось удалить участника из группы."));
