@@ -15,8 +15,7 @@ export function OrganizationGroupCourseAssignmentForm({
   groupEnrollmentResult,
 }) {
   return (
-    <>
-      <form
+    <form
         onSubmit={handleCreateGroupEnrollments}
         className="mt-4 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100"
       >
@@ -146,7 +145,6 @@ export function OrganizationGroupCourseAssignmentForm({
               )}
           </div>
         )}
-      </form>
-    </>
+    </form>
   );
 }
