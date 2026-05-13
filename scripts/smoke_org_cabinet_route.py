@@ -137,6 +137,7 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationSelectedGroupAside.jsx",
         [
             "export function OrganizationSelectedGroupAside",
+            "hasSelectedGroup",
             "OrganizationSelectedGroupPanelHeader",
             "LearningGroupEditForm",
             "OrganizationGroupCourseAssignmentForm",

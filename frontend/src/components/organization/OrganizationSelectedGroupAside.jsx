@@ -56,6 +56,8 @@ export function OrganizationSelectedGroupAside({
   deletingMemberId,
   handleDeleteMember,
 }) {
+  const hasSelectedGroup = Boolean(selectedGroup);
+
   return (
     <aside className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <OrganizationSelectedGroupPanelHeader
@@ -67,14 +69,14 @@ export function OrganizationSelectedGroupAside({
         onDeleteGroup={handleDeleteGroup}
       />
 
-      {selectedGroup && (
+      {hasSelectedGroup && (
         <LearningGroupEditForm
           group={selectedGroup}
           onSave={handleSaveGroup}
         />
       )}
 
-      {selectedGroup && (
+      {hasSelectedGroup && (
         <OrganizationGroupCourseAssignmentForm
           handleCreateGroupEnrollments={handleCreateGroupEnrollments}
           courseSearchQuery={courseSearchQuery}
@@ -91,7 +93,7 @@ export function OrganizationSelectedGroupAside({
         />
       )}
 
-      {selectedGroup && (
+      {hasSelectedGroup && (
         <OrganizationGroupEnrollmentsSection
           groupEnrollmentsLoading={groupEnrollmentsLoading}
           groupEnrollmentsError={groupEnrollmentsError}
