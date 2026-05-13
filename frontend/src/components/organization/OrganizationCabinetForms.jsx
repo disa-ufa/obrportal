@@ -366,6 +366,44 @@ export function OrganizationCabinetHero({ children }) {
 }
 
 
+export function OrganizationProfileSection({
+  organizations,
+  onSaveOrganization,
+}) {
+  if (organizations.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="rounded-[2rem] bg-slate-50 p-1">
+      <div className="rounded-[1.8rem] bg-white/70 p-5 ring-1 ring-slate-200 md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-950">Реквизиты организации</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Данные берутся из профиля организации и показываются только в рамках доступного org-scope.
+            </p>
+          </div>
+          <span className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white">
+            {organizations.length} в доступе
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-4">
+          {organizations.map((organization) => (
+            <OrganizationProfileCard
+              key={organization.id}
+              organization={organization}
+              onSave={onSaveOrganization}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 export function OrganizationCabinetStats({
   summary,
   organizations,
