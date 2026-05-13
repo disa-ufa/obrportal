@@ -370,14 +370,26 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupMemberAddForm.jsx",
         [
             "export function OrganizationGroupMemberAddForm",
+            "OrganizationGroupMemberCandidateCard",
             "organizationLabel",
             "roleLabel",
             "Добавить участника",
             "Email или ФИО пользователя",
             "Добавить в группу",
             "candidate.roles",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupMemberCandidateCard.jsx",
+        [
+            "export function OrganizationGroupMemberCandidateCard",
             "formatUserOrganizations",
             "formatUserRoles",
+            "candidate.full_name || candidate.email",
+            "Организация:",
+            "Роли:",
+            "setMemberUserId(candidate.id)",
         ],
     )
 
