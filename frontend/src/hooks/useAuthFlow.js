@@ -12,6 +12,14 @@ import {
 } from "../api/client";
 import { EMPTY_ADMIN_DATA, userHasRole } from "../utils/adminState";
 
+function getPostAuthPublicPage(user) {
+  return userHasRole(user, "org_rep") ? "organization" : "account";
+}
+
+function getPostAuthPublicPath(user) {
+  return userHasRole(user, "org_rep") ? "/organization" : "/account";
+}
+
 export function useAuthFlow({
   email,
   password,
@@ -51,7 +59,7 @@ export function useAuthFlow({
         setCurrentPage("dashboard");
         await loadAdminData();
       } else {
-        setCurrentPage("account");
+        setCurrentPage(getPostAuthPublicPage(currentUser));
       }
     } catch {
       clearToken();
@@ -84,7 +92,7 @@ export function useAuthFlow({
         setAdminData(EMPTY_ADMIN_DATA);
         setAdminDataLoadedAt("");
         await completePendingEnrollmentIfNeeded();
-        navigate("/account", { replace: true });
+        navigate(getPostAuthPublicPath(currentUser), { replace: true });
       }
 
       return currentUser;
@@ -116,7 +124,7 @@ export function useAuthFlow({
         setAdminData(EMPTY_ADMIN_DATA);
         setAdminDataLoadedAt("");
         await completePendingEnrollmentIfNeeded();
-        navigate("/account", { replace: true });
+        navigate(getPostAuthPublicPath(currentUser), { replace: true });
       }
     } catch (err) {
       setError(formatApiError(err, "Не удалось войти."));

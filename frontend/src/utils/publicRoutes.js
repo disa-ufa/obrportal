@@ -4,6 +4,7 @@ export const PUBLIC_ROUTE_MAP = {
   home: "/",
   catalog: "/catalog",
   "organization-info": "/organization-info",
+  organization: "/organization",
   "verify-document": "/verify-document",
   contacts: "/contacts",
   faq: "/faq",
@@ -19,6 +20,7 @@ export function getPublicPageFromPathname(pathname) {
   if (pathname === "/catalog") return "catalog";
   if (pathname.startsWith("/courses/")) return "course-detail";
   if (pathname === "/organization-info") return "organization-info";
+  if (pathname === "/organization") return "organization";
   if (pathname === "/verify-document") return "verify-document";
   if (pathname.startsWith("/verify/")) return "verify-document";
   if (pathname === "/contacts") return "contacts";
@@ -91,6 +93,14 @@ export function buildPublicMeta(pathname) {
       title: "Проверка документа — ObrPortal",
       description:
         "Публичная проверка подлинности итогового документа по номеру или безопасному идентификатору.",
+    };
+  }
+
+  if (pathname === "/organization") {
+    return {
+      title: "Кабинет организации - ObrPortal",
+      description:
+        "Кабинет представителя юридического лица для просмотра учебных групп, участников и корпоративного обучения.",
     };
   }
 

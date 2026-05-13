@@ -9,11 +9,13 @@ import { HomePage } from "../pages/HomePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { OfferPage } from "../pages/OfferPage";
 import { OrganizationInfoPage } from "../pages/OrganizationInfoPage";
+import { OrganizationCabinetPage } from "../pages/OrganizationCabinetPage";
 import { PrivacyPage } from "../pages/PrivacyPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { VerifyDocumentPage } from "../pages/VerifyDocumentPage";
 import { getAdminPathForPage } from "../utils/adminRoutes";
 import { CourseDetailPublicRoute, VerifyDocumentCodeRoute } from "./PublicRouteComponents";
+import { userHasRole } from "../utils/adminState";
 
 export function PublicRoutes({
   email,
@@ -31,6 +33,8 @@ export function PublicRoutes({
   handleNavigatePublicPage,
   handleOpenPublicCourse,
 }) {
+  const isOrgRepresentative = userHasRole(user, "org_rep");
+
   return (
       <Routes>
         <Route
@@ -65,6 +69,26 @@ export function PublicRoutes({
         <Route
           path="/organization-info"
           element={<OrganizationInfoPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/organization"
+          element={
+            user ? (
+              isAdmin ? (
+                <Navigate to={getAdminPathForPage("dashboard")} replace />
+              ) : isOrgRepresentative ? (
+                <OrganizationCabinetPage
+                  user={user}
+                  onPageChange={handleNavigatePublicPage}
+                  onLogout={handleLogout}
+                />
+              ) : (
+                <Navigate to="/account" replace />
+              )
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
         />
         <Route
           path="/verify/:code"
@@ -124,6 +148,8 @@ export function PublicRoutes({
             user ? (
               isAdmin ? (
                 <Navigate to={getAdminPathForPage("dashboard")} replace />
+              ) : isOrgRepresentative ? (
+                <Navigate to="/organization" replace />
               ) : (
                 <AccountPage
                   user={user}
