@@ -138,12 +138,21 @@ def main() -> None:
         [
             "export function OrganizationSelectedGroupAside",
             "hasSelectedGroup",
-            "<>",
+            "OrganizationSelectedGroupContent",
             "OrganizationSelectedGroupPanelHeader",
+            "OrganizationGroupMembersSection",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationSelectedGroupContent.jsx",
+        [
+            "export function OrganizationSelectedGroupContent",
             "LearningGroupEditForm",
             "OrganizationGroupCourseAssignmentForm",
             "OrganizationGroupEnrollmentsSection",
-            "OrganizationGroupMembersSection",
+            "handleCreateGroupEnrollments",
+            "handleDeleteGroupEnrollment",
         ],
     )
 
