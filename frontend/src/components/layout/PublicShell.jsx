@@ -17,7 +17,7 @@ const FOOTER_LINKS = [
 ];
 
 function NavButton({ active, children, onClick }) {
-  const isOrgRepresentative = userHasRole(user, "org_rep");
+
 
   return (
     <button
@@ -41,6 +41,8 @@ export function PublicShell({
   onPageChange,
   children,
 }) {
+  const isOrgRepresentative = userHasRole(user, "org_rep");
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
