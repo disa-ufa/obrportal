@@ -152,8 +152,20 @@ def main() -> None:
             "canAssignCourse",
             "OrganizationGroupCoursePicker",
             "OrganizationGroupCourseAssignmentActions",
+            "OrganizationGroupCourseAssignmentError",
             "OrganizationGroupCourseAssignmentResult",
             "Назначить курс группе",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupCourseAssignmentError.jsx",
+        [
+            "export function OrganizationGroupCourseAssignmentError",
+            "groupEnrollmentError",
+            "return null",
+            "bg-red-50",
+            "text-red-800",
         ],
     )
 

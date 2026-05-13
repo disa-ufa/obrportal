@@ -1,4 +1,5 @@
 import { OrganizationGroupCourseAssignmentResult } from "./OrganizationGroupCourseAssignmentResult";
+import { OrganizationGroupCourseAssignmentError } from "./OrganizationGroupCourseAssignmentError";
 import { OrganizationGroupCourseAssignmentActions } from "./OrganizationGroupCourseAssignmentActions";
 import { OrganizationGroupCoursePicker } from "./OrganizationGroupCoursePicker";
 
@@ -47,11 +48,9 @@ export function OrganizationGroupCourseAssignmentForm({
         />
       </div>
 
-      {groupEnrollmentError && (
-        <div className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
-          {groupEnrollmentError}
-        </div>
-      )}
+      <OrganizationGroupCourseAssignmentError
+        groupEnrollmentError={groupEnrollmentError}
+      />
 
       {groupEnrollmentResult && (
         <OrganizationGroupCourseAssignmentResult
