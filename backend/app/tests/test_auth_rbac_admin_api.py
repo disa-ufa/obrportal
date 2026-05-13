@@ -6884,3 +6884,183 @@ def test_org_user_search_excludes_existing_group_members() -> None:
     )
     assert status == 404
     assert isinstance(foreign_exclude, dict)
+
+
+
+def test_org_rep_can_create_group_enrollments_for_assigned_organization() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+
+    learner_role_id = get_role_id_by_code(admin_token, "learner_fl")
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    learner_email = f"org_group_enrollment_learner_{uuid4().hex[:12]}@example.com"
+    status, learner_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": learner_email,
+            "password": "OrgGroupEnrollmentLearner123!",
+            "full_name": "Org Group Enrollment Learner",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(learner_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user['id']}/roles",
+        {
+            "role_id": learner_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    group_code = unique_group_code()
+    status, group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": first_organization_id,
+            "name": f"Org enrollment group {group_code}",
+            "code": group_code,
+            "description": "Org group enrollment test",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(group, dict)
+
+    foreign_group_code = unique_group_code()
+    status, foreign_group = request_json(
+        "POST",
+        "/api/v1/org/groups",
+        {
+            "organization_id": second_organization_id,
+            "name": f"Foreign org enrollment group {foreign_group_code}",
+            "code": foreign_group_code,
+            "description": "Foreign org group enrollment test",
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(foreign_group, dict)
+
+    status, member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{group['id']}/members",
+        {"user_id": learner_user["id"]},
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(member, dict)
+
+    course = create_test_course_in_db(
+        title=f"Org Group Enrollment Course {uuid4().hex[:8]}",
+    )
+
+    org_rep_email = f"org_group_enrollment_rep_{uuid4().hex[:12]}@example.com"
+    org_rep_password = "OrgGroupEnrollmentRep123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Org Group Enrollment Representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user['id']}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/org/enrollments/group",
+        {
+            "learning_group_id": group["id"],
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+        token=org_rep_token,
+    )
+    assert status == 201
+    assert isinstance(created, dict)
+    assert created["status"] == "ok"
+    assert created["learning_group_id"] == group["id"]
+    assert created["course_id"] == course["id"]
+    assert created["organization_id"] == first_organization_id
+    assert created["created_count"] == 1
+    assert created["skipped_count"] == 0
+    assert len(created["created"]) == 1
+    assert created["created"][0]["user_id"] == learner_user["id"]
+    assert created["created"][0]["learning_group_id"] == group["id"]
+
+    status, repeated = request_json(
+        "POST",
+        "/api/v1/org/enrollments/group",
+        {
+            "learning_group_id": group["id"],
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+        token=org_rep_token,
+    )
+    assert status == 201
+    assert isinstance(repeated, dict)
+    assert repeated["created_count"] == 0
+    assert repeated["skipped_count"] == 1
+    assert repeated["skipped"][0]["reason"] == "already_enrolled"
+
+    status, foreign_group_payload = request_json(
+        "POST",
+        "/api/v1/org/enrollments/group",
+        {
+            "learning_group_id": foreign_group["id"],
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_group_payload, dict)
+
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, forbidden = request_json(
+        "POST",
+        "/api/v1/org/enrollments/group",
+        {
+            "learning_group_id": group["id"],
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden, dict)

@@ -7,11 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.rbac import require_permission
 from app.db.session import get_db
+from app.models.course import Course
+from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.schemas.org import (
+    OrgEnrollmentBulkCreateResult,
+    OrgEnrollmentBulkSkippedItem,
+    OrgEnrollmentGroupCreate,
+    OrgEnrollmentItem,
     OrgLearningGroupCreate,
     OrgLearningGroupDetail,
     OrgLearningGroupItem,
@@ -90,6 +96,27 @@ def normalize_learning_group_update_data(payload: OrgLearningGroupUpdate) -> dic
         data["description"] = normalize_optional_text(data["description"])
 
     return data
+
+
+def build_org_enrollment_item(row) -> OrgEnrollmentItem:
+    return OrgEnrollmentItem(
+        id=str(row.id),
+        user_id=str(row.user_id),
+        user_email=row.user_email,
+        user_full_name=row.user_full_name,
+        course_id=str(row.course_id),
+        course_slug=row.course_slug,
+        course_title=row.course_title,
+        organization_id=str(row.organization_id) if row.organization_id else None,
+        organization_name=row.organization_name,
+        learning_group_id=str(row.learning_group_id) if row.learning_group_id else None,
+        learning_group_name=row.learning_group_name,
+        status=row.status,
+        started_at=row.started_at,
+        completed_at=row.completed_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
 
 
 def build_learning_group_item(group: LearningGroup) -> OrgLearningGroupItem:
@@ -373,6 +400,83 @@ def build_org_user_search_items(rows, limit: int) -> list[OrgUserSearchItem]:
     return items
 
 
+async def get_active_course_or_404(
+    course_id: str,
+    session: AsyncSession,
+) -> Course:
+    result = await session.execute(
+        select(Course).where(
+            Course.id == course_id,
+            Course.is_active.is_(True),
+        )
+    )
+    course = result.scalar_one_or_none()
+
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    return course
+
+
+async def enrollment_for_user_course_exists(
+    *,
+    user_id: str,
+    course_id: str,
+    session: AsyncSession,
+) -> str | None:
+    result = await session.execute(
+        select(Enrollment.id)
+        .where(
+            Enrollment.user_id == user_id,
+            Enrollment.course_id == course_id,
+        )
+        .limit(1)
+    )
+    enrollment_id = result.scalar_one_or_none()
+
+    return str(enrollment_id) if enrollment_id is not None else None
+
+
+async def get_org_enrollment_rows_by_ids(
+    enrollment_ids: list[str],
+    session: AsyncSession,
+):
+    if not enrollment_ids:
+        return []
+
+    result = await session.execute(
+        select(
+            Enrollment.id.label("id"),
+            Enrollment.user_id.label("user_id"),
+            Enrollment.course_id.label("course_id"),
+            Enrollment.organization_id.label("organization_id"),
+            Enrollment.learning_group_id.label("learning_group_id"),
+            Enrollment.status.label("status"),
+            Enrollment.started_at.label("started_at"),
+            Enrollment.completed_at.label("completed_at"),
+            Enrollment.created_at.label("created_at"),
+            Enrollment.updated_at.label("updated_at"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            Organization.name.label("organization_name"),
+            LearningGroup.name.label("learning_group_name"),
+        )
+        .join(User, User.id == Enrollment.user_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+        .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+        .where(Enrollment.id.in_(enrollment_ids))
+        .order_by(User.email.asc())
+    )
+
+    return result.all()
+
+
 async def get_organization_or_404(
     organization_id: str,
     session: AsyncSession,
@@ -650,6 +754,104 @@ async def search_org_users(
 
     result = await session.execute(query)
     return build_org_user_search_items(result.all(), limit)
+
+
+@router.post(
+    "/enrollments/group",
+    response_model=OrgEnrollmentBulkCreateResult,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_org_group_enrollments(
+    payload: OrgEnrollmentGroupCreate,
+    current_user: User = Depends(require_permission("org.groups.write")),
+    session: AsyncSession = Depends(get_db),
+) -> OrgEnrollmentBulkCreateResult:
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.write",
+        session,
+    )
+
+    group = await get_learning_group_or_404(
+        payload.learning_group_id.strip(),
+        session,
+        allowed_organization_ids,
+    )
+    course = await get_active_course_or_404(payload.course_id.strip(), session)
+
+    members_result = await session.execute(
+        select(
+            LearningGroupMember.user_id,
+            User.email,
+            User.full_name,
+        )
+        .join(User, User.id == LearningGroupMember.user_id)
+        .where(
+            LearningGroupMember.learning_group_id == group.id,
+            User.is_active.is_(True),
+        )
+        .order_by(User.email.asc())
+    )
+    members = members_result.all()
+
+    created_enrollments: list[Enrollment] = []
+    skipped: list[OrgEnrollmentBulkSkippedItem] = []
+
+    for user_id, user_email, user_full_name in members:
+        existing_enrollment_id = await enrollment_for_user_course_exists(
+            user_id=str(user_id),
+            course_id=str(course.id),
+            session=session,
+        )
+
+        if existing_enrollment_id is not None:
+            skipped.append(
+                OrgEnrollmentBulkSkippedItem(
+                    user_id=str(user_id),
+                    user_email=user_email,
+                    user_full_name=user_full_name,
+                    reason="already_enrolled",
+                    existing_enrollment_id=existing_enrollment_id,
+                )
+            )
+            continue
+
+        enrollment = Enrollment(
+            user_id=user_id,
+            course_id=course.id,
+            organization_id=group.organization_id,
+            learning_group_id=group.id,
+            status=payload.status.strip() or "assigned",
+            started_at=payload.started_at,
+            completed_at=payload.completed_at,
+        )
+        session.add(enrollment)
+        created_enrollments.append(enrollment)
+
+    try:
+        await session.flush()
+        created_ids = [str(enrollment.id) for enrollment in created_enrollments]
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Enrollment already exists",
+        )
+
+    created_rows = await get_org_enrollment_rows_by_ids(created_ids, session)
+    created = [build_org_enrollment_item(row) for row in created_rows]
+
+    return OrgEnrollmentBulkCreateResult(
+        status="ok",
+        learning_group_id=str(group.id),
+        course_id=str(course.id),
+        organization_id=str(group.organization_id),
+        created_count=len(created),
+        skipped_count=len(skipped),
+        created=created,
+        skipped=skipped,
+    )
 
 
 @router.get("/profile", response_model=OrgProfile)

@@ -68,6 +68,9 @@ def main() -> None:
         [
             "class OrgProfileUpdate",
             "class OrgUserSearchItem",
+            "class OrgEnrollmentGroupCreate",
+            "class OrgEnrollmentBulkCreateResult",
+            "class OrgEnrollmentItem",
             "class OrgUserSearchOrganizationItem",
             "class OrgUserSearchRoleItem",
             "user_organizations",
@@ -141,6 +144,7 @@ def main() -> None:
             "/api/v1/org/profile",
             "/api/v1/org/profile/${organizationId}",
             "export async function createOrgLearningGroup",
+            "export async function createOrgGroupEnrollments",
             "export async function deleteOrgLearningGroup",
             "export async function addOrgLearningGroupMember",
             "export async function removeOrgLearningGroupMember",
@@ -151,6 +155,7 @@ def main() -> None:
             "/api/v1/org/groups/${groupId}/members",
             "/api/v1/org/groups/${groupId}/members/${userId}",
             "/api/v1/org/users",
+            "/api/v1/org/enrollments/group",
         ],
     )
 

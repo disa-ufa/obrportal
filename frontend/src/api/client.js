@@ -292,6 +292,14 @@ export async function searchOrgUsers(filters = {}) {
   return request(`/api/v1/org/users${query ? `?${query}` : ""}`);
 }
 
+
+export async function createOrgGroupEnrollments(payload) {
+  return request("/api/v1/org/enrollments/group", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function updateOrgProfile(organizationId, payload) {
   return request(`/api/v1/org/profile/${organizationId}`, {
     method: "PATCH",
