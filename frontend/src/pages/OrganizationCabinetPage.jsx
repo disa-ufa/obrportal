@@ -140,6 +140,21 @@ function formatEnrollmentStatus(status) {
 
   return statuses[status] || status || "—";
 }
+
+
+function mergeUniqueEnrollments(currentItems = [], newItems = []) {
+  const itemsById = new Map();
+
+  [...currentItems, ...newItems].forEach((item) => {
+    if (!item?.id) {
+      return;
+    }
+
+    itemsById.set(item.id, item);
+  });
+
+  return sortEnrollments([...itemsById.values()]);
+}
 function sortMembers(items) {
   return [...items].sort((left, right) =>
     (left.user_full_name || left.user_email || left.user_id).localeCompare(
@@ -559,6 +574,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groupEnrollments, setGroupEnrollments] = useState([]);
   const [groupEnrollmentsLoading, setGroupEnrollmentsLoading] = useState(false);
   const [groupEnrollmentsError, setGroupEnrollmentsError] = useState("");
+  const [groupEnrollmentsRefreshKey, setGroupEnrollmentsRefreshKey] = useState(0);
   const [groupDeleteError, setGroupDeleteError] = useState("");
   const [groupDeleteMessage, setGroupDeleteMessage] = useState("");
   const [deletingGroupId, setDeletingGroupId] = useState("");
@@ -659,7 +675,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     return () => {
       cancelled = true;
     };
-  }, [selectedGroupId]);
+  }, [selectedGroupId, groupEnrollmentsRefreshKey]);
 
   const organizations = useMemo(() => buildOrganizationOptions(profile?.organizations || [], groups), [profile, groups]);
   const selectedGroup = useMemo(
@@ -1014,7 +1030,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       setCourseSearchResults([]);
 
       if (Array.isArray(result.created) && result.created.length > 0) {
-        setGroupEnrollments((current) => sortEnrollments([...current, ...result.created]));
+        setGroupEnrollments((current) => mergeUniqueEnrollments(current, result.created));
       }
     } catch (err) {
       setGroupEnrollmentError(formatApiError(err, "Не удалось назначить курс группе."));
@@ -1573,9 +1589,19 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                       Курсы, уже назначенные участникам выбранной учебной группы.
                     </div>
                   </div>
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
-                    {groupEnrollments.length}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setGroupEnrollmentsRefreshKey((current) => current + 1)}
+                      disabled={groupEnrollmentsLoading}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400"
+                    >
+                      {groupEnrollmentsLoading ? "Обновляем..." : "Обновить"}
+                    </button>
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+                      {groupEnrollments.length}
+                    </span>
+                  </div>
                 </div>
 
                 {groupEnrollmentsError && (

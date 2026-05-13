@@ -134,6 +134,9 @@ def main() -> None:
             "Назначения группы",
             "groupEnrollments",
             "formatEnrollmentStatus",
+            "mergeUniqueEnrollments",
+            "groupEnrollmentsRefreshKey",
+            "Обновить",
             
             "created_count",
             "skipped_count",
