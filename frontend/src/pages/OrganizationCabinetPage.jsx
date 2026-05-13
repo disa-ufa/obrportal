@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { addOrgLearningGroupMember, createOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
+import { addOrgLearningGroupMember, createOrgLearningGroup, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -520,6 +520,9 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [groupActionError, setGroupActionError] = useState("");
   const [groupActionMessage, setGroupActionMessage] = useState("");
+  const [groupDeleteError, setGroupDeleteError] = useState("");
+  const [groupDeleteMessage, setGroupDeleteMessage] = useState("");
+  const [deletingGroupId, setDeletingGroupId] = useState("");
   const [loading, setLoading] = useState(true);
   const [membersLoading, setMembersLoading] = useState(false);
   const [error, setError] = useState("");
@@ -534,6 +537,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         setError("");
         setGroupActionError("");
         setGroupActionMessage("");
+        setGroupDeleteError("");
+        setGroupDeleteMessage("");
 
         const [profileResponse, groupsResponse] = await Promise.all([
           getOrgProfile(),
@@ -736,6 +741,46 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     );
 
     return updated;
+  }
+
+  async function handleDeleteGroup(group) {
+    if (!group?.id) {
+      return;
+    }
+
+    if (!window.confirm(`Удалить учебную группу "${group.name}"? Действие нельзя отменить.`)) {
+      return;
+    }
+
+    try {
+      setDeletingGroupId(group.id);
+      setGroupDeleteError("");
+      setGroupDeleteMessage("");
+      setGroupActionError("");
+      setGroupActionMessage("");
+
+      await deleteOrgLearningGroup(group.id);
+
+      const remainingGroups = groups.filter((item) => item.id !== group.id);
+      setGroups(remainingGroups);
+
+      if (selectedGroupId === group.id) {
+        setSelectedGroupId(remainingGroups[0]?.id || "");
+        setMembers([]);
+        setMembersError("");
+        setMemberUserId("");
+        setMemberSearchQuery("");
+        setMemberSearchResults([]);
+        setMemberActionError("");
+        setMemberActionMessage("");
+      }
+
+      setGroupDeleteMessage("Учебная группа удалена.");
+    } catch (err) {
+      setGroupDeleteError(formatApiError(err, "Не удалось удалить учебную группу."));
+    } finally {
+      setDeletingGroupId("");
+    }
   }
 
   async function handleSearchMemberCandidates() {
@@ -1145,6 +1190,39 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                     {formatDate(selectedGroup.created_at)}
                   </span>
                 </div>
+              </div>
+            )}
+
+            {selectedGroup && (
+              <div className="mt-4 rounded-2xl bg-red-50 p-4 ring-1 ring-red-100">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-bold text-red-950">Опасная зона</div>
+                    <div className="mt-1 text-xs leading-5 text-red-700">
+                      Удаление группы доступно только если это разрешено текущими связями и ограничениями backend.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteGroup(selectedGroup)}
+                    disabled={deletingGroupId === selectedGroup.id}
+                    className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:text-slate-400 disabled:ring-slate-200"
+                  >
+                    {deletingGroupId === selectedGroup.id ? "Удаляем..." : "Удалить группу"}
+                  </button>
+                </div>
+
+                {groupDeleteError && (
+                  <div className="mt-3 rounded-2xl bg-white p-3 text-sm text-red-800 ring-1 ring-red-200">
+                    {groupDeleteError}
+                  </div>
+                )}
+
+                {groupDeleteMessage && (
+                  <div className="mt-3 rounded-2xl bg-white p-3 text-sm text-green-800 ring-1 ring-green-200">
+                    {groupDeleteMessage}
+                  </div>
+                )}
               </div>
             )}
 
