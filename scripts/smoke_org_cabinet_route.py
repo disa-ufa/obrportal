@@ -519,6 +519,8 @@ def main() -> None:
             "Удалить",
             "Кабинет организации",
             "OrganizationSelectedGroupAside",
+            "selectedGroupAsideProps",
+            "<OrganizationSelectedGroupAside {...selectedGroupAsideProps} />",
             "../components/organization/OrganizationSelectedGroupAside",
         ],
     )
