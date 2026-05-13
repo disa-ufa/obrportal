@@ -121,7 +121,7 @@ def main() -> None:
             "member.user_roles",
             "formatEnrollmentStatus",
             "shortId",
-            "enrollment.status === "assigned"",
+            "enrollment.status === \"assigned\"",
             "onClick={() => handleDeleteGroupEnrollment(enrollment)}",
             "Участники группы",
             "Опасная зона",
