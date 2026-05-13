@@ -237,10 +237,8 @@ def main() -> None:
             "OrganizationGroupEnrollmentsHeader",
             "OrganizationGroupEnrollmentsFilters",
             "OrganizationGroupEnrollmentsMessages",
-            "Снять назначение",
-            "formatEnrollmentStatus",
+            "OrganizationGroupEnrollmentCard",
             "enrollment.status === \"assigned\"",
-            "onClick={() => handleDeleteGroupEnrollment(enrollment)}",
         ],
     )
 
@@ -282,6 +280,19 @@ def main() -> None:
             "text-green-800",
             "bg-red-50",
             "text-red-800",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupEnrollmentCard.jsx",
+        [
+            "export function OrganizationGroupEnrollmentCard",
+            "formatEnrollmentStatus",
+            "formatDate",
+            "enrollment.status === \"assigned\"",
+            "onClick={() => handleDeleteGroupEnrollment(enrollment)}",
+            "deletingGroupEnrollmentId === enrollment.id",
+            "Снять назначение",
         ],
     )
 
