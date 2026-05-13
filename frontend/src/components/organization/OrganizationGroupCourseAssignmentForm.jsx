@@ -1,6 +1,5 @@
-import { shortId } from "../../utils/organizationCabinet";
 import { OrganizationGroupCourseAssignmentResult } from "./OrganizationGroupCourseAssignmentResult";
-import { OrganizationGroupCourseOption } from "./OrganizationGroupCourseOption";
+import { OrganizationGroupCoursePicker } from "./OrganizationGroupCoursePicker";
 
 export function OrganizationGroupCourseAssignmentForm({
   handleCreateGroupEnrollments,
@@ -16,8 +15,6 @@ export function OrganizationGroupCourseAssignmentForm({
   groupEnrollmentError,
   groupEnrollmentResult,
 }) {
-  const selectedCourseLabel =
-    courseSearchQuery || shortId(groupEnrollmentForm.course_id);
   const canAssignCourse = Boolean(groupEnrollmentForm.course_id) && !assigningGroupCourse;
 
   return (
@@ -31,44 +28,15 @@ export function OrganizationGroupCourseAssignmentForm({
       </div>
 
       <div className="mt-3 space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            value={courseSearchQuery}
-            onChange={handleCourseSearchQueryChange}
-            className="min-w-0 flex-1 rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-            placeholder="Название, код или описание курса"
-          />
-          <button
-            type="button"
-            onClick={handleSearchCourseCandidates}
-            disabled={courseSearchLoading}
-            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:bg-slate-300"
-          >
-            {courseSearchLoading ? "Ищем..." : "Найти курс"}
-          </button>
-        </div>
-
-        {courseSearchResults.length > 0 && (
-          <div className="grid gap-2">
-            {courseSearchResults.map((course) => (
-              <OrganizationGroupCourseOption
-                key={course.id}
-                course={course}
-                active={groupEnrollmentForm.course_id === course.id}
-                onSelect={handleSelectCourse}
-              />
-            ))}
-          </div>
-        )}
-
-        {groupEnrollmentForm.course_id && (
-          <div className="rounded-2xl bg-white px-4 py-3 text-xs text-blue-900 ring-1 ring-blue-100">
-            Выбранный курс:{" "}
-            <span className="font-semibold">
-              {selectedCourseLabel}
-            </span>
-          </div>
-        )}
+        <OrganizationGroupCoursePicker
+          courseSearchQuery={courseSearchQuery}
+          handleCourseSearchQueryChange={handleCourseSearchQueryChange}
+          handleSearchCourseCandidates={handleSearchCourseCandidates}
+          courseSearchLoading={courseSearchLoading}
+          courseSearchResults={courseSearchResults}
+          handleSelectCourse={handleSelectCourse}
+          groupEnrollmentForm={groupEnrollmentForm}
+        />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <select

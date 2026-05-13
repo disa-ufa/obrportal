@@ -149,11 +149,19 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupCourseAssignmentForm.jsx",
         [
             "export function OrganizationGroupCourseAssignmentForm",
-            "selectedCourseLabel",
             "canAssignCourse",
+            "OrganizationGroupCoursePicker",
             "OrganizationGroupCourseAssignmentResult",
-            "OrganizationGroupCourseOption",
             "Назначить курс группе",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupCoursePicker.jsx",
+        [
+            "export function OrganizationGroupCoursePicker",
+            "selectedCourseLabel",
+            "OrganizationGroupCourseOption",
             "Название, код или описание курса",
             "Найти курс",
             "Выбранный курс",
