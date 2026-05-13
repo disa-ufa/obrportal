@@ -286,6 +286,8 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupEnrollmentsList.jsx",
         [
             "export function OrganizationGroupEnrollmentsList",
+            "hasGroupEnrollments",
+            "hasVisibleGroupEnrollments",
             "OrganizationGroupEnrollmentCard",
             "Загружаем назначения",
             "У выбранной группы пока нет назначенных курсов",

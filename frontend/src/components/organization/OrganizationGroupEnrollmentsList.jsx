@@ -7,13 +7,16 @@ export function OrganizationGroupEnrollmentsList({
   deletingGroupEnrollmentId,
   handleDeleteGroupEnrollment,
 }) {
+  const hasGroupEnrollments = groupEnrollments.length > 0;
+  const hasVisibleGroupEnrollments = visibleGroupEnrollments.length > 0;
+
   if (groupEnrollmentsLoading) {
     return (
       <div className="mt-3 text-sm text-slate-500">Загружаем назначения...</div>
     );
   }
 
-  if (groupEnrollments.length === 0) {
+  if (!hasGroupEnrollments) {
     return (
       <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
         У выбранной группы пока нет назначенных курсов.
@@ -21,7 +24,7 @@ export function OrganizationGroupEnrollmentsList({
     );
   }
 
-  if (visibleGroupEnrollments.length === 0) {
+  if (!hasVisibleGroupEnrollments) {
     return (
       <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
         По заданным фильтрам назначений не найдено.
