@@ -180,15 +180,9 @@ def main() -> None:
         [
             "export function OrganizationGroupMembersSection",
             "OrganizationGroupMemberAddForm",
-            "member.user_roles",
+            "OrganizationGroupMemberCard",
             "Загружаем участников",
             "В выбранной группе пока нет участников",
-            "formatDate",
-            "formatUserOrganizations",
-            "formatUserRoles",
-            "handleDeleteMember(member)",
-            "deletingMemberId === member.id",
-            "Удалить",
         ],
     )
 
@@ -202,6 +196,20 @@ def main() -> None:
             "candidate.roles",
             "formatUserOrganizations",
             "formatUserRoles",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupMemberCard.jsx",
+        [
+            "export function OrganizationGroupMemberCard",
+            "member.user_roles",
+            "formatDate",
+            "formatUserOrganizations",
+            "formatUserRoles",
+            "handleDeleteMember(member)",
+            "deletingMemberId === member.id",
+            "Удалить",
         ],
     )
 
