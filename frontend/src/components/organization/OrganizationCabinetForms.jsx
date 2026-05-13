@@ -355,3 +355,14 @@ export function EmptyState({ title, text }) {
     </div>
   );
 }
+
+
+export function SummaryCard({ label, value, hint }) {
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <div className="text-sm text-slate-500">{label}</div>
+      <div className="mt-2 text-3xl font-bold text-slate-950">{value}</div>
+      {hint && <div className="mt-2 text-sm text-slate-500">{hint}</div>}
+    </div>
+  );
+}

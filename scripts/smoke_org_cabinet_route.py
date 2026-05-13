@@ -95,6 +95,7 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationCabinetForms.jsx",
         [
             "export function EmptyState",
+            "export function SummaryCard",
             "export function OrganizationProfileCard",
             "export function LearningGroupEditForm",
             "buildOrganizationProfileFormData",
