@@ -137,6 +137,12 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationSelectedGroupAside.jsx",
         [
             "export function OrganizationSelectedGroupAside",
+            "panelHeaderProps",
+            "selectedGroupContentProps",
+            "groupMembersSectionProps",
+            "<OrganizationSelectedGroupPanelHeader {...panelHeaderProps} />",
+            "<OrganizationSelectedGroupContent {...selectedGroupContentProps} />",
+            "<OrganizationGroupMembersSection {...groupMembersSectionProps} />",
             "hasSelectedGroup",
             "OrganizationSelectedGroupContent",
             "OrganizationSelectedGroupPanelHeader",
