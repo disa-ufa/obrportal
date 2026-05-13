@@ -4,6 +4,9 @@ export function OrganizationGroupEnrollmentsHeader({
   groupEnrollments,
   setGroupEnrollmentsRefreshKey,
 }) {
+  const refreshButtonLabel = groupEnrollmentsLoading ? "Обновляем..." : "Обновить";
+  const counterLabel = `${visibleGroupEnrollments.length} / ${groupEnrollments.length}`;
+
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
@@ -19,10 +22,10 @@ export function OrganizationGroupEnrollmentsHeader({
           disabled={groupEnrollmentsLoading}
           className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400"
         >
-          {groupEnrollmentsLoading ? "Обновляем..." : "Обновить"}
+          {refreshButtonLabel}
         </button>
         <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
-          {visibleGroupEnrollments.length} / {groupEnrollments.length}
+          {counterLabel}
         </span>
       </div>
     </div>

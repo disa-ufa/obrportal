@@ -245,6 +245,8 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupEnrollmentsHeader.jsx",
         [
             "export function OrganizationGroupEnrollmentsHeader",
+            "refreshButtonLabel",
+            "counterLabel",
             "Назначения группы",
             "Курсы, уже назначенные участникам выбранной учебной группы",
             "setGroupEnrollmentsRefreshKey((current) => current + 1)",
