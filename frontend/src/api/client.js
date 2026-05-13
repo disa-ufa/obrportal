@@ -277,6 +277,21 @@ export async function getOrgProfile() {
   return request("/api/v1/org/profile");
 }
 
+export async function searchOrgUsers(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+  return request(`/api/v1/org/users${query ? `?${query}` : ""}`);
+}
+
 export async function updateOrgProfile(organizationId, payload) {
   return request(`/api/v1/org/profile/${organizationId}`, {
     method: "PATCH",

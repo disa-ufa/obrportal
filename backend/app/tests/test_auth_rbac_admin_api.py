@@ -6456,3 +6456,149 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     )
     assert status == 403
     assert isinstance(forbidden_payload, dict)
+
+
+
+def test_org_user_search_is_limited_to_assigned_organization() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+
+    learner_role_id = get_role_id_by_code(admin_token, "learner_fl")
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    first_user_email = f"org_search_first_{uuid4().hex[:12]}@example.com"
+    second_user_email = f"org_search_second_{uuid4().hex[:12]}@example.com"
+
+    status, first_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": first_user_email,
+            "password": "OrgSearchFirst123!",
+            "full_name": "Org Search First User",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(first_user, dict)
+
+    status, second_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": second_user_email,
+            "password": "OrgSearchSecond123!",
+            "full_name": "Org Search Second User",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(second_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{first_user['id']}/roles",
+        {
+            "role_id": learner_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{second_user['id']}/roles",
+        {
+            "role_id": learner_role_id,
+            "organization_id": second_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    org_rep_email = f"org_search_rep_{uuid4().hex[:12]}@example.com"
+    org_rep_password = "OrgSearchRep123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Org Search Representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user['id']}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, scoped_results = request_json(
+        "GET",
+        f"/api/v1/org/users?q={first_user_email}",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(scoped_results, list)
+    assert [item["id"] for item in scoped_results] == [first_user["id"]]
+    assert scoped_results[0]["organization_ids"] == [first_organization_id]
+
+    status, foreign_results = request_json(
+        "GET",
+        f"/api/v1/org/users?q={second_user_email}",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(foreign_results, list)
+    assert foreign_results == []
+
+    status, visible_results = request_json(
+        "GET",
+        "/api/v1/org/users?limit=20",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(visible_results, list)
+    visible_ids = {item["id"] for item in visible_results}
+    assert first_user["id"] in visible_ids
+    assert second_user["id"] not in visible_ids
+
+    status, admin_results = request_json(
+        "GET",
+        f"/api/v1/org/users?q={second_user_email}",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(admin_results, list)
+    assert [item["id"] for item in admin_results] == [second_user["id"]]
+
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, forbidden_payload = request_json(
+        "GET",
+        "/api/v1/org/users",
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_payload, dict)

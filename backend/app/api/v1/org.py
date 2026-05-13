@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +22,7 @@ from app.schemas.org import (
     OrgProfileOrganizationItem,
     OrgProfileSummary,
     OrgProfileUpdate,
+    OrgUserSearchItem,
 )
 
 
@@ -227,6 +228,44 @@ async def build_org_profile_summary(
     )
 
 
+def build_org_user_search_items(rows, limit: int) -> list[OrgUserSearchItem]:
+    users_by_id: dict[str, dict] = {}
+
+    for user, organization_id in rows:
+        user_id = str(user.id)
+
+        if user_id not in users_by_id:
+            users_by_id[user_id] = {
+                "user": user,
+                "organization_ids": [],
+            }
+
+        if organization_id is not None:
+            normalized_organization_id = str(organization_id)
+
+            if normalized_organization_id not in users_by_id[user_id]["organization_ids"]:
+                users_by_id[user_id]["organization_ids"].append(normalized_organization_id)
+
+    items: list[OrgUserSearchItem] = []
+
+    for item in users_by_id.values():
+        user = item["user"]
+        items.append(
+            OrgUserSearchItem(
+                id=str(user.id),
+                email=user.email,
+                full_name=user.full_name,
+                is_active=user.is_active,
+                organization_ids=item["organization_ids"],
+            )
+        )
+
+        if len(items) >= limit:
+            break
+
+    return items
+
+
 async def get_organization_or_404(
     organization_id: str,
     session: AsyncSession,
@@ -404,6 +443,51 @@ async def learning_group_member_exists(
     )
 
     return result.scalar_one_or_none() is not None
+
+
+@router.get("/users", response_model=list[OrgUserSearchItem])
+async def search_org_users(
+    q: str | None = Query(default=None, max_length=255),
+    limit: int = Query(default=20, ge=1, le=50),
+    current_user: User = Depends(require_permission("org.groups.write")),
+    session: AsyncSession = Depends(get_db),
+) -> list[OrgUserSearchItem]:
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.write",
+        session,
+    )
+
+    if allowed_organization_ids is not None and not allowed_organization_ids:
+        return []
+
+    query = (
+        select(User, UserRole.organization_id)
+        .join(UserRole, UserRole.user_id == User.id)
+        .where(
+            User.is_active.is_(True),
+            UserRole.organization_id.is_not(None),
+        )
+        .order_by(User.email)
+        .limit(limit * 3)
+    )
+
+    if allowed_organization_ids is not None:
+        query = query.where(UserRole.organization_id.in_(list(allowed_organization_ids)))
+
+    normalized_query = (q or "").strip().lower()
+
+    if normalized_query:
+        search_pattern = f"%{normalized_query}%"
+        query = query.where(
+            or_(
+                func.lower(User.email).like(search_pattern),
+                func.lower(User.full_name).like(search_pattern),
+            )
+        )
+
+    result = await session.execute(query)
+    return build_org_user_search_items(result.all(), limit)
 
 
 @router.get("/profile", response_model=OrgProfile)

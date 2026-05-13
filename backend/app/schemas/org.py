@@ -45,6 +45,15 @@ class OrgLearningGroupMemberItem(BaseModel):
     updated_at: datetime
 
 
+
+class OrgUserSearchItem(BaseModel):
+    id: str
+    email: str
+    full_name: str | None = None
+    is_active: bool
+    organization_ids: list[str]
+
+
 class OrgLearningGroupMemberCreate(BaseModel):
     user_id: str = Field(min_length=1, max_length=64)
 

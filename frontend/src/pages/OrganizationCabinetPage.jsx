@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { addOrgLearningGroupMember, createOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, removeOrgLearningGroupMember, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
+import { addOrgLearningGroupMember, createOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -483,6 +483,9 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [members, setMembers] = useState([]);
   const [memberUserId, setMemberUserId] = useState("");
+  const [memberSearchQuery, setMemberSearchQuery] = useState("");
+  const [memberSearchResults, setMemberSearchResults] = useState([]);
+  const [memberSearchLoading, setMemberSearchLoading] = useState(false);
   const [memberActionError, setMemberActionError] = useState("");
   const [memberActionMessage, setMemberActionMessage] = useState("");
   const [addingMember, setAddingMember] = useState(false);
@@ -551,6 +554,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         setMemberActionError("");
         setMemberActionMessage("");
         setMemberUserId("");
+        setMemberSearchQuery("");
+        setMemberSearchResults([]);
         return;
       }
 
@@ -560,6 +565,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         setMemberActionError("");
         setMemberActionMessage("");
         setMemberUserId("");
+        setMemberSearchQuery("");
+        setMemberSearchResults([]);
 
         const response = await getOrgLearningGroupMembers(selectedGroupId);
 
@@ -706,6 +713,41 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     return updated;
   }
 
+  async function handleSearchMemberCandidates() {
+    const normalizedQuery = memberSearchQuery.trim();
+
+    if (!normalizedQuery) {
+      setMemberActionError("Введите email или ФИО пользователя для поиска.");
+      setMemberSearchResults([]);
+      setMemberUserId("");
+      return;
+    }
+
+    try {
+      setMemberSearchLoading(true);
+      setMemberActionError("");
+      setMemberActionMessage("");
+      setMemberUserId("");
+
+      const results = await searchOrgUsers({
+        q: normalizedQuery,
+        limit: 20,
+      });
+
+      const items = Array.isArray(results) ? results : [];
+      setMemberSearchResults(items);
+
+      if (items.length === 0) {
+        setMemberActionError("Пользователи не найдены в доступной организации.");
+      }
+    } catch (err) {
+      setMemberSearchResults([]);
+      setMemberActionError(formatApiError(err, "Не удалось выполнить поиск пользователей."));
+    } finally {
+      setMemberSearchLoading(false);
+    }
+  }
+
   async function handleAddMember(event) {
     event.preventDefault();
 
@@ -717,7 +759,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }
 
     if (!normalizedUserId) {
-      setMemberActionError("Укажите ID пользователя.");
+      setMemberActionError("Выберите пользователя из результатов поиска.");
       return;
     }
 
@@ -732,6 +774,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
       setMembers((current) => sortMembers([...current, created]));
       setMemberUserId("");
+      setMemberSearchQuery("");
+      setMemberSearchResults([]);
       setMemberActionMessage("Участник добавлен в группу.");
     } catch (err) {
       setMemberActionError(formatApiError(err, "Не удалось добавить участника в группу."));
@@ -1085,22 +1129,61 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
               >
                 <div className="text-sm font-bold text-slate-950">Добавить участника</div>
                 <div className="mt-1 text-xs leading-5 text-slate-500">
-                  Сейчас добавление выполняется по ID пользователя. Позже можно заменить поле на поиск по email.
+                  Найдите пользователя по email или ФИО. В результатах показываются только пользователи из доступной организации.
                 </div>
 
                 <div className="mt-3 flex flex-col gap-3 sm:flex-row">
                   <input
-                    value={memberUserId}
-                    onChange={(event) => setMemberUserId(event.target.value)}
+                    value={memberSearchQuery}
+                    onChange={(event) => setMemberSearchQuery(event.target.value)}
                     className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
-                    placeholder="ID пользователя"
+                    placeholder="Email или ФИО пользователя"
                   />
                   <button
+                    type="button"
+                    onClick={handleSearchMemberCandidates}
+                    disabled={memberSearchLoading}
+                    className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:bg-slate-300"
+                  >
+                    {memberSearchLoading ? "Ищем..." : "Найти"}
+                  </button>
+                </div>
+
+                {memberSearchResults.length > 0 && (
+                  <div className="mt-3 grid gap-2">
+                    {memberSearchResults.map((candidate) => {
+                      const active = memberUserId === candidate.id;
+
+                      return (
+                        <button
+                          key={candidate.id}
+                          type="button"
+                          onClick={() => setMemberUserId(candidate.id)}
+                          className={`rounded-2xl px-4 py-3 text-left text-sm ring-1 transition ${
+                            active
+                              ? "bg-blue-50 text-blue-900 ring-blue-200"
+                              : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span className="block font-semibold">
+                            {candidate.full_name || candidate.email}
+                          </span>
+                          <span className="mt-1 block text-xs text-slate-500">
+                            {candidate.email}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
                     type="submit"
-                    disabled={addingMember}
+                    disabled={addingMember || !memberUserId}
                     className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
                   >
-                    {addingMember ? "Добавляем..." : "Добавить"}
+                    {addingMember ? "Добавляем..." : "Добавить в группу"}
                   </button>
                 </div>
 
