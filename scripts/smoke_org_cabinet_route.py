@@ -24,6 +24,22 @@ def require_contains(path: str, fragments: list[str]) -> None:
         raise SystemExit(1)
 
 
+def require_not_contains(path: str, fragments: list[str]) -> None:
+    file_path = Path(path)
+
+    if not file_path.exists():
+        raise SystemExit(f"Missing required file: {path}")
+
+    text = file_path.read_text(encoding="utf-8")
+    present = [fragment for fragment in fragments if fragment in text]
+
+    if present:
+        print(f"Forbidden route wiring fragments in {path}:")
+        for fragment in present:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+
 def fetch_frontend_route(path: str) -> str:
     url = f"{FRONTEND_BASE_URL}{path}"
     request = urllib.request.Request(url, headers={"Accept": "text/html"})
@@ -93,6 +109,13 @@ def main() -> None:
             'active={currentPage === "organization"}',
             'onClick={() => onPageChange("organization")}',
             "Кабинет организации",
+        ],
+    )
+
+    require_not_contains(
+        "frontend/src/components/layout/PublicShell.jsx",
+        [
+            'function NavButton({ active, children, onClick }) {\n  const isOrgRepresentative = userHasRole(user, "org_rep");',
         ],
     )
 
