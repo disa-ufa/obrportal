@@ -524,6 +524,8 @@ def main() -> None:
             "selectedGroupAsideProps",
             "<OrganizationSelectedGroupAside {...selectedGroupAsideProps} />",
             "../components/organization/OrganizationSelectedGroupAside",
+            "organizationUsersSectionProps",
+            "<OrganizationUsersSection {...organizationUsersSectionProps} />",
         ],
     )
 

@@ -756,6 +756,22 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }
   }
 
+  const organizationUsersSectionProps = {
+    organizations,
+    organizationUsers,
+    organizationUsersQuery,
+    organizationUsersLoading,
+    organizationUsersError,
+    organizationUsersMessage,
+    addingOrganizationUserId,
+    selectedGroupId,
+    onSearchOrganizationUsers: handleSearchOrganizationUsers,
+    onAddOrganizationUserToSelectedGroup: handleAddOrganizationUserToSelectedGroup,
+    setOrganizationUsersQuery,
+    setOrganizationUsers,
+    setOrganizationUsersError,
+  };
+
   const cabinetStatsProps = {
     summary,
     organizations,
@@ -877,21 +893,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         onSaveOrganization={handleSaveOrganization}
       />
 
-      <OrganizationUsersSection
-        organizations={organizations}
-        organizationUsers={organizationUsers}
-        organizationUsersQuery={organizationUsersQuery}
-        organizationUsersLoading={organizationUsersLoading}
-        organizationUsersError={organizationUsersError}
-        organizationUsersMessage={organizationUsersMessage}
-        addingOrganizationUserId={addingOrganizationUserId}
-        selectedGroupId={selectedGroupId}
-        onSearchOrganizationUsers={handleSearchOrganizationUsers}
-        onAddOrganizationUserToSelectedGroup={handleAddOrganizationUserToSelectedGroup}
-        setOrganizationUsersQuery={setOrganizationUsersQuery}
-        setOrganizationUsers={setOrganizationUsers}
-        setOrganizationUsersError={setOrganizationUsersError}
-      />
+      <OrganizationUsersSection {...organizationUsersSectionProps} />
 
       <OrganizationGroupCreateSection
         organizations={organizations}
