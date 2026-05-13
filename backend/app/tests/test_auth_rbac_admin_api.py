@@ -7192,3 +7192,136 @@ def test_org_rep_can_list_group_enrollments_in_assigned_organization() -> None:
     )
     assert status == 403
     assert isinstance(forbidden_payload, dict)
+
+
+
+def test_org_rep_can_delete_assigned_group_enrollment() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    organization_id = create_test_organization(admin_token)
+    foreign_organization_id = create_test_organization(admin_token)
+
+    learner_role_id = get_role_id_by_code(admin_token, "learner_fl")
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    learner_email = f"org_delete_enrollment_learner_{uuid4().hex[:12]}@example.com"
+
+    status, learner_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": learner_email,
+            "password": "OrgDeleteEnrollmentLearner123!",
+            "full_name": "Org Delete Enrollment Learner",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(learner_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user['id']}/roles",
+        {
+            "role_id": learner_role_id,
+            "organization_id": organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    group = create_test_learning_group(admin_token, organization_id)
+    foreign_group = create_test_learning_group(admin_token, foreign_organization_id)
+
+    status, member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{group['id']}/members",
+        {"user_id": learner_user["id"]},
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(member, dict)
+
+    course = create_test_course_in_db(title=f"Org Delete Group Enrollment {uuid4().hex[:8]}")
+
+    org_rep_email = f"org_delete_enrollment_rep_{uuid4().hex[:12]}@example.com"
+    org_rep_password = "OrgDeleteEnrollmentRep123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Org Delete Enrollment Representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user['id']}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, bulk_result = request_json(
+        "POST",
+        "/api/v1/org/enrollments/group",
+        {
+            "learning_group_id": group["id"],
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+        token=org_rep_token,
+    )
+    assert status == 201
+    assert isinstance(bulk_result, dict)
+    assert bulk_result["created_count"] == 1
+    assert len(bulk_result["created"]) == 1
+
+    enrollment_id = bulk_result["created"][0]["id"]
+
+    status, foreign_delete_payload = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{foreign_group['id']}/enrollments/{enrollment_id}",
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_delete_payload, dict)
+
+    status, delete_payload = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{group['id']}/enrollments/{enrollment_id}",
+        token=org_rep_token,
+    )
+    assert status == 204
+
+    status, enrollments_after_delete = request_json(
+        "GET",
+        f"/api/v1/org/groups/{group['id']}/enrollments",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(enrollments_after_delete, list)
+    assert all(item["id"] != enrollment_id for item in enrollments_after_delete)
+
+    status, repeated_delete_payload = request_json(
+        "DELETE",
+        f"/api/v1/org/groups/{group['id']}/enrollments/{enrollment_id}",
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(repeated_delete_payload, dict)

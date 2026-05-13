@@ -304,6 +304,12 @@ export async function getOrgGroupEnrollments(groupId) {
   return request(`/api/v1/org/groups/${groupId}/enrollments`);
 }
 
+export async function deleteOrgGroupEnrollment(groupId, enrollmentId) {
+  return request(`/api/v1/org/groups/${groupId}/enrollments/${enrollmentId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function updateOrgProfile(organizationId, payload) {
   return request(`/api/v1/org/profile/${organizationId}`, {
     method: "PATCH",

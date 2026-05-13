@@ -901,6 +901,51 @@ async def create_org_group_enrollments(
     )
 
 
+
+@router.delete("/groups/{group_id}/enrollments/{enrollment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_org_group_enrollment(
+    group_id: str,
+    enrollment_id: str,
+    current_user: User = Depends(require_permission("org.groups.write")),
+    session: AsyncSession = Depends(get_db),
+) -> Response:
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.write",
+        session,
+    )
+    group = await get_learning_group_or_404(
+        group_id.strip(),
+        session,
+        allowed_organization_ids,
+    )
+
+    result = await session.execute(
+        select(Enrollment).where(
+            Enrollment.id == enrollment_id.strip(),
+            Enrollment.learning_group_id == group.id,
+        )
+    )
+    enrollment = result.scalar_one_or_none()
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Enrollment not found",
+        )
+
+    if enrollment.status != "assigned":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only assigned group enrollment can be deleted",
+        )
+
+    await session.delete(enrollment)
+    await session.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/profile", response_model=OrgProfile)
 async def get_org_profile(
     current_user: User = Depends(require_permission("org.profile.read")),
