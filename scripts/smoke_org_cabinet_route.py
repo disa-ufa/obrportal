@@ -300,6 +300,13 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupEnrollmentCard.jsx",
         [
             "export function OrganizationGroupEnrollmentCard",
+            "courseLabel",
+            "userLabel",
+            "statusLabel",
+            "createdAtLabel",
+            "isAssigned",
+            "isDeleting",
+            "deleteButtonLabel",
             "formatEnrollmentStatus",
             "formatDate",
             "enrollment.status === \"assigned\"",
