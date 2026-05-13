@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, updateOrgProfile } from "../api/client";
+import { createOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -101,6 +101,17 @@ function buildEmptyGroupForm(organizationId = "") {
     code: "",
     description: "",
     is_active: true,
+  };
+}
+
+
+
+function buildLearningGroupFormData(group) {
+  return {
+    name: group?.name || "",
+    code: group?.code || "",
+    description: group?.description || "",
+    is_active: group?.is_active ?? true,
   };
 }
 
@@ -288,6 +299,168 @@ function OrganizationProfileCard({ organization, onSave }) {
         </div>
       </div>
         </>
+      )}
+    </div>
+  );
+}
+
+
+
+function LearningGroupEditForm({ group, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState(() => buildLearningGroupFormData(group));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setEditing(false);
+    setError("");
+    setMessage("");
+    setFormData(buildLearningGroupFormData(group));
+  }, [group]);
+
+  function handleChange(event) {
+    const { checked, name, type, value } = event.target;
+
+    setFormData((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (!formData.name.trim()) {
+      setError("Укажите название учебной группы.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError("");
+      setMessage("");
+
+      const updated = await onSave(group.id, formData);
+
+      setFormData(buildLearningGroupFormData(updated));
+      setEditing(false);
+      setMessage("Учебная группа обновлена.");
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить учебную группу."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-bold text-slate-950">Настройки группы</div>
+          <div className="mt-1 text-xs text-slate-500">
+            Название, код, описание и активность группы.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setEditing((current) => !current);
+            setError("");
+            setMessage("");
+            setFormData(buildLearningGroupFormData(group));
+          }}
+          className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
+        >
+          {editing ? "Отменить" : "Редактировать группу"}
+        </button>
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+          {error}
+        </div>
+      )}
+
+      {message && !editing && (
+        <div className="mt-4 rounded-2xl bg-green-50 p-4 text-sm text-green-800 ring-1 ring-green-200">
+          {message}
+        </div>
+      )}
+
+      {editing && (
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-500">Название группы</span>
+            <input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              maxLength={255}
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              placeholder="Название группы"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-500">Код группы</span>
+            <input
+              name="code"
+              value={formData.code}
+              onChange={handleChange}
+              maxLength={64}
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              placeholder="Код группы"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-500">Описание</span>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              maxLength={1024}
+              rows={3}
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              placeholder="Описание группы"
+            />
+          </label>
+
+          <label className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-100">
+            <input
+              name="is_active"
+              type="checkbox"
+              checked={formData.is_active}
+              onChange={handleChange}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            <span className="text-sm font-semibold text-slate-700">Группа активна</span>
+          </label>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
+            >
+              {saving ? "Сохраняем..." : "Сохранить группу"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(false);
+                setError("");
+                setMessage("");
+                setFormData(buildLearningGroupFormData(group));
+              }}
+              className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+            >
+              Отмена
+            </button>
+          </div>
+        </form>
       )}
     </div>
   );
@@ -497,6 +670,18 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     } finally {
       setCreatingGroup(false);
     }
+  }
+
+  async function handleSaveGroup(groupId, payload) {
+    const updated = await updateOrgLearningGroup(groupId, payload);
+
+    setGroups((current) =>
+      current
+        .map((group) => (group.id === updated.id ? { ...group, ...updated } : group))
+        .sort((left, right) => left.name.localeCompare(right.name, "ru"))
+    );
+
+    return updated;
   }
 
   return (
@@ -800,6 +985,13 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                   </span>
                 </div>
               </div>
+            )}
+
+            {selectedGroup && (
+              <LearningGroupEditForm
+                group={selectedGroup}
+                onSave={handleSaveGroup}
+              />
             )}
 
             {membersError && (

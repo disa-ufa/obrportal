@@ -86,6 +86,7 @@ def main() -> None:
         [
             "export function OrganizationCabinetPage",
             "createOrgLearningGroup",
+            "updateOrgLearningGroup",
             "getOrgProfile",
             "updateOrgProfile",
             "getOrgLearningGroups",
@@ -99,6 +100,10 @@ def main() -> None:
             "Создать учебную группу",
             "Создать группу",
             "handleCreateGroup",
+            "LearningGroupEditForm",
+            "handleSaveGroup",
+            "Редактировать группу",
+            "Сохранить группу",
             "Кабинет организации",
         ],
     )
@@ -111,7 +116,9 @@ def main() -> None:
             "/api/v1/org/profile",
             "/api/v1/org/profile/${organizationId}",
             "export async function createOrgLearningGroup",
+            "export async function updateOrgLearningGroup",
             "/api/v1/org/groups",
+            "/api/v1/org/groups/${groupId}",
         ],
     )
 
