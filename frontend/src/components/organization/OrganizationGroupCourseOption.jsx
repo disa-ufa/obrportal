@@ -5,6 +5,16 @@ export function OrganizationGroupCourseOption({
   active,
   onSelect,
 }) {
+  const courseTitle = course.title || course.slug || course.id;
+  const courseMetaLabel = [
+    course.slug || shortId(course.id),
+    course.hours ? `${course.hours} ч.` : "",
+    course.format || "",
+    course.document_type || "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <button
       type="button"
@@ -16,13 +26,10 @@ export function OrganizationGroupCourseOption({
       }`}
     >
       <span className="block font-semibold">
-        {course.title || course.slug || course.id}
+        {courseTitle}
       </span>
       <span className="mt-1 block text-xs text-slate-500">
-        {course.slug || shortId(course.id)}
-        {course.hours ? ` · ${course.hours} ч.` : ""}
-        {course.format ? ` · ${course.format}` : ""}
-        {course.document_type ? ` · ${course.document_type}` : ""}
+        {courseMetaLabel}
       </span>
     </button>
   );

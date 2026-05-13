@@ -178,6 +178,8 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupCourseOption.jsx",
         [
             "export function OrganizationGroupCourseOption",
+            "courseTitle",
+            "courseMetaLabel",
             "onSelect(course)",
             "course.title || course.slug || course.id",
             "course.slug || shortId(course.id)",
