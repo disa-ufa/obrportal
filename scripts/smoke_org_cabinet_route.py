@@ -179,10 +179,7 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupMembersSection.jsx",
         [
             "export function OrganizationGroupMembersSection",
-            "Добавить участника",
-            "Email или ФИО пользователя",
-            "Добавить в группу",
-            "candidate.roles",
+            "OrganizationGroupMemberAddForm",
             "member.user_roles",
             "Загружаем участников",
             "В выбранной группе пока нет участников",
@@ -192,6 +189,19 @@ def main() -> None:
             "handleDeleteMember(member)",
             "deletingMemberId === member.id",
             "Удалить",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupMemberAddForm.jsx",
+        [
+            "export function OrganizationGroupMemberAddForm",
+            "Добавить участника",
+            "Email или ФИО пользователя",
+            "Добавить в группу",
+            "candidate.roles",
+            "formatUserOrganizations",
+            "formatUserRoles",
         ],
     )
 
