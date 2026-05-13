@@ -756,6 +756,16 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }
   }
 
+  const groupCreateSectionProps = {
+    organizations,
+    groupForm,
+    creatingGroup,
+    groupActionError,
+    groupActionMessage,
+    onCreateGroup: handleCreateGroup,
+    onGroupFormChange: handleGroupFormChange,
+  };
+
   const organizationUsersSectionProps = {
     organizations,
     organizationUsers,
@@ -895,15 +905,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
       <OrganizationUsersSection {...organizationUsersSectionProps} />
 
-      <OrganizationGroupCreateSection
-        organizations={organizations}
-        groupForm={groupForm}
-        creatingGroup={creatingGroup}
-        groupActionError={groupActionError}
-        groupActionMessage={groupActionMessage}
-        onCreateGroup={handleCreateGroup}
-        onGroupFormChange={handleGroupFormChange}
-      />
+      <OrganizationGroupCreateSection {...groupCreateSectionProps} />
 
       {loading ? (
         <div className="rounded-3xl bg-white p-8 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
