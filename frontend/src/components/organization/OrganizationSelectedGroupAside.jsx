@@ -58,75 +58,76 @@ export function OrganizationSelectedGroupAside({
 }) {
   return (
     <aside className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <OrganizationSelectedGroupPanelHeader
-              selectedGroup={selectedGroup}
-              organizations={organizations}
-              deletingGroupId={deletingGroupId}
-              groupDeleteError={groupDeleteError}
-              groupDeleteMessage={groupDeleteMessage}
-              onDeleteGroup={handleDeleteGroup}
-            />
-            {selectedGroup && (
-              <LearningGroupEditForm
-                group={selectedGroup}
-                onSave={handleSaveGroup}
-              />
-            )}
+      <OrganizationSelectedGroupPanelHeader
+        selectedGroup={selectedGroup}
+        organizations={organizations}
+        deletingGroupId={deletingGroupId}
+        groupDeleteError={groupDeleteError}
+        groupDeleteMessage={groupDeleteMessage}
+        onDeleteGroup={handleDeleteGroup}
+      />
 
-            {selectedGroup && (
-              <OrganizationGroupCourseAssignmentForm
-                handleCreateGroupEnrollments={handleCreateGroupEnrollments}
-                courseSearchQuery={courseSearchQuery}
-                handleCourseSearchQueryChange={handleCourseSearchQueryChange}
-                handleSearchCourseCandidates={handleSearchCourseCandidates}
-                courseSearchLoading={courseSearchLoading}
-                courseSearchResults={courseSearchResults}
-                handleSelectCourse={handleSelectCourse}
-                groupEnrollmentForm={groupEnrollmentForm}
-                handleGroupEnrollmentFormChange={handleGroupEnrollmentFormChange}
-                assigningGroupCourse={assigningGroupCourse}
-                groupEnrollmentError={groupEnrollmentError}
-                groupEnrollmentResult={groupEnrollmentResult}
-              />
-            )}
+      {selectedGroup && (
+        <LearningGroupEditForm
+          group={selectedGroup}
+          onSave={handleSaveGroup}
+        />
+      )}
 
-            {selectedGroup && (
-              <OrganizationGroupEnrollmentsSection
-                groupEnrollmentsLoading={groupEnrollmentsLoading}
-                groupEnrollmentsError={groupEnrollmentsError}
-                groupEnrollmentDeleteMessage={groupEnrollmentDeleteMessage}
-                groupEnrollmentSearchQuery={groupEnrollmentSearchQuery}
-                setGroupEnrollmentSearchQuery={setGroupEnrollmentSearchQuery}
-                groupEnrollmentStatusFilter={groupEnrollmentStatusFilter}
-                setGroupEnrollmentStatusFilter={setGroupEnrollmentStatusFilter}
-                groupEnrollmentFiltersActive={groupEnrollmentFiltersActive}
-                setGroupEnrollmentsRefreshKey={setGroupEnrollmentsRefreshKey}
-                groupEnrollments={groupEnrollments}
-                visibleGroupEnrollments={visibleGroupEnrollments}
-                deletingGroupEnrollmentId={deletingGroupEnrollmentId}
-                handleDeleteGroupEnrollment={handleDeleteGroupEnrollment}
-              />
-            )}
+      {selectedGroup && (
+        <OrganizationGroupCourseAssignmentForm
+          handleCreateGroupEnrollments={handleCreateGroupEnrollments}
+          courseSearchQuery={courseSearchQuery}
+          handleCourseSearchQueryChange={handleCourseSearchQueryChange}
+          handleSearchCourseCandidates={handleSearchCourseCandidates}
+          courseSearchLoading={courseSearchLoading}
+          courseSearchResults={courseSearchResults}
+          handleSelectCourse={handleSelectCourse}
+          groupEnrollmentForm={groupEnrollmentForm}
+          handleGroupEnrollmentFormChange={handleGroupEnrollmentFormChange}
+          assigningGroupCourse={assigningGroupCourse}
+          groupEnrollmentError={groupEnrollmentError}
+          groupEnrollmentResult={groupEnrollmentResult}
+        />
+      )}
 
-            <OrganizationGroupMembersSection
-              selectedGroup={selectedGroup}
-              membersLoading={membersLoading}
-              membersError={membersError}
-              memberSearchQuery={memberSearchQuery}
-              setMemberSearchQuery={setMemberSearchQuery}
-              memberSearchLoading={memberSearchLoading}
-              handleSearchMemberCandidates={handleSearchMemberCandidates}
-              memberSearchResults={memberSearchResults}
-              memberUserId={memberUserId}
-              setMemberUserId={setMemberUserId}
-              addingMember={addingMember}
-              handleAddMember={handleAddMember}
-              memberActionError={memberActionError}
-              memberActionMessage={memberActionMessage}
-              members={members}
-              deletingMemberId={deletingMemberId}
-              handleDeleteMember={handleDeleteMember}
-            />
+      {selectedGroup && (
+        <OrganizationGroupEnrollmentsSection
+          groupEnrollmentsLoading={groupEnrollmentsLoading}
+          groupEnrollmentsError={groupEnrollmentsError}
+          groupEnrollmentDeleteMessage={groupEnrollmentDeleteMessage}
+          groupEnrollmentSearchQuery={groupEnrollmentSearchQuery}
+          setGroupEnrollmentSearchQuery={setGroupEnrollmentSearchQuery}
+          groupEnrollmentStatusFilter={groupEnrollmentStatusFilter}
+          setGroupEnrollmentStatusFilter={setGroupEnrollmentStatusFilter}
+          groupEnrollmentFiltersActive={groupEnrollmentFiltersActive}
+          setGroupEnrollmentsRefreshKey={setGroupEnrollmentsRefreshKey}
+          groupEnrollments={groupEnrollments}
+          visibleGroupEnrollments={visibleGroupEnrollments}
+          deletingGroupEnrollmentId={deletingGroupEnrollmentId}
+          handleDeleteGroupEnrollment={handleDeleteGroupEnrollment}
+        />
+      )}
+
+      <OrganizationGroupMembersSection
+        selectedGroup={selectedGroup}
+        membersLoading={membersLoading}
+        membersError={membersError}
+        memberSearchQuery={memberSearchQuery}
+        setMemberSearchQuery={setMemberSearchQuery}
+        memberSearchLoading={memberSearchLoading}
+        handleSearchMemberCandidates={handleSearchMemberCandidates}
+        memberSearchResults={memberSearchResults}
+        memberUserId={memberUserId}
+        setMemberUserId={setMemberUserId}
+        addingMember={addingMember}
+        handleAddMember={handleAddMember}
+        memberActionError={memberActionError}
+        memberActionMessage={memberActionMessage}
+        members={members}
+        deletingMemberId={deletingMemberId}
+        handleDeleteMember={handleDeleteMember}
+      />
     </aside>
   );
 }
