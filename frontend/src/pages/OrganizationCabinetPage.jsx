@@ -23,11 +23,10 @@ import {
   OrganizationCabinetStats,
   OrganizationGroupCreateSection,
   OrganizationGroupListSection,
-  OrganizationSelectedGroupPanelHeader,
-  OrganizationSelectedGroupAside,
   OrganizationUsersSection,
   OrganizationProfileSection,
 } from "../components/organization/OrganizationCabinetForms";
+import { OrganizationSelectedGroupAside } from "../components/organization/OrganizationSelectedGroupAside";
 import {
   buildEmptyGroupEnrollmentForm,
   buildEmptyGroupForm,
