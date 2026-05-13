@@ -92,6 +92,24 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/components/organization/OrganizationCabinetForms.jsx",
+        [
+            "export function OrganizationProfileCard",
+            "export function LearningGroupEditForm",
+            "buildOrganizationProfileFormData",
+            "buildLearningGroupFormData",
+            "formatOptional",
+            "formatApiError",
+            "Сохранить реквизиты",
+            "Редактировать группу",
+            "Сохранить группу",
+            "Юридический адрес",
+            "Фактический адрес",
+            "Редактировать",
+        ],
+    )
+
+    require_contains(
         "frontend/src/utils/organizationCabinet.js",
         [
             "export function formatDate",
@@ -122,6 +140,7 @@ def main() -> None:
         "frontend/src/pages/OrganizationCabinetPage.jsx",
         [
             "export function OrganizationCabinetPage",
+            "from \"../components/organization/OrganizationCabinetForms\";",
             "from \"../utils/organizationCabinet\";",
             "addOrgLearningGroupMember",
             "removeOrgLearningGroupMember",
@@ -139,10 +158,6 @@ def main() -> None:
             "getOrgLearningGroupMembers",
             "OrganizationProfileCard",
             "Реквизиты организации",
-            "Юридический адрес",
-            "Фактический адрес",
-            "Редактировать",
-            "Сохранить реквизиты",
             "Обучающиеся организации",
             "organizationUsers",
             "handleSearchOrganizationUsers",
@@ -162,8 +177,6 @@ def main() -> None:
             "handleDeleteGroup",
             "Опасная зона",
             "Удалить группу",
-            "Редактировать группу",
-            "Сохранить группу",
             "handleCreateGroupEnrollments",
             "handleSearchCourseCandidates",
             "handleSelectCourse",
