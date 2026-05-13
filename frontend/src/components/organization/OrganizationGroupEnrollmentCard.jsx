@@ -8,8 +8,10 @@ export function OrganizationGroupEnrollmentCard({
   deletingGroupEnrollmentId,
   handleDeleteGroupEnrollment,
 }) {
-  const courseLabel = enrollment.course_title || enrollment.course_slug || enrollment.course_id;
-  const userLabel = enrollment.user_full_name || enrollment.user_email || enrollment.user_id;
+  const courseLabel =
+    enrollment.course_title || enrollment.course_slug || enrollment.course_id;
+  const userLabel =
+    enrollment.user_full_name || enrollment.user_email || enrollment.user_id;
   const statusLabel = formatEnrollmentStatus(enrollment.status);
   const createdAtLabel = formatDate(enrollment.created_at);
   const isAssigned = enrollment.status === "assigned";
