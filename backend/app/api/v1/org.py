@@ -756,6 +756,53 @@ async def search_org_users(
     return build_org_user_search_items(result.all(), limit)
 
 
+@router.get("/groups/{group_id}/enrollments", response_model=list[OrgEnrollmentItem])
+async def list_org_group_enrollments(
+    group_id: str,
+    current_user: User = Depends(require_permission("org.groups.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[OrgEnrollmentItem]:
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.read",
+        session,
+    )
+    group = await get_learning_group_or_404(
+        group_id.strip(),
+        session,
+        allowed_organization_ids,
+    )
+
+    result = await session.execute(
+        select(
+            Enrollment.id.label("id"),
+            Enrollment.user_id.label("user_id"),
+            Enrollment.course_id.label("course_id"),
+            Enrollment.organization_id.label("organization_id"),
+            Enrollment.learning_group_id.label("learning_group_id"),
+            Enrollment.status.label("status"),
+            Enrollment.started_at.label("started_at"),
+            Enrollment.completed_at.label("completed_at"),
+            Enrollment.created_at.label("created_at"),
+            Enrollment.updated_at.label("updated_at"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            Organization.name.label("organization_name"),
+            LearningGroup.name.label("learning_group_name"),
+        )
+        .join(User, User.id == Enrollment.user_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+        .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+        .where(Enrollment.learning_group_id == group.id)
+        .order_by(Course.title.asc(), User.email.asc())
+    )
+
+    return [build_org_enrollment_item(row) for row in result.all()]
+
+
 @router.post(
     "/enrollments/group",
     response_model=OrgEnrollmentBulkCreateResult,

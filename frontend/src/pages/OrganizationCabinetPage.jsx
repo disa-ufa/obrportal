@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { addOrgLearningGroupMember, createOrgGroupEnrollments, createOrgLearningGroup, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, getPublicCourses, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
+import { addOrgLearningGroupMember, createOrgGroupEnrollments, createOrgLearningGroup, getOrgGroupEnrollments, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, getPublicCourses, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -120,6 +120,26 @@ function EmptyState({ title, text }) {
 
 
 
+
+function sortEnrollments(items) {
+  return [...items].sort((left, right) =>
+    `${left.course_title || ""} ${left.user_email || ""}`.localeCompare(
+      `${right.course_title || ""} ${right.user_email || ""}`,
+      "ru"
+    )
+  );
+}
+
+
+function formatEnrollmentStatus(status) {
+  const statuses = {
+    assigned: "Назначен",
+    in_progress: "В процессе",
+    completed: "Завершён",
+  };
+
+  return statuses[status] || status || "—";
+}
 function sortMembers(items) {
   return [...items].sort((left, right) =>
     (left.user_full_name || left.user_email || left.user_id).localeCompare(
@@ -536,6 +556,9 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [assigningGroupCourse, setAssigningGroupCourse] = useState(false);
   const [groupEnrollmentError, setGroupEnrollmentError] = useState("");
   const [groupEnrollmentResult, setGroupEnrollmentResult] = useState(null);
+  const [groupEnrollments, setGroupEnrollments] = useState([]);
+  const [groupEnrollmentsLoading, setGroupEnrollmentsLoading] = useState(false);
+  const [groupEnrollmentsError, setGroupEnrollmentsError] = useState("");
   const [groupDeleteError, setGroupDeleteError] = useState("");
   const [groupDeleteMessage, setGroupDeleteMessage] = useState("");
   const [deletingGroupId, setDeletingGroupId] = useState("");
@@ -684,6 +707,44 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     setGroupEnrollmentForm(buildEmptyGroupEnrollmentForm());
     setCourseSearchQuery("");
     setCourseSearchResults([]);
+  }, [selectedGroupId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadGroupEnrollments() {
+      if (!selectedGroupId) {
+        setGroupEnrollments([]);
+        setGroupEnrollmentsError("");
+        return;
+      }
+
+      try {
+        setGroupEnrollmentsLoading(true);
+        setGroupEnrollmentsError("");
+
+        const response = await getOrgGroupEnrollments(selectedGroupId);
+
+        if (!cancelled) {
+          setGroupEnrollments(Array.isArray(response) ? sortEnrollments(response) : []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setGroupEnrollments([]);
+          setGroupEnrollmentsError(formatApiError(err, "Не удалось загрузить назначения группы."));
+        }
+      } finally {
+        if (!cancelled) {
+          setGroupEnrollmentsLoading(false);
+        }
+      }
+    }
+
+    loadGroupEnrollments();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedGroupId]);
 
   async function handleSaveOrganization(organizationId, payload) {
@@ -951,6 +1012,10 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       setGroupEnrollmentForm(buildEmptyGroupEnrollmentForm());
       setCourseSearchQuery("");
       setCourseSearchResults([]);
+
+      if (Array.isArray(result.created) && result.created.length > 0) {
+        setGroupEnrollments((current) => sortEnrollments([...current, ...result.created]));
+      }
     } catch (err) {
       setGroupEnrollmentError(formatApiError(err, "Не удалось назначить курс группе."));
     } finally {
@@ -1497,6 +1562,58 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                   </div>
                 )}
               </form>
+            )}
+
+            {selectedGroup && (
+              <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-bold text-slate-950">Назначения группы</div>
+                    <div className="mt-1 text-xs leading-5 text-slate-500">
+                      Курсы, уже назначенные участникам выбранной учебной группы.
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+                    {groupEnrollments.length}
+                  </span>
+                </div>
+
+                {groupEnrollmentsError && (
+                  <div className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
+                    {groupEnrollmentsError}
+                  </div>
+                )}
+
+                {groupEnrollmentsLoading ? (
+                  <div className="mt-3 text-sm text-slate-500">Загружаем назначения...</div>
+                ) : groupEnrollments.length === 0 ? (
+                  <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
+                    У выбранной группы пока нет назначенных курсов.
+                  </div>
+                ) : (
+                  <div className="mt-3 grid gap-2">
+                    {groupEnrollments.map((enrollment) => (
+                      <div
+                        key={enrollment.id}
+                        className="rounded-2xl bg-slate-50 p-4 text-sm ring-1 ring-slate-200"
+                      >
+                        <div className="font-semibold text-slate-950">
+                          {enrollment.course_title || enrollment.course_slug || enrollment.course_id}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          Участник: {enrollment.user_full_name || enrollment.user_email || enrollment.user_id}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          Статус: {formatEnrollmentStatus(enrollment.status)}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          Создано: {formatDate(enrollment.created_at)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {selectedGroup && (

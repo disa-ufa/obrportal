@@ -7064,3 +7064,131 @@ def test_org_rep_can_create_group_enrollments_for_assigned_organization() -> Non
     )
     assert status == 403
     assert isinstance(forbidden, dict)
+
+
+
+def test_org_rep_can_list_group_enrollments_in_assigned_organization() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+
+    learner_role_id = get_role_id_by_code(admin_token, "learner_fl")
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    learner_email = f"org_group_enrollment_list_{uuid4().hex[:12]}@example.com"
+
+    status, learner = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": learner_email,
+            "password": "OrgGroupEnrollmentList123!",
+            "full_name": "Org Group Enrollment List Learner",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(learner, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner['id']}/roles",
+        {
+            "role_id": learner_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    group = create_test_learning_group(admin_token, first_organization_id)
+    foreign_group = create_test_learning_group(admin_token, second_organization_id)
+    course = create_test_course_in_db(title=f"Org Group Enrollment List Course {uuid4().hex[:8]}")
+
+    status, member = request_json(
+        "POST",
+        f"/api/v1/org/groups/{group['id']}/members",
+        {"user_id": learner["id"]},
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(member, dict)
+
+    status, bulk_result = request_json(
+        "POST",
+        "/api/v1/org/enrollments/group",
+        {
+            "learning_group_id": group["id"],
+            "course_id": course["id"],
+            "status": "assigned",
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(bulk_result, dict)
+    assert bulk_result["created_count"] == 1
+
+    org_rep_email = f"org_group_enrollment_list_rep_{uuid4().hex[:12]}@example.com"
+    org_rep_password = "OrgGroupEnrollmentListRep123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Org Group Enrollment List Representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+
+    status, _ = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user['id']}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, enrollments = request_json(
+        "GET",
+        f"/api/v1/org/groups/{group['id']}/enrollments",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(enrollments, list)
+    assert len(enrollments) == 1
+    assert enrollments[0]["user_id"] == learner["id"]
+    assert enrollments[0]["course_id"] == course["id"]
+    assert enrollments[0]["learning_group_id"] == group["id"]
+    assert enrollments[0]["organization_id"] == first_organization_id
+
+    status, foreign_payload = request_json(
+        "GET",
+        f"/api/v1/org/groups/{foreign_group['id']}/enrollments",
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_payload, dict)
+
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, forbidden_payload = request_json(
+        "GET",
+        f"/api/v1/org/groups/{group['id']}/enrollments",
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_payload, dict)
