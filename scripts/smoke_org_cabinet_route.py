@@ -94,6 +94,7 @@ def main() -> None:
     require_contains(
         "frontend/src/components/organization/OrganizationCabinetForms.jsx",
         [
+            "export function EmptyState",
             "export function OrganizationProfileCard",
             "export function LearningGroupEditForm",
             "buildOrganizationProfileFormData",

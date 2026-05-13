@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { addOrgLearningGroupMember, createOrgGroupEnrollments, createOrgLearningGroup, deleteOrgGroupEnrollment, getOrgGroupEnrollments, deleteOrgLearningGroup, getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, getPublicCourses, removeOrgLearningGroupMember, searchOrgUsers, updateOrgLearningGroup, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 import {
+  EmptyState,
   LearningGroupEditForm,
   OrganizationProfileCard,
 } from "../components/organization/OrganizationCabinetForms";
@@ -38,20 +39,6 @@ function SummaryCard({ label, value, hint }) {
     </div>
   );
 }
-
-function EmptyState({ title, text }) {
-  return (
-    <div className="rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
-      <div className="text-lg font-semibold text-slate-950">{title}</div>
-      <div className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-600">{text}</div>
-    </div>
-  );
-}
-
-
-
-
-
 
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);

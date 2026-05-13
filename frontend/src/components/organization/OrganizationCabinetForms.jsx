@@ -345,3 +345,13 @@ export function LearningGroupEditForm({ group, onSave }) {
     </div>
   );
 }
+
+
+export function EmptyState({ title, text }) {
+  return (
+    <div className="rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
+      <div className="text-lg font-semibold text-slate-950">{title}</div>
+      <div className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-600">{text}</div>
+    </div>
+  );
+}
