@@ -277,6 +277,13 @@ export async function getOrgProfile() {
   return request("/api/v1/org/profile");
 }
 
+export async function updateOrgProfile(organizationId, payload) {
+  return request(`/api/v1/org/profile/${organizationId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getOrgLearningGroups(filters = {}) {
   const params = new URLSearchParams();
 

@@ -21,6 +21,7 @@ from app.schemas.org import (
     OrgProfile,
     OrgProfileOrganizationItem,
     OrgProfileSummary,
+    OrgProfileUpdate,
 )
 
 
@@ -123,6 +124,17 @@ def build_learning_group_member_item(row) -> OrgLearningGroupMemberItem:
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
+
+
+
+def normalize_org_profile_update_data(payload: OrgProfileUpdate) -> dict:
+    data = model_to_dict(payload, exclude_unset=True)
+
+    for key in ("kpp", "ogrn", "legal_address", "actual_address"):
+        if key in data:
+            data[key] = normalize_optional_text(data[key])
+
+    return data
 
 
 def build_org_profile_organization_item(
@@ -396,6 +408,37 @@ async def get_org_profile(
         ],
         summary=summary,
     )
+
+
+@router.patch("/profile/{organization_id}", response_model=OrgProfileOrganizationItem)
+async def update_org_profile(
+    organization_id: str,
+    payload: OrgProfileUpdate,
+    current_user: User = Depends(require_permission("org.profile.write")),
+    session: AsyncSession = Depends(get_db),
+) -> OrgProfileOrganizationItem:
+    normalized_organization_id = organization_id.strip()
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.profile.write",
+        session,
+    )
+
+    ensure_organization_in_scope_or_404(
+        normalized_organization_id,
+        allowed_organization_ids,
+    )
+
+    organization = await get_organization_or_404(normalized_organization_id, session)
+    data = normalize_org_profile_update_data(payload)
+
+    for key, value in data.items():
+        setattr(organization, key, value)
+
+    await session.commit()
+    await session.refresh(organization)
+
+    return build_org_profile_organization_item(organization)
 
 
 @router.get("/groups", response_model=list[OrgLearningGroupItem])

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile } from "../api/client";
+import { getOrgLearningGroupMembers, getOrgLearningGroups, getOrgProfile, updateOrgProfile } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 
 function formatDate(value) {
@@ -92,7 +92,52 @@ function EmptyState({ title, text }) {
 }
 
 
-function OrganizationProfileCard({ organization }) {
+
+function buildOrganizationProfileFormData(organization) {
+  return {
+    kpp: organization.kpp || "",
+    ogrn: organization.ogrn || "",
+    legal_address: organization.legal_address || "",
+    actual_address: organization.actual_address || "",
+  };
+}
+
+
+function OrganizationProfileCard({ organization, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState(() => buildOrganizationProfileFormData(organization));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setFormData(buildOrganizationProfileFormData(organization));
+    setError("");
+  }, [organization]);
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+    setFormData((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    try {
+      setSaving(true);
+      setError("");
+      const updated = await onSave(organization.id, formData);
+      setFormData(buildOrganizationProfileFormData(updated));
+      setEditing(false);
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось сохранить реквизиты организации."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -104,10 +149,102 @@ function OrganizationProfileCard({ organization }) {
             {organization.label}
           </div>
         </div>
-        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
-          Доступ по роли
-        </span>
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+            Доступ по роли
+          </span>
+          <button
+            type="button"
+            onClick={() => setEditing((current) => !current)}
+            className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white transition hover:bg-slate-700"
+          >
+            {editing ? "Отменить" : "Редактировать"}
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+          {error}
+        </div>
+      )}
+
+      {editing ? (
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <div className="grid gap-3 text-sm md:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-500">КПП</span>
+              <input
+                name="kpp"
+                value={formData.kpp}
+                onChange={handleChange}
+                maxLength={9}
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                placeholder="КПП"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-500">ОГРН</span>
+              <input
+                name="ogrn"
+                value={formData.ogrn}
+                onChange={handleChange}
+                maxLength={15}
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                placeholder="ОГРН"
+              />
+            </label>
+          </div>
+
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-500">Юридический адрес</span>
+            <textarea
+              name="legal_address"
+              value={formData.legal_address}
+              onChange={handleChange}
+              maxLength={1024}
+              rows={3}
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              placeholder="Юридический адрес"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-500">Фактический адрес</span>
+            <textarea
+              name="actual_address"
+              value={formData.actual_address}
+              onChange={handleChange}
+              maxLength={1024}
+              rows={3}
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              placeholder="Фактический адрес"
+            />
+          </label>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
+            >
+              {saving ? "Сохраняем..." : "Сохранить реквизиты"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData(buildOrganizationProfileFormData(organization));
+                setEditing(false);
+                setError("");
+              }}
+              className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+            >
+              Отмена
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
 
       <div className="mt-5 grid gap-3 text-sm md:grid-cols-3">
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
@@ -138,6 +275,8 @@ function OrganizationProfileCard({ organization }) {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -256,6 +395,25 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     0
   );
 
+  async function handleSaveOrganization(organizationId, payload) {
+    const updated = await updateOrgProfile(organizationId, payload);
+
+    setProfile((current) => {
+      if (!current || !Array.isArray(current.organizations)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        organizations: current.organizations.map((organization) =>
+          organization.id === updated.id ? updated : organization
+        ),
+      };
+    });
+
+    return updated;
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-6 text-white shadow-sm md:p-8">
@@ -346,6 +504,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                 <OrganizationProfileCard
                   key={organization.id}
                   organization={organization}
+                  onSave={handleSaveOrganization}
                 />
               ))}
             </div>

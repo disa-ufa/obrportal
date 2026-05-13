@@ -6346,3 +6346,104 @@ def test_org_profile_scope_for_admin_org_rep_and_unscoped_user() -> None:
     )
     assert status == 403
     assert isinstance(forbidden_payload, dict)
+
+
+
+def test_org_profile_update_is_limited_to_assigned_organization() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+
+    org_rep_email = f"org_profile_update_rep_{uuid4().hex[:12]}@example.com"
+    org_rep_password = "OrgProfileUpdate123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Org profile update representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    status, scoped_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user['id']}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(scoped_user, dict)
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, updated = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{first_organization_id}",
+        {
+            "kpp": "  123456789  ",
+            "ogrn": "  1234567890123  ",
+            "legal_address": "  Test legal address  ",
+            "actual_address": "  Test actual address  ",
+        },
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["id"] == first_organization_id
+    assert updated["kpp"] == "123456789"
+    assert updated["ogrn"] == "1234567890123"
+    assert updated["legal_address"] == "Test legal address"
+    assert updated["actual_address"] == "Test actual address"
+
+    status, profile = request_json(
+        "GET",
+        "/api/v1/org/profile",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(profile, dict)
+    assert len(profile["organizations"]) == 1
+    assert profile["organizations"][0]["id"] == first_organization_id
+    assert profile["organizations"][0]["legal_address"] == "Test legal address"
+
+    status, foreign_update = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{second_organization_id}",
+        {"actual_address": "Forbidden foreign update"},
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_update, dict)
+
+    status, missing_update = request_json(
+        "PATCH",
+        "/api/v1/org/profile/00000000-0000-0000-0000-000000000000",
+        {"actual_address": "Missing organization"},
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(missing_update, dict)
+
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, forbidden_payload = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{first_organization_id}",
+        {"actual_address": "Learner forbidden update"},
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_payload, dict)

@@ -69,6 +69,14 @@ class OrgProfileSummary(BaseModel):
     members_count: int
 
 
+
+class OrgProfileUpdate(BaseModel):
+    kpp: str | None = Field(default=None, max_length=9)
+    ogrn: str | None = Field(default=None, max_length=15)
+    legal_address: str | None = Field(default=None, max_length=1024)
+    actual_address: str | None = Field(default=None, max_length=1024)
+
+
 class OrgProfile(BaseModel):
     organizations: list[OrgProfileOrganizationItem]
     summary: OrgProfileSummary

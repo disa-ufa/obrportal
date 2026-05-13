@@ -64,6 +64,15 @@ def fetch_frontend_route(path: str) -> str:
 
 def main() -> None:
     require_contains(
+        "backend/app/schemas/org.py",
+        [
+            "class OrgProfileUpdate",
+            "legal_address",
+            "actual_address",
+        ],
+    )
+
+    require_contains(
         "backend/app/api/v1/org.py",
         [
             '@router.get("/profile", response_model=OrgProfile)',
@@ -77,12 +86,15 @@ def main() -> None:
         [
             "export function OrganizationCabinetPage",
             "getOrgProfile",
+            "updateOrgProfile",
             "getOrgLearningGroups",
             "getOrgLearningGroupMembers",
             "OrganizationProfileCard",
             "Реквизиты организации",
             "Юридический адрес",
             "Фактический адрес",
+            "Редактировать",
+            "Сохранить реквизиты",
             "Кабинет организации",
         ],
     )
@@ -91,7 +103,9 @@ def main() -> None:
         "frontend/src/api/client.js",
         [
             "export async function getOrgProfile()",
+            "export async function updateOrgProfile",
             "/api/v1/org/profile",
+            "/api/v1/org/profile/${organizationId}",
         ],
     )
 
