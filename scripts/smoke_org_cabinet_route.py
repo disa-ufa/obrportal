@@ -236,6 +236,7 @@ def main() -> None:
             "export function OrganizationGroupEnrollmentsSection",
             "OrganizationGroupEnrollmentsHeader",
             "OrganizationGroupEnrollmentsFilters",
+            "OrganizationGroupEnrollmentsMessages",
             "Снять назначение",
             "formatEnrollmentStatus",
             "enrollment.status === \"assigned\"",
@@ -268,6 +269,19 @@ def main() -> None:
             "setGroupEnrollmentSearchQuery(\"\")",
             "setGroupEnrollmentStatusFilter(\"\")",
             "Сбросить",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupEnrollmentsMessages.jsx",
+        [
+            "export function OrganizationGroupEnrollmentsMessages",
+            "groupEnrollmentDeleteMessage",
+            "groupEnrollmentsError",
+            "bg-green-50",
+            "text-green-800",
+            "bg-red-50",
+            "text-red-800",
         ],
     )
 

@@ -4,6 +4,7 @@ import {
 } from "../../utils/organizationCabinet";
 import { OrganizationGroupEnrollmentsHeader } from "./OrganizationGroupEnrollmentsHeader";
 import { OrganizationGroupEnrollmentsFilters } from "./OrganizationGroupEnrollmentsFilters";
+import { OrganizationGroupEnrollmentsMessages } from "./OrganizationGroupEnrollmentsMessages";
 
 export function OrganizationGroupEnrollmentsSection({
   groupEnrollmentsLoading,
@@ -37,17 +38,10 @@ export function OrganizationGroupEnrollmentsSection({
         groupEnrollmentFiltersActive={groupEnrollmentFiltersActive}
       />
 
-    {groupEnrollmentDeleteMessage && (
-      <div className="mt-4 rounded-2xl bg-green-50 p-4 text-sm text-green-800 ring-1 ring-green-200">
-        {groupEnrollmentDeleteMessage}
-      </div>
-    )}
-
-    {groupEnrollmentsError && (
-      <div className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
-        {groupEnrollmentsError}
-      </div>
-    )}
+      <OrganizationGroupEnrollmentsMessages
+        groupEnrollmentDeleteMessage={groupEnrollmentDeleteMessage}
+        groupEnrollmentsError={groupEnrollmentsError}
+      />
 
     {groupEnrollmentsLoading ? (
       <div className="mt-3 text-sm text-slate-500">Загружаем назначения...</div>
