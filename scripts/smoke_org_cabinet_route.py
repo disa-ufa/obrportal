@@ -381,6 +381,10 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationGroupMemberCandidateCard.jsx",
         [
             "export function OrganizationGroupMemberCandidateCard",
+            "candidateTitle",
+            "candidateEmail",
+            "candidateClassName",
+            "handleSelectCandidate",
             "formatUserOrganizations",
             "formatUserRoles",
             "candidate.full_name || candidate.email",

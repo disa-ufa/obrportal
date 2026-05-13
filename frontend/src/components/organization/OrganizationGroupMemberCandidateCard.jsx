@@ -13,22 +13,29 @@ export function OrganizationGroupMemberCandidateCard({
     candidate.organization_ids,
   );
   const roleLabel = formatUserRoles(candidate.roles);
+  const candidateTitle = candidate.full_name || candidate.email;
+  const candidateEmail = candidate.email;
+  const candidateClassName = `rounded-2xl px-4 py-3 text-left text-sm ring-1 transition ${
+    active
+      ? "bg-blue-50 text-blue-900 ring-blue-200"
+      : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+  }`;
+
+  function handleSelectCandidate() {
+    setMemberUserId(candidate.id);
+  }
 
   return (
     <button
       type="button"
-      onClick={() => setMemberUserId(candidate.id)}
-      className={`rounded-2xl px-4 py-3 text-left text-sm ring-1 transition ${
-        active
-          ? "bg-blue-50 text-blue-900 ring-blue-200"
-          : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
-      }`}
+      onClick={handleSelectCandidate}
+      className={candidateClassName}
     >
       <span className="block font-semibold">
-        {candidate.full_name || candidate.email}
+        {candidateTitle}
       </span>
       <span className="mt-1 block text-xs text-slate-500">
-        {candidate.email}
+        {candidateEmail}
       </span>
       {organizationLabel && (
         <span className="mt-2 block text-xs text-slate-500">
