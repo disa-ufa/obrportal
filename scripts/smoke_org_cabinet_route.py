@@ -151,15 +151,25 @@ def main() -> None:
             "export function OrganizationGroupCourseAssignmentForm",
             "selectedCourseLabel",
             "canAssignCourse",
-            "visibleSkippedEnrollments",
-            "hasSkippedEnrollments",
+            "OrganizationGroupCourseAssignmentResult",
             "Назначить курс группе",
             "Название, код или описание курса",
             "Найти курс",
             "Выбранный курс",
+            "shortId",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationGroupCourseAssignmentResult.jsx",
+        [
+            "export function OrganizationGroupCourseAssignmentResult",
+            "visibleSkippedEnrollments",
+            "hasSkippedEnrollments",
+            "Результат назначения",
             "created_count",
             "skipped_count",
-            "shortId",
+            "Пропущенные участники",
         ],
     )
 
