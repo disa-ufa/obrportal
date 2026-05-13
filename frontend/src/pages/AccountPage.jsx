@@ -128,7 +128,7 @@ function getAccountDocumentNotice(documentItem) {
   if (documentItem.status === "available" && documentItem.file_available) {
     return {
       title: "Документ опубликован, но скачивание временно недоступно",
-      text: "Файл есть в хранилище, но backend не разрешил скачивание. Обратитесь к администратору.",
+      text: "Файл найден, но сейчас недоступен для скачивания. Обратитесь к администратору.",
       toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
     };
   }
@@ -312,7 +312,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       setAccountNotice({
         tone: "green",
         title: "Обучение завершено",
-        message: "Статус программы обновлён. Курс отмечен как завершённый, черновик итогового документа добавлен в раздел документов.",
+        message: "Курс отмечен как завершённый. Итоговый документ подготовлен и ожидает публикации администратором. После публикации он станет доступен для скачивания и публичной проверки.",
       });
     } catch (err) {
       setCourseActionError(formatApiError(err, "Не удалось завершить обучение."));
@@ -372,8 +372,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
           Кабинет пользователя
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-          Профиль, счетчики, программы и документы уже подтягиваются из backend
-          через account endpoints.
+          Здесь собраны профиль, назначенные программы, статус обучения и итоговые
+          документы пользователя.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -506,7 +506,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
               <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                 {documents.length > 0
                   ? "Документы уже доступны для пользователя."
-                  : "Следующим шагом сюда можно подключить хранение бинарных файлов и реальную выдачу через внутреннее хранилище."}
+                  : "После завершения программы здесь появятся итоговые документы и их статусы."}
               </div>
             </div>
           )}
@@ -515,7 +515,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
 
       <SectionCard
         title="Назначенные программы"
-        subtitle="Реальный список программ из /api/v1/account/courses"
+        subtitle="Программы, назначенные вам администратором или выбранные из каталога"
       >
         {loading ? (
           <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
@@ -690,7 +690,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
 
       <SectionCard
         title="Мои документы"
-        subtitle="Реальный список документов из /api/v1/account/documents"
+        subtitle="Статусы, проверка и скачивание итоговых документов"
       >
         {loading ? (
           <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
