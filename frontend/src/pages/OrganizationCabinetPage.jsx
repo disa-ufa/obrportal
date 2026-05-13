@@ -183,6 +183,11 @@ function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) {
 
   return searchableText.includes(normalizedSearch);
 }
+function hasActiveEnrollmentFilters(searchQuery, statusFilter) {
+  return searchQuery.trim() !== "" || statusFilter !== "";
+}
+
+
 function sortMembers(items) {
   return [...items].sort((left, right) =>
     (left.user_full_name || left.user_email || left.user_id).localeCompare(
@@ -723,6 +728,11 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         )
       ),
     [groupEnrollments, groupEnrollmentSearchQuery, groupEnrollmentStatusFilter]
+  );
+
+  const groupEnrollmentFiltersActive = hasActiveEnrollmentFilters(
+    groupEnrollmentSearchQuery,
+    groupEnrollmentStatusFilter
   );
 
   const activeGroupsCount = useMemo(
@@ -1648,7 +1658,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-[1fr_220px]">
+                <div className="mt-4 grid gap-3 md:grid-cols-[1fr_220px_auto]">
                   <input
                     value={groupEnrollmentSearchQuery}
                     onChange={(event) => setGroupEnrollmentSearchQuery(event.target.value)}
@@ -1665,6 +1675,17 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                     <option value="in_progress">В процессе</option>
                     <option value="completed">Завершён</option>
                   </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGroupEnrollmentSearchQuery("");
+                      setGroupEnrollmentStatusFilter("");
+                    }}
+                    disabled={!groupEnrollmentFiltersActive}
+                    className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    Сбросить
+                  </button>
                 </div>
 
                 {groupEnrollmentsError && (
