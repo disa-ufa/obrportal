@@ -129,10 +129,24 @@ def build_learning_group_member_item(row) -> OrgLearningGroupMemberItem:
 
 def normalize_org_profile_update_data(payload: OrgProfileUpdate) -> dict:
     data = model_to_dict(payload, exclude_unset=True)
+    max_lengths = {
+        "kpp": 9,
+        "ogrn": 15,
+        "legal_address": 1024,
+        "actual_address": 1024,
+    }
 
-    for key in ("kpp", "ogrn", "legal_address", "actual_address"):
-        if key in data:
-            data[key] = normalize_optional_text(data[key])
+    for key, max_length in max_lengths.items():
+        if key not in data:
+            continue
+
+        data[key] = normalize_optional_text(data[key])
+
+        if data[key] is not None and len(data[key]) > max_length:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{key} must be at most {max_length} characters",
+            )
 
     return data
 

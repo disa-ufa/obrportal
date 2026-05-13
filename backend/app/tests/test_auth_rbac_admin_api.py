@@ -6428,6 +6428,15 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     assert status == 404
     assert isinstance(foreign_update, dict)
 
+    status, too_long_payload = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{first_organization_id}",
+        {"kpp": "1234567890"},
+        token=org_rep_token,
+    )
+    assert status == 422
+    assert isinstance(too_long_payload, dict)
+
     status, missing_update = request_json(
         "PATCH",
         "/api/v1/org/profile/00000000-0000-0000-0000-000000000000",

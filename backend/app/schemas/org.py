@@ -71,10 +71,10 @@ class OrgProfileSummary(BaseModel):
 
 
 class OrgProfileUpdate(BaseModel):
-    kpp: str | None = Field(default=None, max_length=9)
-    ogrn: str | None = Field(default=None, max_length=15)
-    legal_address: str | None = Field(default=None, max_length=1024)
-    actual_address: str | None = Field(default=None, max_length=1024)
+    kpp: str | None = Field(default=None)
+    ogrn: str | None = Field(default=None)
+    legal_address: str | None = Field(default=None)
+    actual_address: str | None = Field(default=None)
 
 
 class OrgProfile(BaseModel):
