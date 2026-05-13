@@ -161,6 +161,8 @@ def main() -> None:
         [
             "export function OrganizationGroupCoursePicker",
             "selectedCourseLabel",
+            "selectedCourseId",
+            "hasCourseSearchResults",
             "OrganizationGroupCourseOption",
             "Название, код или описание курса",
             "Найти курс",

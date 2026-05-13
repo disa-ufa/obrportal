@@ -10,8 +10,9 @@ export function OrganizationGroupCoursePicker({
   handleSelectCourse,
   groupEnrollmentForm,
 }) {
-  const selectedCourseLabel =
-    courseSearchQuery || shortId(groupEnrollmentForm.course_id);
+  const selectedCourseId = groupEnrollmentForm.course_id;
+  const selectedCourseLabel = courseSearchQuery || shortId(selectedCourseId);
+  const hasCourseSearchResults = courseSearchResults.length > 0;
 
   return (
     <>
@@ -32,20 +33,20 @@ export function OrganizationGroupCoursePicker({
         </button>
       </div>
 
-      {courseSearchResults.length > 0 && (
+      {hasCourseSearchResults && (
         <div className="grid gap-2">
           {courseSearchResults.map((course) => (
             <OrganizationGroupCourseOption
               key={course.id}
               course={course}
-              active={groupEnrollmentForm.course_id === course.id}
+              active={selectedCourseId === course.id}
               onSelect={handleSelectCourse}
             />
           ))}
         </div>
       )}
 
-      {groupEnrollmentForm.course_id && (
+      {selectedCourseId && (
         <div className="rounded-2xl bg-white px-4 py-3 text-xs text-blue-900 ring-1 ring-blue-100">
           Выбранный курс:{" "}
           <span className="font-semibold">
