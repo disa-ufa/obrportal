@@ -155,6 +155,34 @@ function mergeUniqueEnrollments(currentItems = [], newItems = []) {
 
   return sortEnrollments([...itemsById.values()]);
 }
+
+
+function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) {
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+
+  if (statusFilter && enrollment.status !== statusFilter) {
+    return false;
+  }
+
+  if (!normalizedSearch) {
+    return true;
+  }
+
+  const searchableText = [
+    enrollment.course_title,
+    enrollment.course_slug,
+    enrollment.course_id,
+    enrollment.user_full_name,
+    enrollment.user_email,
+    enrollment.user_id,
+    formatEnrollmentStatus(enrollment.status),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return searchableText.includes(normalizedSearch);
+}
 function sortMembers(items) {
   return [...items].sort((left, right) =>
     (left.user_full_name || left.user_email || left.user_id).localeCompare(
@@ -575,6 +603,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groupEnrollmentsLoading, setGroupEnrollmentsLoading] = useState(false);
   const [groupEnrollmentsError, setGroupEnrollmentsError] = useState("");
   const [groupEnrollmentsRefreshKey, setGroupEnrollmentsRefreshKey] = useState(0);
+  const [groupEnrollmentSearchQuery, setGroupEnrollmentSearchQuery] = useState("");
+  const [groupEnrollmentStatusFilter, setGroupEnrollmentStatusFilter] = useState("");
   const [groupDeleteError, setGroupDeleteError] = useState("");
   const [groupDeleteMessage, setGroupDeleteMessage] = useState("");
   const [deletingGroupId, setDeletingGroupId] = useState("");
@@ -683,6 +713,18 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     [groups, selectedGroupId]
   );
 
+  const visibleGroupEnrollments = useMemo(
+    () =>
+      groupEnrollments.filter((enrollment) =>
+        enrollmentMatchesFilters(
+          enrollment,
+          groupEnrollmentSearchQuery,
+          groupEnrollmentStatusFilter
+        )
+      ),
+    [groupEnrollments, groupEnrollmentSearchQuery, groupEnrollmentStatusFilter]
+  );
+
   const activeGroupsCount = useMemo(
     () => groups.filter((group) => group.is_active).length,
     [groups]
@@ -723,6 +765,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     setGroupEnrollmentForm(buildEmptyGroupEnrollmentForm());
     setCourseSearchQuery("");
     setCourseSearchResults([]);
+    setGroupEnrollmentSearchQuery("");
+    setGroupEnrollmentStatusFilter("");
   }, [selectedGroupId]);
 
   useEffect(() => {
@@ -1599,9 +1643,28 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                       {groupEnrollmentsLoading ? "Обновляем..." : "Обновить"}
                     </button>
                     <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
-                      {groupEnrollments.length}
+                      {visibleGroupEnrollments.length} / {groupEnrollments.length}
                     </span>
                   </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 md:grid-cols-[1fr_220px]">
+                  <input
+                    value={groupEnrollmentSearchQuery}
+                    onChange={(event) => setGroupEnrollmentSearchQuery(event.target.value)}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                    placeholder="Поиск по курсу, участнику или email"
+                  />
+                  <select
+                    value={groupEnrollmentStatusFilter}
+                    onChange={(event) => setGroupEnrollmentStatusFilter(event.target.value)}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                  >
+                    <option value="">Все статусы</option>
+                    <option value="assigned">Назначен</option>
+                    <option value="in_progress">В процессе</option>
+                    <option value="completed">Завершён</option>
+                  </select>
                 </div>
 
                 {groupEnrollmentsError && (
@@ -1616,9 +1679,13 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
                   <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
                     У выбранной группы пока нет назначенных курсов.
                   </div>
+                ) : visibleGroupEnrollments.length === 0 ? (
+                  <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
+                    По заданным фильтрам назначений не найдено.
+                  </div>
                 ) : (
                   <div className="mt-3 grid gap-2">
-                    {groupEnrollments.map((enrollment) => (
+                    {visibleGroupEnrollments.map((enrollment) => (
                       <div
                         key={enrollment.id}
                         className="rounded-2xl bg-slate-50 p-4 text-sm ring-1 ring-slate-200"

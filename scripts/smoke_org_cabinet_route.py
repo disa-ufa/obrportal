@@ -136,6 +136,12 @@ def main() -> None:
             "formatEnrollmentStatus",
             "mergeUniqueEnrollments",
             "groupEnrollmentsRefreshKey",
+            "visibleGroupEnrollments",
+            "groupEnrollmentSearchQuery",
+            "groupEnrollmentStatusFilter",
+            "enrollmentMatchesFilters",
+            "Поиск по курсу, участнику или email",
+            "Все статусы",
             "Обновить",
             
             "created_count",
