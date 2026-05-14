@@ -542,6 +542,8 @@ def main() -> None:
             "<OrganizationCabinetStats {...cabinetStatsProps} />",
             "selectedGroupAsideProps",
             "function buildSelectedGroupAsideProps",
+            "...restProps",
+            "groupDeleteMessage",
             "buildSelectedGroupAsideProps({",
             "organizationUsersSectionProps",
             "function buildOrganizationUsersSectionProps",

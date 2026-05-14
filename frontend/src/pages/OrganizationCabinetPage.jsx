@@ -158,8 +158,22 @@ function buildGroupsWorkspaceProps({
   };
 }
 
-function buildSelectedGroupAsideProps(props) {
-  return props;
+function buildSelectedGroupAsideProps({
+  selectedGroup,
+  organizations,
+  deletingGroupId,
+  groupDeleteError,
+  groupDeleteMessage,
+  ...restProps
+}) {
+  return {
+    selectedGroup,
+    organizations,
+    deletingGroupId,
+    groupDeleteError,
+    groupDeleteMessage,
+    ...restProps,
+  };
 }
 
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
