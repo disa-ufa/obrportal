@@ -539,7 +539,6 @@ def main() -> None:
             "<OrganizationGroupCreateSection {...groupCreateSectionProps} />",
             "organizationProfileSectionProps",
             "<OrganizationProfileSection {...organizationProfileSectionProps} />",
-            "groupListSectionProps",
         ],
     )
 
