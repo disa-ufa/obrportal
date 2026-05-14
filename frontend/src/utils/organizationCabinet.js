@@ -229,13 +229,14 @@ export function buildOrganizationUserFromMember(member) {
 }
 
 export function organizationUserMatchesQuery(userItem, query) {
+  const item = normalizeObject(userItem);
   const normalizedQuery = (query || "").trim().toLowerCase();
 
   if (!normalizedQuery) {
     return true;
   }
 
-  return [userItem.email, userItem.full_name]
+  return [item.email, item.full_name]
     .filter(Boolean)
     .some((value) => value.toLowerCase().includes(normalizedQuery));
 }
