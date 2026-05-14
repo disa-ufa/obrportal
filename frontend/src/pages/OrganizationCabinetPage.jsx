@@ -747,6 +747,17 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onLogout,
   };
 
+  const cabinetStatsProps = {
+    summary,
+    organizations,
+    groups,
+    activeGroupsCount,
+    inactiveGroupsCount,
+    selectedGroup,
+    selectedGroupId,
+    members,
+  };
+
   const organizationProfileSectionProps = {
     organizations,
     onSaveOrganization: handleSaveOrganization,
@@ -776,17 +787,6 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     setOrganizationUsersQuery,
     setOrganizationUsers,
     setOrganizationUsersError,
-  };
-
-  const cabinetStatsProps = {
-    summary,
-    organizations,
-    groups,
-    activeGroupsCount,
-    inactiveGroupsCount,
-    selectedGroup,
-    selectedGroupId,
-    members,
   };
 
   const selectedGroupAsideProps = {
