@@ -90,7 +90,7 @@ function normalizeObject(item) {
 export function buildActiveGroupsCount(groups = []) {
   const items = normalizeItems(groups);
 
-  return items.filter((group) => group.is_active).length;
+  return items.filter((group) => group?.is_active === true).length;
 }
 
 export function buildFallbackOrganizationSummary({
