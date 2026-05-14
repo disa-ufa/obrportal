@@ -587,6 +587,8 @@ def main() -> None:
             "selectedGroupAsideSectionProps",
             "selectedGroupAsideProps: selectedGroupAsideSectionProps",
             "buildSelectedGroupAsideSectionProps({",
+            "function buildFallbackOrganizationSummary",
+            "buildFallbackOrganizationSummary({",
             "groupDeleteMessage",
             "organizationUsersSectionProps",
             "buildOrganizationUsersSectionProps({",
