@@ -29,6 +29,7 @@ import { OrganizationCabinetGroupsWorkspace } from "../components/organization/O
 import {
   buildEmptyGroupEnrollmentForm,
   buildEmptyGroupForm,
+  buildActiveGroupsCount,
   buildFallbackOrganizationSummary,
   buildInactiveGroupsCount,
   buildOrganizationOptions,
@@ -215,10 +216,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     groupEnrollmentStatusFilter
   );
 
-  const activeGroupsCount = useMemo(
-    () => groups.filter((group) => group.is_active).length,
-    [groups]
-  );
+  const activeGroupsCount = useMemo(() => buildActiveGroupsCount(groups), [groups]);
 
   const summary = profile?.summary || buildFallbackOrganizationSummary({
     organizations,

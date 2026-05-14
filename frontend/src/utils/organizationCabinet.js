@@ -79,6 +79,10 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
 }
 
 // Organization cabinet summary helpers.
+export function buildActiveGroupsCount(groups = []) {
+  return groups.filter((group) => group.is_active).length;
+}
+
 export function buildFallbackOrganizationSummary({
   organizations,
   groups,

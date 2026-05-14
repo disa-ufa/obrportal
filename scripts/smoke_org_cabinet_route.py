@@ -440,6 +440,7 @@ def main() -> None:
             "export function formatUserRoles",
             "export function buildOrganizationOptions",
             "Organization cabinet summary helpers.",
+            "export function buildActiveGroupsCount",
             "export function buildFallbackOrganizationSummary",
             "export function buildInactiveGroupsCount",
             "export function getOrganizationLabel",
@@ -594,6 +595,8 @@ def main() -> None:
             "buildFallbackOrganizationSummary({",
             "buildInactiveGroupsCount,",
             "buildInactiveGroupsCount({",
+            "buildActiveGroupsCount,",
+            "buildActiveGroupsCount(groups)",
             "groupDeleteMessage",
             "organizationUsersSectionProps",
             "buildOrganizationUsersSectionProps({",
@@ -620,6 +623,7 @@ def main() -> None:
             "function buildSelectedGroupAsideSectionProps",
             "function buildFallbackOrganizationSummary",
             "function buildInactiveGroupsCount",
+            "function buildActiveGroupsCount",
         ],
     )
 
