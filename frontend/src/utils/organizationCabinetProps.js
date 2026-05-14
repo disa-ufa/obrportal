@@ -100,6 +100,7 @@ export function buildGroupsWorkspaceProps({
   return { loading, hasGroups, groupListProps, selectedGroupAsideProps };
 }
 
+// Large selected-group aside props are kept explicit to preserve the component contract.
 export function buildSelectedGroupAsideSectionProps({
   selectedGroup,
   organizations,
