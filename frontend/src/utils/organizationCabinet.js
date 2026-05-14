@@ -276,10 +276,12 @@ export function buildLearningGroupFormData(group) {
 }
 
 export function buildOrganizationProfileFormData(organization) {
+  const item = normalizeObject(organization);
+
   return {
-    kpp: organization.kpp || "",
-    ogrn: organization.ogrn || "",
-    legal_address: organization.legal_address || "",
-    actual_address: organization.actual_address || "",
+    kpp: item.kpp || "",
+    ogrn: item.ogrn || "",
+    legal_address: item.legal_address || "",
+    actual_address: item.actual_address || "",
   };
 }
