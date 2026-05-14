@@ -79,8 +79,12 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
 }
 
 // Organization cabinet summary helpers.
+function normalizeItems(items) {
+  return Array.isArray(items) ? items : [];
+}
+
 export function buildActiveGroupsCount(groups = []) {
-  const items = Array.isArray(groups) ? groups : [];
+  const items = normalizeItems(groups);
 
   return items.filter((group) => group.is_active).length;
 }
@@ -90,8 +94,8 @@ export function buildFallbackOrganizationSummary({
   groups,
   activeGroupsCount,
 }) {
-  const organizationItems = Array.isArray(organizations) ? organizations : [];
-  const groupItems = Array.isArray(groups) ? groups : [];
+  const organizationItems = normalizeItems(organizations);
+  const groupItems = normalizeItems(groups);
   const normalizedActiveGroupsCount =
     typeof activeGroupsCount === "number" ? activeGroupsCount : buildActiveGroupsCount(groupItems);
 
@@ -109,7 +113,7 @@ export function buildInactiveGroupsCount({
   activeGroupsCount,
 }) {
   const summaryItem = summary && typeof summary === "object" ? summary : {};
-  const groupItems = Array.isArray(groups) ? groups : [];
+  const groupItems = normalizeItems(groups);
   const normalizedActiveGroupsCount =
     typeof activeGroupsCount === "number" ? activeGroupsCount : buildActiveGroupsCount(groupItems);
 
