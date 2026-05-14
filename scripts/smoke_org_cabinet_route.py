@@ -528,6 +528,10 @@ def main() -> None:
             "<OrganizationUsersSection {...organizationUsersSectionProps} />",
             "groupCreateSectionProps",
             "<OrganizationGroupCreateSection {...groupCreateSectionProps} />",
+            "organizationProfileSectionProps",
+            "<OrganizationProfileSection {...organizationProfileSectionProps} />",
+            "groupListSectionProps",
+            "<OrganizationGroupListSection {...groupListSectionProps} />",
         ],
     )
 

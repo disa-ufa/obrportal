@@ -756,6 +756,17 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }
   }
 
+  const organizationProfileSectionProps = {
+    organizations,
+    onSaveOrganization: handleSaveOrganization,
+  };
+
+  const groupListSectionProps = {
+    groups,
+    selectedGroupId,
+    onSelectGroup: setSelectedGroupId,
+  };
+
   const groupCreateSectionProps = {
     organizations,
     groupForm,
@@ -898,10 +909,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
       <OrganizationCabinetStats {...cabinetStatsProps} />
 
-      <OrganizationProfileSection
-        organizations={organizations}
-        onSaveOrganization={handleSaveOrganization}
-      />
+      <OrganizationProfileSection {...organizationProfileSectionProps} />
 
       <OrganizationUsersSection {...organizationUsersSectionProps} />
 
@@ -918,11 +926,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         />
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <OrganizationGroupListSection
-            groups={groups}
-            selectedGroupId={selectedGroupId}
-            onSelectGroup={setSelectedGroupId}
-          />
+          <OrganizationGroupListSection {...groupListSectionProps} />
 
           <OrganizationSelectedGroupAside {...selectedGroupAsideProps} />
         </div>
