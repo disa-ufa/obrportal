@@ -241,7 +241,7 @@ export function organizationUserMatchesQuery(userItem, query) {
 }
 
 export function sortMembers(items) {
-  return [...items].sort((left, right) =>
+  return normalizeItems(items).sort((left, right) =>
     (left.user_full_name || left.user_email || left.user_id).localeCompare(
       right.user_full_name || right.user_email || right.user_id,
       "ru"
