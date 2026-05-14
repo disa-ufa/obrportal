@@ -434,7 +434,7 @@ def main() -> None:
         "frontend/src/utils/organizationCabinet.js",
         [
             "normalizedActiveGroupsCount",
-            "group.is_active",
+            "filter((group) => group.is_active)",
         ],
     )
 
