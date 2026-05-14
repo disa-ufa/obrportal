@@ -763,16 +763,6 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onSaveOrganization: handleSaveOrganization,
   };
 
-  const groupCreateSectionProps = {
-    organizations,
-    groupForm,
-    creatingGroup,
-    groupActionError,
-    groupActionMessage,
-    onCreateGroup: handleCreateGroup,
-    onGroupFormChange: handleGroupFormChange,
-  };
-
   const organizationUsersSectionProps = {
     organizations,
     organizationUsers,
@@ -787,6 +777,16 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     setOrganizationUsersQuery,
     setOrganizationUsers,
     setOrganizationUsersError,
+  };
+
+  const groupCreateSectionProps = {
+    organizations,
+    groupForm,
+    creatingGroup,
+    groupActionError,
+    groupActionMessage,
+    onCreateGroup: handleCreateGroup,
+    onGroupFormChange: handleGroupFormChange,
   };
 
   const selectedGroupAsideProps = {
