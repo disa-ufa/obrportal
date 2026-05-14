@@ -213,18 +213,18 @@ export function sortOrganizationUsers(items) {
 }
 
 export function buildOrganizationUserFromMember(member) {
-  const organizations = Array.isArray(member.user_organizations)
-    ? member.user_organizations
-    : [];
+  const item = normalizeObject(member);
+  const organizations = normalizeItems(item.user_organizations);
+  const roles = normalizeItems(item.user_roles);
 
   return {
-    id: member.user_id,
-    email: member.user_email,
-    full_name: member.user_full_name,
-    is_active: member.user_is_active,
+    id: item.user_id,
+    email: item.user_email,
+    full_name: item.user_full_name,
+    is_active: item.user_is_active,
     organization_ids: organizations.map((organization) => organization.id),
     organizations,
-    roles: Array.isArray(member.user_roles) ? member.user_roles : [],
+    roles,
   };
 }
 
