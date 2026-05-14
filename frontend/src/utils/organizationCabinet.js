@@ -30,14 +30,17 @@ export function shortId(value) {
 }
 
 export function formatUserOrganizations(organizations = [], organizationIds = []) {
-  if (Array.isArray(organizations) && organizations.length > 0) {
-    return organizations
+  const organizationItems = normalizeItems(organizations);
+  const organizationIdItems = normalizeItems(organizationIds);
+
+  if (organizationItems.length > 0) {
+    return organizationItems
       .map((organization) => organization.name || shortId(organization.id))
       .join(", ");
   }
 
-  if (Array.isArray(organizationIds) && organizationIds.length > 0) {
-    return organizationIds.map((id) => shortId(id)).join(", ");
+  if (organizationIdItems.length > 0) {
+    return organizationIdItems.map((id) => shortId(id)).join(", ");
   }
 
   return "";
