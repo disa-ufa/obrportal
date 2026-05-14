@@ -518,6 +518,8 @@ def main() -> None:
             "OrganizationCabinetErrorAlert",
             "OrganizationCabinetGroupsWorkspace",
             "groupsWorkspaceProps",
+            "function buildGroupsWorkspaceProps",
+            "buildGroupsWorkspaceProps({",
             "groupListProps",
             "function buildGroupListProps",
             "buildGroupListProps({",

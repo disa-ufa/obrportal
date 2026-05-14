@@ -144,6 +144,20 @@ function buildGroupListProps({
   };
 }
 
+function buildGroupsWorkspaceProps({
+  loading,
+  hasGroups,
+  groupListProps,
+  selectedGroupAsideProps,
+}) {
+  return {
+    loading,
+    hasGroups,
+    groupListProps,
+    selectedGroupAsideProps,
+  };
+}
+
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -950,12 +964,12 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onSelectGroup: setSelectedGroupId,
   });
 
-  const groupsWorkspaceProps = {
+  const groupsWorkspaceProps = buildGroupsWorkspaceProps({
     loading,
     hasGroups,
     groupListProps,
     selectedGroupAsideProps,
-  };
+  });
 
   return (
     <div className="space-y-6">
