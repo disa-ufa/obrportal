@@ -204,7 +204,7 @@ export function hasActiveEnrollmentFilters(searchQuery, statusFilter) {
 }
 
 export function sortOrganizationUsers(items) {
-  return [...items].sort((left, right) =>
+  return normalizeItems(items).sort((left, right) =>
     (left.full_name || left.email || left.id).localeCompare(
       right.full_name || right.email || right.id,
       "ru"
