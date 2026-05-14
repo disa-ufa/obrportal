@@ -57,8 +57,11 @@ export function formatUserRoles(roles = []) {
 }
 
 export function buildOrganizationOptions(profileOrganizations = [], groups = []) {
-  if (Array.isArray(profileOrganizations) && profileOrganizations.length > 0) {
-    return profileOrganizations.map((organization) => ({
+  const organizationItems = normalizeItems(profileOrganizations);
+  const groupItems = normalizeItems(groups);
+
+  if (organizationItems.length > 0) {
+    return organizationItems.map((organization) => ({
       id: organization.id,
       label: organization.name || shortId(organization.id),
       inn: organization.inn,
@@ -71,7 +74,7 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
 
   const uniqueIds = [];
 
-  groups.forEach((group) => {
+  groupItems.forEach((group) => {
     if (group.organization_id && !uniqueIds.includes(group.organization_id)) {
       uniqueIds.push(group.organization_id);
     }
