@@ -27,6 +27,7 @@ import {
 import { OrganizationSelectedGroupAside } from "../components/organization/OrganizationSelectedGroupAside";
 import { OrganizationCabinetNextSteps } from "../components/organization/OrganizationCabinetNextSteps";
 import { OrganizationCabinetHeroSection } from "../components/organization/OrganizationCabinetHeroSection";
+import { OrganizationCabinetErrorAlert } from "../components/organization/OrganizationCabinetErrorAlert";
 import {
   buildEmptyGroupEnrollmentForm,
   buildEmptyGroupForm,
@@ -851,11 +852,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     <div className="space-y-6">
       <OrganizationCabinetHeroSection {...heroSectionProps} />
 
-      {error && (
-        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200">
-          {error}
-        </div>
-      )}
+      <OrganizationCabinetErrorAlert error={error} />
 
       <OrganizationCabinetStats {...cabinetStatsProps} />
 

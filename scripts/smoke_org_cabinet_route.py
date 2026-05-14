@@ -516,6 +516,9 @@ def main() -> None:
             "OrganizationSelectedGroupAside",
             "OrganizationCabinetNextSteps",
             "OrganizationCabinetHeroSection",
+            "OrganizationCabinetErrorAlert",
+            "<OrganizationCabinetErrorAlert error={error} />",
+            "../components/organization/OrganizationCabinetErrorAlert",
             "heroSectionProps",
             "<OrganizationCabinetHeroSection {...heroSectionProps} />",
             "<OrganizationCabinetHeroSection",
@@ -561,6 +564,17 @@ def main() -> None:
             "logoutButtonLabel",
             "Управление обучением сотрудников",
             "Роль: представитель ЮЛ",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationCabinetErrorAlert.jsx",
+        [
+            "export function OrganizationCabinetErrorAlert",
+            "if (!error)",
+            "return null",
+            "rounded-3xl bg-red-50",
+            "{error}",
         ],
     )
 
