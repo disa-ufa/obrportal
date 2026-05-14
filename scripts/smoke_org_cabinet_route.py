@@ -480,6 +480,7 @@ def main() -> None:
             "export function buildEmptyGroupForm",
             "export function buildLearningGroupFormData",
             "export function buildOrganizationProfileFormData",
+            "normalizeObject(organization)",
         ],
     )
 
