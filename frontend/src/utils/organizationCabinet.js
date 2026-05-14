@@ -140,7 +140,7 @@ export function getGroupStatus(group) {
 }
 
 export function sortEnrollments(items) {
-  return [...items].sort((left, right) =>
+  return normalizeItems(items).sort((left, right) =>
     `${left.course_title || ""} ${left.user_email || ""}`.localeCompare(
       `${right.course_title || ""} ${right.user_email || ""}`,
       "ru"
