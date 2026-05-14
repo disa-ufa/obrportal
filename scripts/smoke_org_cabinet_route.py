@@ -462,6 +462,7 @@ def main() -> None:
             "totalGroupsCount",
             "export function getOrganizationLabel",
             "export function getGroupStatus",
+            "return group?.is_active === true",
             "export function sortEnrollments",
             "export function formatEnrollmentStatus",
             "export function mergeUniqueEnrollments",
