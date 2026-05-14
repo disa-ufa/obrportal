@@ -80,6 +80,38 @@ function buildOrganizationProfileSectionProps({
   };
 }
 
+function buildOrganizationUsersSectionProps({
+  organizations,
+  organizationUsers,
+  organizationUsersQuery,
+  organizationUsersLoading,
+  organizationUsersError,
+  organizationUsersMessage,
+  addingOrganizationUserId,
+  selectedGroupId,
+  onSearchOrganizationUsers,
+  onAddOrganizationUserToSelectedGroup,
+  setOrganizationUsersQuery,
+  setOrganizationUsers,
+  setOrganizationUsersError,
+}) {
+  return {
+    organizations,
+    organizationUsers,
+    organizationUsersQuery,
+    organizationUsersLoading,
+    organizationUsersError,
+    organizationUsersMessage,
+    addingOrganizationUserId,
+    selectedGroupId,
+    onSearchOrganizationUsers,
+    onAddOrganizationUserToSelectedGroup,
+    setOrganizationUsersQuery,
+    setOrganizationUsers,
+    setOrganizationUsersError,
+  };
+}
+
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -803,7 +835,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onSaveOrganization: handleSaveOrganization,
   });
 
-  const organizationUsersSectionProps = {
+  const organizationUsersSectionProps = buildOrganizationUsersSectionProps({
     organizations,
     organizationUsers,
     organizationUsersQuery,
@@ -817,7 +849,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     setOrganizationUsersQuery,
     setOrganizationUsers,
     setOrganizationUsersError,
-  };
+  });
 
   const groupCreateSectionProps = {
     organizations,

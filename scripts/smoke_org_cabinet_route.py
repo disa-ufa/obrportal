@@ -538,6 +538,8 @@ def main() -> None:
             "<OrganizationCabinetStats {...cabinetStatsProps} />",
             "selectedGroupAsideProps",
             "organizationUsersSectionProps",
+            "function buildOrganizationUsersSectionProps",
+            "buildOrganizationUsersSectionProps({",
             "<OrganizationUsersSection {...organizationUsersSectionProps} />",
             "groupCreateSectionProps",
             "<OrganizationGroupCreateSection {...groupCreateSectionProps} />",
