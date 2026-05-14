@@ -849,8 +849,8 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const groupsWorkspaceProps = {
     loading,
     hasGroups,
-    groupListSectionProps,
-    selectedGroupAsideProps,
+    groupListProps: groupListSectionProps,
+    selectedGroupAsideSectionProps: selectedGroupAsideProps,
   };
 
   return (

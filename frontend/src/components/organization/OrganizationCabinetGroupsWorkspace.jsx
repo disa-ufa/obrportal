@@ -6,12 +6,10 @@ import { OrganizationCabinetEmptyGroupsState } from "./OrganizationCabinetEmptyG
 export function OrganizationCabinetGroupsWorkspace({
   loading,
   hasGroups,
-  groupListSectionProps,
-  selectedGroupAsideProps,
+  groupListProps,
+  selectedGroupAsideSectionProps,
 }) {
   const shouldShowEmptyGroupsState = !hasGroups;
-  const groupListProps = groupListSectionProps;
-  const selectedGroupAsideSectionProps = selectedGroupAsideProps;
 
   if (loading) {
     return <OrganizationCabinetLoadingState />;

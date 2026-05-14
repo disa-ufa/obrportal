@@ -518,6 +518,8 @@ def main() -> None:
             "OrganizationCabinetErrorAlert",
             "OrganizationCabinetGroupsWorkspace",
             "groupsWorkspaceProps",
+            "groupListProps: groupListSectionProps",
+            "selectedGroupAsideSectionProps: selectedGroupAsideProps",
             "<OrganizationCabinetGroupsWorkspace {...groupsWorkspaceProps} />",
             "<OrganizationCabinetGroupsWorkspace",
             "../components/organization/OrganizationCabinetGroupsWorkspace",
@@ -612,8 +614,6 @@ def main() -> None:
             "OrganizationCabinetEmptyGroupsState",
             "OrganizationGroupListSection",
             "OrganizationSelectedGroupAside",
-            "groupListSectionProps",
-            "selectedGroupAsideProps",
             "if (loading)",
         ],
     )
