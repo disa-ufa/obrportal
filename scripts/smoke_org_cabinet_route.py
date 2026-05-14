@@ -446,6 +446,8 @@ def main() -> None:
             "Number.isNaN(date.getTime())",
             ".format(date)",
             "export function formatOptional",
+            "const stringValue = `${value}`",
+            "stringValue.trim() === \"\"",
             "export function shortId",
             "const stringValue = `${value}`",
             "stringValue.slice(0, 8)",
