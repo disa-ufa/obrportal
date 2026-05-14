@@ -465,6 +465,7 @@ def main() -> None:
             "export function getGroupStatus",
             "return group?.is_active === true",
             "export function sortEnrollments",
+            "normalizeItems(items).sort",
             "export function formatEnrollmentStatus",
             "export function mergeUniqueEnrollments",
             "export function enrollmentMatchesFilters",
