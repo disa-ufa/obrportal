@@ -456,6 +456,8 @@ def main() -> None:
             "export function buildOrganizationOptions",
             "normalizeItems(profileOrganizations)",
             "normalizeItems(groups)",
+            "const organizationId = group?.organization_id",
+            "uniqueIds.push(organizationId)",
             "Organization cabinet summary helpers.",
             "function normalizeItems",
             "function normalizeObject",
