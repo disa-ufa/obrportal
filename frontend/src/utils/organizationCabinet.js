@@ -120,12 +120,11 @@ export function buildInactiveGroupsCount({
   const groupItems = normalizeItems(groups);
   const normalizedActiveGroupsCount =
     typeof activeGroupsCount === "number" ? activeGroupsCount : buildActiveGroupsCount(groupItems);
+  const totalGroupsCount = summaryItem.groups_count ?? groupItems.length;
+  const activeGroupsCountValue =
+    summaryItem.active_groups_count ?? normalizedActiveGroupsCount;
 
-  return Math.max(
-    (summaryItem.groups_count ?? groupItems.length) -
-      (summaryItem.active_groups_count ?? normalizedActiveGroupsCount),
-    0
-  );
+  return Math.max(totalGroupsCount - activeGroupsCountValue, 0);
 }
 
 export function getOrganizationLabel(organizationId, organizations) {
