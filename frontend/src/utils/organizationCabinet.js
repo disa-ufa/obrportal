@@ -173,9 +173,10 @@ export function mergeUniqueEnrollments(currentItems = [], newItems = []) {
 }
 
 export function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) {
+  const item = normalizeObject(enrollment);
   const normalizedSearch = searchQuery.trim().toLowerCase();
 
-  if (statusFilter && enrollment.status !== statusFilter) {
+  if (statusFilter && item.status !== statusFilter) {
     return false;
   }
 
@@ -184,13 +185,13 @@ export function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) 
   }
 
   const searchableText = [
-    enrollment.course_title,
-    enrollment.course_slug,
-    enrollment.course_id,
-    enrollment.user_full_name,
-    enrollment.user_email,
-    enrollment.user_id,
-    formatEnrollmentStatus(enrollment.status),
+    item.course_title,
+    item.course_slug,
+    item.course_id,
+    item.user_full_name,
+    item.user_email,
+    item.user_id,
+    formatEnrollmentStatus(item.status),
   ]
     .filter(Boolean)
     .join(" ")
