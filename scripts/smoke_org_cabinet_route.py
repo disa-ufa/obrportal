@@ -513,7 +513,6 @@ def main() -> None:
             "buildOrganizationUserFromMember",
             "organizationUserMatchesQuery",
             "Удалить",
-            "Кабинет организации",
             "OrganizationSelectedGroupAside",
             "OrganizationCabinetNextSteps",
             "OrganizationCabinetHeroSection",
@@ -552,6 +551,7 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationCabinetHeroSection.jsx",
         [
             "export function OrganizationCabinetHeroSection",
+            "Кабинет организации",
             "OrganizationCabinetHero",
             "heroUserLabel",
             "handleCatalogClick",
