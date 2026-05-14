@@ -461,6 +461,7 @@ def main() -> None:
             "fallbackActiveGroupsCount",
             "totalGroupsCount",
             "export function getOrganizationLabel",
+            "normalizeItems(organizations)",
             "export function getGroupStatus",
             "return group?.is_active === true",
             "export function sortEnrollments",
