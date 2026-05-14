@@ -752,12 +752,6 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onSaveOrganization: handleSaveOrganization,
   };
 
-  const groupListProps = {
-    groups,
-    selectedGroupId,
-    onSelectGroup: setSelectedGroupId,
-  };
-
   const groupCreateSectionProps = {
     organizations,
     groupForm,
@@ -844,6 +838,12 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     members,
     deletingMemberId,
     handleDeleteMember,
+  };
+
+  const groupListProps = {
+    groups,
+    selectedGroupId,
+    onSelectGroup: setSelectedGroupId,
   };
 
   const groupsWorkspaceProps = {
