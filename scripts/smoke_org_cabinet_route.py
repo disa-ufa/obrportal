@@ -519,6 +519,8 @@ def main() -> None:
             "OrganizationCabinetGroupsWorkspace",
             "groupsWorkspaceProps",
             "groupListProps",
+            "function buildGroupListProps",
+            "buildGroupListProps({",
             "<OrganizationCabinetGroupsWorkspace {...groupsWorkspaceProps} />",
             "<OrganizationCabinetGroupsWorkspace",
             "../components/organization/OrganizationCabinetGroupsWorkspace",
