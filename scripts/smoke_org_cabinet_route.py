@@ -596,6 +596,20 @@ def main() -> None:
         ],
     )
 
+    require_not_contains(
+        "frontend/src/pages/OrganizationCabinetPage.jsx",
+        [
+            "function buildHeroSectionProps",
+            "function buildCabinetStatsProps",
+            "function buildOrganizationProfileSectionProps",
+            "function buildOrganizationUsersSectionProps",
+            "function buildGroupCreateSectionProps",
+            "function buildGroupListProps",
+            "function buildGroupsWorkspaceProps",
+            "function buildSelectedGroupAsideSectionProps",
+        ],
+    )
+
     require_contains(
         "frontend/src/components/organization/OrganizationCabinetNextSteps.jsx",
         [
