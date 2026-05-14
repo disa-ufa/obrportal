@@ -525,6 +525,8 @@ def main() -> None:
             "<OrganizationCabinetErrorAlert error={error} />",
             "../components/organization/OrganizationCabinetErrorAlert",
             "heroSectionProps",
+            "function buildHeroSectionProps",
+            "buildHeroSectionProps({",
             "<OrganizationCabinetHeroSection {...heroSectionProps} />",
             "<OrganizationCabinetHeroSection",
             "../components/organization/OrganizationCabinetHeroSection",

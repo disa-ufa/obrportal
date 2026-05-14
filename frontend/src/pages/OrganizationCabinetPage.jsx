@@ -40,6 +40,14 @@ import {
   sortOrganizationUsers,
 } from "../utils/organizationCabinet";
 
+function buildHeroSectionProps({ heroUserLabel, onPageChange, onLogout }) {
+  return {
+    heroUserLabel,
+    onPageChange,
+    onLogout,
+  };
+}
+
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -741,11 +749,11 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }
   }
 
-  const heroSectionProps = {
+  const heroSectionProps = buildHeroSectionProps({
     heroUserLabel,
     onPageChange,
     onLogout,
-  };
+  });
 
   const cabinetStatsProps = {
     summary,
