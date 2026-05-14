@@ -89,8 +89,10 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
   const uniqueIds = [];
 
   groupItems.forEach((group) => {
-    if (group.organization_id && !uniqueIds.includes(group.organization_id)) {
-      uniqueIds.push(group.organization_id);
+    const organizationId = group?.organization_id;
+
+    if (organizationId && !uniqueIds.includes(organizationId)) {
+      uniqueIds.push(organizationId);
     }
   });
 
