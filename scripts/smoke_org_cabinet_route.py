@@ -460,11 +460,14 @@ def main() -> None:
     require_contains(
         "frontend/src/utils/organizationCabinetProps.js",
         [
+            "Page-level layout props.",
             "export function buildHeroSectionProps",
             "export function buildCabinetStatsProps",
+            "Organization profile, users, and group form props.",
             "export function buildOrganizationProfileSectionProps",
             "export function buildOrganizationUsersSectionProps",
             "export function buildGroupCreateSectionProps",
+            "Group workspace props.",
             "export function buildGroupListProps",
             "export function buildGroupsWorkspaceProps",
             "export function buildSelectedGroupAsideSectionProps",
