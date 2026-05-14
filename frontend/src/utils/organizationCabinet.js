@@ -118,11 +118,11 @@ export function buildInactiveGroupsCount({
 }) {
   const summaryItem = normalizeObject(summary);
   const groupItems = normalizeItems(groups);
-  const normalizedActiveGroupsCount =
+  const fallbackActiveGroupsCount =
     typeof activeGroupsCount === "number" ? activeGroupsCount : buildActiveGroupsCount(groupItems);
   const totalGroupsCount = summaryItem.groups_count ?? groupItems.length;
   const activeGroupsCountValue =
-    summaryItem.active_groups_count ?? normalizedActiveGroupsCount;
+    summaryItem.active_groups_count ?? fallbackActiveGroupsCount;
 
   return Math.max(totalGroupsCount - activeGroupsCountValue, 0);
 }
