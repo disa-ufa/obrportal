@@ -846,6 +846,13 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     handleDeleteMember,
   };
 
+  const groupsWorkspaceProps = {
+    loading,
+    hasGroups,
+    groupListSectionProps,
+    selectedGroupAsideProps,
+  };
+
   return (
     <div className="space-y-6">
       <OrganizationCabinetHeroSection {...heroSectionProps} />
@@ -860,12 +867,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
       <OrganizationGroupCreateSection {...groupCreateSectionProps} />
 
-      <OrganizationCabinetGroupsWorkspace
-        loading={loading}
-        hasGroups={hasGroups}
-        groupListSectionProps={groupListSectionProps}
-        selectedGroupAsideProps={selectedGroupAsideProps}
-      />
+      <OrganizationCabinetGroupsWorkspace {...groupsWorkspaceProps} />
 
       <OrganizationCabinetNextSteps />
     </div>
