@@ -444,6 +444,7 @@ def main() -> None:
             "export function formatDate",
             "export function formatOptional",
             "export function shortId",
+            "`${value}`.slice(0, 8)",
             "export function formatUserOrganizations",
             "normalizeItems(organizations)",
             "normalizeItems(organizationIds)",
