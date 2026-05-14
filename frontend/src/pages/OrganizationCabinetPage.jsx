@@ -164,6 +164,9 @@ function buildSelectedGroupAsideProps({
   deletingGroupId,
   groupDeleteError,
   groupDeleteMessage,
+  handleDeleteGroup,
+  handleSaveGroup,
+  handleCreateGroupEnrollments,
   ...restProps
 }) {
   return {
@@ -172,6 +175,9 @@ function buildSelectedGroupAsideProps({
     deletingGroupId,
     groupDeleteError,
     groupDeleteMessage,
+    handleDeleteGroup,
+    handleSaveGroup,
+    handleCreateGroupEnrollments,
     ...restProps,
   };
 }
