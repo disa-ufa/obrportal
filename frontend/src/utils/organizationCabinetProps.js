@@ -1,3 +1,4 @@
+// Page-level layout props.
 export function buildHeroSectionProps({ heroUserLabel, onPageChange, onLogout }) {
   return { heroUserLabel, onPageChange, onLogout };
 }
@@ -24,6 +25,7 @@ export function buildCabinetStatsProps({
   };
 }
 
+// Organization profile, users, and group form props.
 export function buildOrganizationProfileSectionProps({
   organizations,
   onSaveOrganization,
@@ -83,6 +85,7 @@ export function buildGroupCreateSectionProps({
   };
 }
 
+// Group workspace props.
 export function buildGroupListProps({
   groups,
   selectedGroupId,
