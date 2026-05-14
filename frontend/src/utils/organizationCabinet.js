@@ -106,8 +106,10 @@ export function buildInactiveGroupsCount({
   groups,
   activeGroupsCount,
 }) {
+  const groupItems = Array.isArray(groups) ? groups : [];
+
   return Math.max(
-    (summary.groups_count ?? groups.length) - (summary.active_groups_count ?? activeGroupsCount),
+    (summary.groups_count ?? groupItems.length) - (summary.active_groups_count ?? activeGroupsCount),
     0
   );
 }
