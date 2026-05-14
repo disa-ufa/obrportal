@@ -26,7 +26,7 @@ export function shortId(value) {
     return "—";
   }
 
-  return `${value.slice(0, 8)}…`;
+  return `${`${value}`.slice(0, 8)}…`;
 }
 
 export function formatUserOrganizations(organizations = [], organizationIds = []) {
