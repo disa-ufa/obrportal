@@ -41,6 +41,7 @@ CRITICAL_FILES = [
     Path("frontend/src/hooks/useAuthFlow.js"),
     Path("frontend/src/components/documents/DocumentVerificationQrBlock.jsx"),
     Path("frontend/src/utils/documentVerification.js"),
+    Path("frontend/src/utils/organizationCabinetProps.js"),
 ]
 
 
