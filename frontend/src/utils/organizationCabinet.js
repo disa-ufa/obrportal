@@ -49,7 +49,11 @@ export function formatUserOrganizations(organizations = [], organizationIds = []
 
   if (organizationItems.length > 0) {
     return organizationItems
-      .map((organization) => organization.name || shortId(organization.id))
+      .map((organization) => {
+        const item = normalizeObject(organization);
+
+        return item.name || shortId(item.id);
+      })
       .join(", ");
   }
 
