@@ -132,7 +132,7 @@ export function getOrganizationLabel(organizationId, organizations) {
 }
 
 export function getGroupStatus(group) {
-  return group.is_active
+  return group?.is_active === true
     ? { label: "Активная", className: "bg-green-50 text-green-700 ring-green-200" }
     : { label: "Неактивная", className: "bg-slate-100 text-slate-600 ring-slate-200" };
 }
