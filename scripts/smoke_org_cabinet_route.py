@@ -477,6 +477,7 @@ def main() -> None:
             "normalizeItems(item.user_organizations)",
             "normalizeItems(item.user_roles)",
             "export function organizationUserMatchesQuery",
+            "normalizeObject(userItem)",
             "export function sortMembers",
             "export function sortMembers(items) {\n  return normalizeItems(items).sort",
             "export function buildEmptyGroupEnrollmentForm",
