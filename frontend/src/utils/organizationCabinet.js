@@ -128,7 +128,9 @@ export function buildInactiveGroupsCount({
 }
 
 export function getOrganizationLabel(organizationId, organizations) {
-  return organizations.find((item) => item.id === organizationId)?.label || shortId(organizationId);
+  const items = normalizeItems(organizations);
+
+  return items.find((item) => item.id === organizationId)?.label || shortId(organizationId);
 }
 
 export function getGroupStatus(group) {
