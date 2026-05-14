@@ -517,6 +517,9 @@ def main() -> None:
             "OrganizationCabinetNextSteps",
             "OrganizationCabinetHeroSection",
             "OrganizationCabinetErrorAlert",
+            "OrganizationCabinetLoadingState",
+            "<OrganizationCabinetLoadingState />",
+            "../components/organization/OrganizationCabinetLoadingState",
             "<OrganizationCabinetErrorAlert error={error} />",
             "../components/organization/OrganizationCabinetErrorAlert",
             "heroSectionProps",
@@ -575,6 +578,15 @@ def main() -> None:
             "return null",
             "rounded-3xl bg-red-50",
             "{error}",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationCabinetLoadingState.jsx",
+        [
+            "export function OrganizationCabinetLoadingState",
+            "Загружаем кабинет организации",
+            "rounded-3xl bg-white",
         ],
     )
 

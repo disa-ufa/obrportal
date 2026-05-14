@@ -28,6 +28,7 @@ import { OrganizationSelectedGroupAside } from "../components/organization/Organ
 import { OrganizationCabinetNextSteps } from "../components/organization/OrganizationCabinetNextSteps";
 import { OrganizationCabinetHeroSection } from "../components/organization/OrganizationCabinetHeroSection";
 import { OrganizationCabinetErrorAlert } from "../components/organization/OrganizationCabinetErrorAlert";
+import { OrganizationCabinetLoadingState } from "../components/organization/OrganizationCabinetLoadingState";
 import {
   buildEmptyGroupEnrollmentForm,
   buildEmptyGroupForm,
@@ -863,9 +864,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       <OrganizationGroupCreateSection {...groupCreateSectionProps} />
 
       {loading ? (
-        <div className="rounded-3xl bg-white p-8 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
-          Загружаем кабинет организации...
-        </div>
+        <OrganizationCabinetLoadingState />
       ) : !hasGroups ? (
         <EmptyState
           title="Учебные группы пока не созданы"
