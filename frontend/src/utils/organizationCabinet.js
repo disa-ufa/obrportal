@@ -92,11 +92,13 @@ export function buildFallbackOrganizationSummary({
 }) {
   const organizationItems = Array.isArray(organizations) ? organizations : [];
   const groupItems = Array.isArray(groups) ? groups : [];
+  const normalizedActiveGroupsCount =
+    typeof activeGroupsCount === "number" ? activeGroupsCount : buildActiveGroupsCount(groupItems);
 
   return {
     organizations_count: organizationItems.length,
     groups_count: groupItems.length,
-    active_groups_count: activeGroupsCount,
+    active_groups_count: normalizedActiveGroupsCount,
     members_count: 0,
   };
 }
