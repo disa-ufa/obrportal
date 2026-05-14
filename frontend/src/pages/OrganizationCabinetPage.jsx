@@ -112,6 +112,26 @@ function buildOrganizationUsersSectionProps({
   };
 }
 
+function buildGroupCreateSectionProps({
+  organizations,
+  groupForm,
+  creatingGroup,
+  groupActionError,
+  groupActionMessage,
+  onCreateGroup,
+  onGroupFormChange,
+}) {
+  return {
+    organizations,
+    groupForm,
+    creatingGroup,
+    groupActionError,
+    groupActionMessage,
+    onCreateGroup,
+    onGroupFormChange,
+  };
+}
+
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -851,7 +871,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     setOrganizationUsersError,
   });
 
-  const groupCreateSectionProps = {
+  const groupCreateSectionProps = buildGroupCreateSectionProps({
     organizations,
     groupForm,
     creatingGroup,
@@ -859,7 +879,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     groupActionMessage,
     onCreateGroup: handleCreateGroup,
     onGroupFormChange: handleGroupFormChange,
-  };
+  });
 
   const selectedGroupAsideProps = {
     selectedGroup,
