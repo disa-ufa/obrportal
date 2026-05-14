@@ -48,6 +48,28 @@ function buildHeroSectionProps({ heroUserLabel, onPageChange, onLogout }) {
   };
 }
 
+function buildCabinetStatsProps({
+  summary,
+  organizations,
+  groups,
+  activeGroupsCount,
+  inactiveGroupsCount,
+  selectedGroup,
+  selectedGroupId,
+  members,
+}) {
+  return {
+    summary,
+    organizations,
+    groups,
+    activeGroupsCount,
+    inactiveGroupsCount,
+    selectedGroup,
+    selectedGroupId,
+    members,
+  };
+}
+
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -755,7 +777,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onLogout,
   });
 
-  const cabinetStatsProps = {
+  const cabinetStatsProps = buildCabinetStatsProps({
     summary,
     organizations,
     groups,
@@ -764,7 +786,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     selectedGroup,
     selectedGroupId,
     members,
-  };
+  });
 
   const organizationProfileSectionProps = {
     organizations,

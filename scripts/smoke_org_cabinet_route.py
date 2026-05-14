@@ -533,6 +533,8 @@ def main() -> None:
             "<OrganizationCabinetNextSteps />",
             "../components/organization/OrganizationCabinetNextSteps",
             "cabinetStatsProps",
+            "function buildCabinetStatsProps",
+            "buildCabinetStatsProps({",
             "<OrganizationCabinetStats {...cabinetStatsProps} />",
             "selectedGroupAsideProps",
             "organizationUsersSectionProps",
