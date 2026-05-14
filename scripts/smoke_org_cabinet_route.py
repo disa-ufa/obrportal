@@ -441,10 +441,9 @@ def main() -> None:
     require_contains(
         "frontend/src/utils/organizationCabinet.js",
         [
-            "export function formatDate",
-            "const date = new Date(value)",
-            "Number.isNaN(date.getTime())",
-            ".format(date)",
+            "export function formatDate(value) {\n  if (!value)",
+            "const date = new Date(value);\n\n  if (Number.isNaN(date.getTime()))",
+            "}).format(date)",
             "export function formatOptional(value) {\n  if (value === undefined || value === null)",
             "const stringValue = `${value}`;\n\n  if (stringValue.trim() === \"\"",
             "export function shortId(value) {\n  if (!value)",
