@@ -20,7 +20,13 @@ export function formatDate(value) {
 }
 
 export function formatOptional(value) {
-  if (value === undefined || value === null || `${value}`.trim() === "") {
+  if (value === undefined || value === null) {
+    return "—";
+  }
+
+  const stringValue = `${value}`;
+
+  if (stringValue.trim() === "") {
     return "—";
   }
 
