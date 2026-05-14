@@ -439,6 +439,7 @@ def main() -> None:
             "export function formatUserOrganizations",
             "export function formatUserRoles",
             "export function buildOrganizationOptions",
+            "Organization cabinet summary helpers.",
             "export function buildFallbackOrganizationSummary",
             "export function buildInactiveGroupsCount",
             "export function getOrganizationLabel",
