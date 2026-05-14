@@ -50,6 +50,19 @@ import {
   buildSelectedGroupAsideSectionProps,
 } from "../utils/organizationCabinetProps";
 
+function buildFallbackOrganizationSummary({
+  organizations,
+  groups,
+  activeGroupsCount,
+}) {
+  return {
+    organizations_count: organizations.length,
+    groups_count: groups.length,
+    active_groups_count: activeGroupsCount,
+    members_count: 0,
+  };
+}
+
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -218,12 +231,11 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     [groups]
   );
 
-  const summary = profile?.summary || {
-    organizations_count: organizations.length,
-    groups_count: groups.length,
-    active_groups_count: activeGroupsCount,
-    members_count: 0,
-  };
+  const summary = profile?.summary || buildFallbackOrganizationSummary({
+    organizations,
+    groups,
+    activeGroupsCount,
+  });
 
   const inactiveGroupsCount = Math.max(
     (summary.groups_count ?? groups.length) - (summary.active_groups_count ?? activeGroupsCount),
