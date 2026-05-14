@@ -100,13 +100,13 @@ export function buildFallbackOrganizationSummary({
 }) {
   const organizationItems = normalizeItems(organizations);
   const groupItems = normalizeItems(groups);
-  const normalizedActiveGroupsCount =
+  const activeGroupsCountValue =
     typeof activeGroupsCount === "number" ? activeGroupsCount : buildActiveGroupsCount(groupItems);
 
   return {
     organizations_count: organizationItems.length,
     groups_count: groupItems.length,
-    active_groups_count: normalizedActiveGroupsCount,
+    active_groups_count: activeGroupsCountValue,
     members_count: 0,
   };
 }
