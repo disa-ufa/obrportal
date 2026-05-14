@@ -468,6 +468,8 @@ def main() -> None:
             "export function sortEnrollments(items) {\n  return normalizeItems(items).sort",
             "export function formatEnrollmentStatus",
             "export function mergeUniqueEnrollments",
+            "normalizeItems(currentItems)",
+            "normalizeItems(newItems)",
             "export function enrollmentMatchesFilters",
             "normalizeObject(enrollment)",
             "export function hasActiveEnrollmentFilters",
