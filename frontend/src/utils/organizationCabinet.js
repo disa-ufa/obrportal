@@ -90,9 +90,12 @@ export function buildFallbackOrganizationSummary({
   groups,
   activeGroupsCount,
 }) {
+  const organizationItems = Array.isArray(organizations) ? organizations : [];
+  const groupItems = Array.isArray(groups) ? groups : [];
+
   return {
-    organizations_count: organizations.length,
-    groups_count: groups.length,
+    organizations_count: organizationItems.length,
+    groups_count: groupItems.length,
     active_groups_count: activeGroupsCount,
     members_count: 0,
   };
