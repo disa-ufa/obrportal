@@ -75,15 +75,19 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
   const groupItems = normalizeItems(groups);
 
   if (organizationItems.length > 0) {
-    return organizationItems.map((organization) => ({
-      id: organization.id,
-      label: organization.name || shortId(organization.id),
-      inn: organization.inn,
-      kpp: organization.kpp,
-      ogrn: organization.ogrn,
-      legal_address: organization.legal_address,
-      actual_address: organization.actual_address,
-    }));
+    return organizationItems.map((organization) => {
+      const item = normalizeObject(organization);
+
+      return {
+        id: item.id,
+        label: item.name || shortId(item.id),
+        inn: item.inn,
+        kpp: item.kpp,
+        ogrn: item.ogrn,
+        legal_address: item.legal_address,
+        actual_address: item.actual_address,
+      };
+    });
   }
 
   const uniqueIds = [];
