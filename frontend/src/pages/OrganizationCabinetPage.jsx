@@ -178,6 +178,14 @@ function buildSelectedGroupAsideProps({
   assigningGroupCourse,
   groupEnrollmentError,
   groupEnrollmentResult,
+  groupEnrollmentsLoading,
+  groupEnrollmentsError,
+  groupEnrollmentDeleteMessage,
+  groupEnrollmentSearchQuery,
+  setGroupEnrollmentSearchQuery,
+  groupEnrollmentStatusFilter,
+  setGroupEnrollmentStatusFilter,
+  groupEnrollmentFiltersActive,
   ...restProps
 }) {
   return {
@@ -200,6 +208,14 @@ function buildSelectedGroupAsideProps({
     assigningGroupCourse,
     groupEnrollmentError,
     groupEnrollmentResult,
+    groupEnrollmentsLoading,
+    groupEnrollmentsError,
+    groupEnrollmentDeleteMessage,
+    groupEnrollmentSearchQuery,
+    setGroupEnrollmentSearchQuery,
+    groupEnrollmentStatusFilter,
+    setGroupEnrollmentStatusFilter,
+    groupEnrollmentFiltersActive,
     ...restProps,
   };
 }
