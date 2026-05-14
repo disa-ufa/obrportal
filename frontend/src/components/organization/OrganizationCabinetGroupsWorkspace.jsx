@@ -9,19 +9,23 @@ export function OrganizationCabinetGroupsWorkspace({
   groupListSectionProps,
   selectedGroupAsideProps,
 }) {
+  const shouldShowEmptyGroupsState = !hasGroups;
+  const groupListProps = groupListSectionProps;
+  const selectedGroupAsideSectionProps = selectedGroupAsideProps;
+
   if (loading) {
     return <OrganizationCabinetLoadingState />;
   }
 
-  if (!hasGroups) {
+  if (shouldShowEmptyGroupsState) {
     return <OrganizationCabinetEmptyGroupsState />;
   }
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-      <OrganizationGroupListSection {...groupListSectionProps} />
+      <OrganizationGroupListSection {...groupListProps} />
 
-      <OrganizationSelectedGroupAside {...selectedGroupAsideProps} />
+      <OrganizationSelectedGroupAside {...selectedGroupAsideSectionProps} />
     </div>
   );
 }

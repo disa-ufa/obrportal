@@ -602,6 +602,12 @@ def main() -> None:
         "frontend/src/components/organization/OrganizationCabinetGroupsWorkspace.jsx",
         [
             "export function OrganizationCabinetGroupsWorkspace",
+            "shouldShowEmptyGroupsState",
+            "groupListProps",
+            "selectedGroupAsideSectionProps",
+            "<OrganizationGroupListSection {...groupListProps} />",
+            "<OrganizationSelectedGroupAside {...selectedGroupAsideSectionProps} />",
+            "if (shouldShowEmptyGroupsState)",
             "OrganizationCabinetLoadingState",
             "OrganizationCabinetEmptyGroupsState",
             "OrganizationGroupListSection",
