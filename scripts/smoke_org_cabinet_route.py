@@ -514,6 +514,7 @@ def main() -> None:
             "enrollmentMatchesFilters",
             "hasActiveEnrollmentFilters",
             "groupEnrollmentFiltersActive",
+            "setGroupEnrollmentsRefreshKey",
             "deletingGroupEnrollmentId",
             "groupEnrollmentDeleteMessage",
             "handleDeleteGroupEnrollment",

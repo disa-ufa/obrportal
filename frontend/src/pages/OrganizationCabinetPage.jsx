@@ -186,6 +186,11 @@ function buildSelectedGroupAsideProps({
   groupEnrollmentStatusFilter,
   setGroupEnrollmentStatusFilter,
   groupEnrollmentFiltersActive,
+  setGroupEnrollmentsRefreshKey,
+  groupEnrollments,
+  visibleGroupEnrollments,
+  deletingGroupEnrollmentId,
+  handleDeleteGroupEnrollment,
   ...restProps
 }) {
   return {
@@ -216,6 +221,11 @@ function buildSelectedGroupAsideProps({
     groupEnrollmentStatusFilter,
     setGroupEnrollmentStatusFilter,
     groupEnrollmentFiltersActive,
+    setGroupEnrollmentsRefreshKey,
+    groupEnrollments,
+    visibleGroupEnrollments,
+    deletingGroupEnrollmentId,
+    handleDeleteGroupEnrollment,
     ...restProps,
   };
 }
