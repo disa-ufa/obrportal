@@ -518,6 +518,9 @@ def main() -> None:
             "OrganizationCabinetHeroSection",
             "OrganizationCabinetErrorAlert",
             "OrganizationCabinetLoadingState",
+            "OrganizationCabinetEmptyGroupsState",
+            "<OrganizationCabinetEmptyGroupsState />",
+            "../components/organization/OrganizationCabinetEmptyGroupsState",
             "<OrganizationCabinetLoadingState />",
             "../components/organization/OrganizationCabinetLoadingState",
             "<OrganizationCabinetErrorAlert error={error} />",
@@ -587,6 +590,16 @@ def main() -> None:
             "export function OrganizationCabinetLoadingState",
             "Загружаем кабинет организации",
             "rounded-3xl bg-white",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationCabinetEmptyGroupsState.jsx",
+        [
+            "export function OrganizationCabinetEmptyGroupsState",
+            "EmptyState",
+            "Учебные группы пока не созданы",
+            "После добавления групп они появятся",
         ],
     )
 

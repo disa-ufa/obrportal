@@ -17,7 +17,6 @@ import {
 } from "../api/client";
 import { formatApiError } from "../utils/apiErrors";
 import {
-  EmptyState,
   OrganizationCabinetStats,
   OrganizationGroupCreateSection,
   OrganizationGroupListSection,
@@ -29,6 +28,7 @@ import { OrganizationCabinetNextSteps } from "../components/organization/Organiz
 import { OrganizationCabinetHeroSection } from "../components/organization/OrganizationCabinetHeroSection";
 import { OrganizationCabinetErrorAlert } from "../components/organization/OrganizationCabinetErrorAlert";
 import { OrganizationCabinetLoadingState } from "../components/organization/OrganizationCabinetLoadingState";
+import { OrganizationCabinetEmptyGroupsState } from "../components/organization/OrganizationCabinetEmptyGroupsState";
 import {
   buildEmptyGroupEnrollmentForm,
   buildEmptyGroupForm,
@@ -866,10 +866,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       {loading ? (
         <OrganizationCabinetLoadingState />
       ) : !hasGroups ? (
-        <EmptyState
-          title="Учебные группы пока не созданы"
-          text="После добавления групп они появятся в этом кабинете. Представитель ЮЛ будет видеть только группы организаций, к которым привязана его роль."
-        />
+        <OrganizationCabinetEmptyGroupsState />
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <OrganizationGroupListSection {...groupListSectionProps} />
