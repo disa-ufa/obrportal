@@ -19,7 +19,6 @@ import { formatApiError } from "../utils/apiErrors";
 import {
   OrganizationCabinetStats,
   OrganizationGroupCreateSection,
-  OrganizationGroupListSection,
   OrganizationUsersSection,
   OrganizationProfileSection,
 } from "../components/organization/OrganizationCabinetForms";
