@@ -158,6 +158,10 @@ function buildGroupsWorkspaceProps({
   };
 }
 
+function buildSelectedGroupAsideProps(props) {
+  return props;
+}
+
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -907,7 +911,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onGroupFormChange: handleGroupFormChange,
   });
 
-  const selectedGroupAsideProps = {
+  const selectedGroupAsideProps = buildSelectedGroupAsideProps({
     selectedGroup,
     organizations,
     deletingGroupId,
@@ -956,7 +960,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     members,
     deletingMemberId,
     handleDeleteMember,
-  };
+  });
 
   const groupListProps = buildGroupListProps({
     groups,
