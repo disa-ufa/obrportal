@@ -752,7 +752,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onSaveOrganization: handleSaveOrganization,
   };
 
-  const groupListSectionProps = {
+  const groupListProps = {
     groups,
     selectedGroupId,
     onSelectGroup: setSelectedGroupId,
@@ -849,7 +849,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const groupsWorkspaceProps = {
     loading,
     hasGroups,
-    groupListProps: groupListSectionProps,
+    groupListProps,
     selectedGroupAsideProps,
   };
 

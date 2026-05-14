@@ -518,7 +518,7 @@ def main() -> None:
             "OrganizationCabinetErrorAlert",
             "OrganizationCabinetGroupsWorkspace",
             "groupsWorkspaceProps",
-            "groupListProps: groupListSectionProps",
+            "groupListProps",
             "<OrganizationCabinetGroupsWorkspace {...groupsWorkspaceProps} />",
             "<OrganizationCabinetGroupsWorkspace",
             "../components/organization/OrganizationCabinetGroupsWorkspace",
