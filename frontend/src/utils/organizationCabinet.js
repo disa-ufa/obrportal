@@ -91,6 +91,17 @@ export function buildFallbackOrganizationSummary({
   };
 }
 
+export function buildInactiveGroupsCount({
+  summary,
+  groups,
+  activeGroupsCount,
+}) {
+  return Math.max(
+    (summary.groups_count ?? groups.length) - (summary.active_groups_count ?? activeGroupsCount),
+    0
+  );
+}
+
 export function getOrganizationLabel(organizationId, organizations) {
   return organizations.find((item) => item.id === organizationId)?.label || shortId(organizationId);
 }

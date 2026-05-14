@@ -440,6 +440,7 @@ def main() -> None:
             "export function formatUserRoles",
             "export function buildOrganizationOptions",
             "export function buildFallbackOrganizationSummary",
+            "export function buildInactiveGroupsCount",
             "export function getOrganizationLabel",
             "export function getGroupStatus",
             "export function sortEnrollments",
@@ -590,6 +591,8 @@ def main() -> None:
             "selectedGroupAsideProps: selectedGroupAsideSectionProps",
             "buildSelectedGroupAsideSectionProps({",
             "buildFallbackOrganizationSummary({",
+            "buildInactiveGroupsCount,",
+            "buildInactiveGroupsCount({",
             "groupDeleteMessage",
             "organizationUsersSectionProps",
             "buildOrganizationUsersSectionProps({",
@@ -615,6 +618,7 @@ def main() -> None:
             "function buildGroupsWorkspaceProps",
             "function buildSelectedGroupAsideSectionProps",
             "function buildFallbackOrganizationSummary",
+            "function buildInactiveGroupsCount",
         ],
     )
 

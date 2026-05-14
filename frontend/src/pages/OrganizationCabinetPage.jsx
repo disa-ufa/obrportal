@@ -30,6 +30,7 @@ import {
   buildEmptyGroupEnrollmentForm,
   buildEmptyGroupForm,
   buildFallbackOrganizationSummary,
+  buildInactiveGroupsCount,
   buildOrganizationOptions,
   buildOrganizationUserFromMember,
   enrollmentMatchesFilters,
@@ -225,10 +226,11 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     activeGroupsCount,
   });
 
-  const inactiveGroupsCount = Math.max(
-    (summary.groups_count ?? groups.length) - (summary.active_groups_count ?? activeGroupsCount),
-    0
-  );
+  const inactiveGroupsCount = buildInactiveGroupsCount({
+    summary,
+    groups,
+    activeGroupsCount,
+  });
   const hasGroups = groups.length > 0;
   const heroUserLabel = user?.full_name || user?.email || "Пользователь";
 
