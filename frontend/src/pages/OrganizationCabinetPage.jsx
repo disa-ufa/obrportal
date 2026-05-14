@@ -167,6 +167,12 @@ function buildSelectedGroupAsideProps({
   handleDeleteGroup,
   handleSaveGroup,
   handleCreateGroupEnrollments,
+  courseSearchQuery,
+  handleCourseSearchQueryChange,
+  handleSearchCourseCandidates,
+  courseSearchLoading,
+  courseSearchResults,
+  handleSelectCourse,
   ...restProps
 }) {
   return {
@@ -178,6 +184,12 @@ function buildSelectedGroupAsideProps({
     handleDeleteGroup,
     handleSaveGroup,
     handleCreateGroupEnrollments,
+    courseSearchQuery,
+    handleCourseSearchQueryChange,
+    handleSearchCourseCandidates,
+    courseSearchLoading,
+    courseSearchResults,
+    handleSelectCourse,
     ...restProps,
   };
 }
