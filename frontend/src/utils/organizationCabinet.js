@@ -84,7 +84,7 @@ function normalizeItems(items) {
 }
 
 function normalizeObject(item) {
-  return item && typeof item === "object" ? item : {};
+  return item && typeof item === "object" && !Array.isArray(item) ? item : {};
 }
 
 export function buildActiveGroupsCount(groups = []) {
