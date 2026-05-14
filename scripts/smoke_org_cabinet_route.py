@@ -515,6 +515,9 @@ def main() -> None:
             "Удалить",
             "Кабинет организации",
             "OrganizationSelectedGroupAside",
+            "OrganizationCabinetNextSteps",
+            "<OrganizationCabinetNextSteps />",
+            "../components/organization/OrganizationCabinetNextSteps",
             "cabinetStatsProps",
             "<OrganizationCabinetStats {...cabinetStatsProps} />",
             "selectedGroupAsideProps",
@@ -528,6 +531,17 @@ def main() -> None:
             "<OrganizationProfileSection {...organizationProfileSectionProps} />",
             "groupListSectionProps",
             "<OrganizationGroupListSection {...groupListSectionProps} />",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationCabinetNextSteps.jsx",
+        [
+            "export function OrganizationCabinetNextSteps",
+            "Следующие разделы кабинета ЮЛ",
+            "корпоративные заявки на обучение",
+            "массовые назначения",
+            "документы по сотрудникам",
         ],
     )
 
