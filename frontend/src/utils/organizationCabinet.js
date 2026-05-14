@@ -110,9 +110,12 @@ export function buildInactiveGroupsCount({
 }) {
   const summaryItem = summary && typeof summary === "object" ? summary : {};
   const groupItems = Array.isArray(groups) ? groups : [];
+  const normalizedActiveGroupsCount =
+    typeof activeGroupsCount === "number" ? activeGroupsCount : buildActiveGroupsCount(groupItems);
 
   return Math.max(
-    (summaryItem.groups_count ?? groupItems.length) - (summaryItem.active_groups_count ?? activeGroupsCount),
+    (summaryItem.groups_count ?? groupItems.length) -
+      (summaryItem.active_groups_count ?? normalizedActiveGroupsCount),
     0
   );
 }
