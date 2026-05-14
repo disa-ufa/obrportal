@@ -434,7 +434,6 @@ def main() -> None:
         "frontend/src/utils/organizationCabinet.js",
         [
             "normalizedActiveGroupsCount",
-            "group?.is_active === true",
         ],
     )
 
@@ -454,6 +453,7 @@ def main() -> None:
             "normalizeItems(groups)",
             "normalizeObject(summary)",
             "export function buildActiveGroupsCount",
+            "group?.is_active === true",
             "export function buildFallbackOrganizationSummary",
             "export function buildInactiveGroupsCount",
             "activeGroupsCountValue",
