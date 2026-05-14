@@ -44,11 +44,13 @@ export function formatUserOrganizations(organizations = [], organizationIds = []
 }
 
 export function formatUserRoles(roles = []) {
-  if (!Array.isArray(roles) || roles.length === 0) {
+  const items = normalizeItems(roles);
+
+  if (items.length === 0) {
     return "";
   }
 
-  return roles.map((role) => role.name || role.code).join(", ");
+  return items.map((role) => role.name || role.code).join(", ");
 }
 
 export function buildOrganizationOptions(profileOrganizations = [], groups = []) {
