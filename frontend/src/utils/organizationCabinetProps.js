@@ -97,12 +97,7 @@ export function buildGroupsWorkspaceProps({
   groupListProps,
   selectedGroupAsideProps,
 }) {
-  return {
-    loading,
-    hasGroups,
-    groupListProps,
-    selectedGroupAsideProps,
-  };
+  return { loading, hasGroups, groupListProps, selectedGroupAsideProps };
 }
 
 export function buildSelectedGroupAsideSectionProps({
