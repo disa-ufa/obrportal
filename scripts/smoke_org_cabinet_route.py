@@ -442,6 +442,7 @@ def main() -> None:
             "Organization cabinet summary helpers.",
             "function normalizeItems",
             "function normalizeObject",
+            "!Array.isArray(item)",
             "normalizeItems(groups)",
             "normalizeObject(summary)",
             "export function buildActiveGroupsCount",
