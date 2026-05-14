@@ -88,11 +88,7 @@ export function buildGroupListProps({
   selectedGroupId,
   onSelectGroup,
 }) {
-  return {
-    groups,
-    selectedGroupId,
-    onSelectGroup,
-  };
+  return { groups, selectedGroupId, onSelectGroup };
 }
 
 export function buildGroupsWorkspaceProps({
