@@ -83,6 +83,10 @@ function normalizeItems(items) {
   return Array.isArray(items) ? items : [];
 }
 
+function normalizeObject(item) {
+  return item && typeof item === "object" ? item : {};
+}
+
 export function buildActiveGroupsCount(groups = []) {
   const items = normalizeItems(groups);
 
@@ -112,7 +116,7 @@ export function buildInactiveGroupsCount({
   groups,
   activeGroupsCount,
 }) {
-  const summaryItem = summary && typeof summary === "object" ? summary : {};
+  const summaryItem = normalizeObject(summary);
   const groupItems = normalizeItems(groups);
   const normalizedActiveGroupsCount =
     typeof activeGroupsCount === "number" ? activeGroupsCount : buildActiveGroupsCount(groupItems);
