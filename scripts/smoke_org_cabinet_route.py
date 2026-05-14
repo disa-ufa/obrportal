@@ -519,6 +519,9 @@ def main() -> None:
             "OrganizationCabinetErrorAlert",
             "OrganizationCabinetLoadingState",
             "OrganizationCabinetEmptyGroupsState",
+            "OrganizationCabinetGroupsWorkspace",
+            "<OrganizationCabinetGroupsWorkspace",
+            "../components/organization/OrganizationCabinetGroupsWorkspace",
             "<OrganizationCabinetEmptyGroupsState />",
             "../components/organization/OrganizationCabinetEmptyGroupsState",
             "<OrganizationCabinetLoadingState />",
@@ -600,6 +603,21 @@ def main() -> None:
             "EmptyState",
             "Учебные группы пока не созданы",
             "После добавления групп они появятся",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationCabinetGroupsWorkspace.jsx",
+        [
+            "export function OrganizationCabinetGroupsWorkspace",
+            "OrganizationCabinetLoadingState",
+            "OrganizationCabinetEmptyGroupsState",
+            "OrganizationGroupListSection",
+            "OrganizationSelectedGroupAside",
+            "groupListSectionProps",
+            "selectedGroupAsideProps",
+            "if (loading)",
+            "if (!hasGroups)",
         ],
     )
 

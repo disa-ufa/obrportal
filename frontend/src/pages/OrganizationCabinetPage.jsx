@@ -23,12 +23,10 @@ import {
   OrganizationUsersSection,
   OrganizationProfileSection,
 } from "../components/organization/OrganizationCabinetForms";
-import { OrganizationSelectedGroupAside } from "../components/organization/OrganizationSelectedGroupAside";
 import { OrganizationCabinetNextSteps } from "../components/organization/OrganizationCabinetNextSteps";
 import { OrganizationCabinetHeroSection } from "../components/organization/OrganizationCabinetHeroSection";
 import { OrganizationCabinetErrorAlert } from "../components/organization/OrganizationCabinetErrorAlert";
-import { OrganizationCabinetLoadingState } from "../components/organization/OrganizationCabinetLoadingState";
-import { OrganizationCabinetEmptyGroupsState } from "../components/organization/OrganizationCabinetEmptyGroupsState";
+import { OrganizationCabinetGroupsWorkspace } from "../components/organization/OrganizationCabinetGroupsWorkspace";
 import {
   buildEmptyGroupEnrollmentForm,
   buildEmptyGroupForm,
@@ -863,17 +861,12 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
       <OrganizationGroupCreateSection {...groupCreateSectionProps} />
 
-      {loading ? (
-        <OrganizationCabinetLoadingState />
-      ) : !hasGroups ? (
-        <OrganizationCabinetEmptyGroupsState />
-      ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <OrganizationGroupListSection {...groupListSectionProps} />
-
-          <OrganizationSelectedGroupAside {...selectedGroupAsideProps} />
-        </div>
-      )}
+      <OrganizationCabinetGroupsWorkspace
+        loading={loading}
+        hasGroups={hasGroups}
+        groupListSectionProps={groupListSectionProps}
+        selectedGroupAsideProps={selectedGroupAsideProps}
+      />
 
       <OrganizationCabinetNextSteps />
     </div>
