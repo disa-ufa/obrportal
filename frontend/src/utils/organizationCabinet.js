@@ -78,6 +78,19 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
   }));
 }
 
+export function buildFallbackOrganizationSummary({
+  organizations,
+  groups,
+  activeGroupsCount,
+}) {
+  return {
+    organizations_count: organizations.length,
+    groups_count: groups.length,
+    active_groups_count: activeGroupsCount,
+    members_count: 0,
+  };
+}
+
 export function getOrganizationLabel(organizationId, organizations) {
   return organizations.find((item) => item.id === organizationId)?.label || shortId(organizationId);
 }

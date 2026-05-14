@@ -29,6 +29,7 @@ import { OrganizationCabinetGroupsWorkspace } from "../components/organization/O
 import {
   buildEmptyGroupEnrollmentForm,
   buildEmptyGroupForm,
+  buildFallbackOrganizationSummary,
   buildOrganizationOptions,
   buildOrganizationUserFromMember,
   enrollmentMatchesFilters,
@@ -49,19 +50,6 @@ import {
   buildOrganizationUsersSectionProps,
   buildSelectedGroupAsideSectionProps,
 } from "../utils/organizationCabinetProps";
-
-function buildFallbackOrganizationSummary({
-  organizations,
-  groups,
-  activeGroupsCount,
-}) {
-  return {
-    organizations_count: organizations.length,
-    groups_count: groups.length,
-    active_groups_count: activeGroupsCount,
-    members_count: 0,
-  };
-}
 
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);

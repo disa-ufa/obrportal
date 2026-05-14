@@ -439,6 +439,7 @@ def main() -> None:
             "export function formatUserOrganizations",
             "export function formatUserRoles",
             "export function buildOrganizationOptions",
+            "export function buildFallbackOrganizationSummary",
             "export function getOrganizationLabel",
             "export function getGroupStatus",
             "export function sortEnrollments",
@@ -485,6 +486,7 @@ def main() -> None:
             "heroUserLabel",
             "from \"../components/organization/OrganizationCabinetForms\";",
             "from \"../utils/organizationCabinet\";",
+            "buildFallbackOrganizationSummary,",
             "addOrgLearningGroupMember",
             "removeOrgLearningGroupMember",
             "searchOrgUsers",
@@ -587,7 +589,6 @@ def main() -> None:
             "selectedGroupAsideSectionProps",
             "selectedGroupAsideProps: selectedGroupAsideSectionProps",
             "buildSelectedGroupAsideSectionProps({",
-            "function buildFallbackOrganizationSummary",
             "buildFallbackOrganizationSummary({",
             "groupDeleteMessage",
             "organizationUsersSectionProps",
@@ -613,6 +614,7 @@ def main() -> None:
             "function buildGroupListProps",
             "function buildGroupsWorkspaceProps",
             "function buildSelectedGroupAsideSectionProps",
+            "function buildFallbackOrganizationSummary",
         ],
     )
 
