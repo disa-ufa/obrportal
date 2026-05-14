@@ -3,11 +3,17 @@ export function formatDate(value) {
     return "—";
   }
 
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
   try {
     return new Intl.DateTimeFormat("ru-RU", {
       dateStyle: "medium",
       timeStyle: "short",
-    }).format(new Date(value));
+    }).format(date);
   } catch {
     return value;
   }
