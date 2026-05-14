@@ -430,6 +430,13 @@ def main() -> None:
         ],
     )
 
+    require_not_contains(
+        "frontend/src/utils/organizationCabinet.js",
+        [
+            "normalizedActiveGroupsCount",
+        ],
+    )
+
     require_contains(
         "frontend/src/utils/organizationCabinet.js",
         [
