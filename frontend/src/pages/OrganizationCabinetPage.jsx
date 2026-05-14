@@ -370,7 +370,6 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     return updated;
   }
 
-
   async function handleDeleteGroupEnrollment(enrollment) {
     if (!selectedGroupId || !enrollment?.id) {
       return;
@@ -448,7 +447,6 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     setAddingOrganizationUserId("");
   }, [selectedGroupId]);
 
-
   async function handleSearchOrganizationUsers(event) {
     event?.preventDefault?.();
 
@@ -476,7 +474,6 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }
   }
 
-
   async function handleAddOrganizationUserToSelectedGroup(userItem) {
     if (!selectedGroupId) {
       setOrganizationUsersError("Выберите учебную группу, в которую нужно добавить пользователя.");
@@ -502,7 +499,6 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       setAddingOrganizationUserId("");
     }
   }
-
 
   async function handleSearchMemberCandidates() {
     const normalizedQuery = memberSearchQuery.trim();
