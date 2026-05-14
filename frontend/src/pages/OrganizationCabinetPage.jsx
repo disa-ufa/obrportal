@@ -850,7 +850,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     loading,
     hasGroups,
     groupListProps: groupListSectionProps,
-    selectedGroupAsideSectionProps: selectedGroupAsideProps,
+    selectedGroupAsideProps,
   };
 
   return (

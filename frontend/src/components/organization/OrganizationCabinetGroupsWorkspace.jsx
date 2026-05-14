@@ -7,7 +7,7 @@ export function OrganizationCabinetGroupsWorkspace({
   loading,
   hasGroups,
   groupListProps,
-  selectedGroupAsideSectionProps,
+  selectedGroupAsideProps,
 }) {
   const shouldShowEmptyGroupsState = !hasGroups;
 
@@ -23,7 +23,7 @@ export function OrganizationCabinetGroupsWorkspace({
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
       <OrganizationGroupListSection {...groupListProps} />
 
-      <OrganizationSelectedGroupAside {...selectedGroupAsideSectionProps} />
+      <OrganizationSelectedGroupAside {...selectedGroupAsideProps} />
     </div>
   );
 }
