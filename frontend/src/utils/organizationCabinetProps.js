@@ -28,10 +28,7 @@ export function buildOrganizationProfileSectionProps({
   organizations,
   onSaveOrganization,
 }) {
-  return {
-    organizations,
-    onSaveOrganization,
-  };
+  return { organizations, onSaveOrganization };
 }
 
 export function buildOrganizationUsersSectionProps({
