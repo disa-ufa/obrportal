@@ -173,6 +173,11 @@ function buildSelectedGroupAsideProps({
   courseSearchLoading,
   courseSearchResults,
   handleSelectCourse,
+  groupEnrollmentForm,
+  handleGroupEnrollmentFormChange,
+  assigningGroupCourse,
+  groupEnrollmentError,
+  groupEnrollmentResult,
   ...restProps
 }) {
   return {
@@ -190,6 +195,11 @@ function buildSelectedGroupAsideProps({
     courseSearchLoading,
     courseSearchResults,
     handleSelectCourse,
+    groupEnrollmentForm,
+    handleGroupEnrollmentFormChange,
+    assigningGroupCourse,
+    groupEnrollmentError,
+    groupEnrollmentResult,
     ...restProps,
   };
 }
