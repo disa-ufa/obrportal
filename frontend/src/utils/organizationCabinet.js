@@ -78,6 +78,7 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
   }));
 }
 
+// Organization cabinet summary helpers.
 export function buildFallbackOrganizationSummary({
   organizations,
   groups,
