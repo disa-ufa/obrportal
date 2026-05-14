@@ -516,6 +516,9 @@ def main() -> None:
             "Кабинет организации",
             "OrganizationSelectedGroupAside",
             "OrganizationCabinetNextSteps",
+            "OrganizationCabinetHeroSection",
+            "<OrganizationCabinetHeroSection",
+            "../components/organization/OrganizationCabinetHeroSection",
             "<OrganizationCabinetNextSteps />",
             "../components/organization/OrganizationCabinetNextSteps",
             "cabinetStatsProps",
@@ -542,6 +545,20 @@ def main() -> None:
             "корпоративные заявки на обучение",
             "массовые назначения",
             "документы по сотрудникам",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationCabinetHeroSection.jsx",
+        [
+            "export function OrganizationCabinetHeroSection",
+            "OrganizationCabinetHero",
+            "heroUserLabel",
+            "handleCatalogClick",
+            "catalogButtonLabel",
+            "logoutButtonLabel",
+            "Управление обучением сотрудников",
+            "Роль: представитель ЮЛ",
         ],
     )
 
