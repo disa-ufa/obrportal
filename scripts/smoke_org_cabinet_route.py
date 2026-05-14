@@ -442,6 +442,9 @@ def main() -> None:
         "frontend/src/utils/organizationCabinet.js",
         [
             "export function formatDate",
+            "const date = new Date(value)",
+            "Number.isNaN(date.getTime())",
+            ".format(date)",
             "export function formatOptional",
             "export function shortId",
             "const stringValue = `${value}`",
