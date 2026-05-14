@@ -1009,7 +1009,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onGroupFormChange: handleGroupFormChange,
   });
 
-  const selectedGroupAsideProps = buildSelectedGroupAsideSectionProps({
+  const selectedGroupAsideSectionProps = buildSelectedGroupAsideSectionProps({
     selectedGroup,
     organizations,
     deletingGroupId,
@@ -1070,7 +1070,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     loading,
     hasGroups,
     groupListProps,
-    selectedGroupAsideProps,
+    selectedGroupAsideProps: selectedGroupAsideSectionProps,
   });
 
   return (
