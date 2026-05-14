@@ -1,9 +1,5 @@
 export function buildHeroSectionProps({ heroUserLabel, onPageChange, onLogout }) {
-  return {
-    heroUserLabel,
-    onPageChange,
-    onLogout,
-  };
+  return { heroUserLabel, onPageChange, onLogout };
 }
 
 export function buildCabinetStatsProps({
