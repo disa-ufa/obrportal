@@ -516,6 +516,8 @@ def main() -> None:
             "OrganizationSelectedGroupAside",
             "OrganizationCabinetNextSteps",
             "OrganizationCabinetHeroSection",
+            "heroSectionProps",
+            "<OrganizationCabinetHeroSection {...heroSectionProps} />",
             "<OrganizationCabinetHeroSection",
             "../components/organization/OrganizationCabinetHeroSection",
             "<OrganizationCabinetNextSteps />",

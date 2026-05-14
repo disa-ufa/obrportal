@@ -746,6 +746,12 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     }
   }
 
+  const heroSectionProps = {
+    heroUserLabel,
+    onPageChange,
+    onLogout,
+  };
+
   const organizationProfileSectionProps = {
     organizations,
     onSaveOrganization: handleSaveOrganization,
@@ -847,11 +853,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
   return (
     <div className="space-y-6">
-      <OrganizationCabinetHeroSection
-        heroUserLabel={heroUserLabel}
-        onPageChange={onPageChange}
-        onLogout={onLogout}
-      />
+      <OrganizationCabinetHeroSection {...heroSectionProps} />
 
       {error && (
         <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200">
