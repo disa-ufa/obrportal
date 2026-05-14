@@ -468,6 +468,7 @@ def main() -> None:
             "export function buildGroupListProps",
             "export function buildGroupsWorkspaceProps",
             "export function buildSelectedGroupAsideSectionProps",
+            "Large selected-group aside props are kept explicit to preserve the component contract.",
             "selectedGroupAsideProps",
             "handleDeleteMember",
         ],
