@@ -267,11 +267,13 @@ export function buildEmptyGroupForm(organizationId = "") {
 }
 
 export function buildLearningGroupFormData(group) {
+  const item = normalizeObject(group);
+
   return {
-    name: group?.name || "",
-    code: group?.code || "",
-    description: group?.description || "",
-    is_active: group?.is_active ?? true,
+    name: item.name || "",
+    code: item.code || "",
+    description: item.description || "",
+    is_active: item.is_active ?? true,
   };
 }
 
