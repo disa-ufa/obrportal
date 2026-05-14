@@ -615,7 +615,6 @@ def main() -> None:
             "groupListSectionProps",
             "selectedGroupAsideProps",
             "if (loading)",
-            "if (!hasGroups)",
         ],
     )
 
