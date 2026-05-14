@@ -207,7 +207,6 @@ function buildSelectedGroupAsideProps({
   members,
   deletingMemberId,
   handleDeleteMember,
-  ...restProps
 }) {
   return {
     selectedGroup,
@@ -258,7 +257,6 @@ function buildSelectedGroupAsideProps({
     members,
     deletingMemberId,
     handleDeleteMember,
-    ...restProps,
   };
 }
 
