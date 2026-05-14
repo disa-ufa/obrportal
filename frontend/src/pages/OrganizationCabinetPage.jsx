@@ -70,6 +70,16 @@ function buildCabinetStatsProps({
   };
 }
 
+function buildOrganizationProfileSectionProps({
+  organizations,
+  onSaveOrganization,
+}) {
+  return {
+    organizations,
+    onSaveOrganization,
+  };
+}
+
 export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -788,10 +798,10 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     members,
   });
 
-  const organizationProfileSectionProps = {
+  const organizationProfileSectionProps = buildOrganizationProfileSectionProps({
     organizations,
     onSaveOrganization: handleSaveOrganization,
-  };
+  });
 
   const organizationUsersSectionProps = {
     organizations,
