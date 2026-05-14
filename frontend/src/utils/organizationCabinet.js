@@ -160,8 +160,10 @@ export function formatEnrollmentStatus(status) {
 
 export function mergeUniqueEnrollments(currentItems = [], newItems = []) {
   const itemsById = new Map();
+  const currentEnrollmentItems = normalizeItems(currentItems);
+  const newEnrollmentItems = normalizeItems(newItems);
 
-  [...currentItems, ...newItems].forEach((item) => {
+  [...currentEnrollmentItems, ...newEnrollmentItems].forEach((item) => {
     if (!item?.id) {
       return;
     }
