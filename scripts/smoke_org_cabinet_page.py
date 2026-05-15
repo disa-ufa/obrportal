@@ -68,7 +68,7 @@ def main() -> None:
             "addOrgLearningGroupMember(selectedGroupId,",
             "removeOrgLearningGroupMember(selectedGroupId, member.user_id)",
             "buildOrganizationOptions(profile?.organizations || [], groups)",
-            "sortMembers(members)",
+            "sortMembers(",
             "sortOrganizationUsers(",
             "sortEnrollments(",
             "enrollmentMatchesFilters(",
