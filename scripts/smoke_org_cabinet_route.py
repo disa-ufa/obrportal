@@ -451,6 +451,7 @@ def main() -> None:
             "export function formatUserOrganizations",
             "normalizeItems(organizations)",
             "normalizeItems(organizationIds)",
+            "return organizationIdItems\n      .map((id) => shortId(id))\n      .join(\", \")",
             "normalizeObject(organization)",
             "return item.name || shortId(item.id)",
             "export function formatUserRoles",
