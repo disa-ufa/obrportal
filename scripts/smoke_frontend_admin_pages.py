@@ -1,0 +1,420 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def read_text(relative_path: str) -> str:
+    path = ROOT / relative_path
+
+    if not path.exists():
+        raise SystemExit(f"File not found: {relative_path}")
+
+    return path.read_text(encoding="utf-8")
+
+
+def require_contains(relative_path: str, fragments: list[str]) -> None:
+    text = read_text(relative_path)
+    missing = [fragment for fragment in fragments if fragment not in text]
+
+    if missing:
+        print(f"{relative_path} is missing required fragments:")
+        for fragment in missing:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+
+def require_occurs(relative_path: str, fragment: str, minimum: int) -> None:
+    text = read_text(relative_path)
+    count = text.count(fragment)
+
+    if count < minimum:
+        print(f"{relative_path} has too few occurrences of required fragment:")
+        print(f" - fragment: {fragment}")
+        print(f" - expected at least: {minimum}")
+        print(f" - actual: {count}")
+        raise SystemExit(1)
+
+
+def main() -> None:
+    require_contains(
+        "frontend/src/pages/DashboardPage.jsx",
+        [
+            "export function DashboardPage({",
+            "email,",
+            "password,",
+            "loading,",
+            "adminLoading,",
+            "error,",
+            "user,",
+            "rbac,",
+            "adminData,",
+            "adminDataLoadedAt,",
+            "onEmailChange,",
+            "onPasswordChange,",
+            "onLogin,",
+            "onLogout,",
+            "onRbacCheck,",
+            "onRefreshAdminData,",
+            "SectionCard",
+            "onRefreshAdminData",
+            "onRbacCheck",
+            "onLogout",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/UsersPage.jsx",
+        [
+            "export function UsersPage({",
+            "user,",
+            "users,",
+            "roles,",
+            "organizations,",
+            "loading,",
+            "selectedUser,",
+            "selectedUserLoading,",
+            "selectedUserError,",
+            "onOpenUser,",
+            "onCloseUser,",
+            "onCreateUser,",
+            "onUpdateUser,",
+            "onResetUserPassword,",
+            "onActivateUser,",
+            "onDeactivateUser,",
+            "onAssignUserRole,",
+            "onRemoveUserRole,",
+            "onRefreshAdminData,",
+            "useLocation();",
+            "useNavigate();",
+            "new URLSearchParams(search)",
+            "normalizeSearchValue",
+            "AdminPageActions",
+            "AdminFilterPanel",
+            "AdminCreatePanel",
+            "UserForm",
+            "UserDetailPanel",
+            "SmallTable",
+            "selectedRowId={selectedUser?.id}",
+            "onOpenUser(row.id)",
+            "buildEnrollmentsPath",
+            "buildDocumentsPath",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/OrganizationsPage.jsx",
+        [
+            "export function OrganizationsPage({",
+            "user,",
+            "organizations,",
+            "loading,",
+            "selectedOrganization,",
+            "selectedOrganizationLoading,",
+            "selectedOrganizationError,",
+            "onOpenOrganization,",
+            "onCloseOrganization,",
+            "onCreateOrganization,",
+            "onUpdateOrganization,",
+            "onDeleteOrganization,",
+            "onRefreshAdminData,",
+            "useLocation();",
+            "useNavigate();",
+            "getOrganizationFiltersFromSearch",
+            "AdminPageActions",
+            "AdminCreatePanel",
+            "AdminFilterPanel",
+            "OrganizationForm",
+            "OrganizationDetailPanel",
+            "SmallTable",
+            "selectedRowId={selectedOrganization?.id}",
+            "onOpenOrganization(row.id)",
+            "buildOrganizationsPath",
+            "buildGroupsPath",
+            "buildEnrollmentsPath",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/GroupsPage.jsx",
+        [
+            "getAdminUsers,",
+            "getOrgLearningGroupMembers,",
+            "addOrgLearningGroupMember,",
+            "removeOrgLearningGroupMember,",
+            "function LearningGroupForm({",
+            "function LearningGroupMembersPanel({ groupDetail })",
+            "async function reloadMemberData()",
+            "Promise.all([",
+            "getOrgLearningGroupMembers(groupDetail.id)",
+            "getAdminUsers()",
+            "async function handleAddMember(event)",
+            "addOrgLearningGroupMember(groupDetail.id",
+            "async function handleRemoveMember(userId, userEmail)",
+            "removeOrgLearningGroupMember(groupDetail.id, userId)",
+            "export function GroupsPage({",
+            "user,",
+            "groups,",
+            "organizations,",
+            "loading,",
+            "selectedGroup,",
+            "selectedGroupLoading,",
+            "selectedGroupError,",
+            "onOpenGroup,",
+            "onCloseGroup,",
+            "onCreateGroup,",
+            "onUpdateGroup,",
+            "onDeleteGroup,",
+            "onRefreshAdminData,",
+            "useLocation();",
+            "useNavigate();",
+            "getGroupFiltersFromSearch",
+            "calculateGroupCounts",
+            "AdminPageActions",
+            "AdminCreatePanel",
+            "AdminFilterPanel",
+            "LearningGroupForm",
+            "LearningGroupMembersPanel",
+            "SmallTable",
+            "selectedRowId={selectedGroup?.id}",
+            "onOpenGroup(row.id)",
+            "buildGroupsPath",
+            "buildEnrollmentsPath",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/RolesPage.jsx",
+        [
+            "const SYSTEM_ROLE_CODES = new Set([",
+            "function isSystemRole(role)",
+            "function roleMatchesSearch(role, query)",
+            "function roleMatchesType(role, filter)",
+            "const ROLE_TYPE_FILTERS = [",
+            "function getRoleFiltersFromSearch(search)",
+            "function calculateRoleCounts(items)",
+            "function RolesSummaryCards({ roles, permissions, roleCounts })",
+            "function RolesWorkflowPanel({ roles, permissions, roleCounts })",
+            "export function RolesPage({",
+            "roles,",
+            "permissions,",
+            "selectedRole,",
+            "onOpenRole,",
+            "onCreateRole,",
+            "onUpdateRole,",
+            "onDeleteRole,",
+            "onAssignRolePermission,",
+            "onRemoveRolePermission,",
+            "useLocation();",
+            "useNavigate();",
+            "AdminPageActions",
+            "AdminCreatePanel",
+            "RoleForm",
+            "AdminFilterPanel",
+            "AdminQuickFilterButtons",
+            "SmallTable",
+            "selectedRowId={selectedRole?.id}",
+            "onOpenRole(row.id)",
+            "buildUsersPath({ role_id: row.id })",
+            "buildPermissionsPath({ q: row.code })",
+            "RoleDetailPanel",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/PermissionsPage.jsx",
+        [
+            "const ALL_PERMISSION_GROUPS = \"all\";",
+            "function getPermissionGroup(permission)",
+            "function getPermissionSearchText(permission)",
+            "function getPermissionGroupTone(group)",
+            "function getPermissionFiltersFromSearch(search)",
+            "function calculatePermissionGroupCounts(items)",
+            "function PermissionsSummaryCards({ permissions, permissionGroups, permissionGroupCounts })",
+            "function PermissionsWorkflowPanel({ permissionGroupCounts })",
+            "export function PermissionsPage({",
+            "permissions,",
+            "selectedPermission,",
+            "selectedPermissionLoading,",
+            "selectedPermissionError,",
+            "onOpenPermission,",
+            "onClosePermission,",
+            "onRefreshAdminData,",
+            "useLocation();",
+            "useNavigate();",
+            "AdminPageActions",
+            "AdminFilterPanel",
+            "AdminQuickFilterButtons",
+            "SmallTable",
+            "selectedRowId={selectedPermission?.id}",
+            "onOpenPermission(row.id)",
+            "buildRolesPath({ q: row.code })",
+            "PermissionDetailPanel",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/AuditPage.jsx",
+        [
+            "const DEFAULT_FILTERS = {",
+            "function normalizeFilters(filters)",
+            "function getAuditFiltersFromSearch(search)",
+            "function getLimitNumber(filters)",
+            "function getAuditFilterPayload(filters)",
+            "function getActionTone(action)",
+            "function getEntityTone(entityType)",
+            "function calculateAuditCounts(events)",
+            "function AuditSummaryCards({ auditCounts, filters })",
+            "function AuditWorkflowPanel({ auditCounts })",
+            "export function AuditPage({",
+            "auditEvents,",
+            "selectedAuditEvent,",
+            "selectedAuditEventLoading,",
+            "selectedAuditEventError,",
+            "onOpenAuditEvent,",
+            "onCloseAuditEvent,",
+            "onApplyAuditFilters,",
+            "useLocation();",
+            "useNavigate();",
+            "async function applyAuditFilters(nextFilters)",
+            "await onApplyAuditFilters(payload);",
+            "async function navigateToAuditFilters(nextFilters",
+            "async function handleQuickFilter(field, value)",
+            "async function handleSubmit(event)",
+            "async function handleReset()",
+            "QuickValueFilters",
+            "SmallTable",
+            "selectedRowId={selectedAuditEvent?.id}",
+            "onOpenAuditEvent(row.id)",
+            "buildEntityAdminPath(row)",
+            "buildAuditPath({",
+            "AuditEventDetailPanel",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/AdminCoursesPage.jsx",
+        [
+            "activateAdminCourse,",
+            "createAdminCourse,",
+            "deactivateAdminCourse,",
+            "deleteAdminCourse,",
+            "getAdminCourses,",
+            "updateAdminCourse,",
+            "const COURSE_ACTIVE_FILTERS = [",
+            "const EMPTY_COURSE_FORM = {",
+            "const EMPTY_EDIT_FORM = {",
+            "function normalizeHoursInput(value)",
+            "function getCourseFiltersFromSearch(search)",
+            "function calculateCourseCounts(items)",
+            "function buildEditForm(course)",
+            "function getCourseStatusTone(course)",
+            "function getCourseStatusLabel(course)",
+            "function formatCourseApiError(err, fallback)",
+            "function CourseFormFields({ values, onChange, prefix = \"\" })",
+            "function CourseCard({",
+            "export function AdminCoursesPage()",
+            "useLocation();",
+            "useNavigate();",
+            "const [courses, setCourses] = useState([]);",
+            "const [courseCounts, setCourseCounts] = useState({",
+            "const [showCreateForm, setShowCreateForm] = useState(false);",
+            "getAdminCourses",
+            "createAdminCourse",
+            "updateAdminCourse",
+            "async function handleToggleActive",
+            "activateAdminCourse",
+            "deactivateAdminCourse",
+            "deleteAdminCourse",
+            "AdminPageActions",
+            "AdminCreatePanel",
+            "AdminFilterPanel",
+            "AdminQuickFilterButtons",
+            "AdminEmptyState",
+            "CourseCard",
+            "buildCoursesPath",
+            "buildEnrollmentsPath",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/AdminEnrollmentsPage.jsx",
+        [
+            "createAdminEnrollment,",
+            "createAdminGroupEnrollments,",
+            "deleteAdminEnrollment,",
+            "getAdminCourses,",
+            "getAdminEnrollments,",
+            "getAdminOrganizations,",
+            "getAdminUsers,",
+            "getOrgLearningGroupMembers,",
+            "getOrgLearningGroups,",
+            "updateAdminEnrollment,",
+            "const ENROLLMENT_STATUSES = [",
+            "const ENROLLMENT_STATUS_FILTERS = [",
+            "const ENROLLMENT_API_ERROR_MESSAGES = {",
+            "function getStatusLabel(value)",
+            "function formatEnrollmentApiError(err, fallback)",
+            "function getEnrollmentFiltersFromSearch(search)",
+            "function getStatusTone(value)",
+            "function calculateStatusCounts(items)",
+            "function getUserRoleCodes(user)",
+            "function isLearnerUser(user)",
+            "function isAdminUser(user)",
+            "function getUserRoleLabel(user)",
+            "function buildUserLabel(user)",
+            "function buildCourseLabel(course)",
+            "function buildOrganizationsMap(organizations)",
+            "function buildGroupsMap(groups)",
+            "function groupHasMember(groupId, userId, membersByGroupId)",
+            "function buildGroupLabel(group, organizationsById = {})",
+            "function getAvailableGroups(",
+            "function buildEditForm(enrollment)",
+            "function normalizeDateTime(value)",
+            "function EnrollmentSummaryCards({ statusCounts, users, courses, groups })",
+            "function EnrollmentWorkflowPanel({ statusCounts, courses, groups })",
+            "export function AdminEnrollmentsPage()",
+            "useLocation();",
+            "useNavigate();",
+            "const [enrollments, setEnrollments] = useState([]);",
+            "const [users, setUsers] = useState([]);",
+            "const [courses, setCourses] = useState([]);",
+            "const [organizations, setOrganizations] = useState([]);",
+            "const [groups, setGroups] = useState([]);",
+            "const [bulkForm, setBulkForm] = useState({",
+            "const [editForm, setEditForm] = useState({",
+            "getAdminEnrollments",
+            "getAdminUsers",
+            "getAdminCourses",
+            "getAdminOrganizations",
+            "getOrgLearningGroups",
+            "getOrgLearningGroupMembers",
+            "createAdminEnrollment",
+            "createAdminGroupEnrollments",
+            "updateAdminEnrollment",
+            "deleteAdminEnrollment",
+            "AdminQuickFilterButtons",
+            "AdminEmptyState",
+            "buildCoursesPath",
+            "buildDocumentsPath",
+            "buildEnrollmentsPath",
+            "buildGroupsPath",
+        ],
+    )
+
+    require_occurs("frontend/src/pages/UsersPage.jsx", "useMemo(", 3)
+    require_occurs("frontend/src/pages/OrganizationsPage.jsx", "useMemo(", 2)
+    require_occurs("frontend/src/pages/GroupsPage.jsx", "useMemo(", 4)
+    require_occurs("frontend/src/pages/RolesPage.jsx", "useMemo(", 3)
+    require_occurs("frontend/src/pages/PermissionsPage.jsx", "useMemo(", 3)
+    require_occurs("frontend/src/pages/AuditPage.jsx", "useMemo(", 3)
+    require_occurs("frontend/src/pages/AdminCoursesPage.jsx", "useState(", 8)
+    require_occurs("frontend/src/pages/AdminEnrollmentsPage.jsx", "useState(", 10)
+
+    print("Frontend admin pages behavior smoke passed")
+
+
+if __name__ == "__main__":
+    main()

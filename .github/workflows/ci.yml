@@ -121,6 +121,7 @@ jobs:
           python scripts/smoke_frontend_utils_routes.py
           python scripts/smoke_frontend_hooks_layout.py
           python scripts/smoke_frontend_api_client.py
+          python scripts/smoke_frontend_admin_pages.py
 
       - name: Build frontend
         run: |
