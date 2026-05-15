@@ -50,7 +50,7 @@ export function formatUserOrganizations(organizations = [], organizationIds = []
   if (organizationItems.length > 0) {
     return organizationItems
       .map((organization) => {
-        const item = normalizeObject(organization);
+        const item = normalizeNestedObject(organization, "organization");
 
         return item.name || shortId(item.id);
       })
@@ -75,7 +75,7 @@ export function formatUserRoles(roles = []) {
 
   return items
     .map((role) => {
-      const item = normalizeObject(role);
+      const item = normalizeNestedObject(role, "role");
 
       return item.name || item.code;
     })
@@ -88,7 +88,7 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
 
   if (organizationItems.length > 0) {
     return organizationItems
-      .map((organization) => normalizeObject(organization))
+      .map((organization) => normalizeNestedObject(organization, "organization"))
       .filter((organization) => organization.id)
       .map((organization) => ({
         id: organization.id,
@@ -127,6 +127,18 @@ function normalizeItems(items) {
 
 function normalizeObject(item) {
   return item && typeof item === "object" && !Array.isArray(item) ? item : {};
+}
+
+
+function normalizeNestedObject(item, key) {
+  const normalized = normalizeObject(item);
+  const nested = normalized[key];
+
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    return normalizeObject(nested);
+  }
+
+  return normalized;
 }
 
 export function buildActiveGroupsCount(groups = []) {
@@ -183,8 +195,10 @@ export function getGroupStatus(group) {
 
 function buildEnrollmentSortKey(enrollment) {
   const item = normalizeObject(enrollment);
+  const course = normalizeObject(item.course);
+  const user = normalizeObject(item.user);
 
-  return `${item.course_title || ""} ${item.user_email || ""}`;
+  return `${item.course_title || course.title || ""} ${item.user_email || user.email || ""}`;
 }
 
 export function sortEnrollments(items) {
@@ -226,6 +240,8 @@ export function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) 
   const item = normalizeObject(enrollment);
   const normalizedSearch = (searchQuery || "").trim().toLowerCase();
   const normalizedStatusFilter = (statusFilter || "").trim();
+  const course = normalizeObject(item.course);
+  const user = normalizeObject(item.user);
 
   if (normalizedStatusFilter && item.status !== normalizedStatusFilter) {
     return false;
@@ -237,10 +253,13 @@ export function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) 
 
   const searchableText = [
     item.course_title,
+    course.title,
     item.course_slug,
     item.course_id,
     item.user_full_name,
+    user.full_name,
     item.user_email,
+    user.email,
     item.user_id,
     formatEnrollmentStatus(item.status),
   ]
