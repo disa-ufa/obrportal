@@ -219,8 +219,9 @@ export function mergeUniqueEnrollments(currentItems = [], newItems = []) {
 export function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) {
   const item = normalizeObject(enrollment);
   const normalizedSearch = (searchQuery || "").trim().toLowerCase();
+  const normalizedStatusFilter = (statusFilter || "").trim();
 
-  if (statusFilter && item.status !== statusFilter) {
+  if (normalizedStatusFilter && item.status !== normalizedStatusFilter) {
     return false;
   }
 
@@ -245,7 +246,7 @@ export function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) 
 }
 
 export function hasActiveEnrollmentFilters(searchQuery, statusFilter) {
-  return (searchQuery || "").trim() !== "" || (statusFilter || "") !== "";
+  return (searchQuery || "").trim() !== "" || (statusFilter || "").trim() !== "";
 }
 
 export function sortOrganizationUsers(items) {
