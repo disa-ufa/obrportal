@@ -101,19 +101,22 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
       }));
   }
 
-  const uniqueIds = [];
+  const uniqueIds = new Set();
 
   groupItems.forEach((group) => {
     const organizationId = group?.organization_id;
 
-    if (organizationId && !uniqueIds.includes(organizationId)) {
-      uniqueIds.push(organizationId);
+    if (organizationId) {
+      uniqueIds.add(organizationId);
     }
   });
 
-  return uniqueIds.map((id, index) => ({
+  const organizationIds = [...uniqueIds];
+
+  return organizationIds.map((id, index) => ({
     id,
-    label: uniqueIds.length === 1 ? "Моя организация" : `Организация ${index + 1}`,
+    label:
+      organizationIds.length === 1 ? "Моя организация" : `Организация ${index + 1}`,
   }));
 }
 
