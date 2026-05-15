@@ -549,7 +549,7 @@ def main() -> None:
             "export function buildLearningGroupFormData",
             "normalizeObject(group)",
             "export function buildOrganizationProfileFormData",
-            "normalizeNestedObject(organization,",
+            "normalizeObject(organization)",
         ],
     )
 

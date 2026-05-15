@@ -52,7 +52,7 @@ assertEqual(
 
 assertEqual(
   formatUserOrganizations([], [orgId]),
-  "12345678",
+  "12345678…",
   "formatUserOrganizations formats fallback organization id"
 );
 
