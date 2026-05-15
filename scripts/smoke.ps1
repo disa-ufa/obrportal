@@ -8,11 +8,22 @@ try {
 
     # Smoke пока запускаем с хоста, потому что он проверяет и backend, и frontend через опубликованные localhost-порты.
     # Остальные проверки уже идут внутри Docker-контейнеров.
-    python .\scripts\smoke_auth_rbac.py
+    function Invoke-SmokeCheck {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$Path
+        )
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Smoke failed"
+        & python $Path
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Smoke failed: $Path"
+        }
     }
+
+    Invoke-SmokeCheck ".\scripts\smoke_auth_rbac.py"
+    Invoke-SmokeCheck ".\scripts\smoke_org_cabinet_utils.py"
+    Invoke-SmokeCheck ".\scripts\smoke_org_cabinet_route.py"
 
     Write-Host "`nSmoke passed." -ForegroundColor Green
 }

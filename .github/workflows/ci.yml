@@ -103,9 +103,10 @@ jobs:
         run: |
           docker compose exec -T backend pytest app/tests -q
 
-      - name: Run auth RBAC smoke check
+      - name: Run auth RBAC and organization cabinet smoke checks
         run: |
           python scripts/smoke_auth_rbac.py
+          python scripts/smoke_org_cabinet_utils.py
           python scripts/smoke_org_cabinet_route.py
 
       - name: Build frontend
