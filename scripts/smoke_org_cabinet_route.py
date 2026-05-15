@@ -496,6 +496,7 @@ def main() -> None:
             "normalizeItems(newItems)",
             "export function enrollmentMatchesFilters",
             "normalizeObject(enrollment)",
+            "const normalizedSearch = (searchQuery || \"\").trim().toLowerCase()",
             "export function hasActiveEnrollmentFilters",
             "export function sortOrganizationUsers",
             "export function sortOrganizationUsers(items) {\n  return normalizeItems(items).sort",
