@@ -107,6 +107,7 @@ jobs:
         run: |
           python scripts/smoke_auth_rbac.py
           python scripts/smoke_org_cabinet_utils.py
+          python scripts/smoke_org_cabinet_page.py
           python scripts/smoke_org_cabinet_route.py
 
       - name: Build frontend

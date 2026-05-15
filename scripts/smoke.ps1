@@ -23,6 +23,7 @@ try {
 
     Invoke-SmokeCheck ".\scripts\smoke_auth_rbac.py"
     Invoke-SmokeCheck ".\scripts\smoke_org_cabinet_utils.py"
+    Invoke-SmokeCheck ".\scripts\smoke_org_cabinet_page.py"
     Invoke-SmokeCheck ".\scripts\smoke_org_cabinet_route.py"
 
     Write-Host "`nSmoke passed." -ForegroundColor Green
