@@ -116,6 +116,7 @@ jobs:
           python scripts/smoke_admin_renderer.py
           python scripts/smoke_admin_hooks.py
           python scripts/smoke_frontend_core.py
+          python scripts/smoke_shared_components.py
 
       - name: Build frontend
         run: |
