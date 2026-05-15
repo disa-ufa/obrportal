@@ -293,10 +293,16 @@ export function organizationUserMatchesQuery(userItem, query) {
     .some((value) => value.toLowerCase().includes(normalizedQuery));
 }
 
+function buildMemberSortKey(member) {
+  const item = normalizeObject(member);
+
+  return `${item.user_full_name || item.user_email || item.user_id || ""}`;
+}
+
 export function sortMembers(items) {
-  return normalizeItems(items).sort((left, right) =>
-    (left.user_full_name || left.user_email || left.user_id).localeCompare(
-      right.user_full_name || right.user_email || right.user_id,
+  return [...normalizeItems(items)].sort((left, right) =>
+    buildMemberSortKey(left).localeCompare(
+      buildMemberSortKey(right),
       "ru"
     )
   );
