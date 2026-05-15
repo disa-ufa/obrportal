@@ -29,6 +29,7 @@ try {
     Invoke-SmokeCheck ".\scripts\smoke_account_page.py"
     Invoke-SmokeCheck ".\scripts\smoke_public_pages.py"
     Invoke-SmokeCheck ".\scripts\smoke_auth_pages.py"
+    Invoke-SmokeCheck ".\scripts\smoke_admin_renderer.py"
 
     Write-Host "`nSmoke passed." -ForegroundColor Green
 }
