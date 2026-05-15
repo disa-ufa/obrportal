@@ -228,6 +228,7 @@ if (-not $SkipSmoke) {
     Invoke-HostPython @(".\scripts\smoke_org_cabinet_route.py")
     Invoke-HostPython @(".\scripts\smoke_documents_page.py")
     Invoke-HostPython @(".\scripts\smoke_account_page.py")
+    Invoke-HostPython @(".\scripts\smoke_public_pages.py")
 } else {
     Write-Host "Smoke skipped"
 }
