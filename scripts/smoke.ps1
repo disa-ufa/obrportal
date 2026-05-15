@@ -35,6 +35,7 @@ try {
     Invoke-SmokeCheck ".\scripts\smoke_shared_components.py"
     Invoke-SmokeCheck ".\scripts\smoke_admin_components.py"
     Invoke-SmokeCheck ".\scripts\smoke_frontend_utils_routes.py"
+    Invoke-SmokeCheck ".\scripts\smoke_frontend_hooks_layout.py"
 
     Write-Host "`nSmoke passed." -ForegroundColor Green
 }
