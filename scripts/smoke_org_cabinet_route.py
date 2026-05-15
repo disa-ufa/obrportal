@@ -506,6 +506,8 @@ def main() -> None:
             "normalizeObject(enrollment)",
             "const normalizedSearch = (searchQuery || \"\").trim().toLowerCase()",
             "const normalizedStatusFilter = (statusFilter || \"\").trim()",
+            ".filter((value) => value !== undefined && value !== null)",
+            ".map((value) => `${value}`)",
             "item.status !== normalizedStatusFilter",
             "export function hasActiveEnrollmentFilters",
             "return (searchQuery || \"\").trim() !== \"\" || (statusFilter || \"\").trim() !== \"\"",

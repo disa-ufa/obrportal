@@ -244,7 +244,8 @@ export function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) 
     item.user_id,
     formatEnrollmentStatus(item.status),
   ]
-    .filter(Boolean)
+    .filter((value) => value !== undefined && value !== null)
+    .map((value) => `${value}`)
     .join(" ")
     .toLowerCase();
 
