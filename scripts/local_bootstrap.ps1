@@ -223,6 +223,8 @@ Wait-HttpOk -Url "http://127.0.0.1:8000/api/v1/ready" -Label "ready"
 if (-not $SkipSmoke) {
     Write-Step "Run smoke"
     Invoke-HostPython @(".\scripts\smoke_auth_rbac.py")
+Invoke-HostPython @(".\scripts\smoke_org_cabinet_utils.py")
+Invoke-HostPython @(".\scripts\smoke_org_cabinet_route.py")
 } else {
     Write-Host "Smoke skipped"
 }
