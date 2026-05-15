@@ -218,7 +218,7 @@ export function mergeUniqueEnrollments(currentItems = [], newItems = []) {
 
 export function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) {
   const item = normalizeObject(enrollment);
-  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const normalizedSearch = (searchQuery || "").trim().toLowerCase();
 
   if (statusFilter && item.status !== statusFilter) {
     return false;
