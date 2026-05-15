@@ -1,0 +1,175 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def read_text(relative_path: str) -> str:
+    path = ROOT / relative_path
+
+    if not path.exists():
+        raise SystemExit(f"File not found: {relative_path}")
+
+    return path.read_text(encoding="utf-8")
+
+
+def require_contains(relative_path: str, fragments: list[str]) -> None:
+    text = read_text(relative_path)
+    missing = [fragment for fragment in fragments if fragment not in text]
+
+    if missing:
+        print(f"{relative_path} is missing required fragments:")
+        for fragment in missing:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+
+def main() -> None:
+    require_contains(
+        "frontend/src/api/client.js",
+        [
+            "export async function getAccountDocuments()",
+            'return request("/api/v1/account/documents");',
+            "export async function downloadAccountDocument(documentId)",
+            "export async function verifyPublicDocument(number)",
+            'return request(`/api/v1/public/documents/verify?${query.toString()}`);',
+            "export async function getAdminDocuments(filters = {})",
+            'return request(`/api/v1/admin/documents${query ? `?${query}` : \"\"}`);',
+            "export async function createAdminDocument(payload)",
+            'return request("/api/v1/admin/documents",',
+            "export async function updateAdminDocument(documentId, payload)",
+            "export async function deleteAdminDocument(documentId)",
+            "export async function downloadAdminDocument(documentId)",
+            "extractDownloadFilename(response,",
+            "normalizeDownloadedFilename(",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/DocumentsPage.jsx",
+        [
+            'import { useEffect, useMemo, useState } from "react";',
+            "createAdminDocument,",
+            "deleteAdminDocument,",
+            "downloadAdminDocument,",
+            "getAdminCourses,",
+            "getAdminDocuments,",
+            "getAdminEnrollments,",
+            "getAdminUsers,",
+            "updateAdminDocument,",
+            "DocumentVerificationQrBlock",
+            "buildDocumentVerificationPath",
+            "buildDocumentsPath",
+            "export function DocumentsPage()",
+            "const DOCUMENT_STATUSES = [",
+            "const DOCUMENT_API_ERROR_MESSAGES = {",
+            "function getDocumentStatusLabel(status)",
+            "function formatDocumentApiError(err, fallback)",
+            "function getDocumentStatusTone(status)",
+            "function calculateDocumentStatusCounts(items)",
+            "function getLearnerVisibilityLabel(documentItem)",
+            "function getLearnerVisibilityTone(documentItem)",
+            "function isGeneratedCompletionDocument(documentItem)",
+            "function canPublishGeneratedCompletionDocument(documentItem)",
+            "function getAdminDocumentDownloadLabel(documentItem)",
+            "function getGeneratedCompletionNotice(documentItem)",
+            "function getDocumentFiltersFromSearch(search)",
+            "function buildEditForm(documentItem)",
+            "function DocumentsSummaryCards(",
+            "function DocumentsWorkflowPanel(",
+            "const [documents, setDocuments] = useState([]);",
+            "const [documentStatusCounts, setDocumentStatusCounts] = useState({",
+            "const [users, setUsers] = useState([]);",
+            "const [courses, setCourses] = useState([]);",
+            "const [enrollments, setEnrollments] = useState([]);",
+            "const [filterUserId, setFilterUserId] = useState(",
+            "const [filterEnrollmentId, setFilterEnrollmentId] = useState(",
+            "const [filterStatus, setFilterStatus] = useState(",
+            "const [filterDocumentType, setFilterDocumentType] = useState(",
+            "const [filterQuery, setFilterQuery] = useState(",
+            "async function loadData(nextFilters = null)",
+            "getAdminDocuments(filters)",
+            "getAdminUsers()",
+            "getAdminCourses({ limit: 300 })",
+            "getAdminEnrollments({ limit: 300 })",
+            "getAdminDocuments(counterFilters)",
+            "async function handleSubmit(event)",
+            "createAdminDocument(payload)",
+            "function handleStartEdit(documentItem)",
+            "async function handleEditSubmit(event, documentId)",
+            "updateAdminDocument(documentId, payload)",
+            "async function handleQuickStatusUpdate(documentItem, nextStatus)",
+            "updateAdminDocument(documentItem.id, payload)",
+            "async function handleAdminDownload(documentItem)",
+            "downloadAdminDocument(documentItem.id)",
+            "async function handleDelete(documentItem)",
+            "deleteAdminDocument(documentItem.id)",
+            "async function handleApplyFilter(event)",
+            "async function handleQuickStatusFilter(nextStatus)",
+            "async function handleClearEnrollmentFilter()",
+            "async function handleResetFilter()",
+            "<DocumentsSummaryCards",
+            "<DocumentsWorkflowPanel",
+            "<DocumentVerificationQrBlock",
+            "showPublicLink={documentItem.status === \"available\"}",
+            "handleQuickStatusUpdate(documentItem, \"available\")",
+            "handleQuickStatusUpdate(documentItem, \"draft\")",
+            "handleQuickStatusUpdate(documentItem, \"revoked\")",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/VerifyDocumentPage.jsx",
+        [
+            'import { useEffect, useMemo, useState } from "react";',
+            "verifyPublicDocument",
+            "DocumentVerificationQrBlock",
+            "export function VerifyDocumentPage",
+            "const [query, setQuery] = useState(\"\");",
+            "const [result, setResult] = useState(null);",
+            "const [submittedQuery, setSubmittedQuery] = useState(\"\");",
+            "const [loading, setLoading] = useState(false);",
+            "const [error, setError] = useState(\"\");",
+            "const [notFound, setNotFound] = useState(false);",
+            "async function runVerification(rawValue, options = {})",
+            "verifyPublicDocument(value)",
+            "url.searchParams.set(\"number\", value);",
+            "params.get(\"number\")",
+            "params.get(\"code\")",
+            "async function handleSubmit(event)",
+            "function getRegistryStatusLabel(status)",
+            "function getVerificationTone(result)",
+            "<DocumentVerificationQrBlock",
+            "code={result.verification_code}",
+            "documentNumber={result.document_number}",
+            "containerId=\"public-document-verification-qr\"",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/documents/DocumentVerificationQrBlock.jsx",
+        [
+            "export function DocumentVerificationQrBlock",
+            "QRCodeSVG",
+            "buildDocumentVerificationPath",
+            "showPublicLink",
+            "showCopyLink",
+            "showUrl",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/utils/documentVerification.js",
+        [
+            "export function buildDocumentVerificationPath",
+            "encodeURIComponent",
+        ],
+    )
+
+    print("Documents page behavior smoke passed")
+
+
+if __name__ == "__main__":
+    main()

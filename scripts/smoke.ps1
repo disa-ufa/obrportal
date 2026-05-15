@@ -25,6 +25,7 @@ try {
     Invoke-SmokeCheck ".\scripts\smoke_org_cabinet_utils.py"
     Invoke-SmokeCheck ".\scripts\smoke_org_cabinet_page.py"
     Invoke-SmokeCheck ".\scripts\smoke_org_cabinet_route.py"
+    Invoke-SmokeCheck ".\scripts\smoke_documents_page.py"
 
     Write-Host "`nSmoke passed." -ForegroundColor Green
 }
