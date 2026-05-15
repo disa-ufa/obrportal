@@ -58,7 +58,9 @@ export function formatUserOrganizations(organizations = [], organizationIds = []
   }
 
   if (organizationIdItems.length > 0) {
-    return organizationIdItems.map((id) => shortId(id)).join(", ");
+    return organizationIdItems
+      .map((id) => shortId(id))
+      .join(", ");
   }
 
   return "";
