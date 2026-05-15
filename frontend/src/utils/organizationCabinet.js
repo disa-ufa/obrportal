@@ -71,7 +71,13 @@ export function formatUserRoles(roles = []) {
     return "";
   }
 
-  return items.map((role) => role.name || role.code).join(", ");
+  return items
+    .map((role) => {
+      const item = normalizeObject(role);
+
+      return item.name || item.code;
+    })
+    .join(", ");
 }
 
 export function buildOrganizationOptions(profileOrganizations = [], groups = []) {
