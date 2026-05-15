@@ -469,6 +469,8 @@ def main() -> None:
             "const organizationId = group?.organization_id",
             "uniqueIds.add(organizationId)",
             "const organizationIds = [...uniqueIds]",
+            "const hasSingleOrganization = organizationIds.length === 1",
+            "label: hasSingleOrganization ?",
             "Organization cabinet summary helpers.",
             "function normalizeItems",
             "function normalizeObject",
