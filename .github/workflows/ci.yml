@@ -115,6 +115,7 @@ jobs:
           python scripts/smoke_auth_pages.py
           python scripts/smoke_admin_renderer.py
           python scripts/smoke_admin_hooks.py
+          python scripts/smoke_frontend_core.py
 
       - name: Build frontend
         run: |
