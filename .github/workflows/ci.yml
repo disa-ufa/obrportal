@@ -110,6 +110,7 @@ jobs:
           python scripts/smoke_org_cabinet_page.py
           python scripts/smoke_org_cabinet_route.py
           python scripts/smoke_documents_page.py
+          python scripts/smoke_account_page.py
 
       - name: Build frontend
         run: |
