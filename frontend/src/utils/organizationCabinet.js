@@ -112,11 +112,11 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
   });
 
   const organizationIds = [...uniqueIds];
+  const hasSingleOrganization = organizationIds.length === 1;
 
   return organizationIds.map((id, index) => ({
     id,
-    label:
-      organizationIds.length === 1 ? "Моя организация" : `Организация ${index + 1}`,
+    label: hasSingleOrganization ? "Моя организация" : `Организация ${index + 1}`,
   }));
 }
 
