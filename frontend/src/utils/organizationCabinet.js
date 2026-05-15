@@ -245,7 +245,7 @@ export function enrollmentMatchesFilters(enrollment, searchQuery, statusFilter) 
 }
 
 export function hasActiveEnrollmentFilters(searchQuery, statusFilter) {
-  return searchQuery.trim() !== "" || statusFilter !== "";
+  return (searchQuery || "").trim() !== "" || statusFilter !== "";
 }
 
 export function sortOrganizationUsers(items) {
