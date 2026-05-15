@@ -249,10 +249,16 @@ export function hasActiveEnrollmentFilters(searchQuery, statusFilter) {
   return (searchQuery || "").trim() !== "" || (statusFilter || "").trim() !== "";
 }
 
+function buildOrganizationUserSortKey(user) {
+  const item = normalizeObject(user);
+
+  return `${item.full_name || item.email || item.id || ""}`;
+}
+
 export function sortOrganizationUsers(items) {
-  return normalizeItems(items).sort((left, right) =>
-    (left.full_name || left.email || left.id).localeCompare(
-      right.full_name || right.email || right.id,
+  return [...normalizeItems(items)].sort((left, right) =>
+    buildOrganizationUserSortKey(left).localeCompare(
+      buildOrganizationUserSortKey(right),
       "ru"
     )
   );
