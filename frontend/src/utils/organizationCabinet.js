@@ -181,10 +181,16 @@ export function getGroupStatus(group) {
     : { label: "Неактивная", className: "bg-slate-100 text-slate-600 ring-slate-200" };
 }
 
+function buildEnrollmentSortKey(enrollment) {
+  const item = normalizeObject(enrollment);
+
+  return `${item.course_title || ""} ${item.user_email || ""}`;
+}
+
 export function sortEnrollments(items) {
-  return normalizeItems(items).sort((left, right) =>
-    `${left.course_title || ""} ${left.user_email || ""}`.localeCompare(
-      `${right.course_title || ""} ${right.user_email || ""}`,
+  return [...normalizeItems(items)].sort((left, right) =>
+    buildEnrollmentSortKey(left).localeCompare(
+      buildEnrollmentSortKey(right),
       "ru"
     )
   );
