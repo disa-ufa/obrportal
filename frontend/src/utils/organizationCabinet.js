@@ -289,8 +289,8 @@ export function organizationUserMatchesQuery(userItem, query) {
   }
 
   return [item.email, item.full_name]
-    .filter(Boolean)
-    .some((value) => value.toLowerCase().includes(normalizedQuery));
+    .filter((value) => value !== undefined && value !== null)
+    .some((value) => `${value}`.toLowerCase().includes(normalizedQuery));
 }
 
 function buildMemberSortKey(member) {

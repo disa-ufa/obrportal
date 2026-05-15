@@ -518,6 +518,8 @@ def main() -> None:
             "export function organizationUserMatchesQuery",
             "normalizeObject(userItem)",
             "const normalizedQuery = (query || \"\").trim().toLowerCase()",
+            ".filter((value) => value !== undefined && value !== null)",
+            ".some((value) => `${value}`.toLowerCase().includes(normalizedQuery))",
             "function buildMemberSortKey",
             "normalizeObject(member)",
             "return `${item.user_full_name || item.user_email || item.user_id || \"\"}`",
