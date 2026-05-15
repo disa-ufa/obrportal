@@ -456,6 +456,8 @@ def main() -> None:
             "export function formatUserRoles",
             "export function formatUserRoles",
             "normalizeItems(roles)",
+            "normalizeObject(role)",
+            "return item.name || item.code",
             "export function buildOrganizationOptions",
             "normalizeItems(profileOrganizations)",
             "normalizeItems(groups)",
