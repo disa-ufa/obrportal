@@ -112,6 +112,7 @@ jobs:
           python scripts/smoke_documents_page.py
           python scripts/smoke_account_page.py
           python scripts/smoke_public_pages.py
+          python scripts/smoke_auth_pages.py
 
       - name: Build frontend
         run: |
