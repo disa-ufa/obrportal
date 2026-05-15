@@ -120,6 +120,7 @@ jobs:
           python scripts/smoke_admin_components.py
           python scripts/smoke_frontend_utils_routes.py
           python scripts/smoke_frontend_hooks_layout.py
+          python scripts/smoke_frontend_api_client.py
 
       - name: Build frontend
         run: |
