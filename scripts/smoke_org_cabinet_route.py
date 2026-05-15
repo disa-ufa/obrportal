@@ -517,6 +517,7 @@ def main() -> None:
             "normalizeItems(item.user_roles)",
             "export function organizationUserMatchesQuery",
             "normalizeObject(userItem)",
+            "const normalizedQuery = (query || \"\").trim().toLowerCase()",
             "function buildMemberSortKey",
             "normalizeObject(member)",
             "return `${item.user_full_name || item.user_email || item.user_id || \"\"}`",
