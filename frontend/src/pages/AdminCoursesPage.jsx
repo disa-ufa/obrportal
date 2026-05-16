@@ -10,6 +10,7 @@ import {
   getAdminCourseModules,
   getAdminCourses,
   updateAdminCourse,
+  updateAdminCourseModule,
 } from "../api/client";
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
@@ -102,7 +103,9 @@ const RU = {
   moduleDescriptionPlaceholder: "\u041a\u0440\u0430\u0442\u043a\u043e\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0442\u0435\u043c \u0438 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432",
   modulePosition: "\u041f\u043e\u0437\u0438\u0446\u0438\u044f",
   moduleCreatedMessage: "\u041c\u043e\u0434\u0443\u043b\u044c \u0441\u043e\u0437\u0434\u0430\u043d",
+  moduleUpdatedMessage: "\u041c\u043e\u0434\u0443\u043b\u044c \u043e\u0431\u043d\u043e\u0432\u043b\u0451\u043d",
   moduleCreateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c.",
+  moduleUpdateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c.",
   moduleTitleRequired: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f.",
   modulePositionRequired: "\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u043e\u0437\u0438\u0446\u0438\u044e \u043c\u043e\u0434\u0443\u043b\u044f.",
   modulePositionDuplicate: "\u041c\u043e\u0434\u0443\u043b\u044c \u0441 \u0442\u0430\u043a\u043e\u0439 \u043f\u043e\u0437\u0438\u0446\u0438\u0435\u0439 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u044d\u0442\u043e\u043c \u043a\u0443\u0440\u0441\u0435.",
@@ -380,6 +383,15 @@ function buildModuleCreateForm(modules) {
   };
 }
 
+function buildModuleEditForm(module) {
+  return {
+    title: module.title || "",
+    description: module.description || "",
+    position: module.position ? `${module.position}` : "",
+    is_active: Boolean(module.is_active),
+  };
+}
+
 function formatCourseModuleApiError(err, fallback) {
   const status = err?.status ? `${err.status}` : "";
   const message = getApiErrorMessage(err);
@@ -464,7 +476,10 @@ function CourseCard({
   course,
   modules = [],
   moduleCreateForm,
+  moduleEditFormsByModuleId,
+  editingModuleId,
   isModuleCreating,
+  moduleActionId,
   isEditing,
   isActionRunning,
   editForm,
@@ -477,6 +492,10 @@ function CourseCard({
   onModuleCreateFieldChange,
   onModuleCreateSubmit,
   onModuleCreateReset,
+  onModuleEditStart,
+  onModuleEditFieldChange,
+  onModuleEditSubmit,
+  onModuleEditCancel,
 }) {
   const courseModules = Array.isArray(modules) ? modules : [];
 
@@ -566,31 +585,81 @@ function CourseCard({
               </p>
             ) : (
               <div className="mt-4 space-y-3">
-                {courseModules.map((module) => (
-                  <div
-                    key={module.id}
-                    className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {RU.moduleNumber} {module.position}
-                        </div>
-                        <div className="mt-1 text-sm font-bold text-slate-900">
-                          {module.title}
-                        </div>
-                      </div>
+                {courseModules.map((module) => {
+                  const isModuleEditing = editingModuleId === module.id;
+                  const isModuleActionRunning = moduleActionId === module.id;
+                  const moduleEditForm =
+                    moduleEditFormsByModuleId?.[module.id] || buildModuleEditForm(module);
 
-                      <StatusBadge tone={module.is_active ? "green" : "gray"}>
-                        {module.is_active ? RU.moduleActive : RU.moduleInactive}
-                      </StatusBadge>
+                  return (
+                    <div
+                      key={module.id}
+                      className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                    >
+                      {!isModuleEditing ? (
+                        <>
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                {RU.moduleNumber} {module.position}
+                              </div>
+                              <div className="mt-1 text-sm font-bold text-slate-900">
+                                {module.title}
+                              </div>
+                            </div>
+
+                            <StatusBadge tone={module.is_active ? "green" : "gray"}>
+                              {module.is_active ? RU.moduleActive : RU.moduleInactive}
+                            </StatusBadge>
+                          </div>
+
+                          <p className="mt-3 text-sm leading-6 text-slate-600">
+                            {module.description || RU.moduleDescriptionMissing}
+                          </p>
+
+                          <div className="mt-4 flex flex-wrap gap-3">
+                            <ActionButton
+                              type="button"
+                              tone="blue"
+                              onClick={() => onModuleEditStart(module)}
+                              disabled={isModuleCreating || Boolean(moduleActionId)}
+                            >
+                              {RU.edit}
+                            </ActionButton>
+                          </div>
+                        </>
+                      ) : (
+                        <form
+                          onSubmit={(event) => onModuleEditSubmit(event, module)}
+                          className="space-y-4"
+                        >
+                          <CourseModuleFormFields
+                            values={moduleEditForm}
+                            onChange={(field, value) =>
+                              onModuleEditFieldChange(module.id, field, value)
+                            }
+                            prefix={`module-${module.id}-edit-`}
+                          />
+
+                          <div className="flex flex-wrap gap-3">
+                            <ActionButton type="submit" tone="blue" disabled={isModuleActionRunning}>
+                              {isModuleActionRunning ? RU.saving : RU.save}
+                            </ActionButton>
+
+                            <ActionButton
+                              type="button"
+                              tone="light"
+                              onClick={onModuleEditCancel}
+                              disabled={isModuleActionRunning}
+                            >
+                              {RU.cancel}
+                            </ActionButton>
+                          </div>
+                        </form>
+                      )}
                     </div>
-
-                    <p className="mt-3 text-sm leading-6 text-slate-600">
-                      {module.description || RU.moduleDescriptionMissing}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -720,7 +789,10 @@ export function AdminCoursesPage() {
   const [courses, setCourses] = useState([]);
   const [courseModulesByCourseId, setCourseModulesByCourseId] = useState({});
   const [moduleCreateFormsByCourseId, setModuleCreateFormsByCourseId] = useState({});
+  const [moduleEditFormsByModuleId, setModuleEditFormsByModuleId] = useState({});
+  const [editingModuleId, setEditingModuleId] = useState("");
   const [moduleCreatingCourseId, setModuleCreatingCourseId] = useState("");
+  const [moduleActionId, setModuleActionId] = useState("");
   const [courseCounts, setCourseCounts] = useState({
     all: 0,
     active: 0,
@@ -799,6 +871,9 @@ export function AdminCoursesPage() {
       setError(formatCourseApiError(err, RU.loadFailed));
       setCourseModulesByCourseId({});
       setModuleCreateFormsByCourseId({});
+      setModuleEditFormsByModuleId({});
+      setEditingModuleId("");
+      setModuleActionId("");
       setCourseCounts({ all: 0, active: 0, inactive: 0 });
     } finally {
       setLoading(false);
@@ -962,6 +1037,9 @@ export function AdminCoursesPage() {
         resetEditState();
       }
 
+      setEditingModuleId("");
+      setModuleEditFormsByModuleId({});
+
       setSuccessMessage(`${RU.deletedMessage}: ${course.title}`);
       await loadData(buildFilters());
     } catch (err) {
@@ -1025,6 +1103,63 @@ export function AdminCoursesPage() {
       setError(formatCourseModuleApiError(err, RU.moduleCreateFailed));
     } finally {
       setModuleCreatingCourseId("");
+    }
+  }
+
+  function handleModuleEditStart(module) {
+    setError("");
+    setSuccessMessage("");
+    setEditingModuleId(module.id);
+    setModuleEditFormsByModuleId((current) => ({
+      ...current,
+      [module.id]: buildModuleEditForm(module),
+    }));
+  }
+
+  function updateModuleEditField(moduleId, field, value) {
+    setModuleEditFormsByModuleId((current) => ({
+      ...current,
+      [moduleId]: {
+        ...(current[moduleId] || EMPTY_MODULE_CREATE_FORM),
+        [field]: value,
+      },
+    }));
+  }
+
+  function resetModuleEditState() {
+    setEditingModuleId("");
+    setModuleEditFormsByModuleId({});
+  }
+
+  async function handleModuleEditSubmit(event, module) {
+    event.preventDefault();
+
+    const values = moduleEditFormsByModuleId[module.id] || buildModuleEditForm(module);
+
+    if (!values.title.trim()) {
+      setError(RU.moduleTitleRequired);
+      return;
+    }
+
+    if (normalizeModulePositionInput(values.position) === null) {
+      setError(RU.modulePositionRequired);
+      return;
+    }
+
+    try {
+      setModuleActionId(module.id);
+      setError("");
+      setSuccessMessage("");
+
+      const updated = await updateAdminCourseModule(module.id, buildModulePayload(values));
+
+      setSuccessMessage(`${RU.moduleUpdatedMessage}: ${updated.title}`);
+      resetModuleEditState();
+      await loadData(buildFilters());
+    } catch (err) {
+      setError(formatCourseModuleApiError(err, RU.moduleUpdateFailed));
+    } finally {
+      setModuleActionId("");
     }
   }
 
@@ -1199,7 +1334,10 @@ export function AdminCoursesPage() {
                   moduleCreateFormsByCourseId[course.id] ||
                   buildModuleCreateForm(courseModulesByCourseId[course.id] || [])
                 }
+                moduleEditFormsByModuleId={moduleEditFormsByModuleId}
+                editingModuleId={editingModuleId}
                 isModuleCreating={moduleCreatingCourseId === course.id}
+                moduleActionId={moduleActionId}
                 isEditing={editingCourseId === course.id}
                 isActionRunning={actionCourseId === course.id}
                 editForm={editForm}
@@ -1212,6 +1350,10 @@ export function AdminCoursesPage() {
                 onModuleCreateFieldChange={updateModuleCreateField}
                 onModuleCreateSubmit={handleModuleCreateSubmit}
                 onModuleCreateReset={resetModuleCreateForm}
+                onModuleEditStart={handleModuleEditStart}
+                onModuleEditFieldChange={updateModuleEditField}
+                onModuleEditSubmit={handleModuleEditSubmit}
+                onModuleEditCancel={resetModuleEditState}
               />
             ))}
           </div>
