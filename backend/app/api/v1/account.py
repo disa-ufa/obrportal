@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.auth import build_current_user_response, get_current_user
 from app.db.session import get_db
 from app.models.course import Course
+from app.models.course_lesson import CourseLesson
+from app.models.course_module import CourseModule
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup
@@ -23,7 +25,10 @@ from app.services.document_storage import (
     resolve_private_storage_path,
 )
 from app.schemas.account import (
+    AccountCourseDetailResponse,
     AccountCourseItemResponse,
+    AccountCourseLessonResponse,
+    AccountCourseModuleResponse,
     AccountCoursesResponse,
     AccountDocumentItemResponse,
     AccountDocumentsResponse,
@@ -256,6 +261,106 @@ def build_account_course_item_from_row(row) -> AccountCourseItemResponse:
     )
 
 
+def build_account_course_lesson(lesson: CourseLesson) -> AccountCourseLessonResponse:
+    return AccountCourseLessonResponse(
+        id=str(lesson.id),
+        module_id=str(lesson.module_id),
+        title=lesson.title,
+        description=lesson.description,
+        content_type=lesson.content_type,
+        content_url=lesson.content_url,
+        content_text=lesson.content_text,
+        position=lesson.position,
+        is_required=lesson.is_required,
+    )
+
+
+def build_account_course_module(
+    module: CourseModule,
+    lessons: list[CourseLesson],
+) -> AccountCourseModuleResponse:
+    return AccountCourseModuleResponse(
+        id=str(module.id),
+        course_id=str(module.course_id),
+        title=module.title,
+        description=module.description,
+        position=module.position,
+        lessons=[build_account_course_lesson(lesson) for lesson in lessons],
+    )
+
+
+async def load_account_course_modules(
+    session: AsyncSession,
+    course_id: str,
+) -> list[AccountCourseModuleResponse]:
+    modules_result = await session.execute(
+        select(CourseModule)
+        .where(
+            CourseModule.course_id == course_id,
+            CourseModule.is_active.is_(True),
+        )
+        .order_by(CourseModule.position.asc(), CourseModule.title.asc())
+    )
+    modules = list(modules_result.scalars().all())
+
+    if not modules:
+        return []
+
+    module_ids = [module.id for module in modules]
+
+    lessons_result = await session.execute(
+        select(CourseLesson)
+        .where(
+            CourseLesson.module_id.in_(module_ids),
+            CourseLesson.is_active.is_(True),
+        )
+        .order_by(
+            CourseLesson.module_id.asc(),
+            CourseLesson.position.asc(),
+            CourseLesson.title.asc(),
+        )
+    )
+    lessons = list(lessons_result.scalars().all())
+
+    lessons_by_module_id: dict[str, list[CourseLesson]] = {
+        str(module.id): []
+        for module in modules
+    }
+
+    for lesson in lessons:
+        lessons_by_module_id.setdefault(str(lesson.module_id), []).append(lesson)
+
+    return [
+        build_account_course_module(
+            module,
+            lessons_by_module_id.get(str(module.id), []),
+        )
+        for module in modules
+    ]
+
+
+def build_account_course_detail_from_row(
+    row,
+    modules: list[AccountCourseModuleResponse],
+) -> AccountCourseDetailResponse:
+    return AccountCourseDetailResponse(
+        enrollment_id=str(row.enrollment_id),
+        course_id=str(row.course_id),
+        course_slug=row.course_slug,
+        course_title=row.course_title,
+        course_description=row.course_description,
+        status=row.status,
+        hours=row.hours,
+        format=row.format,
+        document_type=row.document_type,
+        organization_name=row.organization_name,
+        learning_group_name=row.learning_group_name,
+        started_at=getattr(row, "started_at", None),
+        completed_at=getattr(row, "completed_at", None),
+        modules=modules,
+    )
+
+
 async def get_account_course_row_or_404(
     enrollment_id: str,
     current_user: User,
@@ -294,6 +399,22 @@ async def get_account_course_row_or_404(
         )
 
     return row
+
+
+@router.get("/courses/{enrollment_id}", response_model=AccountCourseDetailResponse)
+async def get_account_course_detail(
+    enrollment_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountCourseDetailResponse:
+    row = await get_account_course_row_or_404(
+        enrollment_id.strip(),
+        current_user,
+        session,
+    )
+    modules = await load_account_course_modules(session, str(row.course_id))
+
+    return build_account_course_detail_from_row(row, modules)
 
 
 @router.post("/courses/{course_id}/enroll", response_model=AccountCourseItemResponse, status_code=status.HTTP_201_CREATED)
