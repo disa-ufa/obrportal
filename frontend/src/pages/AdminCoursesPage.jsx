@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   activateAdminCourse,
   createAdminCourse,
+  createAdminCourseModule,
   deactivateAdminCourse,
   deleteAdminCourse,
   getAdminCourseModules,
@@ -93,6 +94,18 @@ const RU = {
   moduleActive: "\u0410\u043a\u0442\u0438\u0432\u0435\u043d",
   moduleInactive: "\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u0435\u043d",
   moduleDescriptionMissing: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d\u043e.",
+  addModule: "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c",
+  createModule: "\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c",
+  moduleTitle: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f",
+  moduleTitlePlaceholder: "\u0412\u0432\u0435\u0434\u0435\u043d\u0438\u0435 \u0432 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443",
+  moduleDescription: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f",
+  moduleDescriptionPlaceholder: "\u041a\u0440\u0430\u0442\u043a\u043e\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0442\u0435\u043c \u0438 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432",
+  modulePosition: "\u041f\u043e\u0437\u0438\u0446\u0438\u044f",
+  moduleCreatedMessage: "\u041c\u043e\u0434\u0443\u043b\u044c \u0441\u043e\u0437\u0434\u0430\u043d",
+  moduleCreateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c.",
+  moduleTitleRequired: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f.",
+  modulePositionRequired: "\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u043e\u0437\u0438\u0446\u0438\u044e \u043c\u043e\u0434\u0443\u043b\u044f.",
+  modulePositionDuplicate: "\u041c\u043e\u0434\u0443\u043b\u044c \u0441 \u0442\u0430\u043a\u043e\u0439 \u043f\u043e\u0437\u0438\u0446\u0438\u0435\u0439 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u044d\u0442\u043e\u043c \u043a\u0443\u0440\u0441\u0435.",
   edit: "\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
   running: "\u0412\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u043c...",
   deactivate: "\u0414\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
@@ -147,6 +160,13 @@ const EMPTY_EDIT_FORM = {
   hours: "",
   format: "",
   document_type: "",
+  is_active: true,
+};
+
+const EMPTY_MODULE_CREATE_FORM = {
+  title: "",
+  description: "",
+  position: "",
   is_active: true,
 };
 
@@ -339,9 +359,112 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
   );
 }
 
+function normalizeModulePositionInput(value) {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed)) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function buildModuleCreateForm(modules) {
+  const nextPosition = Array.isArray(modules)
+    ? modules.reduce((maxPosition, module) => Math.max(maxPosition, Number(module.position) || 0), 0) + 1
+    : 1;
+
+  return {
+    ...EMPTY_MODULE_CREATE_FORM,
+    position: `${nextPosition}`,
+  };
+}
+
+function formatCourseModuleApiError(err, fallback) {
+  const status = err?.status ? `${err.status}` : "";
+  const message = getApiErrorMessage(err);
+  const normalizedMessage = message.toLowerCase();
+
+  let readableMessage = fallback;
+
+  if (status === "403") {
+    readableMessage = RU.accessDenied;
+  } else if (status === "404") {
+    readableMessage = RU.courseNotFound;
+  } else if (status === "409" && normalizedMessage.includes("position")) {
+    readableMessage = RU.modulePositionDuplicate;
+  } else if (message) {
+    readableMessage = message;
+  }
+
+  return `${status} ${readableMessage}`.trim();
+}
+
+function CourseModuleFormFields({ values, onChange, prefix = "" }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-[1fr_160px]">
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {RU.moduleTitle}
+        </span>
+        <input
+          id={`${prefix}module-title`}
+          type="text"
+          value={values.title}
+          onChange={(event) => onChange("title", event.target.value)}
+          placeholder={RU.moduleTitlePlaceholder}
+          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        />
+      </label>
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {RU.modulePosition}
+        </span>
+        <input
+          id={`${prefix}module-position`}
+          type="number"
+          min="1"
+          max="10000"
+          value={values.position}
+          onChange={(event) => onChange("position", event.target.value)}
+          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        />
+      </label>
+
+      <label className="block md:col-span-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {RU.moduleDescription}
+        </span>
+        <textarea
+          id={`${prefix}module-description`}
+          value={values.description}
+          onChange={(event) => onChange("description", event.target.value)}
+          rows={3}
+          placeholder={RU.moduleDescriptionPlaceholder}
+          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        />
+      </label>
+
+      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 md:col-span-2">
+        <input
+          id={`${prefix}module-is-active`}
+          type="checkbox"
+          checked={values.is_active}
+          onChange={(event) => onChange("is_active", event.target.checked)}
+          className="h-4 w-4 rounded border-slate-300"
+        />
+        <span className="font-semibold">{RU.active}</span>
+      </label>
+    </div>
+  );
+}
+
 function CourseCard({
   course,
   modules = [],
+  moduleCreateForm,
+  isModuleCreating,
   isEditing,
   isActionRunning,
   editForm,
@@ -351,6 +474,9 @@ function CourseCard({
   onCancelEdit,
   onToggleActive,
   onDelete,
+  onModuleCreateFieldChange,
+  onModuleCreateSubmit,
+  onModuleCreateReset,
 }) {
   const courseModules = Array.isArray(modules) ? modules : [];
 
@@ -467,6 +593,43 @@ function CourseCard({
                 ))}
               </div>
             )}
+
+            <form
+              onSubmit={(event) => onModuleCreateSubmit(event, course)}
+              className="mt-4 space-y-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    {RU.addModule}
+                  </h4>
+                  <p className="mt-1 text-xs text-slate-500">
+                    POST /api/v1/admin/courses/{course.id}/modules
+                  </p>
+                </div>
+              </div>
+
+              <CourseModuleFormFields
+                values={moduleCreateForm || EMPTY_MODULE_CREATE_FORM}
+                onChange={(field, value) => onModuleCreateFieldChange(course.id, field, value)}
+                prefix={`course-${course.id}-create-`}
+              />
+
+              <div className="flex flex-wrap gap-3">
+                <ActionButton type="submit" tone="blue" disabled={isModuleCreating}>
+                  {isModuleCreating ? RU.saving : RU.createModule}
+                </ActionButton>
+
+                <ActionButton
+                  type="button"
+                  tone="light"
+                  onClick={() => onModuleCreateReset(course.id, courseModules)}
+                  disabled={isModuleCreating}
+                >
+                  {RU.clear}
+                </ActionButton>
+              </div>
+            </form>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -556,6 +719,8 @@ export function AdminCoursesPage() {
 
   const [courses, setCourses] = useState([]);
   const [courseModulesByCourseId, setCourseModulesByCourseId] = useState({});
+  const [moduleCreateFormsByCourseId, setModuleCreateFormsByCourseId] = useState({});
+  const [moduleCreatingCourseId, setModuleCreatingCourseId] = useState("");
   const [courseCounts, setCourseCounts] = useState({
     all: 0,
     active: 0,
@@ -618,12 +783,22 @@ export function AdminCoursesPage() {
         })
       );
 
+      const nextModulesByCourseId = Object.fromEntries(moduleEntries);
+      const nextModuleFormsByCourseId = Object.fromEntries(
+        nextCourses.map((course) => [
+          course.id,
+          buildModuleCreateForm(nextModulesByCourseId[course.id] || []),
+        ])
+      );
+
       setCourses(nextCourses);
-      setCourseModulesByCourseId(Object.fromEntries(moduleEntries));
+      setCourseModulesByCourseId(nextModulesByCourseId);
+      setModuleCreateFormsByCourseId(nextModuleFormsByCourseId);
       setCourseCounts(calculateCourseCounts(Array.isArray(countResponse) ? countResponse : []));
     } catch (err) {
       setError(formatCourseApiError(err, RU.loadFailed));
       setCourseModulesByCourseId({});
+      setModuleCreateFormsByCourseId({});
       setCourseCounts({ all: 0, active: 0, inactive: 0 });
     } finally {
       setLoading(false);
@@ -796,6 +971,63 @@ export function AdminCoursesPage() {
     }
   }
 
+  function updateModuleCreateField(courseId, field, value) {
+    setModuleCreateFormsByCourseId((current) => ({
+      ...current,
+      [courseId]: {
+        ...(current[courseId] || EMPTY_MODULE_CREATE_FORM),
+        [field]: value,
+      },
+    }));
+  }
+
+  function resetModuleCreateForm(courseId, modules = []) {
+    setModuleCreateFormsByCourseId((current) => ({
+      ...current,
+      [courseId]: buildModuleCreateForm(modules),
+    }));
+  }
+
+  function buildModulePayload(values) {
+    return {
+      title: values.title.trim(),
+      description: values.description.trim() || null,
+      position: normalizeModulePositionInput(values.position),
+      is_active: Boolean(values.is_active),
+    };
+  }
+
+  async function handleModuleCreateSubmit(event, course) {
+    event.preventDefault();
+
+    const values = moduleCreateFormsByCourseId[course.id] || EMPTY_MODULE_CREATE_FORM;
+
+    if (!values.title.trim()) {
+      setError(RU.moduleTitleRequired);
+      return;
+    }
+
+    if (normalizeModulePositionInput(values.position) === null) {
+      setError(RU.modulePositionRequired);
+      return;
+    }
+
+    try {
+      setModuleCreatingCourseId(course.id);
+      setError("");
+      setSuccessMessage("");
+
+      const created = await createAdminCourseModule(course.id, buildModulePayload(values));
+
+      setSuccessMessage(`${RU.moduleCreatedMessage}: ${created.title}`);
+      await loadData(buildFilters());
+    } catch (err) {
+      setError(formatCourseModuleApiError(err, RU.moduleCreateFailed));
+    } finally {
+      setModuleCreatingCourseId("");
+    }
+  }
+
   async function handleApplyFilter(event) {
     event.preventDefault();
     await navigateToCourseFilters(buildFilters());
@@ -963,6 +1195,11 @@ export function AdminCoursesPage() {
                 key={course.id}
                 course={course}
                 modules={courseModulesByCourseId[course.id] || []}
+                moduleCreateForm={
+                  moduleCreateFormsByCourseId[course.id] ||
+                  buildModuleCreateForm(courseModulesByCourseId[course.id] || [])
+                }
+                isModuleCreating={moduleCreatingCourseId === course.id}
                 isEditing={editingCourseId === course.id}
                 isActionRunning={actionCourseId === course.id}
                 editForm={editForm}
@@ -972,6 +1209,9 @@ export function AdminCoursesPage() {
                 onCancelEdit={resetEditState}
                 onToggleActive={handleToggleActive}
                 onDelete={handleDelete}
+                onModuleCreateFieldChange={updateModuleCreateField}
+                onModuleCreateSubmit={handleModuleCreateSubmit}
+                onModuleCreateReset={resetModuleCreateForm}
               />
             ))}
           </div>
