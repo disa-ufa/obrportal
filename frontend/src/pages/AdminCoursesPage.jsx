@@ -6,6 +6,7 @@ import {
   createAdminCourse,
   deactivateAdminCourse,
   deleteAdminCourse,
+  getAdminCourseModules,
   getAdminCourses,
   updateAdminCourse,
 } from "../api/client";
@@ -84,6 +85,14 @@ const RU = {
   updatedAt: "\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0430",
   publicCard: "\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0430",
   courseEnrollments: "\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430",
+  courseModules: "\u041c\u043e\u0434\u0443\u043b\u0438 \u043a\u0443\u0440\u0441\u0430",
+  courseModulesHint:
+    "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b: \u043f\u043e\u0440\u044f\u0434\u043e\u043a, \u0441\u0442\u0430\u0442\u0443\u0441 \u0438 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u0435\u0439.",
+  modulesNotFound: "\u041c\u043e\u0434\u0443\u043b\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u044b.",
+  moduleNumber: "\u041c\u043e\u0434\u0443\u043b\u044c",
+  moduleActive: "\u0410\u043a\u0442\u0438\u0432\u0435\u043d",
+  moduleInactive: "\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u0435\u043d",
+  moduleDescriptionMissing: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d\u043e.",
   edit: "\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
   running: "\u0412\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u043c...",
   deactivate: "\u0414\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
@@ -332,6 +341,7 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
 
 function CourseCard({
   course,
+  modules = [],
   isEditing,
   isActionRunning,
   editForm,
@@ -342,6 +352,8 @@ function CourseCard({
   onToggleActive,
   onDelete,
 }) {
+  const courseModules = Array.isArray(modules) ? modules : [];
+
   return (
     <article className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
       <div className="flex flex-wrap items-center gap-2">
@@ -404,6 +416,57 @@ function CourseCard({
                 {formatDateTime(course.updated_at)}
               </div>
             </div>
+          </div>
+
+          <div className="mt-5 rounded-3xl bg-white p-4 ring-1 ring-slate-200">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {RU.courseModules}
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {RU.courseModulesHint}
+                </p>
+              </div>
+
+              <StatusBadge tone={courseModules.length ? "blue" : "gray"}>
+                {courseModules.length}
+              </StatusBadge>
+            </div>
+
+            {courseModules.length === 0 ? (
+              <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                {RU.modulesNotFound}
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {courseModules.map((module) => (
+                  <div
+                    key={module.id}
+                    className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {RU.moduleNumber} {module.position}
+                        </div>
+                        <div className="mt-1 text-sm font-bold text-slate-900">
+                          {module.title}
+                        </div>
+                      </div>
+
+                      <StatusBadge tone={module.is_active ? "green" : "gray"}>
+                        {module.is_active ? RU.moduleActive : RU.moduleInactive}
+                      </StatusBadge>
+                    </div>
+
+                    <p className="mt-3 text-sm leading-6 text-slate-600">
+                      {module.description || RU.moduleDescriptionMissing}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -492,6 +555,7 @@ export function AdminCoursesPage() {
   const initialFilters = getCourseFiltersFromSearch(location.search);
 
   const [courses, setCourses] = useState([]);
+  const [courseModulesByCourseId, setCourseModulesByCourseId] = useState({});
   const [courseCounts, setCourseCounts] = useState({
     all: 0,
     active: 0,
@@ -546,10 +610,20 @@ export function AdminCoursesPage() {
         getAdminCourses(countFilters),
       ]);
 
-      setCourses(Array.isArray(response) ? response : []);
+      const nextCourses = Array.isArray(response) ? response : [];
+      const moduleEntries = await Promise.all(
+        nextCourses.map(async (course) => {
+          const modules = await getAdminCourseModules(course.id);
+          return [course.id, Array.isArray(modules) ? modules : []];
+        })
+      );
+
+      setCourses(nextCourses);
+      setCourseModulesByCourseId(Object.fromEntries(moduleEntries));
       setCourseCounts(calculateCourseCounts(Array.isArray(countResponse) ? countResponse : []));
     } catch (err) {
       setError(formatCourseApiError(err, RU.loadFailed));
+      setCourseModulesByCourseId({});
       setCourseCounts({ all: 0, active: 0, inactive: 0 });
     } finally {
       setLoading(false);
@@ -888,6 +962,7 @@ export function AdminCoursesPage() {
               <CourseCard
                 key={course.id}
                 course={course}
+                modules={courseModulesByCourseId[course.id] || []}
                 isEditing={editingCourseId === course.id}
                 isActionRunning={actionCourseId === course.id}
                 editForm={editForm}
