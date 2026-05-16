@@ -239,6 +239,7 @@ if (-not $SkipSmoke) {
     Invoke-HostPython @(".\scripts\smoke_frontend_hooks_layout.py")
     Invoke-HostPython @(".\scripts\smoke_frontend_api_client.py")
     Invoke-HostPython @(".\scripts\smoke_frontend_admin_pages.py")
+    Invoke-HostPython @(".\scripts\smoke_frontend_admin_detail_components.py")
 } else {
     Write-Host "Smoke skipped"
 }
