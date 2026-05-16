@@ -41,6 +41,146 @@ function getEnrollmentStatusTone(status) {
   }
 }
 
+function getCourseLessonTypeLabel(contentType) {
+  switch (contentType) {
+    case "text":
+      return "Текст";
+    case "video":
+      return "Видео";
+    case "file":
+      return "Файл";
+    case "link":
+      return "Ссылка";
+    case "assignment":
+      return "Задание";
+    default:
+      return contentType || "Материал";
+  }
+}
+
+function CourseOutlineSection({ modules = [] }) {
+  const courseModules = Array.isArray(modules) ? modules : [];
+
+  return (
+    <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+            Структура обучения
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            Программа курса
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            Модули и уроки, которые входят в опубликованную программу.
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200">
+          Модулей: {courseModules.length}
+        </div>
+      </div>
+
+      {courseModules.length === 0 ? (
+        <div className="mt-6 rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
+          Программа курса пока не опубликована.
+        </div>
+      ) : (
+        <div className="mt-6 space-y-4">
+          {courseModules.map((module) => {
+            const lessons = Array.isArray(module.lessons) ? module.lessons : [];
+
+            return (
+              <article
+                key={module.id}
+                className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Модуль {module.position}
+                    </div>
+                    <h3 className="mt-1 text-lg font-bold text-slate-900">
+                      {module.title}
+                    </h3>
+                    {module.description && (
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        {module.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    Уроков: {lessons.length}
+                  </div>
+                </div>
+
+                {lessons.length === 0 ? (
+                  <div className="mt-4 rounded-2xl bg-white p-4 text-sm text-slate-500 ring-1 ring-slate-200">
+                    Уроки пока не добавлены.
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {lessons.map((lesson) => (
+                      <div
+                        key={lesson.id}
+                        className="rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Урок {lesson.position}
+                            </div>
+                            <h4 className="mt-1 text-base font-bold text-slate-900">
+                              {lesson.title}
+                            </h4>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                              {getCourseLessonTypeLabel(lesson.content_type)}
+                            </span>
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                              {lesson.is_required ? "Обязательный" : "Дополнительный"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {lesson.description && (
+                          <p className="mt-3 text-sm leading-6 text-slate-600">
+                            {lesson.description}
+                          </p>
+                        )}
+
+                        {lesson.content_url && (
+                          <a
+                            href={lesson.content_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex text-sm font-semibold text-blue-700 hover:text-blue-800"
+                          >
+                            Открыть материал
+                          </a>
+                        )}
+
+                        {lesson.content_text && (
+                          <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
+                            {lesson.content_text}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function getPrimaryActionLabel(enrollment, user) {
   if (!user) {
     return "Зарегистрироваться и записаться";
@@ -353,6 +493,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           </button>
         </div>
       </section>
+
+      <CourseOutlineSection modules={course.modules} />
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
