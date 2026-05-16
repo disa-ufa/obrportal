@@ -13,6 +13,7 @@ import {
   getAdminCourseModules,
   getAdminCourses,
   updateAdminCourse,
+  updateAdminCourseLesson,
   updateAdminCourseModule,
 } from "../api/client";
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
@@ -124,7 +125,9 @@ const RU = {
   lessonContentTextPlaceholder: "\u0422\u0435\u043a\u0441\u0442 \u0443\u0440\u043e\u043a\u0430 \u0438\u043b\u0438 \u0438\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f",
   lessonPosition: "\u041f\u043e\u0437\u0438\u0446\u0438\u044f",
   lessonCreatedMessage: "\u0423\u0440\u043e\u043a \u0441\u043e\u0437\u0434\u0430\u043d",
+  lessonUpdatedMessage: "\u0423\u0440\u043e\u043a \u043e\u0431\u043d\u043e\u0432\u043b\u0451\u043d",
   lessonCreateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0443\u0440\u043e\u043a.",
+  lessonUpdateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0443\u0440\u043e\u043a.",
   lessonTitleRequired: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430.",
   lessonPositionRequired: "\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u043e\u0437\u0438\u0446\u0438\u044e \u0443\u0440\u043e\u043a\u0430.",
   lessonPositionDuplicate: "\u0423\u0440\u043e\u043a \u0441 \u0442\u0430\u043a\u043e\u0439 \u043f\u043e\u0437\u0438\u0446\u0438\u0435\u0439 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u044d\u0442\u043e\u043c \u043c\u043e\u0434\u0443\u043b\u0435.",
@@ -531,6 +534,19 @@ function buildLessonCreateForm(lessons) {
   };
 }
 
+function buildLessonEditForm(lesson) {
+  return {
+    title: lesson.title || "",
+    description: lesson.description || "",
+    content_type: lesson.content_type || "text",
+    content_url: lesson.content_url || "",
+    content_text: lesson.content_text || "",
+    position: lesson.position ? `${lesson.position}` : "",
+    is_required: Boolean(lesson.is_required),
+    is_active: Boolean(lesson.is_active),
+  };
+}
+
 function formatCourseLessonApiError(err, fallback) {
   const status = err?.status ? `${err.status}` : "";
   const message = getApiErrorMessage(err);
@@ -687,7 +703,10 @@ function CourseCard({
   modules = [],
   lessonsByModuleId = {},
   lessonCreateFormsByModuleId,
+  lessonEditFormsByLessonId,
+  editingLessonId,
   lessonCreatingModuleId,
+  lessonActionId,
   moduleCreateForm,
   moduleEditFormsByModuleId,
   editingModuleId,
@@ -713,6 +732,10 @@ function CourseCard({
   onLessonCreateFieldChange,
   onLessonCreateSubmit,
   onLessonCreateReset,
+  onLessonEditStart,
+  onLessonEditFieldChange,
+  onLessonEditSubmit,
+  onLessonEditCancel,
 }) {
   const courseModules = Array.isArray(modules) ? modules : [];
 
@@ -863,57 +886,116 @@ function CourseCard({
                               </p>
                             ) : (
                               <div className="mt-4 space-y-3">
-                                {moduleLessons.map((lesson) => (
-                                  <div
-                                    key={lesson.id}
-                                    className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-                                  >
-                                    <div className="flex flex-wrap items-center justify-between gap-3">
-                                      <div>
-                                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                          {RU.lessonNumber} {lesson.position}
-                                        </div>
-                                        <div className="mt-1 text-sm font-bold text-slate-900">
-                                          {lesson.title}
-                                        </div>
-                                      </div>
+                                {moduleLessons.map((lesson) => {
+                                  const isLessonEditing = editingLessonId === lesson.id;
+                                  const isLessonActionRunning = lessonActionId === lesson.id;
+                                  const lessonEditForm =
+                                    lessonEditFormsByLessonId?.[lesson.id] ||
+                                    buildLessonEditForm(lesson);
 
-                                      <div className="flex flex-wrap gap-2">
-                                        <StatusBadge tone="blue">
-                                          {getLessonContentTypeLabel(lesson.content_type)}
-                                        </StatusBadge>
-                                        <StatusBadge tone={lesson.is_required ? "green" : "gray"}>
-                                          {lesson.is_required ? RU.lessonRequired : RU.lessonOptional}
-                                        </StatusBadge>
-                                        <StatusBadge tone={lesson.is_active ? "green" : "gray"}>
-                                          {lesson.is_active ? RU.moduleActive : RU.moduleInactive}
-                                        </StatusBadge>
-                                      </div>
+                                  return (
+                                    <div
+                                      key={lesson.id}
+                                      className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                                    >
+                                      {!isLessonEditing ? (
+                                        <>
+                                          <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <div>
+                                              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                                {RU.lessonNumber} {lesson.position}
+                                              </div>
+                                              <div className="mt-1 text-sm font-bold text-slate-900">
+                                                {lesson.title}
+                                              </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2">
+                                              <StatusBadge tone="blue">
+                                                {getLessonContentTypeLabel(lesson.content_type)}
+                                              </StatusBadge>
+                                              <StatusBadge tone={lesson.is_required ? "green" : "gray"}>
+                                                {lesson.is_required ? RU.lessonRequired : RU.lessonOptional}
+                                              </StatusBadge>
+                                              <StatusBadge tone={lesson.is_active ? "green" : "gray"}>
+                                                {lesson.is_active ? RU.moduleActive : RU.moduleInactive}
+                                              </StatusBadge>
+                                            </div>
+                                          </div>
+
+                                          <p className="mt-3 text-sm leading-6 text-slate-600">
+                                            {lesson.description || RU.lessonDescriptionMissing}
+                                          </p>
+
+                                          {lesson.content_url && (
+                                            <div className="mt-3 text-xs text-slate-500">
+                                              <span className="font-semibold text-slate-700">
+                                                {RU.lessonContentUrl}:
+                                              </span>{" "}
+                                              {lesson.content_url}
+                                            </div>
+                                          )}
+
+                                          {lesson.content_text && (
+                                            <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs leading-5 text-slate-600 ring-1 ring-slate-200">
+                                              <span className="font-semibold text-slate-700">
+                                                {RU.lessonContentText}:
+                                              </span>{" "}
+                                              {lesson.content_text}
+                                            </div>
+                                          )}
+
+                                          <div className="mt-4 flex flex-wrap gap-3">
+                                            <ActionButton
+                                              type="button"
+                                              tone="blue"
+                                              onClick={() => onLessonEditStart(lesson)}
+                                              disabled={
+                                                isLessonCreating ||
+                                                Boolean(editingLessonId) ||
+                                                Boolean(lessonActionId)
+                                              }
+                                            >
+                                              {RU.edit}
+                                            </ActionButton>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <form
+                                          onSubmit={(event) => onLessonEditSubmit(event, lesson)}
+                                          className="space-y-4"
+                                        >
+                                          <CourseLessonFormFields
+                                            values={lessonEditForm}
+                                            onChange={(field, value) =>
+                                              onLessonEditFieldChange(lesson.id, field, value)
+                                            }
+                                            prefix={`lesson-${lesson.id}-edit-`}
+                                          />
+
+                                          <div className="flex flex-wrap gap-3">
+                                            <ActionButton
+                                              type="submit"
+                                              tone="blue"
+                                              disabled={isLessonActionRunning}
+                                            >
+                                              {isLessonActionRunning ? RU.saving : RU.save}
+                                            </ActionButton>
+
+                                            <ActionButton
+                                              type="button"
+                                              tone="light"
+                                              onClick={onLessonEditCancel}
+                                              disabled={isLessonActionRunning}
+                                            >
+                                              {RU.cancel}
+                                            </ActionButton>
+                                          </div>
+                                        </form>
+                                      )}
                                     </div>
-
-                                    <p className="mt-3 text-sm leading-6 text-slate-600">
-                                      {lesson.description || RU.lessonDescriptionMissing}
-                                    </p>
-
-                                    {lesson.content_url && (
-                                      <div className="mt-3 text-xs text-slate-500">
-                                        <span className="font-semibold text-slate-700">
-                                          {RU.lessonContentUrl}:
-                                        </span>{" "}
-                                        {lesson.content_url}
-                                      </div>
-                                    )}
-
-                                    {lesson.content_text && (
-                                      <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs leading-5 text-slate-600 ring-1 ring-slate-200">
-                                        <span className="font-semibold text-slate-700">
-                                          {RU.lessonContentText}:
-                                        </span>{" "}
-                                        {lesson.content_text}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
 
@@ -939,7 +1021,11 @@ function CourseCard({
                               />
 
                               <div className="flex flex-wrap gap-3">
-                                <ActionButton type="submit" tone="blue" disabled={isLessonCreating}>
+                                <ActionButton
+                                  type="submit"
+                                  tone="blue"
+                                  disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
+                                >
                                   {isLessonCreating ? RU.saving : RU.createLesson}
                                 </ActionButton>
 
@@ -947,7 +1033,7 @@ function CourseCard({
                                   type="button"
                                   tone="light"
                                   onClick={() => onLessonCreateReset(module.id, moduleLessons)}
-                                  disabled={isLessonCreating}
+                                  disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
                                 >
                                   {RU.clear}
                                 </ActionButton>
@@ -1137,7 +1223,10 @@ export function AdminCoursesPage() {
   const [courseModulesByCourseId, setCourseModulesByCourseId] = useState({});
   const [courseLessonsByModuleId, setCourseLessonsByModuleId] = useState({});
   const [lessonCreateFormsByModuleId, setLessonCreateFormsByModuleId] = useState({});
+  const [lessonEditFormsByLessonId, setLessonEditFormsByLessonId] = useState({});
+  const [editingLessonId, setEditingLessonId] = useState("");
   const [lessonCreatingModuleId, setLessonCreatingModuleId] = useState("");
+  const [lessonActionId, setLessonActionId] = useState("");
   const [moduleCreateFormsByCourseId, setModuleCreateFormsByCourseId] = useState({});
   const [moduleEditFormsByModuleId, setModuleEditFormsByModuleId] = useState({});
   const [editingModuleId, setEditingModuleId] = useState("");
@@ -1238,7 +1327,10 @@ export function AdminCoursesPage() {
       setCourseModulesByCourseId({});
       setCourseLessonsByModuleId({});
       setLessonCreateFormsByModuleId({});
+      setLessonEditFormsByLessonId({});
+      setEditingLessonId("");
       setLessonCreatingModuleId("");
+      setLessonActionId("");
       setModuleCreateFormsByCourseId({});
       setModuleEditFormsByModuleId({});
       setEditingModuleId("");
@@ -1408,6 +1500,8 @@ export function AdminCoursesPage() {
 
       setEditingModuleId("");
       setModuleEditFormsByModuleId({});
+      setEditingLessonId("");
+      setLessonEditFormsByLessonId({});
 
       setSuccessMessage(`${RU.deletedMessage}: ${course.title}`);
       await loadData(buildFilters());
@@ -1476,6 +1570,63 @@ export function AdminCoursesPage() {
       setError(formatCourseLessonApiError(err, RU.lessonCreateFailed));
     } finally {
       setLessonCreatingModuleId("");
+    }
+  }
+
+  function handleLessonEditStart(lesson) {
+    setError("");
+    setSuccessMessage("");
+    setEditingLessonId(lesson.id);
+    setLessonEditFormsByLessonId((current) => ({
+      ...current,
+      [lesson.id]: buildLessonEditForm(lesson),
+    }));
+  }
+
+  function updateLessonEditField(lessonId, field, value) {
+    setLessonEditFormsByLessonId((current) => ({
+      ...current,
+      [lessonId]: {
+        ...(current[lessonId] || EMPTY_LESSON_CREATE_FORM),
+        [field]: value,
+      },
+    }));
+  }
+
+  function resetLessonEditState() {
+    setEditingLessonId("");
+    setLessonEditFormsByLessonId({});
+  }
+
+  async function handleLessonEditSubmit(event, lesson) {
+    event.preventDefault();
+
+    const values = lessonEditFormsByLessonId[lesson.id] || buildLessonEditForm(lesson);
+
+    if (!values.title.trim()) {
+      setError(RU.lessonTitleRequired);
+      return;
+    }
+
+    if (normalizeModulePositionInput(values.position) === null) {
+      setError(RU.lessonPositionRequired);
+      return;
+    }
+
+    try {
+      setLessonActionId(lesson.id);
+      setError("");
+      setSuccessMessage("");
+
+      const updated = await updateAdminCourseLesson(lesson.id, buildLessonPayload(values));
+
+      resetLessonEditState();
+      setSuccessMessage(`${RU.lessonUpdatedMessage}: ${updated.title}`);
+      await loadData(buildFilters());
+    } catch (err) {
+      setError(formatCourseLessonApiError(err, RU.lessonUpdateFailed));
+    } finally {
+      setLessonActionId("");
     }
   }
 
@@ -1612,6 +1763,8 @@ export function AdminCoursesPage() {
       if (editingModuleId === module.id) {
         resetModuleEditState();
       }
+
+      resetLessonEditState();
 
       setSuccessMessage(`${RU.moduleDeletedMessage}: ${module.title}`);
       await loadData(buildFilters());
@@ -1791,7 +1944,10 @@ export function AdminCoursesPage() {
                 modules={courseModulesByCourseId[course.id] || []}
                 lessonsByModuleId={courseLessonsByModuleId}
                 lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
+                lessonEditFormsByLessonId={lessonEditFormsByLessonId}
+                editingLessonId={editingLessonId}
                 lessonCreatingModuleId={lessonCreatingModuleId}
+                lessonActionId={lessonActionId}
                 moduleCreateForm={
                   moduleCreateFormsByCourseId[course.id] ||
                   buildModuleCreateForm(courseModulesByCourseId[course.id] || [])
@@ -1820,6 +1976,10 @@ export function AdminCoursesPage() {
                 onLessonCreateFieldChange={updateLessonCreateField}
                 onLessonCreateSubmit={handleLessonCreateSubmit}
                 onLessonCreateReset={resetLessonCreateForm}
+                onLessonEditStart={handleLessonEditStart}
+                onLessonEditFieldChange={updateLessonEditField}
+                onLessonEditSubmit={handleLessonEditSubmit}
+                onLessonEditCancel={resetLessonEditState}
               />
             ))}
           </div>
