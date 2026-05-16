@@ -645,6 +645,223 @@ def main() -> int:
     assert isinstance(empty_course_module_update, dict)
     checks.append("admin course module empty update returns 400")
 
+    status, initial_course_lessons = request_json(
+        "GET",
+        f"/api/v1/admin/course-modules/{course_module_id}/lessons",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course lessons initial list")
+    assert isinstance(initial_course_lessons, list)
+    assert len(initial_course_lessons) == 0
+    checks.append("admin course lessons initial list ok")
+
+    status, created_course_lesson = request_json(
+        "POST",
+        f"/api/v1/admin/course-modules/{course_module_id}/lessons",
+        {
+            "title": "  Smoke Course Lesson 1  ",
+            "description": "  Smoke course lesson for admin CRUD coverage  ",
+            "content_type": "Text",
+            "content_url": "",
+            "content_text": "  Smoke lesson text content  ",
+            "position": 1,
+            "is_required": True,
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin course lesson create")
+    assert isinstance(created_course_lesson, dict)
+    assert created_course_lesson["id"]
+    assert created_course_lesson["module_id"] == course_module_id
+    assert created_course_lesson["title"] == "Smoke Course Lesson 1"
+    assert created_course_lesson["description"] == "Smoke course lesson for admin CRUD coverage"
+    assert created_course_lesson["content_type"] == "text"
+    assert created_course_lesson["content_url"] is None
+    assert created_course_lesson["content_text"] == "Smoke lesson text content"
+    assert created_course_lesson["position"] == 1
+    assert created_course_lesson["is_required"] is True
+    assert created_course_lesson["is_active"] is True
+    course_lesson_id = str(created_course_lesson["id"])
+    checks.append("admin course lesson create ok")
+
+    status, listed_course_lessons = request_json(
+        "GET",
+        f"/api/v1/admin/course-modules/{course_module_id}/lessons",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course lessons list")
+    assert isinstance(listed_course_lessons, list)
+    assert any(
+        isinstance(lesson, dict) and str(lesson.get("id")) == course_lesson_id
+        for lesson in listed_course_lessons
+    )
+    checks.append("admin course lessons list ok")
+
+    status, active_course_lessons = request_json(
+        "GET",
+        f"/api/v1/admin/course-modules/{course_module_id}/lessons?is_active=true",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course lessons active filter")
+    assert isinstance(active_course_lessons, list)
+    assert any(
+        isinstance(lesson, dict) and str(lesson.get("id")) == course_lesson_id
+        for lesson in active_course_lessons
+    )
+    checks.append("admin course lessons active filter ok")
+
+    status, text_course_lessons = request_json(
+        "GET",
+        f"/api/v1/admin/course-modules/{course_module_id}/lessons?content_type=text",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course lessons content type filter")
+    assert isinstance(text_course_lessons, list)
+    assert any(
+        isinstance(lesson, dict) and str(lesson.get("id")) == course_lesson_id
+        for lesson in text_course_lessons
+    )
+    checks.append("admin course lessons content type filter ok")
+
+    status, course_lesson_detail = request_json(
+        "GET",
+        f"/api/v1/admin/course-lessons/{course_lesson_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course lesson detail")
+    assert isinstance(course_lesson_detail, dict)
+    assert course_lesson_detail["id"] == course_lesson_id
+    assert course_lesson_detail["module_id"] == course_module_id
+    checks.append("admin course lesson detail ok")
+
+    status, updated_course_lesson = request_json(
+        "PATCH",
+        f"/api/v1/admin/course-lessons/{course_lesson_id}",
+        {
+            "title": "Smoke Course Lesson 1 Updated",
+            "description": "Updated smoke course lesson",
+            "content_type": "link",
+            "content_url": "  https://example.com/smoke-lesson  ",
+            "content_text": "",
+            "position": 2,
+            "is_required": False,
+            "is_active": False,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course lesson update")
+    assert isinstance(updated_course_lesson, dict)
+    assert updated_course_lesson["id"] == course_lesson_id
+    assert updated_course_lesson["title"] == "Smoke Course Lesson 1 Updated"
+    assert updated_course_lesson["description"] == "Updated smoke course lesson"
+    assert updated_course_lesson["content_type"] == "link"
+    assert updated_course_lesson["content_url"] == "https://example.com/smoke-lesson"
+    assert updated_course_lesson["content_text"] is None
+    assert updated_course_lesson["position"] == 2
+    assert updated_course_lesson["is_required"] is False
+    assert updated_course_lesson["is_active"] is False
+    checks.append("admin course lesson update ok")
+
+    status, inactive_course_lessons = request_json(
+        "GET",
+        f"/api/v1/admin/course-modules/{course_module_id}/lessons?is_active=false",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course lessons inactive filter")
+    assert isinstance(inactive_course_lessons, list)
+    assert any(
+        isinstance(lesson, dict) and str(lesson.get("id")) == course_lesson_id
+        for lesson in inactive_course_lessons
+    )
+    checks.append("admin course lessons inactive filter ok")
+
+    status, link_course_lessons = request_json(
+        "GET",
+        f"/api/v1/admin/course-modules/{course_module_id}/lessons?content_type=link",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course lessons updated content type filter")
+    assert isinstance(link_course_lessons, list)
+    assert any(
+        isinstance(lesson, dict) and str(lesson.get("id")) == course_lesson_id
+        for lesson in link_course_lessons
+    )
+    checks.append("admin course lessons updated content type filter ok")
+
+    status, duplicate_course_lesson = request_json(
+        "POST",
+        f"/api/v1/admin/course-modules/{course_module_id}/lessons",
+        {
+            "title": "Smoke Duplicate Course Lesson Position",
+            "description": "Duplicate position should be rejected",
+            "content_type": "text",
+            "position": 2,
+            "is_required": True,
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 409, "admin duplicate course lesson position")
+    assert isinstance(duplicate_course_lesson, dict)
+    checks.append("admin duplicate course lesson position returns 409")
+
+    status, invalid_course_lesson_type = request_json(
+        "POST",
+        f"/api/v1/admin/course-modules/{course_module_id}/lessons",
+        {
+            "title": "Smoke Invalid Course Lesson Type",
+            "description": "Unsupported content type should be rejected",
+            "content_type": "unsupported",
+            "position": 3,
+            "is_required": True,
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 422, "admin invalid course lesson content type")
+    assert isinstance(invalid_course_lesson_type, dict)
+    checks.append("admin invalid course lesson content type returns 422")
+
+    status, empty_course_lesson_update = request_json(
+        "PATCH",
+        f"/api/v1/admin/course-lessons/{course_lesson_id}",
+        {},
+        token=admin_token,
+    )
+    assert_status(status, 400, "admin course lesson empty update")
+    assert isinstance(empty_course_lesson_update, dict)
+    checks.append("admin course lesson empty update returns 400")
+
+    status, deleted_course_lesson = request_json(
+        "DELETE",
+        f"/api/v1/admin/course-lessons/{course_lesson_id}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin course lesson delete")
+    assert isinstance(deleted_course_lesson, dict)
+    assert deleted_course_lesson["status"] == "deleted"
+    assert deleted_course_lesson["id"] == course_lesson_id
+    checks.append("admin course lesson delete ok")
+
+    status, deleted_course_lesson_detail = request_json(
+        "GET",
+        f"/api/v1/admin/course-lessons/{course_lesson_id}",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin deleted course lesson detail")
+    assert isinstance(deleted_course_lesson_detail, dict)
+    checks.append("admin deleted course lesson detail returns 404")
+
+    status, missing_course_lesson_delete = request_json(
+        "DELETE",
+        "/api/v1/admin/course-lessons/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin course lesson delete 404")
+    assert isinstance(missing_course_lesson_delete, dict)
+    checks.append("admin course lesson delete 404 ok")
+
     status, deleted_course_module = request_json(
         "DELETE",
         f"/api/v1/admin/course-modules/{course_module_id}",

@@ -18,6 +18,7 @@ from app.core.security import get_password_hash
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
 from app.models.course import Course
+from app.models.course_lesson import CourseLesson
 from app.models.course_module import CourseModule
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
@@ -38,6 +39,10 @@ from app.schemas.admin import (
     AdminCourseCreate,
     AdminCourseDetail,
     AdminCourseItem,
+    AdminCourseLessonCreate,
+    AdminCourseLessonDetail,
+    AdminCourseLessonItem,
+    AdminCourseLessonUpdate,
     AdminCourseModuleCreate,
     AdminCourseModuleDetail,
     AdminCourseModuleItem,
@@ -3153,6 +3158,343 @@ async def delete_admin_course_module(
     await session.commit()
 
     return AdminDeleteResult(status="deleted", id=deleted_module_id)
+
+ADMIN_COURSE_LESSON_CONTENT_TYPES = {
+    "text",
+    "video",
+    "file",
+    "link",
+    "assignment",
+}
+
+
+def normalize_course_lesson_content_type(value: str) -> str:
+    normalized = value.strip().lower()
+
+    if normalized not in ADMIN_COURSE_LESSON_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported course lesson content type",
+        )
+
+    return normalized
+
+
+def normalize_course_lesson_create_data(data: dict) -> dict:
+    normalized = dict(data)
+    normalized["title"] = normalized["title"].strip()
+    normalized["description"] = normalize_optional_text(normalized.get("description"))
+    normalized["content_type"] = normalize_course_lesson_content_type(
+        normalized.get("content_type") or "text"
+    )
+    normalized["content_url"] = normalize_optional_text(normalized.get("content_url"))
+    normalized["content_text"] = normalize_optional_text(normalized.get("content_text"))
+
+    if not normalized["title"]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Course lesson title is required",
+        )
+
+    return normalized
+
+
+def normalize_course_lesson_update_data(data: dict) -> dict:
+    normalized = dict(data)
+
+    if "title" in normalized:
+        if normalized["title"] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Course lesson title is required",
+            )
+
+        normalized["title"] = normalized["title"].strip()
+
+        if not normalized["title"]:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Course lesson title is required",
+            )
+
+    if "description" in normalized:
+        normalized["description"] = normalize_optional_text(normalized["description"])
+
+    if "content_type" in normalized:
+        if normalized["content_type"] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Course lesson content type is required",
+            )
+
+        normalized["content_type"] = normalize_course_lesson_content_type(
+            normalized["content_type"]
+        )
+
+    if "content_url" in normalized:
+        normalized["content_url"] = normalize_optional_text(normalized["content_url"])
+
+    if "content_text" in normalized:
+        normalized["content_text"] = normalize_optional_text(normalized["content_text"])
+
+    if "position" in normalized and normalized["position"] is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Course lesson position is required",
+        )
+
+    if "is_required" in normalized and normalized["is_required"] is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Course lesson required flag is required",
+        )
+
+    if "is_active" in normalized and normalized["is_active"] is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Course lesson active flag is required",
+        )
+
+    return normalized
+
+
+def build_admin_course_lesson_item(lesson: CourseLesson) -> AdminCourseLessonItem:
+    return AdminCourseLessonItem(
+        id=str(lesson.id),
+        module_id=str(lesson.module_id),
+        title=lesson.title,
+        description=lesson.description,
+        content_type=lesson.content_type,
+        content_url=lesson.content_url,
+        content_text=lesson.content_text,
+        position=lesson.position,
+        is_required=lesson.is_required,
+        is_active=lesson.is_active,
+    )
+
+
+def build_admin_course_lesson_detail(lesson: CourseLesson) -> AdminCourseLessonDetail:
+    return AdminCourseLessonDetail(
+        id=str(lesson.id),
+        module_id=str(lesson.module_id),
+        title=lesson.title,
+        description=lesson.description,
+        content_type=lesson.content_type,
+        content_url=lesson.content_url,
+        content_text=lesson.content_text,
+        position=lesson.position,
+        is_required=lesson.is_required,
+        is_active=lesson.is_active,
+        created_at=lesson.created_at,
+        updated_at=lesson.updated_at,
+    )
+
+
+def course_lesson_snapshot(lesson: CourseLesson) -> dict:
+    return {
+        "id": str(lesson.id),
+        "module_id": str(lesson.module_id),
+        "title": lesson.title,
+        "description": lesson.description,
+        "content_type": lesson.content_type,
+        "content_url": lesson.content_url,
+        "content_text": lesson.content_text,
+        "position": lesson.position,
+        "is_required": lesson.is_required,
+        "is_active": lesson.is_active,
+    }
+
+
+async def get_admin_course_lesson_or_404(
+    lesson_id: str,
+    session: AsyncSession,
+) -> CourseLesson:
+    result = await session.execute(
+        select(CourseLesson).where(CourseLesson.id == lesson_id)
+    )
+    lesson = result.scalar_one_or_none()
+
+    if lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course lesson not found",
+        )
+
+    return lesson
+
+
+@router.get("/course-modules/{module_id}/lessons", response_model=list[AdminCourseLessonItem])
+async def list_admin_course_lessons(
+    module_id: str,
+    is_active: bool | None = Query(default=None),
+    content_type: str | None = Query(default=None),
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminCourseLessonItem]:
+    module = await get_admin_course_module_or_404(module_id, session)
+
+    query = (
+        select(CourseLesson)
+        .where(CourseLesson.module_id == module.id)
+        .order_by(CourseLesson.position.asc(), CourseLesson.title.asc())
+    )
+
+    if is_active is not None:
+        query = query.where(CourseLesson.is_active == is_active)
+
+    if content_type:
+        query = query.where(
+            CourseLesson.content_type == normalize_course_lesson_content_type(content_type)
+        )
+
+    result = await session.execute(query)
+    lessons = result.scalars().all()
+
+    return [
+        build_admin_course_lesson_item(lesson)
+        for lesson in lessons
+    ]
+
+
+@router.post(
+    "/course-modules/{module_id}/lessons",
+    response_model=AdminCourseLessonDetail,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_admin_course_lesson(
+    module_id: str,
+    payload: AdminCourseLessonCreate,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseLessonDetail:
+    module = await get_admin_course_module_or_404(module_id, session)
+    data = normalize_course_lesson_create_data(model_to_dict(payload))
+
+    lesson = CourseLesson(
+        module_id=module.id,
+        **data,
+    )
+    session.add(lesson)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.course_lesson_created",
+            entity_type="course_lesson",
+            entity_id=str(lesson.id),
+            payload={
+                "course_module": course_module_snapshot(module),
+                "course_lesson": course_lesson_snapshot(lesson),
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Course lesson position already exists in this module",
+        ) from exc
+
+    return build_admin_course_lesson_detail(lesson)
+
+
+@router.get("/course-lessons/{lesson_id}", response_model=AdminCourseLessonDetail)
+async def get_admin_course_lesson_detail(
+    lesson_id: str,
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseLessonDetail:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+
+    return build_admin_course_lesson_detail(lesson)
+
+
+@router.patch("/course-lessons/{lesson_id}", response_model=AdminCourseLessonDetail)
+async def update_admin_course_lesson(
+    lesson_id: str,
+    payload: AdminCourseLessonUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseLessonDetail:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    data = normalize_course_lesson_update_data(model_to_dict(payload, exclude_unset=True))
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+
+    before = course_lesson_snapshot(lesson)
+
+    for field, value in data.items():
+        setattr(lesson, field, value)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.course_lesson_updated",
+            entity_type="course_lesson",
+            entity_id=str(lesson.id),
+            payload={
+                "before": before,
+                "after": course_lesson_snapshot(lesson),
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Course lesson position already exists in this module",
+        ) from exc
+
+    return build_admin_course_lesson_detail(lesson)
+
+
+@router.delete("/course-lessons/{lesson_id}", response_model=AdminDeleteResult)
+async def delete_admin_course_lesson(
+    lesson_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDeleteResult:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+
+    deleted_lesson_id = str(lesson.id)
+    before = course_lesson_snapshot(lesson)
+
+    await session.delete(lesson)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.course_lesson_deleted",
+        entity_type="course_lesson",
+        entity_id=deleted_lesson_id,
+        payload={
+            "before": before,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return AdminDeleteResult(status="deleted", id=deleted_lesson_id)
+
 
 ADMIN_ENROLLMENT_STATUSES = {
     "assigned",
