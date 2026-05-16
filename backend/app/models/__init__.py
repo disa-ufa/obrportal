@@ -1,6 +1,7 @@
 from app.models.audit_event import AuditEvent
 from app.models.course import Course
 from app.models.course_module import CourseModule
+from app.models.course_lesson import CourseLesson
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup, LearningGroupMember
@@ -12,6 +13,7 @@ __all__ = [
     "AuditEvent",
     "Course",
     "CourseModule",
+    "CourseLesson",
     "DocumentRecord",
     "Enrollment",
     "LearningGroup",
