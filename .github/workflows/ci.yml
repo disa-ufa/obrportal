@@ -123,6 +123,7 @@ jobs:
           python scripts/smoke_frontend_api_client.py
           python scripts/smoke_frontend_admin_pages.py
           python scripts/smoke_frontend_admin_detail_components.py
+          python scripts/smoke_frontend_document_account_flows.py
 
       - name: Build frontend
         run: |
