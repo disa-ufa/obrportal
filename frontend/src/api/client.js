@@ -585,6 +585,46 @@ export async function deleteAdminCourse(courseId) {
   });
 }
 
+export async function getAdminCourseModules(courseId, filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/admin/courses/${courseId}/modules${query ? `?${query}` : ""}`);
+}
+
+export async function createAdminCourseModule(courseId, payload) {
+  return request(`/api/v1/admin/courses/${courseId}/modules`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getAdminCourseModuleDetail(moduleId) {
+  return request(`/api/v1/admin/course-modules/${moduleId}`);
+}
+
+export async function updateAdminCourseModule(moduleId, payload) {
+  return request(`/api/v1/admin/course-modules/${moduleId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminCourseModule(moduleId) {
+  return request(`/api/v1/admin/course-modules/${moduleId}`, {
+    method: "DELETE",
+  });
+}
+
 
 export async function getAdminEnrollments(filters = {}) {
   const params = new URLSearchParams();
