@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   activateAdminCourse,
   createAdminCourse,
+  createAdminCourseLesson,
   createAdminCourseModule,
   deactivateAdminCourse,
   deleteAdminCourse,
@@ -112,6 +113,22 @@ const RU = {
   lessonTypeFile: "\u0424\u0430\u0439\u043b",
   lessonTypeLink: "\u0421\u0441\u044b\u043b\u043a\u0430",
   lessonTypeAssignment: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435",
+  addLesson: "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0443\u0440\u043e\u043a",
+  createLesson: "\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0443\u0440\u043e\u043a",
+  lessonTitle: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430",
+  lessonTitlePlaceholder: "\u0412\u0432\u043e\u0434\u043d\u044b\u0439 \u0443\u0440\u043e\u043a",
+  lessonDescription: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430",
+  lessonDescriptionPlaceholder: "\u041a\u0440\u0430\u0442\u043a\u043e\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0437\u0430\u043d\u044f\u0442\u0438\u044f",
+  lessonContentType: "\u0422\u0438\u043f \u043a\u043e\u043d\u0442\u0435\u043d\u0442\u0430",
+  lessonContentUrlPlaceholder: "https://example.com/material",
+  lessonContentTextPlaceholder: "\u0422\u0435\u043a\u0441\u0442 \u0443\u0440\u043e\u043a\u0430 \u0438\u043b\u0438 \u0438\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f",
+  lessonPosition: "\u041f\u043e\u0437\u0438\u0446\u0438\u044f",
+  lessonCreatedMessage: "\u0423\u0440\u043e\u043a \u0441\u043e\u0437\u0434\u0430\u043d",
+  lessonCreateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0443\u0440\u043e\u043a.",
+  lessonTitleRequired: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430.",
+  lessonPositionRequired: "\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u043e\u0437\u0438\u0446\u0438\u044e \u0443\u0440\u043e\u043a\u0430.",
+  lessonPositionDuplicate: "\u0423\u0440\u043e\u043a \u0441 \u0442\u0430\u043a\u043e\u0439 \u043f\u043e\u0437\u0438\u0446\u0438\u0435\u0439 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u044d\u0442\u043e\u043c \u043c\u043e\u0434\u0443\u043b\u0435.",
+  lessonIsRequiredLabel: "\u0423\u0440\u043e\u043a \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u0435\u043d \u0434\u043b\u044f \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f",
   addModule: "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c",
   createModule: "\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c",
   moduleTitle: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f",
@@ -190,6 +207,17 @@ const EMPTY_MODULE_CREATE_FORM = {
   title: "",
   description: "",
   position: "",
+  is_active: true,
+};
+
+const EMPTY_LESSON_CREATE_FORM = {
+  title: "",
+  description: "",
+  content_type: "text",
+  content_url: "",
+  content_text: "",
+  position: "",
+  is_required: true,
   is_active: true,
 };
 
@@ -492,6 +520,37 @@ function CourseModuleFormFields({ values, onChange, prefix = "" }) {
   );
 }
 
+function buildLessonCreateForm(lessons) {
+  const nextPosition = Array.isArray(lessons)
+    ? lessons.reduce((maxPosition, lesson) => Math.max(maxPosition, Number(lesson.position) || 0), 0) + 1
+    : 1;
+
+  return {
+    ...EMPTY_LESSON_CREATE_FORM,
+    position: `${nextPosition}`,
+  };
+}
+
+function formatCourseLessonApiError(err, fallback) {
+  const status = err?.status ? `${err.status}` : "";
+  const message = getApiErrorMessage(err);
+  const normalizedMessage = message.toLowerCase();
+
+  let readableMessage = fallback;
+
+  if (status === "403") {
+    readableMessage = RU.accessDenied;
+  } else if (status === "404") {
+    readableMessage = RU.moduleNotFound || RU.courseNotFound;
+  } else if (status === "409" && normalizedMessage.includes("position")) {
+    readableMessage = RU.lessonPositionDuplicate;
+  } else if (message) {
+    readableMessage = message;
+  }
+
+  return `${status} ${readableMessage}`.trim();
+}
+
 function getLessonContentTypeLabel(contentType) {
   const normalized = `${contentType || ""}`.toLowerCase();
 
@@ -506,10 +565,129 @@ function getLessonContentTypeLabel(contentType) {
   return labels[normalized] || normalized || "-";
 }
 
+function CourseLessonFormFields({ values, onChange, prefix = "" }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-[1fr_180px_140px]">
+      <label className="block md:col-span-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {RU.lessonTitle}
+        </span>
+        <input
+          id={`${prefix}lesson-title`}
+          type="text"
+          value={values.title}
+          onChange={(event) => onChange("title", event.target.value)}
+          placeholder={RU.lessonTitlePlaceholder}
+          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        />
+      </label>
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {RU.lessonPosition}
+        </span>
+        <input
+          id={`${prefix}lesson-position`}
+          type="number"
+          min="1"
+          max="10000"
+          value={values.position}
+          onChange={(event) => onChange("position", event.target.value)}
+          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        />
+      </label>
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {RU.lessonContentType}
+        </span>
+        <select
+          id={`${prefix}lesson-content-type`}
+          value={values.content_type}
+          onChange={(event) => onChange("content_type", event.target.value)}
+          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        >
+          <option value="text">{RU.lessonTypeText}</option>
+          <option value="video">{RU.lessonTypeVideo}</option>
+          <option value="file">{RU.lessonTypeFile}</option>
+          <option value="link">{RU.lessonTypeLink}</option>
+          <option value="assignment">{RU.lessonTypeAssignment}</option>
+        </select>
+      </label>
+
+      <label className="block md:col-span-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {RU.lessonContentUrl}
+        </span>
+        <input
+          id={`${prefix}lesson-content-url`}
+          type="text"
+          value={values.content_url}
+          onChange={(event) => onChange("content_url", event.target.value)}
+          placeholder={RU.lessonContentUrlPlaceholder}
+          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        />
+      </label>
+
+      <label className="block md:col-span-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {RU.lessonDescription}
+        </span>
+        <textarea
+          id={`${prefix}lesson-description`}
+          value={values.description}
+          onChange={(event) => onChange("description", event.target.value)}
+          rows={3}
+          placeholder={RU.lessonDescriptionPlaceholder}
+          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        />
+      </label>
+
+      <label className="block md:col-span-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {RU.lessonContentText}
+        </span>
+        <textarea
+          id={`${prefix}lesson-content-text`}
+          value={values.content_text}
+          onChange={(event) => onChange("content_text", event.target.value)}
+          rows={4}
+          placeholder={RU.lessonContentTextPlaceholder}
+          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        />
+      </label>
+
+      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 md:col-span-3">
+        <input
+          id={`${prefix}lesson-is-required`}
+          type="checkbox"
+          checked={values.is_required}
+          onChange={(event) => onChange("is_required", event.target.checked)}
+          className="h-4 w-4 rounded border-slate-300"
+        />
+        <span className="font-semibold">{RU.lessonIsRequiredLabel}</span>
+      </label>
+
+      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 md:col-span-3">
+        <input
+          id={`${prefix}lesson-is-active`}
+          type="checkbox"
+          checked={values.is_active}
+          onChange={(event) => onChange("is_active", event.target.checked)}
+          className="h-4 w-4 rounded border-slate-300"
+        />
+        <span className="font-semibold">{RU.active}</span>
+      </label>
+    </div>
+  );
+}
+
 function CourseCard({
   course,
   modules = [],
   lessonsByModuleId = {},
+  lessonCreateFormsByModuleId,
+  lessonCreatingModuleId,
   moduleCreateForm,
   moduleEditFormsByModuleId,
   editingModuleId,
@@ -532,6 +710,9 @@ function CourseCard({
   onModuleEditSubmit,
   onModuleEditCancel,
   onModuleDelete,
+  onLessonCreateFieldChange,
+  onLessonCreateSubmit,
+  onLessonCreateReset,
 }) {
   const courseModules = Array.isArray(modules) ? modules : [];
 
@@ -629,6 +810,10 @@ function CourseCard({
                   const moduleLessons = Array.isArray(lessonsByModuleId?.[module.id])
                     ? lessonsByModuleId[module.id]
                     : [];
+                  const lessonCreateForm =
+                    lessonCreateFormsByModuleId?.[module.id] ||
+                    buildLessonCreateForm(moduleLessons);
+                  const isLessonCreating = lessonCreatingModuleId === module.id;
 
                   return (
                     <div
@@ -731,6 +916,43 @@ function CourseCard({
                                 ))}
                               </div>
                             )}
+
+                            <form
+                              onSubmit={(event) => onLessonCreateSubmit(event, module, moduleLessons)}
+                              className="mt-4 space-y-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                            >
+                              <div>
+                                <h5 className="text-sm font-bold text-slate-900">
+                                  {RU.addLesson}
+                                </h5>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  POST /api/v1/admin/course-modules/{module.id}/lessons
+                                </p>
+                              </div>
+
+                              <CourseLessonFormFields
+                                values={lessonCreateForm}
+                                onChange={(field, value) =>
+                                  onLessonCreateFieldChange(module.id, field, value)
+                                }
+                                prefix={`module-${module.id}-lesson-create-`}
+                              />
+
+                              <div className="flex flex-wrap gap-3">
+                                <ActionButton type="submit" tone="blue" disabled={isLessonCreating}>
+                                  {isLessonCreating ? RU.saving : RU.createLesson}
+                                </ActionButton>
+
+                                <ActionButton
+                                  type="button"
+                                  tone="light"
+                                  onClick={() => onLessonCreateReset(module.id, moduleLessons)}
+                                  disabled={isLessonCreating}
+                                >
+                                  {RU.clear}
+                                </ActionButton>
+                              </div>
+                            </form>
                           </div>
 
                           <div className="mt-4 flex flex-wrap gap-3">
@@ -914,6 +1136,8 @@ export function AdminCoursesPage() {
   const [courses, setCourses] = useState([]);
   const [courseModulesByCourseId, setCourseModulesByCourseId] = useState({});
   const [courseLessonsByModuleId, setCourseLessonsByModuleId] = useState({});
+  const [lessonCreateFormsByModuleId, setLessonCreateFormsByModuleId] = useState({});
+  const [lessonCreatingModuleId, setLessonCreatingModuleId] = useState("");
   const [moduleCreateFormsByCourseId, setModuleCreateFormsByCourseId] = useState({});
   const [moduleEditFormsByModuleId, setModuleEditFormsByModuleId] = useState({});
   const [editingModuleId, setEditingModuleId] = useState("");
@@ -990,6 +1214,12 @@ export function AdminCoursesPage() {
         })
       );
       const nextLessonsByModuleId = Object.fromEntries(lessonEntries);
+      const nextLessonFormsByModuleId = Object.fromEntries(
+        allModules.map((module) => [
+          module.id,
+          buildLessonCreateForm(nextLessonsByModuleId[module.id] || []),
+        ])
+      );
       const nextModuleFormsByCourseId = Object.fromEntries(
         nextCourses.map((course) => [
           course.id,
@@ -1000,12 +1230,15 @@ export function AdminCoursesPage() {
       setCourses(nextCourses);
       setCourseModulesByCourseId(nextModulesByCourseId);
       setCourseLessonsByModuleId(nextLessonsByModuleId);
+      setLessonCreateFormsByModuleId(nextLessonFormsByModuleId);
       setModuleCreateFormsByCourseId(nextModuleFormsByCourseId);
       setCourseCounts(calculateCourseCounts(Array.isArray(countResponse) ? countResponse : []));
     } catch (err) {
       setError(formatCourseApiError(err, RU.loadFailed));
       setCourseModulesByCourseId({});
       setCourseLessonsByModuleId({});
+      setLessonCreateFormsByModuleId({});
+      setLessonCreatingModuleId("");
       setModuleCreateFormsByCourseId({});
       setModuleEditFormsByModuleId({});
       setEditingModuleId("");
@@ -1182,6 +1415,67 @@ export function AdminCoursesPage() {
       setError(formatCourseApiError(err, RU.deleteFailed));
     } finally {
       setActionCourseId("");
+    }
+  }
+
+  function updateLessonCreateField(moduleId, field, value) {
+    setLessonCreateFormsByModuleId((current) => ({
+      ...current,
+      [moduleId]: {
+        ...(current[moduleId] || EMPTY_LESSON_CREATE_FORM),
+        [field]: value,
+      },
+    }));
+  }
+
+  function resetLessonCreateForm(moduleId, lessons = []) {
+    setLessonCreateFormsByModuleId((current) => ({
+      ...current,
+      [moduleId]: buildLessonCreateForm(lessons),
+    }));
+  }
+
+  function buildLessonPayload(values) {
+    return {
+      title: values.title.trim(),
+      description: values.description.trim() || null,
+      content_type: values.content_type,
+      content_url: values.content_url.trim() || null,
+      content_text: values.content_text.trim() || null,
+      position: normalizeModulePositionInput(values.position),
+      is_required: Boolean(values.is_required),
+      is_active: Boolean(values.is_active),
+    };
+  }
+
+  async function handleLessonCreateSubmit(event, module, lessons = []) {
+    event.preventDefault();
+
+    const values = lessonCreateFormsByModuleId[module.id] || buildLessonCreateForm(lessons);
+
+    if (!values.title.trim()) {
+      setError(RU.lessonTitleRequired);
+      return;
+    }
+
+    if (normalizeModulePositionInput(values.position) === null) {
+      setError(RU.lessonPositionRequired);
+      return;
+    }
+
+    try {
+      setLessonCreatingModuleId(module.id);
+      setError("");
+      setSuccessMessage("");
+
+      const created = await createAdminCourseLesson(module.id, buildLessonPayload(values));
+
+      setSuccessMessage(`${RU.lessonCreatedMessage}: ${created.title}`);
+      await loadData(buildFilters());
+    } catch (err) {
+      setError(formatCourseLessonApiError(err, RU.lessonCreateFailed));
+    } finally {
+      setLessonCreatingModuleId("");
     }
   }
 
@@ -1496,6 +1790,8 @@ export function AdminCoursesPage() {
                 course={course}
                 modules={courseModulesByCourseId[course.id] || []}
                 lessonsByModuleId={courseLessonsByModuleId}
+                lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
+                lessonCreatingModuleId={lessonCreatingModuleId}
                 moduleCreateForm={
                   moduleCreateFormsByCourseId[course.id] ||
                   buildModuleCreateForm(courseModulesByCourseId[course.id] || [])
@@ -1521,6 +1817,9 @@ export function AdminCoursesPage() {
                 onModuleEditSubmit={handleModuleEditSubmit}
                 onModuleEditCancel={resetModuleEditState}
                 onModuleDelete={handleModuleDelete}
+                onLessonCreateFieldChange={updateLessonCreateField}
+                onLessonCreateSubmit={handleLessonCreateSubmit}
+                onLessonCreateReset={resetLessonCreateForm}
               />
             ))}
           </div>
