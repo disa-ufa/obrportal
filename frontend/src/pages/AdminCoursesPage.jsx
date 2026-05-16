@@ -7,6 +7,7 @@ import {
   createAdminCourseModule,
   deactivateAdminCourse,
   deleteAdminCourse,
+  deleteAdminCourseModule,
   getAdminCourseModules,
   getAdminCourses,
   updateAdminCourse,
@@ -104,8 +105,11 @@ const RU = {
   modulePosition: "\u041f\u043e\u0437\u0438\u0446\u0438\u044f",
   moduleCreatedMessage: "\u041c\u043e\u0434\u0443\u043b\u044c \u0441\u043e\u0437\u0434\u0430\u043d",
   moduleUpdatedMessage: "\u041c\u043e\u0434\u0443\u043b\u044c \u043e\u0431\u043d\u043e\u0432\u043b\u0451\u043d",
+  moduleDeletedMessage: "\u041c\u043e\u0434\u0443\u043b\u044c \u0443\u0434\u0430\u043b\u0451\u043d",
   moduleCreateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c.",
   moduleUpdateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c.",
+  moduleDeleteFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c.",
+  moduleDeleteConfirmPrefix: "\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c",
   moduleTitleRequired: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f.",
   modulePositionRequired: "\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u043e\u0437\u0438\u0446\u0438\u044e \u043c\u043e\u0434\u0443\u043b\u044f.",
   modulePositionDuplicate: "\u041c\u043e\u0434\u0443\u043b\u044c \u0441 \u0442\u0430\u043a\u043e\u0439 \u043f\u043e\u0437\u0438\u0446\u0438\u0435\u0439 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u044d\u0442\u043e\u043c \u043a\u0443\u0440\u0441\u0435.",
@@ -496,6 +500,7 @@ function CourseCard({
   onModuleEditFieldChange,
   onModuleEditSubmit,
   onModuleEditCancel,
+  onModuleDelete,
 }) {
   const courseModules = Array.isArray(modules) ? modules : [];
 
@@ -625,6 +630,15 @@ function CourseCard({
                               disabled={isModuleCreating || Boolean(moduleActionId)}
                             >
                               {RU.edit}
+                            </ActionButton>
+
+                            <ActionButton
+                              type="button"
+                              tone="red"
+                              onClick={() => onModuleDelete(module)}
+                              disabled={isModuleCreating || Boolean(moduleActionId)}
+                            >
+                              {RU.delete}
                             </ActionButton>
                           </div>
                         </>
@@ -1163,6 +1177,35 @@ export function AdminCoursesPage() {
     }
   }
 
+  async function handleModuleDelete(module) {
+    const confirmed = window.confirm(
+      `${RU.moduleDeleteConfirmPrefix} "${module.title}"? ${RU.deleteConfirmSuffix}`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setModuleActionId(module.id);
+      setError("");
+      setSuccessMessage("");
+
+      await deleteAdminCourseModule(module.id);
+
+      if (editingModuleId === module.id) {
+        resetModuleEditState();
+      }
+
+      setSuccessMessage(`${RU.moduleDeletedMessage}: ${module.title}`);
+      await loadData(buildFilters());
+    } catch (err) {
+      setError(formatCourseModuleApiError(err, RU.moduleDeleteFailed));
+    } finally {
+      setModuleActionId("");
+    }
+  }
+
   async function handleApplyFilter(event) {
     event.preventDefault();
     await navigateToCourseFilters(buildFilters());
@@ -1354,6 +1397,7 @@ export function AdminCoursesPage() {
                 onModuleEditFieldChange={updateModuleEditField}
                 onModuleEditSubmit={handleModuleEditSubmit}
                 onModuleEditCancel={resetModuleEditState}
+                onModuleDelete={handleModuleDelete}
               />
             ))}
           </div>
