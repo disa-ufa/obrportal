@@ -8,6 +8,7 @@ import {
   createAdminCourseModule,
   deactivateAdminCourse,
   deleteAdminCourse,
+  deleteAdminCourseLesson,
   deleteAdminCourseModule,
   getAdminCourseLessons,
   getAdminCourseModules,
@@ -126,8 +127,10 @@ const RU = {
   lessonPosition: "\u041f\u043e\u0437\u0438\u0446\u0438\u044f",
   lessonCreatedMessage: "\u0423\u0440\u043e\u043a \u0441\u043e\u0437\u0434\u0430\u043d",
   lessonUpdatedMessage: "\u0423\u0440\u043e\u043a \u043e\u0431\u043d\u043e\u0432\u043b\u0451\u043d",
+  lessonDeletedMessage: "\u0423\u0440\u043e\u043a \u0443\u0434\u0430\u043b\u0451\u043d",
   lessonCreateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0443\u0440\u043e\u043a.",
   lessonUpdateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0443\u0440\u043e\u043a.",
+  lessonDeleteFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0440\u043e\u043a.",
   lessonTitleRequired: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430.",
   lessonPositionRequired: "\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u043e\u0437\u0438\u0446\u0438\u044e \u0443\u0440\u043e\u043a\u0430.",
   lessonPositionDuplicate: "\u0423\u0440\u043e\u043a \u0441 \u0442\u0430\u043a\u043e\u0439 \u043f\u043e\u0437\u0438\u0446\u0438\u0435\u0439 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c \u0432 \u044d\u0442\u043e\u043c \u043c\u043e\u0434\u0443\u043b\u0435.",
@@ -736,6 +739,7 @@ function CourseCard({
   onLessonEditFieldChange,
   onLessonEditSubmit,
   onLessonEditCancel,
+  onLessonDelete,
 }) {
   const courseModules = Array.isArray(modules) ? modules : [];
 
@@ -957,6 +961,19 @@ function CourseCard({
                                               }
                                             >
                                               {RU.edit}
+                                            </ActionButton>
+
+                                            <ActionButton
+                                              type="button"
+                                              tone="red"
+                                              onClick={() => onLessonDelete(lesson)}
+                                              disabled={
+                                                isLessonCreating ||
+                                                Boolean(editingLessonId) ||
+                                                Boolean(lessonActionId)
+                                              }
+                                            >
+                                              {RU.delete}
                                             </ActionButton>
                                           </div>
                                         </>
@@ -1630,6 +1647,35 @@ export function AdminCoursesPage() {
     }
   }
 
+  async function handleLessonDelete(lesson) {
+    const confirmed = window.confirm(
+      `${RU.deleteConfirmPrefix} "${lesson.title}"? ${RU.deleteConfirmSuffix}`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setLessonActionId(lesson.id);
+      setError("");
+      setSuccessMessage("");
+
+      await deleteAdminCourseLesson(lesson.id);
+
+      if (editingLessonId === lesson.id) {
+        resetLessonEditState();
+      }
+
+      setSuccessMessage(`${RU.lessonDeletedMessage}: ${lesson.title}`);
+      await loadData(buildFilters());
+    } catch (err) {
+      setError(formatCourseLessonApiError(err, RU.lessonDeleteFailed));
+    } finally {
+      setLessonActionId("");
+    }
+  }
+
   function updateModuleCreateField(courseId, field, value) {
     setModuleCreateFormsByCourseId((current) => ({
       ...current,
@@ -1980,6 +2026,7 @@ export function AdminCoursesPage() {
                 onLessonEditFieldChange={updateLessonEditField}
                 onLessonEditSubmit={handleLessonEditSubmit}
                 onLessonEditCancel={resetLessonEditState}
+                onLessonDelete={handleLessonDelete}
               />
             ))}
           </div>
