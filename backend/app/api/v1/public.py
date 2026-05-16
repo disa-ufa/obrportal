@@ -8,10 +8,18 @@ from fastapi import Depends
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.course import Course
+from app.models.course_lesson import CourseLesson
+from app.models.course_module import CourseModule
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.user import User
-from app.schemas.public import PublicCourseDetailResponse, PublicCourseItemResponse, PublicDocumentVerifyResponse
+from app.schemas.public import (
+    PublicCourseDetailResponse,
+    PublicCourseItemResponse,
+    PublicCourseLessonResponse,
+    PublicCourseModuleResponse,
+    PublicDocumentVerifyResponse,
+)
 
 
 router = APIRouter(prefix="/public", tags=["public"])
@@ -31,7 +39,38 @@ def build_public_course_item(course: Course) -> PublicCourseItemResponse:
     )
 
 
-def build_public_course_detail(course: Course) -> PublicCourseDetailResponse:
+def build_public_course_lesson(lesson: CourseLesson) -> PublicCourseLessonResponse:
+    return PublicCourseLessonResponse(
+        id=str(lesson.id),
+        module_id=str(lesson.module_id),
+        title=lesson.title,
+        description=lesson.description,
+        content_type=lesson.content_type,
+        content_url=lesson.content_url,
+        content_text=lesson.content_text,
+        position=lesson.position,
+        is_required=lesson.is_required,
+    )
+
+
+def build_public_course_module(
+    module: CourseModule,
+    lessons: list[CourseLesson],
+) -> PublicCourseModuleResponse:
+    return PublicCourseModuleResponse(
+        id=str(module.id),
+        course_id=str(module.course_id),
+        title=module.title,
+        description=module.description,
+        position=module.position,
+        lessons=[build_public_course_lesson(lesson) for lesson in lessons],
+    )
+
+
+def build_public_course_detail(
+    course: Course,
+    modules: list[PublicCourseModuleResponse] | None = None,
+) -> PublicCourseDetailResponse:
     return PublicCourseDetailResponse(
         id=str(course.id),
         slug=course.slug,
@@ -40,7 +79,58 @@ def build_public_course_detail(course: Course) -> PublicCourseDetailResponse:
         hours=course.hours,
         format=course.format,
         document_type=course.document_type,
+        modules=modules or [],
     )
+
+
+async def load_public_course_modules(
+    session: AsyncSession,
+    course_id: str,
+) -> list[PublicCourseModuleResponse]:
+    modules_result = await session.execute(
+        select(CourseModule)
+        .where(
+            CourseModule.course_id == course_id,
+            CourseModule.is_active.is_(True),
+        )
+        .order_by(CourseModule.position.asc(), CourseModule.title.asc())
+    )
+    modules = list(modules_result.scalars().all())
+
+    if not modules:
+        return []
+
+    module_ids = [module.id for module in modules]
+
+    lessons_result = await session.execute(
+        select(CourseLesson)
+        .where(
+            CourseLesson.module_id.in_(module_ids),
+            CourseLesson.is_active.is_(True),
+        )
+        .order_by(
+            CourseLesson.module_id.asc(),
+            CourseLesson.position.asc(),
+            CourseLesson.title.asc(),
+        )
+    )
+    lessons = list(lessons_result.scalars().all())
+
+    lessons_by_module_id: dict[str, list[CourseLesson]] = {
+        str(module.id): []
+        for module in modules
+    }
+
+    for lesson in lessons:
+        lessons_by_module_id.setdefault(str(lesson.module_id), []).append(lesson)
+
+    return [
+        build_public_course_module(
+            module,
+            lessons_by_module_id.get(str(module.id), []),
+        )
+        for module in modules
+    ]
 
 
 @router.get("/courses", response_model=list[PublicCourseItemResponse])
@@ -98,7 +188,9 @@ async def get_public_course_detail(
             detail="Course not found",
         )
 
-    return build_public_course_detail(course)
+    modules = await load_public_course_modules(session, str(course.id))
+
+    return build_public_course_detail(course, modules)
 
 @router.get("/documents/verify", response_model=PublicDocumentVerifyResponse)
 async def verify_document(

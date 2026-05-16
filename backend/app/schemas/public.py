@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PublicDocumentVerifyResponse(BaseModel):
@@ -39,5 +39,27 @@ class PublicCourseItemResponse(BaseModel):
     document_type: str | None = None
 
 
+class PublicCourseLessonResponse(BaseModel):
+    id: str
+    module_id: str
+    title: str
+    description: str | None = None
+    content_type: str
+    content_url: str | None = None
+    content_text: str | None = None
+    position: int
+    is_required: bool
+
+
+class PublicCourseModuleResponse(BaseModel):
+    id: str
+    course_id: str
+    title: str
+    description: str | None = None
+    position: int
+    lessons: list[PublicCourseLessonResponse] = Field(default_factory=list)
+
+
 class PublicCourseDetailResponse(PublicCourseItemResponse):
-    pass
+    modules: list[PublicCourseModuleResponse] = Field(default_factory=list)
+
