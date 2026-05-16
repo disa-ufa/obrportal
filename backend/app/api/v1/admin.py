@@ -18,6 +18,7 @@ from app.core.security import get_password_hash
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
 from app.models.course import Course
+from app.models.course_module import CourseModule
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup, LearningGroupMember
@@ -37,6 +38,10 @@ from app.schemas.admin import (
     AdminCourseCreate,
     AdminCourseDetail,
     AdminCourseItem,
+    AdminCourseModuleCreate,
+    AdminCourseModuleDetail,
+    AdminCourseModuleItem,
+    AdminCourseModuleUpdate,
     AdminCourseUpdate,
     AdminEnrollmentBulkCreateResult,
     AdminEnrollmentBulkSkippedItem,
@@ -2894,6 +2899,260 @@ async def delete_admin_course(
 
     return AdminDeleteResult(status="deleted", id=deleted_course_id)
 
+
+
+def normalize_course_module_create_data(data: dict) -> dict:
+    normalized = dict(data)
+    normalized["title"] = normalized["title"].strip()
+    normalized["description"] = normalize_optional_text(normalized.get("description"))
+
+    if not normalized["title"]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Course module title is required",
+        )
+
+    return normalized
+
+
+def normalize_course_module_update_data(data: dict) -> dict:
+    normalized = dict(data)
+
+    if "title" in normalized and normalized["title"] is not None:
+        normalized["title"] = normalized["title"].strip()
+        if not normalized["title"]:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Course module title is required",
+            )
+
+    if "description" in normalized:
+        normalized["description"] = normalize_optional_text(normalized["description"])
+
+    return normalized
+
+
+def build_admin_course_module_item(module: CourseModule) -> AdminCourseModuleItem:
+    return AdminCourseModuleItem(
+        id=str(module.id),
+        course_id=str(module.course_id),
+        title=module.title,
+        description=module.description,
+        position=module.position,
+        is_active=module.is_active,
+    )
+
+
+def build_admin_course_module_detail(module: CourseModule) -> AdminCourseModuleDetail:
+    return AdminCourseModuleDetail(
+        id=str(module.id),
+        course_id=str(module.course_id),
+        title=module.title,
+        description=module.description,
+        position=module.position,
+        is_active=module.is_active,
+        created_at=module.created_at,
+        updated_at=module.updated_at,
+    )
+
+
+def course_module_snapshot(module: CourseModule) -> dict:
+    return {
+        "id": str(module.id),
+        "course_id": str(module.course_id),
+        "title": module.title,
+        "description": module.description,
+        "position": module.position,
+        "is_active": module.is_active,
+    }
+
+
+async def get_admin_course_module_or_404(
+    module_id: str,
+    session: AsyncSession,
+) -> CourseModule:
+    result = await session.execute(
+        select(CourseModule).where(CourseModule.id == module_id)
+    )
+    module = result.scalar_one_or_none()
+
+    if module is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course module not found",
+        )
+
+    return module
+
+
+@router.get("/courses/{course_id}/modules", response_model=list[AdminCourseModuleItem])
+async def list_admin_course_modules(
+    course_id: str,
+    is_active: bool | None = Query(default=None),
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminCourseModuleItem]:
+    course = await get_admin_course_or_404(course_id, session)
+
+    query = (
+        select(CourseModule)
+        .where(CourseModule.course_id == course.id)
+        .order_by(CourseModule.position.asc(), CourseModule.title.asc())
+    )
+
+    if is_active is not None:
+        query = query.where(CourseModule.is_active == is_active)
+
+    result = await session.execute(query)
+    modules = result.scalars().all()
+
+    return [
+        build_admin_course_module_item(module)
+        for module in modules
+    ]
+
+
+@router.post(
+    "/courses/{course_id}/modules",
+    response_model=AdminCourseModuleDetail,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_admin_course_module(
+    course_id: str,
+    payload: AdminCourseModuleCreate,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseModuleDetail:
+    course = await get_admin_course_or_404(course_id, session)
+    data = normalize_course_module_create_data(model_to_dict(payload))
+
+    module = CourseModule(
+        course_id=course.id,
+        **data,
+    )
+    session.add(module)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.course_module_created",
+            entity_type="course_module",
+            entity_id=str(module.id),
+            payload={
+                "course": course_snapshot(course),
+                "course_module": course_module_snapshot(module),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(module)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Course module position already exists for this course",
+        )
+
+    return build_admin_course_module_detail(module)
+
+
+@router.get("/course-modules/{module_id}", response_model=AdminCourseModuleDetail)
+async def get_admin_course_module_detail(
+    module_id: str,
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseModuleDetail:
+    module = await get_admin_course_module_or_404(module_id, session)
+
+    return build_admin_course_module_detail(module)
+
+
+@router.patch("/course-modules/{module_id}", response_model=AdminCourseModuleDetail)
+async def update_admin_course_module(
+    module_id: str,
+    payload: AdminCourseModuleUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseModuleDetail:
+    module = await get_admin_course_module_or_404(module_id, session)
+    data = normalize_course_module_update_data(model_to_dict(payload, exclude_unset=True))
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+
+    before = course_module_snapshot(module)
+
+    for field, value in data.items():
+        setattr(module, field, value)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.course_module_updated",
+            entity_type="course_module",
+            entity_id=str(module.id),
+            payload={
+                "before": before,
+                "after": course_module_snapshot(module),
+                "changed_fields": sorted(data.keys()),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(module)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Course module position already exists for this course",
+        )
+
+    return build_admin_course_module_detail(module)
+
+
+@router.delete("/course-modules/{module_id}", response_model=AdminDeleteResult)
+async def delete_admin_course_module(
+    module_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDeleteResult:
+    module = await get_admin_course_module_or_404(module_id, session)
+
+    deleted_module_id = str(module.id)
+    before = course_module_snapshot(module)
+
+    await session.delete(module)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.course_module_deleted",
+        entity_type="course_module",
+        entity_id=deleted_module_id,
+        payload={
+            "before": before,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return AdminDeleteResult(status="deleted", id=deleted_module_id)
 
 ADMIN_ENROLLMENT_STATUSES = {
     "assigned",
