@@ -8,6 +8,7 @@ import {
   deactivateAdminCourse,
   deleteAdminCourse,
   deleteAdminCourseModule,
+  getAdminCourseLessons,
   getAdminCourseModules,
   getAdminCourses,
   updateAdminCourse,
@@ -96,6 +97,21 @@ const RU = {
   moduleActive: "\u0410\u043a\u0442\u0438\u0432\u0435\u043d",
   moduleInactive: "\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u0435\u043d",
   moduleDescriptionMissing: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d\u043e.",
+  courseLessons: "\u0423\u0440\u043e\u043a\u0438 \u043c\u043e\u0434\u0443\u043b\u044f",
+  courseLessonsHint:
+    "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b \u0438 \u0437\u0430\u043d\u044f\u0442\u0438\u044f, \u0438\u0437 \u043a\u043e\u0442\u043e\u0440\u044b\u0445 \u0441\u043e\u0441\u0442\u043e\u0438\u0442 \u043c\u043e\u0434\u0443\u043b\u044c.",
+  lessonsNotFound: "\u0423\u0440\u043e\u043a\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u044b.",
+  lessonNumber: "\u0423\u0440\u043e\u043a",
+  lessonRequired: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439",
+  lessonOptional: "\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0439",
+  lessonDescriptionMissing: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d\u043e.",
+  lessonContentUrl: "\u0421\u0441\u044b\u043b\u043a\u0430",
+  lessonContentText: "\u0422\u0435\u043a\u0441\u0442",
+  lessonTypeText: "\u0422\u0435\u043a\u0441\u0442",
+  lessonTypeVideo: "\u0412\u0438\u0434\u0435\u043e",
+  lessonTypeFile: "\u0424\u0430\u0439\u043b",
+  lessonTypeLink: "\u0421\u0441\u044b\u043b\u043a\u0430",
+  lessonTypeAssignment: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435",
   addModule: "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c",
   createModule: "\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u044c",
   moduleTitle: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f",
@@ -476,9 +492,24 @@ function CourseModuleFormFields({ values, onChange, prefix = "" }) {
   );
 }
 
+function getLessonContentTypeLabel(contentType) {
+  const normalized = `${contentType || ""}`.toLowerCase();
+
+  const labels = {
+    text: RU.lessonTypeText,
+    video: RU.lessonTypeVideo,
+    file: RU.lessonTypeFile,
+    link: RU.lessonTypeLink,
+    assignment: RU.lessonTypeAssignment,
+  };
+
+  return labels[normalized] || normalized || "-";
+}
+
 function CourseCard({
   course,
   modules = [],
+  lessonsByModuleId = {},
   moduleCreateForm,
   moduleEditFormsByModuleId,
   editingModuleId,
@@ -595,6 +626,9 @@ function CourseCard({
                   const isModuleActionRunning = moduleActionId === module.id;
                   const moduleEditForm =
                     moduleEditFormsByModuleId?.[module.id] || buildModuleEditForm(module);
+                  const moduleLessons = Array.isArray(lessonsByModuleId?.[module.id])
+                    ? lessonsByModuleId[module.id]
+                    : [];
 
                   return (
                     <div
@@ -621,6 +655,83 @@ function CourseCard({
                           <p className="mt-3 text-sm leading-6 text-slate-600">
                             {module.description || RU.moduleDescriptionMissing}
                           </p>
+
+                          <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <h4 className="text-sm font-bold text-slate-900">
+                                  {RU.courseLessons}
+                                </h4>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">
+                                  {RU.courseLessonsHint}
+                                </p>
+                              </div>
+
+                              <StatusBadge tone={moduleLessons.length ? "blue" : "gray"}>
+                                {moduleLessons.length}
+                              </StatusBadge>
+                            </div>
+
+                            {moduleLessons.length === 0 ? (
+                              <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                                {RU.lessonsNotFound}
+                              </p>
+                            ) : (
+                              <div className="mt-4 space-y-3">
+                                {moduleLessons.map((lesson) => (
+                                  <div
+                                    key={lesson.id}
+                                    className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                                  >
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                      <div>
+                                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                          {RU.lessonNumber} {lesson.position}
+                                        </div>
+                                        <div className="mt-1 text-sm font-bold text-slate-900">
+                                          {lesson.title}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex flex-wrap gap-2">
+                                        <StatusBadge tone="blue">
+                                          {getLessonContentTypeLabel(lesson.content_type)}
+                                        </StatusBadge>
+                                        <StatusBadge tone={lesson.is_required ? "green" : "gray"}>
+                                          {lesson.is_required ? RU.lessonRequired : RU.lessonOptional}
+                                        </StatusBadge>
+                                        <StatusBadge tone={lesson.is_active ? "green" : "gray"}>
+                                          {lesson.is_active ? RU.moduleActive : RU.moduleInactive}
+                                        </StatusBadge>
+                                      </div>
+                                    </div>
+
+                                    <p className="mt-3 text-sm leading-6 text-slate-600">
+                                      {lesson.description || RU.lessonDescriptionMissing}
+                                    </p>
+
+                                    {lesson.content_url && (
+                                      <div className="mt-3 text-xs text-slate-500">
+                                        <span className="font-semibold text-slate-700">
+                                          {RU.lessonContentUrl}:
+                                        </span>{" "}
+                                        {lesson.content_url}
+                                      </div>
+                                    )}
+
+                                    {lesson.content_text && (
+                                      <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs leading-5 text-slate-600 ring-1 ring-slate-200">
+                                        <span className="font-semibold text-slate-700">
+                                          {RU.lessonContentText}:
+                                        </span>{" "}
+                                        {lesson.content_text}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
 
                           <div className="mt-4 flex flex-wrap gap-3">
                             <ActionButton
@@ -802,6 +913,7 @@ export function AdminCoursesPage() {
 
   const [courses, setCourses] = useState([]);
   const [courseModulesByCourseId, setCourseModulesByCourseId] = useState({});
+  const [courseLessonsByModuleId, setCourseLessonsByModuleId] = useState({});
   const [moduleCreateFormsByCourseId, setModuleCreateFormsByCourseId] = useState({});
   const [moduleEditFormsByModuleId, setModuleEditFormsByModuleId] = useState({});
   const [editingModuleId, setEditingModuleId] = useState("");
@@ -870,6 +982,14 @@ export function AdminCoursesPage() {
       );
 
       const nextModulesByCourseId = Object.fromEntries(moduleEntries);
+      const allModules = Object.values(nextModulesByCourseId).flat();
+      const lessonEntries = await Promise.all(
+        allModules.map(async (module) => {
+          const lessons = await getAdminCourseLessons(module.id);
+          return [module.id, Array.isArray(lessons) ? lessons : []];
+        })
+      );
+      const nextLessonsByModuleId = Object.fromEntries(lessonEntries);
       const nextModuleFormsByCourseId = Object.fromEntries(
         nextCourses.map((course) => [
           course.id,
@@ -879,11 +999,13 @@ export function AdminCoursesPage() {
 
       setCourses(nextCourses);
       setCourseModulesByCourseId(nextModulesByCourseId);
+      setCourseLessonsByModuleId(nextLessonsByModuleId);
       setModuleCreateFormsByCourseId(nextModuleFormsByCourseId);
       setCourseCounts(calculateCourseCounts(Array.isArray(countResponse) ? countResponse : []));
     } catch (err) {
       setError(formatCourseApiError(err, RU.loadFailed));
       setCourseModulesByCourseId({});
+      setCourseLessonsByModuleId({});
       setModuleCreateFormsByCourseId({});
       setModuleEditFormsByModuleId({});
       setEditingModuleId("");
@@ -1373,6 +1495,7 @@ export function AdminCoursesPage() {
                 key={course.id}
                 course={course}
                 modules={courseModulesByCourseId[course.id] || []}
+                lessonsByModuleId={courseLessonsByModuleId}
                 moduleCreateForm={
                   moduleCreateFormsByCourseId[course.id] ||
                   buildModuleCreateForm(courseModulesByCourseId[course.id] || [])
