@@ -228,6 +228,46 @@ class AdminCourseModuleUpdate(BaseModel):
     position: int | None = Field(default=None, ge=1, le=10000)
     is_active: bool | None = None
 
+class AdminCourseLessonItem(BaseModel):
+    id: str
+    module_id: str
+    title: str
+    description: str | None = None
+    content_type: str
+    content_url: str | None = None
+    content_text: str | None = None
+    position: int
+    is_required: bool
+    is_active: bool
+
+
+class AdminCourseLessonDetail(AdminCourseLessonItem):
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminCourseLessonCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=2048)
+    content_type: str = Field(default="text", min_length=1, max_length=32)
+    content_url: str | None = Field(default=None, max_length=2048)
+    content_text: str | None = None
+    position: int = Field(ge=1, le=10000)
+    is_required: bool = True
+    is_active: bool = True
+
+
+class AdminCourseLessonUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=2048)
+    content_type: str | None = Field(default=None, min_length=1, max_length=32)
+    content_url: str | None = Field(default=None, max_length=2048)
+    content_text: str | None = None
+    position: int | None = Field(default=None, ge=1, le=10000)
+    is_required: bool | None = None
+    is_active: bool | None = None
+
+
 class AdminCourseCreate(BaseModel):
     slug: str = Field(min_length=1, max_length=255)
     title: str = Field(min_length=1, max_length=255)
