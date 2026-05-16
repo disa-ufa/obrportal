@@ -41,6 +41,7 @@ try {
     Invoke-SmokeCheck ".\scripts\smoke_frontend_admin_detail_components.py"
     Invoke-SmokeCheck ".\scripts\smoke_frontend_document_account_flows.py"
     Invoke-SmokeCheck ".\scripts\smoke_frontend_ui_primitives.py"
+    Invoke-SmokeCheck ".\scripts\smoke_frontend_static_public_files.py"
 
     Write-Host "`nSmoke passed." -ForegroundColor Green
 }
