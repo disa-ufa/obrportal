@@ -245,6 +245,7 @@ if (-not $SkipSmoke) {
     Invoke-HostPython @(".\scripts\smoke_frontend_static_public_files.py")
     Invoke-HostPython @(".\scripts\check_frontend_smoke_coverage.py")
     Invoke-HostPython @(".\scripts\check_backend_smoke_coverage.py")
+    Invoke-HostPython @(".\scripts\check_no_todo_markers.py")
 } else {
     Write-Host "Smoke skipped"
 }

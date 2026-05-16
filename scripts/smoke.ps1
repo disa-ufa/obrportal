@@ -44,6 +44,7 @@ try {
     Invoke-SmokeCheck ".\scripts\smoke_frontend_static_public_files.py"
     Invoke-SmokeCheck ".\scripts\check_frontend_smoke_coverage.py"
     Invoke-SmokeCheck ".\scripts\check_backend_smoke_coverage.py"
+    Invoke-SmokeCheck ".\scripts\check_no_todo_markers.py"
 
     Write-Host "`nSmoke passed." -ForegroundColor Green
 }
