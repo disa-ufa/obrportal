@@ -127,6 +127,7 @@ jobs:
           python scripts/smoke_frontend_ui_primitives.py
           python scripts/smoke_frontend_static_public_files.py
           python scripts/check_frontend_smoke_coverage.py
+          python scripts/check_backend_smoke_coverage.py
 
       - name: Build frontend
         run: |
