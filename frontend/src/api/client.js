@@ -625,6 +625,46 @@ export async function deleteAdminCourseModule(moduleId) {
   });
 }
 
+export async function getAdminCourseLessons(moduleId, filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/admin/course-modules/${moduleId}/lessons${query ? `?${query}` : ""}`);
+}
+
+export async function createAdminCourseLesson(moduleId, payload) {
+  return request(`/api/v1/admin/course-modules/${moduleId}/lessons`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getAdminCourseLessonDetail(lessonId) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}`);
+}
+
+export async function updateAdminCourseLesson(lessonId, payload) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminCourseLesson(lessonId) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}`, {
+    method: "DELETE",
+  });
+}
+
 
 export async function getAdminEnrollments(filters = {}) {
   const params = new URLSearchParams();
