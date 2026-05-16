@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   completeAccountCourse,
   downloadAccountDocument,
+  getAccountCourseDetail,
   getAccountCourses,
   getAccountDocuments,
   getAccountSummary,
@@ -205,6 +206,146 @@ function canDownloadDocument(documentItem) {
   );
 }
 
+function getCourseLessonTypeLabel(contentType) {
+  switch (contentType) {
+    case "text":
+      return "Текст";
+    case "video":
+      return "Видео";
+    case "file":
+      return "Файл";
+    case "link":
+      return "Ссылка";
+    case "assignment":
+      return "Задание";
+    default:
+      return contentType || "Материал";
+  }
+}
+
+function AccountCourseOutline({ detail }) {
+  const modules = Array.isArray(detail?.modules) ? detail.modules : [];
+
+  return (
+    <div className="mt-5 rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Структура обучения
+          </div>
+          <h3 className="mt-1 text-lg font-bold text-slate-900">
+            Программа курса
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Модули и уроки, доступные слушателю в рамках этого назначения.
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200">
+          Модулей: {modules.length}
+        </div>
+      </div>
+
+      {modules.length === 0 ? (
+        <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
+          Программа курса пока не опубликована.
+        </div>
+      ) : (
+        <div className="mt-4 space-y-4">
+          {modules.map((module) => {
+            const lessons = Array.isArray(module.lessons) ? module.lessons : [];
+
+            return (
+              <article
+                key={module.id}
+                className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Модуль {module.position}
+                    </div>
+                    <div className="mt-1 font-bold text-slate-900">
+                      {module.title}
+                    </div>
+                    {module.description && (
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        {module.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    Уроков: {lessons.length}
+                  </div>
+                </div>
+
+                {lessons.length === 0 ? (
+                  <div className="mt-3 rounded-2xl bg-white p-3 text-sm text-slate-500 ring-1 ring-slate-200">
+                    Уроки пока не добавлены.
+                  </div>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    {lessons.map((lesson) => (
+                      <div
+                        key={lesson.id}
+                        className="rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Урок {lesson.position}
+                            </div>
+                            <div className="mt-1 font-bold text-slate-900">
+                              {lesson.title}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                              {getCourseLessonTypeLabel(lesson.content_type)}
+                            </span>
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                              {lesson.is_required ? "Обязательный" : "Дополнительный"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {lesson.description && (
+                          <p className="mt-3 text-sm leading-6 text-slate-600">
+                            {lesson.description}
+                          </p>
+                        )}
+
+                        {lesson.content_text && (
+                          <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
+                            {lesson.content_text}
+                          </div>
+                        )}
+
+                        {lesson.content_url && (
+                          <a
+                            href={lesson.content_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex text-sm font-semibold text-blue-700 hover:text-blue-800"
+                          >
+                            Открыть материал
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [summary, setSummary] = useState(null);
   const [coursesResponse, setCoursesResponse] = useState(null);
@@ -218,6 +359,9 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [courseStatusFilter, setCourseStatusFilter] = useState("");
   const [documentStatusFilter, setDocumentStatusFilter] = useState("");
   const [accountNotice, setAccountNotice] = useState(null);
+  const [selectedCourseDetail, setSelectedCourseDetail] = useState(null);
+  const [courseDetailLoadingId, setCourseDetailLoadingId] = useState("");
+  const [courseDetailError, setCourseDetailError] = useState(null);
 
   useEffect(() => {
     try {
@@ -320,6 +464,32 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       setCourseActionLoadingKey("");
     }
   }
+  async function handleToggleCourseOutline(course) {
+    const enrollmentId = course.enrollment_id;
+
+    if (selectedCourseDetail?.enrollment_id === enrollmentId) {
+      setSelectedCourseDetail(null);
+      setCourseDetailError(null);
+      return;
+    }
+
+    try {
+      setCourseDetailError(null);
+      setCourseDetailLoadingId(enrollmentId);
+
+      const detail = await getAccountCourseDetail(enrollmentId);
+
+      setSelectedCourseDetail(detail);
+    } catch (err) {
+      setCourseDetailError({
+        enrollmentId,
+        message: formatApiError(err, "Не удалось загрузить программу курса."),
+      });
+    } finally {
+      setCourseDetailLoadingId("");
+    }
+  }
+
   async function handleDownload(documentId) {
     try {
       setDownloadError("");
@@ -650,6 +820,19 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     Открыть карточку курса
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => handleToggleCourseOutline(course)}
+                    disabled={courseDetailLoadingId === course.enrollment_id}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {courseDetailLoadingId === course.enrollment_id
+                      ? "Загружаем..."
+                      : selectedCourseDetail?.enrollment_id === course.enrollment_id
+                        ? "Скрыть программу"
+                        : "Открыть программу"}
+                  </button>
+
                   {course.status === "assigned" && (
                     <button
                       type="button"
@@ -682,6 +865,16 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </span>
                   )}
                 </div>
+
+                {courseDetailError?.enrollmentId === course.enrollment_id && (
+                  <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200">
+                    {courseDetailError.message}
+                  </div>
+                )}
+
+                {selectedCourseDetail?.enrollment_id === course.enrollment_id && (
+                  <AccountCourseOutline detail={selectedCourseDetail} />
+                )}
               </article>
             ))}
           </div>
