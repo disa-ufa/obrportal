@@ -201,6 +201,33 @@ class AdminCourseDetail(AdminCourseItem):
     updated_at: datetime
 
 
+class AdminCourseModuleItem(BaseModel):
+    id: str
+    course_id: str
+    title: str
+    description: str | None = None
+    position: int
+    is_active: bool
+
+
+class AdminCourseModuleDetail(AdminCourseModuleItem):
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminCourseModuleCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=2048)
+    position: int = Field(ge=1, le=10000)
+    is_active: bool = True
+
+
+class AdminCourseModuleUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=2048)
+    position: int | None = Field(default=None, ge=1, le=10000)
+    is_active: bool | None = None
+
 class AdminCourseCreate(BaseModel):
     slug: str = Field(min_length=1, max_length=255)
     title: str = Field(min_length=1, max_length=255)
