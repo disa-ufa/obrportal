@@ -2222,6 +2222,45 @@ def main() -> int:
     assert isinstance(self_enroll_course, dict)
     checks.append("self enrollment course create ok")
 
+    status, self_enroll_module = request_json(
+        "POST",
+        "/api/v1/admin/courses/" + str(self_enroll_course["id"]) + "/modules",
+        {
+            "title": "Smoke Self Enrollment Module",
+            "description": "Smoke module for required learner progress",
+            "position": 1,
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "self enrollment module create")
+    assert isinstance(self_enroll_module, dict)
+    assert self_enroll_module["course_id"] == self_enroll_course["id"]
+    self_enroll_module_id = str(self_enroll_module["id"])
+    checks.append("self enrollment module create ok")
+
+    status, self_enroll_lesson = request_json(
+        "POST",
+        f"/api/v1/admin/course-modules/{self_enroll_module_id}/lessons",
+        {
+            "title": "Smoke Required Account Lesson",
+            "description": "Smoke required lesson for account progress",
+            "content_type": "text",
+            "content_text": "Smoke required lesson content",
+            "position": 1,
+            "is_required": True,
+            "is_active": True,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "self enrollment required lesson create")
+    assert isinstance(self_enroll_lesson, dict)
+    assert self_enroll_lesson["module_id"] == self_enroll_module_id
+    assert self_enroll_lesson["is_required"] is True
+    assert self_enroll_lesson["is_active"] is True
+    self_enroll_lesson_id = str(self_enroll_lesson["id"])
+    checks.append("self enrollment required lesson create ok")
+
     frontend_self_enroll_course_path = "/courses/" + quote(str(self_enroll_course["slug"]), safe="")
     status, frontend_self_enroll_course_html, frontend_self_enroll_course_headers = request_frontend_text(
         frontend_self_enroll_course_path
@@ -2267,6 +2306,64 @@ def main() -> int:
         for item in learner_account_courses["items"]
     )
     checks.append("learner account courses include self enrollment")
+
+    status, learner_course_detail = request_json(
+        "GET",
+        "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]),
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner account course detail")
+    assert isinstance(learner_course_detail, dict)
+    assert learner_course_detail["enrollment_id"] == self_enrollment["enrollment_id"]
+    assert learner_course_detail["course_id"] == self_enroll_course["id"]
+    assert learner_course_detail["lessons_total"] == 1
+    assert learner_course_detail["lessons_completed"] == 0
+    assert learner_course_detail["required_lessons_total"] == 1
+    assert learner_course_detail["required_lessons_completed"] == 0
+    assert learner_course_detail["progress_percent"] == 0
+    assert learner_course_detail["required_progress_percent"] == 0
+    assert len(learner_course_detail["modules"]) == 1
+
+    self_enroll_detail_module = learner_course_detail["modules"][0]
+    assert self_enroll_detail_module["id"] == self_enroll_module_id
+    assert len(self_enroll_detail_module["lessons"]) == 1
+
+    self_enroll_detail_lesson = self_enroll_detail_module["lessons"][0]
+    assert self_enroll_detail_lesson["id"] == self_enroll_lesson_id
+    assert self_enroll_detail_lesson["is_required"] is True
+    assert self_enroll_detail_lesson["is_completed"] is False
+    checks.append("learner account course detail includes required lesson")
+
+    status, blocked_self_completion = request_json(
+        "POST",
+        "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
+        token=learner_token,
+    )
+    assert_status(status, 400, "learner complete self enrolled course before required lesson")
+    assert isinstance(blocked_self_completion, dict)
+    assert blocked_self_completion["detail"] == "Complete required lessons before completing course"
+    checks.append("learner course completion requires required lesson")
+
+    status, detail_after_required_lesson = request_json(
+        "POST",
+        "/api/v1/account/courses/"
+        + str(self_enrollment["enrollment_id"])
+        + "/lessons/"
+        + self_enroll_lesson_id
+        + "/complete",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner complete required account lesson")
+    assert isinstance(detail_after_required_lesson, dict)
+    assert detail_after_required_lesson["lessons_total"] == 1
+    assert detail_after_required_lesson["lessons_completed"] == 1
+    assert detail_after_required_lesson["required_lessons_total"] == 1
+    assert detail_after_required_lesson["required_lessons_completed"] == 1
+    assert detail_after_required_lesson["progress_percent"] == 100
+    assert detail_after_required_lesson["required_progress_percent"] == 100
+    assert detail_after_required_lesson["modules"][0]["lessons"][0]["is_completed"] is True
+    checks.append("learner complete required account lesson ok")
+
     status, completed_self_enrollment = request_json(
         "POST",
         "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
@@ -2276,6 +2373,18 @@ def main() -> int:
     assert isinstance(completed_self_enrollment, dict)
     assert completed_self_enrollment["status"] == "completed"
     checks.append("learner complete self enrolled course ok")
+
+    status, completed_course_detail = request_json(
+        "GET",
+        "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]),
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner completed account course detail")
+    assert isinstance(completed_course_detail, dict)
+    assert completed_course_detail["status"] == "completed"
+    assert completed_course_detail["required_lessons_completed"] == 1
+    assert completed_course_detail["modules"][0]["lessons"][0]["is_completed"] is True
+    checks.append("learner completed account course detail ok")
 
     status, learner_documents_after_completion = request_json(
         "GET",
