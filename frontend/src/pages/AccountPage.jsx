@@ -2,6 +2,7 @@ import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import {
   completeAccountCourse,
+  completeAccountCourseLesson,
   downloadAccountDocument,
   getAccountCourseDetail,
   getAccountCourses,
@@ -223,8 +224,10 @@ function getCourseLessonTypeLabel(contentType) {
   }
 }
 
-function AccountCourseOutline({ detail }) {
+function AccountCourseOutline({ detail, onCompleteLesson, lessonProgressLoadingId }) {
   const modules = Array.isArray(detail?.modules) ? detail.modules : [];
+  const enrollmentId = detail?.enrollment_id || "";
+  const canCompleteLessons = detail?.status !== "completed";
 
   return (
     <div className="mt-5 rounded-3xl bg-white p-5 ring-1 ring-slate-200">
@@ -308,6 +311,11 @@ function AccountCourseOutline({ detail }) {
                             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
                               {lesson.is_required ? "Обязательный" : "Дополнительный"}
                             </span>
+                            {lesson.is_completed && (
+                              <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+                                Пройден
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -333,6 +341,31 @@ function AccountCourseOutline({ detail }) {
                             Открыть материал
                           </a>
                         )}
+
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                          {lesson.is_completed ? (
+                            <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+                              {lesson.completed_at
+                                ? `Пройден: ${formatDateTime(lesson.completed_at)}`
+                                : "Пройден"}
+                            </span>
+                          ) : canCompleteLessons ? (
+                            <button
+                              type="button"
+                              onClick={() => onCompleteLesson(enrollmentId, lesson.id)}
+                              disabled={lessonProgressLoadingId === `${enrollmentId}:${lesson.id}`}
+                              className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {lessonProgressLoadingId === `${enrollmentId}:${lesson.id}`
+                                ? "Отмечаем..."
+                                : "Отметить пройденным"}
+                            </button>
+                          ) : (
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                              Курс завершён
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -362,6 +395,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [selectedCourseDetail, setSelectedCourseDetail] = useState(null);
   const [courseDetailLoadingId, setCourseDetailLoadingId] = useState("");
   const [courseDetailError, setCourseDetailError] = useState(null);
+  const [lessonProgressLoadingId, setLessonProgressLoadingId] = useState("");
 
   useEffect(() => {
     try {
@@ -487,6 +521,31 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       });
     } finally {
       setCourseDetailLoadingId("");
+    }
+  }
+
+  async function handleCompleteLesson(enrollmentId, lessonId) {
+    try {
+      setCourseDetailError(null);
+      setLessonProgressLoadingId(`${enrollmentId}:${lessonId}`);
+
+      const detail = await completeAccountCourseLesson(enrollmentId, lessonId);
+
+      setSelectedCourseDetail(detail);
+      await refreshAccountSnapshot();
+
+      setAccountNotice({
+        tone: "green",
+        title: "Урок отмечен как пройденный",
+        message: "Прогресс по программе обновлён.",
+      });
+    } catch (err) {
+      setCourseDetailError({
+        enrollmentId,
+        message: formatApiError(err, "Не удалось отметить урок как пройденный."),
+      });
+    } finally {
+      setLessonProgressLoadingId("");
     }
   }
 
@@ -873,7 +932,11 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                 )}
 
                 {selectedCourseDetail?.enrollment_id === course.enrollment_id && (
-                  <AccountCourseOutline detail={selectedCourseDetail} />
+                  <AccountCourseOutline
+                    detail={selectedCourseDetail}
+                    onCompleteLesson={handleCompleteLesson}
+                    lessonProgressLoadingId={lessonProgressLoadingId}
+                  />
                 )}
               </article>
             ))}
