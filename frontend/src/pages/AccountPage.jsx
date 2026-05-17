@@ -441,6 +441,41 @@ function AccountCourseOutline({ detail, onCompleteLesson, lessonProgressLoadingI
   );
 }
 
+function getSelectedCourseDetailForCourse(course, selectedCourseDetail) {
+  if (!course?.enrollment_id || selectedCourseDetail?.enrollment_id !== course.enrollment_id) {
+    return null;
+  }
+
+  return selectedCourseDetail;
+}
+
+function getCourseCompletionBlockReason(course, selectedCourseDetail) {
+  const detail = getSelectedCourseDetailForCourse(course, selectedCourseDetail);
+
+  if (!detail) {
+    return "";
+  }
+
+  const requiredLessonsTotal = Number(detail.required_lessons_total || 0);
+  const requiredLessonsCompleted = Number(detail.required_lessons_completed || 0);
+
+  if (requiredLessonsTotal <= 0 || requiredLessonsCompleted >= requiredLessonsTotal) {
+    return "";
+  }
+
+  return `Пройдите обязательные уроки: ${requiredLessonsCompleted} из ${requiredLessonsTotal}`;
+}
+
+function canCompleteCourseFromDetail(course, selectedCourseDetail) {
+  return !getCourseCompletionBlockReason(course, selectedCourseDetail);
+}
+
+function isRequiredLessonsBackendError(err) {
+  const message = String(err?.message || err?.detail || "");
+
+  return message.includes("Complete required lessons before completing course");
+}
+
 export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [summary, setSummary] = useState(null);
   const [coursesResponse, setCoursesResponse] = useState(null);
@@ -555,7 +590,13 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         message: "Курс отмечен как завершённый. Итоговый документ подготовлен и ожидает публикации администратором. После публикации он станет доступен для скачивания и публичной проверки.",
       });
     } catch (err) {
-      setCourseActionError(formatApiError(err, "Не удалось завершить обучение."));
+      if (isRequiredLessonsBackendError(err)) {
+        setCourseActionError(
+          "Сначала пройдите все обязательные уроки. Откройте программу курса и отметьте обязательные уроки как пройденные."
+        );
+      } else {
+        setCourseActionError(formatApiError(err, "Не удалось завершить обучение."));
+      }
     } finally {
       setCourseActionLoadingKey("");
     }
@@ -971,7 +1012,10 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     <button
                       type="button"
                       onClick={() => handleCompleteCourse(course.enrollment_id)}
-                      disabled={courseActionLoadingKey === `${course.enrollment_id}:complete`}
+                      disabled={
+                        courseActionLoadingKey === `${course.enrollment_id}:complete` ||
+                        !canCompleteCourseFromDetail(course, selectedCourseDetail)
+                      }
                       className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {courseActionLoadingKey === `${course.enrollment_id}:complete`
@@ -979,6 +1023,13 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                         : "Завершить обучение"}
                     </button>
                   )}
+
+                  {course.status === "active" &&
+                    getCourseCompletionBlockReason(course, selectedCourseDetail) && (
+                      <div className="w-full rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
+                        {getCourseCompletionBlockReason(course, selectedCourseDetail)}
+                      </div>
+                    )}
 
                   {course.status === "completed" && (
                     <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">
