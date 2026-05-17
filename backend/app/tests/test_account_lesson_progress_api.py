@@ -244,6 +244,45 @@ def test_lesson_complete_rejects_foreign_enrollment_foreign_lesson_and_guest() -
         delete_admin_course(admin_token, second_course_id)
 
 
+def test_course_completion_requires_required_lessons() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner = register_learner(prefix="lesson-progress-required")
+    learner_token = login(learner["email"], learner["password"])
+
+    created = create_course_with_module_and_lesson(admin_token)
+    course_id = str(created["course"]["id"])
+    enrollment_id: str | None = None
+
+    try:
+        enrollment = enroll_learner_to_course(learner_token, course_id)
+        enrollment_id = str(enrollment["enrollment_id"])
+
+        status, payload = request_json(
+            "POST",
+            f"/api/v1/account/courses/{enrollment_id}/complete",
+            token=learner_token,
+        )
+
+        assert status == 400
+        assert payload["detail"] == "Complete required lessons before completing course"
+
+        status, detail = request_json(
+            "GET",
+            f"/api/v1/account/courses/{enrollment_id}",
+            token=learner_token,
+        )
+
+        assert status == 200
+        assert detail["status"] == "assigned"
+        assert detail["completed_at"] is None
+        assert detail["required_lessons_total"] == 1
+        assert detail["required_lessons_completed"] == 0
+    finally:
+        if enrollment_id is not None:
+            delete_admin_enrollment(admin_token, enrollment_id)
+        delete_admin_course(admin_token, course_id)
+
+
 def test_lesson_complete_rejects_completed_course() -> None:
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     learner = register_learner(prefix="lesson-progress-completed")
@@ -257,6 +296,14 @@ def test_lesson_complete_rejects_completed_course() -> None:
     try:
         enrollment = enroll_learner_to_course(learner_token, course_id)
         enrollment_id = str(enrollment["enrollment_id"])
+
+        status, detail_after_lesson = request_json(
+            "POST",
+            f"/api/v1/account/courses/{enrollment_id}/lessons/{lesson_id}/complete",
+            token=learner_token,
+        )
+        assert status == 200
+        assert detail_after_lesson["required_lessons_completed"] == 1
 
         status, completed = request_json(
             "POST",

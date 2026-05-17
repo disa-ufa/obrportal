@@ -715,6 +715,22 @@ async def complete_account_course_learning(
             detail="Enrollment cannot be completed from current status",
         )
 
+    modules = await load_account_course_modules(
+        session,
+        str(enrollment.course_id),
+        enrollment_id=str(enrollment.id),
+    )
+    progress = calculate_account_course_progress(modules)
+
+    if (
+        progress["required_lessons_total"] > 0
+        and progress["required_lessons_completed"] < progress["required_lessons_total"]
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Complete required lessons before completing course",
+        )
+
     if enrollment.started_at is None:
         enrollment.started_at = datetime.now(timezone.utc)
 
