@@ -376,10 +376,59 @@ async def load_account_course_modules(
     ]
 
 
+def calculate_progress_percent(completed: int, total: int) -> int:
+    if total <= 0:
+        return 0
+
+    return int(round((completed / total) * 100))
+
+
+def calculate_account_course_progress(
+    modules: list[AccountCourseModuleResponse],
+) -> dict[str, int]:
+    lessons = [
+        lesson
+        for module in modules
+        for lesson in module.lessons
+    ]
+
+    lessons_total = len(lessons)
+    lessons_completed = sum(1 for lesson in lessons if lesson.is_completed)
+
+    required_lessons = [
+        lesson
+        for lesson in lessons
+        if lesson.is_required
+    ]
+    required_lessons_total = len(required_lessons)
+    required_lessons_completed = sum(
+        1
+        for lesson in required_lessons
+        if lesson.is_completed
+    )
+
+    return {
+        "lessons_total": lessons_total,
+        "lessons_completed": lessons_completed,
+        "required_lessons_total": required_lessons_total,
+        "required_lessons_completed": required_lessons_completed,
+        "progress_percent": calculate_progress_percent(
+            lessons_completed,
+            lessons_total,
+        ),
+        "required_progress_percent": calculate_progress_percent(
+            required_lessons_completed,
+            required_lessons_total,
+        ),
+    }
+
+
 def build_account_course_detail_from_row(
     row,
     modules: list[AccountCourseModuleResponse],
 ) -> AccountCourseDetailResponse:
+    progress = calculate_account_course_progress(modules)
+
     return AccountCourseDetailResponse(
         enrollment_id=str(row.enrollment_id),
         course_id=str(row.course_id),
@@ -394,6 +443,12 @@ def build_account_course_detail_from_row(
         learning_group_name=row.learning_group_name,
         started_at=getattr(row, "started_at", None),
         completed_at=getattr(row, "completed_at", None),
+        lessons_total=progress["lessons_total"],
+        lessons_completed=progress["lessons_completed"],
+        required_lessons_total=progress["required_lessons_total"],
+        required_lessons_completed=progress["required_lessons_completed"],
+        progress_percent=progress["progress_percent"],
+        required_progress_percent=progress["required_progress_percent"],
         modules=modules,
     )
 

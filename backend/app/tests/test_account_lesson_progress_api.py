@@ -98,6 +98,13 @@ def test_learner_can_complete_lesson_and_detail_returns_progress() -> None:
         )
 
         assert status == 200
+        assert detail_before["lessons_total"] == 1
+        assert detail_before["lessons_completed"] == 0
+        assert detail_before["required_lessons_total"] == 1
+        assert detail_before["required_lessons_completed"] == 0
+        assert detail_before["progress_percent"] == 0
+        assert detail_before["required_progress_percent"] == 0
+
         lesson_before = find_lesson(detail_before, lesson_id)
         assert lesson_before["is_completed"] is False
         assert lesson_before["completed_at"] is None
@@ -114,6 +121,12 @@ def test_learner_can_complete_lesson_and_detail_returns_progress() -> None:
         assert detail_after["status"] == "active"
         assert detail_after["started_at"] is not None
         assert detail_after["completed_at"] is None
+        assert detail_after["lessons_total"] == 1
+        assert detail_after["lessons_completed"] == 1
+        assert detail_after["required_lessons_total"] == 1
+        assert detail_after["required_lessons_completed"] == 1
+        assert detail_after["progress_percent"] == 100
+        assert detail_after["required_progress_percent"] == 100
 
         lesson_after = find_lesson(detail_after, lesson_id)
         assert lesson_after["is_completed"] is True
@@ -126,6 +139,13 @@ def test_learner_can_complete_lesson_and_detail_returns_progress() -> None:
         )
 
         assert status == 200
+        assert detail_after_get["lessons_total"] == 1
+        assert detail_after_get["lessons_completed"] == 1
+        assert detail_after_get["required_lessons_total"] == 1
+        assert detail_after_get["required_lessons_completed"] == 1
+        assert detail_after_get["progress_percent"] == 100
+        assert detail_after_get["required_progress_percent"] == 100
+
         lesson_after_get = find_lesson(detail_after_get, lesson_id)
         assert lesson_after_get["is_completed"] is True
         assert lesson_after_get["completed_at"] == lesson_after["completed_at"]

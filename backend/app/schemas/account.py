@@ -55,6 +55,12 @@ class AccountCourseModuleResponse(BaseModel):
 
 
 class AccountCourseDetailResponse(AccountCourseItemResponse):
+    lessons_total: int = 0
+    lessons_completed: int = 0
+    required_lessons_total: int = 0
+    required_lessons_completed: int = 0
+    progress_percent: int = 0
+    required_progress_percent: int = 0
     modules: list[AccountCourseModuleResponse] = Field(default_factory=list)
 
 
