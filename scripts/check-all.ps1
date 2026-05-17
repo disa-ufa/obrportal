@@ -1,4 +1,4 @@
-﻿param(
+param(
     [switch]$SkipSmoke,
     [switch]$SkipSecretScan
 )
@@ -23,21 +23,24 @@ try {
         Write-Host "`n=== 3. SECRET SCAN SKIPPED ===" -ForegroundColor Yellow
     }
 
-    Write-Host "`n=== 4. BACKEND TESTS ===" -ForegroundColor Cyan
+    Write-Host "`n=== 4. FRONTEND GUARD ===" -ForegroundColor Cyan
+    python scripts/frontend_guard.py
+
+    Write-Host "`n=== 5. BACKEND TESTS ===" -ForegroundColor Cyan
     & .\scripts\test-backend.ps1
 
-    Write-Host "`n=== 5. FRONTEND BUILD ===" -ForegroundColor Cyan
+    Write-Host "`n=== 6. FRONTEND BUILD ===" -ForegroundColor Cyan
     & .\scripts\test-frontend.ps1
 
     if (-not $SkipSmoke) {
-        Write-Host "`n=== 6. SMOKE ===" -ForegroundColor Cyan
+        Write-Host "`n=== 7. SMOKE ===" -ForegroundColor Cyan
         & .\scripts\smoke.ps1
     }
     else {
-        Write-Host "`n=== 6. SMOKE SKIPPED ===" -ForegroundColor Yellow
+        Write-Host "`n=== 7. SMOKE SKIPPED ===" -ForegroundColor Yellow
     }
 
-    Write-Host "`n=== 7. GIT STATUS ===" -ForegroundColor Cyan
+    Write-Host "`n=== 8. GIT STATUS ===" -ForegroundColor Cyan
     git status --short
     git branch -vv
 

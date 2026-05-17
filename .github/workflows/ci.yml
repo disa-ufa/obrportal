@@ -40,6 +40,10 @@ jobs:
           python scripts/check_frontend_api_errors.py
           python scripts/check_frontend_mojibake.py
 
+      - name: Run frontend forbidden pattern guard
+        run: |
+          python scripts/frontend_guard.py
+
       - name: Show Docker versions
         run: |
           docker version
