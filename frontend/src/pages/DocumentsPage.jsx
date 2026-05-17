@@ -1281,6 +1281,8 @@ export function DocumentsPage() {
                 const isDrafting = statusSavingKey === `${documentItem.id}:draft`;
                 const isRevoking = statusSavingKey === `${documentItem.id}:revoked`;
                 const isRevokingFormOpen = revokingDocumentId === documentItem.id;
+                const showMissingFileActionHint =
+                  !documentItem.file_available && documentItem.status !== "available";
                 const isGeneratedCompletion = isGeneratedCompletionDocument(documentItem);
                 const canPublishGeneratedCompletion = canPublishGeneratedCompletionDocument(documentItem);
                 const generatedCompletionNotice = isGeneratedCompletion
@@ -1693,6 +1695,21 @@ export function DocumentsPage() {
                             {isDeleteSaving ? "Удаляем..." : "Удалить"}
                           </button>
                         </div>
+
+                        {showMissingFileActionHint && (
+                          <div
+                            data-testid="document-missing-file-action-hint"
+                            className="mt-3 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200"
+                          >
+                            <div className="font-semibold">
+                              {"\u041f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430: \u0444\u0430\u0439\u043b \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d"}
+                            </div>
+                            <div className="mt-1">
+                              {"\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0440\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435, \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0444\u0430\u0439\u043b \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430, \u0437\u0430\u0442\u0435\u043c \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u0443\u0439\u0442\u0435 \u0438\u043b\u0438 \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442."}
+                            </div>
+                          </div>
+                        )}
+
 
                         {isRevokingFormOpen && (
                           <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
