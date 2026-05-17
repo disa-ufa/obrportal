@@ -385,6 +385,8 @@ export function DocumentsPage() {
   const [downloadSavingId, setDownloadSavingId] = useState("");
   const [deleteSavingId, setDeleteSavingId] = useState("");
   const [statusSavingKey, setStatusSavingKey] = useState("");
+  const [revokingDocumentId, setRevokingDocumentId] = useState("");
+  const [revocationReason, setRevocationReason] = useState("");
 
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -766,7 +768,29 @@ export function DocumentsPage() {
     }
   }
 
-  async function handleQuickStatusUpdate(documentItem, nextStatus) {
+  function handleStartRevoke(documentItem) {
+    setError("");
+    setSuccessMessage("");
+    setRevokingDocumentId(documentItem.id);
+    setRevocationReason(documentItem.revocation_reason || "");
+  }
+
+  function handleCancelRevoke() {
+    setRevokingDocumentId("");
+    setRevocationReason("");
+  }
+
+  async function handleConfirmRevoke(documentItem) {
+    if (!revocationReason.trim()) {
+      setError("\u041e\u0442\u0437\u044b\u0432 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043f\u0440\u0438\u0447\u0438\u043d\u0443.");
+      return;
+    }
+
+    await handleQuickStatusUpdate(documentItem, "revoked", revocationReason);
+    handleCancelRevoke();
+  }
+
+  async function handleQuickStatusUpdate(documentItem, nextStatus, revocationReasonOverride = null) {
     if (nextStatus === "available" && !documentItem.file_available) {
       setError("Нельзя опубликовать документ без файла. Сначала загрузите файл в режиме редактирования.");
       return;
@@ -775,13 +799,7 @@ export function DocumentsPage() {
     let revocationReason = "";
 
     if (nextStatus === "revoked") {
-      const reason = window.prompt("\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430:");
-
-      if (reason === null) {
-        return;
-      }
-
-      revocationReason = reason.trim();
+      revocationReason = (revocationReasonOverride || "").trim();
 
       if (!revocationReason) {
         setError("\u041e\u0442\u0437\u044b\u0432 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043f\u0440\u0438\u0447\u0438\u043d\u0443.");
@@ -1262,6 +1280,7 @@ export function DocumentsPage() {
                 const isPublishing = statusSavingKey === `${documentItem.id}:available`;
                 const isDrafting = statusSavingKey === `${documentItem.id}:draft`;
                 const isRevoking = statusSavingKey === `${documentItem.id}:revoked`;
+                const isRevokingFormOpen = revokingDocumentId === documentItem.id;
                 const isGeneratedCompletion = isGeneratedCompletionDocument(documentItem);
                 const canPublishGeneratedCompletion = canPublishGeneratedCompletionDocument(documentItem);
                 const generatedCompletionNotice = isGeneratedCompletion
@@ -1594,7 +1613,7 @@ export function DocumentsPage() {
                           {documentItem.status !== "revoked" && (
                             <button
                               type="button"
-                              onClick={() => handleQuickStatusUpdate(documentItem, "revoked")}
+                              onClick={() => handleStartRevoke(documentItem)}
                               disabled={isRevoking || isDeleteSaving}
                               className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                             >
@@ -1611,6 +1630,43 @@ export function DocumentsPage() {
                             {isDeleteSaving ? "Удаляем..." : "Удалить"}
                           </button>
                         </div>
+
+                        {isRevokingFormOpen && (
+                          <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+                            <label className="block">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-red-600">
+                                Причина отзыва
+                              </span>
+                              <textarea
+                                value={revocationReason}
+                                onChange={(event) => setRevocationReason(event.target.value)}
+                                rows={3}
+                                placeholder="Кратко укажите причину отзыва документа"
+                                className="mt-2 min-h-24 w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+                              />
+                            </label>
+
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleConfirmRevoke(documentItem)}
+                                disabled={isRevoking || isDeleteSaving}
+                                className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {isRevoking ? "Отзываем..." : "Подтвердить отзыв"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={handleCancelRevoke}
+                                disabled={isRevoking}
+                                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Отмена
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <form
