@@ -501,6 +501,13 @@ function AccountCourseDocumentCard({ course, documents, onDownload, downloadLoad
         <div className="mt-1">
           После завершения обучения документ будет сформирован и появится в разделе «Мои документы».
         </div>
+
+        <a
+          href="#account-documents"
+          className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
+        >
+          Перейти к моим документам
+        </a>
       </div>
     );
   }
@@ -560,6 +567,13 @@ function AccountCourseDocumentCard({ course, documents, onDownload, downloadLoad
             ? "Готовим..."
             : getAccountDocumentDownloadLabel(documentItem)}
         </button>
+
+        <a
+          href="#account-documents"
+          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Перейти к моим документам
+        </a>
       </div>
     </div>
   );
@@ -1163,7 +1177,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         )}
       </SectionCard>
 
-      <SectionCard
+      <div id="account-documents" className="scroll-mt-24">
+        <SectionCard
         title="Мои документы"
         subtitle="Статусы, проверка и скачивание итоговых документов"
       >
@@ -1332,7 +1347,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
             })}
           </div>
         )}
-      </SectionCard>
+        </SectionCard>
+      </div>
     </div>
   );
 }
