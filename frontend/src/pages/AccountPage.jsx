@@ -207,6 +207,17 @@ function canDownloadDocument(documentItem) {
   );
 }
 
+function getCourseCompletionDocument(course, documents) {
+  if (!course?.enrollment_id || !Array.isArray(documents)) {
+    return null;
+  }
+
+  return (
+    documents.find((documentItem) => documentItem.enrollment_id === course.enrollment_id) ||
+    null
+  );
+}
+
 function getCourseLessonTypeLabel(contentType) {
   switch (contentType) {
     case "text":
@@ -474,6 +485,84 @@ function isRequiredLessonsBackendError(err) {
   const message = String(err?.message || err?.detail || "");
 
   return message.includes("Complete required lessons before completing course");
+}
+
+function AccountCourseDocumentCard({ course, documents, onDownload, downloadLoadingId }) {
+  const documentItem = getCourseCompletionDocument(course, documents);
+
+  if (course?.status !== "completed" && !documentItem) {
+    return null;
+  }
+
+  if (!documentItem) {
+    return (
+      <div className="mt-4 rounded-3xl bg-amber-50 p-4 text-sm leading-6 text-amber-800 ring-1 ring-amber-200">
+        <div className="font-semibold">Итоговый документ готовится</div>
+        <div className="mt-1">
+          После завершения обучения документ будет сформирован и появится в разделе «Мои документы».
+        </div>
+      </div>
+    );
+  }
+
+  const documentNotice = getAccountDocumentNotice(documentItem);
+  const downloadAvailable = canDownloadDocument(documentItem);
+
+  return (
+    <div className="mt-4 rounded-3xl bg-white p-4 ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Итоговый документ
+        </div>
+
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getDocumentStatusTone(
+            documentItem.status
+          )}`}
+        >
+          {getDocumentStatusLabel(documentItem.status)}
+        </span>
+      </div>
+
+      <div className={`mt-3 rounded-2xl p-4 text-sm leading-6 ring-1 ${documentNotice.toneClass}`}>
+        <div className="font-semibold">{documentNotice.title}</div>
+        <div className="mt-1">{documentNotice.text}</div>
+      </div>
+
+      <div className="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs uppercase tracking-wide text-slate-500">
+            Номер документа
+          </div>
+          <div className="mt-1 break-all font-semibold text-slate-900">
+            {documentItem.document_number || "—"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs uppercase tracking-wide text-slate-500">
+            Код проверки
+          </div>
+          <div className="mt-1 break-all font-semibold text-slate-900">
+            {documentItem.verification_code || "—"}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={() => onDownload(documentItem.id)}
+          disabled={!downloadAvailable || downloadLoadingId === documentItem.id}
+          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {downloadLoadingId === documentItem.id
+            ? "Готовим..."
+            : getAccountDocumentDownloadLabel(documentItem)}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
@@ -983,6 +1072,13 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </div>
                   </div>
                 )}
+                <AccountCourseDocumentCard
+                  course={course}
+                  documents={documents}
+                  onDownload={handleDownload}
+                  downloadLoadingId={downloadLoadingId}
+                />
+
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     type="button"
