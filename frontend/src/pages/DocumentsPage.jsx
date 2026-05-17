@@ -1339,6 +1339,55 @@ export function DocumentsPage() {
                           </div>
                         </div>
 
+                        <div
+                          data-testid="document-state-panel"
+                          className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm ring-1 ring-slate-200 md:grid-cols-4"
+                        >
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {"\u0421\u0442\u0430\u0442\u0443\u0441"}
+                            </div>
+                            <div className="mt-1 font-semibold text-slate-900">
+                              {getDocumentStatusLabel(documentItem.status)}
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {"\u0412\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c"}
+                            </div>
+                            <div className="mt-1 font-semibold text-slate-900">
+                              {getLearnerVisibilityLabel(documentItem)}
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {"\u0424\u0430\u0439\u043b / PDF"}
+                            </div>
+                            <div className="mt-1 font-semibold text-slate-900">
+                              {isGeneratedCompletion
+                                ? "\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 PDF \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d"
+                                : documentItem.file_available
+                                  ? "\u0424\u0430\u0439\u043b \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d"
+                                  : "\u0424\u0430\u0439\u043b \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d"}
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {"\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430"}
+                            </div>
+                            <div className="mt-1 font-semibold text-slate-900">
+                              {documentItem.status === "available"
+                                ? "\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u0430"
+                                : documentItem.status === "revoked"
+                                  ? "\u0421\u043a\u0440\u044b\u0442\u0430: \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"
+                                  : "\u0421\u043a\u0440\u044b\u0442\u0430 \u0434\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438"}
+                            </div>
+                          </div>
+                        </div>
+
                         {generatedCompletionNotice && (
                           <div className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${generatedCompletionNotice.toneClass}`}>
                             <div className="font-semibold">
