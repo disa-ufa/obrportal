@@ -2386,6 +2386,20 @@ def main() -> int:
     assert completed_course_detail["modules"][0]["lessons"][0]["is_completed"] is True
     checks.append("learner completed account course detail ok")
 
+    status, completed_course_lesson_update = request_json(
+        "POST",
+        "/api/v1/account/courses/"
+        + str(self_enrollment["enrollment_id"])
+        + "/lessons/"
+        + self_enroll_lesson_id
+        + "/complete",
+        token=learner_token,
+    )
+    assert_status(status, 400, "learner completed course lesson update blocked")
+    assert isinstance(completed_course_lesson_update, dict)
+    assert completed_course_lesson_update["detail"] == "Completed course cannot be changed"
+    checks.append("learner completed course lesson update blocked")
+
     status, learner_documents_after_completion = request_json(
         "GET",
         "/api/v1/account/documents",
