@@ -1481,21 +1481,35 @@ export function DocumentsPage() {
                           </div>
                         </div>
 
-                        <DocumentVerificationQrBlock
-                          code={documentItem.verification_code}
-                          documentNumber={documentItem.document_number}
-                          containerId={`admin-document-qr-${documentItem.id}`}
-                          title="QR-код проверки"
-                          description={
-                            documentItem.status === "available"
-                              ? "QR-код можно использовать для размещения на документе или отправки слушателю."
-                              : "Код проверки уже закреплён за документом. Публичная проверка подтвердит документ после публикации."
-                          }
-                          showPublicLink={documentItem.status === "available"}
-                          showCopyLink
-                          publicLinkLabel="Публичная проверка"
-                          className="mt-5"
-                        />
+                        {documentItem.status === "available" ? (
+                          <DocumentVerificationQrBlock
+                            code={documentItem.verification_code}
+                            documentNumber={documentItem.document_number}
+                            containerId={`admin-document-qr-${documentItem.id}`}
+                            title="QR-код проверки"
+                            description="QR-код можно использовать для размещения на документе или отправки слушателю."
+                            showPublicLink
+                            showCopyLink
+                            publicLinkLabel="Публичная проверка"
+                            className="mt-5"
+                          />
+                        ) : (
+                          <div
+                            data-testid="document-verification-hidden-note"
+                            className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200"
+                          >
+                            <div className="font-semibold text-slate-800">
+                              {documentItem.status === "revoked"
+                                ? "Публичная проверка скрыта: документ отозван"
+                                : "Публичная проверка скрыта до публикации"}
+                            </div>
+                            <div className="mt-1">
+                              {documentItem.status === "revoked"
+                                ? "QR-код и публичная ссылка не показываются для отозванного документа."
+                                : "QR-код и публичная ссылка появятся после перевода документа в статус «Доступен»."}
+                            </div>
+                          </div>
+                        )}
 
                         <div className="mt-5 flex flex-wrap gap-3">
                           <button
