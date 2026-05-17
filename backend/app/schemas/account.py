@@ -41,6 +41,8 @@ class AccountCourseLessonResponse(BaseModel):
     content_text: str | None = None
     position: int
     is_required: bool
+    is_completed: bool = False
+    completed_at: datetime | None = None
 
 
 class AccountCourseModuleResponse(BaseModel):

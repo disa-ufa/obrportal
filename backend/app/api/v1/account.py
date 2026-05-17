@@ -16,6 +16,7 @@ from app.models.course_module import CourseModule
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup
+from app.models.lesson_progress import LessonProgress
 from app.models.organization import Organization
 from app.models.user import User
 from app.services.completion_documents import ensure_completion_document_for_enrollment
@@ -261,7 +262,13 @@ def build_account_course_item_from_row(row) -> AccountCourseItemResponse:
     )
 
 
-def build_account_course_lesson(lesson: CourseLesson) -> AccountCourseLessonResponse:
+def build_account_course_lesson(
+    lesson: CourseLesson,
+    completed_at_by_lesson_id: dict[str, datetime] | None = None,
+) -> AccountCourseLessonResponse:
+    completed_at_by_lesson_id = completed_at_by_lesson_id or {}
+    completed_at = completed_at_by_lesson_id.get(str(lesson.id))
+
     return AccountCourseLessonResponse(
         id=str(lesson.id),
         module_id=str(lesson.module_id),
@@ -272,12 +279,15 @@ def build_account_course_lesson(lesson: CourseLesson) -> AccountCourseLessonResp
         content_text=lesson.content_text,
         position=lesson.position,
         is_required=lesson.is_required,
+        is_completed=completed_at is not None,
+        completed_at=completed_at,
     )
 
 
 def build_account_course_module(
     module: CourseModule,
     lessons: list[CourseLesson],
+    completed_at_by_lesson_id: dict[str, datetime] | None = None,
 ) -> AccountCourseModuleResponse:
     return AccountCourseModuleResponse(
         id=str(module.id),
@@ -285,13 +295,20 @@ def build_account_course_module(
         title=module.title,
         description=module.description,
         position=module.position,
-        lessons=[build_account_course_lesson(lesson) for lesson in lessons],
+        lessons=[
+            build_account_course_lesson(
+                lesson,
+                completed_at_by_lesson_id=completed_at_by_lesson_id,
+            )
+            for lesson in lessons
+        ],
     )
 
 
 async def load_account_course_modules(
     session: AsyncSession,
     course_id: str,
+    enrollment_id: str | None = None,
 ) -> list[AccountCourseModuleResponse]:
     modules_result = await session.execute(
         select(CourseModule)
@@ -322,6 +339,25 @@ async def load_account_course_modules(
     )
     lessons = list(lessons_result.scalars().all())
 
+    completed_at_by_lesson_id: dict[str, datetime] = {}
+
+    if enrollment_id is not None and lessons:
+        lesson_ids = [lesson.id for lesson in lessons]
+
+        progress_result = await session.execute(
+            select(LessonProgress).where(
+                LessonProgress.enrollment_id == enrollment_id,
+                LessonProgress.lesson_id.in_(lesson_ids),
+                LessonProgress.status == "completed",
+            )
+        )
+
+        completed_at_by_lesson_id = {
+            str(progress.lesson_id): progress.completed_at
+            for progress in progress_result.scalars().all()
+            if progress.completed_at is not None
+        }
+
     lessons_by_module_id: dict[str, list[CourseLesson]] = {
         str(module.id): []
         for module in modules
@@ -334,6 +370,7 @@ async def load_account_course_modules(
         build_account_course_module(
             module,
             lessons_by_module_id.get(str(module.id), []),
+            completed_at_by_lesson_id=completed_at_by_lesson_id,
         )
         for module in modules
     ]
@@ -412,7 +449,96 @@ async def get_account_course_detail(
         current_user,
         session,
     )
-    modules = await load_account_course_modules(session, str(row.course_id))
+    modules = await load_account_course_modules(
+        session,
+        str(row.course_id),
+        enrollment_id=str(row.enrollment_id),
+    )
+
+    return build_account_course_detail_from_row(row, modules)
+
+
+@router.post(
+    "/courses/{enrollment_id}/lessons/{lesson_id}/complete",
+    response_model=AccountCourseDetailResponse,
+)
+async def complete_account_course_lesson(
+    enrollment_id: str,
+    lesson_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountCourseDetailResponse:
+    enrollment = await get_account_enrollment_entity_or_404(
+        enrollment_id=enrollment_id,
+        current_user=current_user,
+        session=session,
+    )
+
+    if enrollment.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Completed course cannot be changed",
+        )
+
+    lesson_result = await session.execute(
+        select(CourseLesson)
+        .join(CourseModule, CourseModule.id == CourseLesson.module_id)
+        .where(
+            CourseLesson.id == lesson_id.strip(),
+            CourseLesson.is_active.is_(True),
+            CourseModule.is_active.is_(True),
+            CourseModule.course_id == enrollment.course_id,
+        )
+    )
+    lesson = lesson_result.scalar_one_or_none()
+
+    if lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found in this course",
+        )
+
+    now = datetime.now(timezone.utc)
+
+    if enrollment.status == "assigned":
+        enrollment.status = "active"
+
+    if enrollment.started_at is None:
+        enrollment.started_at = now
+
+    progress_result = await session.execute(
+        select(LessonProgress).where(
+            LessonProgress.enrollment_id == enrollment.id,
+            LessonProgress.lesson_id == lesson.id,
+        )
+    )
+    progress = progress_result.scalar_one_or_none()
+
+    if progress is None:
+        progress = LessonProgress(
+            enrollment_id=enrollment.id,
+            lesson_id=lesson.id,
+            status="completed",
+            completed_at=now,
+        )
+        session.add(progress)
+    else:
+        progress.status = "completed"
+
+        if progress.completed_at is None:
+            progress.completed_at = now
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+
+    row = await get_account_course_row_or_404(str(enrollment.id), current_user, session)
+    modules = await load_account_course_modules(
+        session,
+        str(row.course_id),
+        enrollment_id=str(row.enrollment_id),
+    )
 
     return build_account_course_detail_from_row(row, modules)
 
