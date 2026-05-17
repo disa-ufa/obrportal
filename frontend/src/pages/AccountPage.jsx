@@ -224,6 +224,66 @@ function getCourseLessonTypeLabel(contentType) {
   }
 }
 
+function AccountCourseProgressSummary({ detail }) {
+  const progressPercent = Number(detail?.progress_percent || 0);
+  const requiredProgressPercent = Number(detail?.required_progress_percent || 0);
+
+  return (
+    <div className="mt-5 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Прогресс по курсу
+          </div>
+          <div className="mt-1 text-lg font-bold text-slate-900">
+            {progressPercent}%
+          </div>
+        </div>
+
+        <div className="text-sm leading-6 text-slate-600">
+          <div>
+            Всего уроков:{" "}
+            <span className="font-semibold text-slate-900">
+              {detail.lessons_completed} из {detail.lessons_total}
+            </span>
+          </div>
+          <div>
+            Обязательных:{" "}
+            <span className="font-semibold text-slate-900">
+              {detail.required_lessons_completed} из {detail.required_lessons_total}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 h-3 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+        <div
+          className="h-full rounded-full bg-green-500 transition-all"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+        <div className="flex items-center justify-between gap-4 text-sm">
+          <span className="font-semibold text-slate-700">
+            Обязательные уроки
+          </span>
+          <span className="font-bold text-slate-900">
+            {requiredProgressPercent}%
+          </span>
+        </div>
+
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-blue-500 transition-all"
+            style={{ width: `${requiredProgressPercent}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AccountCourseOutline({ detail, onCompleteLesson, lessonProgressLoadingId }) {
   const modules = Array.isArray(detail?.modules) ? detail.modules : [];
   const enrollmentId = detail?.enrollment_id || "";
@@ -248,6 +308,8 @@ function AccountCourseOutline({ detail, onCompleteLesson, lessonProgressLoadingI
           Модулей: {modules.length}
         </div>
       </div>
+
+      <AccountCourseProgressSummary detail={detail} />
 
       {modules.length === 0 ? (
         <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
