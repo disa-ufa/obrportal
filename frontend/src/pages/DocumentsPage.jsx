@@ -108,6 +108,23 @@ function getDocumentStatusTone(status) {
   }
 }
 
+function isDocumentActionRequired(documentItem) {
+  if (!documentItem) {
+    return false;
+  }
+
+  if (documentItem.status === "revoked") {
+    return true;
+  }
+
+  if (documentItem.status === "draft") {
+    return true;
+  }
+
+  return documentItem.status === "available" && !documentItem.file_available;
+}
+
+
 function calculateDocumentStatusCounts(items) {
   const counts = {
     all: Array.isArray(items) ? items.length : 0,
@@ -378,6 +395,7 @@ export function DocumentsPage() {
   const [filterStatus, setFilterStatus] = useState(initialFilters.status);
   const [filterDocumentType, setFilterDocumentType] = useState(initialFilters.document_type);
   const [filterQuery, setFilterQuery] = useState(initialFilters.q);
+  const [showActionRequiredOnly, setShowActionRequiredOnly] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -440,6 +458,13 @@ export function DocumentsPage() {
     () => enrollments.find((enrollment) => enrollment.id === filterEnrollmentId) || null,
     [enrollments, filterEnrollmentId]
   );
+
+  const actionRequiredDocuments = useMemo(
+    () => documents.filter((documentItem) => isDocumentActionRequired(documentItem)),
+    [documents]
+  );
+
+  const displayedDocuments = showActionRequiredOnly ? actionRequiredDocuments : documents;
 
   useEffect(() => {
     if (!filterEnrollmentId || !selectedFilterEnrollment) {
@@ -901,6 +926,7 @@ export function DocumentsPage() {
     setFilterStatus("");
     setFilterDocumentType("");
     setFilterQuery("");
+    setShowActionRequiredOnly(false);
     await navigateToDocumentFilters({}, { replace: true });
   }
 
@@ -1195,6 +1221,28 @@ export function DocumentsPage() {
             })}
           </div>
 
+          <div className="mb-5">
+            <button
+              type="button"
+              data-testid="documents-action-required-filter"
+              onClick={() => setShowActionRequiredOnly((current) => !current)}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
+                showActionRequiredOnly
+                  ? "bg-amber-600 text-white ring-amber-600"
+                  : "bg-amber-50 text-amber-800 ring-amber-200 hover:bg-amber-100"
+              }`}
+            >
+              <span>{"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs ${
+                  showActionRequiredOnly ? "bg-white/20 text-white" : "bg-white text-amber-800"
+                }`}
+              >
+                {actionRequiredDocuments.length}
+              </span>
+            </button>
+          </div>
+
           <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr_1fr_auto_auto]">
             <input
               type="search"
@@ -1263,7 +1311,7 @@ export function DocumentsPage() {
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
               Загружаем документы...
             </div>
-          ) : documents.length === 0 ? (
+          ) : displayedDocuments.length === 0 ? (
             <AdminEmptyState
               title="Документы не найдены"
               description="Попробуйте снять фильтр по пользователю, статусу, типу документа или загрузите первый документ."
@@ -1272,7 +1320,7 @@ export function DocumentsPage() {
             />
           ) : (
             <div className="space-y-4">
-              {documents.map((documentItem) => {
+              {displayedDocuments.map((documentItem) => {
                 const isEditing = editingDocumentId === documentItem.id;
                 const isEditSaving = editSavingId === documentItem.id;
                 const isDownloadSaving = downloadSavingId === documentItem.id;
