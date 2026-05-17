@@ -26,6 +26,17 @@ def require_contains(relative_path: str, fragments: list[str]) -> None:
         raise SystemExit(1)
 
 
+def require_not_contains(relative_path: str, fragments: list[str]) -> None:
+    text = read_text(relative_path)
+    found = [fragment for fragment in fragments if fragment in text]
+
+    if found:
+        print(f"{relative_path} contains forbidden fragments:")
+        for fragment in found:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+
 def main() -> None:
     require_contains(
         "frontend/src/api/client.js",
@@ -100,7 +111,7 @@ def main() -> None:
             "function handleStartEdit(documentItem)",
             "async function handleEditSubmit(event, documentId)",
             "updateAdminDocument(documentId, payload)",
-            "async function handleQuickStatusUpdate(documentItem, nextStatus)",
+            "async function handleQuickStatusUpdate(documentItem, nextStatus, revocationReasonOverride = null)",
             "updateAdminDocument(documentItem.id, payload)",
             "async function handleAdminDownload(documentItem)",
             "downloadAdminDocument(documentItem.id)",
@@ -116,6 +127,29 @@ def main() -> None:
             "showPublicLink={documentItem.status === \"available\"}",
             "handleQuickStatusUpdate(documentItem, \"available\")",
             "handleQuickStatusUpdate(documentItem, \"draft\")",
+            "handleStartRevoke(documentItem)",
+            "const [revokingDocumentId, setRevokingDocumentId] = useState(\"\");",
+            "const [revocationReason, setRevocationReason] = useState(\"\");",
+            "function handleStartRevoke(documentItem)",
+            "function handleCancelRevoke()",
+            "async function handleConfirmRevoke(documentItem)",
+            "setRevokingDocumentId(documentItem.id);",
+            "setRevocationReason(documentItem.revocation_reason || \"\");",
+            "handleQuickStatusUpdate(documentItem, \"revoked\", revocationReason)",
+            "const isRevokingFormOpen = revokingDocumentId === documentItem.id;",
+            "{isRevokingFormOpen && (",
+            "\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u043e\u0442\u0437\u044b\u0432\u0430",
+            "\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+            "\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c \u043e\u0442\u0437\u044b\u0432",
+            "\u041e\u0442\u043c\u0435\u043d\u0430",
+        ],
+    )
+
+    require_not_contains(
+        "frontend/src/pages/DocumentsPage.jsx",
+        [
+            "window.prompt(",
+            "window.alert(",
             "handleQuickStatusUpdate(documentItem, \"revoked\")",
         ],
     )
