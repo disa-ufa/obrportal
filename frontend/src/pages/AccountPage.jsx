@@ -576,6 +576,15 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     }
   }
 
+  async function refreshOpenedCourseDetailAfterCompletion(enrollmentId) {
+    if (selectedCourseDetail?.enrollment_id !== enrollmentId) {
+      return;
+    }
+
+    const detail = await getAccountCourseDetail(enrollmentId);
+    setSelectedCourseDetail(detail);
+  }
+
   async function handleCompleteCourse(enrollmentId) {
     try {
       setCourseActionError("");
@@ -583,6 +592,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
 
       await completeAccountCourse(enrollmentId);
       await refreshAccountSnapshot();
+      await refreshOpenedCourseDetailAfterCompletion(enrollmentId);
 
       setAccountNotice({
         tone: "green",
