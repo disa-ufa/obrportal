@@ -1303,8 +1303,9 @@ export function DocumentsPage() {
           </form>
 
           <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
-            <span>Показано документов: {documents.length}</span>
+            <span>Показано документов: {displayedDocuments.length}</span>
             <span>Всего по текущим фильтрам: {documentStatusCounts.all || 0}</span>
+            <span>Требуют действия: {actionRequiredDocuments.length}</span>
           </div>
 
           {loading ? (

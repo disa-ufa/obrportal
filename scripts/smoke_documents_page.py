@@ -142,6 +142,8 @@ def main() -> None:
             "setShowActionRequiredOnly(false)",
             "actionRequiredDocuments",
             "displayedDocuments",
+            "\u041f\u043e\u043a\u0430\u0437\u0430\u043d\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432: {displayedDocuments.length}",
+            "\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f: {actionRequiredDocuments.length}",
             "data-testid=\"documents-action-required-filter\"",
             r"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f",
             "actionRequiredDocuments.length",
