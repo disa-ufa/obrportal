@@ -51,6 +51,21 @@ EXPLICIT_COVERAGE_HINTS = {
         "/api/v1/admin/courses",
         "/api/v1/courses",
     ],
+    "backend/app/models/course_module.py": [
+        "admin course module create ok",
+        "admin course module update ok",
+        "admin course module delete ok",
+    ],
+    "backend/app/models/course_lesson.py": [
+        "admin course lesson create ok",
+        "admin course lesson update ok",
+        "admin course lesson delete ok",
+    ],
+    "backend/app/models/lesson_progress.py": [
+        "learner complete required account lesson ok",
+        "learner completed course lesson update blocked",
+        "learner course completion requires required lesson",
+    ],
     "backend/app/models/document_record.py": [
         "/api/v1/admin/documents",
         "/api/v1/documents/verify",
