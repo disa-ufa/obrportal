@@ -145,6 +145,11 @@ function getStatusTone(value) {
   return "bg-slate-100 text-slate-700 ring-slate-200";
 }
 
+function isEnrollmentActionRequired(enrollment) {
+  return enrollment?.status === "assigned" || enrollment?.status === "completed";
+}
+
+
 function calculateStatusCounts(items) {
   const counts = {
     all: Array.isArray(items) ? items.length : 0,
@@ -401,6 +406,7 @@ export function AdminEnrollmentsPage() {
   const [filterCourseId, setFilterCourseId] = useState(initialFilters.course_id);
   const [filterStatus, setFilterStatus] = useState(initialFilters.status);
   const [filterGroupId, setFilterGroupId] = useState(initialFilters.learning_group_id);
+  const [showActionRequiredOnly, setShowActionRequiredOnly] = useState(false);
   const [statusCounts, setStatusCounts] = useState({ all: 0 });
 
   const [loading, setLoading] = useState(true);
@@ -534,9 +540,14 @@ export function AdminEnrollmentsPage() {
     ]
   );
 
-  const visibleEnrollments = useMemo(
-    () => enrollments,
+  const actionRequiredEnrollments = useMemo(
+    () => enrollments.filter((enrollment) => isEnrollmentActionRequired(enrollment)),
     [enrollments]
+  );
+
+  const visibleEnrollments = useMemo(
+    () => (showActionRequiredOnly ? actionRequiredEnrollments : enrollments),
+    [actionRequiredEnrollments, enrollments, showActionRequiredOnly]
   );
 
   function buildFilters(overrides = {}) {
@@ -1026,6 +1037,7 @@ export function AdminEnrollmentsPage() {
     setFilterCourseId("");
     setFilterStatus("");
     setFilterGroupId("");
+    setShowActionRequiredOnly(false);
     await navigateToEnrollmentFilters({}, { replace: true });
   }
 
@@ -1359,9 +1371,32 @@ export function AdminEnrollmentsPage() {
               className="mb-5 flex flex-wrap gap-2"
             />
 
+          <div className="mb-5">
+            <button
+              type="button"
+              data-testid="enrollments-action-required-filter"
+              onClick={() => setShowActionRequiredOnly((current) => !current)}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
+                showActionRequiredOnly
+                  ? "bg-amber-600 text-white ring-amber-600"
+                  : "bg-amber-50 text-amber-800 ring-amber-200 hover:bg-amber-100"
+              }`}
+            >
+              <span>{"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs ${
+                  showActionRequiredOnly ? "bg-white/20 text-white" : "bg-white text-amber-800"
+                }`}
+              >
+                {actionRequiredEnrollments.length}
+              </span>
+            </button>
+          </div>
+
           <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
             <span>Показано назначений: {visibleEnrollments.length}</span>
             <span>Всего по текущим фильтрам: {statusCounts.all || 0}</span>
+            <span>{"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}: {actionRequiredEnrollments.length}</span>
           </div>
 
           {loading ? (
@@ -1374,6 +1409,7 @@ export function AdminEnrollmentsPage() {
               description="Измените фильтры или назначьте пользователя на образовательную программу."
               onReset={handleResetFilter}
             />
+
           ) : (
             <div className="space-y-4">
               {visibleEnrollments.map((enrollment) => {
