@@ -157,6 +157,29 @@ class AdminAuditEventItem(BaseModel):
     created_at: datetime
 
 
+class AdminDashboardSummary(BaseModel):
+    users_total: int
+    users_inactive: int
+    organizations_total: int
+    groups_total: int
+    groups_inactive: int
+    courses_total: int
+    courses_inactive: int
+    enrollments_total: int
+    enrollments_assigned: int
+    enrollments_active: int
+    enrollments_completed: int
+    enrollments_action_required: int
+    documents_total: int
+    documents_available: int
+    documents_draft: int
+    documents_revoked: int
+    documents_action_required: int
+    roles_total: int
+    permissions_total: int
+    audit_events_total: int
+
+
 class AdminDocumentItem(BaseModel):
     id: str
     document_number: str

@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.exc import IntegrityError
@@ -48,6 +48,7 @@ from app.schemas.admin import (
     AdminCourseModuleItem,
     AdminCourseModuleUpdate,
     AdminCourseUpdate,
+    AdminDashboardSummary,
     AdminEnrollmentBulkCreateResult,
     AdminEnrollmentBulkSkippedItem,
     AdminEnrollmentCreate,
@@ -638,6 +639,12 @@ def role_assignment_snapshot(
     }
 
 
+async def count_admin_rows(session: AsyncSession, query) -> int:
+    result = await session.execute(query)
+    value = result.scalar_one()
+    return int(value or 0)
+
+
 def role_permission_snapshot(
     role_permission: RolePermission,
     role: Role,
@@ -788,6 +795,98 @@ async def rbac_check(
         "permissions_count": len(permissions),
         "has_permission": "admin.users.read" in permissions,
     }
+
+
+@router.get("/dashboard-summary", response_model=AdminDashboardSummary)
+async def get_admin_dashboard_summary(
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDashboardSummary:
+    enrollment_action_required_condition = Enrollment.status.in_(("assigned", "completed"))
+    document_action_required_condition = or_(
+        DocumentRecord.status.in_(("draft", "revoked")),
+        (DocumentRecord.status == "available") & DocumentRecord.storage_path.is_(None),
+    )
+
+    return AdminDashboardSummary(
+        users_total=await count_admin_rows(session, select(func.count()).select_from(User)),
+        users_inactive=await count_admin_rows(
+            session,
+            select(func.count()).select_from(User).where(User.is_active.is_(False)),
+        ),
+        organizations_total=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Organization),
+        ),
+        groups_total=await count_admin_rows(
+            session,
+            select(func.count()).select_from(LearningGroup),
+        ),
+        groups_inactive=await count_admin_rows(
+            session,
+            select(func.count()).select_from(LearningGroup).where(LearningGroup.is_active.is_(False)),
+        ),
+        courses_total=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Course),
+        ),
+        courses_inactive=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Course).where(Course.is_active.is_(False)),
+        ),
+        enrollments_total=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Enrollment),
+        ),
+        enrollments_assigned=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Enrollment).where(Enrollment.status == "assigned"),
+        ),
+        enrollments_active=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Enrollment).where(Enrollment.status == "active"),
+        ),
+        enrollments_completed=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Enrollment).where(Enrollment.status == "completed"),
+        ),
+        enrollments_action_required=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Enrollment).where(enrollment_action_required_condition),
+        ),
+        documents_total=await count_admin_rows(
+            session,
+            select(func.count()).select_from(DocumentRecord),
+        ),
+        documents_available=await count_admin_rows(
+            session,
+            select(func.count()).select_from(DocumentRecord).where(DocumentRecord.status == "available"),
+        ),
+        documents_draft=await count_admin_rows(
+            session,
+            select(func.count()).select_from(DocumentRecord).where(DocumentRecord.status == "draft"),
+        ),
+        documents_revoked=await count_admin_rows(
+            session,
+            select(func.count()).select_from(DocumentRecord).where(DocumentRecord.status == "revoked"),
+        ),
+        documents_action_required=await count_admin_rows(
+            session,
+            select(func.count()).select_from(DocumentRecord).where(document_action_required_condition),
+        ),
+        roles_total=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Role),
+        ),
+        permissions_total=await count_admin_rows(
+            session,
+            select(func.count()).select_from(Permission),
+        ),
+        audit_events_total=await count_admin_rows(
+            session,
+            select(func.count()).select_from(AuditEvent),
+        ),
+    )
 
 
 @router.get("/users", response_model=list[AdminUserItem])
