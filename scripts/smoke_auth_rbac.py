@@ -239,6 +239,14 @@ def main() -> int:
     assert ready["status"] == "ok"
     checks.append("ready ok")
 
+    status, anonymous_dashboard_summary = request_json(
+        "GET",
+        "/api/v1/admin/dashboard-summary",
+    )
+    assert_status(status, 401, "admin dashboard summary requires auth")
+    assert isinstance(anonymous_dashboard_summary, dict)
+    checks.append("admin dashboard summary requires auth")
+
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     checks.append("admin login ok")
 
@@ -247,6 +255,55 @@ def main() -> int:
     assert isinstance(me, dict)
     assert me["email"] == ADMIN_EMAIL
     checks.append("admin /auth/me ok")
+
+    status, admin_dashboard_summary = request_json(
+        "GET",
+        "/api/v1/admin/dashboard-summary",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin dashboard summary")
+    assert isinstance(admin_dashboard_summary, dict)
+
+    expected_dashboard_summary_keys = {
+        "users_total",
+        "users_inactive",
+        "organizations_total",
+        "groups_total",
+        "groups_inactive",
+        "courses_total",
+        "courses_inactive",
+        "enrollments_total",
+        "enrollments_assigned",
+        "enrollments_active",
+        "enrollments_completed",
+        "enrollments_action_required",
+        "documents_total",
+        "documents_available",
+        "documents_draft",
+        "documents_revoked",
+        "documents_action_required",
+        "roles_total",
+        "permissions_total",
+        "audit_events_total",
+    }
+
+    missing_dashboard_summary_keys = expected_dashboard_summary_keys - set(admin_dashboard_summary)
+    if missing_dashboard_summary_keys:
+        raise AssertionError(
+            f"admin dashboard summary missing keys: {sorted(missing_dashboard_summary_keys)}"
+        )
+
+    for key in expected_dashboard_summary_keys:
+        value = admin_dashboard_summary[key]
+        if not isinstance(value, int) or value < 0:
+            raise AssertionError(f"admin dashboard summary invalid value for {key}: {value!r}")
+
+    assert admin_dashboard_summary["users_total"] >= admin_dashboard_summary["users_inactive"]
+    assert admin_dashboard_summary["groups_total"] >= admin_dashboard_summary["groups_inactive"]
+    assert admin_dashboard_summary["courses_total"] >= admin_dashboard_summary["courses_inactive"]
+    assert admin_dashboard_summary["enrollments_total"] >= admin_dashboard_summary["enrollments_action_required"]
+    assert admin_dashboard_summary["documents_total"] >= admin_dashboard_summary["documents_action_required"]
+    checks.append("admin dashboard summary ok")
 
     public_email = f"public_{uuid4().hex[:12]}@example.com"
     public_password = "Public123Local2026!"
