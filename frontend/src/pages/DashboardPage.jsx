@@ -128,6 +128,12 @@ function percent(part, total) {
   return Math.round((part / total) * 100);
 }
 
+function summaryNumber(summary, key, fallback = 0) {
+  const value = summary?.[key];
+
+  return Number.isFinite(value) ? value : fallback;
+}
+
 function QuickLinkCard({ label, description, path, count }) {
   return (
     <Link
@@ -267,85 +273,150 @@ export function DashboardPage({
   const groups = asArray(adminData?.groups);
   const courses = asArray(adminData?.courses);
   const enrollments = asArray(adminData?.enrollments);
-  const actionRequiredEnrollments = asArray(adminData?.actionRequiredEnrollments);
   const documents = asArray(adminData?.documents);
-  const actionRequiredDocuments = asArray(adminData?.actionRequiredDocuments);
   const roles = asArray(adminData?.roles);
+  const dashboardSummary = adminData?.dashboardSummary || {};
   const permissions = asArray(adminData?.permissions);
   const auditEvents = asArray(adminData?.auditEvents);
 
+  const usersTotalCount = summaryNumber(dashboardSummary, "users_total", users.length);
+  const inactiveUsersCount = summaryNumber(
+    dashboardSummary,
+    "users_inactive",
+    countWhere(users, (item) => item.is_active === false)
+  );
+  const activeUsersCount = Math.max(usersTotalCount - inactiveUsersCount, 0);
+
+  const organizationsTotalCount = summaryNumber(
+    dashboardSummary,
+    "organizations_total",
+    organizations.length
+  );
+
+  const groupsTotalCount = summaryNumber(dashboardSummary, "groups_total", groups.length);
+  const inactiveGroupsCount = summaryNumber(
+    dashboardSummary,
+    "groups_inactive",
+    countWhere(groups, (item) => item.is_active === false)
+  );
+  const activeGroupsCount = Math.max(groupsTotalCount - inactiveGroupsCount, 0);
+
+  const coursesTotalCount = summaryNumber(dashboardSummary, "courses_total", courses.length);
+  const inactiveCoursesCount = summaryNumber(
+    dashboardSummary,
+    "courses_inactive",
+    countWhere(courses, (item) => item.is_active === false)
+  );
+  const activeCoursesCount = Math.max(coursesTotalCount - inactiveCoursesCount, 0);
+
+  const enrollmentsTotalCount = summaryNumber(
+    dashboardSummary,
+    "enrollments_total",
+    enrollments.length
+  );
+  const activeEnrollmentsCount = summaryNumber(
+    dashboardSummary,
+    "enrollments_active",
+    countWhere(enrollments, (item) => item.status === "active")
+  );
+  const completedEnrollmentsCount = summaryNumber(
+    dashboardSummary,
+    "enrollments_completed",
+    countWhere(enrollments, (item) => item.status === "completed")
+  );
+  const actionRequiredEnrollmentsCount = summaryNumber(
+    dashboardSummary,
+    "enrollments_action_required",
+    0
+  );
+
+  const documentsTotalCount = summaryNumber(dashboardSummary, "documents_total", documents.length);
+  const availableDocumentsCount = summaryNumber(
+    dashboardSummary,
+    "documents_available",
+    countWhere(documents, (item) => item.status === "available")
+  );
+  const draftDocumentsCount = summaryNumber(
+    dashboardSummary,
+    "documents_draft",
+    countWhere(documents, (item) => item.status === "draft")
+  );
+  const revokedDocumentsCount = summaryNumber(
+    dashboardSummary,
+    "documents_revoked",
+    countWhere(documents, (item) => item.status === "revoked")
+  );
+  const actionRequiredDocumentsCount = summaryNumber(
+    dashboardSummary,
+    "documents_action_required",
+    0
+  );
+
+  const rolesTotalCount = summaryNumber(dashboardSummary, "roles_total", roles.length);
+  const permissionsTotalCount = summaryNumber(
+    dashboardSummary,
+    "permissions_total",
+    permissions.length
+  );
+  const auditEventsTotalCount = summaryNumber(
+    dashboardSummary,
+    "audit_events_total",
+    auditEvents.length
+  );
+
   const counts = {
-    users: users.length,
-    organizations: organizations.length,
-    groups: groups.length,
-    courses: courses.length,
-    enrollments: enrollments.length,
-    documents: documents.length,
-    roles: roles.length,
-    permissions: permissions.length,
-    auditEvents: auditEvents.length,
+    users: usersTotalCount,
+    organizations: organizationsTotalCount,
+    groups: groupsTotalCount,
+    courses: coursesTotalCount,
+    enrollments: enrollmentsTotalCount,
+    documents: documentsTotalCount,
+    roles: rolesTotalCount,
+    permissions: permissionsTotalCount,
+    auditEvents: auditEventsTotalCount,
   };
 
-  const activeUsersCount = countWhere(users, (item) => item.is_active !== false);
-  const inactiveUsersCount = countWhere(users, (item) => item.is_active === false);
-
-  const activeGroupsCount = countWhere(groups, (item) => item.is_active !== false);
-  const inactiveGroupsCount = countWhere(groups, (item) => item.is_active === false);
-
-  const activeCoursesCount = countWhere(courses, (item) => item.is_active !== false);
-  const inactiveCoursesCount = countWhere(courses, (item) => item.is_active === false);
-
-  const assignedEnrollmentsCount = countWhere(enrollments, (item) => item.status === "assigned");
-  const activeEnrollmentsCount = countWhere(enrollments, (item) => item.status === "active");
-  const completedEnrollmentsCount = countWhere(enrollments, (item) => item.status === "completed");
-  const actionRequiredEnrollmentsCount = actionRequiredEnrollments.length;
-
-  const availableDocumentsCount = countWhere(documents, (item) => item.status === "available");
-  const draftDocumentsCount = countWhere(documents, (item) => item.status === "draft");
-  const revokedDocumentsCount = countWhere(documents, (item) => item.status === "revoked");
-  const actionRequiredDocumentsCount = actionRequiredDocuments.length;
-
   const systemRolesCount = countWhere(roles, isSystemRole);
-  const customRolesCount = Math.max(roles.length - systemRolesCount, 0);
+  const customRolesCount = Math.max(rolesTotalCount - systemRolesCount, 0);
 
   const organizationsWithoutKppCount = countWhere(organizations, (item) => !item.kpp);
   const auditWithActorCount = countWhere(auditEvents, (item) => item.actor_user_id);
 
-  const completionRate = percent(completedEnrollmentsCount, enrollments.length);
-  const publishedDocumentsRate = percent(availableDocumentsCount, documents.length);
+  const completionRate = percent(completedEnrollmentsCount, enrollmentsTotalCount);
+  const publishedDocumentsRate = percent(availableDocumentsCount, documentsTotalCount);
 
   const primaryMetrics = [
     {
       label: "Пользователи",
-      value: users.length,
+      value: usersTotalCount,
       hint: `${activeUsersCount} активных / ${inactiveUsersCount} неактивных`,
       to: buildUsersPath(),
       tone: "blue",
     },
     {
       label: "Организации",
-      value: organizations.length,
+      value: organizationsTotalCount,
       hint: `${organizationsWithoutKppCount} без КПП`,
       to: buildOrganizationsPath(),
       tone: "violet",
     },
     {
       label: "Группы",
-      value: groups.length,
+      value: groupsTotalCount,
       hint: `${activeGroupsCount} активных / ${inactiveGroupsCount} неактивных`,
       to: buildGroupsPath(),
       tone: "green",
     },
     {
       label: "Курсы",
-      value: courses.length,
+      value: coursesTotalCount,
       hint: `${activeCoursesCount} активных / ${inactiveCoursesCount} неактивных`,
       to: buildCoursesPath(),
       tone: "blue",
     },
     {
       label: "Назначения",
-      value: enrollments.length,
+      value: enrollmentsTotalCount,
       hint: actionRequiredEnrollmentsCount
         ? `${actionRequiredEnrollmentsCount} требуют действия`
         : `${completionRate}% завершено`,
@@ -354,7 +425,7 @@ export function DashboardPage({
     },
     {
       label: "Документы",
-      value: documents.length,
+      value: documentsTotalCount,
       hint: actionRequiredDocumentsCount
         ? `${actionRequiredDocumentsCount} требуют действия`
         : `${publishedDocumentsRate}% опубликовано`,
@@ -363,21 +434,21 @@ export function DashboardPage({
     },
     {
       label: "Роли",
-      value: roles.length,
+      value: rolesTotalCount,
       hint: `${systemRolesCount} системных / ${customRolesCount} пользовательских`,
       to: buildRolesPath(),
       tone: "violet",
     },
     {
       label: "Права",
-      value: permissions.length,
+      value: permissionsTotalCount,
       hint: "Разрешения RBAC",
       to: buildPermissionsPath(),
       tone: "blue",
     },
     {
       label: "Аудит",
-      value: auditEvents.length,
+      value: auditEventsTotalCount,
       hint: `${auditWithActorCount} событий с actor`,
       to: buildAuditPath(),
       tone: "amber",

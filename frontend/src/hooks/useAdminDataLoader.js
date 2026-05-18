@@ -2,6 +2,7 @@ import { formatApiError } from "../utils/apiErrors";
 import {
   getAdminAuditEvents,
   getAdminCourses,
+  getAdminDashboardSummary,
   getAdminDocuments,
   getAdminEnrollments,
   getAdminOrganizations,
@@ -33,24 +34,22 @@ export function useAdminDataLoader({
         groups,
         courses,
         enrollments,
-        actionRequiredEnrollments,
         documents,
-        actionRequiredDocuments,
         roles,
         permissions,
         auditEvents,
+        dashboardSummary,
       ] = await Promise.all([
         getAdminUsers(),
         getAdminOrganizations(),
         getOrgLearningGroups(),
         getAdminCourses({ limit: 300 }),
         getAdminEnrollments({ limit: 300 }),
-        getAdminEnrollments({ limit: 300, action_required: "true" }),
         getAdminDocuments({ limit: 300 }),
-        getAdminDocuments({ limit: 300, action_required: "true" }),
         getAdminRoles(),
         getAdminPermissions(),
         getAdminAuditEvents(),
+        getAdminDashboardSummary(),
       ]);
 
       setAdminData({
@@ -59,12 +58,11 @@ export function useAdminDataLoader({
         groups: sortGroups(groups),
         courses,
         enrollments,
-        actionRequiredEnrollments,
         documents,
-        actionRequiredDocuments,
         roles,
         permissions,
         auditEvents,
+        dashboardSummary,
       });
       setAdminDataLoadedAt(getNowLabel());
     } catch (err) {

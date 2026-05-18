@@ -193,6 +193,10 @@ export async function checkAdminRbac() {
   return request("/api/v1/admin/rbac-check");
 }
 
+export async function getAdminDashboardSummary() {
+  return request("/api/v1/admin/dashboard-summary");
+}
+
 export async function getHealth() {
   return request("/health");
 }

@@ -4,12 +4,11 @@ export const EMPTY_ADMIN_DATA = {
   groups: [],
   courses: [],
   enrollments: [],
-  actionRequiredEnrollments: [],
   documents: [],
-  actionRequiredDocuments: [],
   roles: [],
   permissions: [],
   auditEvents: [],
+  dashboardSummary: null,
 };
 
 export function userHasRole(user, roleCode) {

@@ -40,6 +40,15 @@ def require_occurs(relative_path: str, fragment: str, minimum: int) -> None:
 
 def main() -> None:
     require_contains(
+        "frontend/src/hooks/useAdminDataLoader.js",
+        [
+            "getAdminDashboardSummary,",
+            "getAdminDashboardSummary()",
+            "dashboardSummary",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/DashboardPage.jsx",
         [
             "export function DashboardPage({",
@@ -51,6 +60,10 @@ def main() -> None:
             "user,",
             "rbac,",
             "adminData,",
+            "dashboardSummary",
+            "summaryNumber",
+            "usersTotalCount",
+            "documentsTotalCount",
             "adminDataLoadedAt,",
             "onEmailChange,",
             "onPasswordChange,",
@@ -308,7 +321,7 @@ def main() -> None:
             "deactivateAdminCourse,",
             "deleteAdminCourse,",
             "getAdminCourses,",
-            "updateAdminCourse,",
+            "updateAdminCourse",
             "const COURSE_ACTIVE_FILTERS = [",
             "const EMPTY_COURSE_FORM = {",
             "const EMPTY_EDIT_FORM = {",
