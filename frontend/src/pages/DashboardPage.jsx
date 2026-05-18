@@ -169,6 +169,32 @@ function WorkflowCard({ title, description, links }) {
   );
 }
 
+function WorkCenterActionCard({ action }) {
+  return (
+    <Link
+      to={action.to}
+      className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-base font-bold text-slate-900">{action.title}</div>
+          <p className="mt-2 text-sm leading-6 text-slate-600">{action.description}</p>
+        </div>
+        <span className={`rounded-2xl px-3 py-2 text-sm font-black ring-1 ${getAdminToneClasses(action.tone)}`}>
+          {action.value}
+        </span>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {action.priorityLabel}
+        </span>
+        <span className="text-sm font-semibold text-blue-700">Открыть →</span>
+      </div>
+    </Link>
+  );
+}
+
 function AuditPreview({ auditEvents }) {
   const events = asArray(auditEvents).slice(0, 6);
 
@@ -385,6 +411,46 @@ export function DashboardPage({
   const completionRate = percent(completedEnrollmentsCount, enrollmentsTotalCount);
   const publishedDocumentsRate = percent(availableDocumentsCount, documentsTotalCount);
 
+  const priorityActions = [
+    {
+      title: "Назначения требуют действия",
+      value: actionRequiredEnrollmentsCount,
+      description: "Проверьте назначения со статусами «назначено» и «завершено», чтобы не потерять следующий административный шаг.",
+      to: buildEnrollmentsPath({ action_required: "true" }),
+      tone: actionRequiredEnrollmentsCount ? "amber" : "green",
+      priorityLabel: actionRequiredEnrollmentsCount ? "Приоритет: высокий" : "Нет срочных задач",
+    },
+    {
+      title: "Документы требуют действия",
+      value: actionRequiredDocumentsCount,
+      description: "Черновики, отозванные документы и опубликованные записи без файла требуют проверки администратора.",
+      to: buildDocumentsPath({ action_required: "true" }),
+      tone: actionRequiredDocumentsCount ? "amber" : "green",
+      priorityLabel: actionRequiredDocumentsCount ? "Приоритет: высокий" : "Нет срочных задач",
+    },
+    {
+      title: "Неактивные пользователи",
+      value: inactiveUsersCount,
+      description: "Проверьте заблокированные или отключённые учётные записи и восстановите доступ при необходимости.",
+      to: buildUsersPath({ activity: "inactive" }),
+      tone: inactiveUsersCount ? "amber" : "green",
+      priorityLabel: inactiveUsersCount ? "Проверить доступы" : "Доступы в норме",
+    },
+    {
+      title: "Отозванные документы",
+      value: revokedDocumentsCount,
+      description: "Контроль недействующих документов: причина отзыва, история изменений и возможное восстановление.",
+      to: buildDocumentsPath({ status: "revoked" }),
+      tone: revokedDocumentsCount ? "red" : "green",
+      priorityLabel: revokedDocumentsCount ? "Проверить реестр" : "Нет отозванных",
+    },
+  ];
+
+  const urgentPriorityActions = priorityActions.filter((action) => action.value > 0);
+  const displayedPriorityActions = urgentPriorityActions.length
+    ? urgentPriorityActions
+    : priorityActions.slice(0, 2);
+
   const primaryMetrics = [
     {
       label: "Пользователи",
@@ -564,6 +630,23 @@ export function DashboardPage({
           </div>
         )}
       </SectionCard>
+
+      {user && !adminLoading && (
+        <SectionCard
+          title="Рабочий центр администратора"
+          subtitle={
+            urgentPriorityActions.length
+              ? "Приоритетные задачи, которые требуют внимания администратора."
+              : "Критичных задач нет — основные контрольные переходы доступны ниже."
+          }
+        >
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {displayedPriorityActions.map((action) => (
+              <WorkCenterActionCard key={action.title} action={action} />
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       {user && !adminLoading && (
         <SectionCard
