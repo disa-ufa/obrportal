@@ -40,6 +40,27 @@ def require_occurs(relative_path: str, fragment: str, minimum: int) -> None:
 
 def main() -> None:
     require_contains(
+        "frontend/src/pages/DocumentsPage.jsx",
+        [
+            "getDocumentActionRequiredHint",
+            "document-action-required-hint",
+            "Требуется публикация или доработка черновика",
+            "Требуется файл для опубликованного документа",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/AdminEnrollmentsPage.jsx",
+        [
+            "getEnrollmentActionRequiredHint",
+            "enrollment-action-required-hint",
+            "Назначение ожидает старта обучения",
+            "Завершённое обучение ожидает документ",
+            "Назначения, требующие действия, не найдены",
+        ],
+    )
+
+    require_contains(
         "frontend/src/hooks/useAdminDataLoader.js",
         [
             "getAdminDashboardSummary,",

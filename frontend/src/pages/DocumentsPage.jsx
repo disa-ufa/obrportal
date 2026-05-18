@@ -124,6 +124,34 @@ function isDocumentActionRequired(documentItem) {
   return documentItem.status === "available" && !documentItem.file_available;
 }
 
+function getDocumentActionRequiredHint(documentItem) {
+  if (!isDocumentActionRequired(documentItem)) {
+    return null;
+  }
+
+  if (documentItem.status === "revoked") {
+    return {
+      title: "Требуется проверка отозванного документа",
+      description: "Проверьте причину отзыва, историю изменений и при необходимости восстановите документ после корректировки.",
+      toneClass: "bg-red-50 text-red-800 ring-red-200",
+    };
+  }
+
+  if (documentItem.status === "draft") {
+    return {
+      title: "Требуется публикация или доработка черновика",
+      description: "Проверьте данные документа, загрузите файл при необходимости и переведите документ в доступные.",
+      toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
+    };
+  }
+
+  return {
+    title: "Требуется файл для опубликованного документа",
+    description: "Документ опубликован, но файл не загружен. Слушатель и публичная проверка не смогут получить корректный PDF.",
+    toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
+  };
+}
+
 
 function calculateDocumentStatusCounts(items) {
   const counts = {
@@ -1381,6 +1409,7 @@ export function DocumentsPage() {
                   : "";
                 const documentCourse =
                   courses.find((course) => course.id === documentItem.course_id) || null;
+                const documentActionHint = getDocumentActionRequiredHint(documentItem);
 
                 return (
                   <article
@@ -1475,6 +1504,20 @@ export function DocumentsPage() {
                             </div>
                           </div>
                         </div>
+
+                        {documentActionHint && (
+                          <div
+                            data-testid="document-action-required-hint"
+                            className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${documentActionHint.toneClass}`}
+                          >
+                            <div className="font-semibold">
+                              {documentActionHint.title}
+                            </div>
+                            <p className="mt-1 leading-6">
+                              {documentActionHint.description}
+                            </p>
+                          </div>
+                        )}
 
                         {generatedCompletionNotice && (
                           <div className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${generatedCompletionNotice.toneClass}`}>

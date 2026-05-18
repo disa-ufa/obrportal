@@ -146,6 +146,26 @@ function getStatusTone(value) {
   return "bg-slate-100 text-slate-700 ring-slate-200";
 }
 
+function getEnrollmentActionRequiredHint(enrollment) {
+  if (enrollment?.status === "assigned") {
+    return {
+      title: "Назначение ожидает старта обучения",
+      description: "Проверьте слушателя, программу и группу. Если обучение началось, переведите назначение в работу.",
+      toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
+    };
+  }
+
+  if (enrollment?.status === "completed") {
+    return {
+      title: "Завершённое обучение ожидает документ",
+      description: "Проверьте итоговый документ по назначению: черновик, публикацию, файл и публичную проверку.",
+      toneClass: "bg-green-50 text-green-800 ring-green-200",
+    };
+  }
+
+  return null;
+}
+
 function calculateStatusCounts(items) {
   const counts = {
     all: Array.isArray(items) ? items.length : 0,
@@ -1416,9 +1436,22 @@ export function AdminEnrollmentsPage() {
             </div>
           ) : visibleEnrollments.length === 0 ? (
             <AdminEmptyState
-              title="Назначения не найдены"
-              description="Измените фильтры или назначьте пользователя на образовательную программу."
-              onReset={handleResetFilter}
+              title={
+                showActionRequiredOnly
+                  ? "Назначения, требующие действия, не найдены"
+                  : "Назначения не найдены"
+              }
+              description={
+                showActionRequiredOnly
+                  ? "В текущей выборке нет назначений со статусами «назначен» или «завершен», которые требуют внимания администратора."
+                  : "Измените фильтры или назначьте пользователя на образовательную программу."
+              }
+              resetLabel={
+                showActionRequiredOnly
+                  ? "Показать все назначения"
+                  : "Сбросить фильтр"
+              }
+              onReset={showActionRequiredOnly ? handleToggleActionRequiredFilter : handleResetFilter}
             />
 
           ) : (
@@ -1426,6 +1459,7 @@ export function AdminEnrollmentsPage() {
               {visibleEnrollments.map((enrollment) => {
                 const isEditing = editingEnrollmentId === enrollment.id;
                 const isActionRunning = actionEnrollmentId === enrollment.id;
+                const enrollmentActionHint = getEnrollmentActionRequiredHint(enrollment);
 
                 return (
                   <article
@@ -1453,6 +1487,20 @@ export function AdminEnrollmentsPage() {
                             {enrollment.user_full_name ? ` - ${enrollment.user_full_name}` : ""}
                           </div>
                         </div>
+
+                        {enrollmentActionHint && (
+                          <div
+                            data-testid="enrollment-action-required-hint"
+                            className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${enrollmentActionHint.toneClass}`}
+                          >
+                            <div className="font-semibold">
+                              {enrollmentActionHint.title}
+                            </div>
+                            <p className="mt-1 leading-6">
+                              {enrollmentActionHint.description}
+                            </p>
+                          </div>
+                        )}
 
                         <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
                           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
