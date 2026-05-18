@@ -126,6 +126,7 @@ function getEnrollmentFiltersFromSearch(search) {
     course_id: params.get("course_id") || "",
     status: params.get("status") || "",
     learning_group_id: params.get("learning_group_id") || "",
+    action_required: params.get("action_required") === "true" ? "true" : "",
   };
 }
 
@@ -144,11 +145,6 @@ function getStatusTone(value) {
 
   return "bg-slate-100 text-slate-700 ring-slate-200";
 }
-
-function isEnrollmentActionRequired(enrollment) {
-  return enrollment?.status === "assigned" || enrollment?.status === "completed";
-}
-
 
 function calculateStatusCounts(items) {
   const counts = {
@@ -406,8 +402,9 @@ export function AdminEnrollmentsPage() {
   const [filterCourseId, setFilterCourseId] = useState(initialFilters.course_id);
   const [filterStatus, setFilterStatus] = useState(initialFilters.status);
   const [filterGroupId, setFilterGroupId] = useState(initialFilters.learning_group_id);
-  const [showActionRequiredOnly, setShowActionRequiredOnly] = useState(false);
+  const [filterActionRequired, setFilterActionRequired] = useState(initialFilters.action_required);
   const [statusCounts, setStatusCounts] = useState({ all: 0 });
+  const [actionRequiredCount, setActionRequiredCount] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -540,15 +537,8 @@ export function AdminEnrollmentsPage() {
     ]
   );
 
-  const actionRequiredEnrollments = useMemo(
-    () => enrollments.filter((enrollment) => isEnrollmentActionRequired(enrollment)),
-    [enrollments]
-  );
-
-  const visibleEnrollments = useMemo(
-    () => (showActionRequiredOnly ? actionRequiredEnrollments : enrollments),
-    [actionRequiredEnrollments, enrollments, showActionRequiredOnly]
-  );
+  const showActionRequiredOnly = filterActionRequired === "true";
+  const visibleEnrollments = enrollments;
 
   function buildFilters(overrides = {}) {
     return {
@@ -557,6 +547,7 @@ export function AdminEnrollmentsPage() {
       course_id: overrides.course_id ?? filterCourseId,
       status: overrides.status ?? filterStatus,
       learning_group_id: overrides.learning_group_id ?? filterGroupId,
+      action_required: overrides.action_required ?? filterActionRequired,
     };
   }
 
@@ -578,11 +569,20 @@ export function AdminEnrollmentsPage() {
       setError("");
 
       const activeFilters = { limit: 300, ...(filters ?? buildFilters()) };
-      const countFilters = { ...activeFilters, status: "" };
+      const countFilters = {
+        ...activeFilters,
+        status: "",
+        action_required: "",
+      };
+      const actionRequiredCountFilters = {
+        ...countFilters,
+        action_required: "true",
+      };
 
       const [
         enrollmentsResponse,
         countEnrollmentsResponse,
+        actionRequiredCountResponse,
         usersResponse,
         coursesResponse,
         organizationsResponse,
@@ -590,6 +590,7 @@ export function AdminEnrollmentsPage() {
       ] = await Promise.all([
         getAdminEnrollments(activeFilters),
         getAdminEnrollments(countFilters),
+        getAdminEnrollments(actionRequiredCountFilters),
         getAdminUsers(),
         getAdminCourses({ limit: 300 }),
         getAdminOrganizations(),
@@ -612,6 +613,9 @@ export function AdminEnrollmentsPage() {
           Array.isArray(countEnrollmentsResponse) ? countEnrollmentsResponse : []
         )
       );
+      setActionRequiredCount(
+        Array.isArray(actionRequiredCountResponse) ? actionRequiredCountResponse.length : 0
+      );
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setOrganizations(Array.isArray(organizationsResponse) ? organizationsResponse : []);
@@ -633,6 +637,7 @@ export function AdminEnrollmentsPage() {
     setFilterCourseId(queryFilters.course_id);
     setFilterStatus(queryFilters.status);
     setFilterGroupId(queryFilters.learning_group_id);
+    setFilterActionRequired(queryFilters.action_required);
 
     if (queryFilters.learning_group_id) {
       setBulkForm((current) => ({
@@ -1031,13 +1036,19 @@ export function AdminEnrollmentsPage() {
     await navigateToEnrollmentFilters(buildFilters({ status }));
   }
 
+  async function handleToggleActionRequiredFilter() {
+    const nextActionRequired = showActionRequiredOnly ? "" : "true";
+    setFilterActionRequired(nextActionRequired);
+    await navigateToEnrollmentFilters(buildFilters({ action_required: nextActionRequired }));
+  }
+
   async function handleResetFilter() {
     setFilterQuery("");
     setFilterUserId("");
     setFilterCourseId("");
     setFilterStatus("");
     setFilterGroupId("");
-    setShowActionRequiredOnly(false);
+    setFilterActionRequired("");
     await navigateToEnrollmentFilters({}, { replace: true });
   }
 
@@ -1375,7 +1386,7 @@ export function AdminEnrollmentsPage() {
             <button
               type="button"
               data-testid="enrollments-action-required-filter"
-              onClick={() => setShowActionRequiredOnly((current) => !current)}
+              onClick={handleToggleActionRequiredFilter}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
                 showActionRequiredOnly
                   ? "bg-amber-600 text-white ring-amber-600"
@@ -1388,7 +1399,7 @@ export function AdminEnrollmentsPage() {
                   showActionRequiredOnly ? "bg-white/20 text-white" : "bg-white text-amber-800"
                 }`}
               >
-                {actionRequiredEnrollments.length}
+                {actionRequiredCount}
               </span>
             </button>
           </div>
@@ -1396,7 +1407,7 @@ export function AdminEnrollmentsPage() {
           <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
             <span>Показано назначений: {visibleEnrollments.length}</span>
             <span>Всего по текущим фильтрам: {statusCounts.all || 0}</span>
-            <span>{"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}: {actionRequiredEnrollments.length}</span>
+            <span>{"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}: {actionRequiredCount}</span>
           </div>
 
           {loading ? (

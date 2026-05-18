@@ -247,6 +247,7 @@ function getDocumentFiltersFromSearch(search) {
     status: params.get("status") || "",
     document_type: params.get("document_type") || "",
     q: params.get("q") || "",
+    action_required: params.get("action_required") === "true" ? "true" : "",
   };
 }
 
@@ -386,6 +387,7 @@ export function DocumentsPage() {
     draft: 0,
     revoked: 0,
   });
+  const [documentActionRequiredCount, setDocumentActionRequiredCount] = useState(0);
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
@@ -395,7 +397,7 @@ export function DocumentsPage() {
   const [filterStatus, setFilterStatus] = useState(initialFilters.status);
   const [filterDocumentType, setFilterDocumentType] = useState(initialFilters.document_type);
   const [filterQuery, setFilterQuery] = useState(initialFilters.q);
-  const [showActionRequiredOnly, setShowActionRequiredOnly] = useState(false);
+  const [filterActionRequired, setFilterActionRequired] = useState(initialFilters.action_required);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -459,12 +461,8 @@ export function DocumentsPage() {
     [enrollments, filterEnrollmentId]
   );
 
-  const actionRequiredDocuments = useMemo(
-    () => documents.filter((documentItem) => isDocumentActionRequired(documentItem)),
-    [documents]
-  );
-
-  const displayedDocuments = showActionRequiredOnly ? actionRequiredDocuments : documents;
+  const showActionRequiredOnly = filterActionRequired === "true";
+  const displayedDocuments = documents;
 
   useEffect(() => {
     if (!filterEnrollmentId || !selectedFilterEnrollment) {
@@ -497,6 +495,7 @@ export function DocumentsPage() {
       status: overrides.status ?? filterStatus,
       document_type: overrides.document_type ?? filterDocumentType,
       q: overrides.q ?? filterQuery,
+      action_required: overrides.action_required ?? filterActionRequired,
     };
   }
 
@@ -529,10 +528,17 @@ export function DocumentsPage() {
       setError("");
 
       const filters = nextFilters ?? buildDocumentFilters();
+      const activeFilters = { limit: 300, ...filters };
 
       const counterFilters = {
-        ...filters,
+        ...activeFilters,
         status: "",
+        action_required: "",
+      };
+
+      const actionRequiredCounterFilters = {
+        ...counterFilters,
+        action_required: "true",
       };
 
       const [
@@ -541,16 +547,23 @@ export function DocumentsPage() {
         coursesResponse,
         enrollmentsResponse,
         counterDocumentsResponse,
+        actionRequiredCounterDocumentsResponse,
       ] = await Promise.all([
-        getAdminDocuments(filters),
+        getAdminDocuments(activeFilters),
         getAdminUsers(),
         getAdminCourses({ limit: 300 }),
         getAdminEnrollments({ limit: 300 }),
         getAdminDocuments(counterFilters),
+        getAdminDocuments(actionRequiredCounterFilters),
       ]);
 
       setDocuments(Array.isArray(documentsResponse) ? documentsResponse : []);
       setDocumentStatusCounts(calculateDocumentStatusCounts(counterDocumentsResponse));
+      setDocumentActionRequiredCount(
+        Array.isArray(actionRequiredCounterDocumentsResponse)
+          ? actionRequiredCounterDocumentsResponse.length
+          : 0
+      );
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
@@ -569,6 +582,7 @@ export function DocumentsPage() {
     setFilterStatus(nextFilters.status);
     setFilterDocumentType(nextFilters.document_type);
     setFilterQuery(nextFilters.q);
+    setFilterActionRequired(nextFilters.action_required);
 
     loadData(nextFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -920,8 +934,15 @@ export function DocumentsPage() {
     await navigateToDocumentFilters(buildDocumentFilters({ enrollment_id: "" }), { replace: true });
   }
 
-  function handleClearActionRequiredFilter() {
-    setShowActionRequiredOnly(false);
+  async function handleClearActionRequiredFilter() {
+    setFilterActionRequired("");
+    await navigateToDocumentFilters(buildDocumentFilters({ action_required: "" }), { replace: true });
+  }
+
+  async function handleToggleActionRequiredFilter() {
+    const nextActionRequired = showActionRequiredOnly ? "" : "true";
+    setFilterActionRequired(nextActionRequired);
+    await navigateToDocumentFilters(buildDocumentFilters({ action_required: nextActionRequired }));
   }
 
   async function handleResetFilter() {
@@ -930,7 +951,7 @@ export function DocumentsPage() {
     setFilterStatus("");
     setFilterDocumentType("");
     setFilterQuery("");
-    setShowActionRequiredOnly(false);
+    setFilterActionRequired("");
     await navigateToDocumentFilters({}, { replace: true });
   }
 
@@ -1229,7 +1250,7 @@ export function DocumentsPage() {
             <button
               type="button"
               data-testid="documents-action-required-filter"
-              onClick={() => setShowActionRequiredOnly((current) => !current)}
+              onClick={handleToggleActionRequiredFilter}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
                 showActionRequiredOnly
                   ? "bg-amber-600 text-white ring-amber-600"
@@ -1242,7 +1263,7 @@ export function DocumentsPage() {
                   showActionRequiredOnly ? "bg-white/20 text-white" : "bg-white text-amber-800"
                 }`}
               >
-                {actionRequiredDocuments.length}
+                {documentActionRequiredCount}
               </span>
             </button>
           </div>
@@ -1309,7 +1330,7 @@ export function DocumentsPage() {
           <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
             <span>Показано документов: {displayedDocuments.length}</span>
             <span>Всего по текущим фильтрам: {documentStatusCounts.all || 0}</span>
-            <span>Требуют действия: {actionRequiredDocuments.length}</span>
+            <span>Требуют действия: {documentActionRequiredCount}</span>
           </div>
 
           {loading ? (
