@@ -1924,6 +1924,7 @@ async def list_admin_documents(
     status_filter: str | None = Query(default=None, alias="status", max_length=32),
     document_type: str | None = Query(default=None, max_length=128),
     q: str | None = Query(default=None, max_length=255),
+    action_required: bool | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=300),
     _: User = Depends(require_permission("admin.users.read")),
     session: AsyncSession = Depends(get_db),
@@ -1976,6 +1977,17 @@ async def list_admin_documents(
 
     if status_filter:
         query = query.where(DocumentRecord.status == normalize_document_status(status_filter))
+
+    if action_required is not None:
+        action_required_condition = or_(
+            DocumentRecord.status.in_(("draft", "revoked")),
+            (DocumentRecord.status == "available") & DocumentRecord.storage_path.is_(None),
+        )
+        query = query.where(
+            action_required_condition
+            if action_required
+            else ~action_required_condition
+        )
 
     if document_type and document_type.strip():
         query = query.where(DocumentRecord.document_type.ilike(f"%{document_type.strip()}%"))
@@ -3503,6 +3515,11 @@ ADMIN_ENROLLMENT_STATUSES = {
     "cancelled",
 }
 
+ADMIN_ENROLLMENT_ACTION_REQUIRED_STATUSES = {
+    "assigned",
+    "completed",
+}
+
 
 def normalize_enrollment_status(value: str) -> str:
     normalized = value.strip().lower()
@@ -3705,6 +3722,7 @@ async def list_admin_enrollments(
     learning_group_id: str | None = Query(default=None, max_length=64),
     status_filter: str | None = Query(default=None, alias="status", max_length=32),
     q: str | None = Query(default=None, max_length=255),
+    action_required: bool | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=300),
     _: User = Depends(require_permission("admin.users.read")),
     session: AsyncSession = Depends(get_db),
@@ -3747,6 +3765,16 @@ async def list_admin_enrollments(
 
     if status_filter:
         query = query.where(Enrollment.status == normalize_enrollment_status(status_filter))
+
+    if action_required is not None:
+        action_required_condition = Enrollment.status.in_(
+            tuple(ADMIN_ENROLLMENT_ACTION_REQUIRED_STATUSES)
+        )
+        query = query.where(
+            action_required_condition
+            if action_required
+            else ~action_required_condition
+        )
 
     if q and q.strip():
         q_filter = f"%{q.strip()}%"
