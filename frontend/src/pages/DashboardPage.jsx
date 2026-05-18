@@ -267,7 +267,9 @@ export function DashboardPage({
   const groups = asArray(adminData?.groups);
   const courses = asArray(adminData?.courses);
   const enrollments = asArray(adminData?.enrollments);
+  const actionRequiredEnrollments = asArray(adminData?.actionRequiredEnrollments);
   const documents = asArray(adminData?.documents);
+  const actionRequiredDocuments = asArray(adminData?.actionRequiredDocuments);
   const roles = asArray(adminData?.roles);
   const permissions = asArray(adminData?.permissions);
   const auditEvents = asArray(adminData?.auditEvents);
@@ -296,10 +298,12 @@ export function DashboardPage({
   const assignedEnrollmentsCount = countWhere(enrollments, (item) => item.status === "assigned");
   const activeEnrollmentsCount = countWhere(enrollments, (item) => item.status === "active");
   const completedEnrollmentsCount = countWhere(enrollments, (item) => item.status === "completed");
+  const actionRequiredEnrollmentsCount = actionRequiredEnrollments.length;
 
   const availableDocumentsCount = countWhere(documents, (item) => item.status === "available");
   const draftDocumentsCount = countWhere(documents, (item) => item.status === "draft");
   const revokedDocumentsCount = countWhere(documents, (item) => item.status === "revoked");
+  const actionRequiredDocumentsCount = actionRequiredDocuments.length;
 
   const systemRolesCount = countWhere(roles, isSystemRole);
   const customRolesCount = Math.max(roles.length - systemRolesCount, 0);
@@ -342,16 +346,20 @@ export function DashboardPage({
     {
       label: "Назначения",
       value: enrollments.length,
-      hint: `${completionRate}% завершено`,
+      hint: actionRequiredEnrollmentsCount
+        ? `${actionRequiredEnrollmentsCount} требуют действия`
+        : `${completionRate}% завершено`,
       to: buildEnrollmentsPath(),
-      tone: "amber",
+      tone: actionRequiredEnrollmentsCount ? "amber" : "green",
     },
     {
       label: "Документы",
       value: documents.length,
-      hint: `${publishedDocumentsRate}% опубликовано`,
+      hint: actionRequiredDocumentsCount
+        ? `${actionRequiredDocumentsCount} требуют действия`
+        : `${publishedDocumentsRate}% опубликовано`,
       to: buildDocumentsPath(),
-      tone: "green",
+      tone: actionRequiredDocumentsCount ? "amber" : "green",
     },
     {
       label: "Роли",
@@ -433,6 +441,20 @@ export function DashboardPage({
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               <AdminSignalCard
+                title="Назначения требуют действия"
+                value={actionRequiredEnrollmentsCount}
+                hint="Назначены или завершены — нужен контроль администратора"
+                to={buildEnrollmentsPath({ action_required: "true" })}
+                tone={actionRequiredEnrollmentsCount ? "amber" : "green"}
+              />
+              <AdminSignalCard
+                title="Документы требуют действия"
+                value={actionRequiredDocumentsCount}
+                hint="Черновики, отозванные или опубликованные без файла"
+                to={buildDocumentsPath({ action_required: "true" })}
+                tone={actionRequiredDocumentsCount ? "amber" : "green"}
+              />
+              <AdminSignalCard
                 title="Неактивные пользователи"
                 value={inactiveUsersCount}
                 hint="Проверить доступы и блокировки"
@@ -508,6 +530,7 @@ export function DashboardPage({
                 { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
                 { label: "В процессе", to: buildEnrollmentsPath({ status: "active" }) },
                 { label: "Завершены", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
               ]}
             />
 
@@ -519,6 +542,7 @@ export function DashboardPage({
                 { label: "Черновики", to: buildDocumentsPath({ status: "draft" }) },
                 { label: "Доступные", to: buildDocumentsPath({ status: "available" }) },
                 { label: "Отозванные", to: buildDocumentsPath({ status: "revoked" }) },
+                { label: "Требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
               ]}
             />
 
