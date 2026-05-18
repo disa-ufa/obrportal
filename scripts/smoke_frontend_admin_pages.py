@@ -48,6 +48,19 @@ def main() -> None:
         ],
     )
 
+    loader_text = read_text("frontend/src/hooks/useAdminDataLoader.js")
+    forbidden_loader_fragments = [
+        "getAdminCourses({ limit: 300 })",
+        "getAdminEnrollments({ limit: 300 })",
+        "getAdminDocuments({ limit: 300 })",
+    ]
+
+    for fragment in forbidden_loader_fragments:
+        if fragment in loader_text:
+            raise SystemExit(
+                f"frontend/src/hooks/useAdminDataLoader.js still loads large Dashboard list: {fragment}"
+            )
+
     require_contains(
         "frontend/src/pages/DashboardPage.jsx",
         [
