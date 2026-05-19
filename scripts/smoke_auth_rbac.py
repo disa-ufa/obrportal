@@ -305,6 +305,78 @@ def main() -> int:
     assert admin_dashboard_summary["documents_total"] >= admin_dashboard_summary["documents_action_required"]
     checks.append("admin dashboard summary ok")
 
+    status, anonymous_worklist_summary = request_json(
+        "GET",
+        "/api/v1/admin/worklist-summary",
+    )
+    assert_status(status, 401, "admin worklist summary requires auth")
+    assert isinstance(anonymous_worklist_summary, dict)
+    checks.append("admin worklist summary requires auth")
+
+    status, admin_worklist_summary = request_json(
+        "GET",
+        "/api/v1/admin/worklist-summary",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin worklist summary")
+    assert isinstance(admin_worklist_summary, dict)
+
+    expected_worklist_summary_keys = {
+        "documents",
+        "enrollments",
+    }
+
+    missing_worklist_summary_keys = expected_worklist_summary_keys - set(admin_worklist_summary)
+    if missing_worklist_summary_keys:
+        raise AssertionError(
+            f"admin worklist summary missing keys: {sorted(missing_worklist_summary_keys)}"
+        )
+
+    documents_summary = admin_worklist_summary["documents"]
+    enrollments_summary = admin_worklist_summary["enrollments"]
+
+    expected_documents_summary_keys = {
+        "total",
+        "available",
+        "draft",
+        "revoked",
+        "action_required",
+    }
+    expected_enrollments_summary_keys = {
+        "total",
+        "assigned",
+        "active",
+        "completed",
+        "cancelled",
+        "action_required",
+    }
+
+    if expected_documents_summary_keys - set(documents_summary):
+        raise AssertionError("admin worklist documents summary missing keys")
+
+    if expected_enrollments_summary_keys - set(enrollments_summary):
+        raise AssertionError("admin worklist enrollments summary missing keys")
+
+    for section_name, section in (
+        ("documents", documents_summary),
+        ("enrollments", enrollments_summary),
+    ):
+        for key, value in section.items():
+            if not isinstance(value, int) or value < 0:
+                raise AssertionError(
+                    f"admin worklist {section_name} summary invalid value for {key}: {value!r}"
+                )
+
+    if documents_summary["action_required"] > documents_summary["total"]:
+        raise AssertionError("admin worklist documents action_required exceeds total")
+
+    if enrollments_summary["action_required"] != (
+        enrollments_summary["assigned"] + enrollments_summary["completed"]
+    ):
+        raise AssertionError("admin worklist enrollments action_required mismatch")
+
+    checks.append("admin worklist summary ok")
+
     public_email = f"public_{uuid4().hex[:12]}@example.com"
     public_password = "Public123Local2026!"
     public_phone = f"+7999{uuid4().int % 10_000_000:07d}"
