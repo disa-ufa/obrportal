@@ -513,6 +513,23 @@ export async function regenerateAdminDocument(documentId) {
 }
 
 
+export async function getAdminDocumentGenerationEvents(documentId, filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/admin/documents/${documentId}/generation-events${query ? `?${query}` : ""}`);
+}
+
+
 export async function deleteAdminDocument(documentId) {
   return request(`/api/v1/admin/documents/${documentId}`, {
     method: "DELETE",

@@ -7,6 +7,7 @@ import {
   downloadAdminDocument,
   getAdminCourses,
   getAdminDocuments,
+  getAdminDocumentGenerationEvents,
   getAdminEnrollments,
   getAdminUsers,
   getAdminWorklistSummary,
@@ -337,6 +338,17 @@ function getDocumentGenerationActorLabel(documentItem) {
   return name || email || "Система";
 }
 
+function getDocumentGenerationEventActorLabel(event) {
+  const name = event.generated_by_user_full_name || "";
+  const email = event.generated_by_user_email || "";
+
+  if (name && email) {
+    return `${name} / ${email}`;
+  }
+
+  return name || email || "Система";
+}
+
 function getRevocationActorLabel(documentItem) {
   const name = documentItem.revoked_by_user_full_name || "";
   const email = documentItem.revoked_by_user_email || "";
@@ -469,6 +481,8 @@ export function DocumentsPage() {
   const [editSavingId, setEditSavingId] = useState("");
   const [downloadSavingId, setDownloadSavingId] = useState("");
   const [regenerateSavingId, setRegenerateSavingId] = useState("");
+  const [generationEventsLoadingId, setGenerationEventsLoadingId] = useState("");
+  const [generationEventsByDocumentId, setGenerationEventsByDocumentId] = useState({});
   const [deleteSavingId, setDeleteSavingId] = useState("");
   const [statusSavingKey, setStatusSavingKey] = useState("");
   const [revokingDocumentId, setRevokingDocumentId] = useState("");
@@ -625,6 +639,7 @@ export function DocumentsPage() {
         revoked: documentsSummary.revoked || 0,
       });
       setDocumentActionRequiredCount(documentsSummary.action_required || 0);
+      setGenerationEventsByDocumentId({});
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
@@ -970,6 +985,29 @@ export function DocumentsPage() {
       setError(formatDocumentApiError(err, "Не удалось пересобрать итоговый PDF."));
     } finally {
       setRegenerateSavingId("");
+    }
+  }
+
+  async function handleLoadGenerationEvents(documentItem) {
+    if (!isGeneratedCompletionDocument(documentItem)) {
+      setError("История генерации доступна только для автоматически сформированных итоговых PDF.");
+      return;
+    }
+
+    try {
+      setGenerationEventsLoadingId(documentItem.id);
+      setError("");
+
+      const events = await getAdminDocumentGenerationEvents(documentItem.id, { limit: 20 });
+
+      setGenerationEventsByDocumentId((current) => ({
+        ...current,
+        [documentItem.id]: Array.isArray(events) ? events : [],
+      }));
+    } catch (err) {
+      setError(formatDocumentApiError(err, "Не удалось загрузить историю PDF-артефактов."));
+    } finally {
+      setGenerationEventsLoadingId("");
     }
   }
 
@@ -1479,6 +1517,12 @@ export function DocumentsPage() {
                 const isEditSaving = editSavingId === documentItem.id;
                 const isDownloadSaving = downloadSavingId === documentItem.id;
                 const isRegenerating = regenerateSavingId === documentItem.id;
+                const isGenerationEventsLoading = generationEventsLoadingId === documentItem.id;
+                const generationEvents = generationEventsByDocumentId[documentItem.id] || [];
+                const hasLoadedGenerationEvents = Object.prototype.hasOwnProperty.call(
+                  generationEventsByDocumentId,
+                  documentItem.id
+                );
                 const isDeleteSaving = deleteSavingId === documentItem.id;
                 const isPublishing = statusSavingKey === `${documentItem.id}:available`;
                 const isDrafting = statusSavingKey === `${documentItem.id}:draft`;
@@ -1641,6 +1685,75 @@ export function DocumentsPage() {
                                 </div>
                               </div>
                             </div>
+                          </div>
+                        )}
+
+                        {isGeneratedCompletion && (
+                          <div
+                            data-testid="document-generation-events"
+                            className="mt-4 rounded-2xl bg-white p-4 text-sm ring-1 ring-indigo-100"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <div className="font-semibold text-slate-900">
+                                  История PDF-артефактов
+                                </div>
+                                <div className="mt-1 text-slate-500">
+                                  Отдельные файлы, созданные при первичной генерации и ручных пересборках.
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                data-testid="document-generation-events-load-action"
+                                onClick={() => handleLoadGenerationEvents(documentItem)}
+                                disabled={isGenerationEventsLoading || isDeleteSaving}
+                                className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {isGenerationEventsLoading
+                                  ? "Загружаем..."
+                                  : hasLoadedGenerationEvents
+                                    ? "Обновить историю"
+                                    : "Показать историю PDF"}
+                              </button>
+                            </div>
+
+                            {hasLoadedGenerationEvents && generationEvents.length === 0 && (
+                              <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-slate-600 ring-1 ring-slate-200">
+                                История генерации пока пуста.
+                              </div>
+                            )}
+
+                            {generationEvents.length > 0 && (
+                              <div className="mt-3 overflow-hidden rounded-2xl ring-1 ring-slate-200">
+                                <div className="grid grid-cols-12 gap-2 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  <div className="col-span-3">Дата</div>
+                                  <div className="col-span-3">Источник</div>
+                                  <div className="col-span-2">Шаблон</div>
+                                  <div className="col-span-4">Кем</div>
+                                </div>
+
+                                {generationEvents.map((event) => (
+                                  <div
+                                    key={event.id}
+                                    className="grid grid-cols-12 gap-2 border-t border-slate-100 px-4 py-3 text-sm text-slate-700"
+                                  >
+                                    <div className="col-span-3 font-semibold text-slate-900">
+                                      {formatDateTime(event.generated_at)}
+                                    </div>
+                                    <div className="col-span-3">
+                                      {getDocumentGenerationSourceLabel(event.source)}
+                                    </div>
+                                    <div className="col-span-2">
+                                      {event.template_version || "—"}
+                                    </div>
+                                    <div className="col-span-4">
+                                      {getDocumentGenerationEventActorLabel(event)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
 
