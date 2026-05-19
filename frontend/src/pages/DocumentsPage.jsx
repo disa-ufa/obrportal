@@ -1532,10 +1532,14 @@ export function DocumentsPage() {
 
                               {documentItem.enrollment_id && (
                                 <Link
-                                  to={buildEnrollmentsPath({ action_required: "true" })}
+                                  to={buildEnrollmentsPath({
+                                    action_required: "true",
+                                    user_id: documentItem.user_id || "",
+                                    course_id: documentItem.course_id || "",
+                                  })}
                                   className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
                                 >
-                                  К назначениям
+                                  Связанное назначение
                                 </Link>
                               )}
                             </div>
