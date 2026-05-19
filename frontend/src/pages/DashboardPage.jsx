@@ -195,10 +195,11 @@ function WorkCenterActionCard({ action }) {
   );
 }
 
-function DashboardTaskCard({ title, value, description, to, tone, actionLabel }) {
+function DashboardTaskCard({ title, value, description, to, tone, actionLabel, testId }) {
   return (
     <Link
       to={to}
+      data-testid={testId}
       className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-4">
@@ -481,6 +482,7 @@ export function DashboardPage({
       to: buildDocumentsPath({ action_required: "true" }),
       tone: actionRequiredDocumentsCount ? "amber" : "green",
       actionLabel: actionRequiredDocumentsCount ? "Разобрать документы" : "Открыть контроль",
+      testId: "dashboard-documents-task",
     },
     {
       title: "Назначения требуют действия",
@@ -489,6 +491,7 @@ export function DashboardPage({
       to: buildEnrollmentsPath({ action_required: "true" }),
       tone: actionRequiredEnrollmentsCount ? "amber" : "green",
       actionLabel: actionRequiredEnrollmentsCount ? "Разобрать назначения" : "Открыть контроль",
+      testId: "dashboard-enrollments-task",
     },
   ];
 
@@ -690,6 +693,7 @@ export function DashboardPage({
                 to={task.to}
                 tone={task.tone}
                 actionLabel={task.actionLabel}
+                testId={task.testId}
               />
             ))}
           </div>
