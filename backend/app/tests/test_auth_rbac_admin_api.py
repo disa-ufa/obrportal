@@ -1044,6 +1044,11 @@ def test_admin_can_create_and_update_organization() -> None:
         "name": f"???????? ??????????? {inn}",
         "legal_address": "450000, ?????????? ????????????, ?. ???, ???????? ?????",
         "actual_address": "450000, ?????????? ????????????, ?. ???, ???????? ?????",
+        "document_issuer_name": f"Document issuer {inn}",
+        "document_signer_position": "Director",
+        "document_signer_name": "Ivanov I.I.",
+        "document_basis": "License test basis",
+        "document_place": "Ufa",
     }
 
     status, created = request_json(
@@ -1058,6 +1063,11 @@ def test_admin_can_create_and_update_organization() -> None:
     assert created["id"]
     assert created["inn"] == inn
     assert created["name"] == create_payload["name"]
+    assert created["document_issuer_name"] == create_payload["document_issuer_name"]
+    assert created["document_signer_position"] == "Director"
+    assert created["document_signer_name"] == "Ivanov I.I."
+    assert created["document_basis"] == "License test basis"
+    assert created["document_place"] == "Ufa"
     assert "created_at" in created
     assert "updated_at" in created
 
@@ -1070,6 +1080,11 @@ def test_admin_can_create_and_update_organization() -> None:
         {
             "name": updated_name,
             "actual_address": "450000, ?????????? ????????????, ?. ???, ??????????? ?????",
+            "document_issuer_name": f"Updated document issuer {inn}",
+            "document_signer_position": "Head of education",
+            "document_signer_name": "Petrov P.P.",
+            "document_basis": "Updated license test basis",
+            "document_place": "Ufa updated",
         },
         token=token,
     )
@@ -1079,6 +1094,11 @@ def test_admin_can_create_and_update_organization() -> None:
     assert updated["id"] == organization_id
     assert updated["inn"] == inn
     assert updated["name"] == updated_name
+    assert updated["document_issuer_name"] == f"Updated document issuer {inn}"
+    assert updated["document_signer_position"] == "Head of education"
+    assert updated["document_signer_name"] == "Petrov P.P."
+    assert updated["document_basis"] == "Updated license test basis"
+    assert updated["document_place"] == "Ufa updated"
 
     status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
     assert status == 200

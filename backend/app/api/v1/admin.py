@@ -233,6 +233,11 @@ def build_admin_organization_item(
         name=organization.name,
         legal_address=organization.legal_address,
         actual_address=organization.actual_address,
+        document_issuer_name=organization.document_issuer_name,
+        document_signer_position=organization.document_signer_position,
+        document_signer_name=organization.document_signer_name,
+        document_basis=organization.document_basis,
+        document_place=organization.document_place,
     )
 
 
@@ -247,6 +252,11 @@ def build_admin_organization_detail(
         name=organization.name,
         legal_address=organization.legal_address,
         actual_address=organization.actual_address,
+        document_issuer_name=organization.document_issuer_name,
+        document_signer_position=organization.document_signer_position,
+        document_signer_name=organization.document_signer_name,
+        document_basis=organization.document_basis,
+        document_place=organization.document_place,
         created_at=organization.created_at,
         updated_at=organization.updated_at,
     )
@@ -314,6 +324,11 @@ def organization_snapshot(organization: Organization) -> dict:
         "name": organization.name,
         "legal_address": organization.legal_address,
         "actual_address": organization.actual_address,
+        "document_issuer_name": organization.document_issuer_name,
+        "document_signer_position": organization.document_signer_position,
+        "document_signer_name": organization.document_signer_name,
+        "document_basis": organization.document_basis,
+        "document_place": organization.document_place,
     }
 
 

@@ -13,3 +13,8 @@ class Organization(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     name: Mapped[str] = mapped_column(String(512), nullable=False)
     legal_address: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     actual_address: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    document_issuer_name: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    document_signer_position: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    document_signer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    document_basis: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    document_place: Mapped[str | None] = mapped_column(String(255), nullable=True)

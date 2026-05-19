@@ -120,6 +120,11 @@ class AdminOrganizationItem(BaseModel):
     name: str
     legal_address: str | None = None
     actual_address: str | None = None
+    document_issuer_name: str | None = None
+    document_signer_position: str | None = None
+    document_signer_name: str | None = None
+    document_basis: str | None = None
+    document_place: str | None = None
 
 
 class AdminOrganizationDetail(AdminOrganizationItem):
@@ -134,6 +139,11 @@ class AdminOrganizationCreate(BaseModel):
     name: str = Field(min_length=1, max_length=512)
     legal_address: str | None = Field(default=None, max_length=1024)
     actual_address: str | None = Field(default=None, max_length=1024)
+    document_issuer_name: str | None = Field(default=None, max_length=512)
+    document_signer_position: str | None = Field(default=None, max_length=255)
+    document_signer_name: str | None = Field(default=None, max_length=255)
+    document_basis: str | None = Field(default=None, max_length=1024)
+    document_place: str | None = Field(default=None, max_length=255)
 
 
 class AdminOrganizationUpdate(BaseModel):
@@ -143,6 +153,11 @@ class AdminOrganizationUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=512)
     legal_address: str | None = Field(default=None, max_length=1024)
     actual_address: str | None = Field(default=None, max_length=1024)
+    document_issuer_name: str | None = Field(default=None, max_length=512)
+    document_signer_position: str | None = Field(default=None, max_length=255)
+    document_signer_name: str | None = Field(default=None, max_length=255)
+    document_basis: str | None = Field(default=None, max_length=1024)
+    document_place: str | None = Field(default=None, max_length=255)
 
 
 class AdminAuditEventItem(BaseModel):
