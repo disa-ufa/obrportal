@@ -56,6 +56,7 @@ def main() -> None:
             "documents_enrollment_id: filters.enrollment_id",
             "documents_document_type: filters.document_type",
             "documents_q: filters.q",
+            "getAdminWorklistSummary({",
         ],
     )
 
@@ -112,7 +113,6 @@ def main() -> None:
             "Требуется публикация или доработка черновика",
             "Требуется файл для опубликованного документа",
             "getAdminWorklistSummary",
-            "getAdminWorklistSummary()",
             "documentsSummary.total",
             "documentsSummary.action_required",
         ],
@@ -135,7 +135,6 @@ def main() -> None:
             "Завершённое обучение ожидает документ",
             "Назначения, требующие действия, не найдены",
             "getAdminWorklistSummary",
-            "getAdminWorklistSummary()",
             "enrollmentsSummary.total",
             "enrollmentsSummary.action_required",
         ],
