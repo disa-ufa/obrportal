@@ -174,6 +174,20 @@ function getDocumentAttentionItems(documentItem) {
   return items;
 }
 
+function getDocumentAttentionTone(documentItem) {
+  if (documentItem.status === "revoked") {
+    return {
+      panelClass: "bg-red-50 text-red-800 ring-red-200",
+      badgeClass: "bg-white text-red-800 ring-red-200",
+    };
+  }
+
+  return {
+    panelClass: "bg-amber-50 text-amber-900 ring-amber-200",
+    badgeClass: "bg-white text-amber-800 ring-amber-200",
+  };
+}
+
 
 function getLearnerVisibilityLabel(documentItem) {
   if (documentItem.status === "available" && documentItem.file_available) {
@@ -1440,6 +1454,7 @@ export function DocumentsPage() {
                   courses.find((course) => course.id === documentItem.course_id) || null;
                 const documentActionHint = getDocumentActionRequiredHint(documentItem);
                 const documentAttentionItems = getDocumentAttentionItems(documentItem);
+                const documentAttentionTone = getDocumentAttentionTone(documentItem);
 
                 return (
                   <article
@@ -1538,7 +1553,7 @@ export function DocumentsPage() {
                         {documentAttentionItems.length > 0 && (
                           <div
                             data-testid="document-attention-fields"
-                            className="mt-4 rounded-2xl bg-white p-4 text-sm text-slate-700 ring-1 ring-slate-200"
+                            className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${documentAttentionTone.panelClass}`}
                           >
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="font-semibold text-slate-900">
@@ -1546,7 +1561,7 @@ export function DocumentsPage() {
                               </div>
                               <span
                                 data-testid="document-attention-count"
-                                className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+                                className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${documentAttentionTone.badgeClass}`}
                               >
                                 Пунктов внимания: {documentAttentionItems.length}
                               </span>
