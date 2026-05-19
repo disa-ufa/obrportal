@@ -1515,7 +1515,10 @@ export function AdminEnrollmentsPage() {
                               {enrollment.status === "completed" && (
                                 <Link
                                   data-testid="enrollment-action-required-documents-link"
-                                  to={buildDocumentsPath({ enrollment_id: enrollment.id })}
+                                  to={buildDocumentsPath({
+                                    enrollment_id: enrollment.id,
+                                    action_required: "true",
+                                  })}
                                   className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
                                 >
                                   Открыть документы
