@@ -3432,6 +3432,95 @@ def test_admin_can_download_admin_document() -> None:
     assert document["document_number"].lower() in disposition.lower()
 
 
+def test_admin_can_regenerate_generated_completion_document() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    slug = unique_course_slug()
+
+    status, created_course = request_json(
+        "POST",
+        "/api/v1/admin/courses",
+        token=admin_token,
+        body={
+            "slug": slug,
+            "title": f"Regenerated Completion PDF {slug}",
+            "description": "Regeneration target course",
+            "hours": 72,
+            "format": "online",
+            "document_type": "Сертификат",
+            "is_active": True,
+        },
+    )
+
+    assert status == 201
+    assert isinstance(created_course, dict)
+
+    status, enrolled = request_json(
+        "POST",
+        f'/api/v1/account/courses/{created_course["id"]}/enroll',
+        token=learner_token,
+    )
+
+    assert status == 201
+    assert isinstance(enrolled, dict)
+    enrollment_id = enrolled["enrollment_id"]
+
+    status, completed = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/complete",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(completed, dict)
+    assert completed["status"] == "completed"
+
+    status, documents = request_json(
+        "GET",
+        f"/api/v1/admin/documents?enrollment_id={enrollment_id}",
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, list)
+    assert len(documents) == 1
+
+    document = documents[0]
+    assert document["document_number"].startswith("AUTO-")
+    assert document["status"] == "draft"
+    assert document["file_available"] is True
+
+    status, regenerated = request_json(
+        "POST",
+        f'/api/v1/admin/documents/{document["id"]}/regenerate',
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(regenerated, dict)
+    assert regenerated["id"] == document["id"]
+    assert regenerated["document_number"] == document["document_number"]
+    assert regenerated["file_available"] is True
+
+    response = get_admin_document_download_response(
+        token=admin_token,
+        document_id=document["id"],
+    )
+
+    assert response.status_code == 200
+    assert response.content.startswith(b"%PDF")
+
+    status, audit_events = request_json(
+        "GET",
+        f'/api/v1/admin/audit-events?action=admin.document_regenerated&entity_id={document["id"]}',
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(audit_events, list)
+    assert any(event["action"] == "admin.document_regenerated" for event in audit_events)
+
+
 def test_admin_download_document_without_file_returns_409() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 

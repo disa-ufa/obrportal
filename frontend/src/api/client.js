@@ -506,6 +506,13 @@ export async function updateAdminDocument(documentId, payload) {
 }
 
 
+export async function regenerateAdminDocument(documentId) {
+  return request(`/api/v1/admin/documents/${documentId}/regenerate`, {
+    method: "POST",
+  });
+}
+
+
 export async function deleteAdminDocument(documentId) {
   return request(`/api/v1/admin/documents/${documentId}`, {
     method: "DELETE",

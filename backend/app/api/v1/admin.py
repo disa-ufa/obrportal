@@ -33,7 +33,11 @@ from app.services.document_storage import (
     resolve_private_storage_path,
     write_private_storage_file,
 )
-from app.services.completion_documents import ensure_completion_document_for_enrollment
+from app.services.completion_documents import (
+    ensure_completion_document_for_enrollment,
+    load_completion_document_context,
+    write_completion_document_pdf_to_storage,
+)
 from app.schemas.admin import (
     AdminAuditEventItem,
     AdminCourseCreate,
@@ -2635,6 +2639,72 @@ async def download_admin_document(
         media_type=media_type,
         filename=filename,
     )
+
+
+def is_generated_completion_document(document: DocumentRecord) -> bool:
+    return bool(
+        document.enrollment_id
+        and str(document.document_number or "").startswith("AUTO-")
+    )
+
+
+@router.post("/documents/{document_id}/regenerate", response_model=AdminDocumentItem)
+async def regenerate_admin_completion_document(
+    document_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDocumentItem:
+    document = await get_admin_document_or_404(document_id, session)
+
+    if not is_generated_completion_document(document):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only generated completion documents can be regenerated",
+        )
+
+    enrollment_result = await session.execute(
+        select(Enrollment).where(Enrollment.id == document.enrollment_id)
+    )
+    enrollment = enrollment_result.scalar_one_or_none()
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Enrollment not found",
+        )
+
+    before = document_record_snapshot(document)
+    course, learner = await load_completion_document_context(enrollment, session)
+
+    document.storage_path = write_completion_document_pdf_to_storage(
+        enrollment=enrollment,
+        document=document,
+        course=course,
+        learner=learner,
+    )
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.document_regenerated",
+        entity_type="document",
+        entity_id=str(document.id),
+        payload={
+            "before": before,
+            "after": document_record_snapshot(document),
+            "regenerated_file_available": bool(document.storage_path),
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    row = await get_admin_document_row_or_404(str(document.id), session)
+
+    return build_admin_document_item(row)
 
 
 COURSE_SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,254}$")

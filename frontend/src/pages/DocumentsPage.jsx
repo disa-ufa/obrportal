@@ -10,6 +10,7 @@ import {
   getAdminEnrollments,
   getAdminUsers,
   getAdminWorklistSummary,
+  regenerateAdminDocument,
   updateAdminDocument,
 } from "../api/client";
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
@@ -446,6 +447,7 @@ export function DocumentsPage() {
   const [saving, setSaving] = useState(false);
   const [editSavingId, setEditSavingId] = useState("");
   const [downloadSavingId, setDownloadSavingId] = useState("");
+  const [regenerateSavingId, setRegenerateSavingId] = useState("");
   const [deleteSavingId, setDeleteSavingId] = useState("");
   const [statusSavingKey, setStatusSavingKey] = useState("");
   const [revokingDocumentId, setRevokingDocumentId] = useState("");
@@ -925,6 +927,28 @@ export function DocumentsPage() {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.downloadFailed));
     } finally {
       setDownloadSavingId("");
+    }
+  }
+
+  async function handleRegenerateCompletionDocument(documentItem) {
+    if (!isGeneratedCompletionDocument(documentItem)) {
+      setError("Пересборка доступна только для автоматически сформированных итоговых PDF.");
+      return;
+    }
+
+    try {
+      setRegenerateSavingId(documentItem.id);
+      setError("");
+      setSuccessMessage("");
+
+      const regenerated = await regenerateAdminDocument(documentItem.id);
+
+      setSuccessMessage(`PDF пересобран: ${regenerated.document_number}`);
+      await loadData(buildDocumentFilters());
+    } catch (err) {
+      setError(formatDocumentApiError(err, "Не удалось пересобрать итоговый PDF."));
+    } finally {
+      setRegenerateSavingId("");
     }
   }
 
@@ -1433,6 +1457,7 @@ export function DocumentsPage() {
                 const isEditing = editingDocumentId === documentItem.id;
                 const isEditSaving = editSavingId === documentItem.id;
                 const isDownloadSaving = downloadSavingId === documentItem.id;
+                const isRegenerating = regenerateSavingId === documentItem.id;
                 const isDeleteSaving = deleteSavingId === documentItem.id;
                 const isPublishing = statusSavingKey === `${documentItem.id}:available`;
                 const isDrafting = statusSavingKey === `${documentItem.id}:draft`;
