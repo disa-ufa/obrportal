@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.exc import IntegrityError
@@ -3708,53 +3708,65 @@ async def get_admin_worklist_summary(
             )
         )
 
-    async def count_documents(*extra_conditions) -> int:
-        query = (
-            select(func.count())
-            .select_from(DocumentRecord)
-            .join(User, User.id == DocumentRecord.user_id)
-            .outerjoin(Course, Course.id == DocumentRecord.course_id)
+    def count_if(condition):
+        return func.coalesce(func.sum(case((condition, 1), else_=0)), 0)
+
+    documents_query = (
+        select(
+            func.count().label("total"),
+            count_if(DocumentRecord.status == "available").label("available"),
+            count_if(DocumentRecord.status == "draft").label("draft"),
+            count_if(DocumentRecord.status == "revoked").label("revoked"),
+            count_if(document_action_required_condition).label("action_required"),
         )
+        .select_from(DocumentRecord)
+        .join(User, User.id == DocumentRecord.user_id)
+        .outerjoin(Course, Course.id == DocumentRecord.course_id)
+    )
 
-        all_conditions = [*document_conditions, *extra_conditions]
+    if document_conditions:
+        documents_query = documents_query.where(*document_conditions)
 
-        if all_conditions:
-            query = query.where(*all_conditions)
+    documents_result = await session.execute(documents_query)
+    documents_summary = documents_result.one()
 
-        return await count_admin_rows(session, query)
-
-    async def count_enrollments(*extra_conditions) -> int:
-        query = (
-            select(func.count())
-            .select_from(Enrollment)
-            .join(User, User.id == Enrollment.user_id)
-            .join(Course, Course.id == Enrollment.course_id)
-            .outerjoin(Organization, Organization.id == Enrollment.organization_id)
-            .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+    enrollments_query = (
+        select(
+            func.count().label("total"),
+            count_if(Enrollment.status == "assigned").label("assigned"),
+            count_if(Enrollment.status == "active").label("active"),
+            count_if(Enrollment.status == "completed").label("completed"),
+            count_if(Enrollment.status == "cancelled").label("cancelled"),
+            count_if(enrollment_action_required_condition).label("action_required"),
         )
+        .select_from(Enrollment)
+        .join(User, User.id == Enrollment.user_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+        .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+    )
 
-        all_conditions = [*enrollment_conditions, *extra_conditions]
+    if enrollment_conditions:
+        enrollments_query = enrollments_query.where(*enrollment_conditions)
 
-        if all_conditions:
-            query = query.where(*all_conditions)
-
-        return await count_admin_rows(session, query)
+    enrollments_result = await session.execute(enrollments_query)
+    enrollments_summary = enrollments_result.one()
 
     return AdminWorklistSummary(
         documents=AdminWorklistDocumentsSummary(
-            total=await count_documents(),
-            available=await count_documents(DocumentRecord.status == "available"),
-            draft=await count_documents(DocumentRecord.status == "draft"),
-            revoked=await count_documents(DocumentRecord.status == "revoked"),
-            action_required=await count_documents(document_action_required_condition),
+            total=int(documents_summary.total or 0),
+            available=int(documents_summary.available or 0),
+            draft=int(documents_summary.draft or 0),
+            revoked=int(documents_summary.revoked or 0),
+            action_required=int(documents_summary.action_required or 0),
         ),
         enrollments=AdminWorklistEnrollmentsSummary(
-            total=await count_enrollments(),
-            assigned=await count_enrollments(Enrollment.status == "assigned"),
-            active=await count_enrollments(Enrollment.status == "active"),
-            completed=await count_enrollments(Enrollment.status == "completed"),
-            cancelled=await count_enrollments(Enrollment.status == "cancelled"),
-            action_required=await count_enrollments(enrollment_action_required_condition),
+            total=int(enrollments_summary.total or 0),
+            assigned=int(enrollments_summary.assigned or 0),
+            active=int(enrollments_summary.active or 0),
+            completed=int(enrollments_summary.completed or 0),
+            cancelled=int(enrollments_summary.cancelled or 0),
+            action_required=int(enrollments_summary.action_required or 0),
         ),
     )
 
