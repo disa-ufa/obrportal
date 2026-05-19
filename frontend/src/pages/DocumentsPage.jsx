@@ -1840,6 +1840,18 @@ export function DocumentsPage() {
                             {isDownloadSaving ? "Скачиваем..." : getAdminDocumentDownloadLabel(documentItem)}
                           </button>
 
+                          {isGeneratedCompletion && (
+                            <button
+                              type="button"
+                              data-testid="document-regenerate-pdf-action"
+                              onClick={() => handleRegenerateCompletionDocument(documentItem)}
+                              disabled={isRegenerating || isDeleteSaving}
+                              className="rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 ring-1 ring-indigo-200 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isRegenerating ? "Пересобираем..." : "Пересобрать PDF"}
+                            </button>
+                          )}
+
                           {documentItem.user_id && (
                             <Link
                               to={getDocumentFilterPath({
