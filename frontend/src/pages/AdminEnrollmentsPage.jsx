@@ -167,26 +167,6 @@ function getEnrollmentActionRequiredHint(enrollment) {
   return null;
 }
 
-function calculateStatusCounts(items) {
-  const counts = {
-    all: Array.isArray(items) ? items.length : 0,
-  };
-
-  if (!Array.isArray(items)) {
-    return counts;
-  }
-
-  items.forEach((item) => {
-    if (!item.status) {
-      return;
-    }
-
-    counts[item.status] = (counts[item.status] || 0) + 1;
-  });
-
-  return counts;
-}
-
 const USER_ROLE_LABELS = {
   admin: "Администратор",
   learner_fl: "Физлицо",

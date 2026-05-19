@@ -94,6 +94,15 @@ def main() -> None:
                 f"frontend/src/pages/AdminEnrollmentsPage.jsx still loads counter list: {fragment}"
             )
 
+    forbidden_dead_counter_helpers = [
+        ("frontend/src/pages/DocumentsPage.jsx", "function calculateDocumentStatusCounts"),
+        ("frontend/src/pages/AdminEnrollmentsPage.jsx", "function calculateStatusCounts"),
+    ]
+
+    for relative_path, fragment in forbidden_dead_counter_helpers:
+        if fragment in read_text(relative_path):
+            raise SystemExit(f"{relative_path} still contains dead counter helper: {fragment}")
+
     require_contains(
         "frontend/src/pages/DocumentsPage.jsx",
         [

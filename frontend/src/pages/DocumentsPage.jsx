@@ -157,27 +157,6 @@ function getDocumentActionRequiredHint(documentItem) {
 }
 
 
-function calculateDocumentStatusCounts(items) {
-  const counts = {
-    all: Array.isArray(items) ? items.length : 0,
-    available: 0,
-    draft: 0,
-    revoked: 0,
-  };
-
-  if (!Array.isArray(items)) {
-    return counts;
-  }
-
-  items.forEach((item) => {
-    if (Object.prototype.hasOwnProperty.call(counts, item.status)) {
-      counts[item.status] += 1;
-    }
-  });
-
-  return counts;
-}
-
 function getLearnerVisibilityLabel(documentItem) {
   if (documentItem.status === "available" && documentItem.file_available) {
     return "Слушатель может скачать";
