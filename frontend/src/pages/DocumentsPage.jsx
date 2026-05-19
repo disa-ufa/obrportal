@@ -1299,6 +1299,32 @@ export function DocumentsPage() {
             </button>
           </div>
 
+          {showActionRequiredOnly && (
+            <div
+              data-testid="documents-action-required-banner"
+              className="mb-5 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
+            >
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="font-semibold">
+                    Включён режим контроля документов
+                  </div>
+                  <p className="mt-1 leading-6 text-amber-800">
+                    Показаны только черновики, отозванные документы и опубликованные записи без файла.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleClearActionRequiredFilter}
+                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
+                >
+                  Показать все документы
+                </button>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr_1fr_auto_auto]">
             <input
               type="search"
