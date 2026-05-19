@@ -377,6 +377,35 @@ def main() -> int:
 
     checks.append("admin worklist summary ok")
 
+    status, filtered_worklist_summary = request_json(
+        "GET",
+        (
+            "/api/v1/admin/worklist-summary"
+            "?documents_q=__missing_smoke_worklist_query__"
+            "&enrollments_q=__missing_smoke_worklist_query__"
+        ),
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin filtered worklist summary")
+    assert isinstance(filtered_worklist_summary, dict)
+
+    filtered_documents_summary = filtered_worklist_summary["documents"]
+    filtered_enrollments_summary = filtered_worklist_summary["enrollments"]
+
+    for key in expected_documents_summary_keys:
+        if filtered_documents_summary[key] != 0:
+            raise AssertionError(
+                f"admin filtered worklist documents summary expected 0 for {key}, got {filtered_documents_summary[key]!r}"
+            )
+
+    for key in expected_enrollments_summary_keys:
+        if filtered_enrollments_summary[key] != 0:
+            raise AssertionError(
+                f"admin filtered worklist enrollments summary expected 0 for {key}, got {filtered_enrollments_summary[key]!r}"
+            )
+
+    checks.append("admin filtered worklist summary ok")
+
     public_email = f"public_{uuid4().hex[:12]}@example.com"
     public_password = "Public123Local2026!"
     public_phone = f"+7999{uuid4().int % 10_000_000:07d}"
