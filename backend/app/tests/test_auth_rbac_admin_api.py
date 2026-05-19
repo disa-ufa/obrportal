@@ -3689,8 +3689,8 @@ def test_admin_can_filter_admin_courses() -> None:
         token=token,
         body={
             "slug": slug,
-            "title": "Unique Admin Filter Course",
-            "description": "Filter target description",
+            "title": f"Unique Admin Filter Course {slug}",
+            "description": f"Filter target description {slug}",
             "is_active": False,
         },
     )
@@ -3701,7 +3701,7 @@ def test_admin_can_filter_admin_courses() -> None:
     query = urlencode(
         {
             "is_active": "false",
-            "q": "Unique Admin Filter",
+            "q": slug,
         }
     )
 
