@@ -604,7 +604,12 @@ export function AdminEnrollmentsPage() {
         getAdminCourses({ limit: 300 }),
         getAdminOrganizations(),
         getOrgLearningGroups(),
-        getAdminWorklistSummary(),
+        getAdminWorklistSummary({
+          enrollments_user_id: activeFilters.user_id,
+          enrollments_course_id: activeFilters.course_id,
+          enrollments_learning_group_id: activeFilters.learning_group_id,
+          enrollments_q: activeFilters.q,
+        }),
       ]);
 
       const loadedGroups = Array.isArray(groupsResponse) ? groupsResponse : [];

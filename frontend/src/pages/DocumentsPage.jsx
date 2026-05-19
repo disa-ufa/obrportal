@@ -573,7 +573,12 @@ export function DocumentsPage() {
         getAdminUsers(),
         getAdminCourses({ limit: 300 }),
         getAdminEnrollments({ limit: 300 }),
-        getAdminWorklistSummary(),
+        getAdminWorklistSummary({
+          documents_user_id: filters.user_id,
+          documents_enrollment_id: filters.enrollment_id,
+          documents_document_type: filters.document_type,
+          documents_q: filters.q,
+        }),
       ]);
 
       const documentsSummary = worklistSummaryResponse?.documents || {};

@@ -40,6 +40,60 @@ def require_occurs(relative_path: str, fragment: str, minimum: int) -> None:
 
 def main() -> None:
     require_contains(
+        "frontend/src/api/client.js",
+        [
+            "getAdminWorklistSummary(filters = {})",
+            "/api/v1/admin/worklist-summary",
+            "Object.entries(filters).forEach",
+            "params.set(key, value)",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/DocumentsPage.jsx",
+        [
+            "documents_user_id: filters.user_id",
+            "documents_enrollment_id: filters.enrollment_id",
+            "documents_document_type: filters.document_type",
+            "documents_q: filters.q",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/AdminEnrollmentsPage.jsx",
+        [
+            "enrollments_user_id: activeFilters.user_id",
+            "enrollments_course_id: activeFilters.course_id",
+            "enrollments_learning_group_id: activeFilters.learning_group_id",
+            "enrollments_q: activeFilters.q",
+        ],
+    )
+
+    documents_text = read_text("frontend/src/pages/DocumentsPage.jsx")
+    forbidden_documents_counter_fragments = [
+        "getAdminDocuments(counterFilters)",
+        "getAdminDocuments(actionRequiredCounterFilters)",
+    ]
+
+    for fragment in forbidden_documents_counter_fragments:
+        if fragment in documents_text:
+            raise SystemExit(
+                f"frontend/src/pages/DocumentsPage.jsx still loads counter list: {fragment}"
+            )
+
+    enrollments_text = read_text("frontend/src/pages/AdminEnrollmentsPage.jsx")
+    forbidden_enrollments_counter_fragments = [
+        "getAdminEnrollments(countFilters)",
+        "getAdminEnrollments(actionRequiredCountFilters)",
+    ]
+
+    for fragment in forbidden_enrollments_counter_fragments:
+        if fragment in enrollments_text:
+            raise SystemExit(
+                f"frontend/src/pages/AdminEnrollmentsPage.jsx still loads counter list: {fragment}"
+            )
+
+    require_contains(
         "frontend/src/pages/DocumentsPage.jsx",
         [
             "getDocumentActionRequiredHint",
