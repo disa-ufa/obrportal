@@ -316,6 +316,27 @@ function getEnrollmentStatusLabel(status) {
   return labels[status] || status || "-";
 }
 
+function getDocumentGenerationSourceLabel(source) {
+  const labels = {
+    auto_completion: "Автоматически при завершении обучения",
+    admin_regenerate: "Ручная пересборка администратором",
+    legacy_completion: "Ранее сформированный PDF",
+  };
+
+  return labels[source] || source || "—";
+}
+
+function getDocumentGenerationActorLabel(documentItem) {
+  const name = documentItem.generated_by_user_full_name || "";
+  const email = documentItem.generated_by_user_email || "";
+
+  if (name && email) {
+    return `${name} / ${email}`;
+  }
+
+  return name || email || "Система";
+}
+
 function getRevocationActorLabel(documentItem) {
   const name = documentItem.revoked_by_user_full_name || "";
   const email = documentItem.revoked_by_user_email || "";
@@ -1574,6 +1595,54 @@ export function DocumentsPage() {
                             </div>
                           </div>
                         </div>
+
+                        {isGeneratedCompletion && (
+                          <div
+                            data-testid="document-generation-metadata"
+                            className="mt-4 rounded-2xl bg-indigo-50 p-4 text-sm text-indigo-900 ring-1 ring-indigo-200"
+                          >
+                            <div className="font-semibold">
+                              Паспорт генерации PDF
+                            </div>
+                            <div className="mt-3 grid gap-3 md:grid-cols-4">
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                                  Сформирован
+                                </div>
+                                <div className="mt-1 font-semibold">
+                                  {formatDateTime(documentItem.generated_at)}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                                  Источник
+                                </div>
+                                <div className="mt-1 font-semibold">
+                                  {getDocumentGenerationSourceLabel(documentItem.generation_source)}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                                  Шаблон
+                                </div>
+                                <div className="mt-1 font-semibold">
+                                  {documentItem.generation_template_version || "—"}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                                  Кем
+                                </div>
+                                <div className="mt-1 font-semibold">
+                                  {getDocumentGenerationActorLabel(documentItem)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {documentAttentionItems.length > 0 && (
                           <div

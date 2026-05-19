@@ -226,6 +226,12 @@ class AdminDocumentItem(BaseModel):
     learning_group_id: str | None = None
     learning_group_name: str | None = None
     file_available: bool = False
+    generated_at: datetime | None = None
+    generated_by_user_id: str | None = None
+    generated_by_user_email: str | None = None
+    generated_by_user_full_name: str | None = None
+    generation_source: str | None = None
+    generation_template_version: str | None = None
     created_at: datetime
     updated_at: datetime
 

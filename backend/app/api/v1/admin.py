@@ -36,6 +36,7 @@ from app.services.document_storage import (
 from app.services.completion_documents import (
     ensure_completion_document_for_enrollment,
     load_completion_document_context,
+    mark_completion_document_generation_metadata,
     write_completion_document_pdf_to_storage,
 )
 from app.schemas.admin import (
@@ -1837,6 +1838,12 @@ def build_admin_document_item(row) -> AdminDocumentItem:
         learning_group_id=str(row.learning_group_id) if row.learning_group_id else None,
         learning_group_name=row.learning_group_name,
         file_available=bool(row.storage_path),
+        generated_at=row.generated_at,
+        generated_by_user_id=str(row.generated_by_user_id) if row.generated_by_user_id else None,
+        generated_by_user_email=row.generated_by_user_email,
+        generated_by_user_full_name=row.generated_by_user_full_name,
+        generation_source=row.generation_source,
+        generation_template_version=row.generation_template_version,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -1975,6 +1982,7 @@ async def get_admin_document_row_or_404(
     session: AsyncSession,
 ):
     revoked_by_user = aliased(User)
+    generated_by_user = aliased(User)
 
     result = await session.execute(
         select(
@@ -1991,12 +1999,18 @@ async def get_admin_document_row_or_404(
             DocumentRecord.course_id.label("course_id"),
             DocumentRecord.enrollment_id.label("enrollment_id"),
             DocumentRecord.storage_path.label("storage_path"),
+            DocumentRecord.generated_at.label("generated_at"),
+            DocumentRecord.generated_by_user_id.label("generated_by_user_id"),
+            DocumentRecord.generation_source.label("generation_source"),
+            DocumentRecord.generation_template_version.label("generation_template_version"),
             DocumentRecord.created_at.label("created_at"),
             DocumentRecord.updated_at.label("updated_at"),
             User.email.label("user_email"),
             User.full_name.label("user_full_name"),
             revoked_by_user.email.label("revoked_by_user_email"),
             revoked_by_user.full_name.label("revoked_by_user_full_name"),
+            generated_by_user.email.label("generated_by_user_email"),
+            generated_by_user.full_name.label("generated_by_user_full_name"),
             Course.title.label("course_title"),
             Enrollment.status.label("enrollment_status"),
             Enrollment.organization_id.label("organization_id"),
@@ -2006,6 +2020,7 @@ async def get_admin_document_row_or_404(
         )
         .join(User, User.id == DocumentRecord.user_id)
         .outerjoin(revoked_by_user, revoked_by_user.id == DocumentRecord.revoked_by_user_id)
+        .outerjoin(generated_by_user, generated_by_user.id == DocumentRecord.generated_by_user_id)
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
         .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
         .outerjoin(Organization, Organization.id == Enrollment.organization_id)
@@ -2036,6 +2051,7 @@ async def list_admin_documents(
     session: AsyncSession = Depends(get_db),
 ) -> list[AdminDocumentItem]:
     revoked_by_user = aliased(User)
+    generated_by_user = aliased(User)
 
     query = (
         select(
@@ -2052,12 +2068,18 @@ async def list_admin_documents(
             DocumentRecord.course_id.label("course_id"),
             DocumentRecord.enrollment_id.label("enrollment_id"),
             DocumentRecord.storage_path.label("storage_path"),
+            DocumentRecord.generated_at.label("generated_at"),
+            DocumentRecord.generated_by_user_id.label("generated_by_user_id"),
+            DocumentRecord.generation_source.label("generation_source"),
+            DocumentRecord.generation_template_version.label("generation_template_version"),
             DocumentRecord.created_at.label("created_at"),
             DocumentRecord.updated_at.label("updated_at"),
             User.email.label("user_email"),
             User.full_name.label("user_full_name"),
             revoked_by_user.email.label("revoked_by_user_email"),
             revoked_by_user.full_name.label("revoked_by_user_full_name"),
+            generated_by_user.email.label("generated_by_user_email"),
+            generated_by_user.full_name.label("generated_by_user_full_name"),
             Course.title.label("course_title"),
             Enrollment.status.label("enrollment_status"),
             Enrollment.organization_id.label("organization_id"),
@@ -2067,6 +2089,7 @@ async def list_admin_documents(
         )
         .join(User, User.id == DocumentRecord.user_id)
         .outerjoin(revoked_by_user, revoked_by_user.id == DocumentRecord.revoked_by_user_id)
+        .outerjoin(generated_by_user, generated_by_user.id == DocumentRecord.generated_by_user_id)
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
         .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
         .outerjoin(Organization, Organization.id == Enrollment.organization_id)
@@ -2281,6 +2304,10 @@ def document_record_snapshot(document: DocumentRecord) -> dict:
         "enrollment_id": str(document.enrollment_id) if document.enrollment_id else None,
         "file_available": bool(document.storage_path),
         "storage_path": document.storage_path,
+        "generated_at": document.generated_at.isoformat() if document.generated_at else None,
+        "generated_by_user_id": str(document.generated_by_user_id) if document.generated_by_user_id else None,
+        "generation_source": document.generation_source,
+        "generation_template_version": document.generation_template_version,
     }
 
 
@@ -2682,6 +2709,11 @@ async def regenerate_admin_completion_document(
         document=document,
         course=course,
         learner=learner,
+    )
+    mark_completion_document_generation_metadata(
+        document,
+        actor_user=current_user,
+        source="admin_regenerate",
     )
 
     await session.flush()

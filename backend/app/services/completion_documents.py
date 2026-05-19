@@ -5,6 +5,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.base import utcnow
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
@@ -17,6 +18,21 @@ from app.services.document_templates import (
     build_document_verification_url,
 )
 
+
+
+COMPLETION_DOCUMENT_TEMPLATE_VERSION = "completion_pdf_v1"
+
+
+def mark_completion_document_generation_metadata(
+    document: DocumentRecord,
+    *,
+    actor_user: User | None = None,
+    source: str = "auto_completion",
+) -> None:
+    document.generated_at = utcnow()
+    document.generated_by_user_id = actor_user.id if actor_user else None
+    document.generation_source = source
+    document.generation_template_version = COMPLETION_DOCUMENT_TEMPLATE_VERSION
 
 
 def get_completion_document_public_base_url() -> str:
@@ -120,6 +136,10 @@ async def ensure_completion_document_for_enrollment(
                 course=course,
                 learner=learner,
             )
+            mark_completion_document_generation_metadata(
+                existing_document,
+                source="auto_completion",
+            )
             await session.flush()
 
         return existing_document
@@ -157,6 +177,10 @@ async def ensure_completion_document_for_enrollment(
         document=document,
         course=course,
         learner=learner,
+    )
+    mark_completion_document_generation_metadata(
+        document,
+        source="auto_completion",
     )
     await session.flush()
 

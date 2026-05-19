@@ -3489,6 +3489,11 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
     assert document["document_number"].startswith("AUTO-")
     assert document["status"] == "draft"
     assert document["file_available"] is True
+    assert document["generated_at"] is not None
+    assert document["generated_by_user_id"] is None
+    assert document["generated_by_user_email"] is None
+    assert document["generation_source"] == "auto_completion"
+    assert document["generation_template_version"] == "completion_pdf_v1"
 
     status, regenerated = request_json(
         "POST",
@@ -3501,6 +3506,11 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
     assert regenerated["id"] == document["id"]
     assert regenerated["document_number"] == document["document_number"]
     assert regenerated["file_available"] is True
+    assert regenerated["generated_at"] is not None
+    assert regenerated["generated_by_user_id"] is not None
+    assert regenerated["generated_by_user_email"] == ADMIN_EMAIL
+    assert regenerated["generation_source"] == "admin_regenerate"
+    assert regenerated["generation_template_version"] == "completion_pdf_v1"
 
     response = get_admin_document_download_response(
         token=admin_token,

@@ -53,3 +53,11 @@ class DocumentRecord(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     revocation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     storage_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     file_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    generated_by_user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
+    generation_source: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    generation_template_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
