@@ -220,6 +220,8 @@ def main() -> None:
             "displayedPriorityActions",
             "DashboardTaskCard",
             "dashboardTaskCards",
+            "totalDashboardTasksCount",
+            "Всего задач:",
             "dashboard-work-tasks",
             "dashboard-documents-task",
             "dashboard-enrollments-task",

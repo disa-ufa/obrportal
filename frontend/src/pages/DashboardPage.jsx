@@ -458,6 +458,9 @@ export function DashboardPage({
     ? urgentPriorityActions
     : priorityActions.slice(0, 2);
 
+  const totalDashboardTasksCount =
+    actionRequiredDocumentsCount + actionRequiredEnrollmentsCount;
+
   const dashboardTaskCards = [
     {
       title: "Документы требуют действия",
@@ -662,7 +665,7 @@ export function DashboardPage({
       {user && !adminLoading && (
         <SectionCard
           title="Рабочие задачи"
-          subtitle="Главные действия администратора по документам и назначениям."
+          subtitle={`Главные действия администратора по документам и назначениям. Всего задач: ${totalDashboardTasksCount}.`}
         >
           <div
             data-testid="dashboard-work-tasks"
