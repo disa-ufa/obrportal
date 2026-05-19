@@ -1186,6 +1186,8 @@ def main() -> int:
         ("/admin/enrollments?action_required=true", "enrollments action required"),
         ("/admin/documents?action_required=true", "documents action required"),
         ("/admin/documents?enrollment_id=00000000-0000-0000-0000-000000000000&action_required=true", "documents enrollment action required"),
+        ("/admin/documents?q=__missing_smoke_worklist_query__", "documents missing worklist query"),
+        ("/admin/enrollments?q=__missing_smoke_worklist_query__", "enrollments missing worklist query"),
         ("/admin/audit-events?entity_type=document", "dashboard audit documents"),
     ]
 
