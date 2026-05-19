@@ -156,6 +156,24 @@ function getDocumentActionRequiredHint(documentItem) {
   };
 }
 
+function getDocumentAttentionItems(documentItem) {
+  const items = [];
+
+  if (documentItem.status === "revoked") {
+    items.push("Отзыв: проверьте причину и возможность восстановления.");
+  }
+
+  if (documentItem.status === "draft") {
+    items.push("Публикация: черновик нужно доработать или опубликовать.");
+  }
+
+  if (documentItem.status === "available" && !documentItem.file_available) {
+    items.push("Файл: опубликованный документ недоступен для скачивания.");
+  }
+
+  return items;
+}
+
 
 function getLearnerVisibilityLabel(documentItem) {
   if (documentItem.status === "available" && documentItem.file_available) {
@@ -1421,6 +1439,7 @@ export function DocumentsPage() {
                 const documentCourse =
                   courses.find((course) => course.id === documentItem.course_id) || null;
                 const documentActionHint = getDocumentActionRequiredHint(documentItem);
+                const documentAttentionItems = getDocumentAttentionItems(documentItem);
 
                 return (
                   <article
@@ -1515,6 +1534,22 @@ export function DocumentsPage() {
                             </div>
                           </div>
                         </div>
+
+                        {documentAttentionItems.length > 0 && (
+                          <div
+                            data-testid="document-attention-fields"
+                            className="mt-4 rounded-2xl bg-white p-4 text-sm text-slate-700 ring-1 ring-slate-200"
+                          >
+                            <div className="font-semibold text-slate-900">
+                              Что требует внимания
+                            </div>
+                            <ul className="mt-2 list-disc space-y-1 pl-5">
+                              {documentAttentionItems.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
 
                         {documentActionHint && (
                           <div

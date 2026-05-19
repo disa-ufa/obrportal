@@ -108,6 +108,11 @@ def main() -> None:
         [
             "getDocumentActionRequiredHint",
             "document-action-required-hint",
+            "document-attention-fields",
+            "getDocumentAttentionItems",
+            "Что требует внимания",
+            "Публикация: черновик нужно доработать или опубликовать.",
+            "Файл: опубликованный документ недоступен для скачивания.",
             "document-action-required-primary-action",
             "documents-action-required-banner",
             "documents-worklist-summary-note",
