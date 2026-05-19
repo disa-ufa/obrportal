@@ -537,6 +537,54 @@ export async function deleteAdminDocument(documentId) {
 }
 
 
+export async function downloadAdminDocumentGenerationEvent(documentId, eventId) {
+  const token = getStoredToken();
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/documents/${documentId}/generation-events/${eventId}/download`, {
+    method: "GET",
+    headers: {
+      "Accept": "application/pdf, application/octet-stream",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    let data = null;
+
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+
+    const message = data?.detail || `HTTP ${response.status}`;
+    const error = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    error.status = response.status;
+    error.payload = data;
+    throw error;
+  }
+
+  const blob = await response.blob();
+  const filename = normalizeDownloadedFilename(
+    extractDownloadFilename(response, `admin-document-generation-${eventId}.bin`),
+    blob
+  );
+  const objectUrl = window.URL.createObjectURL(blob);
+
+  try {
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.URL.revokeObjectURL(objectUrl);
+  }
+}
+
+
 export async function downloadAdminDocument(documentId) {
   const token = getStoredToken();
 

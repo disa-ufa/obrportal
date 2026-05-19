@@ -5,6 +5,7 @@ import {
   createAdminDocument,
   deleteAdminDocument,
   downloadAdminDocument,
+  downloadAdminDocumentGenerationEvent,
   getAdminCourses,
   getAdminDocuments,
   getAdminDocumentGenerationEvents,
@@ -483,6 +484,7 @@ export function DocumentsPage() {
   const [regenerateSavingId, setRegenerateSavingId] = useState("");
   const [generationEventsLoadingId, setGenerationEventsLoadingId] = useState("");
   const [generationEventsByDocumentId, setGenerationEventsByDocumentId] = useState({});
+  const [generationEventDownloadSavingId, setGenerationEventDownloadSavingId] = useState("");
   const [deleteSavingId, setDeleteSavingId] = useState("");
   const [statusSavingKey, setStatusSavingKey] = useState("");
   const [revokingDocumentId, setRevokingDocumentId] = useState("");
@@ -1008,6 +1010,19 @@ export function DocumentsPage() {
       setError(formatDocumentApiError(err, "Не удалось загрузить историю PDF-артефактов."));
     } finally {
       setGenerationEventsLoadingId("");
+    }
+  }
+
+  async function handleDownloadGenerationEvent(documentItem, event) {
+    try {
+      setGenerationEventDownloadSavingId(`${documentItem.id}:${event.id}`);
+      setError("");
+
+      await downloadAdminDocumentGenerationEvent(documentItem.id, event.id);
+    } catch (err) {
+      setError(formatDocumentApiError(err, "Не удалось скачать выбранную версию PDF."));
+    } finally {
+      setGenerationEventDownloadSavingId("");
     }
   }
 
@@ -1727,31 +1742,49 @@ export function DocumentsPage() {
                             {generationEvents.length > 0 && (
                               <div className="mt-3 overflow-hidden rounded-2xl ring-1 ring-slate-200">
                                 <div className="grid grid-cols-12 gap-2 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                  <div className="col-span-3">Дата</div>
+                                  <div className="col-span-2">Дата</div>
                                   <div className="col-span-3">Источник</div>
                                   <div className="col-span-2">Шаблон</div>
-                                  <div className="col-span-4">Кем</div>
+                                  <div className="col-span-3">Кем</div>
+                                  <div className="col-span-2">Файл</div>
                                 </div>
 
-                                {generationEvents.map((event) => (
-                                  <div
-                                    key={event.id}
-                                    className="grid grid-cols-12 gap-2 border-t border-slate-100 px-4 py-3 text-sm text-slate-700"
-                                  >
-                                    <div className="col-span-3 font-semibold text-slate-900">
-                                      {formatDateTime(event.generated_at)}
+                                {generationEvents.map((event) => {
+                                  const generationEventDownloadKey = `${documentItem.id}:${event.id}`;
+                                  const isGenerationEventDownloading =
+                                    generationEventDownloadSavingId === generationEventDownloadKey;
+
+                                  return (
+                                    <div
+                                      key={event.id}
+                                      className="grid grid-cols-12 gap-2 border-t border-slate-100 px-4 py-3 text-sm text-slate-700"
+                                    >
+                                      <div className="col-span-2 font-semibold text-slate-900">
+                                        {formatDateTime(event.generated_at)}
+                                      </div>
+                                      <div className="col-span-3">
+                                        {getDocumentGenerationSourceLabel(event.source)}
+                                      </div>
+                                      <div className="col-span-2">
+                                        {event.template_version || "—"}
+                                      </div>
+                                      <div className="col-span-3">
+                                        {getDocumentGenerationEventActorLabel(event)}
+                                      </div>
+                                      <div className="col-span-2">
+                                        <button
+                                          type="button"
+                                          data-testid="document-generation-event-download-action"
+                                          onClick={() => handleDownloadGenerationEvent(documentItem, event)}
+                                          disabled={isGenerationEventDownloading || isDeleteSaving}
+                                          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                          {isGenerationEventDownloading ? "Скачиваем..." : "Скачать версию"}
+                                        </button>
+                                      </div>
                                     </div>
-                                    <div className="col-span-3">
-                                      {getDocumentGenerationSourceLabel(event.source)}
-                                    </div>
-                                    <div className="col-span-2">
-                                      {event.template_version || "—"}
-                                    </div>
-                                    <div className="col-span-4">
-                                      {getDocumentGenerationEventActorLabel(event)}
-                                    </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

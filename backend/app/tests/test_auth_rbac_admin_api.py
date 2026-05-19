@@ -3393,6 +3393,21 @@ def get_admin_document_download_response(
 
 
 
+def get_admin_document_generation_event_download_response(
+    *,
+    token: str,
+    document_id: str,
+    event_id: str,
+):
+    import httpx
+
+    return httpx.get(
+        f"http://127.0.0.1:8000/api/v1/admin/documents/{document_id}/generation-events/{event_id}/download",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=20.0,
+    )
+
+
 def get_account_document_download_response(
     *,
     token: str,
@@ -3544,6 +3559,32 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
     assert latest_generation_event["generated_by_user_email"] == ADMIN_EMAIL
     assert latest_generation_event["storage_path"].endswith(".pdf")
     assert latest_generation_event["storage_path"] != first_generation_event["storage_path"]
+
+    latest_artifact_response = get_admin_document_generation_event_download_response(
+        token=admin_token,
+        document_id=document["id"],
+        event_id=latest_generation_event["id"],
+    )
+
+    assert latest_artifact_response.status_code == 200
+    assert latest_artifact_response.content.startswith(b"%PDF")
+
+    first_artifact_response = get_admin_document_generation_event_download_response(
+        token=admin_token,
+        document_id=document["id"],
+        event_id=first_generation_event["id"],
+    )
+
+    assert first_artifact_response.status_code == 200
+    assert first_artifact_response.content.startswith(b"%PDF")
+
+    missing_artifact_response = get_admin_document_generation_event_download_response(
+        token=admin_token,
+        document_id=document["id"],
+        event_id="missing-generation-event",
+    )
+
+    assert missing_artifact_response.status_code == 404
 
     response = get_admin_document_download_response(
         token=admin_token,

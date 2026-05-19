@@ -2410,6 +2410,50 @@ async def list_admin_document_generation_events(
     ]
 
 
+@router.get("/documents/{document_id}/generation-events/{event_id}/download")
+async def download_admin_document_generation_event(
+    document_id: str,
+    event_id: str,
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+):
+    document = await get_admin_document_or_404(document_id, session)
+
+    event_result = await session.execute(
+        select(DocumentGenerationEvent).where(
+            DocumentGenerationEvent.id == event_id,
+            DocumentGenerationEvent.document_id == document.id,
+        )
+    )
+    event = event_result.scalar_one_or_none()
+
+    if event is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document generation event not found",
+        )
+
+    resolved_path = resolve_admin_document_storage_path(event.storage_path)
+
+    if not resolved_path or not resolved_path.exists() or not resolved_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document generation artifact is not available",
+        )
+
+    media_type, filename = detect_document_download_metadata(
+        resolved_path=resolved_path,
+        storage_path=event.storage_path,
+        document_number=document.document_number,
+    )
+
+    return FileResponse(
+        path=resolved_path,
+        media_type=media_type,
+        filename=filename,
+    )
+
+
 @router.patch("/documents/{document_id}", response_model=AdminDocumentItem)
 async def update_admin_document(
     document_id: str,
