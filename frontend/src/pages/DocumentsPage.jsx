@@ -1540,8 +1540,16 @@ export function DocumentsPage() {
                             data-testid="document-attention-fields"
                             className="mt-4 rounded-2xl bg-white p-4 text-sm text-slate-700 ring-1 ring-slate-200"
                           >
-                            <div className="font-semibold text-slate-900">
-                              Что требует внимания
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="font-semibold text-slate-900">
+                                Что требует внимания
+                              </div>
+                              <span
+                                data-testid="document-attention-count"
+                                className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+                              >
+                                Пунктов внимания: {documentAttentionItems.length}
+                              </span>
                             </div>
                             <ul className="mt-2 list-disc space-y-1 pl-5">
                               {documentAttentionItems.map((item) => (
