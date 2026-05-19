@@ -1531,16 +1531,28 @@ export function DocumentsPage() {
                               </button>
 
                               {documentItem.enrollment_id && (
-                                <Link
-                                  to={buildEnrollmentsPath({
-                                    action_required: "true",
-                                    user_id: documentItem.user_id || "",
-                                    course_id: documentItem.course_id || "",
-                                  })}
-                                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
-                                >
-                                  Связанное назначение
-                                </Link>
+                                <>
+                                  <Link
+                                    to={buildDocumentsPath({
+                                      enrollment_id: documentItem.enrollment_id,
+                                      action_required: "true",
+                                    })}
+                                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                                  >
+                                    Документы назначения
+                                  </Link>
+
+                                  <Link
+                                    to={buildEnrollmentsPath({
+                                      action_required: "true",
+                                      user_id: documentItem.user_id || "",
+                                      course_id: documentItem.course_id || "",
+                                    })}
+                                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                                  >
+                                    Связанное назначение
+                                  </Link>
+                                </>
                               )}
                             </div>
                           </div>

@@ -48,6 +48,8 @@ def main() -> None:
             "Доработать документ",
             "Загрузить файл",
             "Связанное назначение",
+            "Документы назначения",
+            "enrollment_id: documentItem.enrollment_id",
             "user_id: documentItem.user_id || \"\"",
             "course_id: documentItem.course_id || \"\"",
             "Требуется публикация или доработка черновика",
