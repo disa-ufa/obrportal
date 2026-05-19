@@ -134,6 +134,7 @@ function getDocumentActionRequiredHint(documentItem) {
       title: "Требуется проверка отозванного документа",
       description: "Проверьте причину отзыва, историю изменений и при необходимости восстановите документ после корректировки.",
       toneClass: "bg-red-50 text-red-800 ring-red-200",
+      actionLabel: "Проверить отзыв",
     };
   }
 
@@ -142,6 +143,7 @@ function getDocumentActionRequiredHint(documentItem) {
       title: "Требуется публикация или доработка черновика",
       description: "Проверьте данные документа, загрузите файл при необходимости и переведите документ в доступные.",
       toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
+      actionLabel: "Доработать документ",
     };
   }
 
@@ -149,6 +151,7 @@ function getDocumentActionRequiredHint(documentItem) {
     title: "Требуется файл для опубликованного документа",
     description: "Документ опубликован, но файл не загружен. Слушатель и публичная проверка не смогут получить корректный PDF.",
     toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
+    actionLabel: "Загрузить файл",
   };
 }
 
@@ -1516,6 +1519,26 @@ export function DocumentsPage() {
                             <p className="mt-1 leading-6">
                               {documentActionHint.description}
                             </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                data-testid="document-action-required-primary-action"
+                                onClick={() => handleStartEdit(documentItem)}
+                                disabled={isEditSaving || isDeleteSaving}
+                                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {documentActionHint.actionLabel}
+                              </button>
+
+                              {documentItem.enrollment_id && (
+                                <Link
+                                  to={buildEnrollmentsPath({ action_required: "true" })}
+                                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                                >
+                                  К назначениям
+                                </Link>
+                              )}
+                            </div>
                           </div>
                         )}
 

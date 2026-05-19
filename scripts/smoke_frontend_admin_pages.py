@@ -44,6 +44,9 @@ def main() -> None:
         [
             "getDocumentActionRequiredHint",
             "document-action-required-hint",
+            "document-action-required-primary-action",
+            "Доработать документ",
+            "Загрузить файл",
             "Требуется публикация или доработка черновика",
             "Требуется файл для опубликованного документа",
         ],
@@ -54,6 +57,10 @@ def main() -> None:
         [
             "getEnrollmentActionRequiredHint",
             "enrollment-action-required-hint",
+            "enrollment-action-required-primary-action",
+            "enrollment-action-required-documents-link",
+            "Проверить назначение",
+            "Открыть документы",
             "Назначение ожидает старта обучения",
             "Завершённое обучение ожидает документ",
             "Назначения, требующие действия, не найдены",

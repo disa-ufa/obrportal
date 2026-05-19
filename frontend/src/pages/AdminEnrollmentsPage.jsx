@@ -1499,6 +1499,29 @@ export function AdminEnrollmentsPage() {
                             <p className="mt-1 leading-6">
                               {enrollmentActionHint.description}
                             </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {enrollment.status === "assigned" && (
+                                <button
+                                  type="button"
+                                  data-testid="enrollment-action-required-primary-action"
+                                  onClick={() => handleStartEdit(enrollment)}
+                                  disabled={isActionRunning}
+                                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Проверить назначение
+                                </button>
+                              )}
+
+                              {enrollment.status === "completed" && (
+                                <Link
+                                  data-testid="enrollment-action-required-documents-link"
+                                  to={buildDocumentsPath({ enrollment_id: enrollment.id })}
+                                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                                >
+                                  Открыть документы
+                                </Link>
+                              )}
+                            </div>
                           </div>
                         )}
 
