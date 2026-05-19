@@ -534,7 +534,6 @@ def main() -> None:
             "function formatEnrollmentApiError(err, fallback)",
             "function getEnrollmentFiltersFromSearch(search)",
             "function getStatusTone(value)",
-            "function calculateStatusCounts(items)",
             "function getUserRoleCodes(user)",
             "function isLearnerUser(user)",
             "function isAdminUser(user)",
