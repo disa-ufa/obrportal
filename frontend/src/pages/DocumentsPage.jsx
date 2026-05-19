@@ -1273,6 +1273,13 @@ export function DocumentsPage() {
             })}
           </div>
 
+          <div
+            data-testid="documents-worklist-summary-note"
+            className="mb-5 text-xs text-slate-500"
+          >
+            Счётчики быстрых фильтров рассчитаны по текущим фильтрам страницы.
+          </div>
+
           <div className="mb-5">
             <button
               type="button"

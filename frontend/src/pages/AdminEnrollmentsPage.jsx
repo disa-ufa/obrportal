@@ -1399,6 +1399,13 @@ export function AdminEnrollmentsPage() {
               className="mb-5 flex flex-wrap gap-2"
             />
 
+          <div
+            data-testid="enrollments-worklist-summary-note"
+            className="mb-5 text-xs text-slate-500"
+          >
+            Счётчики быстрых фильтров рассчитаны по текущим фильтрам страницы.
+          </div>
+
           <div className="mb-5">
             <button
               type="button"
