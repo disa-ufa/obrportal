@@ -3625,6 +3625,14 @@ ADMIN_ENROLLMENT_ACTION_REQUIRED_STATUSES = {
 
 @router.get("/worklist-summary", response_model=AdminWorklistSummary)
 async def get_admin_worklist_summary(
+    documents_user_id: str | None = Query(default=None, max_length=64),
+    documents_enrollment_id: str | None = Query(default=None, max_length=64),
+    documents_document_type: str | None = Query(default=None, max_length=128),
+    documents_q: str | None = Query(default=None, max_length=255),
+    enrollments_user_id: str | None = Query(default=None, max_length=64),
+    enrollments_course_id: str | None = Query(default=None, max_length=64),
+    enrollments_learning_group_id: str | None = Query(default=None, max_length=64),
+    enrollments_q: str | None = Query(default=None, max_length=255),
     _: User = Depends(require_permission("admin.users.read")),
     session: AsyncSession = Depends(get_db),
 ) -> AdminWorklistSummary:
@@ -3636,54 +3644,117 @@ async def get_admin_worklist_summary(
         tuple(ADMIN_ENROLLMENT_ACTION_REQUIRED_STATUSES)
     )
 
+    document_conditions = []
+
+    normalized_documents_user_id = normalize_optional_text(documents_user_id)
+    normalized_documents_enrollment_id = normalize_optional_text(documents_enrollment_id)
+    normalized_documents_document_type = normalize_optional_text(documents_document_type)
+    normalized_documents_q = normalize_optional_text(documents_q)
+
+    if normalized_documents_user_id:
+        document_conditions.append(DocumentRecord.user_id == normalized_documents_user_id)
+
+    if normalized_documents_enrollment_id:
+        document_conditions.append(DocumentRecord.enrollment_id == normalized_documents_enrollment_id)
+
+    if normalized_documents_document_type:
+        document_conditions.append(
+            DocumentRecord.document_type.ilike(f"%{normalized_documents_document_type}%")
+        )
+
+    if normalized_documents_q:
+        q_filter = f"%{normalized_documents_q}%"
+        document_conditions.append(
+            or_(
+                DocumentRecord.document_number.ilike(q_filter),
+                DocumentRecord.verification_code.ilike(q_filter),
+                DocumentRecord.title.ilike(q_filter),
+                DocumentRecord.document_type.ilike(q_filter),
+                User.email.ilike(q_filter),
+                User.full_name.ilike(q_filter),
+                Course.title.ilike(q_filter),
+            )
+        )
+
+    enrollment_conditions = []
+
+    normalized_enrollments_user_id = normalize_optional_text(enrollments_user_id)
+    normalized_enrollments_course_id = normalize_optional_text(enrollments_course_id)
+    normalized_enrollments_learning_group_id = normalize_optional_text(enrollments_learning_group_id)
+    normalized_enrollments_q = normalize_optional_text(enrollments_q)
+
+    if normalized_enrollments_user_id:
+        enrollment_conditions.append(Enrollment.user_id == normalized_enrollments_user_id)
+
+    if normalized_enrollments_course_id:
+        enrollment_conditions.append(Enrollment.course_id == normalized_enrollments_course_id)
+
+    if normalized_enrollments_learning_group_id:
+        enrollment_conditions.append(
+            Enrollment.learning_group_id == normalized_enrollments_learning_group_id
+        )
+
+    if normalized_enrollments_q:
+        q_filter = f"%{normalized_enrollments_q}%"
+        enrollment_conditions.append(
+            or_(
+                User.email.ilike(q_filter),
+                User.full_name.ilike(q_filter),
+                Course.slug.ilike(q_filter),
+                Course.title.ilike(q_filter),
+                Enrollment.status.ilike(q_filter),
+                Organization.name.ilike(q_filter),
+                LearningGroup.name.ilike(q_filter),
+            )
+        )
+
+    async def count_documents(*extra_conditions) -> int:
+        query = (
+            select(func.count())
+            .select_from(DocumentRecord)
+            .join(User, User.id == DocumentRecord.user_id)
+            .outerjoin(Course, Course.id == DocumentRecord.course_id)
+        )
+
+        all_conditions = [*document_conditions, *extra_conditions]
+
+        if all_conditions:
+            query = query.where(*all_conditions)
+
+        return await count_admin_rows(session, query)
+
+    async def count_enrollments(*extra_conditions) -> int:
+        query = (
+            select(func.count())
+            .select_from(Enrollment)
+            .join(User, User.id == Enrollment.user_id)
+            .join(Course, Course.id == Enrollment.course_id)
+            .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+            .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+        )
+
+        all_conditions = [*enrollment_conditions, *extra_conditions]
+
+        if all_conditions:
+            query = query.where(*all_conditions)
+
+        return await count_admin_rows(session, query)
+
     return AdminWorklistSummary(
         documents=AdminWorklistDocumentsSummary(
-            total=await count_admin_rows(
-                session,
-                select(func.count()).select_from(DocumentRecord),
-            ),
-            available=await count_admin_rows(
-                session,
-                select(func.count()).select_from(DocumentRecord).where(DocumentRecord.status == "available"),
-            ),
-            draft=await count_admin_rows(
-                session,
-                select(func.count()).select_from(DocumentRecord).where(DocumentRecord.status == "draft"),
-            ),
-            revoked=await count_admin_rows(
-                session,
-                select(func.count()).select_from(DocumentRecord).where(DocumentRecord.status == "revoked"),
-            ),
-            action_required=await count_admin_rows(
-                session,
-                select(func.count()).select_from(DocumentRecord).where(document_action_required_condition),
-            ),
+            total=await count_documents(),
+            available=await count_documents(DocumentRecord.status == "available"),
+            draft=await count_documents(DocumentRecord.status == "draft"),
+            revoked=await count_documents(DocumentRecord.status == "revoked"),
+            action_required=await count_documents(document_action_required_condition),
         ),
         enrollments=AdminWorklistEnrollmentsSummary(
-            total=await count_admin_rows(
-                session,
-                select(func.count()).select_from(Enrollment),
-            ),
-            assigned=await count_admin_rows(
-                session,
-                select(func.count()).select_from(Enrollment).where(Enrollment.status == "assigned"),
-            ),
-            active=await count_admin_rows(
-                session,
-                select(func.count()).select_from(Enrollment).where(Enrollment.status == "active"),
-            ),
-            completed=await count_admin_rows(
-                session,
-                select(func.count()).select_from(Enrollment).where(Enrollment.status == "completed"),
-            ),
-            cancelled=await count_admin_rows(
-                session,
-                select(func.count()).select_from(Enrollment).where(Enrollment.status == "cancelled"),
-            ),
-            action_required=await count_admin_rows(
-                session,
-                select(func.count()).select_from(Enrollment).where(enrollment_action_required_condition),
-            ),
+            total=await count_enrollments(),
+            assigned=await count_enrollments(Enrollment.status == "assigned"),
+            active=await count_enrollments(Enrollment.status == "active"),
+            completed=await count_enrollments(Enrollment.status == "completed"),
+            cancelled=await count_enrollments(Enrollment.status == "cancelled"),
+            action_required=await count_enrollments(enrollment_action_required_condition),
         ),
     )
 

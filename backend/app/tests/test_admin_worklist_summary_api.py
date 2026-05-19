@@ -131,3 +131,82 @@ def test_admin_worklist_summary_requires_auth() -> None:
 
     assert status == 401
     assert isinstance(payload, dict)
+
+
+
+def test_admin_worklist_summary_supports_filter_params() -> None:
+    token = login()
+    missing_id = "00000000-0000-0000-0000-000000000000"
+
+    status, summary = request_json(
+        "GET",
+        (
+            "/api/v1/admin/worklist-summary"
+            f"?documents_enrollment_id={missing_id}"
+            f"&enrollments_user_id={missing_id}"
+        ),
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(summary, dict)
+
+    documents = summary["documents"]
+    enrollments = summary["enrollments"]
+
+    assert documents["total"] == 0
+    assert documents["available"] == 0
+    assert documents["draft"] == 0
+    assert documents["revoked"] == 0
+    assert documents["action_required"] == 0
+
+    assert enrollments["total"] == 0
+    assert enrollments["assigned"] == 0
+    assert enrollments["active"] == 0
+    assert enrollments["completed"] == 0
+    assert enrollments["cancelled"] == 0
+    assert enrollments["action_required"] == 0
+
+
+def test_admin_worklist_summary_query_filters_match_list_endpoints() -> None:
+    token = login()
+
+    status, documents = request_json(
+        "GET",
+        "/api/v1/admin/documents?q=__missing_worklist_query__&limit=300",
+        token=token,
+    )
+
+    assert status == 200
+    assert documents == []
+
+    status, summary = request_json(
+        "GET",
+        "/api/v1/admin/worklist-summary?documents_q=__missing_worklist_query__",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(summary, dict)
+    assert summary["documents"]["total"] == 0
+    assert summary["documents"]["action_required"] == 0
+
+    status, enrollments = request_json(
+        "GET",
+        "/api/v1/admin/enrollments?q=__missing_worklist_query__&limit=300",
+        token=token,
+    )
+
+    assert status == 200
+    assert enrollments == []
+
+    status, summary = request_json(
+        "GET",
+        "/api/v1/admin/worklist-summary?enrollments_q=__missing_worklist_query__",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(summary, dict)
+    assert summary["enrollments"]["total"] == 0
+    assert summary["enrollments"]["action_required"] == 0
