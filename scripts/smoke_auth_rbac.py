@@ -1082,6 +1082,9 @@ def main() -> int:
         ("/admin/documents?status=revoked", "dashboard documents revoked"),
         ("/admin/enrollments?status=active", "dashboard enrollments active"),
         ("/admin/enrollments?status=completed", "dashboard enrollments completed"),
+        ("/admin/enrollments?action_required=true", "enrollments action required"),
+        ("/admin/documents?action_required=true", "documents action required"),
+        ("/admin/documents?enrollment_id=00000000-0000-0000-0000-000000000000&action_required=true", "documents enrollment action required"),
         ("/admin/audit-events?entity_type=document", "dashboard audit documents"),
     ]
 
