@@ -761,3 +761,44 @@ git switch develop
 ```
 
 Новые крупные функции добавляются только после зелёной контрольной точки.
+
+---
+
+## Checkpoint 6.41 - генерация документов
+
+Контур генерации документов стабилизирован.
+
+Закрыто:
+
+- 6.41.1 - Backend: ручная регенерация итогового PDF
+- 6.41.2 - Frontend: кнопка "Пересобрать PDF"
+- 6.41.3 - Метаданные генерации документа
+- 6.41.4.1 - Backend: история PDF-артефактов
+- 6.41.4.2 - UI: история PDF-артефактов
+- 6.41.4.3 - Скачать конкретный PDF-артефакт из истории
+- 6.41.5 - финальная стабилизация документационного контура
+
+API:
+
+- POST /api/v1/admin/documents/{document_id}/regenerate
+- GET  /api/v1/admin/documents/{document_id}/generation-events
+- GET  /api/v1/admin/documents/{document_id}/generation-events/{event_id}/download
+
+Frontend:
+
+- Паспорт генерации PDF
+- История PDF-артефактов
+- Пересобрать PDF
+- Скачать версию
+
+Контрольный smoke:
+
+```powershell
+python .\scripts\smoke_document_generation_flow.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.42 - следующий функциональный блок после стабилизации document generation contour
+```
