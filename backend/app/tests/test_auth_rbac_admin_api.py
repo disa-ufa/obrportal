@@ -3495,6 +3495,22 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
     assert document["generation_source"] == "auto_completion"
     assert document["generation_template_version"] == "completion_pdf_v1"
 
+    status, generation_events_before = request_json(
+        "GET",
+        f'/api/v1/admin/documents/{document["id"]}/generation-events',
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(generation_events_before, list)
+    assert len(generation_events_before) == 1
+    first_generation_event = generation_events_before[0]
+    assert first_generation_event["document_id"] == document["id"]
+    assert first_generation_event["source"] == "auto_completion"
+    assert first_generation_event["template_version"] == "completion_pdf_v1"
+    assert first_generation_event["storage_path"].endswith(".pdf")
+    assert first_generation_event["generated_by_user_id"] is None
+
     status, regenerated = request_json(
         "POST",
         f'/api/v1/admin/documents/{document["id"]}/regenerate',
@@ -3511,6 +3527,23 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
     assert regenerated["generated_by_user_email"] == ADMIN_EMAIL
     assert regenerated["generation_source"] == "admin_regenerate"
     assert regenerated["generation_template_version"] == "completion_pdf_v1"
+
+    status, generation_events_after = request_json(
+        "GET",
+        f'/api/v1/admin/documents/{document["id"]}/generation-events',
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(generation_events_after, list)
+    assert len(generation_events_after) == 2
+    latest_generation_event = generation_events_after[0]
+    assert latest_generation_event["document_id"] == document["id"]
+    assert latest_generation_event["source"] == "admin_regenerate"
+    assert latest_generation_event["template_version"] == "completion_pdf_v1"
+    assert latest_generation_event["generated_by_user_email"] == ADMIN_EMAIL
+    assert latest_generation_event["storage_path"].endswith(".pdf")
+    assert latest_generation_event["storage_path"] != first_generation_event["storage_path"]
 
     response = get_admin_document_download_response(
         token=admin_token,

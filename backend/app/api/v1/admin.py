@@ -20,6 +20,7 @@ from app.models.audit_event import AuditEvent
 from app.models.course import Course
 from app.models.course_lesson import CourseLesson
 from app.models.course_module import CourseModule
+from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup, LearningGroupMember
@@ -34,6 +35,7 @@ from app.services.document_storage import (
     write_private_storage_file,
 )
 from app.services.completion_documents import (
+    add_completion_document_generation_event,
     ensure_completion_document_for_enrollment,
     load_completion_document_context,
     mark_completion_document_generation_metadata,
@@ -60,6 +62,7 @@ from app.schemas.admin import (
     AdminEnrollmentGroupCreate,
     AdminEnrollmentItem,
     AdminEnrollmentUpdate,
+    AdminDocumentGenerationEventItem,
     AdminDocumentItem,
     AdminDeleteResult,
     AdminOrganizationCreate,
@@ -1849,6 +1852,21 @@ def build_admin_document_item(row) -> AdminDocumentItem:
     )
 
 
+def build_admin_document_generation_event_item(row) -> AdminDocumentGenerationEventItem:
+    return AdminDocumentGenerationEventItem(
+        id=str(row.id),
+        document_id=str(row.document_id),
+        storage_path=row.storage_path,
+        source=row.source,
+        template_version=row.template_version,
+        generated_at=row.generated_at,
+        generated_by_user_id=str(row.generated_by_user_id) if row.generated_by_user_id else None,
+        generated_by_user_email=row.generated_by_user_email,
+        generated_by_user_full_name=row.generated_by_user_full_name,
+        created_at=row.created_at,
+    )
+
+
 def normalize_document_number(value: str | None) -> str:
     if value is None or not value.strip():
         return f"DOC-{uuid4().hex[:12].upper()}"
@@ -2356,6 +2374,42 @@ async def get_admin_document_or_404(
     return document
 
 
+@router.get("/documents/{document_id}/generation-events", response_model=list[AdminDocumentGenerationEventItem])
+async def list_admin_document_generation_events(
+    document_id: str,
+    limit: int = Query(default=50, ge=1, le=200),
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminDocumentGenerationEventItem]:
+    await get_admin_document_or_404(document_id, session)
+
+    generated_by_user = aliased(User)
+
+    result = await session.execute(
+        select(
+            DocumentGenerationEvent.id.label("id"),
+            DocumentGenerationEvent.document_id.label("document_id"),
+            DocumentGenerationEvent.storage_path.label("storage_path"),
+            DocumentGenerationEvent.source.label("source"),
+            DocumentGenerationEvent.template_version.label("template_version"),
+            DocumentGenerationEvent.generated_at.label("generated_at"),
+            DocumentGenerationEvent.generated_by_user_id.label("generated_by_user_id"),
+            generated_by_user.email.label("generated_by_user_email"),
+            generated_by_user.full_name.label("generated_by_user_full_name"),
+            DocumentGenerationEvent.created_at.label("created_at"),
+        )
+        .outerjoin(generated_by_user, generated_by_user.id == DocumentGenerationEvent.generated_by_user_id)
+        .where(DocumentGenerationEvent.document_id == document_id)
+        .order_by(DocumentGenerationEvent.generated_at.desc(), DocumentGenerationEvent.created_at.desc())
+        .limit(limit)
+    )
+
+    return [
+        build_admin_document_generation_event_item(row)
+        for row in result.all()
+    ]
+
+
 @router.patch("/documents/{document_id}", response_model=AdminDocumentItem)
 async def update_admin_document(
     document_id: str,
@@ -2712,6 +2766,12 @@ async def regenerate_admin_completion_document(
     )
     mark_completion_document_generation_metadata(
         document,
+        actor_user=current_user,
+        source="admin_regenerate",
+    )
+    add_completion_document_generation_event(
+        document=document,
+        session=session,
         actor_user=current_user,
         source="admin_regenerate",
     )

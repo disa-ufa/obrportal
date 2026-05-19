@@ -236,6 +236,19 @@ class AdminDocumentItem(BaseModel):
     updated_at: datetime
 
 
+class AdminDocumentGenerationEventItem(BaseModel):
+    id: str
+    document_id: str
+    storage_path: str
+    source: str
+    template_version: str | None = None
+    generated_at: datetime
+    generated_by_user_id: str | None = None
+    generated_by_user_email: str | None = None
+    generated_by_user_full_name: str | None = None
+    created_at: datetime
+
+
 class AdminCourseItem(BaseModel):
     id: str
     slug: str

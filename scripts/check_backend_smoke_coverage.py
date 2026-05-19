@@ -70,6 +70,10 @@ EXPLICIT_COVERAGE_HINTS = {
         "/api/v1/admin/documents",
         "/api/v1/documents/verify",
     ],
+    "backend/app/models/document_generation_event.py": [
+        "/api/v1/admin/documents",
+        "generation-events",
+    ],
     "backend/app/models/enrollment.py": [
         "/api/v1/admin/enrollments",
         "/api/v1/account/courses",

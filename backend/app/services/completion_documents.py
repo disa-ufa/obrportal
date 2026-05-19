@@ -1,4 +1,5 @@
 from pathlib import Path
+from uuid import uuid4
 
 from sqlalchemy import select
 
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.base import utcnow
 from app.models.course import Course
+from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.user import User
@@ -33,6 +35,41 @@ def mark_completion_document_generation_metadata(
     document.generated_by_user_id = actor_user.id if actor_user else None
     document.generation_source = source
     document.generation_template_version = COMPLETION_DOCUMENT_TEMPLATE_VERSION
+
+
+def build_completion_document_storage_path(document: DocumentRecord) -> Path:
+    safe_document_number = "".join(
+        ch if ch.isalnum() or ch in ("-", "_") else "_"
+        for ch in str(document.document_number or "document")
+    ).strip("_") or "document"
+    timestamp = utcnow().strftime("%Y%m%dT%H%M%S%fZ")
+
+    return (
+        Path("generated")
+        / "completion"
+        / safe_document_number
+        / f"{timestamp}-{uuid4().hex[:8]}.pdf"
+    )
+
+
+def add_completion_document_generation_event(
+    *,
+    document: DocumentRecord,
+    session: AsyncSession,
+    actor_user: User | None = None,
+    source: str,
+) -> DocumentGenerationEvent:
+    event = DocumentGenerationEvent(
+        document_id=document.id,
+        storage_path=document.storage_path or "",
+        source=source,
+        template_version=document.generation_template_version or COMPLETION_DOCUMENT_TEMPLATE_VERSION,
+        generated_at=document.generated_at or utcnow(),
+        generated_by_user_id=actor_user.id if actor_user else None,
+    )
+    session.add(event)
+
+    return event
 
 
 def get_completion_document_public_base_url() -> str:
@@ -111,7 +148,7 @@ def write_completion_document_pdf_to_storage(
         )
     )
 
-    relative_path = Path("generated") / "completion" / f"{document.document_number}.pdf"
+    relative_path = build_completion_document_storage_path(document)
 
     return write_private_storage_file(relative_path, pdf_bytes)
 
@@ -138,6 +175,11 @@ async def ensure_completion_document_for_enrollment(
             )
             mark_completion_document_generation_metadata(
                 existing_document,
+                source="auto_completion",
+            )
+            add_completion_document_generation_event(
+                document=existing_document,
+                session=session,
                 source="auto_completion",
             )
             await session.flush()
@@ -180,6 +222,11 @@ async def ensure_completion_document_for_enrollment(
     )
     mark_completion_document_generation_metadata(
         document,
+        source="auto_completion",
+    )
+    add_completion_document_generation_event(
+        document=document,
+        session=session,
         source="auto_completion",
     )
     await session.flush()
