@@ -436,22 +436,6 @@ export function DashboardPage({
 
   const priorityActions = [
     {
-      title: "Назначения требуют действия",
-      value: actionRequiredEnrollmentsCount,
-      description: "Проверьте назначения со статусами «назначено» и «завершено», чтобы не потерять следующий административный шаг.",
-      to: buildEnrollmentsPath({ action_required: "true" }),
-      tone: actionRequiredEnrollmentsCount ? "amber" : "green",
-      priorityLabel: actionRequiredEnrollmentsCount ? "Приоритет: высокий" : "Нет срочных задач",
-    },
-    {
-      title: "Документы требуют действия",
-      value: actionRequiredDocumentsCount,
-      description: "Черновики, отозванные документы и опубликованные записи без файла требуют проверки администратора.",
-      to: buildDocumentsPath({ action_required: "true" }),
-      tone: actionRequiredDocumentsCount ? "amber" : "green",
-      priorityLabel: actionRequiredDocumentsCount ? "Приоритет: высокий" : "Нет срочных задач",
-    },
-    {
       title: "Неактивные пользователи",
       value: inactiveUsersCount,
       description: "Проверьте заблокированные или отключённые учётные записи и восстановите доступ при необходимости.",
