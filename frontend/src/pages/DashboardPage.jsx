@@ -195,6 +195,28 @@ function WorkCenterActionCard({ action }) {
   );
 }
 
+function DashboardTaskCard({ title, value, description, to, tone, actionLabel }) {
+  return (
+    <Link
+      to={to}
+      className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-base font-bold text-slate-900">{title}</div>
+          <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+        </div>
+
+        <span className={`rounded-2xl px-3 py-2 text-sm font-black ring-1 ${getAdminToneClasses(tone)}`}>
+          {value}
+        </span>
+      </div>
+
+      <div className="mt-4 text-sm font-semibold text-blue-700">{actionLabel} →</div>
+    </Link>
+  );
+}
+
 function AuditPreview({ auditEvents }) {
   const events = asArray(auditEvents).slice(0, 6);
 
@@ -451,6 +473,25 @@ export function DashboardPage({
     ? urgentPriorityActions
     : priorityActions.slice(0, 2);
 
+  const dashboardTaskCards = [
+    {
+      title: "Документы требуют действия",
+      value: actionRequiredDocumentsCount,
+      description: "Откройте черновики, отозванные документы и опубликованные записи без файла.",
+      to: buildDocumentsPath({ action_required: "true" }),
+      tone: actionRequiredDocumentsCount ? "amber" : "green",
+      actionLabel: actionRequiredDocumentsCount ? "Разобрать документы" : "Открыть контроль",
+    },
+    {
+      title: "Назначения требуют действия",
+      value: actionRequiredEnrollmentsCount,
+      description: "Проверьте назначения, где нужен старт обучения или выпускной документ.",
+      to: buildEnrollmentsPath({ action_required: "true" }),
+      tone: actionRequiredEnrollmentsCount ? "amber" : "green",
+      actionLabel: actionRequiredEnrollmentsCount ? "Разобрать назначения" : "Открыть контроль",
+    },
+  ];
+
   const primaryMetrics = [
     {
       label: "Пользователи",
@@ -630,6 +671,30 @@ export function DashboardPage({
           </div>
         )}
       </SectionCard>
+
+      {user && !adminLoading && (
+        <SectionCard
+          title="Рабочие задачи"
+          subtitle="Главные действия администратора по документам и назначениям."
+        >
+          <div
+            data-testid="dashboard-work-tasks"
+            className="grid gap-4 md:grid-cols-2"
+          >
+            {dashboardTaskCards.map((task) => (
+              <DashboardTaskCard
+                key={task.title}
+                title={task.title}
+                value={task.value}
+                description={task.description}
+                to={task.to}
+                tone={task.tone}
+                actionLabel={task.actionLabel}
+              />
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       {user && !adminLoading && (
         <SectionCard
