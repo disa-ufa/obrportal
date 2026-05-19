@@ -57,6 +57,10 @@ def main() -> None:
             "course_id: documentItem.course_id || \"\"",
             "Требуется публикация или доработка черновика",
             "Требуется файл для опубликованного документа",
+            "getAdminWorklistSummary",
+            "getAdminWorklistSummary()",
+            "documentsSummary.total",
+            "documentsSummary.action_required",
         ],
     )
 
@@ -76,6 +80,10 @@ def main() -> None:
             "Назначение ожидает старта обучения",
             "Завершённое обучение ожидает документ",
             "Назначения, требующие действия, не найдены",
+            "getAdminWorklistSummary",
+            "getAdminWorklistSummary()",
+            "enrollmentsSummary.total",
+            "enrollmentsSummary.action_required",
         ],
     )
 
@@ -99,6 +107,30 @@ def main() -> None:
         if fragment in loader_text:
             raise SystemExit(
                 f"frontend/src/hooks/useAdminDataLoader.js still loads large Dashboard list: {fragment}"
+            )
+
+    documents_text = read_text("frontend/src/pages/DocumentsPage.jsx")
+    forbidden_documents_counter_fragments = [
+        "getAdminDocuments(counterFilters)",
+        "getAdminDocuments(actionRequiredCounterFilters)",
+    ]
+
+    for fragment in forbidden_documents_counter_fragments:
+        if fragment in documents_text:
+            raise SystemExit(
+                f"frontend/src/pages/DocumentsPage.jsx still loads counter list: {fragment}"
+            )
+
+    enrollments_text = read_text("frontend/src/pages/AdminEnrollmentsPage.jsx")
+    forbidden_enrollments_counter_fragments = [
+        "getAdminEnrollments(countFilters)",
+        "getAdminEnrollments(actionRequiredCountFilters)",
+    ]
+
+    for fragment in forbidden_enrollments_counter_fragments:
+        if fragment in enrollments_text:
+            raise SystemExit(
+                f"frontend/src/pages/AdminEnrollmentsPage.jsx still loads counter list: {fragment}"
             )
 
     require_contains(

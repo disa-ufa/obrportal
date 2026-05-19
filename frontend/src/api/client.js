@@ -197,6 +197,10 @@ export async function getAdminDashboardSummary() {
   return request("/api/v1/admin/dashboard-summary");
 }
 
+export async function getAdminWorklistSummary() {
+  return request("/api/v1/admin/worklist-summary");
+}
+
 export async function getHealth() {
   return request("/health");
 }

@@ -9,6 +9,7 @@ import {
   getAdminDocuments,
   getAdminEnrollments,
   getAdminUsers,
+  getAdminWorklistSummary,
   updateAdminDocument,
 } from "../api/client";
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
@@ -561,40 +562,30 @@ export function DocumentsPage() {
       const filters = nextFilters ?? buildDocumentFilters();
       const activeFilters = { limit: 300, ...filters };
 
-      const counterFilters = {
-        ...activeFilters,
-        status: "",
-        action_required: "",
-      };
-
-      const actionRequiredCounterFilters = {
-        ...counterFilters,
-        action_required: "true",
-      };
-
       const [
         documentsResponse,
         usersResponse,
         coursesResponse,
         enrollmentsResponse,
-        counterDocumentsResponse,
-        actionRequiredCounterDocumentsResponse,
+        worklistSummaryResponse,
       ] = await Promise.all([
         getAdminDocuments(activeFilters),
         getAdminUsers(),
         getAdminCourses({ limit: 300 }),
         getAdminEnrollments({ limit: 300 }),
-        getAdminDocuments(counterFilters),
-        getAdminDocuments(actionRequiredCounterFilters),
+        getAdminWorklistSummary(),
       ]);
 
+      const documentsSummary = worklistSummaryResponse?.documents || {};
+
       setDocuments(Array.isArray(documentsResponse) ? documentsResponse : []);
-      setDocumentStatusCounts(calculateDocumentStatusCounts(counterDocumentsResponse));
-      setDocumentActionRequiredCount(
-        Array.isArray(actionRequiredCounterDocumentsResponse)
-          ? actionRequiredCounterDocumentsResponse.length
-          : 0
-      );
+      setDocumentStatusCounts({
+        all: documentsSummary.total || 0,
+        available: documentsSummary.available || 0,
+        draft: documentsSummary.draft || 0,
+        revoked: documentsSummary.revoked || 0,
+      });
+      setDocumentActionRequiredCount(documentsSummary.action_required || 0);
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);

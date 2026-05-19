@@ -9,6 +9,7 @@ import {
   getAdminEnrollments,
   getAdminOrganizations,
   getAdminUsers,
+  getAdminWorklistSummary,
   getOrgLearningGroupMembers,
   getOrgLearningGroups,
   updateAdminEnrollment,
@@ -589,32 +590,21 @@ export function AdminEnrollmentsPage() {
       setError("");
 
       const activeFilters = { limit: 300, ...(filters ?? buildFilters()) };
-      const countFilters = {
-        ...activeFilters,
-        status: "",
-        action_required: "",
-      };
-      const actionRequiredCountFilters = {
-        ...countFilters,
-        action_required: "true",
-      };
 
       const [
         enrollmentsResponse,
-        countEnrollmentsResponse,
-        actionRequiredCountResponse,
         usersResponse,
         coursesResponse,
         organizationsResponse,
         groupsResponse,
+        worklistSummaryResponse,
       ] = await Promise.all([
         getAdminEnrollments(activeFilters),
-        getAdminEnrollments(countFilters),
-        getAdminEnrollments(actionRequiredCountFilters),
         getAdminUsers(),
         getAdminCourses({ limit: 300 }),
         getAdminOrganizations(),
         getOrgLearningGroups(),
+        getAdminWorklistSummary(),
       ]);
 
       const loadedGroups = Array.isArray(groupsResponse) ? groupsResponse : [];
@@ -627,15 +617,17 @@ export function AdminEnrollmentsPage() {
         )
       );
 
+      const enrollmentsSummary = worklistSummaryResponse?.enrollments || {};
+
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
-      setStatusCounts(
-        calculateStatusCounts(
-          Array.isArray(countEnrollmentsResponse) ? countEnrollmentsResponse : []
-        )
-      );
-      setActionRequiredCount(
-        Array.isArray(actionRequiredCountResponse) ? actionRequiredCountResponse.length : 0
-      );
+      setStatusCounts({
+        all: enrollmentsSummary.total || 0,
+        assigned: enrollmentsSummary.assigned || 0,
+        active: enrollmentsSummary.active || 0,
+        completed: enrollmentsSummary.completed || 0,
+        cancelled: enrollmentsSummary.cancelled || 0,
+      });
+      setActionRequiredCount(enrollmentsSummary.action_required || 0);
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setOrganizations(Array.isArray(organizationsResponse) ? organizationsResponse : []);
