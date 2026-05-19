@@ -461,6 +461,10 @@ export function DashboardPage({
   const totalDashboardTasksCount =
     actionRequiredDocumentsCount + actionRequiredEnrollmentsCount;
 
+  const dashboardTasksStatusText = totalDashboardTasksCount
+    ? `Есть рабочие задачи: ${totalDashboardTasksCount}.`
+    : "Все рабочие задачи закрыты.";
+
   const dashboardTaskCards = [
     {
       title: "Документы требуют действия",
@@ -667,6 +671,17 @@ export function DashboardPage({
           title="Рабочие задачи"
           subtitle={`Главные действия администратора по документам и назначениям. Всего задач: ${totalDashboardTasksCount}.`}
         >
+          <div
+            data-testid="dashboard-work-tasks-status"
+            className={`mb-4 rounded-2xl p-4 text-sm font-semibold ring-1 ${
+              totalDashboardTasksCount
+                ? "bg-amber-50 text-amber-900 ring-amber-200"
+                : "bg-green-50 text-green-900 ring-green-200"
+            }`}
+          >
+            {dashboardTasksStatusText}
+          </div>
+
           <div
             data-testid="dashboard-work-tasks"
             className="grid gap-4 md:grid-cols-2"
