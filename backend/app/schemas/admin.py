@@ -180,6 +180,28 @@ class AdminDashboardSummary(BaseModel):
     audit_events_total: int
 
 
+class AdminWorklistDocumentsSummary(BaseModel):
+    total: int
+    available: int
+    draft: int
+    revoked: int
+    action_required: int
+
+
+class AdminWorklistEnrollmentsSummary(BaseModel):
+    total: int
+    assigned: int
+    active: int
+    completed: int
+    cancelled: int
+    action_required: int
+
+
+class AdminWorklistSummary(BaseModel):
+    documents: AdminWorklistDocumentsSummary
+    enrollments: AdminWorklistEnrollmentsSummary
+
+
 class AdminDocumentItem(BaseModel):
     id: str
     document_number: str

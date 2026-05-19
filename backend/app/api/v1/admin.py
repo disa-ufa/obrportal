@@ -77,6 +77,9 @@ from app.schemas.admin import (
     AdminUserRoleAssign,
     AdminUserRoleItem,
     AdminUserUpdate,
+    AdminWorklistDocumentsSummary,
+    AdminWorklistEnrollmentsSummary,
+    AdminWorklistSummary,
 )
 
 
@@ -3618,6 +3621,71 @@ ADMIN_ENROLLMENT_ACTION_REQUIRED_STATUSES = {
     "assigned",
     "completed",
 }
+
+
+@router.get("/worklist-summary", response_model=AdminWorklistSummary)
+async def get_admin_worklist_summary(
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminWorklistSummary:
+    document_action_required_condition = or_(
+        DocumentRecord.status.in_(("draft", "revoked")),
+        (DocumentRecord.status == "available") & DocumentRecord.storage_path.is_(None),
+    )
+    enrollment_action_required_condition = Enrollment.status.in_(
+        tuple(ADMIN_ENROLLMENT_ACTION_REQUIRED_STATUSES)
+    )
+
+    return AdminWorklistSummary(
+        documents=AdminWorklistDocumentsSummary(
+            total=await count_admin_rows(
+                session,
+                select(func.count()).select_from(DocumentRecord),
+            ),
+            available=await count_admin_rows(
+                session,
+                select(func.count()).select_from(DocumentRecord).where(DocumentRecord.status == "available"),
+            ),
+            draft=await count_admin_rows(
+                session,
+                select(func.count()).select_from(DocumentRecord).where(DocumentRecord.status == "draft"),
+            ),
+            revoked=await count_admin_rows(
+                session,
+                select(func.count()).select_from(DocumentRecord).where(DocumentRecord.status == "revoked"),
+            ),
+            action_required=await count_admin_rows(
+                session,
+                select(func.count()).select_from(DocumentRecord).where(document_action_required_condition),
+            ),
+        ),
+        enrollments=AdminWorklistEnrollmentsSummary(
+            total=await count_admin_rows(
+                session,
+                select(func.count()).select_from(Enrollment),
+            ),
+            assigned=await count_admin_rows(
+                session,
+                select(func.count()).select_from(Enrollment).where(Enrollment.status == "assigned"),
+            ),
+            active=await count_admin_rows(
+                session,
+                select(func.count()).select_from(Enrollment).where(Enrollment.status == "active"),
+            ),
+            completed=await count_admin_rows(
+                session,
+                select(func.count()).select_from(Enrollment).where(Enrollment.status == "completed"),
+            ),
+            cancelled=await count_admin_rows(
+                session,
+                select(func.count()).select_from(Enrollment).where(Enrollment.status == "cancelled"),
+            ),
+            action_required=await count_admin_rows(
+                session,
+                select(func.count()).select_from(Enrollment).where(enrollment_action_required_condition),
+            ),
+        ),
+    )
 
 
 def normalize_enrollment_status(value: str) -> str:
