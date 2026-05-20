@@ -114,6 +114,7 @@ jobs:
           python scripts/smoke_org_cabinet_page.py
           python scripts/smoke_org_cabinet_route.py
           python scripts/smoke_documents_page.py
+          python scripts/smoke_document_generation_flow.py
           python scripts/smoke_account_page.py
           python scripts/smoke_public_pages.py
           python scripts/smoke_auth_pages.py

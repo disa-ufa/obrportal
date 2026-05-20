@@ -802,3 +802,44 @@ python .\scripts\smoke_document_generation_flow.py
 ```text
 6.42 - следующий функциональный блок после стабилизации document generation contour
 ```
+
+---
+
+## Checkpoint 6.42 - профиль организации для документов
+
+Контур профиля организации для генерируемых документов стабилизирован.
+
+Закрыто:
+
+- 6.42.1 - Backend: профиль организации для документов
+- 6.42.2 - Frontend: поля профиля организации для документов в админке организаций
+- 6.42.3 - Использовать профиль организации в PDF-шаблоне итогового документа
+- 6.42.4 - финальная стабилизация профиля организации для документов
+
+Поля профиля организации:
+
+- document_issuer_name
+- document_signer_position
+- document_signer_name
+- document_basis
+- document_place
+
+PDF использует профиль организации из enrollment.organization_id с fallback на настройки приложения.
+
+Контрольные smoke:
+
+```powershell
+python .\scripts\smoke_document_generation_flow.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_documents_page.py
+```
+
+CI:
+
+- GitHub Actions запускает `smoke_document_generation_flow.py` вместе с основными smoke-проверками.
+
+Следующий функциональный блок:
+
+```text
+6.43 - следующий функциональный блок после стабилизации профиля организации для документов
+```
