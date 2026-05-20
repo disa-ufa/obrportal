@@ -763,14 +763,16 @@ export function DashboardPage({
             />
 
             <WorkflowCard
-              title="Документы и реестр"
-              description="Публикация PDF, контроль черновиков, отзыв и восстановление документов."
+              testId="dashboard-document-quality-flow"
+              title="Документы требуют действия"
+              description="Контроль качества реестра: черновики, отозванные документы, записи без файла и аудит PDF-операций."
               links={[
-                { label: "Все документы", to: buildDocumentsPath() },
-                { label: "Черновики", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Доступные", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Отозванные", to: buildDocumentsPath({ status: "revoked" }) },
                 { label: "Требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Черновики", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Отозванные", to: buildDocumentsPath({ status: "revoked" }) },
+                { label: "Доступные", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
               ]}
             />
 
