@@ -152,9 +152,9 @@ function QuickLinkCard({ label, description, path, count }) {
   );
 }
 
-function WorkflowCard({ title, description, links }) {
+function WorkflowCard({ title, description, links, testId }) {
   return (
-    <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
+    <div data-testid={testId} className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
       <div className="text-base font-bold text-slate-900">{title}</div>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
 
@@ -737,13 +737,16 @@ export function DashboardPage({
             />
 
             <WorkflowCard
-              title="Организации и группы"
-              description="Ведение организаций, учебных групп и переход к групповым назначениям."
+              testId="dashboard-organization-document-flow"
+              title="Организации → группы → назначения → документы"
+              description="Контроль полного организационного контура: карточка организации, группы, назначения и документы."
               links={[
                 { label: "Организации", to: buildOrganizationsPath() },
                 { label: "Группы", to: buildGroupsPath() },
-                { label: "Активные группы", to: buildGroupsPath({ is_active: "true" }) },
-                { label: "Назначения", to: buildEnrollmentsPath({ status: "assigned" }) },
+                { label: "Назначения", to: buildEnrollmentsPath() },
+                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
+                { label: "Документы", to: buildDocumentsPath() },
+                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
               ]}
             />
 
