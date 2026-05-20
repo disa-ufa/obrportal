@@ -1070,3 +1070,46 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.48 - следующий функциональный блок после стабилизации операционного центра назначений
 ```
+
+---
+
+## Checkpoint 6.48 - операционный центр организаций
+
+Контур операционного контроля организаций стабилизирован.
+
+Закрыто:
+
+- 6.48.1 - Dashboard: сценарий `Операционный центр организаций`
+- 6.48.2 - OrganizationDetailPanel: диагностика организационного контура
+- 6.48.3 - smoke-покрытие прямых маршрутов операционного центра организаций
+- 6.48.4 - финальная стабилизация блока операционного центра организаций
+
+Результат:
+
+- Dashboard содержит отдельный сценарий операционного контроля организаций;
+- карточка организации показывает диагностику реквизитов, адресов и PDF-профиля;
+- добавлены быстрые переходы к группам, проблемным назначениям, проблемным документам и аудиту организации;
+- прямые маршруты операционного центра организаций покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/organizations?scope=with_kpp`
+- `/admin/groups?organization_id=...`
+- `/admin/enrollments?organization_id=...&action_required=true`
+- `/admin/documents?organization_id=...&action_required=true`
+- `/admin/audit-events?entity_type=organization`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.49 - следующий функциональный блок после стабилизации операционного центра организаций
+```
