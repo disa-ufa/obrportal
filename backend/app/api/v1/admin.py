@@ -2075,6 +2075,7 @@ async def get_admin_document_row_or_404(
 async def list_admin_documents(
     user_id: str | None = Query(default=None, max_length=64),
     enrollment_id: str | None = Query(default=None, max_length=64),
+    organization_id: str | None = Query(default=None, max_length=64),
     status_filter: str | None = Query(default=None, alias="status", max_length=32),
     document_type: str | None = Query(default=None, max_length=128),
     q: str | None = Query(default=None, max_length=255),
@@ -2136,6 +2137,9 @@ async def list_admin_documents(
 
     if enrollment_id and enrollment_id.strip():
         query = query.where(DocumentRecord.enrollment_id == enrollment_id.strip())
+
+    if organization_id and organization_id.strip():
+        query = query.where(Enrollment.organization_id == organization_id.strip())
 
     if status_filter:
         query = query.where(DocumentRecord.status == normalize_document_status(status_filter))
@@ -3849,6 +3853,7 @@ ADMIN_ENROLLMENT_ACTION_REQUIRED_STATUSES = {
 async def get_admin_worklist_summary(
     documents_user_id: str | None = Query(default=None, max_length=64),
     documents_enrollment_id: str | None = Query(default=None, max_length=64),
+    documents_organization_id: str | None = Query(default=None, max_length=64),
     documents_document_type: str | None = Query(default=None, max_length=128),
     documents_q: str | None = Query(default=None, max_length=255),
     enrollments_user_id: str | None = Query(default=None, max_length=64),
@@ -3871,6 +3876,7 @@ async def get_admin_worklist_summary(
 
     normalized_documents_user_id = normalize_optional_text(documents_user_id)
     normalized_documents_enrollment_id = normalize_optional_text(documents_enrollment_id)
+    normalized_documents_organization_id = normalize_optional_text(documents_organization_id)
     normalized_documents_document_type = normalize_optional_text(documents_document_type)
     normalized_documents_q = normalize_optional_text(documents_q)
 
@@ -3879,6 +3885,9 @@ async def get_admin_worklist_summary(
 
     if normalized_documents_enrollment_id:
         document_conditions.append(DocumentRecord.enrollment_id == normalized_documents_enrollment_id)
+
+    if normalized_documents_organization_id:
+        document_conditions.append(Enrollment.organization_id == normalized_documents_organization_id)
 
     if normalized_documents_document_type:
         document_conditions.append(
@@ -3949,6 +3958,8 @@ async def get_admin_worklist_summary(
         .select_from(DocumentRecord)
         .join(User, User.id == DocumentRecord.user_id)
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
     )
 
     if document_conditions:

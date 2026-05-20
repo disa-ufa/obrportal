@@ -73,6 +73,7 @@ def main() -> None:
             "downloadAdminDocument,",
             "downloadAdminDocumentGenerationEvent,",
             "getAdminCourses,",
+            "getAdminOrganizations,",
             "getAdminDocuments,",
             "getAdminWorklistSummary,",
             "getAdminEnrollments,",
@@ -128,21 +129,25 @@ def main() -> None:
             "const activeFilters = { limit: 300, ...filters };",
             "getAdminDocuments(activeFilters)",
             "getAdminWorklistSummary({",
+            "documents_organization_id: filters.organization_id",
             "setDocumentActionRequiredCount(documentsSummary.action_required || 0);",
             "handleToggleActionRequiredFilter",
             "documentActionRequiredCount",
             "Требуют действия: {documentActionRequiredCount}",
             "const [users, setUsers] = useState([]);",
             "const [courses, setCourses] = useState([]);",
+            "const [organizations, setOrganizations] = useState([]);",
             "const [enrollments, setEnrollments] = useState([]);",
             "const [filterUserId, setFilterUserId] = useState(",
             "const [filterEnrollmentId, setFilterEnrollmentId] = useState(",
+            "const [filterOrganizationId, setFilterOrganizationId] = useState(",
             "const [filterStatus, setFilterStatus] = useState(",
             "const [filterDocumentType, setFilterDocumentType] = useState(",
             "const [filterQuery, setFilterQuery] = useState(",
             "async function loadData(nextFilters = null)",
             "getAdminUsers()",
             "getAdminCourses({ limit: 300 })",
+            "getAdminOrganizations()",
             "getAdminEnrollments({ limit: 300 })",
             "async function handleSubmit(event)",
             "createAdminDocument(payload)",
@@ -164,6 +169,8 @@ def main() -> None:
             "async function handleQuickStatusFilter(nextStatus)",
             "async function handleClearEnrollmentFilter()",
             "async function handleResetFilter()",
+            "sortedOrganizations",
+            "Все организации",
             "<DocumentsSummaryCards",
             "<DocumentsWorkflowPanel",
             "<DocumentVerificationQrBlock",
@@ -219,6 +226,26 @@ def main() -> None:
             "\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
             "\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c \u043e\u0442\u0437\u044b\u0432",
             "\u041e\u0442\u043c\u0435\u043d\u0430",
+        ],
+    )
+
+    require_contains(
+        "backend/app/api/v1/admin.py",
+        [
+            "documents_organization_id: str | None = Query(default=None, max_length=64)",
+            "normalized_documents_organization_id = normalize_optional_text(documents_organization_id)",
+            "document_conditions.append(Enrollment.organization_id == normalized_documents_organization_id)",
+            "organization_id: str | None = Query(default=None, max_length=64)",
+            "query = query.where(Enrollment.organization_id == organization_id.strip())",
+        ],
+    )
+
+    require_contains(
+        "backend/app/tests/test_auth_rbac_admin_api.py",
+        [
+            "test_admin_can_filter_documents_by_organization",
+            "/api/v1/admin/documents?",
+            "documents_organization_id",
         ],
     )
 

@@ -7,6 +7,7 @@ import {
   downloadAdminDocument,
   downloadAdminDocumentGenerationEvent,
   getAdminCourses,
+  getAdminOrganizations,
   getAdminDocuments,
   getAdminDocumentGenerationEvents,
   getAdminEnrollments,
@@ -290,6 +291,7 @@ function getDocumentFiltersFromSearch(search) {
   return {
     user_id: params.get("user_id") || "",
     enrollment_id: params.get("enrollment_id") || "",
+    organization_id: params.get("organization_id") || "",
     status: params.get("status") || "",
     document_type: params.get("document_type") || "",
     q: params.get("q") || "",
@@ -468,10 +470,12 @@ export function DocumentsPage() {
   const [documentActionRequiredCount, setDocumentActionRequiredCount] = useState(0);
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
 
   const [filterUserId, setFilterUserId] = useState(initialFilters.user_id);
   const [filterEnrollmentId, setFilterEnrollmentId] = useState(initialFilters.enrollment_id);
+  const [filterOrganizationId, setFilterOrganizationId] = useState(initialFilters.organization_id);
   const [filterStatus, setFilterStatus] = useState(initialFilters.status);
   const [filterDocumentType, setFilterDocumentType] = useState(initialFilters.document_type);
   const [filterQuery, setFilterQuery] = useState(initialFilters.q);
@@ -543,6 +547,11 @@ export function DocumentsPage() {
     [enrollments, filterEnrollmentId]
   );
 
+  const sortedOrganizations = useMemo(
+    () => [...organizations].sort((left, right) => left.name.localeCompare(right.name, "ru")),
+    [organizations]
+  );
+
   const showActionRequiredOnly = filterActionRequired === "true";
   const displayedDocuments = documents;
 
@@ -574,6 +583,7 @@ export function DocumentsPage() {
     return {
       user_id: overrides.user_id ?? filterUserId,
       enrollment_id: overrides.enrollment_id ?? filterEnrollmentId,
+      organization_id: overrides.organization_id ?? filterOrganizationId,
       status: overrides.status ?? filterStatus,
       document_type: overrides.document_type ?? filterDocumentType,
       q: overrides.q ?? filterQuery,
@@ -616,16 +626,19 @@ export function DocumentsPage() {
         documentsResponse,
         usersResponse,
         coursesResponse,
+        organizationsResponse,
         enrollmentsResponse,
         worklistSummaryResponse,
       ] = await Promise.all([
         getAdminDocuments(activeFilters),
         getAdminUsers(),
         getAdminCourses({ limit: 300 }),
+        getAdminOrganizations(),
         getAdminEnrollments({ limit: 300 }),
         getAdminWorklistSummary({
           documents_user_id: filters.user_id,
           documents_enrollment_id: filters.enrollment_id,
+          documents_organization_id: filters.organization_id,
           documents_document_type: filters.document_type,
           documents_q: filters.q,
         }),
@@ -644,6 +657,7 @@ export function DocumentsPage() {
       setGenerationEventsByDocumentId({});
       setUsers(Array.isArray(usersResponse) ? usersResponse : []);
       setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
+      setOrganizations(Array.isArray(organizationsResponse) ? organizationsResponse : []);
       setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
     } catch (err) {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.loadFailed));
@@ -657,6 +671,7 @@ export function DocumentsPage() {
 
     setFilterUserId(nextFilters.user_id);
     setFilterEnrollmentId(nextFilters.enrollment_id);
+    setFilterOrganizationId(nextFilters.organization_id);
     setFilterStatus(nextFilters.status);
     setFilterDocumentType(nextFilters.document_type);
     setFilterQuery(nextFilters.q);
@@ -1084,6 +1099,7 @@ export function DocumentsPage() {
   async function handleResetFilter() {
     setFilterUserId("");
     setFilterEnrollmentId("");
+    setFilterOrganizationId("");
     setFilterStatus("");
     setFilterDocumentType("");
     setFilterQuery("");
@@ -1437,7 +1453,7 @@ export function DocumentsPage() {
             </div>
           )}
 
-          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr_1fr_auto_auto]">
+          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto_auto]">
             <input
               type="search"
               value={filterQuery}
@@ -1455,6 +1471,19 @@ export function DocumentsPage() {
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.email}{user.full_name ? ` — ${user.full_name}` : ""}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filterOrganizationId}
+              onChange={(event) => setFilterOrganizationId(event.target.value)}
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="">Все организации</option>
+              {sortedOrganizations.map((organization) => (
+                <option key={organization.id} value={organization.id}>
+                  {organization.name}
                 </option>
               ))}
             </select>

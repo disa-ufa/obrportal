@@ -3099,6 +3099,86 @@ def post_multipart_admin_document(
     )
 
 
+def test_admin_can_filter_documents_by_organization() -> None:
+    from urllib.parse import urlencode
+
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    first_organization_id = create_test_organization(token)
+    second_organization_id = create_test_organization(token)
+
+    first_created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        organization_id=first_organization_id,
+        status="completed",
+    )
+    second_created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        organization_id=second_organization_id,
+        status="completed",
+    )
+
+    first_course = first_created["course"]
+    first_enrollment = first_created["enrollment"]
+    second_course = second_created["course"]
+    second_enrollment = second_created["enrollment"]
+
+    first_document = create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=first_course["id"],
+        enrollment_id=first_enrollment["id"],
+        title="Organization filtered document first",
+        status="available",
+    )
+    second_document = create_test_document_record_in_db(
+        user_id=user_id,
+        course_id=second_course["id"],
+        enrollment_id=second_enrollment["id"],
+        title="Organization filtered document second",
+        status="available",
+    )
+
+    query = urlencode(
+        {
+            "organization_id": first_organization_id,
+            "limit": 300,
+        }
+    )
+
+    status, documents = request_json(
+        "GET",
+        f"/api/v1/admin/documents?{query}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, list)
+    assert any(item["id"] == first_document["id"] for item in documents)
+    assert all(item["organization_id"] == first_organization_id for item in documents)
+    assert not any(item["id"] == second_document["id"] for item in documents)
+
+    summary_query = urlencode(
+        {
+            "documents_organization_id": first_organization_id,
+        }
+    )
+
+    status, summary = request_json(
+        "GET",
+        f"/api/v1/admin/worklist-summary?{summary_query}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(summary, dict)
+    assert summary["documents"]["total"] >= 1
+
+
 def test_admin_can_list_admin_documents() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
