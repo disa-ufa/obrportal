@@ -11,7 +11,53 @@ import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
-import { buildAuditPath, buildDocumentsPath, buildEnrollmentsPath } from "../../utils/adminLinks";
+import { buildAuditPath, buildDocumentsPath, buildEnrollmentsPath, buildGroupsPath } from "../../utils/adminLinks";
+
+const ORGANIZATION_DOCUMENT_PROFILE_FIELDS = [
+  { key: "document_issuer_name", label: "организация-выдавшая документ" },
+  { key: "document_signer_position", label: "должность подписанта" },
+  { key: "document_signer_name", label: "ФИО подписанта" },
+  { key: "document_basis", label: "основание выдачи" },
+  { key: "document_place", label: "место выдачи" },
+];
+
+function getOrganizationAttentionItems(organization) {
+  const items = [];
+
+  if (!organization) {
+    return items;
+  }
+
+  if (!organization.kpp) {
+    items.push("КПП: не заполнен, проверьте реквизиты юридического лица.");
+  }
+
+  if (!organization.ogrn) {
+    items.push("ОГРН: не заполнен, проверьте регистрационные данные организации.");
+  }
+
+  if (!organization.legal_address) {
+    items.push("Юридический адрес: не заполнен.");
+  }
+
+  if (!organization.actual_address) {
+    items.push("Фактический адрес: не заполнен.");
+  }
+
+  const missingProfileFields = ORGANIZATION_DOCUMENT_PROFILE_FIELDS.filter(
+    (field) => !String(organization[field.key] || "").trim()
+  );
+
+  if (missingProfileFields.length > 0) {
+    items.push(
+      `PDF-профиль: не заполнено полей — ${missingProfileFields.length}. Заполните ${missingProfileFields
+        .map((field) => field.label)
+        .join(", ")}.`
+    );
+  }
+
+  return [...new Set(items)];
+}
 
 export function OrganizationDetailPanel({
   organizationDetail,
@@ -24,6 +70,7 @@ export function OrganizationDetailPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState("");
+  const organizationAttentionItems = getOrganizationAttentionItems(organizationDetail);
 
   function handleClose() {
     setIsEditing(false);
@@ -144,6 +191,36 @@ export function OrganizationDetailPanel({
                 </StatusBadge>
               </div>
 
+              {organizationAttentionItems.length > 0 && (
+                <div
+                  data-testid="organization-attention-diagnostics"
+                  className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-semibold text-slate-900">
+                      Что требует внимания в организации
+                    </div>
+                    <span
+                      data-testid="organization-attention-count"
+                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+                    >
+                      Пунктов внимания: {organizationAttentionItems.length}
+                    </span>
+                  </div>
+                  <p
+                    data-testid="organization-attention-diagnostics-note"
+                    className="mt-2 leading-6"
+                  >
+                    Диагностика основана на реквизитах, адресах и PDF-профиле организации.
+                  </p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {organizationAttentionItems.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div
                 data-testid="organization-related-records-links"
                 className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100"
@@ -157,6 +234,14 @@ export function OrganizationDetailPanel({
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link
+                    data-testid="organization-groups-link"
+                    to={buildGroupsPath({ organization_id: organizationDetail.id })}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
+                  >
+                    Группы организации
+                  </Link>
+
+                  <Link
                     to={buildEnrollmentsPath({ organization_id: organizationDetail.id })}
                     className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
                   >
@@ -168,6 +253,28 @@ export function OrganizationDetailPanel({
                     className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
                   >
                     Документы организации
+                  </Link>
+
+                  <Link
+                    data-testid="organization-action-required-enrollments-link"
+                    to={buildEnrollmentsPath({
+                      organization_id: organizationDetail.id,
+                      action_required: "true",
+                    })}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100"
+                  >
+                    Проблемные назначения
+                  </Link>
+
+                  <Link
+                    data-testid="organization-action-required-documents-link"
+                    to={buildDocumentsPath({
+                      organization_id: organizationDetail.id,
+                      action_required: "true",
+                    })}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100"
+                  >
+                    Проблемные документы
                   </Link>
 
                   <Link
