@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import {
   UserForm,
@@ -13,6 +14,51 @@ import { StatusBadge } from "../ui/StatusBadge";
 import { AdminFormTextInput as TextInput } from "./AdminTextInput";
 import { AdminFormField as Field } from "./AdminFormField";
 import { AdminFormSelectInput as SelectInput } from "./AdminTextInput";
+import { buildAuditPath, buildDocumentsPath, buildEnrollmentsPath, buildRolesPath } from "../../utils/adminLinks";
+
+const USER_RELATED_LINK_CLASS =
+  "inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100";
+
+const USER_ATTENTION_LINK_CLASS =
+  "inline-flex items-center justify-center rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100";
+
+function getUserAttentionItems(user) {
+  const items = [];
+
+  if (!user) {
+    return items;
+  }
+
+  if (!user.is_active) {
+    items.push("Статус: пользователь неактивен, проверьте необходимость доступа и связанные назначения.");
+  }
+
+  if (!user.is_email_verified) {
+    items.push("Email: не подтверждён, пользователь может не получать уведомления и восстановление доступа.");
+  }
+
+  if (!user.mfa_enabled) {
+    items.push("MFA: не включена, проверьте требования безопасности для административных ролей.");
+  }
+
+  if (!String(user.phone || "").trim()) {
+    items.push("Телефон: не заполнен, сложнее связаться с пользователем вне системы.");
+  }
+
+  if (!user.roles?.length) {
+    items.push("Роли: не назначены, пользователь не сможет работать в административных разделах.");
+  }
+
+  const hasOrganizationScopedRole = Boolean(
+    user.roles?.some((role) => Boolean(role.organization_id))
+  );
+
+  if (user.roles?.length && !hasOrganizationScopedRole) {
+    items.push("Организации: нет ролей в рамках организации, доступ действует только глобально.");
+  }
+
+  return [...new Set(items)];
+}
 
 function roleBadgeTone(roleCode) {
   if (roleCode === "admin") {
@@ -298,6 +344,8 @@ export function UserDetailPanel({
     return map;
   }, [organizations]);
 
+  const userAttentionItems = getUserAttentionItems(userDetail);
+
   function handleClose() {
     setIsEditing(false);
     setActionError("");
@@ -454,6 +502,93 @@ export function UserDetailPanel({
                 <StatusBadge tone={userDetail.mfa_enabled ? "green" : "gray"}>
                   mfa: {userDetail.mfa_enabled ? "enabled" : "disabled"}
                 </StatusBadge>
+              </div>
+
+              {userAttentionItems.length > 0 && (
+                <div
+                  data-testid="user-attention-diagnostics"
+                  className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-semibold text-slate-900">
+                      Что требует внимания в пользователе
+                    </div>
+                    <span
+                      data-testid="user-attention-count"
+                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+                    >
+                      Пунктов внимания: {userAttentionItems.length}
+                    </span>
+                  </div>
+                  <p
+                    data-testid="user-attention-diagnostics-note"
+                    className="mt-2 leading-6"
+                  >
+                    Диагностика основана на активности, подтверждении email, MFA, телефоне и ролях пользователя.
+                  </p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {userAttentionItems.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div
+                data-testid="user-related-records-links"
+                className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100"
+              >
+                <div className="font-semibold text-slate-900">
+                  Связанные записи пользователя
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  Быстрые переходы к назначениям, документам, ролям и аудиту выбранного пользователя.
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    data-testid="user-enrollments-link"
+                    to={buildEnrollmentsPath({ user_id: userDetail.id })}
+                    className={USER_RELATED_LINK_CLASS}
+                  >
+                    Назначения пользователя
+                  </Link>
+
+                  <Link
+                    data-testid="user-documents-link"
+                    to={buildDocumentsPath({ user_id: userDetail.id })}
+                    className={USER_RELATED_LINK_CLASS}
+                  >
+                    Документы пользователя
+                  </Link>
+
+                  <Link
+                    data-testid="user-action-required-enrollments-link"
+                    to={buildEnrollmentsPath({
+                      user_id: userDetail.id,
+                      action_required: "true",
+                    })}
+                    className={USER_ATTENTION_LINK_CLASS}
+                  >
+                    Проблемные назначения
+                  </Link>
+
+                  <Link
+                    data-testid="user-roles-link"
+                    to={buildRolesPath()}
+                    className={USER_RELATED_LINK_CLASS}
+                  >
+                    Роли пользователя
+                  </Link>
+
+                  <Link
+                    data-testid="user-audit-link"
+                    to={buildAuditPath({ entity_type: "user", entity_id: userDetail.id })}
+                    className={USER_RELATED_LINK_CLASS}
+                  >
+                    Аудит пользователя
+                  </Link>
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
