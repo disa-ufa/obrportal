@@ -934,3 +934,49 @@ python .\scripts\smoke_frontend_admin_pages.py
 ```text
 6.45 - следующий функциональный блок после стабилизации быстрых переходов по организации
 ```
+
+---
+
+## Checkpoint 6.45 - аудит document/PDF-контура
+
+Контур аудита и трассировки `организация → назначение → документ → PDF` стабилизирован.
+
+Закрыто:
+
+- 6.45.1 - быстрые переходы в аудит из организации и документа
+- 6.45.2 - AuditPage: быстрый сценарий аудита document/PDF-контура
+- 6.45.3 - smoke-покрытие прямых audit-маршрутов document/PDF-контура
+- 6.45.4 - финальная стабилизация блока аудита document/PDF-контура
+
+Результат:
+
+- из карточки организации доступен переход в аудит организации;
+- из карточки документа доступны переходы в аудит документа, назначения и организации;
+- AuditPage содержит сценарий `Document/PDF-контур`; 
+- прямые маршруты аудита для document/PDF-событий покрыты smoke-проверками;
+- проверяются audit-фильтры по `action` и `entity_type`.
+
+Основные audit-маршруты:
+
+- `/admin/audit-events?entity_type=document`
+- `/admin/audit-events?entity_type=enrollment`
+- `/admin/audit-events?entity_type=organization`
+- `/admin/audit-events?action=admin.document_created`
+- `/admin/audit-events?action=admin.document_regenerated`
+- `/admin/audit-events?action=admin.document_revoked`
+- `/admin/audit-events?action=admin.document_restored`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_frontend_admin_pages.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.46 - следующий функциональный блок после стабилизации аудита document/PDF-контура
+```
