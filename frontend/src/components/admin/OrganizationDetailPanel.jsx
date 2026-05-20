@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   OrganizationForm,
   ORGANIZATION_API_ERROR_MESSAGES,
@@ -10,6 +11,7 @@ import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
+import { buildDocumentsPath, buildEnrollmentsPath } from "../../utils/adminLinks";
 
 export function OrganizationDetailPanel({
   organizationDetail,
@@ -140,6 +142,34 @@ export function OrganizationDetailPanel({
                 <StatusBadge tone={organizationDetail.ogrn ? "green" : "gray"}>
                   ogrn: {organizationDetail.ogrn ? "filled" : "empty"}
                 </StatusBadge>
+              </div>
+
+              <div
+                data-testid="organization-related-records-links"
+                className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100"
+              >
+                <div className="font-semibold text-slate-900">
+                  Связанные записи
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  Быстрые переходы в назначения и документы, отфильтрованные по этой организации.
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    to={buildEnrollmentsPath({ organization_id: organizationDetail.id })}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
+                  >
+                    Назначения организации
+                  </Link>
+
+                  <Link
+                    to={buildDocumentsPath({ organization_id: organizationDetail.id })}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
+                  >
+                    Документы организации
+                  </Link>
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">

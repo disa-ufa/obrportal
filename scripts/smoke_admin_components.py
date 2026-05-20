@@ -265,6 +265,8 @@ def main() -> None:
             'import { LoadingBlock } from "../ui/LoadingBlock";',
             'import { SectionCard } from "../ui/SectionCard";',
             'import { StatusBadge } from "../ui/StatusBadge";',
+            'import { buildDocumentsPath, buildEnrollmentsPath } from "../../utils/adminLinks";',
+            'import { Link } from "react-router-dom";',
             "export function OrganizationDetailPanel({",
             "organizationDetail,",
             "onUpdateOrganization,",
@@ -289,6 +291,12 @@ def main() -> None:
             "<StatusBadge tone=\"blue\">organization</StatusBadge>",
             "formatDetailDate(organizationDetail.created_at)",
             "formatDetailDate(organizationDetail.updated_at)",
+            "organization-related-records-links",
+            "Связанные записи",
+            "Назначения организации",
+            "Документы организации",
+            "buildEnrollmentsPath({ organization_id: organizationDetail.id })",
+            "buildDocumentsPath({ organization_id: organizationDetail.id })",
         ],
     )
 
