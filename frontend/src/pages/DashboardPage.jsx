@@ -847,6 +847,24 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-rbac-operations-flow"
+              title="Операционный центр ролей и прав"
+              description="Контроль системных и пользовательских ролей, permissions, назначений ролей и аудита RBAC-действий."
+              links={[
+                { label: "Все роли", to: buildRolesPath() },
+                { label: "Системные роли", to: buildRolesPath({ type: "system" }) },
+                { label: "Пользовательские роли", to: buildRolesPath({ type: "custom" }) },
+                { label: "Admin-роли", to: buildRolesPath({ q: "admin" }) },
+                { label: "Все права", to: buildPermissionsPath() },
+                { label: "Admin-права", to: buildPermissionsPath({ group: "admin" }) },
+                { label: "Audit-права", to: buildPermissionsPath({ group: "audit" }) },
+                { label: "Пользователи с ролью admin", to: buildUsersPath({ role: "admin" }) },
+                { label: "Аудит ролей", to: buildAuditPath({ entity_type: "role" }) },
+                { label: "Аудит прав", to: buildAuditPath({ entity_type: "permission" }) },
+              ]}
+            />
+
+            <WorkflowCard
               title="Аудит и расследование"
               description="Проверка действий администраторов, истории сущностей и событий actor."
               links={[
