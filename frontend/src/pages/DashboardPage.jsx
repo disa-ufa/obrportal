@@ -737,6 +737,21 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-user-operations-flow"
+              title="Операционный центр пользователей"
+              description="Контроль активности, ролей, назначений, документов и аудита действий по пользователям."
+              links={[
+                { label: "Все пользователи", to: buildUsersPath() },
+                { label: "Активные пользователи", to: buildUsersPath({ activity: "active" }) },
+                { label: "Неактивные пользователи", to: buildUsersPath({ activity: "inactive" }) },
+                { label: "Роли пользователей", to: buildRolesPath() },
+                { label: "Назначения пользователей", to: buildEnrollmentsPath() },
+                { label: "Документы пользователей", to: buildDocumentsPath() },
+                { label: "Аудит пользователей", to: buildAuditPath({ entity_type: "user" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-organization-document-flow"
               title="Организации → группы → назначения → документы"
               description="Контроль полного организационного контура: карточка организации, группы, назначения и документы."
