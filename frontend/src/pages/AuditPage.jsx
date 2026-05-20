@@ -161,6 +161,8 @@ function AuditSummaryCards({ auditCounts, filters }) {
 function AuditWorkflowPanel({ auditCounts }) {
   const userEventsCount = auditCounts.entityTypes.user || 0;
   const documentEventsCount = auditCounts.entityTypes.document || 0;
+  const enrollmentEventsCount = auditCounts.entityTypes.enrollment || 0;
+  const organizationEventsCount = auditCounts.entityTypes.organization || 0;
   const roleEventsCount = auditCounts.entityTypes.role || 0;
   const permissionEventsCount = auditCounts.entityTypes.permission || 0;
 
@@ -180,6 +182,72 @@ function AuditWorkflowPanel({ auditCounts }) {
           description={`Проверить выпуск, публикацию и отзыв документов: ${documentEventsCount}.`}
           to={buildAuditPath({ entity_type: "document" })}
         />
+        <AdminWorkflowLink
+          title="События назначений"
+          description={`Старт, завершение и изменение назначений: ${enrollmentEventsCount}.`}
+          to={buildAuditPath({ entity_type: "enrollment" })}
+        />
+        <AdminWorkflowLink
+          title="События организаций"
+          description={`Изменения организаций и профилей PDF: ${organizationEventsCount}.`}
+          to={buildAuditPath({ entity_type: "organization" })}
+        />
+        <div
+          data-testid="audit-document-pdf-workflow"
+          className="rounded-3xl bg-indigo-50 p-5 ring-1 ring-indigo-100"
+        >
+          <div className="text-base font-bold text-slate-900">
+            Document/PDF-контур
+          </div>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Быстрые фильтры для трассировки выпуска, пересборки, публикации, отзыва и восстановления документов.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              to={buildAuditPath({ entity_type: "document" })}
+              className={TABLE_LINK_CLASS}
+            >
+              Все события документов
+            </Link>
+            <Link
+              to={buildAuditPath({ action: "admin.document_regenerated" })}
+              className={TABLE_LINK_CLASS}
+            >
+              Регенерация PDF
+            </Link>
+            <Link
+              to={buildAuditPath({ action: "admin.document_created" })}
+              className={TABLE_LINK_CLASS}
+            >
+              Создание документов
+            </Link>
+            <Link
+              to={buildAuditPath({ action: "admin.document_revoked" })}
+              className={TABLE_LINK_CLASS}
+            >
+              Отзывы документов
+            </Link>
+            <Link
+              to={buildAuditPath({ action: "admin.document_restored" })}
+              className={TABLE_LINK_CLASS}
+            >
+              Восстановления документов
+            </Link>
+            <Link
+              to={buildAuditPath({ entity_type: "enrollment" })}
+              className={TABLE_LINK_CLASS}
+            >
+              Назначения
+            </Link>
+            <Link
+              to={buildAuditPath({ entity_type: "organization" })}
+              className={TABLE_LINK_CLASS}
+            >
+              Организации
+            </Link>
+          </div>
+        </div>
         <AdminWorkflowLink
           title="RBAC изменения"
           description={`Роли: ${roleEventsCount}, permissions: ${permissionEventsCount}.`}
