@@ -843,3 +843,52 @@ CI:
 ```text
 6.43 - следующий функциональный блок после стабилизации профиля организации для документов
 ```
+
+---
+
+## Checkpoint 6.43 - связка организация, назначение, документ и PDF
+
+Контур связи `организация → назначение → документ → PDF` стабилизирован.
+
+Закрыто:
+
+- 6.43.1 - Frontend: подсказки профиля PDF в назначениях
+- 6.43.2 - фильтр назначений по организации
+- 6.43.3 - фильтр документов по организации
+- 6.43.4 - финальная стабилизация блока `организация → назначение → документ → PDF`
+
+Результат:
+
+- в назначениях отображается подсказка, какой профиль PDF будет использован;
+- назначения фильтруются по `organization_id`; 
+- документы фильтруются по `organization_id` через связанное назначение;
+- `worklist-summary` учитывает организацию для назначений и документов;
+- PDF использует профиль организации из `enrollment.organization_id` с fallback на настройки приложения.
+
+Backend/API:
+
+- GET `/api/v1/admin/enrollments?organization_id=...`
+- GET `/api/v1/admin/documents?organization_id=...`
+- GET `/api/v1/admin/worklist-summary?enrollments_organization_id=...`
+- GET `/api/v1/admin/worklist-summary?documents_organization_id=...`
+
+Frontend:
+
+- `/admin/enrollments?organization_id=...`
+- `/admin/documents?organization_id=...`
+- select `Все организации` на страницах назначений и документов.
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_document_generation_flow.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_frontend_admin_pages.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.44 - следующий функциональный блок после стабилизации связки организация, назначение, документ и PDF
+```
