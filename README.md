@@ -1025,3 +1025,48 @@ python .\scripts\smoke_frontend_admin_pages.py
 ```text
 6.47 - следующий функциональный блок после стабилизации контроля качества документов
 ```
+
+---
+
+## Checkpoint 6.47 - операционный центр назначений
+
+Контур операционного контроля проблемных назначений стабилизирован.
+
+Закрыто:
+
+- 6.47.1 - Dashboard: сценарий `Операционный центр назначений`
+- 6.47.2 - AdminEnrollmentsPage: усиленная диагностика причин, почему назначение требует действия
+- 6.47.3 - smoke-покрытие прямых маршрутов операционного центра назначений
+- 6.47.4 - финальная стабилизация блока операционного центра назначений
+
+Результат:
+
+- Dashboard содержит отдельный сценарий операционного контроля назначений;
+- AdminEnrollmentsPage показывает расширенную диагностику причин внимания;
+- диагностируются назначенные и завершённые назначения;
+- отображаются причины по статусу, датам, группе, организации и PDF-профилю организации;
+- прямые маршруты `action_required=true` для назначений покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/enrollments?action_required=true`
+- `/admin/enrollments?action_required=true&status=assigned`
+- `/admin/enrollments?action_required=true&status=completed`
+- `/admin/enrollments?action_required=true&organization_id=...`
+- `/admin/enrollments?action_required=true&learning_group_id=...`
+- `/admin/documents?action_required=true`
+- `/admin/audit-events?entity_type=enrollment`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.48 - следующий функциональный блок после стабилизации операционного центра назначений
+```
