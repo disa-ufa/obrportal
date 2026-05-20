@@ -169,6 +169,46 @@ function getEnrollmentActionRequiredHint(enrollment) {
   return null;
 }
 
+function getEnrollmentAttentionItems(enrollment, organization) {
+  const items = [];
+
+  if (!enrollment) {
+    return items;
+  }
+
+  const documentProfileStatus = getOrganizationDocumentProfileStatus(organization);
+
+  if (enrollment.status === "assigned") {
+    items.push("Старт обучения: назначение ещё не переведено в работу.");
+
+    if (!enrollment.started_at) {
+      items.push("Дата старта: не заполнена, проверьте фактическое начало обучения.");
+    }
+  }
+
+  if (enrollment.status === "completed") {
+    items.push("Итоговый документ: завершённое обучение нужно проверить в реестре документов.");
+
+    if (!enrollment.completed_at) {
+      items.push("Дата завершения: не заполнена, проверьте корректность статуса.");
+    }
+  }
+
+  if (!enrollment.organization_id) {
+    items.push("Организация: не указана, PDF будет использовать fallback-настройки приложения.");
+  } else if (!organization) {
+    items.push("Организация: карточка не найдена в загруженном справочнике, обновите данные.");
+  } else if (documentProfileStatus.missing.length > 0) {
+    items.push(`PDF-профиль организации: не заполнено полей — ${documentProfileStatus.missing.length}.`);
+  }
+
+  if (!enrollment.learning_group_id) {
+    items.push("Группа: назначение без учебной группы, проверьте контекст группового обучения.");
+  }
+
+  return [...new Set(items)];
+}
+
 const USER_ROLE_LABELS = {
   admin: "Администратор",
   learner_fl: "Физлицо",
@@ -1551,6 +1591,12 @@ export function AdminEnrollmentsPage() {
                 const isEditing = editingEnrollmentId === enrollment.id;
                 const isActionRunning = actionEnrollmentId === enrollment.id;
                 const enrollmentActionHint = getEnrollmentActionRequiredHint(enrollment);
+                const enrollmentOrganization = organizationsById[enrollment.organization_id] || null;
+                const enrollmentProfileStatus = getOrganizationDocumentProfileStatus(enrollmentOrganization);
+                const enrollmentAttentionItems = getEnrollmentAttentionItems(
+                  enrollment,
+                  enrollmentOrganization
+                );
 
                 return (
                   <article
@@ -1619,6 +1665,36 @@ export function AdminEnrollmentsPage() {
                           </div>
                         )}
 
+                        {enrollmentAttentionItems.length > 0 && (
+                          <div
+                            data-testid="enrollment-attention-fields"
+                            className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${enrollmentActionHint?.toneClass || "bg-amber-50 text-amber-900 ring-amber-200"}`}
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="font-semibold text-slate-900">
+                                Что требует внимания в назначении
+                              </div>
+                              <span
+                                data-testid="enrollment-attention-count"
+                                className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+                              >
+                                Пунктов внимания: {enrollmentAttentionItems.length}
+                              </span>
+                            </div>
+                            <p
+                              data-testid="enrollment-attention-diagnostics-note"
+                              className="mt-2 leading-6"
+                            >
+                              Диагностика основана на статусе, датах, группе, организации и PDF-профиле организации.
+                            </p>
+                            <ul className="mt-2 list-disc space-y-1 pl-5">
+                              {enrollmentAttentionItems.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
                         <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
                           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                             <div className="text-xs uppercase tracking-wide text-slate-500">
@@ -1639,9 +1715,9 @@ export function AdminEnrollmentsPage() {
                             )}
                             <div
                               data-testid="enrollment-list-document-profile-status"
-                              className={`mt-3 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getOrganizationDocumentProfileStatus(organizationsById[enrollment.organization_id]).toneClass}`}
+                              className={`mt-3 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${enrollmentProfileStatus.toneClass}`}
                             >
-                              {getOrganizationDocumentProfileStatus(organizationsById[enrollment.organization_id]).label}
+                              {enrollmentProfileStatus.label}
                             </div>
                           </div>
 
