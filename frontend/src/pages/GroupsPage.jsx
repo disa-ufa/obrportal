@@ -238,6 +238,34 @@ function calculateGroupCounts(items) {
   return counts;
 }
 
+function getGroupAttentionItems(group, organizationsMap) {
+  const items = [];
+
+  if (!group) {
+    return items;
+  }
+
+  if (!group.is_active) {
+    items.push("Статус: группа неактивна, проверьте актуальность назначений и участников.");
+  }
+
+  if (!String(group.code || "").trim()) {
+    items.push("Код группы: не заполнен, сложнее искать группу в операционных списках.");
+  }
+
+  if (!group.organization_id) {
+    items.push("Организация: группа не привязана к организации.");
+  } else if (!organizationsMap[group.organization_id]) {
+    items.push("Организация: карточка не найдена в загруженном справочнике.");
+  }
+
+  if (!String(group.description || "").trim()) {
+    items.push("Описание: не заполнено, добавьте контекст обучения или состава группы.");
+  }
+
+  return [...new Set(items)];
+}
+
 function LearningGroupForm({
   organizations,
   initialValues = EMPTY_GROUP,
@@ -660,6 +688,7 @@ function LearningGroupDetailPanel({
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState("");
   const organizationsMap = useMemo(() => buildOrganizationsMap(organizations), [organizations]);
+  const groupAttentionItems = getGroupAttentionItems(groupDetail, organizationsMap);
 
   function handleClose() {
     setIsEditing(false);
@@ -799,6 +828,90 @@ function LearningGroupDetailPanel({
                 <StatusBadge tone={groupDetail.code ? "green" : "gray"}>
                   code: {groupDetail.code ? "filled" : "empty"}
                 </StatusBadge>
+              </div>
+
+              {groupAttentionItems.length > 0 && (
+                <div
+                  data-testid="group-attention-diagnostics"
+                  className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-semibold text-slate-900">
+                      Что требует внимания в группе
+                    </div>
+                    <span
+                      data-testid="group-attention-count"
+                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+                    >
+                      Пунктов внимания: {groupAttentionItems.length}
+                    </span>
+                  </div>
+                  <p
+                    data-testid="group-attention-diagnostics-note"
+                    className="mt-2 leading-6"
+                  >
+                    Диагностика основана на статусе, коде, организации и описании группы.
+                  </p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {groupAttentionItems.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div
+                data-testid="group-related-records-links"
+                className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100"
+              >
+                <div className="font-semibold text-slate-900">
+                  Связанные записи группы
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  Быстрые переходы к организации, назначениям и документам, связанным с выбранной группой.
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    data-testid="group-organization-link"
+                    to={buildOrganizationsPath({
+                      q: organizationsMap[groupDetail.organization_id] || groupDetail.organization_id,
+                    })}
+                    className={SECONDARY_LINK_CLASS}
+                  >
+                    Организация группы
+                  </Link>
+
+                  <Link
+                    data-testid="group-enrollments-link"
+                    to={buildGroupEnrollmentsHref(groupDetail.id)}
+                    className={ENROLLMENTS_LINK_CLASS}
+                  >
+                    Назначения группы
+                  </Link>
+
+                  <Link
+                    data-testid="group-action-required-enrollments-link"
+                    to={buildEnrollmentsPath({
+                      learning_group_id: groupDetail.id,
+                      action_required: "true",
+                    })}
+                    className="inline-flex items-center justify-center rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100"
+                  >
+                    Проблемные назначения
+                  </Link>
+
+                  <Link
+                    data-testid="group-action-required-documents-link"
+                    to={buildDocumentsPath({
+                      learning_group_id: groupDetail.id,
+                      action_required: "true",
+                    })}
+                    className="inline-flex items-center justify-center rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100"
+                  >
+                    Проблемные документы
+                  </Link>
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
