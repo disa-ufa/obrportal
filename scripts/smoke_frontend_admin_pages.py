@@ -324,6 +324,18 @@ def main() -> None:
             "buildEnrollmentsPath({ status: \"assigned\" })",
             "buildEnrollmentsPath({ status: \"active\" })",
             "buildEnrollmentsPath({ status: \"completed\" })",
+            "dashboard-organization-operations-flow",
+            "Операционный центр организаций",
+            "Контроль организаций, групп, проблемных назначений, документов и аудита организационного контура.",
+            "Все организации",
+            "Организации с КПП",
+            "Группы организаций",
+            "Назначения организаций",
+            "Проблемные назначения",
+            "Проблемные документы",
+            "Аудит организаций",
+            "buildOrganizationsPath({ scope: \"with_kpp\" })",
+            "buildAuditPath({ entity_type: \"organization\" })",
         ],
     )
 

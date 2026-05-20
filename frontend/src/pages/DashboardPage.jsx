@@ -751,6 +751,21 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-organization-operations-flow"
+              title="Операционный центр организаций"
+              description="Контроль организаций, групп, проблемных назначений, документов и аудита организационного контура."
+              links={[
+                { label: "Все организации", to: buildOrganizationsPath() },
+                { label: "Организации с КПП", to: buildOrganizationsPath({ scope: "with_kpp" }) },
+                { label: "Группы организаций", to: buildGroupsPath() },
+                { label: "Назначения организаций", to: buildEnrollmentsPath() },
+                { label: "Проблемные назначения", to: buildEnrollmentsPath({ action_required: "true" }) },
+                { label: "Проблемные документы", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Аудит организаций", to: buildAuditPath({ entity_type: "organization" }) },
+              ]}
+            />
+
+            <WorkflowCard
               title="Курсы и обучение"
               description="Контроль программ, назначений и статусов прохождения обучения."
               links={[
