@@ -980,3 +980,48 @@ python .\scripts\smoke_frontend_admin_pages.py
 ```text
 6.46 - следующий функциональный блок после стабилизации аудита document/PDF-контура
 ```
+
+---
+
+## Checkpoint 6.46 - контроль качества документов
+
+Контур контроля качества проблемных документов стабилизирован.
+
+Закрыто:
+
+- 6.46.1 - Dashboard: сценарий `Документы требуют действия`
+- 6.46.2 - DocumentsPage: усиленный блок причин, почему документ требует действия
+- 6.46.3 - smoke-покрытие прямых маршрутов контроля качества документов
+- 6.46.4 - финальная стабилизация блока контроля качества документов
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля проблемных документов;
+- DocumentsPage показывает расширенную диагностику причин внимания;
+- диагностируются черновики, отозванные документы, опубликованные документы без файла;
+- отображаются причины по отзыву, файлу, паспорту генерации PDF и организации;
+- прямые маршруты `action_required=true` покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/documents?action_required=true`
+- `/admin/documents?action_required=true&status=draft`
+- `/admin/documents?action_required=true&status=revoked`
+- `/admin/documents?action_required=true&document_type=certificate`
+- `/admin/documents?action_required=true&organization_id=...`
+- `/admin/audit-events?entity_type=document`
+- `/admin/audit-events?action=admin.document_regenerated`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_frontend_admin_pages.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.47 - следующий функциональный блок после стабилизации контроля качества документов
+```
