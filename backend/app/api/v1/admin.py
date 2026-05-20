@@ -3853,6 +3853,7 @@ async def get_admin_worklist_summary(
     documents_q: str | None = Query(default=None, max_length=255),
     enrollments_user_id: str | None = Query(default=None, max_length=64),
     enrollments_course_id: str | None = Query(default=None, max_length=64),
+    enrollments_organization_id: str | None = Query(default=None, max_length=64),
     enrollments_learning_group_id: str | None = Query(default=None, max_length=64),
     enrollments_q: str | None = Query(default=None, max_length=255),
     _: User = Depends(require_permission("admin.users.read")),
@@ -3902,6 +3903,7 @@ async def get_admin_worklist_summary(
 
     normalized_enrollments_user_id = normalize_optional_text(enrollments_user_id)
     normalized_enrollments_course_id = normalize_optional_text(enrollments_course_id)
+    normalized_enrollments_organization_id = normalize_optional_text(enrollments_organization_id)
     normalized_enrollments_learning_group_id = normalize_optional_text(enrollments_learning_group_id)
     normalized_enrollments_q = normalize_optional_text(enrollments_q)
 
@@ -3910,6 +3912,9 @@ async def get_admin_worklist_summary(
 
     if normalized_enrollments_course_id:
         enrollment_conditions.append(Enrollment.course_id == normalized_enrollments_course_id)
+
+    if normalized_enrollments_organization_id:
+        enrollment_conditions.append(Enrollment.organization_id == normalized_enrollments_organization_id)
 
     if normalized_enrollments_learning_group_id:
         enrollment_conditions.append(
@@ -4191,6 +4196,7 @@ async def ensure_enrollment_can_be_deleted(
 async def list_admin_enrollments(
     user_id: str | None = Query(default=None, max_length=64),
     course_id: str | None = Query(default=None, max_length=64),
+    organization_id: str | None = Query(default=None, max_length=64),
     learning_group_id: str | None = Query(default=None, max_length=64),
     status_filter: str | None = Query(default=None, alias="status", max_length=32),
     q: str | None = Query(default=None, max_length=255),
@@ -4231,6 +4237,9 @@ async def list_admin_enrollments(
 
     if course_id:
         query = query.where(Enrollment.course_id == course_id.strip())
+
+    if organization_id:
+        query = query.where(Enrollment.organization_id == organization_id.strip())
 
     if learning_group_id:
         query = query.where(Enrollment.learning_group_id == learning_group_id.strip())

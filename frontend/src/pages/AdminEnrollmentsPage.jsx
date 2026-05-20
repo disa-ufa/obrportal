@@ -125,6 +125,7 @@ function getEnrollmentFiltersFromSearch(search) {
     q: params.get("q") || "",
     user_id: params.get("user_id") || "",
     course_id: params.get("course_id") || "",
+    organization_id: params.get("organization_id") || "",
     status: params.get("status") || "",
     learning_group_id: params.get("learning_group_id") || "",
     action_required: params.get("action_required") === "true" ? "true" : "",
@@ -457,6 +458,7 @@ export function AdminEnrollmentsPage() {
   const [filterQuery, setFilterQuery] = useState(initialFilters.q);
   const [filterUserId, setFilterUserId] = useState(initialFilters.user_id);
   const [filterCourseId, setFilterCourseId] = useState(initialFilters.course_id);
+  const [filterOrganizationId, setFilterOrganizationId] = useState(initialFilters.organization_id);
   const [filterStatus, setFilterStatus] = useState(initialFilters.status);
   const [filterGroupId, setFilterGroupId] = useState(initialFilters.learning_group_id);
   const [filterActionRequired, setFilterActionRequired] = useState(initialFilters.action_required);
@@ -602,6 +604,7 @@ export function AdminEnrollmentsPage() {
       q: overrides.q ?? filterQuery,
       user_id: overrides.user_id ?? filterUserId,
       course_id: overrides.course_id ?? filterCourseId,
+      organization_id: overrides.organization_id ?? filterOrganizationId,
       status: overrides.status ?? filterStatus,
       learning_group_id: overrides.learning_group_id ?? filterGroupId,
       action_required: overrides.action_required ?? filterActionRequired,
@@ -643,6 +646,7 @@ export function AdminEnrollmentsPage() {
         getAdminWorklistSummary({
           enrollments_user_id: activeFilters.user_id,
           enrollments_course_id: activeFilters.course_id,
+          enrollments_organization_id: activeFilters.organization_id,
           enrollments_learning_group_id: activeFilters.learning_group_id,
           enrollments_q: activeFilters.q,
         }),
@@ -688,6 +692,7 @@ export function AdminEnrollmentsPage() {
     setFilterQuery(queryFilters.q);
     setFilterUserId(queryFilters.user_id);
     setFilterCourseId(queryFilters.course_id);
+    setFilterOrganizationId(queryFilters.organization_id);
     setFilterStatus(queryFilters.status);
     setFilterGroupId(queryFilters.learning_group_id);
     setFilterActionRequired(queryFilters.action_required);
@@ -1099,6 +1104,7 @@ export function AdminEnrollmentsPage() {
     setFilterQuery("");
     setFilterUserId("");
     setFilterCourseId("");
+    setFilterOrganizationId("");
     setFilterStatus("");
     setFilterGroupId("");
     setFilterActionRequired("");
@@ -1361,7 +1367,7 @@ export function AdminEnrollmentsPage() {
         </div>
 
         <SectionCard title="Список назначений" subtitle="GET /api/v1/admin/enrollments">
-          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.15fr_1fr_1fr_1fr_1fr_auto_auto]">
+          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.15fr_1fr_1fr_1fr_1fr_1fr_auto_auto]">
             <input
               type="search"
               value={filterQuery}
@@ -1392,6 +1398,19 @@ export function AdminEnrollmentsPage() {
               {sortedCourses.map((course) => (
                 <option key={course.id} value={course.id}>
                   {buildCourseLabel(course)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filterOrganizationId}
+              onChange={(event) => setFilterOrganizationId(event.target.value)}
+              className={INPUT_CLASS}
+            >
+              <option value="">Все организации</option>
+              {sortedOrganizations.map((organization) => (
+                <option key={organization.id} value={organization.id}>
+                  {organization.name}
                 </option>
               ))}
             </select>

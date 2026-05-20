@@ -65,6 +65,7 @@ def main() -> None:
         [
             "enrollments_user_id: activeFilters.user_id",
             "enrollments_course_id: activeFilters.course_id",
+            "enrollments_organization_id: activeFilters.organization_id",
             "enrollments_learning_group_id: activeFilters.learning_group_id",
             "enrollments_q: activeFilters.q",
         ],
@@ -169,6 +170,10 @@ def main() -> None:
             "enrollment-create-document-profile-hint",
             "enrollment-edit-document-profile-hint",
             "enrollment-list-document-profile-status",
+            "filterOrganizationId",
+            "setFilterOrganizationId",
+            "Все организации",
+            "organization_id: overrides.organization_id",
             "PDF: профиль организации заполнен",
             "PDF: профиль организации заполнен частично",
             "PDF: настройки приложения",

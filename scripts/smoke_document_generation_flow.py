@@ -34,6 +34,10 @@ CHECKS = {
         "generated_at",
     ],
     "backend/app/api/v1/admin.py": [
+        "organization_id: str | None = Query(default=None, max_length=64)",
+        "query = query.where(Enrollment.organization_id == organization_id.strip())",
+        "enrollments_organization_id",
+        "Enrollment.organization_id == normalized_enrollments_organization_id",
         "course, learner, organization = await load_completion_document_context",
         "organization=organization",
         "regenerate_admin_completion_document",

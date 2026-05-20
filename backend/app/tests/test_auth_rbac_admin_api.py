@@ -2622,6 +2622,69 @@ def create_test_course_with_enrollment_in_db(
     return asyncio.run(_create())
 
 
+def test_admin_can_filter_enrollments_by_organization() -> None:
+    from urllib.parse import urlencode
+
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    first_organization_id = create_test_organization(token)
+    second_organization_id = create_test_organization(token)
+
+    first_created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        organization_id=first_organization_id,
+        status="active",
+    )
+    second_created = create_test_course_with_enrollment_in_db(
+        user_id=user_id,
+        organization_id=second_organization_id,
+        status="active",
+    )
+
+    first_enrollment_id = first_created["enrollment"]["id"]
+    second_enrollment_id = second_created["enrollment"]["id"]
+
+    query = urlencode(
+        {
+            "organization_id": first_organization_id,
+            "limit": 300,
+        }
+    )
+
+    status, enrollments = request_json(
+        "GET",
+        f"/api/v1/admin/enrollments?{query}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(enrollments, list)
+    assert any(item["id"] == first_enrollment_id for item in enrollments)
+    assert all(item["organization_id"] == first_organization_id for item in enrollments)
+    assert not any(item["id"] == second_enrollment_id for item in enrollments)
+
+    summary_query = urlencode(
+        {
+            "enrollments_organization_id": first_organization_id,
+        }
+    )
+
+    status, summary = request_json(
+        "GET",
+        f"/api/v1/admin/worklist-summary?{summary_query}",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(summary, dict)
+    assert summary["enrollments"]["total"] >= 1
+
+
 def test_admin_can_get_account_courses() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
