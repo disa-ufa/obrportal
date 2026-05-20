@@ -763,6 +763,20 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-enrollment-operations-flow"
+              title="Операционный центр назначений"
+              description="Старт, завершение, выпуск документов и аудит назначений, которые требуют контроля администратора."
+              links={[
+                { label: "Требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
+                { label: "Назначены", to: buildEnrollmentsPath({ status: "assigned" }) },
+                { label: "В процессе", to: buildEnrollmentsPath({ status: "active" }) },
+                { label: "Завершены", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Документы по проблемным назначениям", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-document-quality-flow"
               title="Документы требуют действия"
               description="Контроль качества реестра: черновики, отозванные документы, записи без файла и аудит PDF-операций."

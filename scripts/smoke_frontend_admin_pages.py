@@ -299,6 +299,15 @@ def main() -> None:
             "buildDocumentsPath({ action_required: \"true\" })",
             "onRbacCheck",
             "onLogout",
+            "dashboard-enrollment-operations-flow",
+            "Операционный центр назначений",
+            "Старт, завершение, выпуск документов и аудит назначений",
+            "Документы по проблемным назначениям",
+            "Аудит назначений",
+            "buildAuditPath({ entity_type: \"enrollment\" })",
+            "buildEnrollmentsPath({ status: \"assigned\" })",
+            "buildEnrollmentsPath({ status: \"active\" })",
+            "buildEnrollmentsPath({ status: \"completed\" })",
         ],
     )
 
