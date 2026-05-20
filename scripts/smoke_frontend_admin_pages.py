@@ -170,6 +170,8 @@ def main() -> None:
             "enrollment-create-document-profile-hint",
             "enrollment-edit-document-profile-hint",
             "enrollment-list-document-profile-status",
+            "enrollment-organization-link",
+            "buildOrganizationsPath({ organization_id: enrollment.organization_id })",
             "filterOrganizationId",
             "setFilterOrganizationId",
             "Все организации",

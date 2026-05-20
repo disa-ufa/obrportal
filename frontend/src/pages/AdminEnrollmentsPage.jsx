@@ -26,6 +26,7 @@ import {
   buildDocumentsPath,
   buildEnrollmentsPath,
   buildGroupsPath,
+  buildOrganizationsPath,
 } from "../utils/adminLinks";
 
 const ENROLLMENT_STATUSES = [
@@ -1623,9 +1624,19 @@ export function AdminEnrollmentsPage() {
                             <div className="text-xs uppercase tracking-wide text-slate-500">
                               Организация
                             </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {enrollment.organization_name || "-"}
-                            </div>
+                            {enrollment.organization_id ? (
+                              <Link
+                                data-testid="enrollment-organization-link"
+                                to={buildOrganizationsPath({ organization_id: enrollment.organization_id })}
+                                className="mt-2 inline-flex font-semibold text-blue-700 transition hover:text-blue-900"
+                              >
+                                {enrollment.organization_name || "Открыть организацию"}
+                              </Link>
+                            ) : (
+                              <div className="mt-2 font-semibold text-slate-900">
+                                -
+                              </div>
+                            )}
                             <div
                               data-testid="enrollment-list-document-profile-status"
                               className={`mt-3 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getOrganizationDocumentProfileStatus(organizationsById[enrollment.organization_id]).toneClass}`}

@@ -27,6 +27,7 @@ import {
   buildCoursesPath,
   buildDocumentsPath,
   buildEnrollmentsPath,
+  buildOrganizationsPath,
 } from "../utils/adminLinks";
 
 const DOCUMENT_STATUSES = [
@@ -2002,9 +2003,19 @@ export function DocumentsPage() {
                                 <div className="font-semibold text-slate-900">
                                   {getEnrollmentStatusLabel(documentItem.enrollment_status)}
                                 </div>
-                                <div className="text-slate-600">
-                                  {documentItem.organization_name || "Организация не указана"}
-                                </div>
+                                {documentItem.organization_id ? (
+                                  <Link
+                                    data-testid="document-organization-link"
+                                    to={buildOrganizationsPath({ organization_id: documentItem.organization_id })}
+                                    className="inline-flex font-semibold text-blue-700 transition hover:text-blue-900"
+                                  >
+                                    {documentItem.organization_name || "Открыть организацию"}
+                                  </Link>
+                                ) : (
+                                  <div className="text-slate-600">
+                                    Организация не указана
+                                  </div>
+                                )}
                                 <div className="text-slate-500">
                                   {documentItem.learning_group_name || "Группа не указана"}
                                 </div>
@@ -2134,6 +2145,16 @@ export function DocumentsPage() {
                               className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
                             >
                               Назначения слушателя
+                            </Link>
+                          )}
+
+                          {documentItem.organization_id && (
+                            <Link
+                              data-testid="document-organization-record-link"
+                              to={buildOrganizationsPath({ organization_id: documentItem.organization_id })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Организация
                             </Link>
                           )}
 
