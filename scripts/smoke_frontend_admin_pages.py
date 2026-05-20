@@ -163,6 +163,17 @@ def main() -> None:
             "getAdminWorklistSummary",
             "enrollmentsSummary.total",
             "enrollmentsSummary.action_required",
+            "DOCUMENT_PROFILE_FIELDS",
+            "getOrganizationDocumentProfileStatus",
+            "OrganizationDocumentProfileHint",
+            "enrollment-create-document-profile-hint",
+            "enrollment-edit-document-profile-hint",
+            "enrollment-list-document-profile-status",
+            "PDF: профиль организации заполнен",
+            "PDF: профиль организации заполнен частично",
+            "PDF: настройки приложения",
+            "Итоговый PDF возьмёт реквизиты",
+            "fallback-настроек приложения",
         ],
     )
 

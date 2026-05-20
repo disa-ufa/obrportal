@@ -276,6 +276,62 @@ function buildGroupLabel(group, organizationsById = {}) {
   return `${group.name}${code}${organizationName}`;
 }
 
+const DOCUMENT_PROFILE_FIELDS = [
+  "document_issuer_name",
+  "document_signer_position",
+  "document_signer_name",
+  "document_basis",
+  "document_place",
+];
+
+function getOrganizationDocumentProfileStatus(organization) {
+  if (!organization) {
+    return {
+      label: "PDF: настройки приложения",
+      description: "Организация не выбрана. Итоговый PDF будет использовать fallback-настройки приложения.",
+      toneClass: "bg-slate-50 text-slate-700 ring-slate-200",
+      missing: DOCUMENT_PROFILE_FIELDS,
+    };
+  }
+
+  const missing = DOCUMENT_PROFILE_FIELDS.filter((field) => !String(organization[field] || "").trim());
+
+  if (missing.length === 0) {
+    return {
+      label: "PDF: профиль организации заполнен",
+      description: "Итоговый PDF возьмёт реквизиты, подписанта, основание и место выдачи из выбранной организации.",
+      toneClass: "bg-green-50 text-green-800 ring-green-200",
+      missing,
+    };
+  }
+
+  return {
+    label: "PDF: профиль организации заполнен частично",
+    description: "PDF использует заполненные реквизиты организации, а недостающие значения возьмёт из fallback-настроек приложения.",
+    toneClass: "bg-amber-50 text-amber-900 ring-amber-200",
+    missing,
+  };
+}
+
+function OrganizationDocumentProfileHint({ organization, testId }) {
+  const status = getOrganizationDocumentProfileStatus(organization);
+
+  return (
+    <div
+      data-testid={testId}
+      className={`rounded-2xl p-4 text-sm ring-1 ${status.toneClass}`}
+    >
+      <div className="font-semibold">{status.label}</div>
+      <p className="mt-1 leading-6">{status.description}</p>
+      {organization && status.missing.length > 0 && (
+        <p className="mt-2 text-xs leading-5">
+          Не заполнено полей профиля PDF: {status.missing.length}.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function sortByLabel(left, right, getLabel) {
   return getLabel(left).localeCompare(getLabel(right), "ru-RU");
 }
@@ -1142,6 +1198,11 @@ export function AdminEnrollmentsPage() {
                 </select>
               </AdminFormField>
 
+              <OrganizationDocumentProfileHint
+                organization={organizationsById[form.organization_id]}
+                testId="enrollment-create-document-profile-hint"
+              />
+
               <AdminFormField contentClassName="mt-2" label="Учебная группа">
                 <select
                   value={form.learning_group_id}
@@ -1546,6 +1607,12 @@ export function AdminEnrollmentsPage() {
                             <div className="mt-2 font-semibold text-slate-900">
                               {enrollment.organization_name || "-"}
                             </div>
+                            <div
+                              data-testid="enrollment-list-document-profile-status"
+                              className={`mt-3 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getOrganizationDocumentProfileStatus(organizationsById[enrollment.organization_id]).toneClass}`}
+                            >
+                              {getOrganizationDocumentProfileStatus(organizationsById[enrollment.organization_id]).label}
+                            </div>
                           </div>
 
                           <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
@@ -1687,6 +1754,11 @@ export function AdminEnrollmentsPage() {
                               ))}
                             </select>
                           </AdminFormField>
+
+                          <OrganizationDocumentProfileHint
+                            organization={organizationsById[editForm.organization_id]}
+                            testId="enrollment-edit-document-profile-hint"
+                          />
 
                           <AdminFormField contentClassName="mt-2" label="Учебная группа">
                             <select
