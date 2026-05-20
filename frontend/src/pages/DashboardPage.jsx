@@ -766,6 +766,21 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-group-operations-flow"
+              title="Операционный центр групп"
+              description="Контроль учебных групп, активности, участников, назначений и связанных документов."
+              links={[
+                { label: "Все группы", to: buildGroupsPath() },
+                { label: "Активные группы", to: buildGroupsPath({ status: "active" }) },
+                { label: "Неактивные группы", to: buildGroupsPath({ status: "inactive" }) },
+                { label: "Организации групп", to: buildOrganizationsPath() },
+                { label: "Назначения по группам", to: buildEnrollmentsPath() },
+                { label: "Проблемные назначения", to: buildEnrollmentsPath({ action_required: "true" }) },
+                { label: "Проблемные документы", to: buildDocumentsPath({ action_required: "true" }) },
+              ]}
+            />
+
+            <WorkflowCard
               title="Курсы и обучение"
               description="Контроль программ, назначений и статусов прохождения обучения."
               links={[

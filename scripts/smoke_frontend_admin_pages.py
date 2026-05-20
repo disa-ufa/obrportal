@@ -336,6 +336,16 @@ def main() -> None:
             "Аудит организаций",
             "buildOrganizationsPath({ scope: \"with_kpp\" })",
             "buildAuditPath({ entity_type: \"organization\" })",
+            "dashboard-group-operations-flow",
+            "Операционный центр групп",
+            "Контроль учебных групп, активности, участников, назначений и связанных документов.",
+            "Все группы",
+            "Активные группы",
+            "Неактивные группы",
+            "Организации групп",
+            "Назначения по группам",
+            "buildGroupsPath({ status: \"active\" })",
+            "buildGroupsPath({ status: \"inactive\" })",
         ],
     )
 
