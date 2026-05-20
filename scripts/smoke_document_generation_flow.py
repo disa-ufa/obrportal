@@ -12,6 +12,10 @@ CHECKS = {
         "build_completion_document_storage_path",
         "mark_completion_document_generation_metadata",
         "add_completion_document_generation_event",
+        "pick_organization_document_value",
+        "organization: Organization | None = None",
+        "document_basis=document_basis",
+        "document_place=document_place",
         "ensure_completion_document_for_enrollment",
     ],
     "backend/app/models/document_record.py": [
@@ -30,6 +34,8 @@ CHECKS = {
         "generated_at",
     ],
     "backend/app/api/v1/admin.py": [
+        "course, learner, organization = await load_completion_document_context",
+        "organization=organization",
         "regenerate_admin_completion_document",
         "list_admin_document_generation_events",
         "download_admin_document_generation_event",

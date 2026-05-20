@@ -23,6 +23,8 @@ class CompletionDocumentTemplateContext:
     organization_kpp: str | None = None
     organization_ogrn: str | None = None
     organization_license: str | None = None
+    document_basis: str | None = None
+    document_place: str | None = None
     signer_position: str | None = None
     signer_full_name: str | None = None
 

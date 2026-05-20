@@ -226,6 +226,14 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
         context.organization_license,
         fallback="",
     )
+    document_basis = normalize_document_text(
+        context.document_basis,
+        fallback="",
+    )
+    document_place = normalize_document_text(
+        context.document_place,
+        fallback="",
+    )
     organization_address = normalize_document_text(
         context.organization_address,
         fallback="",
@@ -265,6 +273,7 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
         for item in (
             organization_identity,
             organization_license,
+            document_basis,
             organization_address,
         )
         if item
@@ -412,7 +421,7 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     pdf.setFillColor(colors.HexColor("#4b5563"))
     pdf.setFont(regular_font, 10)
     pdf.drawString(left_x, row_y, "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438")
-    pdf.drawString(right_x, row_y, "\u0421\u0442\u0430\u0442\u0443\u0441")
+    pdf.drawString(right_x, row_y, "\u041c\u0435\u0441\u0442\u043e \u0432\u044b\u0434\u0430\u0447\u0438" if document_place else "\u0421\u0442\u0430\u0442\u0443\u0441")
 
     pdf.setFillColor(colors.HexColor("#111827"))
     pdf.setFont(bold_font, 13)
@@ -420,7 +429,7 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     pdf.drawString(
         right_x,
         row_y - 7 * mm,
-        "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0432 ObrPortal",
+        document_place or "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0432 ObrPortal",
     )
 
     footer_y = margin + 34 * mm

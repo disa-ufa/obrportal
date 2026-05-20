@@ -11,6 +11,7 @@ from app.models.course import Course
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.organization import Organization
 from app.models.user import User
 from app.services.document_pdf import render_completion_document_pdf
 from app.services.document_storage import write_private_storage_file
@@ -72,6 +73,18 @@ def add_completion_document_generation_event(
     return event
 
 
+def pick_organization_document_value(
+    primary: str | None,
+    fallback: str | None,
+) -> str | None:
+    normalized_primary = " ".join(str(primary or "").split())
+    if normalized_primary:
+        return normalized_primary
+
+    normalized_fallback = " ".join(str(fallback or "").split())
+    return normalized_fallback or None
+
+
 def get_completion_document_public_base_url() -> str:
     return str(
         getattr(settings, "public_base_url", None)
@@ -85,7 +98,7 @@ def get_completion_document_public_base_url() -> str:
 async def load_completion_document_context(
     enrollment: Enrollment,
     session: AsyncSession,
-) -> tuple[Course | None, User | None]:
+) -> tuple[Course | None, User | None, Organization | None]:
     course_result = await session.execute(
         select(Course).where(Course.id == enrollment.course_id)
     )
@@ -96,7 +109,15 @@ async def load_completion_document_context(
     )
     learner = learner_result.scalar_one_or_none()
 
-    return course, learner
+    organization = None
+
+    if enrollment.organization_id:
+        organization_result = await session.execute(
+            select(Organization).where(Organization.id == enrollment.organization_id)
+        )
+        organization = organization_result.scalar_one_or_none()
+
+    return course, learner, organization
 
 
 def write_completion_document_pdf_to_storage(
@@ -105,6 +126,7 @@ def write_completion_document_pdf_to_storage(
     document: DocumentRecord,
     course: Course | None,
     learner: User | None,
+    organization: Organization | None = None,
 ) -> str:
     course_title = (
         course.title
@@ -126,6 +148,27 @@ def write_completion_document_pdf_to_storage(
         verification_code=document.verification_code,
     )
 
+    document_issuer_name = pick_organization_document_value(
+        getattr(organization, "document_issuer_name", None),
+        getattr(organization, "name", None) if organization else settings.document_org_name,
+    )
+    document_signer_position = pick_organization_document_value(
+        getattr(organization, "document_signer_position", None),
+        settings.document_signer_position,
+    )
+    document_signer_name = pick_organization_document_value(
+        getattr(organization, "document_signer_name", None),
+        settings.document_signer_full_name,
+    )
+    document_basis = pick_organization_document_value(
+        getattr(organization, "document_basis", None),
+        settings.document_org_license,
+    )
+    document_place = pick_organization_document_value(
+        getattr(organization, "document_place", None),
+        None,
+    )
+
     pdf_bytes = render_completion_document_pdf(
         CompletionDocumentTemplateContext(
             learner_full_name=learner_full_name,
@@ -136,15 +179,32 @@ def write_completion_document_pdf_to_storage(
             completed_at=enrollment.completed_at,
             course_hours=course.hours if course else None,
             verification_url=verification_url,
-            organization_name=settings.document_org_name,
-            organization_short_name=settings.document_org_short_name,
-            organization_address=settings.document_org_address,
-            organization_inn=settings.document_org_inn,
-            organization_kpp=settings.document_org_kpp,
-            organization_ogrn=settings.document_org_ogrn,
+            organization_name=document_issuer_name,
+            organization_short_name=pick_organization_document_value(
+                getattr(organization, "name", None),
+                settings.document_org_short_name,
+            ),
+            organization_address=pick_organization_document_value(
+                getattr(organization, "legal_address", None),
+                settings.document_org_address,
+            ),
+            organization_inn=pick_organization_document_value(
+                getattr(organization, "inn", None),
+                settings.document_org_inn,
+            ),
+            organization_kpp=pick_organization_document_value(
+                getattr(organization, "kpp", None),
+                settings.document_org_kpp,
+            ),
+            organization_ogrn=pick_organization_document_value(
+                getattr(organization, "ogrn", None),
+                settings.document_org_ogrn,
+            ),
             organization_license=settings.document_org_license,
-            signer_position=settings.document_signer_position,
-            signer_full_name=settings.document_signer_full_name,
+            document_basis=document_basis,
+            document_place=document_place,
+            signer_position=document_signer_position,
+            signer_full_name=document_signer_name,
         )
     )
 
@@ -166,12 +226,13 @@ async def ensure_completion_document_for_enrollment(
 
     if existing_document is not None:
         if not existing_document.storage_path:
-            course, learner = await load_completion_document_context(enrollment, session)
+            course, learner, organization = await load_completion_document_context(enrollment, session)
             existing_document.storage_path = write_completion_document_pdf_to_storage(
                 enrollment=enrollment,
                 document=existing_document,
                 course=course,
                 learner=learner,
+                organization=organization,
             )
             mark_completion_document_generation_metadata(
                 existing_document,
@@ -186,7 +247,7 @@ async def ensure_completion_document_for_enrollment(
 
         return existing_document
 
-    course, learner = await load_completion_document_context(enrollment, session)
+    course, learner, organization = await load_completion_document_context(enrollment, session)
 
     document_type = (
         course.document_type
@@ -219,6 +280,7 @@ async def ensure_completion_document_for_enrollment(
         document=document,
         course=course,
         learner=learner,
+        organization=organization,
     )
     mark_completion_document_generation_metadata(
         document,
