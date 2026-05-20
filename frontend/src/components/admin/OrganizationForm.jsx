@@ -15,6 +15,11 @@ const EMPTY_ORGANIZATION = {
   name: "",
   legal_address: "",
   actual_address: "",
+  document_issuer_name: "",
+  document_signer_position: "",
+  document_signer_name: "",
+  document_basis: "",
+  document_place: "",
 };
 
 export const ORGANIZATION_API_ERROR_MESSAGES = {
@@ -78,6 +83,11 @@ function normalizeInitialValues(initialValues) {
     name: initialValues?.name || "",
     legal_address: initialValues?.legal_address || "",
     actual_address: initialValues?.actual_address || "",
+    document_issuer_name: initialValues?.document_issuer_name || "",
+    document_signer_position: initialValues?.document_signer_position || "",
+    document_signer_name: initialValues?.document_signer_name || "",
+    document_basis: initialValues?.document_basis || "",
+    document_place: initialValues?.document_place || "",
   };
 }
 
@@ -95,6 +105,11 @@ function buildPayload(values) {
     name: values.name.trim(),
     legal_address: nullableTrim(values.legal_address),
     actual_address: nullableTrim(values.actual_address),
+    document_issuer_name: nullableTrim(values.document_issuer_name),
+    document_signer_position: nullableTrim(values.document_signer_position),
+    document_signer_name: nullableTrim(values.document_signer_name),
+    document_basis: nullableTrim(values.document_basis),
+    document_place: nullableTrim(values.document_place),
   };
 }
 
@@ -223,6 +238,70 @@ export function OrganizationForm({
             disabled={loading}
           />
         </Field>
+      </div>
+
+      <div
+        data-testid="organization-document-profile-fields"
+        className="rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-100"
+      >
+        <div className="font-semibold text-slate-900">
+          Реквизиты для генерируемых документов
+        </div>
+        <div className="mt-1 text-sm text-slate-600">
+          Эти поля будут использоваться в PDF-шаблонах удостоверений, сертификатов и справок.
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <Field label="Организация-выдавшая документ">
+            <TextInput
+              value={values.document_issuer_name}
+              onChange={(event) => updateField("document_issuer_name", event.target.value)}
+              placeholder="Полное наименование для печатной формы"
+              maxLength={512}
+              disabled={loading}
+            />
+          </Field>
+
+          <Field label="Место выдачи">
+            <TextInput
+              value={values.document_place}
+              onChange={(event) => updateField("document_place", event.target.value)}
+              placeholder="г. Уфа"
+              maxLength={255}
+              disabled={loading}
+            />
+          </Field>
+
+          <Field label="Должность подписанта">
+            <TextInput
+              value={values.document_signer_position}
+              onChange={(event) => updateField("document_signer_position", event.target.value)}
+              placeholder="Директор"
+              maxLength={255}
+              disabled={loading}
+            />
+          </Field>
+
+          <Field label="ФИО подписанта">
+            <TextInput
+              value={values.document_signer_name}
+              onChange={(event) => updateField("document_signer_name", event.target.value)}
+              placeholder="Иванов И.И."
+              maxLength={255}
+              disabled={loading}
+            />
+          </Field>
+
+          <Field label="Основание выдачи" className="md:col-span-2">
+            <TextArea
+              value={values.document_basis}
+              onChange={(event) => updateField("document_basis", event.target.value)}
+              placeholder="Лицензия, приказ, положение или иное основание"
+              maxLength={1024}
+              disabled={loading}
+            />
+          </Field>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

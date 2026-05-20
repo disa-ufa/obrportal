@@ -616,6 +616,42 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "frontend/src/components/admin/OrganizationForm.jsx",
+        [
+            "document_issuer_name",
+            "document_signer_position",
+            "document_signer_name",
+            "document_basis",
+            "document_place",
+            "organization-document-profile-fields",
+            "Реквизиты для генерируемых документов",
+            "Организация-выдавшая документ",
+            "Место выдачи",
+            "Должность подписанта",
+            "ФИО подписанта",
+            "Основание выдачи",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/admin/OrganizationDetailPanel.jsx",
+        [
+            "organization-document-profile-card",
+            "document_issuer_name",
+            "document_signer_position",
+            "document_signer_name",
+            "document_basis",
+            "document_place",
+            "Реквизиты для генерируемых документов",
+            "Организация-выдавшая документ",
+            "Место выдачи",
+            "Должность подписанта",
+            "ФИО подписанта",
+            "Основание выдачи",
+        ],
+    )
+
     print("Admin components behavior smoke passed")
 
 
