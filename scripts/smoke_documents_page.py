@@ -83,6 +83,7 @@ def main() -> None:
             "getAdminDocumentGenerationEvents,",
             "DocumentVerificationQrBlock",
             "buildDocumentVerificationPath",
+            "buildAuditPath",
             "buildDocumentsPath",
             "export function DocumentsPage()",
             "const DOCUMENT_STATUSES = [",
@@ -231,6 +232,15 @@ def main() -> None:
             "document-organization-record-link",
             "buildOrganizationsPath({ organization_id: documentItem.organization_id })",
             "Открыть организацию",
+            "document-audit-link",
+            "document-enrollment-audit-link",
+            "document-organization-audit-link",
+            "buildAuditPath({ entity_type: \"document\", entity_id: documentItem.id })",
+            "buildAuditPath({ entity_type: \"enrollment\", entity_id: documentItem.enrollment_id })",
+            "buildAuditPath({ entity_type: \"organization\", entity_id: documentItem.organization_id })",
+            "Аудит документа",
+            "Аудит назначения",
+            "Аудит организации",
         ],
     )
 

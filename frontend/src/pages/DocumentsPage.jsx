@@ -24,6 +24,7 @@ import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWo
 import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import { buildDocumentVerificationPath } from "../utils/documentVerification";
 import {
+  buildAuditPath,
   buildCoursesPath,
   buildDocumentsPath,
   buildEnrollmentsPath,
@@ -2077,6 +2078,34 @@ export function DocumentsPage() {
                         )}
 
                         <div className="mt-5 flex flex-wrap gap-3">
+                          <Link
+                            data-testid="document-audit-link"
+                            to={buildAuditPath({ entity_type: "document", entity_id: documentItem.id })}
+                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                          >
+                            Аудит документа
+                          </Link>
+
+                          {documentItem.enrollment_id && (
+                            <Link
+                              data-testid="document-enrollment-audit-link"
+                              to={buildAuditPath({ entity_type: "enrollment", entity_id: documentItem.enrollment_id })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Аудит назначения
+                            </Link>
+                          )}
+
+                          {documentItem.organization_id && (
+                            <Link
+                              data-testid="document-organization-audit-link"
+                              to={buildAuditPath({ entity_type: "organization", entity_id: documentItem.organization_id })}
+                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Аудит организации
+                            </Link>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => handleStartEdit(documentItem)}

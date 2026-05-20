@@ -11,7 +11,7 @@ import { DetailField, formatDetailDate } from "../ui/DetailField";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { SectionCard } from "../ui/SectionCard";
 import { StatusBadge } from "../ui/StatusBadge";
-import { buildDocumentsPath, buildEnrollmentsPath } from "../../utils/adminLinks";
+import { buildAuditPath, buildDocumentsPath, buildEnrollmentsPath } from "../../utils/adminLinks";
 
 export function OrganizationDetailPanel({
   organizationDetail,
@@ -168,6 +168,14 @@ export function OrganizationDetailPanel({
                     className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
                   >
                     Документы организации
+                  </Link>
+
+                  <Link
+                    data-testid="organization-audit-link"
+                    to={buildAuditPath({ entity_type: "organization", entity_id: organizationDetail.id })}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
+                  >
+                    Аудит организации
                   </Link>
                 </div>
               </div>
