@@ -1252,6 +1252,17 @@ def main() -> int:
         ("/admin/documents?status=revoked", "account access revoked documents"),
         ("/admin/audit-events?entity_type=user", "account access audit users"),
         ("/admin/audit-events?entity_type=document", "account access audit documents"),
+        ("/verify-document", "public verification page"),
+        ("/verify-document?number=SMOKE-NOT-FOUND", "public verification number query"),
+        ("/verify-document?code=SMOKE-NOT-FOUND", "public verification code query"),
+        ("/admin/documents?status=available", "public verification available documents"),
+        ("/admin/documents?status=draft", "public verification draft documents"),
+        ("/admin/documents?status=revoked", "public verification revoked documents"),
+        ("/admin/documents?action_required=true", "public verification documents action required"),
+        ("/admin/audit-events?entity_type=document", "public verification audit documents"),
+        ("/admin/audit-events?action=admin.document_revoked", "public verification audit revoked"),
+        ("/admin/audit-events?action=admin.document_restored", "public verification audit restored"),
+        ("/admin/audit-events?action=admin.document_regenerated", "public verification audit regenerated"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
