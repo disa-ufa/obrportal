@@ -201,6 +201,37 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/DocumentsPage.jsx",
+        [
+            "function getAdminDocumentRegistryStats",
+            "function getAdminDocumentRegistryDiagnostics",
+            "function AdminDocumentRegistryDiagnostics",
+            "adminDocumentRegistryStats",
+            "adminDocumentRegistryDiagnostics",
+            "admin-document-registry-diagnostics",
+            "admin-document-registry-summary",
+            "admin-document-registry-quality",
+            "admin-document-registry-attention",
+            "admin-document-registry-attention-count",
+            "admin-document-registry-links",
+            "Диагностика административного реестра документов",
+            "Контроль фильтров, статусов, файлов, PDF, публикации, отзыва, восстановления и action_required",
+            "Что требует внимания в административном реестре",
+            "Публикация: есть черновики документов",
+            "Отзыв: есть отозванные документы",
+            "Контроль: есть документы в режиме action_required.",
+            "Регенерация PDF: выполняется пересборка итогового документа.",
+            "Черновики",
+            "Опубликованные",
+            "Отозванные",
+            "Требуют действия",
+            "Завершённые назначения",
+            "<AdminDocumentRegistryDiagnostics",
+            "getAdminDocumentRegistryDiagnostics({",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/VerifyDocumentPage.jsx",
         [
             "function getPublicVerificationSourceStats",

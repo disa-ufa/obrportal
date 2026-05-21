@@ -414,6 +414,315 @@ function buildEditForm(documentItem) {
   };
 }
 
+function countDocumentsWhere(items, predicate) {
+  return Array.isArray(items) ? items.filter(predicate).length : 0;
+}
+
+function getAdminDocumentRegistryStats({
+  documents,
+  documentStatusCounts,
+  documentActionRequiredCount,
+  filters,
+}) {
+  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
+
+  return {
+    total: documentStatusCounts.all || documents.length || 0,
+    displayed: documents.length,
+    available: documentStatusCounts.available || 0,
+    draft: documentStatusCounts.draft || 0,
+    revoked: documentStatusCounts.revoked || 0,
+    actionRequired: documentActionRequiredCount || 0,
+    withFiles: countDocumentsWhere(documents, (documentItem) => documentItem.file_available),
+    withoutFiles: countDocumentsWhere(documents, (documentItem) => !documentItem.file_available),
+    generatedPdf: countDocumentsWhere(documents, isGeneratedCompletionDocument),
+    publishableGeneratedPdf: countDocumentsWhere(documents, canPublishGeneratedCompletionDocument),
+    completionLinked: countDocumentsWhere(documents, (documentItem) => documentItem.enrollment_id),
+    verificationReady: countDocumentsWhere(
+      documents,
+      (documentItem) => documentItem.document_number || documentItem.verification_code
+    ),
+    activeFiltersCount,
+    filters,
+  };
+}
+
+function getAdminDocumentRegistryDiagnostics({
+  documents,
+  registryStats,
+  error,
+  successMessage,
+  loading,
+  saving,
+  editSavingId,
+  downloadSavingId,
+  regenerateSavingId,
+  generationEventsLoadingId,
+  generationEventDownloadSavingId,
+  deleteSavingId,
+  statusSavingKey,
+  revokingDocumentId,
+}) {
+  const items = [];
+
+  if (loading) {
+    items.push("Загрузка: реестр документов сейчас обновляется.");
+  }
+
+  if (!loading && registryStats.displayed === 0) {
+    items.push("Реестр: по текущим фильтрам документы не найдены.");
+  }
+
+  if (registryStats.activeFiltersCount > 0) {
+    items.push(`Фильтры: включено активных фильтров — ${registryStats.activeFiltersCount}.`);
+  }
+
+  if (registryStats.draft > 0) {
+    items.push("Публикация: есть черновики документов, требующие проверки или публикации.");
+  }
+
+  if (registryStats.revoked > 0) {
+    items.push("Отзыв: есть отозванные документы, проверьте причину и аудит.");
+  }
+
+  if (registryStats.actionRequired > 0) {
+    items.push("Контроль: есть документы в режиме action_required.");
+  }
+
+  if (registryStats.withoutFiles > 0) {
+    items.push("Файлы: в текущей выборке есть документы без файла.");
+  }
+
+  if (registryStats.generatedPdf > 0) {
+    items.push("PDF: в текущей выборке есть автоматически сформированные итоговые PDF.");
+  }
+
+  if (registryStats.publishableGeneratedPdf > 0) {
+    items.push("Публикация PDF: есть сформированные итоговые PDF-черновики, готовые к публикации.");
+  }
+
+  if (registryStats.completionLinked > 0) {
+    items.push("Связь с обучением: есть документы, привязанные к назначениям.");
+  }
+
+  if (registryStats.verificationReady < registryStats.displayed) {
+    items.push("Публичная проверка: часть документов не имеет номера или кода проверки.");
+  }
+
+  if (saving) {
+    items.push("Создание: выполняется сохранение нового документа.");
+  }
+
+  if (editSavingId) {
+    items.push("Редактирование: выполняется обновление документа.");
+  }
+
+  if (downloadSavingId || generationEventDownloadSavingId) {
+    items.push("Скачивание: выполняется загрузка файла или версии PDF.");
+  }
+
+  if (regenerateSavingId) {
+    items.push("Регенерация PDF: выполняется пересборка итогового документа.");
+  }
+
+  if (generationEventsLoadingId) {
+    items.push("История PDF: загружается список версий генерации.");
+  }
+
+  if (statusSavingKey) {
+    items.push("Статус: выполняется публикация, перевод в черновик, отзыв или восстановление.");
+  }
+
+  if (revokingDocumentId) {
+    items.push("Отзыв: открыт ввод причины отзыва документа.");
+  }
+
+  if (deleteSavingId) {
+    items.push("Удаление: выполняется удаление документа.");
+  }
+
+  if (error) {
+    items.push("Ошибка: последняя операция с реестром документов завершилась ошибкой.");
+  }
+
+  if (successMessage) {
+    items.push("Готово: последняя операция с документом завершилась успешно.");
+  }
+
+  return [...new Set(items)];
+}
+
+function AdminDocumentRegistryDiagnostics({
+  registryStats,
+  diagnostics,
+  getDocumentFilterPath,
+  getEnrollmentFilterPath,
+}) {
+  return (
+    <SectionCard
+      title="Диагностика административного реестра документов"
+      subtitle="Контроль фильтров, статусов, файлов, PDF, публикации, отзыва, восстановления и action_required"
+    >
+      <div data-testid="admin-document-registry-diagnostics" className="space-y-5">
+        <div
+          data-testid="admin-document-registry-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Всего / показано
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {registryStats.total} / {registryStats.displayed}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Draft / available / revoked
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {registryStats.draft} / {registryStats.available} / {registryStats.revoked}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Требуют действия
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {registryStats.actionRequired}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Активные фильтры
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {registryStats.activeFiltersCount}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-document-registry-quality"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Файлы / без файла
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {registryStats.withFiles} / {registryStats.withoutFiles}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Авто PDF
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {registryStats.generatedPdf}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              PDF к публикации
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {registryStats.publishableGeneratedPdf}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Номер/код проверки
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {registryStats.verificationReady}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-document-registry-attention"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+            diagnostics.length
+              ? "bg-amber-50 text-amber-900 ring-amber-200"
+              : "bg-green-50 text-green-800 ring-green-200"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="font-semibold text-slate-900">
+              Что требует внимания в административном реестре
+            </div>
+            <span
+              data-testid="admin-document-registry-attention-count"
+              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+            >
+              Пунктов диагностики: {diagnostics.length}
+            </span>
+          </div>
+
+          {diagnostics.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {diagnostics.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2">
+              Критичных замечаний по административному реестру документов не найдено.
+            </p>
+          )}
+        </div>
+
+        <div
+          data-testid="admin-document-registry-links"
+          className="flex flex-wrap gap-3"
+        >
+          <Link
+            to={getDocumentFilterPath({ status: "draft" })}
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Черновики
+          </Link>
+
+          <Link
+            to={getDocumentFilterPath({ status: "available" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Опубликованные
+          </Link>
+
+          <Link
+            to={getDocumentFilterPath({ status: "revoked" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Отозванные
+          </Link>
+
+          <Link
+            to={getDocumentFilterPath({ action_required: "true" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Требуют действия
+          </Link>
+
+          <Link
+            to={getEnrollmentFilterPath({ status: "completed" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Завершённые назначения
+          </Link>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 function DocumentsSummaryCards({ documentStatusCounts, documents, courses, enrollments }) {
   const filesCount = documents.filter((documentItem) => documentItem.file_available).length;
   const completedEnrollmentsCount = enrollments.filter(
@@ -593,6 +902,74 @@ export function DocumentsPage() {
 
   const showActionRequiredOnly = filterActionRequired === "true";
   const displayedDocuments = documents;
+
+  const adminDocumentRegistryFilters = useMemo(
+    () => ({
+      user_id: filterUserId,
+      enrollment_id: filterEnrollmentId,
+      organization_id: filterOrganizationId,
+      status: filterStatus,
+      document_type: filterDocumentType,
+      q: filterQuery,
+      action_required: filterActionRequired,
+    }),
+    [
+      filterUserId,
+      filterEnrollmentId,
+      filterOrganizationId,
+      filterStatus,
+      filterDocumentType,
+      filterQuery,
+      filterActionRequired,
+    ]
+  );
+
+  const adminDocumentRegistryStats = useMemo(
+    () =>
+      getAdminDocumentRegistryStats({
+        documents,
+        documentStatusCounts,
+        documentActionRequiredCount,
+        filters: adminDocumentRegistryFilters,
+      }),
+    [documents, documentStatusCounts, documentActionRequiredCount, adminDocumentRegistryFilters]
+  );
+
+  const adminDocumentRegistryDiagnostics = useMemo(
+    () =>
+      getAdminDocumentRegistryDiagnostics({
+        documents,
+        registryStats: adminDocumentRegistryStats,
+        error,
+        successMessage,
+        loading,
+        saving,
+        editSavingId,
+        downloadSavingId,
+        regenerateSavingId,
+        generationEventsLoadingId,
+        generationEventDownloadSavingId,
+        deleteSavingId,
+        statusSavingKey,
+        revokingDocumentId,
+      }),
+    [
+      documents,
+      adminDocumentRegistryStats,
+      error,
+      successMessage,
+      loading,
+      saving,
+      editSavingId,
+      downloadSavingId,
+      regenerateSavingId,
+      generationEventsLoadingId,
+      generationEventDownloadSavingId,
+      deleteSavingId,
+      statusSavingKey,
+      revokingDocumentId,
+    ]
+  );
 
   useEffect(() => {
     if (!filterEnrollmentId || !selectedFilterEnrollment) {
@@ -1185,6 +1562,13 @@ export function DocumentsPage() {
         documentStatusCounts={documentStatusCounts}
         courses={courses}
         enrollments={enrollments}
+      />
+
+      <AdminDocumentRegistryDiagnostics
+        registryStats={adminDocumentRegistryStats}
+        diagnostics={adminDocumentRegistryDiagnostics}
+        getDocumentFilterPath={getDocumentFilterPath}
+        getEnrollmentFilterPath={getEnrollmentFilterPath}
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)]">
