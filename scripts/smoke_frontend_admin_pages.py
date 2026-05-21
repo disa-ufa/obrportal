@@ -203,6 +203,35 @@ def main() -> None:
     require_contains(
         "frontend/src/pages/AccountPage.jsx",
         [
+            "function getCompletionDocumentStats",
+            "function getCompletionDocumentDiagnostics",
+            "function CompletionDocumentsDiagnostics",
+            "completionDocumentStats",
+            "completionDocumentDiagnostics",
+            "account-completion-documents-diagnostics",
+            "account-completion-documents-summary",
+            "account-completion-documents-quality",
+            "account-completion-documents-attention",
+            "account-completion-documents-attention-count",
+            "account-completion-documents-links",
+            "Контроль итоговых документов",
+            "Диагностика черновиков, публикации, скачивания, QR/публичной проверки, отзыва и восстановления документов",
+            "Что требует внимания в итоговых документах",
+            "Публикация: есть черновики итоговых документов",
+            "Публичная проверка: есть документы с номером или кодом проверки.",
+            "Скачивание: часть опубликованных документов недоступна для скачивания.",
+            "Отзыв: есть отозванные итоговые документы",
+            "Перейти к моим документам",
+            "Перейти к завершённым программам",
+            "Публичная проверка",
+            "<CompletionDocumentsDiagnostics",
+            "getCompletionDocumentDiagnostics({",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/AccountPage.jsx",
+        [
             "function getLearningProgressStats",
             "function getLearningProgressDiagnostics",
             "function LearningProgressDiagnostics",

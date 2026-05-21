@@ -936,6 +936,252 @@ function LearningProgressDiagnostics({
   );
 }
 
+function getCompletionDocumentStats({ courses, documents }) {
+  const completedCourses = Array.isArray(courses)
+    ? courses.filter((course) => course.status === "completed")
+    : [];
+
+  const completionDocuments = Array.isArray(documents)
+    ? documents.filter((documentItem) => documentItem.enrollment_id)
+    : [];
+
+  return {
+    completedCourses: completedCourses.length,
+    completionDocuments: completionDocuments.length,
+    draftDocuments: countLearningWhere(completionDocuments, (documentItem) => documentItem.status === "draft"),
+    availableDocuments: countLearningWhere(completionDocuments, (documentItem) => documentItem.status === "available"),
+    revokedDocuments: countLearningWhere(completionDocuments, (documentItem) => documentItem.status === "revoked"),
+    downloadableDocuments: countLearningWhere(completionDocuments, canDownloadDocument),
+    generatedPdfDocuments: countLearningWhere(completionDocuments, isGeneratedPdfDocument),
+    verificationReadyDocuments: countLearningWhere(completionDocuments, canShowPublicDocumentVerification),
+    missingVerificationTarget: countLearningWhere(
+      completionDocuments,
+      (documentItem) => documentItem.status === "available" && !hasDocumentVerificationTarget(documentItem)
+    ),
+    missingFiles: countLearningWhere(completionDocuments, (documentItem) => !documentItem.file_available),
+    completedWithoutDocument: countLearningWhere(
+      completedCourses,
+      (course) => !getCourseCompletionDocument(course, documents)
+    ),
+  };
+}
+
+function getCompletionDocumentDiagnostics({ courses, documents, downloadError, downloadLoadingId }) {
+  const stats = getCompletionDocumentStats({ courses, documents });
+  const items = [];
+
+  if (!stats.completedCourses) {
+    items.push("Завершение: пока нет завершённых программ, итоговые документы ещё не ожидаются.");
+  }
+
+  if (stats.completedCourses > 0 && !stats.completionDocuments) {
+    items.push("Документы: есть завершённые программы, но итоговые документы ещё не отображаются.");
+  }
+
+  if (stats.completedWithoutDocument > 0) {
+    items.push("Связь с обучением: есть завершённые программы без документа в личном кабинете.");
+  }
+
+  if (stats.draftDocuments > 0) {
+    items.push("Публикация: есть черновики итоговых документов, ожидается действие администратора.");
+  }
+
+  if (stats.availableDocuments > 0) {
+    items.push("Скачивание: есть опубликованные итоговые документы.");
+  }
+
+  if (stats.availableDocuments > 0 && stats.downloadableDocuments < stats.availableDocuments) {
+    items.push("Скачивание: часть опубликованных документов недоступна для скачивания.");
+  }
+
+  if (stats.generatedPdfDocuments > 0) {
+    items.push("PDF: есть автоматически сформированные итоговые PDF-документы.");
+  }
+
+  if (stats.missingFiles > 0) {
+    items.push("Файлы: есть документы без файла, скачивание и QR-проверка могут быть ограничены.");
+  }
+
+  if (stats.verificationReadyDocuments > 0) {
+    items.push("Публичная проверка: есть документы с номером или кодом проверки.");
+  }
+
+  if (stats.missingVerificationTarget > 0) {
+    items.push("Публичная проверка: опубликованные документы без номера или кода не смогут проверяться публично.");
+  }
+
+  if (stats.revokedDocuments > 0) {
+    items.push("Отзыв: есть отозванные итоговые документы, они недействительны для пользователя.");
+  }
+
+  if (downloadError) {
+    items.push("Скачивание: последняя попытка скачать документ завершилась ошибкой.");
+  }
+
+  if (downloadLoadingId) {
+    items.push("Скачивание: сейчас выполняется подготовка документа к скачиванию.");
+  }
+
+  return [...new Set(items)];
+}
+
+function CompletionDocumentsDiagnostics({
+  completionDocumentStats,
+  diagnostics,
+  onPageChange,
+}) {
+  return (
+    <SectionCard
+      title="Контроль итоговых документов"
+      subtitle="Диагностика черновиков, публикации, скачивания, QR/публичной проверки, отзыва и восстановления документов"
+    >
+      <div data-testid="account-completion-documents-diagnostics" className="space-y-5">
+        <div
+          data-testid="account-completion-documents-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Завершённые программы
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {completionDocumentStats.completedCourses}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Черновики / опубликованы
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {completionDocumentStats.draftDocuments} / {completionDocumentStats.availableDocuments}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Доступны для скачивания
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {completionDocumentStats.downloadableDocuments}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              QR/проверка
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {completionDocumentStats.verificationReadyDocuments}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="account-completion-documents-quality"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Авто PDF
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {completionDocumentStats.generatedPdfDocuments}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Отозваны
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {completionDocumentStats.revokedDocuments}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Без файла
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {completionDocumentStats.missingFiles}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Завершены без документа
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {completionDocumentStats.completedWithoutDocument}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="account-completion-documents-attention"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+            diagnostics.length
+              ? "bg-amber-50 text-amber-900 ring-amber-200"
+              : "bg-green-50 text-green-800 ring-green-200"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="font-semibold text-slate-900">
+              Что требует внимания в итоговых документах
+            </div>
+            <span
+              data-testid="account-completion-documents-attention-count"
+              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+            >
+              Пунктов диагностики: {diagnostics.length}
+            </span>
+          </div>
+
+          {diagnostics.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {diagnostics.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2">
+              Критичных замечаний по итоговым документам не найдено.
+            </p>
+          )}
+        </div>
+
+        <div
+          data-testid="account-completion-documents-links"
+          className="flex flex-wrap gap-3"
+        >
+          <a
+            href="#account-documents"
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Перейти к моим документам
+          </a>
+
+          <a
+            href="#account-courses"
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Перейти к завершённым программам
+          </a>
+
+          <button
+            type="button"
+            onClick={() => onPageChange("verify-document")}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Публичная проверка
+          </button>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 function AccountCourseDocumentCard({ course, documents, onDownload, downloadLoadingId }) {
   const documentItem = getCourseCompletionDocument(course, documents);
 
@@ -1288,6 +1534,22 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     ]
   );
 
+  const completionDocumentStats = useMemo(
+    () => getCompletionDocumentStats({ courses, documents }),
+    [courses, documents]
+  );
+
+  const completionDocumentDiagnostics = useMemo(
+    () =>
+      getCompletionDocumentDiagnostics({
+        courses,
+        documents,
+        downloadError,
+        downloadLoadingId,
+      }),
+    [courses, documents, downloadError, downloadLoadingId]
+  );
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
@@ -1367,6 +1629,14 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         <LearningProgressDiagnostics
           learningProgressStats={learningProgressStats}
           diagnostics={learningProgressDiagnostics}
+          onPageChange={onPageChange}
+        />
+      )}
+
+      {!loading && (
+        <CompletionDocumentsDiagnostics
+          completionDocumentStats={completionDocumentStats}
+          diagnostics={completionDocumentDiagnostics}
           onPageChange={onPageChange}
         />
       )}
