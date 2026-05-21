@@ -1245,3 +1245,52 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.52 - следующий функциональный блок после стабилизации операционного центра ролей и прав
 ```
+
+---
+
+## Checkpoint 6.52 - операционный центр аудита и расследований
+
+Контур операционного контроля аудита и расследований стабилизирован.
+
+Закрыто:
+
+- 6.52.1 - Dashboard: сценарий `Операционный центр аудита и расследований`
+- 6.52.2 - AuditEventDetailPanel: диагностика события аудита и быстрые связи расследования
+- 6.52.3 - smoke-покрытие прямых маршрутов операционного центра аудита и расследований
+- 6.52.4 - финальная стабилизация блока операционного центра аудита и расследований
+
+Результат:
+
+- Dashboard содержит отдельный сценарий расследования событий аудита;
+- карточка события аудита показывает диагностику action, entity, actor, IP и user agent;
+- добавлены быстрые переходы к action, entity type, истории сущности, actor, расширенной выдаче и связанному разделу;
+- прямые маршруты операционного центра аудита и расследований покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/audit-events?limit=25`
+- `/admin/audit-events?limit=200`
+- `/admin/audit-events?entity_type=user`
+- `/admin/audit-events?entity_type=document`
+- `/admin/audit-events?entity_type=enrollment`
+- `/admin/audit-events?entity_type=organization`
+- `/admin/audit-events?entity_type=role`
+- `/admin/audit-events?entity_type=permission`
+- `/admin/audit-events?action=admin.user_created`
+- `/admin/audit-events?action=admin.document_regenerated`
+- `/admin/audit-events?actor_user_id=...`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.53 - следующий функциональный блок после стабилизации операционного центра аудита и расследований
+```
