@@ -1726,3 +1726,66 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.61 - следующий функциональный блок после стабилизации административного реестра документов
 ```
+
+---
+
+## Checkpoint 6.61 - операционный центр административного каталога курсов
+
+Контур административного каталога курсов, активных и неактивных программ, модулей, уроков, обязательных материалов, публичного каталога, самозаписи, назначений, завершения обучения и итоговых документов стабилизирован.
+
+Закрыто:
+
+- 6.61.1 - Dashboard: сценарий `Операционный центр административного каталога курсов`
+- 6.61.2 - AdminCoursesPage: диагностика административного каталога курсов
+- 6.61.3 - smoke-покрытие прямых маршрутов административного каталога курсов
+- 6.61.4 - финальная стабилизация блока административного каталога курсов
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля административного каталога курсов;
+- AdminCoursesPage показывает диагностический блок каталога курсов;
+- диагностируются активные и неактивные курсы, фильтры, модули, уроки, обязательные уроки, публичная карточка и тип итогового документа;
+- отображаются проблемные состояния: курсы без модулей, модули без уроков, отсутствие обязательных уроков, неактивные модули/уроки, отсутствие slug и типа итогового документа;
+- отображаются текущие операции: создание, редактирование, активация, деактивация и удаление курса, модуля или урока;
+- прямые маршруты каталога курсов, публичного каталога, самозаписи, назначений, документов и аудита покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/courses`
+- `/admin/courses?is_active=true`
+- `/admin/courses?is_active=false`
+- `/admin/courses?q=__missing_smoke_course_query__`
+- `/catalog`
+- `/courses/SMOKE-NOT-FOUND`
+- `/register`
+- `/account`
+- `/admin/enrollments`
+- `/admin/enrollments?status=assigned`
+- `/admin/enrollments?status=active`
+- `/admin/enrollments?status=completed`
+- `/admin/enrollments?action_required=true`
+- `/admin/documents?status=draft`
+- `/admin/documents?status=available`
+- `/admin/documents?document_type=certificate`
+- `/admin/audit-events?entity_type=course`
+- `/admin/audit-events?entity_type=enrollment`
+- `/admin/audit-events?entity_type=document`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.62 - следующий функциональный блок после стабилизации административного каталога курсов
+```
