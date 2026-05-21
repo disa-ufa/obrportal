@@ -900,6 +900,27 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-admin-document-registry-flow"
+              title="Операционный центр административного реестра документов"
+              description="Контроль фильтров реестра, черновиков, опубликованных и отозванных документов, action_required, типов документов, скачивания, публикации, отзыва, восстановления и регенерации PDF."
+              links={[
+                { label: "Реестр документов", to: buildDocumentsPath() },
+                { label: "Черновики к публикации", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Опубликованные документы", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
+                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Сертификаты", to: buildDocumentsPath({ document_type: "certificate" }) },
+                { label: "Документы завершённых назначений", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Публичная проверка", to: "/verify-document" },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+                { label: "Создание документов", to: buildAuditPath({ action: "admin.document_created" }) },
+                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
+                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
+                { label: "Восстановление документов", to: buildAuditPath({ action: "admin.document_restored" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."

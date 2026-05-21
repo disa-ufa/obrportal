@@ -650,6 +650,16 @@ def main() -> None:
             "Проверка по коду",
             "to: \"/verify-document?number=SMOKE-NOT-FOUND\"",
             "to: \"/verify-document?code=SMOKE-NOT-FOUND\"",
+            "dashboard-admin-document-registry-flow",
+            "Операционный центр административного реестра документов",
+            "Контроль фильтров реестра, черновиков, опубликованных и отозванных документов, action_required, типов документов, скачивания, публикации, отзыва, восстановления и регенерации PDF.",
+            "Реестр документов",
+            "Черновики к публикации",
+            "Сертификаты",
+            "Документы завершённых назначений",
+            "Создание документов",
+            "buildDocumentsPath({ document_type: \"certificate\" })",
+            "buildAuditPath({ action: \"admin.document_created\" })",
         ],
     )
 
