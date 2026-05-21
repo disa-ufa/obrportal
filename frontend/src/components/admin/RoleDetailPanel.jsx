@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { ActionButton } from "../ui/ActionButton";
 import { Alert } from "../ui/Alert";
@@ -12,6 +13,7 @@ import {
 } from "./RoleForm";
 import { AdminFormField as Field } from "./AdminFormField";
 import { AdminFormSelectInput as SelectInput } from "./AdminTextInput";
+import { buildAuditPath, buildPermissionsPath, buildUsersPath } from "../../utils/adminLinks";
 
 const SYSTEM_ROLE_CODES = new Set([
   "admin",
@@ -24,6 +26,43 @@ const SYSTEM_ROLE_CODES = new Set([
   "edo_operator",
   "frdo_operator",
 ]);
+
+const ROLE_RELATED_LINK_CLASS =
+  "inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100";
+
+const ROLE_ATTENTION_LINK_CLASS =
+  "inline-flex items-center justify-center rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100";
+
+function getRoleAttentionItems(role, isSystemRole, isSystemAdminRole) {
+  const items = [];
+
+  if (!role) {
+    return items;
+  }
+
+  if (isSystemAdminRole) {
+    items.push("Admin: системная роль защищена от изменения permissions, чтобы не потерять административный доступ.");
+  } else if (isSystemRole) {
+    items.push("Тип роли: системная роль защищена seed-логикой, редактируйте только пользовательские роли.");
+  } else {
+    items.push("Тип роли: пользовательская роль, перед удалением проверьте назначения пользователям.");
+  }
+
+  if (!String(role.description || "").trim()) {
+    items.push("Описание: не заполнено, сложнее понять назначение роли и границы доступа.");
+  }
+
+  if (!role.permissions?.length) {
+    items.push("Permissions: права не назначены, роль не даёт прикладного доступа.");
+  }
+
+  if (role.permissions?.length && role.permissions.length < 2 && role.code !== "admin") {
+    items.push("Permissions: назначено мало прав, проверьте полноту доступа для рабочего сценария.");
+  }
+
+  return [...new Set(items)];
+}
+
 
 function RolePermissionAssignmentForm({ permissions, assignedPermissions, onAssign }) {
   const assignedIds = useMemo(
@@ -148,6 +187,7 @@ export function RoleDetailPanel({
 
   const isSystemAdminRole = roleDetail?.code === "admin";
   const isSystemRole = SYSTEM_ROLE_CODES.has(roleDetail?.code);
+  const roleAttentionItems = getRoleAttentionItems(roleDetail, isSystemRole, isSystemAdminRole);
 
   async function handleUpdateRole(payload) {
     setActionError("");
@@ -304,6 +344,90 @@ export function RoleDetailPanel({
           </div>
 
           <DetailField label="Описание" value={roleDetail.description} />
+
+          {roleAttentionItems.length > 0 && (
+            <div
+              data-testid="role-attention-diagnostics"
+              className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="font-semibold text-slate-900">
+                  Что требует внимания в роли
+                </div>
+                <span
+                  data-testid="role-attention-count"
+                  className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+                >
+                  Пунктов внимания: {roleAttentionItems.length}
+                </span>
+              </div>
+              <p
+                data-testid="role-attention-diagnostics-note"
+                className="mt-2 leading-6"
+              >
+                Диагностика основана на типе роли, защите системных ролей, описании и составе permissions.
+              </p>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {roleAttentionItems.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div
+            data-testid="role-related-records-links"
+            className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100"
+          >
+            <div className="font-semibold text-slate-900">
+              Связанные записи роли
+            </div>
+            <div className="mt-1 text-sm text-slate-600">
+              Быстрые переходы к пользователям, permissions и аудиту выбранной роли.
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                data-testid="role-users-link"
+                to={buildUsersPath({ role: roleDetail.code })}
+                className={ROLE_RELATED_LINK_CLASS}
+              >
+                Пользователи с этой ролью
+              </Link>
+
+              <Link
+                data-testid="role-permissions-link"
+                to={buildPermissionsPath()}
+                className={ROLE_RELATED_LINK_CLASS}
+              >
+                Все права
+              </Link>
+
+              <Link
+                data-testid="role-admin-permissions-link"
+                to={buildPermissionsPath({ group: "admin" })}
+                className={ROLE_ATTENTION_LINK_CLASS}
+              >
+                Admin-права
+              </Link>
+
+              <Link
+                data-testid="role-audit-link"
+                to={buildAuditPath({ entity_type: "role", entity_id: roleDetail.id })}
+                className={ROLE_RELATED_LINK_CLASS}
+              >
+                Аудит роли
+              </Link>
+
+              <Link
+                data-testid="role-permission-audit-link"
+                to={buildAuditPath({ entity_type: "permission" })}
+                className={ROLE_RELATED_LINK_CLASS}
+              >
+                Аудит permissions
+              </Link>
+            </div>
+          </div>
 
           {editingMetadata && !isSystemRole && (
             <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
