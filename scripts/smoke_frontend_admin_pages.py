@@ -201,6 +201,36 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/AccountPage.jsx",
+        [
+            "function getLearningProgressStats",
+            "function getLearningProgressDiagnostics",
+            "function LearningProgressDiagnostics",
+            "learningProgressStats",
+            "learningProgressDiagnostics",
+            "account-learning-progress-diagnostics",
+            "account-learning-progress-summary",
+            "account-learning-progress-opened-course",
+            "account-learning-progress-attention",
+            "account-learning-progress-attention-count",
+            "account-learning-progress-links",
+            "Контроль прохождения обучения",
+            "Диагностика прогресса, обязательных уроков, завершения курса и итоговых документов",
+            "Что требует внимания в прохождении обучения",
+            "Старт обучения: есть назначенные программы",
+            "Уроки: откройте программу активного курса",
+            "Завершение: обязательные уроки пройдены не полностью",
+            "Итоговый документ: есть черновики документов",
+            "Перейти к программам",
+            "Перейти к документам",
+            "Открыть каталог",
+            "Проверить документ",
+            "<LearningProgressDiagnostics",
+            "getLearningProgressDiagnostics({",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/CourseDetailPage.jsx",
         [
             "function getCourseStructureStats",

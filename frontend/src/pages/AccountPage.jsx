@@ -666,6 +666,276 @@ function AccountAccessDiagnostics({
   );
 }
 
+function countLearningWhere(items, predicate) {
+  return Array.isArray(items) ? items.filter(predicate).length : 0;
+}
+
+function getLearningProgressStats({ courses, documents, selectedCourseDetail }) {
+  const detail = selectedCourseDetail || {};
+  const requiredLessonsTotal = Number(detail.required_lessons_total || 0);
+  const requiredLessonsCompleted = Number(detail.required_lessons_completed || 0);
+  const lessonsTotal = Number(detail.lessons_total || 0);
+  const lessonsCompleted = Number(detail.lessons_completed || 0);
+
+  return {
+    totalCourses: courses.length,
+    assignedCourses: countLearningWhere(courses, (course) => course.status === "assigned"),
+    activeCourses: countLearningWhere(courses, (course) => course.status === "active"),
+    completedCourses: countLearningWhere(courses, (course) => course.status === "completed"),
+    draftDocuments: countLearningWhere(documents, (documentItem) => documentItem.status === "draft"),
+    availableDocuments: countLearningWhere(documents, (documentItem) => documentItem.status === "available"),
+    completedWithoutDocument: countLearningWhere(
+      courses,
+      (course) => course.status === "completed" && !getCourseCompletionDocument(course, documents)
+    ),
+    openedEnrollmentId: detail.enrollment_id || "",
+    lessonsTotal,
+    lessonsCompleted,
+    requiredLessonsTotal,
+    requiredLessonsCompleted,
+    progressPercent: Number(detail.progress_percent || 0),
+    requiredProgressPercent: Number(detail.required_progress_percent || 0),
+  };
+}
+
+function getLearningProgressDiagnostics({
+  courses,
+  documents,
+  selectedCourseDetail,
+  courseActionError,
+  courseDetailError,
+  courseActionLoadingKey,
+  lessonProgressLoadingId,
+}) {
+  const stats = getLearningProgressStats({ courses, documents, selectedCourseDetail });
+  const items = [];
+
+  if (!courses.length) {
+    items.push("Обучение: у пользователя пока нет назначенных программ.");
+  }
+
+  if (stats.assignedCourses > 0) {
+    items.push("Старт обучения: есть назначенные программы, которые пользователь ещё не начал.");
+  }
+
+  if (stats.activeCourses > 0) {
+    items.push("Прогресс: есть активные программы, нужно контролировать прохождение уроков.");
+  }
+
+  if (stats.activeCourses > 0 && !selectedCourseDetail) {
+    items.push("Уроки: откройте программу активного курса, чтобы увидеть модули, уроки и обязательные материалы.");
+  }
+
+  if (selectedCourseDetail && stats.lessonsTotal === 0) {
+    items.push("Структура: в открытой программе нет уроков, прогресс обучения не может быть рассчитан.");
+  }
+
+  if (selectedCourseDetail && stats.requiredLessonsTotal === 0) {
+    items.push("Обязательные уроки: в открытой программе нет обязательных уроков.");
+  }
+
+  if (
+    selectedCourseDetail &&
+    stats.requiredLessonsTotal > 0 &&
+    stats.requiredLessonsCompleted < stats.requiredLessonsTotal
+  ) {
+    items.push(
+      `Завершение: обязательные уроки пройдены не полностью (${stats.requiredLessonsCompleted} из ${stats.requiredLessonsTotal}).`
+    );
+  }
+
+  if (
+    selectedCourseDetail &&
+    stats.requiredLessonsTotal > 0 &&
+    stats.requiredLessonsCompleted >= stats.requiredLessonsTotal
+  ) {
+    items.push("Завершение: обязательные уроки пройдены, курс можно завершать.");
+  }
+
+  if (stats.completedCourses > 0 && stats.draftDocuments > 0) {
+    items.push("Итоговый документ: есть черновики документов после завершения обучения, ожидается публикация.");
+  }
+
+  if (stats.completedWithoutDocument > 0) {
+    items.push("Итоговый документ: есть завершённые программы без связанного документа в личном кабинете.");
+  }
+
+  if (stats.completedCourses > 0 && stats.availableDocuments > 0) {
+    items.push("Документы: по завершённому обучению есть опубликованные итоговые документы.");
+  }
+
+  if (courseActionError) {
+    items.push("Действие по курсу: последняя операция старта/завершения завершилась ошибкой.");
+  }
+
+  if (courseDetailError?.message) {
+    items.push("Программа курса: не удалось загрузить структуру модулей и уроков.");
+  }
+
+  if (courseActionLoadingKey) {
+    items.push("Действие по курсу: выполняется операция старта или завершения обучения.");
+  }
+
+  if (lessonProgressLoadingId) {
+    items.push("Уроки: выполняется отметка урока как пройденного.");
+  }
+
+  return [...new Set(items)];
+}
+
+function LearningProgressDiagnostics({
+  learningProgressStats,
+  diagnostics,
+  onPageChange,
+}) {
+  return (
+    <SectionCard
+      title="Контроль прохождения обучения"
+      subtitle="Диагностика прогресса, обязательных уроков, завершения курса и итоговых документов"
+    >
+      <div data-testid="account-learning-progress-diagnostics" className="space-y-5">
+        <div
+          data-testid="account-learning-progress-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Назначены / активны
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {learningProgressStats.assignedCourses} / {learningProgressStats.activeCourses}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Завершены
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {learningProgressStats.completedCourses}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Уроки открытой программы
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {learningProgressStats.openedEnrollmentId
+                ? `${learningProgressStats.lessonsCompleted} из ${learningProgressStats.lessonsTotal}`
+                : "Программа не открыта"}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Обязательные уроки
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {learningProgressStats.openedEnrollmentId
+                ? `${learningProgressStats.requiredLessonsCompleted} из ${learningProgressStats.requiredLessonsTotal}`
+                : "—"}
+            </div>
+          </div>
+        </div>
+
+        {learningProgressStats.openedEnrollmentId && (
+          <div
+            data-testid="account-learning-progress-opened-course"
+            className="grid gap-3 md:grid-cols-2"
+          >
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Общий прогресс
+              </div>
+              <div className="mt-2 font-semibold text-slate-900">
+                {learningProgressStats.progressPercent}%
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Прогресс обязательных уроков
+              </div>
+              <div className="mt-2 font-semibold text-slate-900">
+                {learningProgressStats.requiredProgressPercent}%
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div
+          data-testid="account-learning-progress-attention"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+            diagnostics.length
+              ? "bg-amber-50 text-amber-900 ring-amber-200"
+              : "bg-green-50 text-green-800 ring-green-200"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="font-semibold text-slate-900">
+              Что требует внимания в прохождении обучения
+            </div>
+            <span
+              data-testid="account-learning-progress-attention-count"
+              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+            >
+              Пунктов диагностики: {diagnostics.length}
+            </span>
+          </div>
+
+          {diagnostics.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {diagnostics.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2">
+              Критичных замечаний по прохождению обучения и урокам не найдено.
+            </p>
+          )}
+        </div>
+
+        <div
+          data-testid="account-learning-progress-links"
+          className="flex flex-wrap gap-3"
+        >
+          <a
+            href="#account-courses"
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Перейти к программам
+          </a>
+
+          <a
+            href="#account-documents"
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Перейти к документам
+          </a>
+
+          <button
+            type="button"
+            onClick={() => onPageChange("catalog")}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Открыть каталог
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onPageChange("verify-document")}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Проверить документ
+          </button>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 function AccountCourseDocumentCard({ course, documents, onDownload, downloadLoadingId }) {
   const documentItem = getCourseCompletionDocument(course, documents);
 
@@ -991,6 +1261,33 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     [profile, courses, documents]
   );
 
+  const learningProgressStats = useMemo(
+    () => getLearningProgressStats({ courses, documents, selectedCourseDetail }),
+    [courses, documents, selectedCourseDetail]
+  );
+
+  const learningProgressDiagnostics = useMemo(
+    () =>
+      getLearningProgressDiagnostics({
+        courses,
+        documents,
+        selectedCourseDetail,
+        courseActionError,
+        courseDetailError,
+        courseActionLoadingKey,
+        lessonProgressLoadingId,
+      }),
+    [
+      courses,
+      documents,
+      selectedCourseDetail,
+      courseActionError,
+      courseDetailError,
+      courseActionLoadingKey,
+      lessonProgressLoadingId,
+    ]
+  );
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
@@ -1062,6 +1359,14 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
           courseStatusCounts={courseStatusCounts}
           documentStatusCounts={documentStatusCounts}
           accountAttentionItems={accountAttentionItems}
+          onPageChange={onPageChange}
+        />
+      )}
+
+      {!loading && (
+        <LearningProgressDiagnostics
+          learningProgressStats={learningProgressStats}
+          diagnostics={learningProgressDiagnostics}
           onPageChange={onPageChange}
         />
       )}
