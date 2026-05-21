@@ -374,6 +374,15 @@ def main() -> None:
             "buildUsersPath({ role: \"admin\" })",
             "buildAuditPath({ entity_type: \"role\" })",
             "buildAuditPath({ entity_type: \"permission\" })",
+            "dashboard-audit-investigations-flow",
+            "Операционный центр аудита и расследований",
+            "Расследование действий по пользователям, документам, назначениям, организациям, ролям и permissions.",
+            "Последние 25 событий",
+            "Последние 200 событий",
+            "Аудит permissions",
+            "buildAuditPath({ limit: \"25\" })",
+            "buildAuditPath({ limit: \"200\" })",
+            "buildAuditPath({ action: \"admin.user_created\" })",
         ],
     )
 

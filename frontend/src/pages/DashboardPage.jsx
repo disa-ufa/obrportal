@@ -874,6 +874,24 @@ export function DashboardPage({
                 { label: "Создание пользователей", to: buildAuditPath({ action: "admin.user_created" }) },
               ]}
             />
+
+            <WorkflowCard
+              testId="dashboard-audit-investigations-flow"
+              title="Операционный центр аудита и расследований"
+              description="Расследование действий по пользователям, документам, назначениям, организациям, ролям и permissions."
+              links={[
+                { label: "Последние 25 событий", to: buildAuditPath({ limit: "25" }) },
+                { label: "Последние 200 событий", to: buildAuditPath({ limit: "200" }) },
+                { label: "Аудит пользователей", to: buildAuditPath({ entity_type: "user" }) },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
+                { label: "Аудит организаций", to: buildAuditPath({ entity_type: "organization" }) },
+                { label: "Аудит ролей", to: buildAuditPath({ entity_type: "role" }) },
+                { label: "Аудит permissions", to: buildAuditPath({ entity_type: "permission" }) },
+                { label: "Создание пользователей", to: buildAuditPath({ action: "admin.user_created" }) },
+                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
+              ]}
+            />
           </div>
         </SectionCard>
       )}
