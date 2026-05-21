@@ -1310,6 +1310,20 @@ def main() -> int:
         ("/admin/audit-events?action=admin.document_regenerated", "completion documents audit regenerated"),
         ("/admin/audit-events?action=admin.document_revoked", "completion documents audit revoked"),
         ("/admin/audit-events?action=admin.document_restored", "completion documents audit restored"),
+        ("/verify-document", "public verification QR page"),
+        ("/verify-document?number=SMOKE-NOT-FOUND", "public verification QR number query"),
+        ("/verify-document?code=SMOKE-NOT-FOUND", "public verification QR code query"),
+        ("/account", "public verification QR account page"),
+        ("/catalog", "public verification QR catalog page"),
+        ("/admin/documents?status=available", "public verification QR available documents"),
+        ("/admin/documents?status=draft", "public verification QR draft documents"),
+        ("/admin/documents?status=revoked", "public verification QR revoked documents"),
+        ("/admin/documents?action_required=true", "public verification QR action required documents"),
+        ("/admin/documents?document_type=certificate", "public verification QR certificates"),
+        ("/admin/audit-events?entity_type=document", "public verification QR audit documents"),
+        ("/admin/audit-events?action=admin.document_regenerated", "public verification QR audit regenerated"),
+        ("/admin/audit-events?action=admin.document_revoked", "public verification QR audit revoked"),
+        ("/admin/audit-events?action=admin.document_restored", "public verification QR audit restored"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
