@@ -50,6 +50,40 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/AdminCoursesPage.jsx",
+        [
+            "function getAdminCourseCatalogStats",
+            "function getAdminCourseCatalogDiagnostics",
+            "function AdminCourseCatalogDiagnostics",
+            "adminCourseCatalogStats",
+            "adminCourseCatalogDiagnostics",
+            "admin-course-catalog-diagnostics",
+            "admin-course-catalog-summary",
+            "admin-course-catalog-structure",
+            "admin-course-catalog-attention",
+            "admin-course-catalog-attention-count",
+            "admin-course-catalog-links",
+            "Диагностика административного каталога курсов",
+            "Контроль активности, структуры модулей и уроков, обязательных материалов, публичного каталога, назначений и итоговых документов",
+            "Что требует внимания в административном каталоге курсов",
+            "Структура: есть курсы без модулей.",
+            "Структура: есть модули без уроков.",
+            "Прохождение: в текущей выборке нет обязательных уроков.",
+            "Публичный каталог: часть курсов не имеет slug",
+            "Итоговые документы: у части курсов не указан тип итогового документа.",
+            "Активные курсы",
+            "Неактивные курсы",
+            "Публичный каталог",
+            "Активное обучение",
+            "Завершённое обучение",
+            "Черновики документов",
+            "Аудит курсов",
+            "<AdminCourseCatalogDiagnostics",
+            "getAdminCourseCatalogDiagnostics({",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/DocumentsPage.jsx",
         [
             "documents_user_id: filters.user_id",

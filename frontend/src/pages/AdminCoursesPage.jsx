@@ -1,5 +1,5 @@
 import { getApiErrorMessage } from "../utils/apiErrors";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   activateAdminCourse,
@@ -30,7 +30,7 @@ import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { buildCoursesPath, buildEnrollmentsPath } from "../utils/adminLinks";
+import { buildAuditPath, buildCoursesPath, buildDocumentsPath, buildEnrollmentsPath } from "../utils/adminLinks";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 
@@ -701,6 +701,321 @@ function CourseLessonFormFields({ values, onChange, prefix = "" }) {
   );
 }
 
+function countCoursesWhere(items, predicate) {
+  return Array.isArray(items) ? items.filter(predicate).length : 0;
+}
+
+function getAdminCourseCatalogStats({
+  courses,
+  courseCounts,
+  courseModulesByCourseId,
+  courseLessonsByModuleId,
+  filters,
+}) {
+  const allModules = Object.values(courseModulesByCourseId || {}).flat();
+  const allLessons = Object.values(courseLessonsByModuleId || {}).flat();
+  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
+
+  return {
+    total: courseCounts.all || courses.length || 0,
+    displayed: courses.length,
+    active: courseCounts.active || 0,
+    inactive: courseCounts.inactive || 0,
+    coursesWithoutModules: countCoursesWhere(
+      courses,
+      (course) => !(courseModulesByCourseId[course.id] || []).length
+    ),
+    modulesTotal: allModules.length,
+    activeModules: countCoursesWhere(allModules, (module) => module.is_active),
+    inactiveModules: countCoursesWhere(allModules, (module) => !module.is_active),
+    modulesWithoutLessons: countCoursesWhere(
+      allModules,
+      (module) => !(courseLessonsByModuleId[module.id] || []).length
+    ),
+    lessonsTotal: allLessons.length,
+    activeLessons: countCoursesWhere(allLessons, (lesson) => lesson.is_active),
+    inactiveLessons: countCoursesWhere(allLessons, (lesson) => !lesson.is_active),
+    requiredLessons: countCoursesWhere(allLessons, (lesson) => lesson.is_required),
+    optionalLessons: countCoursesWhere(allLessons, (lesson) => !lesson.is_required),
+    coursesWithPublicCard: countCoursesWhere(courses, (course) => course.slug),
+    coursesWithDocumentType: countCoursesWhere(courses, (course) => course.document_type),
+    activeFiltersCount,
+    filters,
+  };
+}
+
+function getAdminCourseCatalogDiagnostics({
+  catalogStats,
+  loading,
+  saving,
+  actionCourseId,
+  editingCourseId,
+  showCreateForm,
+  moduleCreatingCourseId,
+  moduleActionId,
+  editingModuleId,
+  lessonCreatingModuleId,
+  lessonActionId,
+  editingLessonId,
+  error,
+  successMessage,
+}) {
+  const items = [];
+
+  if (loading) {
+    items.push("Загрузка: каталог курсов сейчас обновляется.");
+  }
+
+  if (!loading && catalogStats.displayed === 0) {
+    items.push("Каталог: по текущим фильтрам курсы не найдены.");
+  }
+
+  if (catalogStats.activeFiltersCount > 0) {
+    items.push(`Фильтры: включено активных фильтров - ${catalogStats.activeFiltersCount}.`);
+  }
+
+  if (catalogStats.inactive > 0) {
+    items.push("Публикация: есть неактивные курсы, скрытые из публичного каталога.");
+  }
+
+  if (catalogStats.coursesWithoutModules > 0) {
+    items.push("Структура: есть курсы без модулей.");
+  }
+
+  if (catalogStats.modulesWithoutLessons > 0) {
+    items.push("Структура: есть модули без уроков.");
+  }
+
+  if (catalogStats.requiredLessons === 0 && catalogStats.lessonsTotal > 0) {
+    items.push("Прохождение: в текущей выборке нет обязательных уроков.");
+  }
+
+  if (catalogStats.inactiveModules > 0) {
+    items.push("Модули: есть неактивные модули.");
+  }
+
+  if (catalogStats.inactiveLessons > 0) {
+    items.push("Уроки: есть неактивные уроки.");
+  }
+
+  if (catalogStats.coursesWithPublicCard < catalogStats.displayed) {
+    items.push("Публичный каталог: часть курсов не имеет slug для публичной карточки.");
+  }
+
+  if (catalogStats.coursesWithDocumentType < catalogStats.displayed) {
+    items.push("Итоговые документы: у части курсов не указан тип итогового документа.");
+  }
+
+  if (showCreateForm || saving) {
+    items.push("Создание: открыта форма создания курса или выполняется сохранение.");
+  }
+
+  if (editingCourseId || actionCourseId) {
+    items.push("Курс: выполняется редактирование, активация, деактивация или удаление.");
+  }
+
+  if (moduleCreatingCourseId || moduleActionId || editingModuleId) {
+    items.push("Модули: выполняется создание, редактирование или удаление модуля.");
+  }
+
+  if (lessonCreatingModuleId || lessonActionId || editingLessonId) {
+    items.push("Уроки: выполняется создание, редактирование или удаление урока.");
+  }
+
+  if (error) {
+    items.push("Ошибка: последняя операция с каталогом курсов завершилась ошибкой.");
+  }
+
+  if (successMessage) {
+    items.push("Готово: последняя операция с курсом, модулем или уроком завершилась успешно.");
+  }
+
+  return [...new Set(items)];
+}
+
+function AdminCourseCatalogDiagnostics({
+  catalogStats,
+  diagnostics,
+}) {
+  return (
+    <SectionCard
+      title="Диагностика административного каталога курсов"
+      subtitle="Контроль активности, структуры модулей и уроков, обязательных материалов, публичного каталога, назначений и итоговых документов"
+    >
+      <div data-testid="admin-course-catalog-diagnostics" className="space-y-5">
+        <div
+          data-testid="admin-course-catalog-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Всего / показано
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {catalogStats.total} / {catalogStats.displayed}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Активные / неактивные
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {catalogStats.active} / {catalogStats.inactive}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Модули / уроки
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {catalogStats.modulesTotal} / {catalogStats.lessonsTotal}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Активные фильтры
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {catalogStats.activeFiltersCount}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-course-catalog-structure"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Курсы без модулей
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {catalogStats.coursesWithoutModules}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Модули без уроков
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {catalogStats.modulesWithoutLessons}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Обязательные уроки
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {catalogStats.requiredLessons}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Итоговый документ
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {catalogStats.coursesWithDocumentType}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-course-catalog-attention"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+            diagnostics.length
+              ? "bg-amber-50 text-amber-900 ring-amber-200"
+              : "bg-green-50 text-green-800 ring-green-200"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="font-semibold text-slate-900">
+              Что требует внимания в административном каталоге курсов
+            </div>
+            <span
+              data-testid="admin-course-catalog-attention-count"
+              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+            >
+              Пунктов диагностики: {diagnostics.length}
+            </span>
+          </div>
+
+          {diagnostics.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {diagnostics.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2">
+              Критичных замечаний по административному каталогу курсов не найдено.
+            </p>
+          )}
+        </div>
+
+        <div
+          data-testid="admin-course-catalog-links"
+          className="flex flex-wrap gap-3"
+        >
+          <Link
+            to={buildCoursesPath({ is_active: "true" })}
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Активные курсы
+          </Link>
+
+          <Link
+            to={buildCoursesPath({ is_active: "false" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Неактивные курсы
+          </Link>
+
+          <Link
+            to="/catalog"
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Публичный каталог
+          </Link>
+
+          <Link
+            to={buildEnrollmentsPath({ status: "active" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Активное обучение
+          </Link>
+
+          <Link
+            to={buildEnrollmentsPath({ status: "completed" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Завершённое обучение
+          </Link>
+
+          <Link
+            to={buildDocumentsPath({ status: "draft" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Черновики документов
+          </Link>
+
+          <Link
+            to={buildAuditPath({ entity_type: "course" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Аудит курсов
+          </Link>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 function CourseCard({
   course,
   modules = [],
@@ -1270,6 +1585,68 @@ export function AdminCoursesPage() {
   const hasActiveFilters = Boolean(filterQuery || filterActive);
   const activeCount = courseCounts.active || 0;
   const inactiveCount = courseCounts.inactive || 0;
+
+  const adminCourseCatalogFilters = useMemo(
+    () => ({
+      q: filterQuery,
+      is_active: filterActive,
+    }),
+    [filterQuery, filterActive]
+  );
+
+  const adminCourseCatalogStats = useMemo(
+    () =>
+      getAdminCourseCatalogStats({
+        courses,
+        courseCounts,
+        courseModulesByCourseId,
+        courseLessonsByModuleId,
+        filters: adminCourseCatalogFilters,
+      }),
+    [
+      courses,
+      courseCounts,
+      courseModulesByCourseId,
+      courseLessonsByModuleId,
+      adminCourseCatalogFilters,
+    ]
+  );
+
+  const adminCourseCatalogDiagnostics = useMemo(
+    () =>
+      getAdminCourseCatalogDiagnostics({
+        catalogStats: adminCourseCatalogStats,
+        loading,
+        saving,
+        actionCourseId,
+        editingCourseId,
+        showCreateForm,
+        moduleCreatingCourseId,
+        moduleActionId,
+        editingModuleId,
+        lessonCreatingModuleId,
+        lessonActionId,
+        editingLessonId,
+        error,
+        successMessage,
+      }),
+    [
+      adminCourseCatalogStats,
+      loading,
+      saving,
+      actionCourseId,
+      editingCourseId,
+      showCreateForm,
+      moduleCreatingCourseId,
+      moduleActionId,
+      editingModuleId,
+      lessonCreatingModuleId,
+      lessonActionId,
+      editingLessonId,
+      error,
+      successMessage,
+    ]
+  );
 
   function buildFilters(overrides = {}) {
     return {
@@ -1963,6 +2340,11 @@ export function AdminCoursesPage() {
           )}
         </div>
       </SectionCard>
+
+      <AdminCourseCatalogDiagnostics
+        catalogStats={adminCourseCatalogStats}
+        diagnostics={adminCourseCatalogDiagnostics}
+      />
 
       <SectionCard
         title={RU.listTitle}
