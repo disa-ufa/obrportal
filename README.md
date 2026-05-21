@@ -1445,3 +1445,56 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.56 - следующий функциональный блок после стабилизации каталога и публичных курсов
 ```
+
+---
+
+## Checkpoint 6.56 - операционный центр карточки курса и самозаписи
+
+Контур публичной карточки курса, структуры модулей/уроков, самозаписи и связанных маршрутов стабилизирован.
+
+Закрыто:
+
+- 6.56.1 - Dashboard: сценарий `Операционный центр карточки курса и самозаписи`
+- 6.56.2 - CourseDetailPage: диагностика карточки курса, структуры и самозаписи
+- 6.56.3 - smoke-покрытие прямых маршрутов операционного центра карточки курса и самозаписи
+- 6.56.4 - финальная стабилизация блока операционного центра карточки курса и самозаписи
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля карточки курса и самозаписи;
+- CourseDetailPage показывает диагностику slug, структуры модулей/уроков, обязательных уроков, итогового документа и состояния самозаписи;
+- диагностируются неактивный курс, отсутствие slug, отсутствие формата/часов/итогового документа, отсутствие модулей/уроков и ошибки записи;
+- карточка курса связана с каталогом, регистрацией, личным кабинетом, публичной проверкой документов, назначениями и аудитом;
+- прямые маршруты карточки курса, регистрации, кабинета, курсов, назначений, документов и аудита покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/catalog`
+- `/courses/SMOKE-NOT-FOUND`
+- `/register`
+- `/account`
+- `/verify-document`
+- `/admin/courses?is_active=true`
+- `/admin/courses?is_active=false`
+- `/admin/enrollments?status=assigned`
+- `/admin/enrollments?status=active`
+- `/admin/enrollments?status=completed`
+- `/admin/documents?status=available`
+- `/admin/audit-events?entity_type=course`
+- `/admin/audit-events?entity_type=enrollment`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.57 - следующий функциональный блок после стабилизации карточки курса и самозаписи
+```
