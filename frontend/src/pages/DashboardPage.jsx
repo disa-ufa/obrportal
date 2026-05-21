@@ -843,6 +843,24 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-learning-progress-flow"
+              title="Операционный центр прохождения обучения и уроков"
+              description="Контроль личного кабинета обучения, прогресса, обязательных уроков, завершения курса и черновика итогового документа."
+              links={[
+                { label: "Личный кабинет обучения", to: "/account" },
+                { label: "Назначенные программы", to: buildEnrollmentsPath({ status: "assigned" }) },
+                { label: "Обучение в процессе", to: buildEnrollmentsPath({ status: "active" }) },
+                { label: "Завершённое обучение", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
+                { label: "Черновики итоговых документов", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Опубликованные итоговые документы", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Публичная проверка документа", to: "/verify-document" },
+                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
