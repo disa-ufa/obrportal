@@ -825,6 +825,24 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-course-self-enrollment-flow"
+              title="Операционный центр карточки курса и самозаписи"
+              description="Контроль публичной карточки курса, структуры модулей/уроков, самозаписи, существующих назначений и ошибок записи."
+              links={[
+                { label: "Каталог для выбора курса", to: "/catalog" },
+                { label: "Проверка отсутствующей карточки", to: "/courses/SMOKE-NOT-FOUND" },
+                { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
+                { label: "Неактивные курсы", to: buildCoursesPath({ is_active: "false" }) },
+                { label: "Назначены", to: buildEnrollmentsPath({ status: "assigned" }) },
+                { label: "В процессе", to: buildEnrollmentsPath({ status: "active" }) },
+                { label: "Завершены", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Документы выпускников", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Аудит курсов", to: buildAuditPath({ entity_type: "course" }) },
+                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."

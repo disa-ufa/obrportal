@@ -507,6 +507,13 @@ def main() -> None:
             "buildCoursesPath({ is_active: \"true\" })",
             "buildCoursesPath({ is_active: \"false\" })",
             "buildAuditPath({ entity_type: \"course\" })",
+            "dashboard-course-self-enrollment-flow",
+            "Операционный центр карточки курса и самозаписи",
+            "Контроль публичной карточки курса, структуры модулей/уроков, самозаписи, существующих назначений и ошибок записи.",
+            "Каталог для выбора курса",
+            "Проверка отсутствующей карточки",
+            "Назначены",
+            "to: \"/courses/SMOKE-NOT-FOUND\"",
         ],
     )
 
