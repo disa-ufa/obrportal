@@ -201,6 +201,37 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/AccountPage.jsx",
+        [
+            "function getAccountAttentionItems",
+            "function AccountAccessDiagnostics",
+            "accountAttentionItems",
+            "account-access-diagnostics",
+            "account-access-summary",
+            "account-access-attention",
+            "account-access-attention-count",
+            "account-access-links",
+            "Контроль доступа и документов",
+            "Диагностика личного кабинета, обучения, документов, скачивания и публичной проверки",
+            "Что требует внимания в личном кабинете",
+            "Профиль: не указан e-mail",
+            "Обучение: нет назначенных программ",
+            "Документы: есть черновики",
+            "Документы: есть отозванные документы",
+            "Документы: есть записи без файла",
+            "Публичная проверка: опубликованные документы без номера или кода проверки",
+            "Критичных замечаний по доступу, обучению и документам не найдено.",
+            "Открыть каталог курсов",
+            "Перейти к программам",
+            "Перейти к моим документам",
+            "id=\"account-courses\"",
+            "id=\"account-documents\"",
+            "getAccountAttentionItems(profile, courses, documents)",
+            "documentStatusCounts.available",
+        ],
+    )
+
+    require_contains(
         "frontend/src/hooks/useAdminDataLoader.js",
         [
             "getAdminDashboardSummary,",

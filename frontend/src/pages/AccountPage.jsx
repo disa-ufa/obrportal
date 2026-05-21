@@ -487,6 +487,185 @@ function isRequiredLessonsBackendError(err) {
   return message.includes("Complete required lessons before completing course");
 }
 
+function getAccountAttentionItems(profile, courses, documents) {
+  const items = [];
+  const completedCoursesCount = countWhere(courses, (course) => course.status === "completed");
+  const activeCoursesCount = countWhere(courses, (course) => course.status === "active");
+  const draftDocumentsCount = countWhere(documents, (documentItem) => documentItem.status === "draft");
+  const revokedDocumentsCount = countWhere(documents, (documentItem) => documentItem.status === "revoked");
+  const missingFileDocumentsCount = countWhere(documents, (documentItem) => !documentItem.file_available);
+  const unavailablePublishedDocumentsCount = countWhere(
+    documents,
+    (documentItem) => documentItem.status === "available" && !canDownloadDocument(documentItem)
+  );
+  const unavailableVerificationDocumentsCount = countWhere(
+    documents,
+    (documentItem) => documentItem.status === "available" && !hasDocumentVerificationTarget(documentItem)
+  );
+
+  if (!String(profile?.email || "").trim()) {
+    items.push("Профиль: не указан e-mail, пользователь не сможет стабильно получать уведомления и восстанавливать доступ.");
+  }
+
+  if (!String(profile?.full_name || "").trim()) {
+    items.push("Профиль: не заполнено ФИО, сложнее сопоставить пользователя с документами и назначениями.");
+  }
+
+  if (!courses.length) {
+    items.push("Обучение: нет назначенных программ, личный кабинет пока не содержит учебного маршрута.");
+  }
+
+  if (activeCoursesCount > 0 && completedCoursesCount === 0) {
+    items.push("Обучение: есть активные программы, контролируйте прохождение обязательных уроков.");
+  }
+
+  if (completedCoursesCount > 0 && !documents.length) {
+    items.push("Документы: есть завершённые программы, но итоговые документы ещё не отображаются.");
+  }
+
+  if (draftDocumentsCount > 0) {
+    items.push("Документы: есть черновики, пользователь ждёт публикации итогового документа.");
+  }
+
+  if (revokedDocumentsCount > 0) {
+    items.push("Документы: есть отозванные документы, их нельзя использовать как действующие.");
+  }
+
+  if (missingFileDocumentsCount > 0) {
+    items.push("Документы: есть записи без файла, скачивание для пользователя будет недоступно.");
+  }
+
+  if (unavailablePublishedDocumentsCount > 0) {
+    items.push("Скачивание: опубликованные документы есть, но скачивание закрыто или файл недоступен.");
+  }
+
+  if (unavailableVerificationDocumentsCount > 0) {
+    items.push("Публичная проверка: опубликованные документы без номера или кода проверки не смогут проверяться публично.");
+  }
+
+  return [...new Set(items)];
+}
+
+function AccountAccessDiagnostics({
+  profile,
+  courses,
+  documents,
+  courseStatusCounts,
+  documentStatusCounts,
+  accountAttentionItems,
+  onPageChange,
+}) {
+  return (
+    <SectionCard
+      title="Контроль доступа и документов"
+      subtitle="Диагностика личного кабинета, обучения, документов, скачивания и публичной проверки"
+    >
+      <div data-testid="account-access-diagnostics" className="space-y-5">
+        <div
+          data-testid="account-access-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Профиль
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {profile?.email || "E-mail не указан"}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Назначения
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {courseStatusCounts.all || courses.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              В процессе / завершены
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {(courseStatusCounts.active || 0)} / {(courseStatusCounts.completed || 0)}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Документы
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {(documentStatusCounts.available || 0)} доступно · {(documentStatusCounts.draft || 0)} черновиков · {(documentStatusCounts.revoked || 0)} отозвано
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="account-access-attention"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+            accountAttentionItems.length
+              ? "bg-amber-50 text-amber-900 ring-amber-200"
+              : "bg-green-50 text-green-800 ring-green-200"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="font-semibold text-slate-900">
+              Что требует внимания в личном кабинете
+            </div>
+            <span
+              data-testid="account-access-attention-count"
+              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+            >
+              Пунктов внимания: {accountAttentionItems.length}
+            </span>
+          </div>
+
+          {accountAttentionItems.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {accountAttentionItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2">
+              Критичных замечаний по доступу, обучению и документам не найдено.
+            </p>
+          )}
+        </div>
+
+        <div
+          data-testid="account-access-links"
+          className="flex flex-wrap gap-3"
+        >
+          <button
+            type="button"
+            onClick={() => onPageChange("catalog")}
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Открыть каталог курсов
+          </button>
+
+          <a
+            href="#account-courses"
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Перейти к программам
+          </a>
+
+          <a
+            href="#account-documents"
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Перейти к моим документам
+          </a>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 function AccountCourseDocumentCard({ course, documents, onDownload, downloadLoadingId }) {
   const documentItem = getCourseCompletionDocument(course, documents);
 
@@ -807,6 +986,11 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     [documents, documentStatusFilter]
   );
 
+  const accountAttentionItems = useMemo(
+    () => getAccountAttentionItems(profile, courses, documents),
+    [profile, courses, documents]
+  );
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
@@ -868,6 +1052,18 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         <Alert title={accountNotice.title || "Уведомление"} tone={accountNotice.tone || "green"}>
           {accountNotice.message}
         </Alert>
+      )}
+
+      {!loading && (
+        <AccountAccessDiagnostics
+          profile={profile}
+          courses={courses}
+          documents={documents}
+          courseStatusCounts={courseStatusCounts}
+          documentStatusCounts={documentStatusCounts}
+          accountAttentionItems={accountAttentionItems}
+          onPageChange={onPageChange}
+        />
       )}
 
       <div className="grid gap-6 xl:grid-cols-3">
@@ -958,10 +1154,11 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         </SectionCard>
       </div>
 
-      <SectionCard
-        title="Назначенные программы"
-        subtitle="Программы, назначенные вам администратором или выбранные из каталога"
-      >
+      <div id="account-courses" className="scroll-mt-24">
+        <SectionCard
+          title="Назначенные программы"
+          subtitle="Программы, назначенные вам администратором или выбранные из каталога"
+        >
         {loading ? (
           <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
             Загрузка программ...
@@ -1175,7 +1372,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
             ))}
           </div>
         )}
-      </SectionCard>
+        </SectionCard>
+      </div>
 
       <div id="account-documents" className="scroll-mt-24">
         <SectionCard
