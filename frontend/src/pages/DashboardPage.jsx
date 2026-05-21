@@ -986,6 +986,29 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-audit-investigations-flow"
+              title="Операционный центр аудита и расследований"
+              description="Контроль журнала событий, фильтров по действиям, сущностям, актору, лимиту выдачи и быстрых расследований по пользователям, организациям, группам, назначениям, документам, ролям и правам."
+              links={[
+                { label: "Журнал аудита", to: buildAuditPath() },
+                { label: "Последние 25 событий", to: buildAuditPath({ limit: "25" }) },
+                { label: "Расширенный лимит", to: buildAuditPath({ limit: "200" }) },
+                { label: "Фильтр по актору", to: buildAuditPath({ actor_user_id: "00000000-0000-0000-0000-000000000000" }) },
+                { label: "Аудит пользователей", to: buildAuditPath({ entity_type: "user" }) },
+                { label: "Аудит организаций", to: buildAuditPath({ entity_type: "organization" }) },
+                { label: "Аудит групп", to: buildAuditPath({ entity_type: "learning_group" }) },
+                { label: "Аудит курсов", to: buildAuditPath({ entity_type: "course" }) },
+                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+                { label: "Аудит ролей", to: buildAuditPath({ entity_type: "role" }) },
+                { label: "Аудит прав", to: buildAuditPath({ entity_type: "permission" }) },
+                { label: "Создание пользователей", to: buildAuditPath({ action: "admin.user_created" }) },
+                { label: "Регенерация документов", to: buildAuditPath({ action: "admin.document_regenerated" }) },
+                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
