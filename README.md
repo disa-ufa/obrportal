@@ -1857,3 +1857,72 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.63 - следующий функциональный блок после стабилизации административных назначений обучения
 ```
+
+---
+
+## Checkpoint 6.63 - операционный центр учебных групп
+
+Контур учебных групп, активных и неактивных групп, организаций, участников, групповых назначений, action_required, документов и аудита связей обучения стабилизирован.
+
+Закрыто:
+
+- 6.63.1 - Dashboard: сценарий `Операционный центр учебных групп`
+- 6.63.2 - GroupsPage: диагностика операционного центра учебных групп
+- 6.63.3 - smoke-покрытие прямых маршрутов учебных групп
+- 6.63.4 - финальная стабилизация блока учебных групп
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля учебных групп;
+- GroupsPage показывает диагностический блок операционного центра учебных групп;
+- диагностируются активные и неактивные группы, активные фильтры, связь с организацией, код группы и описание;
+- отображаются проблемные состояния: группы без организации, без кода, без описания, отсутствие организаций для создания групп;
+- сохранены переходы к участникам, организациям, пользователям, назначениям, проблемным назначениям, проблемным документам и аудиту;
+- прямые маршруты групп, фильтров, организаций, пользователей, назначений, документов и аудита покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/groups`
+- `/admin/groups?status=active`
+- `/admin/groups?status=inactive`
+- `/admin/groups?q=__missing_smoke_group_query__`
+- `/admin/groups?organization_id=00000000-0000-0000-0000-000000000000`
+- `/admin/groups?status=active&organization_id=00000000-0000-0000-0000-000000000000`
+- `/admin/groups?status=inactive&organization_id=00000000-0000-0000-0000-000000000000`
+- `/admin/organizations`
+- `/admin/organizations?q=__missing_smoke_group_org_query__`
+- `/admin/users`
+- `/admin/users?q=__missing_smoke_group_user_query__`
+- `/admin/enrollments?status=assigned`
+- `/admin/enrollments?status=active`
+- `/admin/enrollments?status=completed`
+- `/admin/enrollments?action_required=true`
+- `/admin/enrollments?learning_group_id=00000000-0000-0000-0000-000000000000`
+- `/admin/enrollments?learning_group_id=00000000-0000-0000-0000-000000000000&action_required=true`
+- `/admin/courses?is_active=true`
+- `/admin/documents?status=draft`
+- `/admin/documents?action_required=true`
+- `/admin/documents?learning_group_id=00000000-0000-0000-0000-000000000000&action_required=true`
+- `/admin/audit-events?entity_type=learning_group`
+- `/admin/audit-events?entity_type=enrollment`
+- `/admin/audit-events?entity_type=organization`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.64 - следующий функциональный блок после стабилизации учебных групп
+```
