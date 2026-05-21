@@ -50,6 +50,41 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/AdminEnrollmentsPage.jsx",
+        [
+            "function getAdminEnrollmentOperationsStats",
+            "function getAdminEnrollmentOperationsDiagnostics",
+            "function AdminEnrollmentOperationsDiagnostics",
+            "adminEnrollmentOperationsStats",
+            "adminEnrollmentOperationsDiagnostics",
+            "admin-enrollment-operations-diagnostics",
+            "admin-enrollment-operations-summary",
+            "admin-enrollment-operations-relations",
+            "admin-enrollment-operations-attention",
+            "admin-enrollment-operations-attention-count",
+            "admin-enrollment-operations-links",
+            "Диагностика административных назначений обучения",
+            "Контроль статусов assigned/active/completed, action_required, групповых назначений, связей с пользователем, организацией, группой, курсом и итоговыми документами",
+            "Что требует внимания в административных назначениях",
+            "Старт обучения: есть назначения в статусе assigned.",
+            "Контроль: есть назначения в режиме action_required.",
+            "Организация: часть назначений не привязана к организации.",
+            "Группа: часть назначений не привязана к учебной группе.",
+            "Массовое назначение: выполняется назначение учебной группе.",
+            "Назначенные",
+            "В обучении",
+            "Завершённые",
+            "Требуют действия",
+            "Активные курсы",
+            "Группы обучения",
+            "Черновики документов",
+            "Аудит назначений",
+            "<AdminEnrollmentOperationsDiagnostics",
+            "getAdminEnrollmentOperationsDiagnostics({",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/AdminCoursesPage.jsx",
         [
             "function getAdminCourseCatalogStats",

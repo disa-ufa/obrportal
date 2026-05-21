@@ -22,6 +22,7 @@ import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
 import { AdminFormField } from "../components/admin/AdminFormField";
 import {
+  buildAuditPath,
   buildCoursesPath,
   buildDocumentsPath,
   buildEnrollmentsPath,
@@ -416,6 +417,351 @@ function normalizeDateTime(value) {
   return new Date(value).toISOString();
 }
 
+function countEnrollmentsWhere(items, predicate) {
+  return Array.isArray(items) ? items.filter(predicate).length : 0;
+}
+
+function getAdminEnrollmentOperationsStats({
+  enrollments,
+  statusCounts,
+  actionRequiredCount,
+  filters,
+  users,
+  courses,
+  organizations,
+  groups,
+  groupMembersByGroupId,
+}) {
+  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
+  const activeCoursesCount = countEnrollmentsWhere(courses, (course) => course.is_active);
+  const activeGroupsCount = countEnrollmentsWhere(groups, (group) => group.is_active);
+  const groupMembersTotal = Object.values(groupMembersByGroupId || {}).flat().length;
+
+  return {
+    total: statusCounts.all || enrollments.length || 0,
+    displayed: enrollments.length,
+    assigned: statusCounts.assigned || 0,
+    active: statusCounts.active || 0,
+    completed: statusCounts.completed || 0,
+    cancelled: statusCounts.cancelled || 0,
+    actionRequired: actionRequiredCount || 0,
+    withOrganization: countEnrollmentsWhere(enrollments, (item) => item.organization_id),
+    withoutOrganization: countEnrollmentsWhere(enrollments, (item) => !item.organization_id),
+    withGroup: countEnrollmentsWhere(enrollments, (item) => item.learning_group_id),
+    withoutGroup: countEnrollmentsWhere(enrollments, (item) => !item.learning_group_id),
+    assignedMissingStart: countEnrollmentsWhere(
+      enrollments,
+      (item) => item.status === "assigned" && !item.started_at
+    ),
+    activeMissingStart: countEnrollmentsWhere(
+      enrollments,
+      (item) => item.status === "active" && !item.started_at
+    ),
+    completedMissingDate: countEnrollmentsWhere(
+      enrollments,
+      (item) => item.status === "completed" && !item.completed_at
+    ),
+    completedReadyForDocuments: countEnrollmentsWhere(
+      enrollments,
+      (item) => item.status === "completed"
+    ),
+    usersTotal: users.length,
+    coursesTotal: courses.length,
+    activeCourses: activeCoursesCount,
+    organizationsTotal: organizations.length,
+    groupsTotal: groups.length,
+    activeGroups: activeGroupsCount,
+    groupMembersTotal,
+    activeFiltersCount,
+    filters,
+  };
+}
+
+function getAdminEnrollmentOperationsDiagnostics({
+  operationsStats,
+  loading,
+  saving,
+  bulkSaving,
+  actionEnrollmentId,
+  editingEnrollmentId,
+  error,
+  successMessage,
+}) {
+  const items = [];
+
+  if (loading) {
+    items.push("Загрузка: реестр назначений сейчас обновляется.");
+  }
+
+  if (!loading && operationsStats.displayed === 0) {
+    items.push("Реестр: по текущим фильтрам назначения не найдены.");
+  }
+
+  if (operationsStats.activeFiltersCount > 0) {
+    items.push(`Фильтры: включено активных фильтров - ${operationsStats.activeFiltersCount}.`);
+  }
+
+  if (operationsStats.assigned > 0) {
+    items.push("Старт обучения: есть назначения в статусе assigned.");
+  }
+
+  if (operationsStats.active > 0) {
+    items.push("Процесс обучения: есть активные назначения.");
+  }
+
+  if (operationsStats.completed > 0) {
+    items.push("Завершение: есть completed-назначения, проверьте итоговые документы.");
+  }
+
+  if (operationsStats.cancelled > 0) {
+    items.push("Отмена: есть отменённые назначения.");
+  }
+
+  if (operationsStats.actionRequired > 0) {
+    items.push("Контроль: есть назначения в режиме action_required.");
+  }
+
+  if (operationsStats.withoutOrganization > 0) {
+    items.push("Организация: часть назначений не привязана к организации.");
+  }
+
+  if (operationsStats.withoutGroup > 0) {
+    items.push("Группа: часть назначений не привязана к учебной группе.");
+  }
+
+  if (operationsStats.assignedMissingStart > 0) {
+    items.push("Дата старта: у назначенных записей может отсутствовать started_at.");
+  }
+
+  if (operationsStats.activeMissingStart > 0) {
+    items.push("Дата старта: у активных назначений отсутствует started_at.");
+  }
+
+  if (operationsStats.completedMissingDate > 0) {
+    items.push("Дата завершения: у завершённых назначений отсутствует completed_at.");
+  }
+
+  if (operationsStats.activeCourses === 0) {
+    items.push("Курсы: нет активных курсов для новых назначений.");
+  }
+
+  if (operationsStats.activeGroups === 0 && operationsStats.groupsTotal > 0) {
+    items.push("Группы: есть группы, но нет активных групп для массового назначения.");
+  }
+
+  if (saving) {
+    items.push("Создание: выполняется создание одиночного назначения.");
+  }
+
+  if (bulkSaving) {
+    items.push("Массовое назначение: выполняется назначение учебной группе.");
+  }
+
+  if (editingEnrollmentId || actionEnrollmentId) {
+    items.push("Операция: выполняется редактирование, завершение или удаление назначения.");
+  }
+
+  if (error) {
+    items.push("Ошибка: последняя операция с назначениями завершилась ошибкой.");
+  }
+
+  if (successMessage) {
+    items.push("Готово: последняя операция с назначениями завершилась успешно.");
+  }
+
+  return [...new Set(items)];
+}
+
+function AdminEnrollmentOperationsDiagnostics({
+  operationsStats,
+  diagnostics,
+}) {
+  return (
+    <SectionCard
+      title="Диагностика административных назначений обучения"
+      subtitle="Контроль статусов assigned/active/completed, action_required, групповых назначений, связей с пользователем, организацией, группой, курсом и итоговыми документами"
+    >
+      <div data-testid="admin-enrollment-operations-diagnostics" className="space-y-5">
+        <div
+          data-testid="admin-enrollment-operations-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Всего / показано
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.total} / {operationsStats.displayed}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Assigned / active / completed
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.assigned} / {operationsStats.active} / {operationsStats.completed}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Требуют действия
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {operationsStats.actionRequired}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Активные фильтры
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {operationsStats.activeFiltersCount}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-enrollment-operations-relations"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Организации
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.withOrganization} / {operationsStats.withoutOrganization}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Группы
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.withGroup} / {operationsStats.withoutGroup}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Справочники
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.usersTotal} / {operationsStats.activeCourses} / {operationsStats.activeGroups}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              К документам
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.completedReadyForDocuments}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-enrollment-operations-attention"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+            diagnostics.length
+              ? "bg-amber-50 text-amber-900 ring-amber-200"
+              : "bg-green-50 text-green-800 ring-green-200"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="font-semibold text-slate-900">
+              Что требует внимания в административных назначениях
+            </div>
+            <span
+              data-testid="admin-enrollment-operations-attention-count"
+              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+            >
+              Пунктов диагностики: {diagnostics.length}
+            </span>
+          </div>
+
+          {diagnostics.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {diagnostics.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2">
+              Критичных замечаний по административным назначениям обучения не найдено.
+            </p>
+          )}
+        </div>
+
+        <div
+          data-testid="admin-enrollment-operations-links"
+          className="flex flex-wrap gap-3"
+        >
+          <Link
+            to={buildEnrollmentsPath({ status: "assigned" })}
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Назначенные
+          </Link>
+
+          <Link
+            to={buildEnrollmentsPath({ status: "active" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            В обучении
+          </Link>
+
+          <Link
+            to={buildEnrollmentsPath({ status: "completed" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Завершённые
+          </Link>
+
+          <Link
+            to={buildEnrollmentsPath({ action_required: "true" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Требуют действия
+          </Link>
+
+          <Link
+            to={buildCoursesPath({ is_active: "true" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Активные курсы
+          </Link>
+
+          <Link
+            to={buildGroupsPath()}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Группы обучения
+          </Link>
+
+          <Link
+            to={buildDocumentsPath({ status: "draft" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Черновики документов
+          </Link>
+
+          <Link
+            to={buildAuditPath({ entity_type: "enrollment" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Аудит назначений
+          </Link>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 function EnrollmentSummaryCards({ statusCounts, users, courses, groups }) {
   const activeCoursesCount = courses.filter((course) => course.is_active).length;
   const activeGroupsCount = groups.filter((group) => group.is_active).length;
@@ -639,6 +985,77 @@ export function AdminEnrollmentsPage() {
 
   const showActionRequiredOnly = filterActionRequired === "true";
   const visibleEnrollments = enrollments;
+
+  const adminEnrollmentOperationsFilters = useMemo(
+    () => ({
+      q: filterQuery,
+      user_id: filterUserId,
+      course_id: filterCourseId,
+      organization_id: filterOrganizationId,
+      status: filterStatus,
+      learning_group_id: filterGroupId,
+      action_required: filterActionRequired,
+    }),
+    [
+      filterQuery,
+      filterUserId,
+      filterCourseId,
+      filterOrganizationId,
+      filterStatus,
+      filterGroupId,
+      filterActionRequired,
+    ]
+  );
+
+  const adminEnrollmentOperationsStats = useMemo(
+    () =>
+      getAdminEnrollmentOperationsStats({
+        enrollments,
+        statusCounts,
+        actionRequiredCount,
+        filters: adminEnrollmentOperationsFilters,
+        users,
+        courses,
+        organizations,
+        groups,
+        groupMembersByGroupId,
+      }),
+    [
+      enrollments,
+      statusCounts,
+      actionRequiredCount,
+      adminEnrollmentOperationsFilters,
+      users,
+      courses,
+      organizations,
+      groups,
+      groupMembersByGroupId,
+    ]
+  );
+
+  const adminEnrollmentOperationsDiagnostics = useMemo(
+    () =>
+      getAdminEnrollmentOperationsDiagnostics({
+        operationsStats: adminEnrollmentOperationsStats,
+        loading,
+        saving,
+        bulkSaving,
+        actionEnrollmentId,
+        editingEnrollmentId,
+        error,
+        successMessage,
+      }),
+    [
+      adminEnrollmentOperationsStats,
+      loading,
+      saving,
+      bulkSaving,
+      actionEnrollmentId,
+      editingEnrollmentId,
+      error,
+      successMessage,
+    ]
+  );
 
   function buildFilters(overrides = {}) {
     return {
@@ -1190,6 +1607,11 @@ export function AdminEnrollmentsPage() {
         statusCounts={statusCounts}
         courses={courses}
         groups={groups}
+      />
+
+      <AdminEnrollmentOperationsDiagnostics
+        operationsStats={adminEnrollmentOperationsStats}
+        diagnostics={adminEnrollmentOperationsDiagnostics}
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)]">
