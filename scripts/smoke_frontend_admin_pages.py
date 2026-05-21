@@ -431,6 +431,16 @@ def main() -> None:
             "buildDocumentsPath({ status: \"available\" })",
             "buildDocumentsPath({ status: \"draft\" })",
             "buildDocumentsPath({ status: \"revoked\" })",
+            "dashboard-public-verification-flow",
+            "Операционный центр публичной проверки документов",
+            "Контроль публичной проверки по номеру/коду, QR-ссылок, статусов документов и ошибок верификации.",
+            "Публичная проверка",
+            "Доступные документы",
+            "Черновики не проверяются",
+            "Отзыв документов",
+            "Восстановление документов",
+            "buildAuditPath({ action: \"admin.document_revoked\" })",
+            "buildAuditPath({ action: \"admin.document_restored\" })",
         ],
     )
 

@@ -854,6 +854,23 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-public-verification-flow"
+              title="Операционный центр публичной проверки документов"
+              description="Контроль публичной проверки по номеру/коду, QR-ссылок, статусов документов и ошибок верификации."
+              links={[
+                { label: "Публичная проверка", to: "/verify-document" },
+                { label: "Доступные документы", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Черновики не проверяются", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
+                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
+                { label: "Восстановление документов", to: buildAuditPath({ action: "admin.document_restored" }) },
+                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
+              ]}
+            />
+
+            <WorkflowCard
               title="RBAC"
               description="Системные роли, пользовательские роли и справочник permissions."
               links={[
