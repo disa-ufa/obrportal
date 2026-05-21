@@ -1,5 +1,5 @@
 import { formatApiError } from "../utils/apiErrors";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { enrollAccountCourse, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 
@@ -181,6 +181,256 @@ function CourseOutlineSection({ modules = [] }) {
   );
 }
 
+function getCourseStructureStats(course) {
+  const modules = Array.isArray(course?.modules) ? course.modules : [];
+  const lessons = modules.flatMap((module) => (Array.isArray(module.lessons) ? module.lessons : []));
+
+  return {
+    modulesCount: modules.length,
+    lessonsCount: lessons.length,
+    requiredLessonsCount: lessons.filter((lesson) => lesson.is_required).length,
+  };
+}
+
+function getCourseDetailDiagnostics({
+  course,
+  existingEnrollment,
+  user,
+  enrollLoading,
+  enrollError,
+  enrollSuccess,
+  relatedCourses,
+}) {
+  const items = [];
+  const structure = getCourseStructureStats(course);
+
+  if (!course) {
+    items.push("Карточка: курс не выбран или не найден.");
+    return items;
+  }
+
+  if (!course.slug) {
+    items.push("Карточка: у курса отсутствует slug для публичного маршрута.");
+  }
+
+  if (course.is_active === false) {
+    items.push("Доступность: курс неактивен и не должен быть доступен для новой самозаписи.");
+  }
+
+  if (!course.format) {
+    items.push("Описание: не указан формат обучения.");
+  }
+
+  if (!course.hours) {
+    items.push("Описание: не указан объём программы в часах.");
+  }
+
+  if (!formatCourseDocument(course)) {
+    items.push("Документ: не указан тип итогового документа.");
+  }
+
+  if (structure.modulesCount === 0) {
+    items.push("Структура: у курса пока нет опубликованных модулей.");
+  }
+
+  if (structure.lessonsCount === 0) {
+    items.push("Структура: у курса пока нет опубликованных уроков.");
+  }
+
+  if (structure.lessonsCount > 0 && structure.requiredLessonsCount === 0) {
+    items.push("Структура: нет обязательных уроков, завершение курса может быть неконтролируемым.");
+  }
+
+  if (!user) {
+    items.push("Самозапись: пользователь не авторизован, основное действие ведёт к регистрации.");
+  }
+
+  if (user && !existingEnrollment) {
+    items.push("Самозапись: пользователь авторизован и может записаться на программу.");
+  }
+
+  if (existingEnrollment?.status === "assigned") {
+    items.push("Назначение: пользователь записан, курс ожидает старта обучения.");
+  }
+
+  if (existingEnrollment?.status === "active") {
+    items.push("Назначение: обучение уже идёт, основное действие ведёт в личный кабинет.");
+  }
+
+  if (existingEnrollment?.status === "completed") {
+    items.push("Назначение: обучение завершено, проверьте итоговые документы в личном кабинете.");
+  }
+
+  if (existingEnrollment?.status === "cancelled") {
+    items.push("Назначение: запись отменена, повторная запись требует контроля администратора.");
+  }
+
+  if (enrollLoading) {
+    items.push("Самозапись: запрос на запись выполняется.");
+  }
+
+  if (enrollError) {
+    items.push("Самозапись: возникла ошибка записи, пользователю нужно повторить действие или обратиться в организацию.");
+  }
+
+  if (enrollSuccess) {
+    items.push("Самозапись: запись выполнена успешно, курс добавлен в личный кабинет.");
+  }
+
+  if (!relatedCourses.length) {
+    items.push("Навигация: похожие программы не найдены.");
+  }
+
+  return [...new Set(items)];
+}
+
+function CourseSelfEnrollmentDiagnostics({
+  course,
+  existingEnrollment,
+  user,
+  enrollLoading,
+  enrollError,
+  enrollSuccess,
+  relatedCourses,
+  diagnostics,
+  onPageChange,
+}) {
+  const structure = getCourseStructureStats(course);
+  const enrollmentLabel = existingEnrollment
+    ? getEnrollmentStatusLabel(existingEnrollment.status)
+    : user
+      ? "Можно записаться"
+      : "Требуется регистрация";
+
+  return (
+    <section
+      data-testid="course-self-enrollment-diagnostics"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Диагностика карточки курса
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            Карточка курса и самозапись
+          </h2>
+        </div>
+
+        <span
+          data-testid="course-self-enrollment-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${getEnrollmentStatusTone(existingEnrollment?.status)}`}
+        >
+          {enrollmentLabel}
+        </span>
+      </div>
+
+      <div
+        data-testid="course-self-enrollment-summary"
+        className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Slug
+          </div>
+          <div className="mt-2 break-all font-semibold text-slate-900">
+            {course?.slug || "—"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Модули / уроки
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {structure.modulesCount} / {structure.lessonsCount}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Обязательные уроки
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {structure.requiredLessonsCount}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Итоговый документ
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {formatCourseDocument(course)}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="course-self-enrollment-attention"
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          enrollError || course?.is_active === false || structure.lessonsCount === 0
+            ? "bg-amber-50 text-amber-900 ring-amber-200"
+            : "bg-green-50 text-green-800 ring-green-200"
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="font-semibold text-slate-900">
+            Что требует внимания в карточке курса
+          </div>
+          <span
+            data-testid="course-self-enrollment-attention-count"
+            className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+          >
+            Пунктов диагностики: {diagnostics.length}
+          </span>
+        </div>
+
+        {diagnostics.length ? (
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {diagnostics.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2">
+            Критичных замечаний по карточке курса и самозаписи не найдено.
+          </p>
+        )}
+      </div>
+
+      <div
+        data-testid="course-self-enrollment-links"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        <button
+          type="button"
+          onClick={() => onPageChange("catalog")}
+          className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          Вернуться в каталог
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Личный кабинет
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("verify-document")}
+          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Проверить документ
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function getPrimaryActionLabel(enrollment, user) {
   if (!user) {
     return "Зарегистрироваться и записаться";
@@ -274,6 +524,20 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       isMounted = false;
     };
   }, [courseSlug, user?.id]);
+
+  const courseDiagnostics = useMemo(
+    () =>
+      getCourseDetailDiagnostics({
+        course,
+        existingEnrollment,
+        user,
+        enrollLoading,
+        enrollError,
+        enrollSuccess,
+        relatedCourses,
+      }),
+    [course, existingEnrollment, user, enrollLoading, enrollError, enrollSuccess, relatedCourses]
+  );
 
   async function handleEnroll() {
     if (!course) {
@@ -493,6 +757,18 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           </button>
         </div>
       </section>
+
+      <CourseSelfEnrollmentDiagnostics
+        course={course}
+        existingEnrollment={existingEnrollment}
+        user={user}
+        enrollLoading={enrollLoading}
+        enrollError={enrollError}
+        enrollSuccess={enrollSuccess}
+        relatedCourses={relatedCourses}
+        diagnostics={courseDiagnostics}
+        onPageChange={onPageChange}
+      />
 
       <CourseOutlineSection modules={course.modules} />
 

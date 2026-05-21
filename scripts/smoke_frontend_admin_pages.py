@@ -201,6 +201,35 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/CourseDetailPage.jsx",
+        [
+            "function getCourseStructureStats",
+            "function getCourseDetailDiagnostics",
+            "function CourseSelfEnrollmentDiagnostics",
+            "courseDiagnostics",
+            "course-self-enrollment-diagnostics",
+            "course-self-enrollment-status",
+            "course-self-enrollment-summary",
+            "course-self-enrollment-attention",
+            "course-self-enrollment-attention-count",
+            "course-self-enrollment-links",
+            "Диагностика карточки курса",
+            "Карточка курса и самозапись",
+            "Что требует внимания в карточке курса",
+            "Карточка: курс не выбран или не найден.",
+            "Структура: у курса пока нет опубликованных модулей.",
+            "Самозапись: пользователь не авторизован",
+            "Самозапись: пользователь авторизован и может записаться на программу.",
+            "Назначение: обучение уже идёт",
+            "Вернуться в каталог",
+            "Личный кабинет",
+            "Проверить документ",
+            "<CourseSelfEnrollmentDiagnostics",
+            "getCourseDetailDiagnostics({",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/CatalogPage.jsx",
         [
             "function getCatalogDiagnostics",
