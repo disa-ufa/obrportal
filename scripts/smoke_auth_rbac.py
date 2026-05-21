@@ -1263,6 +1263,15 @@ def main() -> int:
         ("/admin/audit-events?action=admin.document_revoked", "public verification audit revoked"),
         ("/admin/audit-events?action=admin.document_restored", "public verification audit restored"),
         ("/admin/audit-events?action=admin.document_regenerated", "public verification audit regenerated"),
+        ("/catalog", "public catalog page"),
+        ("/courses/SMOKE-NOT-FOUND", "public catalog missing course page"),
+        ("/admin/courses?is_active=true", "public catalog active courses"),
+        ("/admin/courses?is_active=false", "public catalog inactive courses"),
+        ("/admin/enrollments", "public catalog enrollments"),
+        ("/admin/enrollments?status=active", "public catalog active enrollments"),
+        ("/admin/enrollments?status=completed", "public catalog completed enrollments"),
+        ("/admin/documents?status=available", "public catalog available documents"),
+        ("/admin/audit-events?entity_type=course", "public catalog audit courses"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
