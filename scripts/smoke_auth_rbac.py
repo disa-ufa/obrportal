@@ -1297,6 +1297,19 @@ def main() -> int:
         ("/admin/documents?action_required=true", "learning progress action required documents"),
         ("/admin/audit-events?entity_type=enrollment", "learning progress audit enrollments"),
         ("/admin/audit-events?entity_type=document", "learning progress audit documents"),
+        ("/account", "completion documents account page"),
+        ("/verify-document", "completion documents verify document page"),
+        ("/admin/enrollments?status=completed", "completion documents completed enrollments"),
+        ("/admin/enrollments?action_required=true", "completion documents action required enrollments"),
+        ("/admin/documents?status=draft", "completion documents draft documents"),
+        ("/admin/documents?status=available", "completion documents available documents"),
+        ("/admin/documents?status=revoked", "completion documents revoked documents"),
+        ("/admin/documents?action_required=true", "completion documents action required documents"),
+        ("/admin/documents?document_type=certificate", "completion documents certificates"),
+        ("/admin/audit-events?entity_type=document", "completion documents audit documents"),
+        ("/admin/audit-events?action=admin.document_regenerated", "completion documents audit regenerated"),
+        ("/admin/audit-events?action=admin.document_revoked", "completion documents audit revoked"),
+        ("/admin/audit-events?action=admin.document_restored", "completion documents audit restored"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
