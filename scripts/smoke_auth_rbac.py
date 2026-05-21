@@ -1242,6 +1242,16 @@ def main() -> int:
         ("/admin/documents?q=__missing_smoke_worklist_query__", "documents missing worklist query"),
         ("/admin/enrollments?q=__missing_smoke_worklist_query__", "enrollments missing worklist query"),
         ("/admin/audit-events?entity_type=document", "dashboard audit documents"),
+        ("/account", "account access account page"),
+        ("/catalog", "account access catalog page"),
+        ("/verify-document", "account access verify document page"),
+        ("/admin/enrollments?status=active", "account access active enrollments"),
+        ("/admin/enrollments?status=completed", "account access completed enrollments"),
+        ("/admin/documents?status=available", "account access available documents"),
+        ("/admin/documents?status=draft", "account access draft documents"),
+        ("/admin/documents?status=revoked", "account access revoked documents"),
+        ("/admin/audit-events?entity_type=user", "account access audit users"),
+        ("/admin/audit-events?entity_type=document", "account access audit documents"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
