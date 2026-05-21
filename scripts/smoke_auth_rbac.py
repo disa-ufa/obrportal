@@ -1272,6 +1272,19 @@ def main() -> int:
         ("/admin/enrollments?status=completed", "public catalog completed enrollments"),
         ("/admin/documents?status=available", "public catalog available documents"),
         ("/admin/audit-events?entity_type=course", "public catalog audit courses"),
+        ("/catalog", "course self-enrollment catalog page"),
+        ("/courses/SMOKE-NOT-FOUND", "course self-enrollment missing course page"),
+        ("/register", "course self-enrollment register page"),
+        ("/account", "course self-enrollment account page"),
+        ("/verify-document", "course self-enrollment verify document page"),
+        ("/admin/courses?is_active=true", "course self-enrollment active courses"),
+        ("/admin/courses?is_active=false", "course self-enrollment inactive courses"),
+        ("/admin/enrollments?status=assigned", "course self-enrollment assigned enrollments"),
+        ("/admin/enrollments?status=active", "course self-enrollment active enrollments"),
+        ("/admin/enrollments?status=completed", "course self-enrollment completed enrollments"),
+        ("/admin/documents?status=available", "course self-enrollment available documents"),
+        ("/admin/audit-events?entity_type=course", "course self-enrollment audit courses"),
+        ("/admin/audit-events?entity_type=enrollment", "course self-enrollment audit enrollments"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
