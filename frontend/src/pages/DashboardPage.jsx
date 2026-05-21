@@ -861,6 +861,25 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-completion-documents-flow"
+              title="Операционный центр итоговых документов после обучения"
+              description="Контроль черновиков после завершения курса, публикации, скачивания PDF, QR-проверки, отзыва, восстановления и аудита документов."
+              links={[
+                { label: "Завершённые назначения", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Опубликованные документы", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
+                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Публичная проверка", to: "/verify-document" },
+                { label: "Личный кабинет слушателя", to: "/account" },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
+                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
+                { label: "Восстановление документов", to: buildAuditPath({ action: "admin.document_restored" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
