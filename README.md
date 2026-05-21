@@ -1552,3 +1552,59 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.58 - следующий функциональный блок после стабилизации прохождения обучения и уроков
 ```
+
+---
+
+## Checkpoint 6.58 - операционный центр итоговых документов после обучения
+
+Контур итоговых документов после завершения обучения, публикации, скачивания PDF, QR/публичной проверки, отзыва, восстановления и аудита стабилизирован.
+
+Закрыто:
+
+- 6.58.1 - Dashboard: сценарий `Операционный центр итоговых документов после обучения`
+- 6.58.2 - AccountPage: диагностика итоговых документов после обучения
+- 6.58.3 - smoke-покрытие прямых маршрутов операционного центра итоговых документов после обучения
+- 6.58.4 - финальная стабилизация блока операционного центра итоговых документов после обучения
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля итоговых документов после обучения;
+- AccountPage показывает диагностику завершённых программ, черновиков, опубликованных и отозванных документов;
+- диагностируются доступность скачивания, наличие PDF, наличие файла, номер/код публичной проверки и связь документа с завершённым курсом;
+- публичная проверка документа связана с личным кабинетом и административным контуром документов;
+- маршруты документов, завершённых назначений, публичной проверки и аудита PDF/отзыва/восстановления покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/account`
+- `/verify-document`
+- `/admin/enrollments?status=completed`
+- `/admin/enrollments?action_required=true`
+- `/admin/documents?status=draft`
+- `/admin/documents?status=available`
+- `/admin/documents?status=revoked`
+- `/admin/documents?action_required=true`
+- `/admin/documents?document_type=certificate`
+- `/admin/audit-events?entity_type=document`
+- `/admin/audit-events?action=admin.document_regenerated`
+- `/admin/audit-events?action=admin.document_revoked`
+- `/admin/audit-events?action=admin.document_restored`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\smoke_document_generation_flow.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.59 - следующий функциональный блок после стабилизации итоговых документов после обучения
+```
