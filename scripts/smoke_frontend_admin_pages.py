@@ -50,6 +50,35 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/AuditPage.jsx",
+        [
+            "function getAuditInvestigationsStats",
+            "function getAuditInvestigationsDiagnostics",
+            "function AuditInvestigationsDiagnostics",
+            "auditInvestigationsStats",
+            "auditInvestigationsDiagnostics",
+            "audit-investigations-diagnostics",
+            "audit-investigations-summary",
+            "audit-investigations-entities",
+            "audit-investigations-attention",
+            "audit-investigations-attention-count",
+            "audit-investigations-links",
+            "Диагностика аудита и расследований",
+            "Контроль фильтров action, entity_type, entity_id, actor_user_id, лимита выдачи, критичных действий и связанных разделов",
+            "Что требует внимания в аудите",
+            "Выдача: включён расширенный лимит расследования на 200 событий.",
+            "Actor: расследование ограничено конкретным пользователем.",
+            "Риск: в выдаче есть удаление, отзыв или другие критичные действия.",
+            "RBAC: в выдаче есть события ролей или прав.",
+            "System: часть событий выполнена без actor_user_id.",
+            "Расширенная выдача",
+            "Отзывы документов",
+            "<AuditInvestigationsDiagnostics",
+            "getAuditInvestigationsDiagnostics({",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/GroupsPage.jsx",
         [
             "function getLearningGroupOperationsStats",

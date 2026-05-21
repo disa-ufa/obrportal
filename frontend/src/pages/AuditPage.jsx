@@ -127,6 +127,311 @@ function calculateAuditCounts(events) {
   return counts;
 }
 
+function getAuditInvestigationsStats({
+  auditEvents,
+  auditCounts,
+  filters,
+  selectedAuditEvent,
+  selectedAuditEventLoading,
+  selectedAuditEventError,
+  loading,
+  filterError,
+}) {
+  const normalizedFilters = normalizeFilters(filters);
+  const activeFiltersCount = Object.entries(normalizedFilters).filter(([key, value]) => {
+    if (key === "limit") {
+      return value !== DEFAULT_FILTERS.limit;
+    }
+
+    return Boolean(String(value || "").trim());
+  }).length;
+
+  const documentEvents = auditCounts.entityTypes.document || 0;
+  const enrollmentEvents = auditCounts.entityTypes.enrollment || 0;
+  const userEvents = auditCounts.entityTypes.user || 0;
+  const organizationEvents = auditCounts.entityTypes.organization || 0;
+  const learningGroupEvents = auditCounts.entityTypes.learning_group || 0;
+  const courseEvents = auditCounts.entityTypes.course || 0;
+  const roleEvents = auditCounts.entityTypes.role || 0;
+  const permissionEvents = auditCounts.entityTypes.permission || 0;
+
+  const destructiveEvents = Array.isArray(auditEvents)
+    ? auditEvents.filter((event) => getActionTone(event.action) === "red").length
+    : 0;
+  const updateEvents = Array.isArray(auditEvents)
+    ? auditEvents.filter((event) => getActionTone(event.action) === "amber").length
+    : 0;
+  const createEvents = Array.isArray(auditEvents)
+    ? auditEvents.filter((event) => getActionTone(event.action) === "green").length
+    : 0;
+  const systemEvents = Array.isArray(auditEvents)
+    ? auditEvents.filter((event) => !event.actor_user_id).length
+    : 0;
+  const eventsWithEntityId = Array.isArray(auditEvents)
+    ? auditEvents.filter((event) => event.entity_id).length
+    : 0;
+
+  return {
+    total: auditCounts.all || 0,
+    actionsTotal: Object.keys(auditCounts.actions || {}).length,
+    entityTypesTotal: Object.keys(auditCounts.entityTypes || {}).length,
+    actorsTotal: auditCounts.actors || 0,
+    systemEvents,
+    eventsWithEntityId,
+    documentEvents,
+    enrollmentEvents,
+    userEvents,
+    organizationEvents,
+    learningGroupEvents,
+    courseEvents,
+    roleEvents,
+    permissionEvents,
+    destructiveEvents,
+    updateEvents,
+    createEvents,
+    activeFiltersCount,
+    limit: normalizedFilters.limit || DEFAULT_FILTERS.limit,
+    hasActionFilter: Boolean(normalizedFilters.action),
+    hasEntityTypeFilter: Boolean(normalizedFilters.entity_type),
+    hasEntityIdFilter: Boolean(normalizedFilters.entity_id),
+    hasActorFilter: Boolean(normalizedFilters.actor_user_id),
+    selectedAuditEvent: Boolean(selectedAuditEvent),
+    selectedAuditEventLoading,
+    selectedAuditEventError: Boolean(selectedAuditEventError),
+    loading,
+    filterError: Boolean(filterError),
+  };
+}
+
+function getAuditInvestigationsDiagnostics({ investigationsStats }) {
+  const items = [];
+
+  if (investigationsStats.loading) {
+    items.push("Загрузка: журнал аудита сейчас обновляется.");
+  }
+
+  if (!investigationsStats.loading && investigationsStats.total === 0) {
+    items.push("Журнал: по текущим фильтрам события аудита не найдены.");
+  }
+
+  if (investigationsStats.activeFiltersCount > 0) {
+    items.push(`Фильтры: включено активных фильтров - ${investigationsStats.activeFiltersCount}.`);
+  }
+
+  if (investigationsStats.limit === "200") {
+    items.push("Выдача: включён расширенный лимит расследования на 200 событий.");
+  }
+
+  if (investigationsStats.hasActorFilter) {
+    items.push("Actor: расследование ограничено конкретным пользователем.");
+  }
+
+  if (investigationsStats.hasEntityTypeFilter) {
+    items.push("Сущность: расследование ограничено конкретным entity_type.");
+  }
+
+  if (investigationsStats.hasEntityIdFilter) {
+    items.push("История сущности: расследование ограничено конкретным entity_id.");
+  }
+
+  if (investigationsStats.destructiveEvents > 0) {
+    items.push("Риск: в выдаче есть удаление, отзыв или другие критичные действия.");
+  }
+
+  if (investigationsStats.documentEvents > 0) {
+    items.push("Документы: в выдаче есть события document/PDF-контура.");
+  }
+
+  if (investigationsStats.enrollmentEvents > 0) {
+    items.push("Назначения: в выдаче есть события обучения и завершения.");
+  }
+
+  if (investigationsStats.roleEvents > 0 || investigationsStats.permissionEvents > 0) {
+    items.push("RBAC: в выдаче есть события ролей или прав.");
+  }
+
+  if (investigationsStats.systemEvents > 0) {
+    items.push("System: часть событий выполнена без actor_user_id.");
+  }
+
+  if (investigationsStats.filterError) {
+    items.push("Ошибка фильтра: параметры расследования не применены.");
+  }
+
+  if (investigationsStats.selectedAuditEventLoading) {
+    items.push("Карточка события: загружается детальная информация.");
+  }
+
+  if (investigationsStats.selectedAuditEventError) {
+    items.push("Карточка события: последняя загрузка завершилась ошибкой.");
+  }
+
+  if (investigationsStats.selectedAuditEvent) {
+    items.push("Карточка события: открыта детальная запись audit_events.");
+  }
+
+  return [...new Set(items)];
+}
+
+function AuditInvestigationsDiagnostics({
+  investigationsStats,
+  diagnostics,
+}) {
+  return (
+    <SectionCard
+      title="Диагностика аудита и расследований"
+      subtitle="Контроль фильтров action, entity_type, entity_id, actor_user_id, лимита выдачи, критичных действий и связанных разделов"
+    >
+      <div data-testid="audit-investigations-diagnostics" className="space-y-5">
+        <div
+          data-testid="audit-investigations-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Событий / действий
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {investigationsStats.total} / {investigationsStats.actionsTotal}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Сущностей / actor
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {investigationsStats.entityTypesTotal} / {investigationsStats.actorsTotal}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Критичные / изменения / создание
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {investigationsStats.destructiveEvents} / {investigationsStats.updateEvents} / {investigationsStats.createEvents}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Активные фильтры
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {investigationsStats.activeFiltersCount}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="audit-investigations-entities"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Документы / назначения
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {investigationsStats.documentEvents} / {investigationsStats.enrollmentEvents}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Пользователи / организации
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {investigationsStats.userEvents} / {investigationsStats.organizationEvents}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Группы / курсы
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {investigationsStats.learningGroupEvents} / {investigationsStats.courseEvents}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              RBAC
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {investigationsStats.roleEvents} / {investigationsStats.permissionEvents}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="audit-investigations-attention"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+            diagnostics.length
+              ? "bg-amber-50 text-amber-900 ring-amber-200"
+              : "bg-green-50 text-green-800 ring-green-200"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="font-semibold text-slate-900">
+              Что требует внимания в аудите
+            </div>
+            <span
+              data-testid="audit-investigations-attention-count"
+              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+            >
+              Пунктов диагностики: {diagnostics.length}
+            </span>
+          </div>
+
+          {diagnostics.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {diagnostics.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2">
+              Критичных замечаний по аудиту и расследованиям не найдено.
+            </p>
+          )}
+        </div>
+
+        <div
+          data-testid="audit-investigations-links"
+          className="flex flex-wrap gap-3"
+        >
+          <Link to={buildAuditPath()} className={TABLE_LINK_CLASS}>
+            Журнал аудита
+          </Link>
+          <Link to={buildAuditPath({ limit: "200" })} className={TABLE_LINK_CLASS}>
+            Расширенная выдача
+          </Link>
+          <Link to={buildAuditPath({ entity_type: "document" })} className={TABLE_LINK_CLASS}>
+            Документы
+          </Link>
+          <Link to={buildAuditPath({ entity_type: "enrollment" })} className={TABLE_LINK_CLASS}>
+            Назначения
+          </Link>
+          <Link to={buildAuditPath({ entity_type: "user" })} className={TABLE_LINK_CLASS}>
+            Пользователи
+          </Link>
+          <Link to={buildAuditPath({ entity_type: "role" })} className={TABLE_LINK_CLASS}>
+            Роли
+          </Link>
+          <Link to={buildAuditPath({ entity_type: "permission" })} className={TABLE_LINK_CLASS}>
+            Права
+          </Link>
+          <Link to={buildAuditPath({ action: "admin.document_revoked" })} className={TABLE_LINK_CLASS}>
+            Отзывы документов
+          </Link>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 function AuditSummaryCards({ auditCounts, filters }) {
   const actionsCount = Object.keys(auditCounts.actions || {}).length;
   const entityTypesCount = Object.keys(auditCounts.entityTypes || {}).length;
@@ -290,6 +595,38 @@ export function AuditPage({
 
   const auditCounts = useMemo(() => calculateAuditCounts(auditEvents), [auditEvents]);
 
+  const auditInvestigationsStats = useMemo(
+    () =>
+      getAuditInvestigationsStats({
+        auditEvents,
+        auditCounts,
+        filters,
+        selectedAuditEvent,
+        selectedAuditEventLoading,
+        selectedAuditEventError,
+        loading,
+        filterError,
+      }),
+    [
+      auditEvents,
+      auditCounts,
+      filters,
+      selectedAuditEvent,
+      selectedAuditEventLoading,
+      selectedAuditEventError,
+      loading,
+      filterError,
+    ]
+  );
+
+  const auditInvestigationsDiagnostics = useMemo(
+    () =>
+      getAuditInvestigationsDiagnostics({
+        investigationsStats: auditInvestigationsStats,
+      }),
+    [auditInvestigationsStats]
+  );
+
   const actionOptions = useMemo(
     () => Object.keys(auditCounts.actions).sort((left, right) => left.localeCompare(right, "ru-RU")).slice(0, 10),
     [auditCounts]
@@ -386,6 +723,11 @@ export function AuditPage({
 
           <AuditWorkflowPanel
             auditCounts={auditCounts}
+          />
+
+          <AuditInvestigationsDiagnostics
+            investigationsStats={auditInvestigationsStats}
+            diagnostics={auditInvestigationsDiagnostics}
           />
         </>
       )}
