@@ -78,6 +78,228 @@ function getFormatOptions(courses) {
   return Array.from(new Set(formats)).sort();
 }
 
+function countWhere(items, predicate) {
+  return items.filter(predicate).length;
+}
+
+function getCatalogDiagnostics({
+  courses,
+  filteredCourses,
+  accountCourses,
+  query,
+  formatFilter,
+  loading,
+  error,
+  user,
+  formatOptions,
+}) {
+  const items = [];
+  const normalizedQuery = query.trim();
+  const activeEnrollmentsCount = countWhere(accountCourses, (course) => course.status === "active");
+  const completedEnrollmentsCount = countWhere(accountCourses, (course) => course.status === "completed");
+  const assignedEnrollmentsCount = countWhere(accountCourses, (course) => course.status === "assigned");
+
+  if (loading) {
+    items.push("Каталог: список публичных программ загружается.");
+  }
+
+  if (error) {
+    items.push("Каталог: не удалось загрузить публичные программы, проверьте API и доступность backend.");
+  }
+
+  if (!loading && !error && courses.length === 0) {
+    items.push("Каталог: нет опубликованных программ для публичной витрины.");
+  }
+
+  if (normalizedQuery) {
+    items.push("Поиск: применён текстовый фильтр по названию, slug, описанию, формату или документу.");
+  }
+
+  if (formatFilter !== "all") {
+    items.push("Формат: применён фильтр по формату обучения.");
+  }
+
+  if (!loading && !error && courses.length > 0 && filteredCourses.length === 0) {
+    items.push("Выдача: по текущим условиям программы не найдены, стоит сбросить фильтры.");
+  }
+
+  if (!formatOptions.length && courses.length > 0) {
+    items.push("Форматы: у программ не заполнены форматы, фильтрация по формату ограничена.");
+  }
+
+  if (!user) {
+    items.push("Самозапись: пользователь не авторизован, карточка курса ведёт к регистрации перед записью.");
+  }
+
+  if (user && accountCourses.length === 0) {
+    items.push("Самозапись: у пользователя пока нет записей на программы из каталога.");
+  }
+
+  if (assignedEnrollmentsCount > 0) {
+    items.push("Назначения: есть назначенные программы, которые ожидают старта обучения.");
+  }
+
+  if (activeEnrollmentsCount > 0) {
+    items.push("Назначения: есть активные программы, переход из каталога ведёт в личный кабинет.");
+  }
+
+  if (completedEnrollmentsCount > 0) {
+    items.push("Завершение: есть завершённые программы, проверьте итоговые документы в личном кабинете.");
+  }
+
+  return [...new Set(items)];
+}
+
+function CatalogDiagnostics({
+  courses,
+  filteredCourses,
+  accountCourses,
+  query,
+  formatFilter,
+  loading,
+  error,
+  user,
+  formatOptions,
+  diagnostics,
+}) {
+  return (
+    <section
+      data-testid="catalog-public-diagnostics"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Диагностика каталога
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            Публичный каталог и самозапись
+          </h2>
+        </div>
+
+        <span
+          data-testid="catalog-public-status"
+          className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200"
+        >
+          {loading ? "Загрузка" : error ? "Ошибка" : `${filteredCourses.length} из ${courses.length}`}
+        </span>
+      </div>
+
+      <div
+        data-testid="catalog-public-summary"
+        className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Всего программ
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {courses.length}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            В выдаче
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {filteredCourses.length}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Форматы
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {formatOptions.length || "—"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Мои записи
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {user ? accountCourses.length : "Требуется вход"}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="catalog-public-filters"
+        className="mt-5 grid gap-3 md:grid-cols-2"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Поисковый запрос
+          </div>
+          <div className="mt-2 break-all font-semibold text-slate-900">
+            {query.trim() || "Без поиска"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Фильтр формата
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {formatFilter === "all" ? "Все форматы" : formatFilter}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="catalog-public-attention"
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          error || (!loading && !error && filteredCourses.length === 0)
+            ? "bg-amber-50 text-amber-900 ring-amber-200"
+            : "bg-green-50 text-green-800 ring-green-200"
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="font-semibold text-slate-900">
+            Что требует внимания в каталоге
+          </div>
+          <span
+            data-testid="catalog-public-attention-count"
+            className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+          >
+            Пунктов диагностики: {diagnostics.length}
+          </span>
+        </div>
+
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          {diagnostics.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div
+        data-testid="catalog-public-links"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        <button
+          type="button"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+        >
+          Личный кабинет
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("verify-document")}
+          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Проверить документ
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function CatalogPage({ onPageChange, onOpenCourse, user }) {
   const [courses, setCourses] = useState([]);
   const [accountCourses, setAccountCourses] = useState([]);
@@ -113,6 +335,22 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
       return matchesQuery && matchesFormat;
     });
   }, [courses, formatFilter, query]);
+
+  const catalogDiagnostics = useMemo(
+    () =>
+      getCatalogDiagnostics({
+        courses,
+        filteredCourses,
+        accountCourses,
+        query,
+        formatFilter,
+        loading,
+        error,
+        user,
+        formatOptions,
+      }),
+    [courses, filteredCourses, accountCourses, query, formatFilter, loading, error, user, formatOptions]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -214,6 +452,20 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
           {user && <span>Мои записи в каталоге: {accountCourses.length}</span>}
         </div>
       </section>
+
+      <CatalogDiagnostics
+        courses={courses}
+        filteredCourses={filteredCourses}
+        accountCourses={accountCourses}
+        query={query}
+        formatFilter={formatFilter}
+        loading={loading}
+        error={error}
+        user={user}
+        formatOptions={formatOptions}
+        diagnostics={catalogDiagnostics}
+        onPageChange={onPageChange}
+      />
 
       {loading ? (
         <div className="rounded-2xl bg-white p-6 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">

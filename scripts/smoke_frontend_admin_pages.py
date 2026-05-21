@@ -201,6 +201,34 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/CatalogPage.jsx",
+        [
+            "function getCatalogDiagnostics",
+            "function CatalogDiagnostics",
+            "catalogDiagnostics",
+            "catalog-public-diagnostics",
+            "catalog-public-status",
+            "catalog-public-summary",
+            "catalog-public-filters",
+            "catalog-public-attention",
+            "catalog-public-attention-count",
+            "catalog-public-links",
+            "Диагностика каталога",
+            "Публичный каталог и самозапись",
+            "Что требует внимания в каталоге",
+            "Каталог: список публичных программ загружается.",
+            "Каталог: не удалось загрузить публичные программы",
+            "Поиск: применён текстовый фильтр",
+            "Формат: применён фильтр по формату обучения.",
+            "Самозапись: пользователь не авторизован",
+            "Личный кабинет",
+            "Проверить документ",
+            "<CatalogDiagnostics",
+            "getCatalogDiagnostics({",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/VerifyDocumentPage.jsx",
         [
             "function getPublicVerificationDiagnostics",
