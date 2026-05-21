@@ -1199,3 +1199,49 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.51 - следующий функциональный блок после стабилизации операционного центра пользователей
 ```
+
+---
+
+## Checkpoint 6.51 - операционный центр ролей и прав
+
+Контур операционного контроля ролей и прав стабилизирован.
+
+Закрыто:
+
+- 6.51.1 - Dashboard: сценарий `Операционный центр ролей и прав`
+- 6.51.2 - RoleDetailPanel: диагностика роли, permissions и связанных назначений
+- 6.51.3 - smoke-покрытие прямых маршрутов операционного центра ролей и прав
+- 6.51.4 - финальная стабилизация блока операционного центра ролей и прав
+
+Результат:
+
+- Dashboard содержит отдельный сценарий операционного контроля RBAC;
+- карточка роли показывает диагностику типа роли, защиты системных ролей, описания и состава permissions;
+- добавлены быстрые переходы к пользователям с ролью, permissions, admin-правам и аудиту роли;
+- прямые маршруты операционного центра ролей и прав покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/roles?type=system`
+- `/admin/roles?type=custom`
+- `/admin/roles?q=admin`
+- `/admin/permissions?group=admin`
+- `/admin/permissions?group=audit`
+- `/admin/users?role=admin`
+- `/admin/audit-events?entity_type=role`
+- `/admin/audit-events?entity_type=permission`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.52 - следующий функциональный блок после стабилизации операционного центра ролей и прав
+```
