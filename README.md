@@ -1789,3 +1789,71 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.62 - следующий функциональный блок после стабилизации административного каталога курсов
 ```
+
+---
+
+## Checkpoint 6.62 - операционный центр административных назначений обучения
+
+Контур административных назначений обучения, статусов assigned/active/completed/cancelled, action_required, групповых назначений, связей с пользователем, организацией, группой, курсом, завершения обучения и итоговых документов стабилизирован.
+
+Закрыто:
+
+- 6.62.1 - Dashboard: сценарий `Операционный центр административных назначений обучения`
+- 6.62.2 - AdminEnrollmentsPage: диагностика административных назначений обучения
+- 6.62.3 - smoke-покрытие прямых маршрутов административных назначений обучения
+- 6.62.4 - финальная стабилизация блока административных назначений обучения
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля административных назначений обучения;
+- AdminEnrollmentsPage показывает диагностический блок назначений;
+- диагностируются статусы assigned/active/completed/cancelled, action_required, активные фильтры, связи с организацией и учебной группой;
+- отображаются проблемные состояния: назначения без организации, без группы, отсутствие started_at/completed_at, отсутствие активных курсов или активных групп;
+- отображаются текущие операции: создание одиночного назначения, массовое назначение группе, редактирование, завершение и удаление;
+- прямые маршруты назначений, фильтров, групп, пользователей, организаций, документов и аудита покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/enrollments`
+- `/admin/enrollments?status=assigned`
+- `/admin/enrollments?status=active`
+- `/admin/enrollments?status=completed`
+- `/admin/enrollments?status=cancelled`
+- `/admin/enrollments?action_required=true`
+- `/admin/enrollments?q=__missing_smoke_enrollment_query__`
+- `/admin/enrollments?user_id=00000000-0000-0000-0000-000000000000`
+- `/admin/enrollments?course_id=00000000-0000-0000-0000-000000000000`
+- `/admin/enrollments?organization_id=00000000-0000-0000-0000-000000000000`
+- `/admin/enrollments?learning_group_id=00000000-0000-0000-0000-000000000000`
+- `/admin/enrollments?status=assigned&action_required=true`
+- `/admin/enrollments?status=completed&action_required=true`
+- `/admin/courses?is_active=true`
+- `/admin/groups`
+- `/admin/groups?active=true`
+- `/admin/users`
+- `/admin/organizations`
+- `/admin/documents?status=draft`
+- `/admin/documents?status=available`
+- `/admin/documents?action_required=true`
+- `/admin/audit-events?entity_type=enrollment`
+- `/admin/audit-events?entity_type=document`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.63 - следующий функциональный блок после стабилизации административных назначений обучения
+```
