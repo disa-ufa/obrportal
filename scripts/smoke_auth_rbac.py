@@ -1285,6 +1285,18 @@ def main() -> int:
         ("/admin/documents?status=available", "course self-enrollment available documents"),
         ("/admin/audit-events?entity_type=course", "course self-enrollment audit courses"),
         ("/admin/audit-events?entity_type=enrollment", "course self-enrollment audit enrollments"),
+        ("/account", "learning progress account page"),
+        ("/catalog", "learning progress catalog page"),
+        ("/verify-document", "learning progress verify document page"),
+        ("/admin/enrollments?status=assigned", "learning progress assigned enrollments"),
+        ("/admin/enrollments?status=active", "learning progress active enrollments"),
+        ("/admin/enrollments?status=completed", "learning progress completed enrollments"),
+        ("/admin/enrollments?action_required=true", "learning progress action required enrollments"),
+        ("/admin/documents?status=draft", "learning progress draft documents"),
+        ("/admin/documents?status=available", "learning progress available documents"),
+        ("/admin/documents?action_required=true", "learning progress action required documents"),
+        ("/admin/audit-events?entity_type=enrollment", "learning progress audit enrollments"),
+        ("/admin/audit-events?entity_type=document", "learning progress audit documents"),
     ]
 
     for route, label in admin_filtered_frontend_routes:
