@@ -921,6 +921,27 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-admin-course-catalog-flow"
+              title="Операционный центр административного каталога курсов"
+              description="Контроль активных и неактивных курсов, модулей, уроков, обязательных материалов, самозаписи, назначений, завершений и итоговых документов."
+              links={[
+                { label: "Реестр курсов", to: buildCoursesPath() },
+                { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
+                { label: "Неактивные курсы", to: buildCoursesPath({ is_active: "false" }) },
+                { label: "Публичный каталог", to: "/catalog" },
+                { label: "Самозапись слушателей", to: "/catalog" },
+                { label: "Все назначения", to: buildEnrollmentsPath() },
+                { label: "Активное обучение", to: buildEnrollmentsPath({ status: "active" }) },
+                { label: "Завершённое обучение", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
+                { label: "Итоговые документы", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Аудит курсов", to: buildAuditPath({ entity_type: "course" }) },
+                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
