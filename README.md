@@ -1608,3 +1608,60 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.59 - следующий функциональный блок после стабилизации итоговых документов после обучения
 ```
+
+---
+
+## Checkpoint 6.59 - операционный центр публичной проверки и QR-документов
+
+Контур публичной проверки документов, QR-ссылок, проверки по номеру/коду, статусов available/revoked/draft, ошибок поиска и аудита операций с документами стабилизирован.
+
+Закрыто:
+
+- 6.59.1 - Dashboard: сценарий `Операционный центр публичной проверки и QR-документов`
+- 6.59.2 - VerifyDocumentPage: диагностика публичной проверки, QR-ссылок и статусов документа
+- 6.59.3 - smoke-покрытие прямых маршрутов операционного центра публичной проверки и QR-документов
+- 6.59.4 - финальная стабилизация блока публичной проверки и QR-документов
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля публичной проверки и QR-документов;
+- VerifyDocumentPage показывает операционный QR-блок проверки по номеру, коду и QR-ссылке;
+- диагностируются текущий запрос, режим проверки, статус реестра, готовность QR, наличие номера/кода и проблемные статусы;
+- публичная проверка учитывает published/available, draft, revoked, ошибки поиска и отсутствие результата;
+- прямые маршруты `/verify-document`, query-проверок, документов и аудита покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/verify-document`
+- `/verify-document?number=SMOKE-NOT-FOUND`
+- `/verify-document?code=SMOKE-NOT-FOUND`
+- `/account`
+- `/catalog`
+- `/admin/documents?status=available`
+- `/admin/documents?status=draft`
+- `/admin/documents?status=revoked`
+- `/admin/documents?action_required=true`
+- `/admin/documents?document_type=certificate`
+- `/admin/audit-events?entity_type=document`
+- `/admin/audit-events?action=admin.document_regenerated`
+- `/admin/audit-events?action=admin.document_revoked`
+- `/admin/audit-events?action=admin.document_restored`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_document_generation_flow.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.60 - следующий функциональный блок после стабилизации публичной проверки и QR-документов
+```
