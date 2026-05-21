@@ -880,6 +880,26 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-public-verification-qr-flow"
+              title="Операционный центр публичной проверки и QR-документов"
+              description="Контроль проверки по номеру и коду, QR-ссылок, статусов available/revoked/draft, ошибок поиска и аудита операций с документами."
+              links={[
+                { label: "Публичная проверка", to: "/verify-document" },
+                { label: "Проверка по номеру", to: "/verify-document?number=SMOKE-NOT-FOUND" },
+                { label: "Проверка по коду", to: "/verify-document?code=SMOKE-NOT-FOUND" },
+                { label: "Опубликованные документы", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Черновики не проверяются", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
+                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Личный кабинет", to: "/account" },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
+                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
+                { label: "Восстановление документов", to: buildAuditPath({ action: "admin.document_restored" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
