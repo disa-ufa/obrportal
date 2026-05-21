@@ -808,6 +808,24 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-account-access-flow"
+              title="Операционный центр личного кабинета"
+              description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
+              links={[
+                { label: "Личный кабинет", to: "/account" },
+                { label: "Каталог курсов", to: "/catalog" },
+                { label: "Публичная проверка документа", to: "/verify-document" },
+                { label: "Активные назначения", to: buildEnrollmentsPath({ status: "active" }) },
+                { label: "Завершённые назначения", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Документы пользователя", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
+                { label: "Аудит пользователей", to: buildAuditPath({ entity_type: "user" }) },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-enrollment-operations-flow"
               title="Операционный центр назначений"
               description="Старт, завершение, выпуск документов и аудит назначений, которые требуют контроля администратора."
