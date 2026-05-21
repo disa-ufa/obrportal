@@ -50,6 +50,37 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/GroupsPage.jsx",
+        [
+            "function getLearningGroupOperationsStats",
+            "function getLearningGroupOperationsDiagnostics",
+            "function LearningGroupOperationsDiagnostics",
+            "learningGroupOperationsStats",
+            "learningGroupOperationsDiagnostics",
+            "learning-group-operations-diagnostics",
+            "learning-group-operations-summary",
+            "learning-group-operations-quality",
+            "learning-group-operations-attention",
+            "learning-group-operations-attention-count",
+            "learning-group-operations-links",
+            "Диагностика операционного центра учебных групп",
+            "Контроль активных и неактивных групп, организаций, кодов, описаний, участников, назначений, документов и аудита",
+            "Что требует внимания в учебных группах",
+            "Статус: есть неактивные учебные группы.",
+            "Организации: нет доступных организаций для создания учебных групп.",
+            "Код группы: часть групп не имеет кода.",
+            "Описание: часть групп не имеет описания.",
+            "Активные группы",
+            "Неактивные группы",
+            "Проблемные назначения",
+            "Проблемные документы",
+            "Аудит групп",
+            "<LearningGroupOperationsDiagnostics",
+            "getLearningGroupOperationsDiagnostics({",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/AdminEnrollmentsPage.jsx",
         [
             "function getAdminEnrollmentOperationsStats",

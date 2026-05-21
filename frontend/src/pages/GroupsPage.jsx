@@ -26,6 +26,7 @@ import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterBut
 import { AdminFormField as Field } from "../components/admin/AdminFormField";
 import {
   TABLE_LINK_CLASS,
+  buildAuditPath,
   buildDocumentsPath,
   buildEnrollmentsPath,
   buildGroupsPath,
@@ -264,6 +265,292 @@ function getGroupAttentionItems(group, organizationsMap) {
   }
 
   return [...new Set(items)];
+}
+
+function countGroupsWhere(items, predicate) {
+  return Array.isArray(items) ? items.filter(predicate).length : 0;
+}
+
+function getLearningGroupOperationsStats({
+  groups,
+  filteredGroups,
+  groupCounts,
+  organizations,
+  filters,
+}) {
+  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+    if (key === "organization_id") {
+      return value && value !== "all";
+    }
+
+    if (key === "status") {
+      return value && value !== "all";
+    }
+
+    return Boolean(String(value || "").trim());
+  }).length;
+
+  return {
+    total: groups.length,
+    matched: groupCounts.all || 0,
+    displayed: filteredGroups.length,
+    active: groupCounts.active || 0,
+    inactive: groupCounts.inactive || 0,
+    withOrganization: countGroupsWhere(filteredGroups, (group) => group.organization_id),
+    withoutOrganization: countGroupsWhere(filteredGroups, (group) => !group.organization_id),
+    withoutCode: countGroupsWhere(filteredGroups, (group) => !String(group.code || "").trim()),
+    withoutDescription: countGroupsWhere(
+      filteredGroups,
+      (group) => !String(group.description || "").trim()
+    ),
+    organizationsTotal: organizations.length,
+    activeFiltersCount,
+    filters,
+  };
+}
+
+function getLearningGroupOperationsDiagnostics({
+  operationsStats,
+  loading,
+  showCreateForm,
+  selectedGroup,
+  selectedGroupLoading,
+  selectedGroupError,
+}) {
+  const items = [];
+
+  if (loading) {
+    items.push("Загрузка: реестр учебных групп сейчас обновляется.");
+  }
+
+  if (!loading && operationsStats.displayed === 0) {
+    items.push("Реестр: по текущим фильтрам учебные группы не найдены.");
+  }
+
+  if (operationsStats.activeFiltersCount > 0) {
+    items.push(`Фильтры: включено активных фильтров - ${operationsStats.activeFiltersCount}.`);
+  }
+
+  if (operationsStats.inactive > 0) {
+    items.push("Статус: есть неактивные учебные группы.");
+  }
+
+  if (operationsStats.organizationsTotal === 0) {
+    items.push("Организации: нет доступных организаций для создания учебных групп.");
+  }
+
+  if (operationsStats.withoutOrganization > 0) {
+    items.push("Организация: часть групп не привязана к организации.");
+  }
+
+  if (operationsStats.withoutCode > 0) {
+    items.push("Код группы: часть групп не имеет кода.");
+  }
+
+  if (operationsStats.withoutDescription > 0) {
+    items.push("Описание: часть групп не имеет описания.");
+  }
+
+  if (showCreateForm) {
+    items.push("Создание: открыта форма создания учебной группы.");
+  }
+
+  if (selectedGroupLoading) {
+    items.push("Карточка группы: загружается детальная информация.");
+  }
+
+  if (selectedGroupError) {
+    items.push("Карточка группы: последняя загрузка завершилась ошибкой.");
+  }
+
+  if (selectedGroup) {
+    items.push("Карточка группы: открыта выбранная учебная группа.");
+  }
+
+  return [...new Set(items)];
+}
+
+function LearningGroupOperationsDiagnostics({
+  operationsStats,
+  diagnostics,
+}) {
+  return (
+    <SectionCard
+      title="Диагностика операционного центра учебных групп"
+      subtitle="Контроль активных и неактивных групп, организаций, кодов, описаний, участников, назначений, документов и аудита"
+    >
+      <div data-testid="learning-group-operations-diagnostics" className="space-y-5">
+        <div
+          data-testid="learning-group-operations-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Всего / найдено / показано
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.total} / {operationsStats.matched} / {operationsStats.displayed}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Активные / неактивные
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.active} / {operationsStats.inactive}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Организации
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.organizationsTotal}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Активные фильтры
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {operationsStats.activeFiltersCount}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="learning-group-operations-quality"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              С организацией / без
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.withOrganization} / {operationsStats.withoutOrganization}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Без кода
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.withoutCode}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Без описания
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.withoutDescription}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              К массовому назначению
+            </div>
+            <div className="mt-2 font-semibold text-slate-900">
+              {operationsStats.active}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="learning-group-operations-attention"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+            diagnostics.length
+              ? "bg-amber-50 text-amber-900 ring-amber-200"
+              : "bg-green-50 text-green-800 ring-green-200"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="font-semibold text-slate-900">
+              Что требует внимания в учебных группах
+            </div>
+            <span
+              data-testid="learning-group-operations-attention-count"
+              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+            >
+              Пунктов диагностики: {diagnostics.length}
+            </span>
+          </div>
+
+          {diagnostics.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {diagnostics.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2">
+              Критичных замечаний по учебным группам не найдено.
+            </p>
+          )}
+        </div>
+
+        <div
+          data-testid="learning-group-operations-links"
+          className="flex flex-wrap gap-3"
+        >
+          <Link
+            to={buildGroupsPath({ status: "active" })}
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Активные группы
+          </Link>
+
+          <Link
+            to={buildGroupsPath({ status: "inactive" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Неактивные группы
+          </Link>
+
+          <Link
+            to={buildOrganizationsPath()}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Организации
+          </Link>
+
+          <Link
+            to={buildUsersPath()}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Пользователи
+          </Link>
+
+          <Link
+            to={buildEnrollmentsPath({ action_required: "true" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Проблемные назначения
+          </Link>
+
+          <Link
+            to={buildDocumentsPath({ action_required: "true" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Проблемные документы
+          </Link>
+
+          <Link
+            to={buildAuditPath({ entity_type: "learning_group" })}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Аудит групп
+          </Link>
+        </div>
+      </div>
+    </SectionCard>
+  );
 }
 
 function LearningGroupForm({
@@ -991,6 +1278,47 @@ export function GroupsPage({
   const hasActiveFilters =
     Boolean(searchQuery.trim()) || organizationFilter !== "all" || statusFilter !== "all";
 
+  const learningGroupOperationsFilters = useMemo(
+    () => ({
+      q: searchQuery,
+      organization_id: organizationFilter,
+      status: statusFilter,
+    }),
+    [searchQuery, organizationFilter, statusFilter]
+  );
+
+  const learningGroupOperationsStats = useMemo(
+    () =>
+      getLearningGroupOperationsStats({
+        groups,
+        filteredGroups,
+        groupCounts,
+        organizations,
+        filters: learningGroupOperationsFilters,
+      }),
+    [groups, filteredGroups, groupCounts, organizations, learningGroupOperationsFilters]
+  );
+
+  const learningGroupOperationsDiagnostics = useMemo(
+    () =>
+      getLearningGroupOperationsDiagnostics({
+        operationsStats: learningGroupOperationsStats,
+        loading,
+        showCreateForm,
+        selectedGroup,
+        selectedGroupLoading,
+        selectedGroupError,
+      }),
+    [
+      learningGroupOperationsStats,
+      loading,
+      showCreateForm,
+      selectedGroup,
+      selectedGroupLoading,
+      selectedGroupError,
+    ]
+  );
+
   function buildGroupFilters(overrides = {}) {
     return {
       q: overrides.q ?? searchQuery,
@@ -1131,6 +1459,11 @@ export function GroupsPage({
               <span>Показано групп: {filteredGroups.length}</span>
               <span>Всего по текущему поиску и организации: {groupCounts.all || 0}</span>
             </div>
+
+            <LearningGroupOperationsDiagnostics
+              operationsStats={learningGroupOperationsStats}
+              diagnostics={learningGroupOperationsDiagnostics}
+            />
 
             {loading ? (
               <LoadingBlock text="Загружаем группы..." />
