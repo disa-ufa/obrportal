@@ -467,6 +467,18 @@ def main() -> None:
             "Восстановление документов",
             "buildAuditPath({ action: \"admin.document_revoked\" })",
             "buildAuditPath({ action: \"admin.document_restored\" })",
+            "dashboard-public-catalog-flow",
+            "Операционный центр каталога и публичных курсов",
+            "Контроль публичного каталога, карточек курсов, самозаписи, активных программ, назначений и итоговых документов.",
+            "Публичный каталог",
+            "Неактивные курсы",
+            "Все назначения",
+            "Документы выпускников",
+            "Публичная проверка документов",
+            "Аудит курсов",
+            "buildCoursesPath({ is_active: \"true\" })",
+            "buildCoursesPath({ is_active: \"false\" })",
+            "buildAuditPath({ entity_type: \"course\" })",
         ],
     )
 
