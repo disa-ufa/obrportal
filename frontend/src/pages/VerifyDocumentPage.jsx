@@ -176,6 +176,176 @@ function getPublicVerificationDiagnostics({
   return [...new Set(items)];
 }
 
+function getPublicVerificationSourceStats({
+  normalizedQuery,
+  submittedQuery,
+  result,
+  loading,
+  error,
+  notFound,
+}) {
+  const queryValue = submittedQuery || normalizedQuery || "";
+  const queryMode = result?.verification_code
+    ? "Код проверки"
+    : result?.document_number
+      ? "Номер документа"
+      : queryValue
+        ? "Номер или код"
+        : "Не задан";
+
+  const registryStatus = result
+    ? getRegistryStatusLabel(result.registry_status)
+    : notFound
+      ? "Не найден"
+      : error
+        ? "Ошибка"
+        : loading
+          ? "Проверяется"
+          : "Ожидает запроса";
+
+  return {
+    queryValue,
+    queryMode,
+    registryStatus,
+    hasResult: Boolean(result),
+    hasVerificationCode: Boolean(result?.verification_code),
+    hasDocumentNumber: Boolean(result?.document_number),
+    qrReady: Boolean(result?.verification_code || result?.document_number),
+    isAvailable: result?.registry_status === "available",
+    isRevoked: result?.registry_status === "revoked",
+    isDraft: result?.registry_status === "draft",
+    hasProblem: Boolean(error || notFound || result?.registry_status === "revoked" || result?.registry_status === "draft"),
+  };
+}
+
+function PublicVerificationQrOperationsPanel({
+  sourceStats,
+  onPageChange,
+}) {
+  return (
+    <section
+      data-testid="public-verification-qr-operations-panel"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Операционный контроль QR
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            Проверка по номеру, коду и QR-ссылке
+          </h2>
+        </div>
+
+        <span
+          data-testid="public-verification-qr-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
+            sourceStats.hasProblem
+              ? "bg-amber-50 text-amber-800 ring-amber-200"
+              : sourceStats.isAvailable
+                ? "bg-green-50 text-green-700 ring-green-200"
+                : "bg-slate-100 text-slate-700 ring-slate-200"
+          }`}
+        >
+          {sourceStats.registryStatus}
+        </span>
+      </div>
+
+      <div
+        data-testid="public-verification-qr-summary"
+        className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Режим проверки
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {sourceStats.queryMode}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Запрос
+          </div>
+          <div className="mt-2 break-all font-semibold text-slate-900">
+            {sourceStats.queryValue || "—"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            QR готов
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {sourceStats.qrReady ? "Да" : "Нет"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Код / номер
+          </div>
+          <div className="mt-2 font-semibold text-slate-900">
+            {sourceStats.hasVerificationCode ? "Код есть" : sourceStats.hasDocumentNumber ? "Номер есть" : "Нет данных"}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="public-verification-qr-attention"
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          sourceStats.hasProblem
+            ? "bg-amber-50 text-amber-900 ring-amber-200"
+            : sourceStats.isAvailable
+              ? "bg-green-50 text-green-800 ring-green-200"
+              : "bg-slate-50 text-slate-700 ring-slate-200"
+        }`}
+      >
+        <div className="font-semibold text-slate-900">
+          Контрольные правила публичной проверки
+        </div>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>Опубликованный документ подтверждается публичным реестром.</li>
+          <li>Черновик не должен подтверждаться публичной проверкой.</li>
+          <li>Отозванный документ показывается как недействующий.</li>
+          <li>QR-ссылка считается готовой, если есть номер документа или код проверки.</li>
+          <li>Публичная страница не раскрывает файл документа и личный кабинет пользователя.</li>
+        </ul>
+      </div>
+
+      <div
+        data-testid="public-verification-qr-links"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        <button
+          type="button"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          Личный кабинет
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("catalog")}
+          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Каталог курсов
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("contacts")}
+          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Контакты организации
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function PublicVerificationDiagnostics({
   normalizedQuery,
   submittedQuery,
@@ -432,6 +602,19 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
     [normalizedQuery, submittedQuery, result, loading, error, notFound]
   );
 
+  const verificationSourceStats = useMemo(
+    () =>
+      getPublicVerificationSourceStats({
+        normalizedQuery,
+        submittedQuery,
+        result,
+        loading,
+        error,
+        notFound,
+      }),
+    [normalizedQuery, submittedQuery, result, loading, error, notFound]
+  );
+
   async function runVerification(rawValue, options = {}) {
     const value = String(rawValue || "").trim();
 
@@ -551,6 +734,11 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
         error={error}
         notFound={notFound}
         diagnostics={verificationDiagnostics}
+      />
+
+      <PublicVerificationQrOperationsPanel
+        sourceStats={verificationSourceStats}
+        onPageChange={onPageChange}
       />
 
       {error && (

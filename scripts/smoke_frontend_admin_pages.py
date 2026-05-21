@@ -201,6 +201,33 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/VerifyDocumentPage.jsx",
+        [
+            "function getPublicVerificationSourceStats",
+            "function PublicVerificationQrOperationsPanel",
+            "verificationSourceStats",
+            "public-verification-qr-operations-panel",
+            "public-verification-qr-status",
+            "public-verification-qr-summary",
+            "public-verification-qr-attention",
+            "public-verification-qr-links",
+            "Операционный контроль QR",
+            "Проверка по номеру, коду и QR-ссылке",
+            "Контрольные правила публичной проверки",
+            "Опубликованный документ подтверждается публичным реестром.",
+            "Черновик не должен подтверждаться публичной проверкой.",
+            "Отозванный документ показывается как недействующий.",
+            "QR-ссылка считается готовой",
+            "Публичная страница не раскрывает файл документа",
+            "Личный кабинет",
+            "Каталог курсов",
+            "Контакты организации",
+            "<PublicVerificationQrOperationsPanel",
+            "getPublicVerificationSourceStats({",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/AccountPage.jsx",
         [
             "function getCompletionDocumentStats",
