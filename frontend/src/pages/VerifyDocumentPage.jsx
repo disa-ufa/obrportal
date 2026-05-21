@@ -119,6 +119,169 @@ function getVerificationTone(result) {
   };
 }
 
+function getPublicVerificationDiagnostics({
+  normalizedQuery,
+  submittedQuery,
+  result,
+  loading,
+  error,
+  notFound,
+}) {
+  const items = [];
+
+  if (!normalizedQuery && !submittedQuery && !result) {
+    items.push("Запрос: номер документа или код проверки ещё не введён.");
+  }
+
+  if (normalizedQuery && !submittedQuery && !result && !loading) {
+    items.push("Запрос: значение введено, нажмите кнопку проверки.");
+  }
+
+  if (loading) {
+    items.push("Проверка: запрос к публичному реестру выполняется.");
+  }
+
+  if (error) {
+    items.push("Ошибка: проверка не завершилась, повторите запрос или обратитесь в организацию.");
+  }
+
+  if (notFound) {
+    items.push("Реестр: документ по введённому номеру или коду проверки не найден.");
+  }
+
+  if (result?.registry_status === "available") {
+    items.push("Статус: документ опубликован и подтверждается публичным реестром.");
+  }
+
+  if (result?.registry_status === "revoked") {
+    items.push("Статус: документ отозван, его нельзя считать действующим.");
+  }
+
+  if (result && result.registry_status !== "available" && result.registry_status !== "revoked") {
+    items.push("Статус: документ найден, но публичное использование требует уточнения.");
+  }
+
+  if (result && !result.document_number) {
+    items.push("Номер: в результате проверки нет номера документа.");
+  }
+
+  if (result && !result.verification_code) {
+    items.push("QR/код: код проверки отсутствует, публичная QR-ссылка будет неполной.");
+  }
+
+  if (result?.verification_code) {
+    items.push("QR/код: код проверки доступен, можно использовать публичную ссылку и QR-код.");
+  }
+
+  return [...new Set(items)];
+}
+
+function PublicVerificationDiagnostics({
+  normalizedQuery,
+  submittedQuery,
+  result,
+  loading,
+  error,
+  notFound,
+  diagnostics,
+}) {
+  const statusText = result
+    ? getRegistryStatusLabel(result.registry_status)
+    : notFound
+      ? "Не найден"
+      : error
+        ? "Ошибка проверки"
+        : loading
+          ? "Проверяется"
+          : "Ожидает запроса";
+
+  return (
+    <section
+      data-testid="public-verification-diagnostics"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Диагностика проверки
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            Публичная проверка документа
+          </h2>
+        </div>
+
+        <span
+          data-testid="public-verification-status"
+          className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200"
+        >
+          {statusText}
+        </span>
+      </div>
+
+      <div
+        data-testid="public-verification-summary"
+        className="mt-5 grid gap-3 md:grid-cols-3"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Текущий запрос
+          </div>
+          <div className="mt-2 break-all font-semibold text-slate-900">
+            {normalizedQuery || submittedQuery || "—"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Последняя проверка
+          </div>
+          <div className="mt-2 break-all font-semibold text-slate-900">
+            {submittedQuery || "—"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            QR/код
+          </div>
+          <div className="mt-2 break-all font-semibold text-slate-900">
+            {result?.verification_code || "—"}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="public-verification-attention"
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          error || notFound || result?.registry_status === "revoked"
+            ? "bg-amber-50 text-amber-900 ring-amber-200"
+            : result?.registry_status === "available"
+              ? "bg-green-50 text-green-800 ring-green-200"
+              : "bg-slate-50 text-slate-700 ring-slate-200"
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="font-semibold text-slate-900">
+            Что показывает проверка
+          </div>
+          <span
+            data-testid="public-verification-attention-count"
+            className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+          >
+            Пунктов диагностики: {diagnostics.length}
+          </span>
+        </div>
+
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          {diagnostics.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function InfoCard({ title, children }) {
   return (
     <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
@@ -256,6 +419,19 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
 
   const normalizedQuery = useMemo(() => query.trim(), [query]);
 
+  const verificationDiagnostics = useMemo(
+    () =>
+      getPublicVerificationDiagnostics({
+        normalizedQuery,
+        submittedQuery,
+        result,
+        loading,
+        error,
+        notFound,
+      }),
+    [normalizedQuery, submittedQuery, result, loading, error, notFound]
+  );
+
   async function runVerification(rawValue, options = {}) {
     const value = String(rawValue || "").trim();
 
@@ -366,6 +542,16 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
           </div>
         </form>
       </section>
+
+      <PublicVerificationDiagnostics
+        normalizedQuery={normalizedQuery}
+        submittedQuery={submittedQuery}
+        result={result}
+        loading={loading}
+        error={error}
+        notFound={notFound}
+        diagnostics={verificationDiagnostics}
+      />
 
       {error && (
         <div className="rounded-[2rem] bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200">

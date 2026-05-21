@@ -201,6 +201,32 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/pages/VerifyDocumentPage.jsx",
+        [
+            "function getPublicVerificationDiagnostics",
+            "function PublicVerificationDiagnostics",
+            "verificationDiagnostics",
+            "public-verification-diagnostics",
+            "public-verification-status",
+            "public-verification-summary",
+            "public-verification-attention",
+            "public-verification-attention-count",
+            "Диагностика проверки",
+            "Публичная проверка документа",
+            "Что показывает проверка",
+            "Запрос: номер документа или код проверки ещё не введён.",
+            "Запрос: значение введено, нажмите кнопку проверки.",
+            "Проверка: запрос к публичному реестру выполняется.",
+            "Реестр: документ по введённому номеру или коду проверки не найден.",
+            "Статус: документ опубликован и подтверждается публичным реестром.",
+            "Статус: документ отозван, его нельзя считать действующим.",
+            "QR/код: код проверки доступен, можно использовать публичную ссылку и QR-код.",
+            "getPublicVerificationDiagnostics({",
+            "<PublicVerificationDiagnostics",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/AccountPage.jsx",
         [
             "function getAccountAttentionItems",
