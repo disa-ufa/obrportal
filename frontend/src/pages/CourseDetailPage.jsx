@@ -1,4 +1,4 @@
-﻿import { formatApiError } from "../utils/apiErrors";
+import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { useMemo } from "react";
 import { enrollAccountCourse, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
