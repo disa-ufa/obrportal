@@ -1,5 +1,6 @@
-import { formatApiError } from "../utils/apiErrors";
-import { useEffect, useMemo, useState } from "react";
+﻿import { formatApiError } from "../utils/apiErrors";
+import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { enrollAccountCourse, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 
@@ -847,3 +848,4 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     </div>
   );
 }
+
