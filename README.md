@@ -1344,3 +1344,55 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.54 - следующий функциональный блок после стабилизации операционного центра личного кабинета
 ```
+
+---
+
+## Checkpoint 6.54 - операционный центр публичной проверки документов
+
+Контур публичной проверки документов, QR-ссылок, статусов и ошибок верификации стабилизирован.
+
+Закрыто:
+
+- 6.54.1 - Dashboard: сценарий `Операционный центр публичной проверки документов`
+- 6.54.2 - VerifyDocumentPage: диагностика публичной проверки, статусов и ошибок
+- 6.54.3 - smoke-покрытие прямых маршрутов операционного центра публичной проверки документов
+- 6.54.4 - финальная стабилизация блока операционного центра публичной проверки документов
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля публичной проверки документов;
+- VerifyDocumentPage показывает диагностику запроса, результата, статуса документа, QR/кода проверки, ошибок и not found;
+- диагностируются состояния `available`, `revoked`, неопубликованные/неподтверждённые документы, отсутствие номера и кода проверки;
+- публичная проверка по номеру и коду связана с QR/verification flow;
+- прямые маршруты публичной проверки и связанных административных списков покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/verify-document`
+- `/verify-document?number=SMOKE-NOT-FOUND`
+- `/verify-document?code=SMOKE-NOT-FOUND`
+- `/admin/documents?status=available`
+- `/admin/documents?status=draft`
+- `/admin/documents?status=revoked`
+- `/admin/documents?action_required=true`
+- `/admin/audit-events?entity_type=document`
+- `/admin/audit-events?action=admin.document_revoked`
+- `/admin/audit-events?action=admin.document_restored`
+- `/admin/audit-events?action=admin.document_regenerated`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.55 - следующий функциональный блок после стабилизации публичной проверки документов
+```
