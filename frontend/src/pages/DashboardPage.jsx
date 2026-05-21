@@ -964,6 +964,28 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-learning-group-operations-flow"
+              title="Операционный центр учебных групп"
+              description="Контроль активных и неактивных учебных групп, организаций, участников, групповых назначений, action_required, документов и аудита связей обучения."
+              links={[
+                { label: "Реестр групп", to: buildGroupsPath() },
+                { label: "Активные группы", to: buildGroupsPath({ active: "true" }) },
+                { label: "Неактивные группы", to: buildGroupsPath({ active: "false" }) },
+                { label: "Организации групп", to: buildOrganizationsPath() },
+                { label: "Пользователи групп", to: buildUsersPath() },
+                { label: "Активные назначения", to: buildEnrollmentsPath({ status: "active" }) },
+                { label: "Завершённые назначения", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
+                { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
+                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Аудит групп", to: buildAuditPath({ entity_type: "learning_group" }) },
+                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
+                { label: "Аудит организаций", to: buildAuditPath({ entity_type: "organization" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."

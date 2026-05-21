@@ -783,6 +783,18 @@ def main() -> None:
             "to: \"/admin/groups\"",
             "to: \"/admin/users\"",
             "to: \"/admin/organizations\"",
+            "dashboard-learning-group-operations-flow",
+            "Операционный центр учебных групп",
+            "Контроль активных и неактивных учебных групп, организаций, участников, групповых назначений, action_required, документов и аудита связей обучения.",
+            "Реестр групп",
+            "Пользователи групп",
+            "Аудит групп",
+            "buildGroupsPath()",
+            "buildGroupsPath({ active: \"true\" })",
+            "buildGroupsPath({ active: \"false\" })",
+            "buildOrganizationsPath()",
+            "buildUsersPath()",
+            "buildAuditPath({ entity_type: \"learning_group\" })",
         ],
     )
 
