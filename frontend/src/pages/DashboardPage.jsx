@@ -942,6 +942,28 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-admin-enrollment-operations-flow"
+              title="Операционный центр административных назначений обучения"
+              description="Контроль назначений assigned/active/completed, action_required, групповых назначений, связей с пользователем, организацией, группой и курсом, завершения обучения и итоговых документов."
+              links={[
+                { label: "Реестр назначений", to: buildEnrollmentsPath() },
+                { label: "Назначенные", to: buildEnrollmentsPath({ status: "assigned" }) },
+                { label: "В обучении", to: buildEnrollmentsPath({ status: "active" }) },
+                { label: "Завершённые", to: buildEnrollmentsPath({ status: "completed" }) },
+                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
+                { label: "Курсы для назначений", to: buildCoursesPath({ is_active: "true" }) },
+                { label: "Группы обучения", to: "/admin/groups" },
+                { label: "Пользователи", to: "/admin/users" },
+                { label: "Организации", to: "/admin/organizations" },
+                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
+                { label: "Итоговые документы", to: buildDocumentsPath({ status: "available" }) },
+                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
+                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
