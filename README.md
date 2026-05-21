@@ -1665,3 +1665,64 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.60 - следующий функциональный блок после стабилизации публичной проверки и QR-документов
 ```
+
+---
+
+## Checkpoint 6.60 - операционный центр административного реестра документов
+
+Контур административного реестра документов, фильтров, статусов, action_required, публикации, отзыва, восстановления, скачивания, регенерации PDF и аудита стабилизирован.
+
+Закрыто:
+
+- 6.60.1 - Dashboard: сценарий `Операционный центр административного реестра документов`
+- 6.60.2 - DocumentsPage: диагностика административного реестра документов
+- 6.60.3 - smoke-покрытие прямых маршрутов административного реестра документов
+- 6.60.4 - финальная стабилизация блока административного реестра документов
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля административного реестра документов;
+- DocumentsPage показывает диагностический блок реестра документов;
+- диагностируются фильтры, статусы draft/available/revoked, action_required, файлы, отсутствие файлов, авто PDF, PDF к публикации, номер/код проверки и связь с назначениями;
+- отображаются текущие операции: создание, редактирование, скачивание, регенерация PDF, загрузка истории PDF, смена статуса, отзыв и удаление;
+- прямые маршруты реестра документов, фильтров, завершённых назначений, публичной проверки и аудита документов покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/documents`
+- `/admin/documents?status=draft`
+- `/admin/documents?status=available`
+- `/admin/documents?status=revoked`
+- `/admin/documents?action_required=true`
+- `/admin/documents?document_type=certificate`
+- `/admin/documents?q=__missing_smoke_worklist_query__`
+- `/admin/documents?user_id=00000000-0000-0000-0000-000000000000`
+- `/admin/documents?organization_id=00000000-0000-0000-0000-000000000000`
+- `/admin/documents?enrollment_id=00000000-0000-0000-0000-000000000000`
+- `/admin/documents?status=draft&action_required=true`
+- `/admin/documents?status=revoked&action_required=true`
+- `/admin/enrollments?status=completed`
+- `/verify-document`
+- `/admin/audit-events?entity_type=document`
+- `/admin/audit-events?action=admin.document_created`
+- `/admin/audit-events?action=admin.document_regenerated`
+- `/admin/audit-events?action=admin.document_revoked`
+- `/admin/audit-events?action=admin.document_restored`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_document_generation_flow.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.61 - следующий функциональный блок после стабилизации административного реестра документов
+```
