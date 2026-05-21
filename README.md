@@ -1498,3 +1498,57 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.57 - следующий функциональный блок после стабилизации карточки курса и самозаписи
 ```
+
+---
+
+## Checkpoint 6.57 - операционный центр прохождения обучения и уроков
+
+Контур прохождения обучения, уроков, прогресса, обязательных материалов, завершения курса и итоговых документов стабилизирован.
+
+Закрыто:
+
+- 6.57.1 - Dashboard: сценарий `Операционный центр прохождения обучения и уроков`
+- 6.57.2 - AccountPage: диагностика прохождения обучения, уроков и завершения курса
+- 6.57.3 - smoke-покрытие прямых маршрутов операционного центра прохождения обучения и уроков
+- 6.57.4 - финальная стабилизация блока операционного центра прохождения обучения и уроков
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля прохождения обучения и уроков;
+- AccountPage показывает диагностику назначенных, активных и завершённых программ;
+- диагностируются открытая программа курса, общий прогресс, обязательные уроки, ошибки открытия программы и ошибки старта/завершения;
+- завершение курса связано с проверкой обязательных уроков и появлением черновика итогового документа;
+- личный кабинет связан с каталогом, документами, публичной проверкой, назначениями и аудитом;
+- прямые маршруты личного кабинета, назначений, документов и аудита покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/account`
+- `/catalog`
+- `/verify-document`
+- `/admin/enrollments?status=assigned`
+- `/admin/enrollments?status=active`
+- `/admin/enrollments?status=completed`
+- `/admin/enrollments?action_required=true`
+- `/admin/documents?status=draft`
+- `/admin/documents?status=available`
+- `/admin/documents?action_required=true`
+- `/admin/audit-events?entity_type=enrollment`
+- `/admin/audit-events?entity_type=document`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.58 - следующий функциональный блок после стабилизации прохождения обучения и уроков
+```
