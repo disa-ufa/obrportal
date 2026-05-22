@@ -444,6 +444,40 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_release_tag.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_PUBLICATION_SECTIONS",
+            "REQUIRED_PUBLICATION_COMMANDS",
+            "REQUIRED_CI_COMMANDS",
+            "def get_release_tag_diagnostics",
+            "missingPublicationSections",
+            "missingPublicationCommands",
+            "release tag diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        ".github/workflows/ci.yml",
+        [
+            "Run release tag guard",
+            "python scripts/check_release_tag.py",
+        ],
+    )
+
+    require_contains(
+        "docs/release-publication-checklist.md",
+        [
+            "# Release publication checklist",
+            "## Final publication order",
+            "## Release notes",
+            "## Post-release smoke",
+            "## Rollback checkpoint",
+            "git tag -a v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

@@ -60,6 +60,10 @@ jobs:
         run: |
           python scripts/check_release_candidate.py
 
+      - name: Run release tag guard
+        run: |
+          python scripts/check_release_tag.py
+
       - name: Show Docker versions
         run: |
           docker version
