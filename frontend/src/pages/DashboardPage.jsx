@@ -1059,6 +1059,28 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-frontend-smoke-guards-coverage-flow"
+              title="Операционный центр качества frontend smoke/guards coverage"
+              description="Контроль smoke/guard scripts, покрытия frontend/backend проверками, API error guard, mojibake guard, BOM/text encoding guard, bundle encoding и защиты от TODO/stub/not-implemented маркеров."
+              links={[
+                { label: "Frontend coverage guard", to: "/admin" },
+                { label: "Backend coverage guard", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
+                { label: "Frontend API error guard", to: buildDocumentsPath({ action_required: "true" }) },
+                { label: "Mojibake guard", to: "/catalog" },
+                { label: "Source BOM guard", to: "/" },
+                { label: "Text encoding guard", to: "/verify-document" },
+                { label: "Admin pages smoke", to: buildUsersPath({ activity: "inactive" }) },
+                { label: "Public pages smoke", to: "/contacts" },
+                { label: "Account page smoke", to: "/account" },
+                { label: "Hooks/layout smoke", to: "/organization-info" },
+                { label: "Utils/routes smoke", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
+                { label: "Documents smoke", to: buildDocumentsPath({ status: "available", type: "certificate" }) },
+                { label: "No TODO guard", to: "/__missing_routes_meta_public__" },
+                { label: "Bundle encoding guard", to: "/admin/__missing_shell_route__" },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
