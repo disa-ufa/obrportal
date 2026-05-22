@@ -2416,3 +2416,105 @@ python .\scripts\check_frontend_bundle_encoding.py
 ```text
 6.70 - следующий функциональный блок после стабилизации production readiness / release checklist
 ```
+
+---
+
+## Checkpoint 6.70 - операционный центр release versioning / changelog / deployment handoff
+
+Контур release versioning / changelog / deployment handoff стабилизирован: версия backend/frontend, changelog, release notes, tag-порядок, deployment handoff, rollback-команды, release checklist и post-release verification закрыты проверками.
+
+Закрыто:
+
+- 6.70.1 - Dashboard: сценарий `Операционный центр release versioning / changelog / deployment handoff`
+- 6.70.2 - диагностика release versioning / changelog / deployment handoff
+- 6.70.3 - smoke-покрытие прямых маршрутов release versioning / changelog / deployment handoff
+- 6.70.4 - финальная стабилизация блока release versioning / changelog / deployment handoff
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля release versioning / changelog / deployment handoff;
+- добавлен `CHANGELOG.md` для фиксации значимых изменений проекта;
+- добавлен `docs/release-handoff.md` с release checklist, deployment order, tag order, post-release verification и rollback order;
+- добавлен `scripts/check_release_versioning.py` для контроля версии backend/frontend, changelog и handoff-документа;
+- `.github/workflows/ci.yml` запускает `Run release versioning guard`;
+- `check_ci_local_gate.py` учитывает `check_release_versioning.py` как обязательную CI/local gate проверку;
+- `check_release_readiness.py` учитывает `check_release_versioning.py` как обязательную release readiness проверку;
+- `check_frontend_smoke_coverage.py` учитывает `check_release_versioning.py` как обязательный frontend guard script;
+- `smoke_frontend_core.py` контролирует наличие release versioning diagnostics и CI workflow step;
+- прямые admin/public/fallback маршруты release versioning покрыты smoke-проверками;
+- полный gate подтверждён: secret scan, encoding guards, frontend guards, CI/local gate guard, release readiness guard, release versioning guard, pytest, smoke scripts, coverage guards, frontend build и bundle encoding.
+
+Версия релиза:
+
+- `0.1.0-stage6`
+
+Основные файлы release handoff:
+
+- `CHANGELOG.md`
+- `docs/release-handoff.md`
+- `scripts/check_release_versioning.py`
+- `.github/workflows/ci.yml`
+
+Основные маршруты:
+
+- `/admin?from=release-versioning`
+- `/admin/__missing_release_version_route__`
+- `/admin/users?activity=inactive&from=release-versioning`
+- `/admin/organizations?scope=with_kpp&from=release-versioning`
+- `/admin/groups?status=active&from=release-versioning`
+- `/admin/courses?is_active=true&from=release-versioning`
+- `/admin/enrollments?action_required=true&from=release-versioning`
+- `/admin/documents?action_required=true&from=release-versioning`
+- `/admin/documents?status=available&type=certificate&from=release-versioning`
+- `/admin/audit-events?entity_type=document&limit=25&from=release-versioning`
+- `/admin/audit-events?entity_type=user&limit=25&from=release-versioning`
+- `/admin/audit-events?entity_type=organization&limit=25&from=release-versioning`
+- `/admin/roles?type=system&from=release-versioning`
+- `/admin/permissions?group=audit&from=release-versioning`
+- `/`
+- `/catalog?from=release-versioning`
+- `/courses/__missing_release_version_course__`
+- `/organization-info?from=release-versioning`
+- `/organization?from=release-versioning`
+- `/verify-document?from=release-versioning`
+- `/verify/__missing_release_version_code__`
+- `/contacts?from=release-versioning`
+- `/faq?from=release-versioning`
+- `/privacy?from=release-versioning`
+- `/offer?from=release-versioning`
+- `/login?from=release-versioning`
+- `/register?from=release-versioning`
+- `/account?from=release-versioning`
+- `/__missing_release_version_public__`
+
+Контрольные проверки:
+
+- python .\scripts\secret_scan.py
+- python .\scripts\check_text_encoding.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_frontend_api_errors.py
+- python .\scripts\check_frontend_mojibake.py
+- python .\scripts\frontend_guard.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\check_release_versioning.py
+- docker compose exec backend pytest app/tests -q
+- python .\scripts\smoke_auth_rbac.py
+- python .\scripts\smoke_document_generation_flow.py
+- python .\scripts\smoke_documents_page.py
+- python .\scripts\smoke_admin_components.py
+- python .\scripts\smoke_frontend_admin_pages.py
+- python .\scripts\smoke_public_pages.py
+- python .\scripts\smoke_account_page.py
+- python .\scripts\smoke_frontend_hooks_layout.py
+- python .\scripts\smoke_frontend_utils_routes.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_backend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- docker compose exec frontend npm run build
+- python .\scripts\check_frontend_bundle_encoding.py
+
+Следующий функциональный блок:
+
+- 6.71 - следующий функциональный блок после стабилизации release versioning / changelog / deployment handoff
