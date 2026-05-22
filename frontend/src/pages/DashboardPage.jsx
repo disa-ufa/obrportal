@@ -1147,6 +1147,28 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-release-candidate-tag-readiness-flow"
+              title="Операционный центр release candidate / tag readiness / post-release verification"
+              description="Контроль release candidate перед тегом: git tag readiness, версия, changelog, handoff, CI status, production readiness, smoke-проверки, post-release verification и rollback-порядок."
+              links={[
+                { label: "Release candidate source", to: "/admin?from=release-candidate" },
+                { label: "Tag readiness", to: "/admin/__missing_release_candidate_route__" },
+                { label: "Versioning guard", to: "/admin?from=release-versioning" },
+                { label: "Changelog verification", to: "/admin/audit-events?entity_type=document&limit=25" },
+                { label: "Deployment handoff", to: "/organization-info?from=release-candidate" },
+                { label: "CI status readiness", to: "/admin?from=ci-local-gate" },
+                { label: "Production readiness", to: "/admin?from=production-readiness" },
+                { label: "Health/ready verification", to: "/" },
+                { label: "Public catalog verification", to: "/catalog?from=release-candidate" },
+                { label: "Public document verification", to: "/verify-document?from=release-candidate" },
+                { label: "Account verification", to: "/account?from=release-candidate" },
+                { label: "Admin documents verification", to: "/admin/documents?action_required=true&from=release-candidate" },
+                { label: "Rollback verification", to: "/admin/audit-events?entity_type=organization&limit=25" },
+                { label: "Release candidate fallback", to: "/__missing_release_candidate_public__" },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
