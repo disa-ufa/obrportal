@@ -16,6 +16,114 @@ const FOOTER_LINKS = [
   { key: "faq", label: "FAQ" },
 ];
 
+function getPublicShellNavigationStats({ user, isAdmin, currentPage }) {
+  const primaryKeys = PUBLIC_NAV_ITEMS.map((item) => item.key);
+  const footerKeys = FOOTER_LINKS.map((item) => item.key);
+  const allKnownKeys = [
+    ...new Set([
+      ...primaryKeys,
+      ...footerKeys,
+      "dashboard",
+      "organization",
+      "account",
+      "login",
+      "register",
+      "course-detail",
+      "not-found",
+    ]),
+  ];
+  const duplicatedFooterKeys = footerKeys.filter((key, index) => footerKeys.indexOf(key) !== index);
+  const isOrgRepresentative = userHasRole(user, "org_rep");
+
+  return {
+    primaryCount: primaryKeys.length,
+    footerCount: footerKeys.length,
+    duplicatedFooterKeys: [...new Set(duplicatedFooterKeys)],
+    currentPage,
+    unknownCurrentPage: !allKnownKeys.includes(currentPage),
+    userAuthenticated: Boolean(user),
+    isAdmin,
+    isOrgRepresentative,
+    targetArea: isAdmin && user
+      ? "admin"
+      : user && isOrgRepresentative
+        ? "organization"
+        : user
+          ? "account"
+          : "auth",
+  };
+}
+
+function getPublicShellNavigationDiagnostics(stats) {
+  const items = [];
+
+  if (stats.primaryCount === 0) {
+    items.push("Public nav: основной список навигации пуст.");
+  }
+
+  if (stats.footerCount === 0) {
+    items.push("Public footer: список ссылок footer пуст.");
+  }
+
+  if (stats.duplicatedFooterKeys.length > 0) {
+    items.push(`Public footer: найдены дубли ключей - ${stats.duplicatedFooterKeys.join(", ")}.`);
+  }
+
+  if (stats.unknownCurrentPage) {
+    items.push(`Public route: текущий ключ ${stats.currentPage || "unknown"} не описан в shell.`);
+  }
+
+  if (stats.targetArea === "auth") {
+    items.push("Auth: гостю доступны вход и регистрация.");
+  }
+
+  if (stats.targetArea === "admin") {
+    items.push("Admin bridge: администратору доступен переход в админку.");
+  }
+
+  if (stats.targetArea === "organization") {
+    items.push("Organization bridge: представителю организации доступен кабинет организации.");
+  }
+
+  if (stats.targetArea === "account") {
+    items.push("Account bridge: пользователю доступен личный кабинет.");
+  }
+
+  return [...new Set(items)];
+}
+
+function PublicShellNavigationDiagnostics({ stats, diagnostics }) {
+  return (
+    <section
+      data-testid="public-shell-navigation-diagnostics"
+      className="border-b border-slate-200 bg-white"
+    >
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 text-xs text-slate-600 md:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div data-testid="public-shell-navigation-summary" className="flex flex-wrap gap-3">
+          <span>Public nav: {stats.primaryCount}</span>
+          <span>Footer links: {stats.footerCount}</span>
+          <span>Текущий раздел: {stats.currentPage || "unknown"}</span>
+          <span>Целевая зона: {stats.targetArea}</span>
+        </div>
+
+        <div
+          data-testid="public-shell-navigation-attention"
+          className="flex flex-wrap gap-2"
+        >
+          {diagnostics.map((item) => (
+            <span
+              key={item}
+              className="rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200"
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function NavButton({ active, children, onClick }) {
 
 
@@ -42,6 +150,14 @@ export function PublicShell({
   children,
 }) {
   const isOrgRepresentative = userHasRole(user, "org_rep");
+  const publicShellNavigationStats = getPublicShellNavigationStats({
+    user,
+    isAdmin,
+    currentPage,
+  });
+  const publicShellNavigationDiagnostics = getPublicShellNavigationDiagnostics(
+    publicShellNavigationStats
+  );
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -115,6 +231,11 @@ export function PublicShell({
           </div>
         </div>
       </header>
+
+      <PublicShellNavigationDiagnostics
+        stats={publicShellNavigationStats}
+        diagnostics={publicShellNavigationDiagnostics}
+      />
 
       <section className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
         {children}

@@ -2,6 +2,136 @@ import { Link } from "react-router-dom";
 import { StatusBadge } from "../ui/StatusBadge";
 import { ADMIN_ROUTE_ITEMS } from "../../utils/adminRoutes";
 
+const ADMIN_SHELL_REQUIRED_KEYS = [
+  "dashboard",
+  "users",
+  "organizations",
+  "groups",
+  "courses",
+  "enrollments",
+  "documents",
+  "roles",
+  "permissions",
+  "audit",
+];
+
+const ADMIN_SHELL_COUNT_KEYS = [
+  "users",
+  "organizations",
+  "groups",
+  "courses",
+  "enrollments",
+  "documents",
+  "roles",
+  "permissions",
+  "auditEvents",
+];
+
+function getAdminShellNavigationStats({
+  currentPage,
+  counts,
+  adminLoading,
+  adminDataLoadedAt,
+}) {
+  const routeKeys = ADMIN_ROUTE_ITEMS.map((item) => item.key);
+  const routePaths = ADMIN_ROUTE_ITEMS.map((item) => item.path);
+  const duplicatePaths = routePaths.filter((path, index) => routePaths.indexOf(path) !== index);
+  const missingRouteKeys = ADMIN_SHELL_REQUIRED_KEYS.filter((key) => !routeKeys.includes(key));
+  const missingCountKeys = ADMIN_SHELL_COUNT_KEYS.filter(
+    (key) => !Object.prototype.hasOwnProperty.call(counts || {}, key)
+  );
+  const zeroCounters = ADMIN_SHELL_COUNT_KEYS.filter((key) => counts?.[key] === 0).length;
+
+  return {
+    routesTotal: ADMIN_ROUTE_ITEMS.length,
+    duplicatePaths: [...new Set(duplicatePaths)],
+    missingRouteKeys,
+    missingCountKeys,
+    zeroCounters,
+    currentPage,
+    unknownCurrentPage: !routeKeys.includes(currentPage),
+    adminLoading,
+    adminDataLoadedAt,
+    apiLoaded: Boolean(adminDataLoadedAt),
+  };
+}
+
+function getAdminShellNavigationDiagnostics(stats) {
+  const items = [];
+
+  if (stats.missingRouteKeys.length > 0) {
+    items.push(`Admin routes: отсутствуют ключи разделов - ${stats.missingRouteKeys.join(", ")}.`);
+  }
+
+  if (stats.duplicatePaths.length > 0) {
+    items.push(`Admin routes: найдены дубли path - ${stats.duplicatePaths.join(", ")}.`);
+  }
+
+  if (stats.unknownCurrentPage) {
+    items.push(`Текущий раздел: ключ ${stats.currentPage || "unknown"} не найден в ADMIN_ROUTE_ITEMS.`);
+  }
+
+  if (stats.missingCountKeys.length > 0) {
+    items.push(`Счётчики: отсутствуют count keys - ${stats.missingCountKeys.join(", ")}.`);
+  }
+
+  if (stats.zeroCounters > 0) {
+    items.push(`Счётчики: ${stats.zeroCounters} разделов сейчас показывают 0 записей.`);
+  }
+
+  if (stats.adminLoading) {
+    items.push("Admin API: данные shell сейчас обновляются.");
+  }
+
+  if (!stats.apiLoaded && !stats.adminLoading) {
+    items.push("Admin API: данные ещё не загружены в shell.");
+  }
+
+  return [...new Set(items)];
+}
+
+function AdminShellNavigationDiagnostics({ stats, diagnostics }) {
+  return (
+    <div
+      data-testid="admin-shell-navigation-diagnostics"
+      className="mt-5 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="font-semibold text-slate-800">
+          Качество admin shell
+        </div>
+        <StatusBadge tone={diagnostics.length ? "amber" : "green"}>
+          routes: {stats.routesTotal}
+        </StatusBadge>
+      </div>
+
+      <div
+        data-testid="admin-shell-navigation-summary"
+        className="mt-3 grid gap-2 text-slate-600"
+      >
+        <div>Текущий раздел: {stats.currentPage || "unknown"}</div>
+        <div>Дубликаты path: {stats.duplicatePaths.length}</div>
+        <div>Проблемы count keys: {stats.missingCountKeys.length}</div>
+      </div>
+
+      <div
+        data-testid="admin-shell-navigation-attention"
+        className="mt-3"
+      >
+        {diagnostics.length ? (
+          <ul className="list-disc space-y-1 pl-5">
+            {diagnostics.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>Критичных замечаний по admin shell и навигации не найдено.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AppShell({
   health,
   ready,
@@ -61,6 +191,16 @@ export function AppShell({
     : adminDataLoadedAt
       ? "green"
       : "gray";
+
+  const adminShellNavigationStats = getAdminShellNavigationStats({
+    currentPage,
+    counts,
+    adminLoading,
+    adminDataLoadedAt,
+  });
+  const adminShellNavigationDiagnostics = getAdminShellNavigationDiagnostics(
+    adminShellNavigationStats
+  );
 
   return (
     <main className="min-h-screen bg-slate-100 p-4 text-slate-900 md:p-6">
@@ -161,6 +301,11 @@ export function AppShell({
                 "Войдите под admin, чтобы открыть служебные разделы."
               )}
             </div>
+
+            <AdminShellNavigationDiagnostics
+              stats={adminShellNavigationStats}
+              diagnostics={adminShellNavigationDiagnostics}
+            />
           </aside>
 
           <section className="min-w-0 space-y-6">

@@ -511,6 +511,47 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/components/layout/AppShell.jsx",
+        [
+            "const ADMIN_SHELL_REQUIRED_KEYS = [",
+            "const ADMIN_SHELL_COUNT_KEYS = [",
+            "function getAdminShellNavigationStats",
+            "function getAdminShellNavigationDiagnostics",
+            "function AdminShellNavigationDiagnostics",
+            "adminShellNavigationStats",
+            "adminShellNavigationDiagnostics",
+            "admin-shell-navigation-diagnostics",
+            "admin-shell-navigation-summary",
+            "admin-shell-navigation-attention",
+            "Качество admin shell",
+            "Критичных замечаний по admin shell и навигации не найдено.",
+            "<AdminShellNavigationDiagnostics",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/layout/PublicShell.jsx",
+        [
+            "function getPublicShellNavigationStats",
+            "function getPublicShellNavigationDiagnostics",
+            "function PublicShellNavigationDiagnostics",
+            "publicShellNavigationStats",
+            "publicShellNavigationDiagnostics",
+            "public-shell-navigation-diagnostics",
+            "public-shell-navigation-summary",
+            "public-shell-navigation-attention",
+            "Public nav:",
+            "Footer links:",
+            "Целевая зона:",
+            "Auth: гостю доступны вход и регистрация.",
+            "Admin bridge: администратору доступен переход в админку.",
+            "Organization bridge: представителю организации доступен кабинет организации.",
+            "Account bridge: пользователю доступен личный кабинет.",
+            "<PublicShellNavigationDiagnostics",
+        ],
+    )
+
+    require_contains(
         "frontend/src/App.jsx",
         [
             'import { useEffect, useState } from "react";',
