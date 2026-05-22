@@ -1169,6 +1169,28 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-release-tag-publication-smoke-flow"
+              title="Операционный центр release tag / final publication / post-release smoke"
+              description="Контроль финальной публикации релиза: annotated tag, release notes, final publication order, post-release smoke, health/ready, public/admin/account/document verification и rollback checkpoint."
+              links={[
+                { label: "Release tag source", to: "/admin?from=release-tag" },
+                { label: "Final tag readiness", to: "/admin/__missing_release_tag_route__" },
+                { label: "Release candidate readiness", to: "/admin?from=release-candidate" },
+                { label: "Versioning handoff", to: "/admin?from=release-versioning" },
+                { label: "Production readiness", to: "/admin?from=production-readiness" },
+                { label: "CI/local gate", to: "/admin?from=ci-local-gate" },
+                { label: "Release notes", to: "/admin/documents?status=available&type=certificate&from=release-tag" },
+                { label: "Post-release health", to: "/" },
+                { label: "Post-release catalog", to: "/catalog?from=release-tag" },
+                { label: "Post-release public verification", to: "/verify-document?from=release-tag" },
+                { label: "Post-release account", to: "/account?from=release-tag" },
+                { label: "Admin documents smoke", to: "/admin/documents?action_required=true&from=release-tag" },
+                { label: "Rollback checkpoint", to: "/admin/audit-events?entity_type=organization&limit=25" },
+                { label: "Release tag fallback", to: "/__missing_release_tag_public__" },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
