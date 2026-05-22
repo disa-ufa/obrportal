@@ -2073,3 +2073,81 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.66 - следующий функциональный блок после стабилизации frontend shell и навигации
 ```
+
+---
+
+## Checkpoint 6.66 - операционный центр качества frontend routes/builders/meta
+
+Контур качества frontend routes/builders/meta, adminRoutes, adminLinks, publicRoutes, query builders, entity links, public meta и fallback route стабилизирован.
+
+Закрыто:
+
+- 6.66.1 - Dashboard: сценарий `Операционный центр качества frontend routes/builders/meta`
+- 6.66.2 - adminLinks/publicRoutes: диагностика routes/builders/meta
+- 6.66.3 - smoke-покрытие прямых маршрутов frontend routes/builders/meta
+- 6.66.4 - финальная стабилизация блока frontend routes/builders/meta
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля frontend routes/builders/meta;
+- adminLinks содержит диагностические cases для builders и entity admin links;
+- publicRoutes содержит диагностические cases для public routes, page keys и meta title/description;
+- контролируются buildAuditPath, buildUsersPath, buildOrganizationsPath, buildGroupsPath, buildCoursesPath, buildEnrollmentsPath, buildDocumentsPath, buildRolesPath и buildPermissionsPath;
+- контролируется buildEntityAdminPath для user, organization, learning_group, course, enrollment, document, role и permission;
+- контролируются PUBLIC_ROUTE_MAP, getPublicPageFromPathname и buildPublicMeta;
+- прямые маршруты admin builders, public meta, course fallback, verify fallback и public not-found покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin`
+- `/admin/users?activity=inactive`
+- `/admin/users?q=__routes_meta_user__`
+- `/admin/organizations?scope=with_kpp`
+- `/admin/organizations?q=__routes_meta_org__`
+- `/admin/groups?status=active&organization_id=00000000-0000-0000-0000-000000000000`
+- `/admin/groups?q=__routes_meta_group__`
+- `/admin/courses?is_active=true&q=__routes_meta_course__`
+- `/admin/courses?q=__routes_meta_course__`
+- `/admin/enrollments?status=completed&action_required=true`
+- `/admin/enrollments?q=__routes_meta_enrollment__`
+- `/admin/documents?status=available&type=certificate`
+- `/admin/documents?q=__routes_meta_document__`
+- `/admin/roles?type=system`
+- `/admin/roles?q=__routes_meta_role__`
+- `/admin/permissions?group=audit`
+- `/admin/permissions?q=__routes_meta_permission__`
+- `/admin/audit-events?entity_type=document&limit=25`
+- `/`
+- `/catalog?from=routes-builders-meta`
+- `/courses/__missing_routes_meta_course__`
+- `/organization-info?from=routes-builders-meta`
+- `/organization?from=routes-builders-meta`
+- `/verify-document?from=routes-builders-meta`
+- `/verify/__missing_routes_meta_code__`
+- `/contacts?from=routes-builders-meta`
+- `/faq?from=routes-builders-meta`
+- `/privacy?from=routes-builders-meta`
+- `/offer?from=routes-builders-meta`
+- `/login?from=routes-builders-meta`
+- `/register?from=routes-builders-meta`
+- `/account?from=routes-builders-meta`
+- `/__missing_routes_meta_public__`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_utils_routes.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_frontend_hooks_layout.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.67 - следующий функциональный блок после стабилизации frontend routes/builders/meta
+```
