@@ -1126,6 +1126,27 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-release-versioning-handoff-flow"
+              title="Операционный центр release versioning / changelog / deployment handoff"
+              description="Контроль управляемого релиза: версия backend/frontend, changelog, release notes, tag-порядок, deployment handoff, rollback-команды, release checklist и post-release verification."
+              links={[
+                { label: "Version source", to: "/admin?from=release-versioning" },
+                { label: "Backend health version", to: "/" },
+                { label: "Frontend package version", to: "/catalog?from=release-versioning" },
+                { label: "Changelog readiness", to: "/admin/audit-events?entity_type=document&limit=25" },
+                { label: "Release notes", to: "/admin/documents?status=available&type=certificate&from=release-versioning" },
+                { label: "Tag order", to: "/admin/__missing_release_version_route__" },
+                { label: "Deployment handoff", to: "/organization-info?from=release-versioning" },
+                { label: "Rollback commands", to: "/admin/audit-events?entity_type=organization&limit=25" },
+                { label: "Release checklist", to: "/admin?from=production-readiness" },
+                { label: "CI/local gate", to: "/admin?from=ci-local-gate" },
+                { label: "Public verification", to: "/verify-document?from=release-versioning" },
+                { label: "Account verification", to: "/account?from=release-versioning" },
+                { label: "Release fallback", to: "/__missing_release_version_public__" },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
