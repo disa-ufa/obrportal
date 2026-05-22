@@ -1033,6 +1033,32 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-frontend-routes-builders-meta-flow"
+              title="Операционный центр качества frontend routes/builders/meta"
+              description="Контроль adminRoutes, adminLinks, publicRoutes, meta-описаний, query builders, entity links, unknown/fallback routes и соответствия routes → links → pages → meta."
+              links={[
+                { label: "Admin route registry", to: "/admin" },
+                { label: "Users builder", to: buildUsersPath({ activity: "inactive" }) },
+                { label: "Organizations builder", to: buildOrganizationsPath({ scope: "with_kpp" }) },
+                { label: "Groups builder", to: buildGroupsPath({ status: "active", organization_id: "00000000-0000-0000-0000-000000000000" }) },
+                { label: "Courses builder", to: buildCoursesPath({ is_active: "true", q: "__missing_routes_meta_course__" }) },
+                { label: "Enrollments builder", to: buildEnrollmentsPath({ status: "completed", action_required: "true" }) },
+                { label: "Documents builder", to: buildDocumentsPath({ status: "available", type: "certificate" }) },
+                { label: "Roles builder", to: buildRolesPath({ type: "system" }) },
+                { label: "Permissions builder", to: buildPermissionsPath({ group: "audit" }) },
+                { label: "Audit builder", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
+                { label: "Public home meta", to: "/" },
+                { label: "Public catalog meta", to: "/catalog" },
+                { label: "Public course fallback meta", to: "/courses/__missing_routes_meta_course__" },
+                { label: "Organization info meta", to: "/organization-info" },
+                { label: "Verify document meta", to: "/verify-document" },
+                { label: "Verify code fallback", to: "/verify/__missing_routes_meta_code__" },
+                { label: "Public contacts meta", to: "/contacts" },
+                { label: "Public not found meta", to: "/__missing_routes_meta_public__" },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
