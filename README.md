@@ -2785,3 +2785,57 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 7.2 - production environment template / server deployment checklist
+
+---
+
+## Checkpoint 7.2 - production environment template / server deployment checklist
+
+Контур production environment template подготовлен после релиза `v0.1.0-stage6`: описаны production `.env`, обязательные переменные, reverse proxy requirements, storage/database настройки, seed placeholders, permissions и acceptance checklist.
+
+Закрыто:
+
+- 7.2.1 - production environment template
+- 7.2.2 - diagnostics для production environment template
+- 7.2.3 - README checkpoint для production environment template / server deployment checklist
+
+Результат:
+
+- добавлен `docs/production-environment-template.md`;
+- добавлен `scripts/check_production_environment_template.py`;
+- `.github/workflows/ci.yml` запускает `Run production environment template guard`;
+- `check_ci_local_gate.py` учитывает production environment template guard;
+- `check_release_readiness.py` учитывает production environment template guard и support file;
+- `check_frontend_smoke_coverage.py` учитывает новый guard script;
+- `smoke_frontend_core.py` контролирует наличие production environment diagnostics и production environment template;
+- production environment template фиксирует release baseline, `.env` location, application settings, backend URLs/CORS, PostgreSQL, Redis, object storage, initial administrator, organization seed placeholders, reverse proxy requirements, files/permissions и acceptance checklist.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+
+Основные файлы:
+
+- `docs/production-environment-template.md`
+- `scripts/check_production_environment_template.py`
+- `.github/workflows/ci.yml`
+- `scripts/check_ci_local_gate.py`
+- `scripts/check_release_readiness.py`
+- `scripts/check_frontend_smoke_coverage.py`
+- `scripts/smoke_frontend_core.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 7.3 - production server checklist / deploy commands / rollback commands
