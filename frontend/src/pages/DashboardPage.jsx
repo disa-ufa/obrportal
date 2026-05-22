@@ -1009,6 +1009,30 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-frontend-shell-navigation-flow"
+              title="Операционный центр качества frontend shell и навигации"
+              description="Контроль admin/public shell, прямых маршрутов, fallback-страниц, ссылок Dashboard, публичных страниц, навигационных builders и защиты от сломанных переходов."
+              links={[
+                { label: "Admin shell", to: "/admin" },
+                { label: "Неизвестный admin route", to: "/admin/__missing_shell_route__" },
+                { label: "Пользователи", to: "/admin/users" },
+                { label: "Организации", to: "/admin/organizations" },
+                { label: "Группы", to: "/admin/groups" },
+                { label: "Курсы", to: "/admin/courses" },
+                { label: "Назначения", to: "/admin/enrollments" },
+                { label: "Документы", to: "/admin/documents" },
+                { label: "Аудит", to: "/admin/audit-events" },
+                { label: "Публичная главная", to: "/" },
+                { label: "Каталог", to: "/catalog" },
+                { label: "Проверка документа", to: "/verify-document" },
+                { label: "Личный кабинет", to: "/account" },
+                { label: "Кабинет организации", to: "/organization" },
+                { label: "Вход", to: "/login" },
+                { label: "Регистрация", to: "/register" },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
