@@ -2237,3 +2237,91 @@ python .\scripts\check_frontend_bundle_encoding.py
 ```text
 6.68 - следующий функциональный блок после стабилизации frontend smoke/guards coverage
 ```
+
+---
+
+## Checkpoint 6.68 - операционный центр качества CI/CD и локального gate
+
+Контур качества CI/CD и локального полного gate стабилизирован: GitHub Actions синхронизирован с локальными проверками, добавлен контроль расхождений между CI workflow и локальным gate.
+
+Закрыто:
+
+- 6.68.1 - Dashboard: сценарий `Операционный центр качества CI/CD и локального gate`
+- 6.68.2 - диагностика соответствия CI/CD и локального gate
+- 6.68.3 - smoke-покрытие прямых маршрутов CI/CD и локального gate
+- 6.68.4 - финальная стабилизация блока CI/CD и локального gate
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля CI/CD и локального gate;
+- добавлен `scripts/check_ci_local_gate.py` для проверки соответствия GitHub Actions локальному полному gate;
+- `.github/workflows/ci.yml` запускает `Run CI/local gate consistency guard`;
+- `check_frontend_smoke_coverage.py` учитывает `check_ci_local_gate.py` как обязательный frontend guard script;
+- `smoke_frontend_core.py` контролирует наличие CI/local gate diagnostics и CI workflow step;
+- прямые admin/public/fallback маршруты CI/local gate покрыты smoke-проверками;
+- полный gate подтверждён: secret scan, encoding guards, frontend guards, CI/local gate guard, pytest, smoke scripts, coverage guards, frontend build и bundle encoding.
+
+Основные маршруты:
+
+- `/admin?from=ci-local-gate`
+- `/admin/__missing_ci_gate_route__`
+- `/admin/users?activity=inactive&from=ci-local-gate`
+- `/admin/organizations?scope=with_kpp&from=ci-local-gate`
+- `/admin/groups?status=active&from=ci-local-gate`
+- `/admin/courses?is_active=true&from=ci-local-gate`
+- `/admin/enrollments?action_required=true&from=ci-local-gate`
+- `/admin/documents?action_required=true&from=ci-local-gate`
+- `/admin/documents?status=available&type=certificate&from=ci-local-gate`
+- `/admin/audit-events?entity_type=document&limit=25&from=ci-local-gate`
+- `/admin/audit-events?entity_type=user&limit=25&from=ci-local-gate`
+- `/admin/roles?type=system&from=ci-local-gate`
+- `/admin/permissions?group=audit&from=ci-local-gate`
+- `/`
+- `/catalog?from=ci-local-gate`
+- `/courses/__missing_ci_gate_course__`
+- `/organization-info?from=ci-local-gate`
+- `/organization?from=ci-local-gate`
+- `/verify-document?from=ci-local-gate`
+- `/verify/__missing_ci_gate_code__`
+- `/contacts?from=ci-local-gate`
+- `/faq?from=ci-local-gate`
+- `/privacy?from=ci-local-gate`
+- `/offer?from=ci-local-gate`
+- `/login?from=ci-local-gate`
+- `/register?from=ci-local-gate`
+- `/account?from=ci-local-gate`
+- `/__missing_ci_gate_public__`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\secret_scan.py
+python .\scripts\check_text_encoding.py
+python .\scripts\check_source_bom.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\frontend_guard.py
+python .\scripts\check_ci_local_gate.py
+docker compose exec backend pytest app/tests -q
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_document_generation_flow.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\smoke_frontend_hooks_layout.py
+python .\scripts\smoke_frontend_utils_routes.py
+python .\scripts\smoke_frontend_core.py
+python .\scripts\check_frontend_smoke_coverage.py
+python .\scripts\check_backend_smoke_coverage.py
+python .\scripts\check_no_todo_markers.py
+docker compose exec frontend npm run build
+python .\scripts\check_frontend_bundle_encoding.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.69 - следующий функциональный блок после стабилизации CI/CD и локального gate
+```
