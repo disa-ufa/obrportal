@@ -115,3 +115,9 @@ The file must be readable only by the deployment user and must not be copied int
 - HTTPS is configured.
 - Persistent volumes are configured.
 - Backup destination is configured.
+
+## Template diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_environment_template.py`

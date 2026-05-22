@@ -503,6 +503,32 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_environment_template.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_VARIABLES",
+            "REQUIRED_MARKERS",
+            "def get_production_environment_template_diagnostics",
+            "production environment template diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-environment-template.md",
+        [
+            "# Production environment template",
+            "## Release baseline",
+            "## Application settings",
+            "## PostgreSQL",
+            "## Object storage",
+            "## Production environment acceptance checklist",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 
