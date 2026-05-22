@@ -2839,3 +2839,58 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 7.3 - production server checklist / deploy commands / rollback commands
+
+---
+
+## Checkpoint 7.3 - production server checklist / deploy commands / rollback commands
+
+Контур production server checklist подготовлен после релиза `v0.1.0-stage6`: описаны server prerequisites, директории, команды первичной подготовки сервера, `.env` permissions, backup, deploy, migrations, seed, health verification, post-deployment smoke и rollback.
+
+Закрыто:
+
+- 7.3.1 - production server checklist
+- 7.3.2 - diagnostics для production server checklist
+- 7.3.3 - README checkpoint для production server checklist / deploy commands / rollback commands
+
+Результат:
+
+- добавлен `docs/production-server-checklist.md`;
+- добавлен `scripts/check_production_server_checklist.py`;
+- `.github/workflows/ci.yml` запускает `Run production server checklist guard`;
+- `check_ci_local_gate.py` учитывает production server checklist guard;
+- `check_release_readiness.py` учитывает production server checklist guard и support file;
+- `check_frontend_smoke_coverage.py` учитывает новый guard script;
+- `smoke_frontend_core.py` контролирует наличие production server diagnostics и production server checklist;
+- production server checklist фиксирует release baseline, prerequisites, directories, first server preparation commands, production environment preparation, `.env` permissions, backup commands, deployment commands, migration commands, seed commands, health verification commands, post-deployment smoke checklist, rollback commands и acceptance criteria.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+
+Основные файлы:
+
+- `docs/production-server-checklist.md`
+- `scripts/check_production_server_checklist.py`
+- `.github/workflows/ci.yml`
+- `scripts/check_ci_local_gate.py`
+- `scripts/check_release_readiness.py`
+- `scripts/check_frontend_smoke_coverage.py`
+- `scripts/smoke_frontend_core.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 7.4 - production reverse proxy / HTTPS / domain checklist
