@@ -44,6 +44,10 @@ jobs:
         run: |
           python scripts/frontend_guard.py
 
+      - name: Run CI/local gate consistency guard
+        run: |
+          python scripts/check_ci_local_gate.py
+
       - name: Show Docker versions
         run: |
           docker version

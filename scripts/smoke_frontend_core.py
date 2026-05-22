@@ -323,6 +323,27 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_ci_local_gate.py",
+        [
+            "REQUIRED_CI_SECTIONS",
+            "REQUIRED_CI_COMMANDS",
+            "REQUIRED_SEED_COMMANDS",
+            "def get_ci_local_gate_diagnostics",
+            "missingCommands",
+            "missingSeedCommands",
+            "ci/local gate diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        ".github/workflows/ci.yml",
+        [
+            "Run CI/local gate consistency guard",
+            "python scripts/check_ci_local_gate.py",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 
