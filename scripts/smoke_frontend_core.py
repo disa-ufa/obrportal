@@ -374,6 +374,43 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_release_versioning.py",
+        [
+            "REQUIRED_VERSION",
+            "REQUIRED_CHANGELOG_SECTIONS",
+            "REQUIRED_HANDOFF_SECTIONS",
+            "REQUIRED_HANDOFF_COMMANDS",
+            "def get_release_versioning_diagnostics",
+            "missingChangelogSections",
+            "missingHandoffSections",
+            "release versioning diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        ".github/workflows/ci.yml",
+        [
+            "Run release versioning guard",
+            "python scripts/check_release_versioning.py",
+        ],
+    )
+
+    require_contains(
+        "scripts/check_ci_local_gate.py",
+        [
+            "python scripts/check_release_versioning.py",
+        ],
+    )
+
+    require_contains(
+        "scripts/check_release_readiness.py",
+        [
+            "python scripts/check_release_versioning.py",
+            "scripts/check_release_versioning.py",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

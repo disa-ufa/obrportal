@@ -23,6 +23,7 @@ REQUIRED_FRONTEND_GUARD_SCRIPTS = [
     "scripts/frontend_guard.py",
     "scripts/check_ci_local_gate.py",
     "scripts/check_release_readiness.py",
+    "scripts/check_release_versioning.py",
     "scripts/check_frontend_bundle_encoding.py",
     "scripts/check_no_todo_markers.py",
 ]

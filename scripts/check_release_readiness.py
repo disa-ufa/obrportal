@@ -68,6 +68,7 @@ REQUIRED_RELEASE_COMMANDS = [
     "python scripts/frontend_guard.py",
     "python scripts/check_ci_local_gate.py",
     "python scripts/check_release_readiness.py",
+    "python scripts/check_release_versioning.py",
     "docker compose up -d --build",
     "docker compose exec -T backend alembic upgrade head",
     "docker compose exec -T backend pytest app/tests -q",
@@ -89,6 +90,7 @@ REQUIRED_RELEASE_COMMANDS = [
 REQUIRED_SUPPORT_FILES = [
     "scripts/check_ci_local_gate.py",
     "scripts/check_release_readiness.py",
+    "scripts/check_release_versioning.py",
     "scripts/secret_scan.py",
     "scripts/check_text_encoding.py",
     "scripts/check_source_bom.py",
