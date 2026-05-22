@@ -2625,3 +2625,112 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 6.72 - следующий функциональный блок после стабилизации release candidate / tag readiness / post-release verification
+
+---
+
+## Checkpoint 6.72 - операционный центр release tag / final publication / post-release smoke
+
+Контур release tag / final publication / post-release smoke стабилизирован: финальный tag, release notes, publication checklist, post-release smoke, rollback checkpoint и прямые маршруты release tag закрыты проверками.
+
+Закрыто:
+
+- 6.72.1 - Dashboard: сценарий `Операционный центр release tag / final publication / post-release smoke`
+- 6.72.2 - диагностика release tag / final publication / post-release smoke
+- 6.72.3 - smoke-покрытие прямых маршрутов release tag / final publication / post-release smoke
+- 6.72.4 - финальная стабилизация блока release tag / final publication / post-release smoke
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля release tag / final publication / post-release smoke;
+- добавлен `docs/release-publication-checklist.md` с final publication order, release notes, post-release smoke и rollback checkpoint;
+- добавлен `scripts/check_release_tag.py` для контроля release publication checklist, RC checklist, handoff, changelog и CI-команд;
+- `.github/workflows/ci.yml` запускает `Run release tag guard`;
+- `check_ci_local_gate.py` учитывает `check_release_tag.py` как обязательную CI/local gate проверку;
+- `check_release_readiness.py` учитывает `check_release_tag.py` как обязательную release readiness проверку;
+- `check_frontend_smoke_coverage.py` учитывает `check_release_tag.py` как обязательный frontend guard script;
+- `smoke_frontend_core.py` контролирует наличие release tag diagnostics, CI workflow step и release publication checklist;
+- прямые admin/public/fallback маршруты release tag покрыты smoke-проверками;
+- полный gate подтверждён: secret scan, encoding guards, frontend guards, CI/local gate guard, release readiness guard, release versioning guard, release candidate guard, release tag guard, pytest, smoke scripts, coverage guards, frontend build и bundle encoding.
+
+Версия релиза:
+
+- `0.1.0-stage6`
+
+Ожидаемый tag:
+
+- `v0.1.0-stage6`
+
+Основные файлы release tag контура:
+
+- `docs/release-publication-checklist.md`
+- `scripts/check_release_tag.py`
+- `.github/workflows/ci.yml`
+- `docs/release-candidate-checklist.md`
+- `docs/release-handoff.md`
+- `CHANGELOG.md`
+
+Основные маршруты:
+
+- `/admin?from=release-tag`
+- `/admin/__missing_release_tag_route__`
+- `/admin/users?activity=inactive&from=release-tag`
+- `/admin/organizations?scope=with_kpp&from=release-tag`
+- `/admin/groups?status=active&from=release-tag`
+- `/admin/courses?is_active=true&from=release-tag`
+- `/admin/enrollments?action_required=true&from=release-tag`
+- `/admin/documents?action_required=true&from=release-tag`
+- `/admin/documents?status=available&type=certificate&from=release-tag`
+- `/admin/audit-events?entity_type=document&limit=25&from=release-tag`
+- `/admin/audit-events?entity_type=user&limit=25&from=release-tag`
+- `/admin/audit-events?entity_type=organization&limit=25&from=release-tag`
+- `/admin/roles?type=system&from=release-tag`
+- `/admin/permissions?group=audit&from=release-tag`
+- `/`
+- `/catalog?from=release-tag`
+- `/courses/__missing_release_tag_course__`
+- `/organization-info?from=release-tag`
+- `/organization?from=release-tag`
+- `/verify-document?from=release-tag`
+- `/verify/__missing_release_tag_code__`
+- `/contacts?from=release-tag`
+- `/faq?from=release-tag`
+- `/privacy?from=release-tag`
+- `/offer?from=release-tag`
+- `/login?from=release-tag`
+- `/register?from=release-tag`
+- `/account?from=release-tag`
+- `/__missing_release_tag_public__`
+
+Контрольные проверки:
+
+- python .\scripts\secret_scan.py
+- python .\scripts\check_text_encoding.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_frontend_api_errors.py
+- python .\scripts\check_frontend_mojibake.py
+- python .\scripts\frontend_guard.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\check_release_versioning.py
+- python .\scripts\check_release_candidate.py
+- python .\scripts\check_release_tag.py
+- docker compose exec backend pytest app/tests -q
+- python .\scripts\smoke_auth_rbac.py
+- python .\scripts\smoke_document_generation_flow.py
+- python .\scripts\smoke_documents_page.py
+- python .\scripts\smoke_admin_components.py
+- python .\scripts\smoke_frontend_admin_pages.py
+- python .\scripts\smoke_public_pages.py
+- python .\scripts\smoke_account_page.py
+- python .\scripts\smoke_frontend_hooks_layout.py
+- python .\scripts\smoke_frontend_utils_routes.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_backend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- docker compose exec frontend npm run build
+- python .\scripts\check_frontend_bundle_encoding.py
+
+Следующий функциональный блок:
+
+- 6.73 - финальная подготовка annotated tag `v0.1.0-stage6` и публикации релиза
