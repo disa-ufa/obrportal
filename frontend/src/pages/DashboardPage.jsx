@@ -1081,6 +1081,29 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-ci-local-gate-flow"
+              title="Операционный центр качества CI/CD и локального gate"
+              description="Контроль соответствия GitHub Actions и локального полного gate: secret scan, encoding guards, frontend guards, pytest, smoke scripts, coverage guards, frontend build, bundle encoding и синхронизация develop/main."
+              links={[
+                { label: "CI workflow", to: "/admin?from=ci-local-gate" },
+                { label: "Secret scan", to: "/admin/audit-events?entity_type=document&limit=25" },
+                { label: "Encoding guards", to: "/" },
+                { label: "Frontend guards", to: "/catalog?from=ci-local-gate" },
+                { label: "Backend pytest", to: "/admin/audit-events?entity_type=user&limit=25" },
+                { label: "Auth RBAC smoke", to: "/admin/users?activity=inactive&from=ci-local-gate" },
+                { label: "Documents smoke", to: buildDocumentsPath({ status: "available", type: "certificate" }) },
+                { label: "Public pages smoke", to: "/contacts?from=ci-local-gate" },
+                { label: "Account smoke", to: "/account?from=ci-local-gate" },
+                { label: "Frontend core smoke", to: "/organization-info?from=ci-local-gate" },
+                { label: "Frontend coverage", to: "/admin?from=frontend-coverage" },
+                { label: "Backend coverage", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
+                { label: "Frontend build", to: "/admin/__missing_ci_gate_route__" },
+                { label: "Bundle encoding", to: "/verify-document?from=ci-local-gate" },
+                { label: "Branch sync", to: "/__missing_ci_gate_public__" },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
