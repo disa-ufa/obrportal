@@ -1104,6 +1104,28 @@ export function DashboardPage({
             />
 
             <WorkflowCard
+              testId="dashboard-production-readiness-release-flow"
+              title="Операционный центр production readiness / release checklist"
+              description="Контроль готовности релиза: env/config, Docker Compose, health/ready, migrations, seeds, storage, logs, rollback-порядок, CI/local gate, smoke-команды и release checklist."
+              links={[
+                { label: "Env/config readiness", to: "/admin?from=production-readiness" },
+                { label: "Docker Compose readiness", to: "/admin/__missing_release_route__" },
+                { label: "Health and ready endpoints", to: "/" },
+                { label: "Migrations and seeds", to: "/admin/audit-events?entity_type=user&limit=25" },
+                { label: "Storage readiness", to: buildDocumentsPath({ status: "available", type: "certificate" }) },
+                { label: "Logs and failure diagnostics", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
+                { label: "Release smoke commands", to: "/catalog?from=production-readiness" },
+                { label: "Public verification readiness", to: "/verify-document?from=production-readiness" },
+                { label: "Account readiness", to: "/account?from=production-readiness" },
+                { label: "Organization readiness", to: "/organization-info?from=production-readiness" },
+                { label: "Admin registry readiness", to: "/admin/documents?action_required=true&from=production-readiness" },
+                { label: "Rollback order", to: "/admin/audit-events?entity_type=organization&limit=25" },
+                { label: "CI/local gate release check", to: "/admin?from=ci-local-gate" },
+                { label: "Release checklist fallback", to: "/__missing_release_public__" },
+              ]}
+            />
+
+            <WorkflowCard
               testId="dashboard-account-access-flow"
               title="Операционный центр личного кабинета"
               description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
