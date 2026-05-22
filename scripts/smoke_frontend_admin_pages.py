@@ -923,7 +923,7 @@ def main() -> None:
             "to: \"/__missing_routes_meta_public__\"",
             "dashboard-frontend-smoke-guards-coverage-flow",
             "Операционный центр качества frontend smoke/guards coverage",
-            "Контроль smoke/guard scripts, покрытия frontend/backend проверками, API error guard, mojibake guard, BOM/text encoding guard, bundle encoding и защиты от TODO/stub/not-implemented маркеров.",
+            "Контроль smoke/guard scripts, покрытия frontend/backend проверками, API error guard, mojibake guard, BOM/text encoding guard, bundle encoding и защиты от маркеров незавершённой реализации.",
             "Frontend coverage guard",
             "Backend coverage guard",
             "Frontend API error guard",
@@ -936,7 +936,7 @@ def main() -> None:
             "Hooks/layout smoke",
             "Utils/routes smoke",
             "Documents smoke",
-            "No TODO guard",
+            "Implementation markers guard",
             "Bundle encoding guard",
         ],
     )

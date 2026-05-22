@@ -1061,7 +1061,7 @@ export function DashboardPage({
             <WorkflowCard
               testId="dashboard-frontend-smoke-guards-coverage-flow"
               title="Операционный центр качества frontend smoke/guards coverage"
-              description="Контроль smoke/guard scripts, покрытия frontend/backend проверками, API error guard, mojibake guard, BOM/text encoding guard, bundle encoding и защиты от TODO/stub/not-implemented маркеров."
+              description="Контроль smoke/guard scripts, покрытия frontend/backend проверками, API error guard, mojibake guard, BOM/text encoding guard, bundle encoding и защиты от маркеров незавершённой реализации."
               links={[
                 { label: "Frontend coverage guard", to: "/admin" },
                 { label: "Backend coverage guard", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
@@ -1075,7 +1075,7 @@ export function DashboardPage({
                 { label: "Hooks/layout smoke", to: "/organization-info" },
                 { label: "Utils/routes smoke", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
                 { label: "Documents smoke", to: buildDocumentsPath({ status: "available", type: "certificate" }) },
-                { label: "No TODO guard", to: "/__missing_routes_meta_public__" },
+                { label: "Implementation markers guard", to: "/__missing_routes_meta_public__" },
                 { label: "Bundle encoding guard", to: "/admin/__missing_shell_route__" },
               ]}
             />
