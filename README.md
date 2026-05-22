@@ -2518,3 +2518,110 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 6.71 - следующий функциональный блок после стабилизации release versioning / changelog / deployment handoff
+
+---
+
+## Checkpoint 6.71 - операционный центр release candidate / tag readiness / post-release verification
+
+Контур release candidate / tag readiness / post-release verification стабилизирован: RC-checklist, tag readiness, CI status readiness, post-release verification, rollback readiness и прямые маршруты release candidate закрыты проверками.
+
+Закрыто:
+
+- 6.71.1 - Dashboard: сценарий `Операционный центр release candidate / tag readiness / post-release verification`
+- 6.71.2 - диагностика release candidate / tag readiness / post-release verification
+- 6.71.3 - smoke-покрытие прямых маршрутов release candidate / tag readiness / post-release verification
+- 6.71.4 - финальная стабилизация блока release candidate / tag readiness / post-release verification
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля release candidate / tag readiness / post-release verification;
+- добавлен `docs/release-candidate-checklist.md` с RC checklist, tag readiness, CI status readiness, post-release verification и rollback readiness;
+- добавлен `scripts/check_release_candidate.py` для контроля RC-документа, handoff, changelog и CI-команд;
+- `.github/workflows/ci.yml` запускает `Run release candidate guard`;
+- `check_ci_local_gate.py` учитывает `check_release_candidate.py` как обязательную CI/local gate проверку;
+- `check_release_readiness.py` учитывает `check_release_candidate.py` как обязательную release readiness проверку;
+- `check_frontend_smoke_coverage.py` учитывает `check_release_candidate.py` как обязательный frontend guard script;
+- `smoke_frontend_core.py` контролирует наличие release candidate diagnostics, CI workflow step и release candidate checklist;
+- прямые admin/public/fallback маршруты release candidate покрыты smoke-проверками;
+- полный gate подтверждён: secret scan, encoding guards, frontend guards, CI/local gate guard, release readiness guard, release versioning guard, release candidate guard, pytest, smoke scripts, coverage guards, frontend build и bundle encoding.
+
+Версия RC:
+
+- `0.1.0-stage6`
+
+Ожидаемый tag:
+
+- `v0.1.0-stage6`
+
+Основные файлы RC-контура:
+
+- `docs/release-candidate-checklist.md`
+- `scripts/check_release_candidate.py`
+- `.github/workflows/ci.yml`
+- `docs/release-handoff.md`
+- `CHANGELOG.md`
+
+Основные маршруты:
+
+- `/admin?from=release-candidate`
+- `/admin/__missing_release_candidate_route__`
+- `/admin/users?activity=inactive&from=release-candidate`
+- `/admin/organizations?scope=with_kpp&from=release-candidate`
+- `/admin/groups?status=active&from=release-candidate`
+- `/admin/courses?is_active=true&from=release-candidate`
+- `/admin/enrollments?action_required=true&from=release-candidate`
+- `/admin/documents?action_required=true&from=release-candidate`
+- `/admin/documents?status=available&type=certificate&from=release-candidate`
+- `/admin/audit-events?entity_type=document&limit=25&from=release-candidate`
+- `/admin/audit-events?entity_type=user&limit=25&from=release-candidate`
+- `/admin/audit-events?entity_type=organization&limit=25&from=release-candidate`
+- `/admin/roles?type=system&from=release-candidate`
+- `/admin/permissions?group=audit&from=release-candidate`
+- `/`
+- `/catalog?from=release-candidate`
+- `/courses/__missing_release_candidate_course__`
+- `/organization-info?from=release-candidate`
+- `/organization?from=release-candidate`
+- `/verify-document?from=release-candidate`
+- `/verify/__missing_release_candidate_code__`
+- `/contacts?from=release-candidate`
+- `/faq?from=release-candidate`
+- `/privacy?from=release-candidate`
+- `/offer?from=release-candidate`
+- `/login?from=release-candidate`
+- `/register?from=release-candidate`
+- `/account?from=release-candidate`
+- `/__missing_release_candidate_public__`
+
+Контрольные проверки:
+
+- python .\scripts\secret_scan.py
+- python .\scripts\check_text_encoding.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_frontend_api_errors.py
+- python .\scripts\check_frontend_mojibake.py
+- python .\scripts\frontend_guard.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\check_release_versioning.py
+- python .\scripts\check_release_candidate.py
+- docker compose exec backend pytest app/tests -q
+- python .\scripts\smoke_auth_rbac.py
+- python .\scripts\smoke_document_generation_flow.py
+- python .\scripts\smoke_documents_page.py
+- python .\scripts\smoke_admin_components.py
+- python .\scripts\smoke_frontend_admin_pages.py
+- python .\scripts\smoke_public_pages.py
+- python .\scripts\smoke_account_page.py
+- python .\scripts\smoke_frontend_hooks_layout.py
+- python .\scripts\smoke_frontend_utils_routes.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_backend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- docker compose exec frontend npm run build
+- python .\scripts\check_frontend_bundle_encoding.py
+
+Следующий функциональный блок:
+
+- 6.72 - следующий функциональный блок после стабилизации release candidate / tag readiness / post-release verification
