@@ -2151,3 +2151,89 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.67 - следующий функциональный блок после стабилизации frontend routes/builders/meta
 ```
+
+---
+
+## Checkpoint 6.67 - операционный центр качества frontend smoke/guards coverage
+
+Контур качества smoke/guard scripts, покрытия frontend/backend проверками, API error guard, mojibake guard, BOM/text encoding guard, bundle encoding и защиты от маркеров незавершённой реализации стабилизирован.
+
+Закрыто:
+
+- 6.67.1 - Dashboard: сценарий `Операционный центр качества frontend smoke/guards coverage`
+- 6.67.2 - диагностика smoke/guard coverage scripts
+- 6.67.3 - smoke-покрытие прямых маршрутов frontend smoke/guards coverage
+- 6.67.4 - финальная стабилизация блока frontend smoke/guards coverage
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля frontend smoke/guards coverage;
+- check_frontend_smoke_coverage.py диагностирует обязательные frontend guard/smoke scripts;
+- check_backend_smoke_coverage.py диагностирует обязательные backend guard/smoke scripts и explicit coverage hints;
+- frontend_guard.py показывает диагностическую сводку по protected patterns, extensions и excluded dirs;
+- smoke_frontend_core.py контролирует наличие diagnostics-блоков в coverage/guard scripts;
+- прямые маршруты admin/public/fallback для smoke guards coverage покрыты smoke-проверками;
+- полный gate подтверждён: secret scan, encoding guards, frontend guards, pytest, smoke scripts, coverage guards, frontend build и bundle encoding.
+
+Основные маршруты:
+
+- `/admin?from=smoke-guards-coverage`
+- `/admin/__missing_smoke_guards_route__`
+- `/admin/users?activity=inactive&from=smoke-guards-coverage`
+- `/admin/organizations?scope=with_kpp&from=smoke-guards-coverage`
+- `/admin/groups?status=active&from=smoke-guards-coverage`
+- `/admin/courses?is_active=true&from=smoke-guards-coverage`
+- `/admin/enrollments?action_required=true&from=smoke-guards-coverage`
+- `/admin/documents?action_required=true&from=smoke-guards-coverage`
+- `/admin/documents?status=available&type=certificate&from=smoke-guards-coverage`
+- `/admin/audit-events?entity_type=document&limit=25&from=smoke-guards-coverage`
+- `/admin/roles?type=system&from=smoke-guards-coverage`
+- `/admin/permissions?group=audit&from=smoke-guards-coverage`
+- `/`
+- `/catalog?from=smoke-guards-coverage`
+- `/courses/__missing_smoke_guards_course__`
+- `/organization-info?from=smoke-guards-coverage`
+- `/organization?from=smoke-guards-coverage`
+- `/verify-document?from=smoke-guards-coverage`
+- `/verify/__missing_smoke_guards_code__`
+- `/contacts?from=smoke-guards-coverage`
+- `/faq?from=smoke-guards-coverage`
+- `/privacy?from=smoke-guards-coverage`
+- `/offer?from=smoke-guards-coverage`
+- `/login?from=smoke-guards-coverage`
+- `/register?from=smoke-guards-coverage`
+- `/account?from=smoke-guards-coverage`
+- `/__missing_smoke_guards_public__`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\secret_scan.py
+python .\scripts\check_text_encoding.py
+python .\scripts\check_source_bom.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\frontend_guard.py
+docker compose exec backend pytest app/tests -q
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_document_generation_flow.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\smoke_frontend_hooks_layout.py
+python .\scripts\smoke_frontend_utils_routes.py
+python .\scripts\smoke_frontend_core.py
+python .\scripts\check_frontend_smoke_coverage.py
+python .\scripts\check_backend_smoke_coverage.py
+python .\scripts\check_no_todo_markers.py
+docker compose exec frontend npm run build
+python .\scripts\check_frontend_bundle_encoding.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.68 - следующий функциональный блок после стабилизации frontend smoke/guards coverage
+```
