@@ -166,3 +166,42 @@ export function buildPublicMeta(pathname) {
       "Запрошенная страница не найдена. Вернитесь на главную, в каталог программ или в обязательные публичные разделы.",
   };
 }
+
+export const PUBLIC_ROUTE_META_DIAGNOSTIC_CASES = [
+  { pathname: "/", expectedPage: "home", expectedTitle: "ObrPortal — образовательная платформа" },
+  { pathname: "/catalog", expectedPage: "catalog", expectedTitle: "Каталог программ — ObrPortal" },
+  { pathname: "/courses/__missing_routes_meta_course__", expectedPage: "course-detail", expectedTitle: "Карточка курса — ObrPortal" },
+  { pathname: "/organization-info", expectedPage: "organization-info", expectedTitle: "Сведения об образовательной организации — ObrPortal" },
+  { pathname: "/organization", expectedPage: "organization", expectedTitle: "Кабинет организации - ObrPortal" },
+  { pathname: "/verify-document", expectedPage: "verify-document", expectedTitle: "Проверка документа — ObrPortal" },
+  { pathname: "/verify/__missing_routes_meta_code__", expectedPage: "verify-document", expectedTitle: "Проверка документа — ObrPortal" },
+  { pathname: "/contacts", expectedPage: "contacts", expectedTitle: "Контакты — ObrPortal" },
+  { pathname: "/faq", expectedPage: "faq", expectedTitle: "FAQ — ObrPortal" },
+  { pathname: "/privacy", expectedPage: "privacy", expectedTitle: "Политика обработки персональных данных — ObrPortal" },
+  { pathname: "/offer", expectedPage: "offer", expectedTitle: "Оферта — ObrPortal" },
+  { pathname: "/login", expectedPage: "login", expectedTitle: "Вход — ObrPortal" },
+  { pathname: "/register", expectedPage: "register", expectedTitle: "Регистрация — ObrPortal" },
+  { pathname: "/account", expectedPage: "account", expectedTitle: "Личный кабинет — ObrPortal" },
+  { pathname: "/__missing_routes_meta_public__", expectedPage: "not-found", expectedTitle: "Страница не найдена — ObrPortal" },
+];
+
+export function getPublicRoutesMetaDiagnostics() {
+  const routeMapEntries = Object.entries(PUBLIC_ROUTE_MAP);
+  const duplicatedPaths = routeMapEntries
+    .map(([, path]) => path)
+    .filter((path, index, paths) => paths.indexOf(path) !== index);
+  const brokenMetaCases = PUBLIC_ROUTE_META_DIAGNOSTIC_CASES.filter((item) => {
+    const page = getPublicPageFromPathname(item.pathname);
+    const meta = buildPublicMeta(item.pathname);
+
+    return page !== item.expectedPage || meta.title !== item.expectedTitle || !meta.description;
+  });
+
+  return {
+    routeMapTotal: routeMapEntries.length,
+    metaCasesTotal: PUBLIC_ROUTE_META_DIAGNOSTIC_CASES.length,
+    duplicatedPaths: [...new Set(duplicatedPaths)],
+    brokenMetaCases,
+    ok: duplicatedPaths.length === 0 && brokenMetaCases.length === 0,
+  };
+}
