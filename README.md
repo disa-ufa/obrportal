@@ -2002,3 +2002,74 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.65 - следующий функциональный блок после стабилизации аудита и расследований
 ```
+
+---
+
+## Checkpoint 6.65 - операционный центр качества frontend shell и навигации
+
+Контур качества frontend shell, admin/public навигации, прямых маршрутов, fallback-страниц, Dashboard-ссылок, публичных страниц и защиты от сломанных переходов стабилизирован.
+
+Закрыто:
+
+- 6.65.1 - Dashboard: сценарий `Операционный центр качества frontend shell и навигации`
+- 6.65.2 - AppShell/PublicShell: диагностика качества shell и навигации
+- 6.65.3 - smoke-покрытие прямых маршрутов frontend shell и навигации
+- 6.65.4 - финальная стабилизация блока frontend shell и навигации
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля frontend shell и навигации;
+- AppShell показывает диагностический блок качества admin shell;
+- PublicShell показывает диагностический блок качества public shell;
+- диагностируются admin routes, дубли path, неизвестный currentPage, count keys, состояние загрузки Admin API;
+- диагностируются public nav, footer links, текущий публичный раздел, целевая зона пользователя: auth/admin/organization/account;
+- прямые admin route, unknown admin route, public route, course fallback, verify fallback и public fallback покрыты smoke-проверками;
+- сохранён контроль Dashboard → разделы → фильтры → публичные страницы → fallback-страницы.
+
+Основные маршруты:
+
+- `/admin`
+- `/admin/__missing_shell_route__`
+- `/admin/users?from=shell-navigation`
+- `/admin/organizations?from=shell-navigation`
+- `/admin/groups?from=shell-navigation`
+- `/admin/courses?from=shell-navigation`
+- `/admin/enrollments?from=shell-navigation`
+- `/admin/documents?from=shell-navigation`
+- `/admin/roles?from=shell-navigation`
+- `/admin/permissions?from=shell-navigation`
+- `/admin/audit-events?from=shell-navigation`
+- `/`
+- `/catalog?from=shell-navigation`
+- `/courses/__missing_shell_navigation_course__`
+- `/organization-info?from=shell-navigation`
+- `/organization?from=shell-navigation`
+- `/verify-document?from=shell-navigation`
+- `/verify/__missing_shell_navigation_code__`
+- `/contacts?from=shell-navigation`
+- `/faq?from=shell-navigation`
+- `/privacy?from=shell-navigation`
+- `/offer?from=shell-navigation`
+- `/login?from=shell-navigation`
+- `/register?from=shell-navigation`
+- `/account?from=shell-navigation`
+- `/__missing_public_shell_route__`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_hooks_layout.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.66 - следующий функциональный блок после стабилизации frontend shell и навигации
+```
