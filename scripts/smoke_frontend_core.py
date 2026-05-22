@@ -411,6 +411,39 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_release_candidate.py",
+        [
+            "REQUIRED_RC_TAG",
+            "REQUIRED_RC_CHECKLIST_SECTIONS",
+            "REQUIRED_RC_COMMANDS",
+            "REQUIRED_CI_COMMANDS",
+            "def get_release_candidate_diagnostics",
+            "missingCandidateSections",
+            "missingCandidateCommands",
+            "release candidate diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        ".github/workflows/ci.yml",
+        [
+            "Run release candidate guard",
+            "python scripts/check_release_candidate.py",
+        ],
+    )
+
+    require_contains(
+        "docs/release-candidate-checklist.md",
+        [
+            "# Release candidate checklist",
+            "## Tag readiness",
+            "## Post-release verification",
+            "## Rollback readiness",
+            "git tag -a v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 
