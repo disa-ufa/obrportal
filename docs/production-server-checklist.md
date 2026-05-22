@@ -212,3 +212,9 @@ Database restore must be performed only when schema or data changes require it a
 - Admin panel works.
 - Document workflows work.
 - Backup and rollback path are verified.
+
+## Checklist diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_server_checklist.py`

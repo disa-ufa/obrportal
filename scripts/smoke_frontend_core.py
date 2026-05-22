@@ -529,6 +529,31 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_server_checklist.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_server_checklist_diagnostics",
+            "production server checklist diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-server-checklist.md",
+        [
+            "# Production server checklist",
+            "## Release baseline",
+            "## Deployment commands",
+            "## Rollback commands",
+            "## Production acceptance criteria",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 
