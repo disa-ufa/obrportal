@@ -2325,3 +2325,94 @@ python .\scripts\check_frontend_bundle_encoding.py
 ```text
 6.69 - следующий функциональный блок после стабилизации CI/CD и локального gate
 ```
+
+---
+
+## Checkpoint 6.69 - операционный центр production readiness / release checklist
+
+Контур production readiness / release checklist стабилизирован: env/config, Docker Compose, health/ready, migrations, seeds, storage, logs, release smoke, CI/local gate и rollback-порядок закрыты проверками.
+
+Закрыто:
+
+- 6.69.1 - Dashboard: сценарий `Операционный центр production readiness / release checklist`
+- 6.69.2 - диагностика production readiness / release checklist
+- 6.69.3 - smoke-покрытие прямых маршрутов production readiness / release checklist
+- 6.69.4 - финальная стабилизация блока production readiness / release checklist
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля production readiness / release checklist;
+- добавлен `scripts/check_release_readiness.py` для контроля release-ready окружения;
+- `.github/workflows/ci.yml` запускает `Run release readiness guard`;
+- `check_ci_local_gate.py` учитывает `check_release_readiness.py` как обязательную CI/local gate проверку;
+- `check_frontend_smoke_coverage.py` учитывает `check_release_readiness.py` как обязательный frontend guard script;
+- `smoke_frontend_core.py` контролирует наличие release readiness diagnostics и CI workflow step;
+- прямые admin/public/fallback маршруты production readiness покрыты smoke-проверками;
+- полный gate подтверждён: secret scan, encoding guards, frontend guards, CI/local gate guard, release readiness guard, pytest, smoke scripts, coverage guards, frontend build и bundle encoding.
+
+Основные маршруты:
+
+- `/admin?from=production-readiness`
+- `/admin/__missing_release_route__`
+- `/admin/users?activity=inactive&from=production-readiness`
+- `/admin/organizations?scope=with_kpp&from=production-readiness`
+- `/admin/groups?status=active&from=production-readiness`
+- `/admin/courses?is_active=true&from=production-readiness`
+- `/admin/enrollments?action_required=true&from=production-readiness`
+- `/admin/documents?action_required=true&from=production-readiness`
+- `/admin/documents?status=available&type=certificate&from=production-readiness`
+- `/admin/audit-events?entity_type=document&limit=25&from=production-readiness`
+- `/admin/audit-events?entity_type=user&limit=25&from=production-readiness`
+- `/admin/audit-events?entity_type=organization&limit=25&from=production-readiness`
+- `/admin/roles?type=system&from=production-readiness`
+- `/admin/permissions?group=audit&from=production-readiness`
+- `/`
+- `/catalog?from=production-readiness`
+- `/courses/__missing_release_course__`
+- `/organization-info?from=production-readiness`
+- `/organization?from=production-readiness`
+- `/verify-document?from=production-readiness`
+- `/verify/__missing_release_code__`
+- `/contacts?from=production-readiness`
+- `/faq?from=production-readiness`
+- `/privacy?from=production-readiness`
+- `/offer?from=production-readiness`
+- `/login?from=production-readiness`
+- `/register?from=production-readiness`
+- `/account?from=production-readiness`
+- `/__missing_release_public__`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\secret_scan.py
+python .\scripts\check_text_encoding.py
+python .\scripts\check_source_bom.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\frontend_guard.py
+python .\scripts\check_ci_local_gate.py
+python .\scripts\check_release_readiness.py
+docker compose exec backend pytest app/tests -q
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_document_generation_flow.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\smoke_frontend_hooks_layout.py
+python .\scripts\smoke_frontend_utils_routes.py
+python .\scripts\smoke_frontend_core.py
+python .\scripts\check_frontend_smoke_coverage.py
+python .\scripts\check_backend_smoke_coverage.py
+python .\scripts\check_no_todo_markers.py
+docker compose exec frontend npm run build
+python .\scripts\check_frontend_bundle_encoding.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.70 - следующий функциональный блок после стабилизации production readiness / release checklist
+```
