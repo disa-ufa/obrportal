@@ -478,6 +478,31 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_deployment_plan.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_deployment_plan_diagnostics",
+            "production deployment plan diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-deployment-plan.md",
+        [
+            "# Production deployment plan",
+            "## Release baseline",
+            "## Deployment order",
+            "## Post-deployment smoke",
+            "## Rollback order",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 
