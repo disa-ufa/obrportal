@@ -344,6 +344,36 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_release_readiness.py",
+        [
+            "REQUIRED_ENV_KEYS",
+            "REQUIRED_COMPOSE_SECTIONS",
+            "REQUIRED_RELEASE_COMMANDS",
+            "REQUIRED_SUPPORT_FILES",
+            "def get_release_readiness_diagnostics",
+            "missingEnvKeys",
+            "missingComposeSections",
+            "missingReleaseCommands",
+            "release readiness diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        ".github/workflows/ci.yml",
+        [
+            "Run release readiness guard",
+            "python scripts/check_release_readiness.py",
+        ],
+    )
+
+    require_contains(
+        "scripts/check_ci_local_gate.py",
+        [
+            "python scripts/check_release_readiness.py",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

@@ -27,6 +27,7 @@ REQUIRED_CI_COMMANDS = [
     "python scripts/check_frontend_mojibake.py",
     "python scripts/frontend_guard.py",
     "python scripts/check_ci_local_gate.py",
+    "python scripts/check_release_readiness.py",
     "docker compose exec -T backend pytest app/tests -q",
     "python scripts/smoke_auth_rbac.py",
     "python scripts/smoke_document_generation_flow.py",
