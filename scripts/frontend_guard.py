@@ -40,6 +40,15 @@ FORBIDDEN_PATTERNS = [
 ]
 
 
+def get_frontend_guard_diagnostics() -> dict[str, object]:
+    return {
+        "patternsTotal": len(FORBIDDEN_PATTERNS),
+        "checkExtensionsTotal": len(CHECK_EXTENSIONS),
+        "excludedDirsTotal": len(EXCLUDED_DIRS),
+        "frontendRootExists": FRONTEND_ROOT.exists(),
+    }
+
+
 def should_skip(path: Path) -> bool:
     relative_parts = set(path.relative_to(ROOT).parts)
 
@@ -83,6 +92,15 @@ def scan_file(path: Path) -> list[str]:
 
 def main() -> int:
     findings: list[str] = []
+    guard_diagnostics = get_frontend_guard_diagnostics()
+
+    if not guard_diagnostics["frontendRootExists"]:
+        print("Frontend guard failed: frontend root does not exist.")
+        return 1
+
+    if guard_diagnostics["patternsTotal"] < 4:
+        print("Frontend guard failed: not enough protected patterns configured.")
+        return 1
 
     for path in iter_frontend_files():
         findings.extend(scan_file(path))
@@ -94,6 +112,12 @@ def main() -> int:
         return 1
 
     print("Frontend guard passed. No forbidden frontend patterns found.")
+    print(
+        "frontend guard diagnostics passed: "
+        f"patterns={guard_diagnostics['patternsTotal']}, "
+        f"extensions={guard_diagnostics['checkExtensionsTotal']}, "
+        f"excluded_dirs={guard_diagnostics['excludedDirsTotal']}"
+    )
     return 0
 
 

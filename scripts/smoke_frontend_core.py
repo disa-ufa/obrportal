@@ -288,6 +288,41 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_frontend_smoke_coverage.py",
+        [
+            "REQUIRED_FRONTEND_GUARD_SCRIPTS",
+            "REQUIRED_FRONTEND_SMOKE_SCRIPTS",
+            "def get_frontend_smoke_guard_diagnostics",
+            "missingScriptFiles",
+            "coveredFrontendFilesTotal",
+            "frontend smoke/guard diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "scripts/check_backend_smoke_coverage.py",
+        [
+            "REQUIRED_BACKEND_GUARD_SCRIPTS",
+            "REQUIRED_BACKEND_SMOKE_SCRIPTS",
+            "def get_backend_smoke_guard_diagnostics",
+            "missingScriptFiles",
+            "explicitHintHitsTotal",
+            "backend smoke/guard diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "scripts/frontend_guard.py",
+        [
+            "def get_frontend_guard_diagnostics",
+            "patternsTotal",
+            "frontendRootExists",
+            "not enough protected patterns configured",
+            "frontend guard diagnostics passed",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

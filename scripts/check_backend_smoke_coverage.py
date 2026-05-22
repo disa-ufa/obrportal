@@ -25,6 +25,19 @@ ALLOW_UNCOVERED = {
     "backend/app/db/seed_org.py",
 }
 
+REQUIRED_BACKEND_GUARD_SCRIPTS = [
+    "scripts/secret_scan.py",
+    "scripts/check_text_encoding.py",
+    "scripts/check_source_bom.py",
+    "scripts/check_backend_smoke_coverage.py",
+    "scripts/check_no_todo_markers.py",
+]
+
+REQUIRED_BACKEND_SMOKE_SCRIPTS = [
+    "scripts/smoke_auth_rbac.py",
+    "scripts/smoke_document_generation_flow.py",
+]
+
 EXPLICIT_COVERAGE_HINTS = {
     "backend/app/api/v1/admin.py": [
         "/api/v1/admin/users",
@@ -155,6 +168,35 @@ def app_module_path(path: Path) -> str:
     return "app." + ".".join(relative_parts)
 
 
+def get_backend_smoke_guard_diagnostics(coverage_text: str) -> dict[str, object]:
+    required_scripts = [
+        *REQUIRED_BACKEND_GUARD_SCRIPTS,
+        *REQUIRED_BACKEND_SMOKE_SCRIPTS,
+    ]
+    missing_script_files = [
+        item for item in required_scripts if not (ROOT / item).exists()
+    ]
+    explicit_hints_total = sum(len(hints) for hints in EXPLICIT_COVERAGE_HINTS.values())
+    explicit_hint_hits_total = sum(
+        1
+        for hints in EXPLICIT_COVERAGE_HINTS.values()
+        for hint in hints
+        if hint in coverage_text
+    )
+
+    return {
+        "requiredScriptsTotal": len(required_scripts),
+        "guardScriptsTotal": len(REQUIRED_BACKEND_GUARD_SCRIPTS),
+        "smokeScriptsTotal": len(REQUIRED_BACKEND_SMOKE_SCRIPTS),
+        "missingScriptFiles": missing_script_files,
+        "backendFilesTotal": len(collect_backend_files()),
+        "explicitHintFilesTotal": len(EXPLICIT_COVERAGE_HINTS),
+        "explicitHintsTotal": explicit_hints_total,
+        "explicitHintHitsTotal": explicit_hint_hits_total,
+        "allowedUncoveredTotal": len(ALLOW_UNCOVERED),
+    }
+
+
 def has_explicit_coverage_hint(relative_path: str, coverage_text: str) -> bool:
     hints = EXPLICIT_COVERAGE_HINTS.get(relative_path, [])
 
@@ -176,6 +218,14 @@ def is_likely_covered(path: Path, coverage_text: str) -> bool:
 
 def main() -> None:
     coverage_text = collect_coverage_text()
+    backend_diagnostics = get_backend_smoke_guard_diagnostics(coverage_text)
+
+    if backend_diagnostics["missingScriptFiles"]:
+        print("Required backend smoke/guard scripts are missing:")
+        for item in backend_diagnostics["missingScriptFiles"]:
+            print(f" - {item}")
+
+        raise SystemExit(1)
 
     uncovered = []
     allowed = []
@@ -203,6 +253,15 @@ def main() -> None:
         raise SystemExit(1)
 
     print("backend pytest/smoke/check coverage guard passed")
+    print(
+        "backend smoke/guard diagnostics passed: "
+        f"scripts={backend_diagnostics['requiredScriptsTotal']}, "
+        f"guard_scripts={backend_diagnostics['guardScriptsTotal']}, "
+        f"smoke_scripts={backend_diagnostics['smokeScriptsTotal']}, "
+        f"backend_files={backend_diagnostics['backendFilesTotal']}, "
+        f"explicit_hints={backend_diagnostics['explicitHintsTotal']}, "
+        f"explicit_hint_hits={backend_diagnostics['explicitHintHitsTotal']}"
+    )
 
     if allowed:
         print("Allowed uncovered backend infrastructure/bootstrap files:")

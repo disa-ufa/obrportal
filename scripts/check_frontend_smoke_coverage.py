@@ -14,6 +14,53 @@ ALLOW_UNCOVERED = {
     # Add explicit exceptions only for generated/vendor files if they appear later.
 }
 
+REQUIRED_FRONTEND_GUARD_SCRIPTS = [
+    "scripts/secret_scan.py",
+    "scripts/check_text_encoding.py",
+    "scripts/check_source_bom.py",
+    "scripts/check_frontend_api_errors.py",
+    "scripts/check_frontend_mojibake.py",
+    "scripts/frontend_guard.py",
+    "scripts/check_frontend_bundle_encoding.py",
+    "scripts/check_no_todo_markers.py",
+]
+
+REQUIRED_FRONTEND_SMOKE_SCRIPTS = [
+    "scripts/smoke_auth_rbac.py",
+    "scripts/smoke_frontend_admin_pages.py",
+    "scripts/smoke_public_pages.py",
+    "scripts/smoke_account_page.py",
+    "scripts/smoke_frontend_hooks_layout.py",
+    "scripts/smoke_frontend_utils_routes.py",
+    "scripts/smoke_documents_page.py",
+    "scripts/smoke_admin_components.py",
+]
+
+
+def get_frontend_smoke_guard_diagnostics(script_text: str) -> dict[str, object]:
+    required_scripts = [
+        *REQUIRED_FRONTEND_GUARD_SCRIPTS,
+        *REQUIRED_FRONTEND_SMOKE_SCRIPTS,
+    ]
+    missing_script_files = [
+        item for item in required_scripts if not (ROOT / item).exists()
+    ]
+    covered_frontend_files = [
+        path
+        for path in collect_frontend_files()
+        if is_likely_covered(path, script_text)
+    ]
+
+    return {
+        "requiredScriptsTotal": len(required_scripts),
+        "guardScriptsTotal": len(REQUIRED_FRONTEND_GUARD_SCRIPTS),
+        "smokeScriptsTotal": len(REQUIRED_FRONTEND_SMOKE_SCRIPTS),
+        "missingScriptFiles": missing_script_files,
+        "frontendFilesTotal": len(collect_frontend_files()),
+        "coveredFrontendFilesTotal": len(covered_frontend_files),
+        "allowedUncoveredTotal": len(ALLOW_UNCOVERED),
+    }
+
 
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
@@ -52,6 +99,14 @@ def is_likely_covered(path: Path, script_text: str) -> bool:
 
 def main() -> None:
     script_text = collect_check_scripts_text()
+    frontend_diagnostics = get_frontend_smoke_guard_diagnostics(script_text)
+
+    if frontend_diagnostics["missingScriptFiles"]:
+        print("Required frontend smoke/guard scripts are missing:")
+        for item in frontend_diagnostics["missingScriptFiles"]:
+            print(f" - {item}")
+
+        raise SystemExit(1)
 
     uncovered = []
     for path in collect_frontend_files():
@@ -71,6 +126,14 @@ def main() -> None:
         raise SystemExit(1)
 
     print("frontend smoke/check coverage guard passed")
+    print(
+        "frontend smoke/guard diagnostics passed: "
+        f"scripts={frontend_diagnostics['requiredScriptsTotal']}, "
+        f"guard_scripts={frontend_diagnostics['guardScriptsTotal']}, "
+        f"smoke_scripts={frontend_diagnostics['smokeScriptsTotal']}, "
+        f"frontend_files={frontend_diagnostics['frontendFilesTotal']}, "
+        f"covered_frontend_files={frontend_diagnostics['coveredFrontendFilesTotal']}"
+    )
 
 
 if __name__ == "__main__":
