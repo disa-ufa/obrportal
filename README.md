@@ -2734,3 +2734,54 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 6.73 - финальная подготовка annotated tag `v0.1.0-stage6` и публикации релиза
+
+---
+
+## Checkpoint 7.1 - production deployment preparation
+
+После публикации релиза `v0.1.0-stage6` начат Stage 7: подготовка production deployment без изменения релизного tag.
+
+Закрыто:
+
+- 7.1.1 - production deployment plan
+- 7.1.2 - diagnostics для production deployment plan
+- 7.1.3 - README checkpoint для production deployment preparation
+
+Результат:
+
+- релизный tag `v0.1.0-stage6` сохранён на commit `ac6f339d40567a107dd19f02ec778fbeb5e19971`;
+- `main` оставлен на опубликованном релизе;
+- дальнейшая работа ведётся в `develop` как post-release development;
+- добавлен `docs/production-deployment-plan.md`; 
+- добавлен `scripts/check_production_deployment_plan.py`;
+- `.github/workflows/ci.yml` запускает `Run production deployment plan guard`;
+- `check_ci_local_gate.py` учитывает production deployment plan guard;
+- `check_release_readiness.py` учитывает production deployment plan guard и support file;
+- `check_frontend_smoke_coverage.py` учитывает новый guard script;
+- `smoke_frontend_core.py` контролирует наличие production deployment diagnostics и production deployment plan;
+- production deployment plan фиксирует release baseline, production services, env checks, pre-deployment gate, server preparation, backup order, deployment order, post-deployment smoke, rollback order и acceptance criteria.
+
+Основные файлы:
+
+- `docs/production-deployment-plan.md`
+- `scripts/check_production_deployment_plan.py`
+- `.github/workflows/ci.yml`
+- `scripts/check_ci_local_gate.py`
+- `scripts/check_release_readiness.py`
+- `scripts/check_frontend_smoke_coverage.py`
+- `scripts/smoke_frontend_core.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 7.2 - production environment template / server deployment checklist
