@@ -1926,3 +1926,79 @@ python .\scripts\check_no_todo_markers.py
 ```text
 6.64 - следующий функциональный блок после стабилизации учебных групп
 ```
+
+---
+
+## Checkpoint 6.64 - операционный центр аудита и расследований
+
+Контур аудита и расследований, фильтров action/entity_type/entity_id/actor_user_id/limit, быстрых расследований, связанных разделов, критичных действий, RBAC-событий и document/PDF-событий стабилизирован.
+
+Закрыто:
+
+- 6.64.1 - Dashboard: сценарий `Операционный центр аудита и расследований`
+- 6.64.2 - AuditPage: диагностика аудита и расследований
+- 6.64.3 - smoke-покрытие прямых маршрутов аудита и расследований
+- 6.64.4 - финальная стабилизация блока аудита и расследований
+
+Результат:
+
+- Dashboard содержит отдельный сценарий контроля аудита и расследований;
+- AuditPage показывает диагностический блок аудита и расследований;
+- диагностируются фильтры action, entity_type, entity_id, actor_user_id и limit;
+- отображаются события документов, назначений, пользователей, организаций, учебных групп, курсов, ролей и прав;
+- отображаются критичные действия: удаление, отзыв, восстановление, регенерация и другие действия document/PDF-контура;
+- поддержаны быстрые переходы к журналу аудита, расширенной выдаче, документам, назначениям, пользователям, ролям, правам и отзывам документов;
+- прямые маршруты аудита, расследований, связанных реестров, action_required документов и action_required назначений покрыты smoke-проверками.
+
+Основные маршруты:
+
+- `/admin/audit-events`
+- `/admin/audit-events?limit=25`
+- `/admin/audit-events?limit=200`
+- `/admin/audit-events?action=admin.user_created`
+- `/admin/audit-events?action=admin.document_created`
+- `/admin/audit-events?action=admin.document_regenerated`
+- `/admin/audit-events?action=admin.document_revoked`
+- `/admin/audit-events?action=admin.document_restored`
+- `/admin/audit-events?entity_type=user`
+- `/admin/audit-events?entity_type=organization`
+- `/admin/audit-events?entity_type=learning_group`
+- `/admin/audit-events?entity_type=course`
+- `/admin/audit-events?entity_type=enrollment`
+- `/admin/audit-events?entity_type=document`
+- `/admin/audit-events?entity_type=role`
+- `/admin/audit-events?entity_type=permission`
+- `/admin/audit-events?actor_user_id=00000000-0000-0000-0000-000000000000`
+- `/admin/audit-events?entity_id=00000000-0000-0000-0000-000000000000`
+- `/admin/audit-events?entity_type=document&entity_id=00000000-0000-0000-0000-000000000000`
+- `/admin/audit-events?entity_type=user&actor_user_id=00000000-0000-0000-0000-000000000000`
+- `/admin/users`
+- `/admin/roles`
+- `/admin/permissions`
+- `/admin/organizations`
+- `/admin/groups`
+- `/admin/courses`
+- `/admin/enrollments`
+- `/admin/documents`
+- `/admin/documents?action_required=true`
+- `/admin/enrollments?action_required=true`
+
+Контрольные проверки:
+
+```powershell
+python .\scripts\smoke_auth_rbac.py
+python .\scripts\smoke_frontend_admin_pages.py
+python .\scripts\smoke_admin_components.py
+python .\scripts\smoke_documents_page.py
+python .\scripts\smoke_public_pages.py
+python .\scripts\smoke_account_page.py
+python .\scripts\check_frontend_api_errors.py
+python .\scripts\check_frontend_mojibake.py
+python .\scripts\check_no_todo_markers.py
+```
+
+Следующий функциональный блок:
+
+```text
+6.65 - следующий функциональный блок после стабилизации аудита и расследований
+```
