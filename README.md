@@ -3408,3 +3408,94 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.6 - production server remediation plan / prepare server for rollout
+
+---
+
+## Checkpoint 8.6 - production server remediation plan / prepare server for rollout
+
+Контур production server remediation plan подготовлен для Stage 8: на основе sanitized server facts зафиксирован безопасный план подготовки production-сервера к реальной выкладке ObrPortal.
+
+Закрыто:
+
+- 8.6.1 - production server remediation plan document
+- 8.6.2 - diagnostics для production server remediation plan
+- 8.6.3 - README checkpoint для production server remediation plan / prepare server for rollout
+
+Результат:
+
+- добавлен `docs/production-server-remediation-plan.md`;
+- добавлен `scripts/check_production_server_remediation_plan.py`;
+- `.github/workflows/ci.yml` запускает `Run production server remediation plan guard`;
+- `check_ci_local_gate.py` учитывает production server remediation plan guard;
+- `check_release_readiness.py` учитывает production server remediation plan guard и support file;
+- `check_frontend_smoke_coverage.py` учитывает новый guard script;
+- `smoke_frontend_core.py` контролирует наличие production server remediation plan diagnostics и remediation-документа;
+- remediation plan фиксирует текущие server blockers, порядок подготовки сервера, сохранение `amnezia-awg`, установку Docker Compose plugin, создание `/opt/obrportal`, создание `/opt/obrportal-backups`, выбор reverse proxy, подготовку production `.env`, clone repository и post-remediation verification.
+
+Состояние сервера перед remediation:
+
+- server: `306733.fornex.cloud`; 
+- public IP: `89.127.203.70`; 
+- OS: `Ubuntu 24.04.4 LTS`; 
+- Docker Engine: `installed`, `29.1.3`; 
+- Docker Compose plugin: `missing`; 
+- Git: `installed`, `2.43.0`; 
+- `/opt/obrportal`: `missing`; 
+- `/opt/obrportal-backups`: `missing`; 
+- production `.env`: `missing`; 
+- reverse proxy: `missing`; 
+- existing container: `amnezia-awg`; 
+- existing UDP port: `34503/udp`; 
+- HTTP/HTTPS public listeners: `not configured`.
+
+Критичные правила remediation:
+
+- не удалять и не ломать существующий контейнер `amnezia-awg`;
+- не занимать и не менять UDP `34503` без отдельного решения;
+- не печатать и не коммитить production `.env`; 
+- перед rollout подготовить Docker Compose plugin;
+- перед rollout создать application и backup directories;
+- перед rollout выбрать и установить reverse proxy;
+- после remediation повторно выполнить safe verification.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 remediation base: `861886c`
+
+Основные файлы:
+
+- `docs/production-server-remediation-plan.md`
+- `scripts/check_production_server_remediation_plan.py`
+- `.github/workflows/ci.yml`
+- `scripts/check_ci_local_gate.py`
+- `scripts/check_release_readiness.py`
+- `scripts/check_frontend_smoke_coverage.py`
+- `scripts/smoke_frontend_core.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.7 - production server remediation execution / prepare server directories, Docker Compose and reverse proxy decision
