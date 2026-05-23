@@ -139,3 +139,9 @@ uname -a
 - Backup readiness is recorded.
 - Rollback readiness is recorded.
 - No secrets are committed to Git.
+
+## Facts diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_server_facts.py`

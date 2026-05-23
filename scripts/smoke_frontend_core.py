@@ -664,6 +664,37 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_server_facts.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_STAGE7_COMMIT",
+            "REQUIRED_STAGE8_INVENTORY_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_TABLE_ITEMS",
+            "REQUIRED_PORTS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_server_facts_diagnostics",
+            "production server facts diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-server-facts.md",
+        [
+            "# Production server facts",
+            "## Release baseline",
+            "## Server identity",
+            "## Deployment paths",
+            "## Domain and HTTPS facts",
+            "## Reverse proxy facts",
+            "## Production acceptance criteria",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 
