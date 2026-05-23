@@ -3899,3 +3899,118 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.11 - production Caddy installation / HTTPS entrypoint setup
+
+---
+
+## Checkpoint 8.11 - production Caddy installation / HTTPS entrypoint setup
+
+Контур production Caddy installation / HTTPS entrypoint setup выполнен для Stage 8: Caddy установлен на production-сервер, HTTPS entrypoint для `portal.rcdo02.ru` поднят и временный placeholder успешно отдаёт `200 OK`.
+
+Закрыто:
+
+- 8.11.1 - install Caddy and configure temporary HTTPS entrypoint
+- 8.11.2 - record Caddy HTTPS entrypoint result in docs
+- 8.11.3 - README checkpoint для production Caddy installation / HTTPS entrypoint setup
+
+Результат:
+
+- Caddy установлен на production-сервер;
+- Caddy version: `v2.11.3`; 
+- Caddy service активен и работает через systemd;
+- production domain: `portal.rcdo02.ru`; 
+- DNS A-record: `portal.rcdo02.ru -> 89.127.203.70`; 
+- port `80` открыт;
+- port `443` открыт;
+- HTTP отдаёт `308 Permanent Redirect` на HTTPS;
+- HTTPS отдаёт `200 OK`; 
+- HTTPS body: `ObrPortal HTTPS entrypoint is ready. Backend/frontend deployment is pending.`;
+- security headers присутствуют: `X-Content-Type-Options`, `Referrer-Policy`; 
+- существующий контейнер `amnezia-awg` сохранён;
+- UDP `34503` сохранён;
+- production `.env` не печатался;
+- временный локальный файл `tmp/stage_8_11_1_caddy_install.txt` не коммитился.
+
+Документально зафиксировано:
+
+- `docs/production-server-facts.md` содержит Caddy HTTPS entrypoint safe facts;
+- `docs/production-domain-dns-verification.md` содержит HTTPS entrypoint verification result;
+- `docs/production-domain-reverse-proxy-decision.md` содержит Caddy HTTPS entrypoint decision result;
+- `docs/production-reverse-proxy-checklist.md` содержит Caddy installation result.
+
+Текущее production-состояние:
+
+- server: `306733.fornex.cloud`; 
+- public IPv4: `89.127.203.70`; 
+- domain: `portal.rcdo02.ru`; 
+- HTTPS URL: `https://portal.rcdo02.ru`; 
+- Docker Compose: `2.40.3+ds1-0ubuntu1~24.04.1`; 
+- Caddy: `v2.11.3`; 
+- `/opt/obrportal`: `exists`; 
+- `/opt/obrportal-backups`: `exists`; 
+- production `.env`: `missing`; 
+- backend/frontend deployment: `pending`; 
+- current Caddyfile: temporary placeholder response;
+- existing container: `amnezia-awg running`; 
+- existing UDP port: `34503/udp active`.
+
+Критичные правила дальше:
+
+- не ломать текущий Caddy HTTPS entrypoint;
+- не трогать `amnezia-awg` и UDP `34503`; 
+- не печатать и не коммитить production `.env`; 
+- repository clone выполнять в `/opt/obrportal`; 
+- backend/frontend поднимать только после подготовки production `.env`; 
+- после app deployment заменить placeholder Caddyfile на reverse proxy routes;
+- backend/PostgreSQL/Redis/MinIO не публиковать напрямую наружу.
+
+Следующие rollout blockers:
+
+- clone repository into `/opt/obrportal`; 
+- create production `.env` securely on server;
+- deploy backend/frontend services;
+- replace temporary Caddy placeholder with reverse proxy routes;
+- run deployment smoke checks for `/`, `/health`, `/api/v1/ready`.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 HTTPS entrypoint result: `0cdd934`
+
+Основные файлы:
+
+- `docs/production-server-facts.md`
+- `docs/production-domain-dns-verification.md`
+- `docs/production-domain-reverse-proxy-decision.md`
+- `docs/production-reverse-proxy-checklist.md`
+- `scripts/check_production_domain_dns_verification.py`
+- `scripts/check_production_domain_reverse_proxy_decision.py`
+- `scripts/check_production_reverse_proxy_checklist.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.12 - production repository clone / prepare deployment workspace
