@@ -3499,3 +3499,104 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.7 - production server remediation execution / prepare server directories, Docker Compose and reverse proxy decision
+
+---
+
+## Checkpoint 8.7 - production server remediation execution
+
+Контур production server remediation execution выполнен для Stage 8: на production-сервере безопасно установлен Docker Compose plugin, созданы application/backup directories, результат зафиксирован в sanitized-документации.
+
+Закрыто:
+
+- 8.7.1 - install Docker Compose plugin + create production directories
+- 8.7.2 - sanitized remediation result update
+- 8.7.3 - README checkpoint для production server remediation execution
+
+Результат на сервере:
+
+- Docker Compose plugin установлен;
+- `docker compose version` возвращает `Docker Compose version 2.40.3+ds1-0ubuntu1~24.04.1`;
+- `/opt/obrportal` создан;
+- `/opt/obrportal-backups` создан;
+- backup subdirectories созданы: `env`, `postgres`, `storage`, `proxy`, `deployment`;
+- `/opt/obrportal-backups/env` ограничен через `chmod 700`;
+- production `.env` по-прежнему отсутствует и его содержимое не печаталось;
+- reverse proxy пока не установлен;
+- существующий контейнер `amnezia-awg` сохранён и продолжает работать;
+- UDP `34503` сохранён;
+- secret marker scan по локальному remediation-логу прошёл успешно;
+- временный локальный файл `tmp/stage_8_7_1_server_remediation.txt` не коммитился.
+
+Документально зафиксировано:
+
+- `docs/production-server-facts.md` содержит post-remediation safe facts;
+- `docs/production-fact-collection-result.md` содержит remediation result snapshot;
+- `docs/production-server-remediation-plan.md` содержит remediation execution result;
+- remaining blockers: production `.env`, domain, reverse proxy, repository clone, deployment smoke checks.
+
+Текущее состояние сервера после remediation:
+
+- server: `306733.fornex.cloud`; 
+- public IP: `89.127.203.70`; 
+- OS: `Ubuntu 24.04.4 LTS`; 
+- Docker Engine: `29.1.3`; 
+- Docker Compose: `2.40.3+ds1-0ubuntu1~24.04.1`; 
+- Git: `2.43.0`; 
+- application directory: `/opt/obrportal exists`; 
+- backup directory: `/opt/obrportal-backups exists`; 
+- backup env directory: `/opt/obrportal-backups/env exists, chmod 700`; 
+- production `.env`: `missing`; 
+- reverse proxy: `not installed yet`; 
+- existing container: `amnezia-awg running`; 
+- existing UDP port: `34503/udp active`; 
+- HTTP/HTTPS public listeners: `not configured`.
+
+Критичные правила дальше:
+
+- не удалять и не ломать `amnezia-awg`;
+- не менять UDP `34503` без отдельного решения;
+- не печатать и не коммитить production `.env`; 
+- перед реальным rollout выбрать production domain;
+- перед реальным rollout выбрать reverse proxy: Caddy или Nginx;
+- repository clone и `.env` выполнять только после фиксации reverse proxy/domain decision.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 remediation execution base: `54e99ea`
+
+Основные файлы:
+
+- `docs/production-server-facts.md`
+- `docs/production-fact-collection-result.md`
+- `docs/production-server-remediation-plan.md`
+- `scripts/check_production_server_remediation_plan.py`
+- `scripts/check_production_fact_collection_result.py`
+- `scripts/check_production_server_facts.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.8 - production domain and reverse proxy decision / HTTPS entrypoint planning
