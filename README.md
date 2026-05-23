@@ -2950,3 +2950,60 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 7.5 - production backup / monitoring / maintenance checklist
+
+---
+
+## Checkpoint 7.5 - production backup / monitoring / maintenance checklist
+
+Контур production backup / monitoring / maintenance checklist подготовлен после релиза `v0.1.0-stage6`: описаны backup goals, backup scope, backup directories, PostgreSQL backup/restore, object storage backup, `.env` backup, deployment metadata, reverse proxy backup, monitoring, maintenance, incident response и rollback readiness.
+
+Закрыто:
+
+- 7.5.1 - production backup / monitoring / maintenance checklist
+- 7.5.2 - diagnostics для production backup / monitoring / maintenance checklist
+- 7.5.3 - README checkpoint для production backup / monitoring / maintenance checklist
+
+Результат:
+
+- добавлен `docs/production-backup-monitoring-checklist.md`;
+- добавлен `scripts/check_production_backup_monitoring_checklist.py`;
+- `.github/workflows/ci.yml` запускает `Run production backup monitoring checklist guard`;
+- `check_ci_local_gate.py` учитывает production backup monitoring checklist guard;
+- `check_release_readiness.py` учитывает production backup monitoring checklist guard и support file;
+- `check_frontend_smoke_coverage.py` учитывает новый guard script;
+- `smoke_frontend_core.py` контролирует наличие production backup monitoring diagnostics и production backup monitoring checklist;
+- production backup monitoring checklist фиксирует release baseline, backup goals/scope/directories, backup preparation commands, PostgreSQL backup/restore, object storage backup, environment backup, deployment metadata, reverse proxy backup, monitoring commands, maintenance checklist, incident response checklist, rollback readiness checklist и acceptance criteria.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+
+Основные файлы:
+
+- `docs/production-backup-monitoring-checklist.md`
+- `scripts/check_production_backup_monitoring_checklist.py`
+- `.github/workflows/ci.yml`
+- `scripts/check_ci_local_gate.py`
+- `scripts/check_release_readiness.py`
+- `scripts/check_frontend_smoke_coverage.py`
+- `scripts/smoke_frontend_core.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 7.6 - production deployment final runbook / release handoff consolidation
