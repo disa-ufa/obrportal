@@ -277,3 +277,24 @@ Remaining blockers:
 - reverse proxy must be selected and installed;
 - repository must be cloned into `/opt/obrportal`;
 - rollout deployment must be executed only after another safe verification.
+
+## Repository workspace remediation result - 2026-05-24
+
+Completed:
+
+- `/opt/obrportal` prepared as deployment workspace;
+- repository cloned from `https://github.com/disa-ufa/obrportal.git`;
+- branch `develop` checked out;
+- server HEAD verified: `61867f063f82c8f2c3ed2553b64b535eeaf74e90`;
+- release tag `v0.1.0-stage6` verified;
+- key files and directories verified: `docker-compose.yml`, `.env.example`, `backend`, `frontend`, `docs`, `scripts`;
+- production `.env` remained missing and was not printed;
+- Docker Compose was not started;
+- Caddy placeholder remained active;
+- existing `amnezia-awg` and UDP `34503` remained preserved.
+
+Remaining remediation:
+
+- create production `.env`;
+- deploy app stack;
+- replace placeholder Caddy response with production reverse proxy routes.

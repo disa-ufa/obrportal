@@ -243,3 +243,37 @@ Secret marker scan result: passed.
 - Deploy backend/frontend services.
 - Replace temporary Caddy placeholder with reverse proxy routes to frontend/backend.
 - Run deployment smoke checks for `/`, `/health`, `/api/v1/ready`.
+
+## Repository workspace safe facts - 2026-05-24
+
+Source: local repository workspace output `tmp/stage_8_12_1_repository_workspace.txt` (not committed).
+Secret marker scan result: passed.
+
+| Fact | Value | Notes |
+| --- | --- | --- |
+| Application directory | `/opt/obrportal` | Repository workspace prepared. |
+| Repository URL | `https://github.com/disa-ufa/obrportal.git` | Public repository. |
+| Server branch | `develop` | Deployment workspace branch. |
+| Server HEAD | `61867f063f82c8f2c3ed2553b64b535eeaf74e90` | Stage 8.11 checkpoint. |
+| Server origin/develop | `61867f063f82c8f2c3ed2553b64b535eeaf74e90` | Matches server HEAD. |
+| Release tag | `v0.1.0-stage6` | Available on server. |
+| Release tag commit | `ac6f339d40567a107dd19f02ec778fbeb5e19971` | Stage 6 release baseline. |
+| Production `.env` | `missing` | Content was not printed. |
+| Compose status | `not started` | `docker compose` was not run. |
+| Caddy placeholder | `preserved` | HTTPS placeholder still returns `200 OK`. |
+| Existing `amnezia-awg` | `preserved` | Container remains running. |
+| Existing UDP `34503` | `preserved` | Port remains active. |
+| `docker-compose.yml` | `exists` | Key deployment file present. |
+| `.env.example` | `exists` | Template file present. |
+| `backend` | `exists` | Backend directory present. |
+| `frontend` | `exists` | Frontend directory present. |
+| `docs` | `exists` | Docs directory present. |
+| `scripts` | `exists` | Scripts directory present. |
+
+### Remaining rollout blockers after repository workspace preparation
+
+- Create production `.env` securely on the server.
+- Run safe production `.env` presence/permissions checks without printing values.
+- Start Docker Compose only after `.env` is prepared.
+- Replace temporary Caddy placeholder with reverse proxy routes after app services are healthy.
+- Run deployment smoke checks for `/`, `/health`, `/api/v1/ready`.

@@ -250,3 +250,25 @@ Database restore must be performed only when schema or data changes require it a
 Required diagnostic command:
 
 - `python .\scripts\check_production_deployment_runbook.py`
+
+## Repository workspace preparation result - 2026-05-24
+
+Repository workspace has been prepared on the production server.
+
+| Item | Result | Notes |
+| --- | --- | --- |
+| Application directory | `/opt/obrportal` | Repository cloned into this directory. |
+| Repository branch | `develop` | Checked out on server. |
+| Server HEAD | `61867f063f82c8f2c3ed2553b64b535eeaf74e90` | Matches `origin/develop` at the time of preparation. |
+| Release tag | `v0.1.0-stage6` | Available. |
+| Release tag commit | `ac6f339d40567a107dd19f02ec778fbeb5e19971` | Verified. |
+| Production `.env` | `missing` | Must be created in the next stage. |
+| Docker Compose | `not started` | No application containers were started. |
+| Caddy | `active` | Temporary HTTPS placeholder preserved. |
+| Existing `amnezia-awg` | `preserved` | Container remains running. |
+
+Next runbook action:
+
+- create production `.env` manually and securely;
+- verify `.env` presence and permissions without printing values;
+- start application stack only after safe `.env` checks.

@@ -132,3 +132,27 @@ uname -a
 Required diagnostic command:
 
 - `python .\scripts\check_production_rollout_inventory.py`
+
+## Repository workspace rollout inventory result - 2026-05-24
+
+| Item | Value | Status |
+| --- | --- | --- |
+| Deployment path | `/opt/obrportal` | prepared |
+| Repository | `https://github.com/disa-ufa/obrportal.git` | cloned |
+| Branch | `develop` | checked out |
+| HEAD | `61867f063f82c8f2c3ed2553b64b535eeaf74e90` | verified |
+| Release tag | `v0.1.0-stage6` | available |
+| Production `.env` | `missing` | next stage |
+| Compose stack | `not started` | intentional |
+| Caddy HTTPS placeholder | `active` | preserved |
+| Existing `amnezia-awg` | `running` | preserved |
+| Existing UDP `34503` | `active` | preserved |
+
+Workspace files verified:
+
+- `docker-compose.yml`;
+- `.env.example`;
+- `backend`;
+- `frontend`;
+- `docs`;
+- `scripts`.
