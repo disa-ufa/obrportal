@@ -554,6 +554,31 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_reverse_proxy_checklist.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_reverse_proxy_checklist_diagnostics",
+            "production reverse proxy checklist diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-reverse-proxy-checklist.md",
+        [
+            "# Production reverse proxy checklist",
+            "## Release baseline",
+            "## HTTPS checklist",
+            "## Backend routing requirements",
+            "## Rollback checklist",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

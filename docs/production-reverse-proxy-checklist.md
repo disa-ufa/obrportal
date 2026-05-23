@@ -161,3 +161,9 @@ Replace `https://example.org` with the real production domain.
 - Health and readiness endpoints work through the domain.
 - Reverse proxy config is backed up.
 - Rollback path is documented.
+
+## Checklist diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_reverse_proxy_checklist.py`
