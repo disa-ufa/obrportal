@@ -145,3 +145,43 @@ uname -a
 Required diagnostic command:
 
 - `python .\scripts\check_production_server_facts.py`
+
+## Collected safe facts - 2026-05-23
+
+Source: local safe preflight output `tmp/stage_8_5_2_server_preflight.txt` (not committed).
+Secret marker scan result: passed.
+
+| Fact | Value | Notes |
+| --- | --- | --- |
+| Provider | `Fornex / inferred from hostname` | Hostname uses `fornex.cloud`. |
+| Server name | `306733.fornex.cloud` | From `hostname`. |
+| Server public IP | `89.127.203.70` | SSH target used for preflight. |
+| Operating system | `Ubuntu 24.04.4 LTS` | From `hostnamectl`. |
+| Kernel | `Linux 6.8.0-110-generic` | From `uname -a`. |
+| Virtualization | `kvm / QEMU` | From `hostnamectl`. |
+| SSH user | `root` | Username only; no credentials recorded. |
+| SSH access policy | `interactive root SSH login works` | Harden to key-only/restricted IP before production acceptance. |
+| CPU/RAM/Disk summary | `x86-64; RAM 1.9Gi; / disk 20G, 23% used; swap 0B` | Capacity summary only. |
+| Uptime/load | `30 days 7:04; load 0.00, 0.00, 0.00` | From safe preflight. |
+| Docker installed | `yes, Docker 29.1.3` | Docker engine exists. |
+| Docker Compose installed | `no / unavailable` | `docker compose` returned unknown command. |
+| Git installed | `yes, Git 2.43.0` | Git exists. |
+| Existing container | `amnezia-awg` | Existing container must not be broken by rollout. |
+| Existing public UDP port | `34503/udp` | Used by `amnezia-awg`. |
+| Application directory | `/opt/obrportal missing` | Must be created before rollout. |
+| Backup directory | `/opt/obrportal-backups missing` | Must be created before rollout. |
+| Reverse proxy | `not installed` | Nginx and Caddy are both missing. |
+| Production `.env` | `missing` | Do not print or commit real `.env` values. |
+| Backup root | `missing` | Must be prepared before deployment. |
+| Observed TCP ports | `22 public; 45289 localhost containerd` | No 80/443/8000/5173/5432/6379 listeners observed. |
+| Observed UDP ports | `34503 public` | Existing Docker proxy for `amnezia-awg`. |
+
+### Immediate rollout blockers
+
+- Install or enable Docker Compose plugin.
+- Create `/opt/obrportal`.
+- Create `/opt/obrportal-backups`.
+- Choose and install reverse proxy: Nginx or Caddy.
+- Create production `.env` on server without committing it.
+- Prepare backup directories before deployment.
+- Preserve or explicitly account for existing `amnezia-awg` container and UDP `34503`.

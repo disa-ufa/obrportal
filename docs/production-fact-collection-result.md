@@ -124,3 +124,47 @@ python .\scripts\check_text_encoding.py
 Required diagnostic command:
 
 - `python .\scripts\check_production_fact_collection_result.py`
+
+## Collection result snapshot - 2026-05-23
+
+Source: local safe preflight output `tmp/stage_8_5_2_server_preflight.txt` (not committed).
+Secret marker scan result: passed.
+
+| Item | Result | Notes |
+| --- | --- | --- |
+| Local preflight completed | `done` | Stage 8 local guards passed before server access. |
+| Server access checked | `done` | SSH access to `root@89.127.203.70` succeeded. |
+| Capacity checked | `done` | `/` disk 20G total, 23% used; RAM 1.9Gi; swap 0B. |
+| Docker checked | `partial` | Docker exists, Docker Compose command is unavailable. |
+| Git checked | `done` | Git 2.43.0 installed. |
+| Directories checked | `missing` | `/opt/obrportal` and `/opt/obrportal-backups` missing. |
+| Network ports checked | `done` | SSH 22 public; existing UDP 34503 for `amnezia-awg`. |
+| Reverse proxy checked | `missing` | Nginx and Caddy not installed. |
+| `.env` existence checked | `missing` | `/opt/obrportal/.env` missing; no content printed. |
+| Backup root checked | `missing` | `/opt/obrportal-backups` missing. |
+| Server facts updated | `done` | Safe facts snapshot added to `docs/production-server-facts.md`. |
+
+### Sanitized server facts summary
+
+| Fact | Value | Notes |
+| --- | --- | --- |
+| Provider | `Fornex / inferred from hostname` | Hostname uses `fornex.cloud`. |
+| Server name | `306733.fornex.cloud` | From safe preflight. |
+| Server public IP | `89.127.203.70` | Public IP only. |
+| Operating system | `Ubuntu 24.04.4 LTS` | Non-secret. |
+| CPU/RAM/Disk summary | `x86-64; RAM 1.9Gi; / disk 20G, 23% used; swap 0B` | Capacity summary only. |
+| SSH user | `root` | Username only. |
+| Application directory | `/opt/obrportal missing` | Must be created. |
+| Backup directory | `/opt/obrportal-backups missing` | Must be created. |
+| Reverse proxy | `missing` | Nginx/Caddy absent. |
+| Production domain | `<pending>` | Not configured in this preflight. |
+| HTTPS status | `not configured` | Reverse proxy is missing. |
+
+### Required remediation before rollout
+
+- Install Docker Compose plugin.
+- Create application and backup directories.
+- Choose/install reverse proxy.
+- Create production `.env` securely on the server.
+- Configure domain and HTTPS.
+- Confirm existing `amnezia-awg` container/UDP `34503` must remain untouched.
