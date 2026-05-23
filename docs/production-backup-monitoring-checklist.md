@@ -176,3 +176,9 @@ df -h
 - Health/readiness monitoring is documented.
 - Incident response checklist is documented.
 - Rollback readiness checklist is documented.
+
+## Checklist diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_backup_monitoring_checklist.py`

@@ -579,6 +579,32 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_backup_monitoring_checklist.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_backup_monitoring_checklist_diagnostics",
+            "production backup monitoring checklist diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-backup-monitoring-checklist.md",
+        [
+            "# Production backup monitoring checklist",
+            "## Release baseline",
+            "## PostgreSQL backup commands",
+            "## Monitoring checklist",
+            "## Incident response checklist",
+            "## Rollback readiness checklist",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

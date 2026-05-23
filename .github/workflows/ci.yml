@@ -80,6 +80,10 @@ jobs:
         run: |
           python scripts/check_production_reverse_proxy_checklist.py
 
+      - name: Run production backup monitoring checklist guard
+        run: |
+          python scripts/check_production_backup_monitoring_checklist.py
+
       - name: Show Docker versions
         run: |
           docker version
