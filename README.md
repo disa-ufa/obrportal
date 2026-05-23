@@ -4263,3 +4263,146 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.14 - production pre-compose safety check / Docker Compose stack startup
+
+---
+
+## Checkpoint 8.14 - production pre-compose safety check / Docker Compose stack startup
+
+Контур production pre-compose safety check / Docker Compose stack startup выполнен для Stage 8: перед запуском выполнена финальная safety-проверка, production Docker Compose stack поднят, затем закрыт security-блокер с прямой публикацией app/service портов наружу через localhost-only override.
+
+Закрыто:
+
+- 8.14.1 - final pre-compose safety check
+- 8.14.2 - controlled Docker Compose stack startup
+- 8.14.2a - localhost-only port bind remediation
+- 8.14.3 - record production Docker Compose startup / localhost port bind result in docs
+- 8.14.4 - README checkpoint для production pre-compose safety check / Docker Compose stack startup
+
+Результат:
+
+- final pre-compose safety check: `passed`; 
+- workspace HEAD на сервере перед запуском: `4686cf5b58701be138582ae5fe5fe6a616965a12`; 
+- Docker Compose config: `valid`; 
+- initial stack startup: `compose_exit_code=0`; 
+- backend local `/health`: `ok`; 
+- backend local `/api/v1/ready`: `ok`; 
+- frontend local check: `HTTP/1.1 200 OK`; 
+- initial security finding: app/service ports were exposed on `0.0.0.0`; 
+- remediation: server-side `docker-compose.override.yml`; 
+- first override attempt: `failed` because Compose merged port lists;
+- final override fix: `ports: !override`; 
+- fixed stack recreate: `compose_exit_code=0`; 
+- secret marker scan: `passed`; 
+- production `.env` values were not printed;
+- production `.env` key names were not printed;
+- temporary local logs under `tmp/` were not committed.
+
+Текущие private service bindings:
+
+- backend: `127.0.0.1:8000`; 
+- frontend: `127.0.0.1:5173`; 
+- PostgreSQL: `127.0.0.1:5432`; 
+- Redis: `127.0.0.1:6379`; 
+- MinIO API: `127.0.0.1:9000`; 
+- MinIO console: `127.0.0.1:9001`.
+
+Текущая public exposure модель:
+
+- public `80/443`: Caddy;
+- public `34503/udp`: existing `amnezia-awg`; 
+- app service ports: localhost-only;
+- backend/frontend/database/cache/storage are not exposed directly to public network.
+
+Документально зафиксировано:
+
+- `docs/production-server-facts.md` содержит Docker Compose startup and localhost port bind safe facts;
+- `docs/production-deployment-runbook.md` содержит Docker Compose startup result;
+- `docs/production-server-remediation-plan.md` содержит Docker Compose startup remediation result;
+- `docs/production-rollout-inventory.md` содержит Docker Compose startup rollout inventory result;
+- `docs/production-deployment-plan.md` содержит Docker Compose startup deployment result;
+- `docs/production-reverse-proxy-checklist.md` содержит Pre-route application stack result.
+
+Текущее production-состояние:
+
+- server: `306733.fornex.cloud`; 
+- public IPv4: `89.127.203.70`; 
+- domain: `portal.rcdo02.ru`; 
+- HTTPS URL: `https://portal.rcdo02.ru`; 
+- Caddy: `v2.11.3`; 
+- `/opt/obrportal`: repository workspace prepared;
+- production `.env`: `exists`, `600`, `root:root`; 
+- Docker Compose stack: `running`; 
+- backend: `running`, private localhost bind;
+- frontend: `running`, private localhost bind;
+- PostgreSQL: `running`, private localhost bind;
+- Redis: `running`, private localhost bind;
+- MinIO: `running`, private localhost bind;
+- current Caddyfile: temporary placeholder response;
+- existing container: `amnezia-awg running`; 
+- existing UDP port: `34503/udp active`.
+
+Критичные правила дальше:
+
+- не удалять server-side `docker-compose.override.yml`; 
+- не возвращать app/service ports на `0.0.0.0`; 
+- не печатать production `.env`; 
+- не коммитить production `.env`; 
+- не ломать текущий Caddy HTTPS entrypoint;
+- не трогать `amnezia-awg` и UDP `34503`; 
+- Caddy должен стать единственным public HTTP/HTTPS entrypoint;
+- database/cache/storage остаются private localhost-only;
+- перед заменой Caddy placeholder обязательно сохранить backup текущего `/etc/caddy/Caddyfile`.
+
+Следующие rollout blockers:
+
+- replace temporary Caddy placeholder with reverse proxy routes;
+- route `/` and frontend assets to `127.0.0.1:5173`; 
+- route `/api/*`, `/health`, `/api/v1/ready` to `127.0.0.1:8000`; 
+- validate and reload Caddy;
+- run public HTTPS smoke checks for `/`, `/health`, `/api/v1/ready`; 
+- record public reverse proxy route result in docs.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 production env checkpoint: `4686cf5`
+- Stage 8 compose startup result: `5f45978`
+
+Основные файлы:
+
+- `docs/production-server-facts.md`
+- `docs/production-deployment-runbook.md`
+- `docs/production-server-remediation-plan.md`
+- `docs/production-rollout-inventory.md`
+- `docs/production-deployment-plan.md`
+- `docs/production-reverse-proxy-checklist.md`
+- server-only `/opt/obrportal/docker-compose.override.yml`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.15 - production Caddy reverse proxy route activation / public HTTPS smoke
