@@ -148,3 +148,21 @@ Decision result:
 - Reverse proxy installation can proceed.
 - Caddy remains the recommended reverse proxy for the first production rollout.
 - Existing `amnezia-awg` and UDP `34503` must remain untouched.
+
+## HTTPS entrypoint verification result - 2026-05-23
+
+| Item | Result | Notes |
+| --- | --- | --- |
+| Production domain | `portal.rcdo02.ru` | DNS gate already passed. |
+| HTTP port 80 | `open` | `Test-NetConnection portal.rcdo02.ru -Port 80` passed. |
+| HTTPS port 443 | `open` | `Test-NetConnection portal.rcdo02.ru -Port 443` passed. |
+| HTTP response | `308 Permanent Redirect` | Caddy redirects HTTP to HTTPS. |
+| HTTPS response | `200 OK` | Temporary Caddy placeholder is reachable. |
+| HTTPS body | `ObrPortal HTTPS entrypoint is ready. Backend/frontend deployment is pending.` | Expected temporary response. |
+| Secret marker scan | `passed` | Local Caddy installation log contains no secret-like markers. |
+
+Decision result:
+
+- DNS gate remains passed.
+- HTTPS entrypoint is operational.
+- Caddy can now be reconfigured later from placeholder response to ObrPortal frontend/backend proxy routes.

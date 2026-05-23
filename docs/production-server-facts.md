@@ -215,3 +215,31 @@ Secret marker scan result: passed.
 - Clone repository into `/opt/obrportal`.
 - Configure deployment commit/tag.
 - Configure HTTPS after domain decision.
+
+## Caddy HTTPS entrypoint safe facts - 2026-05-23
+
+Source: local Caddy installation output `tmp/stage_8_11_1_caddy_install.txt` (not committed) and local HTTPS checks.
+Secret marker scan result: passed.
+
+| Fact | Value | Notes |
+| --- | --- | --- |
+| Reverse proxy | `Caddy installed` | Version `v2.11.3`. |
+| Caddy service | `active/running` | `systemctl status caddy` confirmed service is running. |
+| Production domain | `portal.rcdo02.ru` | DNS already points to `89.127.203.70`. |
+| HTTP port | `80 open` | Local `Test-NetConnection` passed. |
+| HTTPS port | `443 open` | Local `Test-NetConnection` passed. |
+| HTTP behavior | `308 Permanent Redirect` | Redirects to HTTPS. |
+| HTTPS behavior | `200 OK` | Temporary entrypoint returns placeholder response. |
+| HTTPS response body | `ObrPortal HTTPS entrypoint is ready. Backend/frontend deployment is pending.` | Temporary placeholder before backend/frontend deployment. |
+| Security headers | `X-Content-Type-Options`, `Referrer-Policy` | Present in HTTPS response. |
+| Existing container | `amnezia-awg running` | Preserved after Caddy installation. |
+| Existing UDP port | `34503/udp active` | Preserved after Caddy installation. |
+| Production `.env` | `not printed` | No `.env` content was exposed. |
+
+### Remaining rollout blockers after HTTPS entrypoint
+
+- Clone repository into `/opt/obrportal`.
+- Create production `.env` securely on the server.
+- Deploy backend/frontend services.
+- Replace temporary Caddy placeholder with reverse proxy routes to frontend/backend.
+- Run deployment smoke checks for `/`, `/health`, `/api/v1/ready`.

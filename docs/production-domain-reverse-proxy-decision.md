@@ -210,3 +210,25 @@ Pre-proxy port state:
 - `443`: connection failed before reverse proxy/HTTPS configuration.
 
 This is expected before Caddy/Nginx is installed.
+
+## Caddy HTTPS entrypoint decision result - 2026-05-23
+
+| Item | Decision / Result | Notes |
+| --- | --- | --- |
+| Reverse proxy | `Caddy selected and installed` | Version `v2.11.3`. |
+| Production domain | `portal.rcdo02.ru` | Verified DNS A-record. |
+| HTTP entrypoint | `enabled` | Port `80` open, returns redirect. |
+| HTTPS entrypoint | `enabled` | Port `443` open, returns `200 OK`. |
+| Temporary response | `enabled` | Placeholder text before backend/frontend deployment. |
+| Future backend model | `same-domain /api/` | Preserved for next deployment stage. |
+| Future health URL | `https://portal.rcdo02.ru/health` | To be routed after backend deployment. |
+| Future readiness URL | `https://portal.rcdo02.ru/api/v1/ready` | To be routed after backend deployment. |
+| Existing `amnezia-awg` | `preserved` | Container remains running. |
+| Existing UDP `34503` | `preserved` | Port remains active. |
+
+Current state:
+
+- Caddy is the selected production reverse proxy.
+- HTTPS is working on `portal.rcdo02.ru`.
+- Backend/frontend are not deployed yet.
+- Current Caddyfile intentionally returns a temporary placeholder.

@@ -167,3 +167,29 @@ Replace `https://example.org` with the real production domain.
 Required diagnostic command:
 
 - `python .\scripts\check_production_reverse_proxy_checklist.py`
+
+## Caddy installation result - 2026-05-23
+
+| Item | Result | Notes |
+| --- | --- | --- |
+| Caddy installed | `yes` | Version `v2.11.3`. |
+| Caddy service | `active/running` | Enabled via systemd. |
+| Domain | `portal.rcdo02.ru` | DNS A-record points to `89.127.203.70`. |
+| HTTP port | `open` | Port `80` is listening. |
+| HTTPS port | `open` | Port `443` is listening. |
+| HTTP behavior | `308 Permanent Redirect` | HTTP redirects to HTTPS. |
+| HTTPS behavior | `200 OK` | Temporary placeholder response. |
+| Placeholder body | `ObrPortal HTTPS entrypoint is ready. Backend/frontend deployment is pending.` | Expected until app deployment. |
+| Existing `amnezia-awg` | `preserved` | Running after Caddy installation. |
+| Existing UDP `34503` | `preserved` | Not changed. |
+| Secret marker scan | `passed` | Local Caddy installation log contains no secret-like markers. |
+
+Next reverse proxy action:
+
+- after backend/frontend deployment, replace placeholder response with routes:
+  - `/` -> frontend service;
+  - `/assets/*` -> frontend service;
+  - `/api/*` -> backend service;
+  - `/health` -> backend service;
+  - `/api/v1/ready` -> backend service.
+
