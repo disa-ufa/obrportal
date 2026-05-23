@@ -4138,3 +4138,128 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.13 - production `.env` preparation / safe environment creation
+
+---
+
+## Checkpoint 8.13 - production .env preparation / safe environment creation
+
+Контур production `.env` preparation / safe environment creation выполнен для Stage 8: production `.env` создан на сервере, заполнен вручную, проверен безопасным audit-процессом без вывода значений и имён чувствительных переменных.
+
+Закрыто:
+
+- 8.13.1 - create production `.env` securely on server
+- 8.13.2 - record production `.env` safe audit result in docs
+- 8.13.3 - README checkpoint для production `.env` preparation / safe environment creation
+
+Результат safe audit:
+
+- production `.env`: `exists`; 
+- `.env.example`: `exists`; 
+- `.env` permissions: `600`; 
+- `.env` owner: `root:root`; 
+- example key count: `42`; 
+- environment key count: `42`; 
+- missing key count: `0`; 
+- extra key count: `0`; 
+- empty value count: `0`; 
+- placeholder value count: `0`; 
+- environment values: `not printed`; 
+- environment key names: `not printed`; 
+- secret marker scan: `passed`; 
+- Docker Compose stack: `not started`; 
+- Caddy HTTPS placeholder сохранён и продолжает отдавать `200 OK`; 
+- существующий контейнер `amnezia-awg` сохранён;
+- UDP `34503` сохранён;
+- временный локальный файл `tmp/stage_8_13_1_env_safe_audit.txt` не коммитился.
+
+Документально зафиксировано:
+
+- `docs/production-server-facts.md` содержит Production environment safe facts;
+- `docs/production-environment-template.md` содержит Production environment safe audit result;
+- `docs/production-deployment-runbook.md` содержит Production environment preparation result;
+- `docs/production-server-remediation-plan.md` содержит Production environment remediation result;
+- `docs/production-rollout-inventory.md` содержит Production environment rollout inventory result.
+
+Текущее production-состояние:
+
+- server: `306733.fornex.cloud`; 
+- public IPv4: `89.127.203.70`; 
+- domain: `portal.rcdo02.ru`; 
+- HTTPS URL: `https://portal.rcdo02.ru`; 
+- Docker Compose: `2.40.3+ds1-0ubuntu1~24.04.1`; 
+- Caddy: `v2.11.3`; 
+- `/opt/obrportal`: repository workspace prepared;
+- production `.env`: `exists`, `600`, `root:root`; 
+- backend/frontend deployment: `pending`; 
+- current Caddyfile: temporary placeholder response;
+- existing container: `amnezia-awg running`; 
+- existing UDP port: `34503/udp active`.
+
+Критичные правила дальше:
+
+- не печатать production `.env`; 
+- не коммитить production `.env`; 
+- не копировать значения `.env` в документацию или чат;
+- не менять права `.env` слабее `600`; 
+- не ломать текущий Caddy HTTPS entrypoint;
+- не трогать `amnezia-awg` и UDP `34503`; 
+- backend/PostgreSQL/Redis/MinIO не публиковать напрямую наружу;
+- перед запуском Docker Compose выполнить final pre-compose safety check;
+- app stack запускать только после безопасной проверки `.env` и workspace.
+
+Следующие rollout blockers:
+
+- run final pre-compose safety check;
+- start Docker Compose stack;
+- verify backend health/readiness locally on server;
+- verify frontend locally on server;
+- replace temporary Caddy placeholder with reverse proxy routes after app services are healthy;
+- run public deployment smoke checks for `/`, `/health`, `/api/v1/ready`.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 repository workspace checkpoint: `9520c09`
+- Stage 8 production env safe audit result: `527584d`
+
+Основные файлы:
+
+- `docs/production-server-facts.md`
+- `docs/production-environment-template.md`
+- `docs/production-deployment-runbook.md`
+- `docs/production-server-remediation-plan.md`
+- `docs/production-rollout-inventory.md`
+- `scripts/check_production_server_facts.py`
+- `scripts/check_production_environment_template.py`
+- `scripts/check_production_deployment_runbook.py`
+- `scripts/check_production_server_remediation_plan.py`
+- `scripts/check_production_rollout_inventory.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.14 - production pre-compose safety check / Docker Compose stack startup
