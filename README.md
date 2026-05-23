@@ -4014,3 +4014,127 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.12 - production repository clone / prepare deployment workspace
+
+---
+
+## Checkpoint 8.12 - production repository clone / prepare deployment workspace
+
+Контур production repository clone / prepare deployment workspace выполнен для Stage 8: репозиторий ObrPortal клонирован на production-сервер в `/opt/obrportal`, workspace проверен, Docker Compose не запускался, production `.env` не создавался и не печатался.
+
+Закрыто:
+
+- 8.12.1 - clone repository into `/opt/obrportal` and verify workspace
+- 8.12.2 - record production repository workspace result in docs
+- 8.12.3 - README checkpoint для production repository clone / prepare deployment workspace
+
+Результат на сервере:
+
+- application directory: `/opt/obrportal`; 
+- repository URL: `https://github.com/disa-ufa/obrportal.git`; 
+- server branch: `develop`; 
+- server HEAD: `61867f063f82c8f2c3ed2553b64b535eeaf74e90`; 
+- server `origin/develop`: `61867f063f82c8f2c3ed2553b64b535eeaf74e90`; 
+- release tag `v0.1.0-stage6` доступен на сервере;
+- release tag commit: `ac6f339d40567a107dd19f02ec778fbeb5e19971`; 
+- production `.env`: `missing`; 
+- Docker Compose stack: `not started`; 
+- Caddy HTTPS placeholder сохранён и продолжает отдавать `200 OK`; 
+- существующий контейнер `amnezia-awg` сохранён;
+- UDP `34503` сохранён;
+- временный локальный файл `tmp/stage_8_12_1_repository_workspace.txt` не коммитился.
+
+Проверенные файлы и директории workspace:
+
+- `docker-compose.yml` exists;
+- `.env.example` exists;
+- `backend` exists;
+- `frontend` exists;
+- `docs` exists;
+- `scripts` exists.
+
+Документально зафиксировано:
+
+- `docs/production-server-facts.md` содержит Repository workspace safe facts;
+- `docs/production-deployment-runbook.md` содержит Repository workspace preparation result;
+- `docs/production-server-remediation-plan.md` содержит Repository workspace remediation result;
+- `docs/production-rollout-inventory.md` содержит Repository workspace rollout inventory result.
+
+Текущее production-состояние:
+
+- server: `306733.fornex.cloud`; 
+- public IPv4: `89.127.203.70`; 
+- domain: `portal.rcdo02.ru`; 
+- HTTPS URL: `https://portal.rcdo02.ru`; 
+- Docker Compose: `2.40.3+ds1-0ubuntu1~24.04.1`; 
+- Caddy: `v2.11.3`; 
+- `/opt/obrportal`: repository workspace prepared;
+- `/opt/obrportal-backups`: exists;
+- production `.env`: `missing`; 
+- backend/frontend deployment: `pending`; 
+- current Caddyfile: temporary placeholder response;
+- existing container: `amnezia-awg running`; 
+- existing UDP port: `34503/udp active`.
+
+Критичные правила дальше:
+
+- не запускать Docker Compose до подготовки production `.env`; 
+- не печатать и не коммитить production `.env`; 
+- не ломать текущий Caddy HTTPS entrypoint;
+- не трогать `amnezia-awg` и UDP `34503`; 
+- backend/PostgreSQL/Redis/MinIO не публиковать напрямую наружу;
+- после подготовки `.env` запускать app stack только через safe verification flow;
+- после app deployment заменить placeholder Caddyfile на reverse proxy routes.
+
+Следующие rollout blockers:
+
+- create production `.env` securely on server;
+- verify `.env` presence and permissions without printing values;
+- start application stack only after safe `.env` checks;
+- replace temporary Caddy placeholder with reverse proxy routes after app services are healthy;
+- run deployment smoke checks for `/`, `/health`, `/api/v1/ready`.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 HTTPS entrypoint checkpoint: `61867f0`
+- Stage 8 repository workspace result: `11a1fed`
+
+Основные файлы:
+
+- `docs/production-server-facts.md`
+- `docs/production-deployment-runbook.md`
+- `docs/production-server-remediation-plan.md`
+- `docs/production-rollout-inventory.md`
+- `scripts/check_production_server_facts.py`
+- `scripts/check_production_deployment_runbook.py`
+- `scripts/check_production_server_remediation_plan.py`
+- `scripts/check_production_rollout_inventory.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.13 - production `.env` preparation / safe environment creation
