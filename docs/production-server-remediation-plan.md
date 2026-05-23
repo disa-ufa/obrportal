@@ -239,3 +239,41 @@ python .\scripts\check_text_encoding.py
 Required diagnostic command:
 
 - `python .\scripts\check_production_server_remediation_plan.py`
+
+## Remediation execution result - 2026-05-23
+
+Source: local safe remediation output `tmp/stage_8_7_1_server_remediation.txt` (not committed).
+Secret marker scan result: passed.
+
+Completed:
+
+- Docker Compose plugin installed.
+- `/opt/obrportal` created.
+- `/opt/obrportal-backups` created.
+- Backup subdirectories created: `env`, `postgres`, `storage`, `proxy`, `deployment`.
+- `/opt/obrportal-backups/env` restricted with `chmod 700`.
+- Existing `amnezia-awg` container preserved.
+- Existing UDP `34503` preserved.
+- Production `.env` content was not printed.
+- Reverse proxy installation intentionally deferred.
+
+Verified safe post-remediation state:
+
+| Check | Result |
+| --- | --- |
+| `docker compose version` | `Docker Compose version 2.40.3+ds1-0ubuntu1~24.04.1` |
+| `/opt/obrportal` | `exists` |
+| `/opt/obrportal-backups` | `exists` |
+| `/opt/obrportal-backups/env` | `exists, chmod 700` |
+| `/opt/obrportal/.env` | `missing` |
+| `amnezia-awg` | `running` |
+| UDP `34503` | `active` |
+| reverse proxy | `not installed yet` |
+
+Remaining blockers:
+
+- production `.env` must be created manually;
+- production domain must be selected/configured;
+- reverse proxy must be selected and installed;
+- repository must be cloned into `/opt/obrportal`;
+- rollout deployment must be executed only after another safe verification.

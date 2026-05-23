@@ -185,3 +185,33 @@ Secret marker scan result: passed.
 - Create production `.env` on server without committing it.
 - Prepare backup directories before deployment.
 - Preserve or explicitly account for existing `amnezia-awg` container and UDP `34503`.
+
+## Post-remediation safe facts - 2026-05-23
+
+Source: local safe remediation output `tmp/stage_8_7_1_server_remediation.txt` (not committed).
+Secret marker scan result: passed.
+
+| Fact | Value | Notes |
+| --- | --- | --- |
+| Docker Compose installed | `yes, Docker Compose 2.40.3+ds1-0ubuntu1~24.04.1` | Installed via `docker-compose-v2`. |
+| Application directory | `/opt/obrportal exists` | Created during remediation. |
+| Backup directory | `/opt/obrportal-backups exists` | Created during remediation. |
+| Backup env directory | `/opt/obrportal-backups/env exists, chmod 700` | Restricted backup directory. |
+| Backup postgres directory | `/opt/obrportal-backups/postgres exists` | Created. |
+| Backup storage directory | `/opt/obrportal-backups/storage exists` | Created. |
+| Backup proxy directory | `/opt/obrportal-backups/proxy exists` | Created. |
+| Backup deployment directory | `/opt/obrportal-backups/deployment exists` | Created. |
+| Production `.env` | `missing` | Content was not printed. |
+| Reverse proxy | `not installed yet` | Deferred until domain/proxy decision. |
+| Existing container | `amnezia-awg running` | Preserved after remediation. |
+| Existing public UDP port | `34503/udp` | Preserved after remediation. |
+| Observed TCP ports | `22 public; 45289 localhost containerd` | No 80/443 listeners yet. |
+
+### Remaining rollout blockers after remediation
+
+- Create production `.env` manually on server.
+- Choose production domain.
+- Choose and install reverse proxy: Nginx or Caddy.
+- Clone repository into `/opt/obrportal`.
+- Configure deployment commit/tag.
+- Configure HTTPS after domain decision.

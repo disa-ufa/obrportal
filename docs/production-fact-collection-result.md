@@ -168,3 +168,29 @@ Secret marker scan result: passed.
 - Create production `.env` securely on the server.
 - Configure domain and HTTPS.
 - Confirm existing `amnezia-awg` container/UDP `34503` must remain untouched.
+
+## Remediation result snapshot - 2026-05-23
+
+Source: local safe remediation output `tmp/stage_8_7_1_server_remediation.txt` (not committed).
+Secret marker scan result: passed.
+
+| Item | Before remediation | After remediation | Notes |
+| --- | --- | --- | --- |
+| Docker Compose plugin | `missing` | `installed` | Docker Compose `2.40.3+ds1-0ubuntu1~24.04.1`. |
+| Application directory | `missing` | `exists` | `/opt/obrportal`. |
+| Backup directory | `missing` | `exists` | `/opt/obrportal-backups`. |
+| Backup subdirectories | `missing` | `created` | `env`, `postgres`, `storage`, `proxy`, `deployment`. |
+| Backup env permissions | `missing` | `chmod 700` | `/opt/obrportal-backups/env`. |
+| Production `.env` | `missing` | `missing` | Content not printed. |
+| Reverse proxy | `missing` | `not installed yet` | Deferred. |
+| Existing `amnezia-awg` container | `running` | `running` | Preserved. |
+| Existing UDP `34503` | `active` | `active` | Preserved. |
+| Secret marker scan | `not applicable` | `passed` | No secret-like markers found in remediation log. |
+
+### Remaining remediation tasks
+
+- Create production `.env` manually and securely.
+- Decide reverse proxy: Caddy or Nginx.
+- Install and configure selected reverse proxy.
+- Clone repository into `/opt/obrportal`.
+- Run deployment smoke checks.
