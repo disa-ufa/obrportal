@@ -3324,3 +3324,87 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.5 - production server facts collection execution / sanitized facts update
+
+---
+
+## Checkpoint 8.5 - production server facts collection execution / sanitized facts update
+
+Контур production server facts collection execution выполнен для Stage 8: проведён безопасный сбор не-секретных фактов с production-сервера и внесён sanitized snapshot в документацию.
+
+Закрыто:
+
+- 8.5.1 - local readiness before real server access
+- 8.5.2 - safe production server preflight execution
+- 8.5.3 - sanitized facts update
+- 8.5.4 - README checkpoint для production server facts collection execution / sanitized facts update
+
+Результат:
+
+- SSH preflight выполнен для `root@89.127.203.70`;
+- локальный файл `tmp/stage_8_5_2_server_preflight.txt` создан только временно и не коммитился;
+- secret marker scan по preflight-файлу прошёл успешно;
+- безопасные факты внесены в `docs/production-server-facts.md`;
+- результат сбора фактов внесён в `docs/production-fact-collection-result.md`;
+- подтверждено, что на сервере есть Docker Engine и Git;
+- подтверждено, что Docker Compose plugin пока недоступен;
+- подтверждено, что `/opt/obrportal`, `/opt/obrportal-backups`, production `.env`, Nginx/Caddy и backup root пока отсутствуют;
+- зафиксирован существующий контейнер `amnezia-awg` и UDP-порт `34503`, которые нельзя случайно сломать при rollout.
+
+Собранные безопасные факты:
+
+- provider: `Fornex / inferred from hostname`; 
+- server hostname: `306733.fornex.cloud`; 
+- public IP: `89.127.203.70`; 
+- OS: `Ubuntu 24.04.4 LTS`; 
+- kernel: `Linux 6.8.0-110-generic`; 
+- virtualization: `kvm / QEMU`; 
+- SSH user: `root`; 
+- RAM: `1.9Gi`; 
+- root disk: `20G total, 23% used`; 
+- swap: `0B`; 
+- Docker: `29.1.3`; 
+- Git: `2.43.0`; 
+- reverse proxy: `missing`; 
+- app directory: `/opt/obrportal missing`; 
+- backup directory: `/opt/obrportal-backups missing`; 
+- production `.env`: `missing`.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 inventory base: `415f3dd`
+- Stage 8 server facts base: `f2b1d13`
+- Stage 8 preflight base: `53066d6`
+
+Основные файлы:
+
+- `docs/production-server-facts.md`
+- `docs/production-fact-collection-result.md`
+- `docs/production-server-preflight-execution.md`
+- `scripts/check_production_fact_collection_result.py`
+- `scripts/check_production_server_preflight_execution.py`
+- `scripts/check_production_server_facts.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.6 - production server remediation plan / prepare server for rollout
