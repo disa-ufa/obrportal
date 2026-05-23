@@ -244,3 +244,9 @@ Database restore must be performed only when schema or data changes require it a
 - Document workflows work.
 - Monitoring commands are documented.
 - Rollback path is documented.
+
+## Runbook diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_deployment_runbook.py`

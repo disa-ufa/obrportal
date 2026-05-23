@@ -36,6 +36,7 @@ REQUIRED_CI_COMMANDS = [
     "python scripts/check_production_server_checklist.py",
     "python scripts/check_production_reverse_proxy_checklist.py",
     "python scripts/check_production_backup_monitoring_checklist.py",
+    "python scripts/check_production_deployment_runbook.py",
     "docker compose exec -T backend pytest app/tests -q",
     "python scripts/smoke_auth_rbac.py",
     "python scripts/smoke_document_generation_flow.py",

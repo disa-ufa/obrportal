@@ -605,6 +605,34 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_deployment_runbook.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "REQUIRED_SOURCE_DOCUMENTS",
+            "def get_production_deployment_runbook_diagnostics",
+            "production deployment runbook diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-deployment-runbook.md",
+        [
+            "# Production deployment runbook",
+            "## Release baseline",
+            "## Source documents",
+            "## Local pre-deployment gate",
+            "## Deployment order",
+            "## Rollback order",
+            "## Final acceptance criteria",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 
