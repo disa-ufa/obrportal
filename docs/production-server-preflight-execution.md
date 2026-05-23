@@ -171,3 +171,9 @@ After collecting server facts:
 - Backup preflight commands are documented.
 - Fact update workflow is documented.
 - No secrets are committed to Git.
+
+## Preflight diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_server_preflight_execution.py`

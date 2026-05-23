@@ -695,6 +695,37 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_server_preflight_execution.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_STAGE7_COMMIT",
+            "REQUIRED_STAGE8_INVENTORY_COMMIT",
+            "REQUIRED_STAGE8_SERVER_FACTS_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_SOURCE_DOCUMENTS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_server_preflight_execution_diagnostics",
+            "production server preflight execution diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-server-preflight-execution.md",
+        [
+            "# Production server preflight execution",
+            "## Release baseline",
+            "## Source documents",
+            "## Local preflight before server access",
+            "## Server access preflight",
+            "## Production `.env` preflight",
+            "## Acceptance criteria",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 
