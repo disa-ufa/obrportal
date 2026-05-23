@@ -189,3 +189,24 @@ curl -I http://127.0.0.1:5173 || true
 Required diagnostic command:
 
 - `python .\scripts\check_production_domain_reverse_proxy_decision.py`
+
+## Real domain decision result - 2026-05-23
+
+| Item | Decision | Notes |
+| --- | --- | --- |
+| Production domain | `portal.rcdo02.ru` | Selected and verified. |
+| DNS A-record | `portal.rcdo02.ru -> 89.127.203.70` | Verified locally and on server. |
+| DNS AAAA-record | `deferred` | IPv6 rollout is not configured. |
+| Frontend public URL | `https://portal.rcdo02.ru` | After HTTPS setup. |
+| Backend public model | `same-domain /api/` | Preserved from 8.8 decision. |
+| Health URL | `https://portal.rcdo02.ru/health` | After reverse proxy setup. |
+| Readiness URL | `https://portal.rcdo02.ru/api/v1/ready` | After reverse proxy setup. |
+| Reverse proxy | `Caddy recommended` | Ready for installation in the next stage. |
+| HTTPS entrypoint | `pending` | Configure after Caddy installation. |
+
+Pre-proxy port state:
+
+- `80`: connection failed before reverse proxy installation;
+- `443`: connection failed before reverse proxy/HTTPS configuration.
+
+This is expected before Caddy/Nginx is installed.

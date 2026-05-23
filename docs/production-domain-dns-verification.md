@@ -118,3 +118,33 @@ curl -I "http://$DOMAIN" || true
 Required diagnostic command:
 
 - `python .\scripts\check_production_domain_dns_verification.py`
+
+## Real DNS verification result - 2026-05-23
+
+Production domain selected:
+
+| Item | Value | Notes |
+| --- | --- | --- |
+| Production domain | `portal.rcdo02.ru` | Real production domain selected. |
+| DNS A-record target | `89.127.203.70` | Expected production server IP. |
+| Local DNS verification | `passed` | `Resolve-DnsName portal.rcdo02.ru -Type A` returned `89.127.203.70`. |
+| Server-side DNS verification | `passed` | `getent hosts` and `dig +short A` returned `89.127.203.70`. |
+| DNS AAAA-record | `absent/deferred` | IPv6 rollout is not configured in this step. |
+| Port 80 before proxy | `closed/connection failed` | Expected because reverse proxy is not installed yet. |
+| Port 443 before proxy | `closed/connection failed` | Expected because HTTPS is not configured yet. |
+| Reverse proxy status | `not installed yet` | Next stage: Caddy installation/configuration. |
+| Secret marker scan | `passed` | Local DNS verification log contains no secret-like markers. |
+
+Safe verification sources:
+
+- local command output: `Resolve-DnsName portal.rcdo02.ru -Type A`;
+- server command output: `getent hosts portal.rcdo02.ru`;
+- server command output: `dig +short A portal.rcdo02.ru`;
+- temporary local log: `tmp/stage_8_10_1_dns_verification.txt` (not committed).
+
+Decision result:
+
+- DNS gate is passed.
+- Reverse proxy installation can proceed.
+- Caddy remains the recommended reverse proxy for the first production rollout.
+- Existing `amnezia-awg` and UDP `34503` must remain untouched.
