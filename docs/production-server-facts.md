@@ -277,3 +277,35 @@ Secret marker scan result: passed.
 - Start Docker Compose only after `.env` is prepared.
 - Replace temporary Caddy placeholder with reverse proxy routes after app services are healthy.
 - Run deployment smoke checks for `/`, `/health`, `/api/v1/ready`.
+
+## Production environment safe facts - 2026-05-24
+
+Source: local safe environment audit output `tmp/stage_8_13_1_env_safe_audit.txt` (not committed).
+Secret marker scan result: passed.
+
+| Fact | Value | Notes |
+| --- | --- | --- |
+| Production `.env` | `exists` | Created on server from `.env.example` and filled manually. |
+| `.env.example` | `exists` | Used as baseline. |
+| `.env` permissions | `600` | Owner-only read/write. |
+| `.env` owner | `root:root` | Verified by safe audit. |
+| Example key count | `42` | Values were not printed. |
+| Environment key count | `42` | Values were not printed. |
+| Missing key count | `0` | `.env` matches `.env.example` key set. |
+| Extra key count | `0` | No unexpected keys versus `.env.example`. |
+| Empty value count | `0` | No empty values detected. |
+| Placeholder value count | `0` | No placeholder-like values detected. |
+| Environment values | `not printed` | Safe audit did not expose values. |
+| Environment key names | `not printed` | Safe audit did not expose key names. |
+| Docker Compose | `not started` | App stack still not started. |
+| Caddy placeholder | `preserved` | HTTPS placeholder still returns `200 OK`. |
+| Existing `amnezia-awg` | `preserved` | Container remains running. |
+| Existing UDP `34503` | `preserved` | Port remains active. |
+
+### Remaining rollout blockers after production `.env` preparation
+
+- Run final pre-compose safety check.
+- Start Docker Compose stack.
+- Verify backend health/readiness locally on server.
+- Replace temporary Caddy placeholder with reverse proxy routes after app services are healthy.
+- Run public deployment smoke checks for `/`, `/health`, `/api/v1/ready`.

@@ -298,3 +298,27 @@ Remaining remediation:
 - create production `.env`;
 - deploy app stack;
 - replace placeholder Caddy response with production reverse proxy routes.
+
+## Production environment remediation result - 2026-05-24
+
+Completed:
+
+- production `.env` created on server;
+- `.env` permissions set to `600`;
+- `.env` owner verified as `root:root`;
+- safe audit confirmed `42` expected keys and `42` environment keys;
+- missing key count is `0`;
+- extra key count is `0`;
+- empty value count is `0`;
+- placeholder value count is `0`;
+- environment values were not printed;
+- environment key names were not printed;
+- Docker Compose was not started;
+- Caddy HTTPS placeholder remained active;
+- existing `amnezia-awg` and UDP `34503` remained preserved.
+
+Remaining remediation:
+
+- start app stack in a controlled step;
+- verify backend/frontend health;
+- replace Caddy placeholder with production reverse proxy routes.

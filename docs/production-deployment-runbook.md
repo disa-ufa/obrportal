@@ -272,3 +272,27 @@ Next runbook action:
 - create production `.env` manually and securely;
 - verify `.env` presence and permissions without printing values;
 - start application stack only after safe `.env` checks.
+
+## Production environment preparation result - 2026-05-24
+
+Production `.env` is prepared and safe-audited.
+
+| Item | Result | Notes |
+| --- | --- | --- |
+| `.env` | `exists` | Created on production server. |
+| Permissions | `600` | Verified. |
+| Owner | `root:root` | Verified. |
+| Key coverage | `42/42` | No key names printed. |
+| Missing keys | `0` | Safe count only. |
+| Extra keys | `0` | Safe count only. |
+| Empty values | `0` | Safe count only. |
+| Placeholder values | `0` | Safe count only. |
+| Docker Compose | `not started` | Start only in next controlled step. |
+| Caddy placeholder | `preserved` | HTTPS still returns placeholder. |
+| Existing `amnezia-awg` | `preserved` | Not touched. |
+
+Next runbook action:
+
+- run final pre-compose safety check;
+- start app stack with Docker Compose;
+- verify local service health before changing Caddy routes.

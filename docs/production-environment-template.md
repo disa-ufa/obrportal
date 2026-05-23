@@ -121,3 +121,30 @@ The file must be readable only by the deployment user and must not be copied int
 Required diagnostic command:
 
 - `python .\scripts\check_production_environment_template.py`
+
+## Production environment safe audit result - 2026-05-24
+
+Production `.env` has been created and safely audited on the production server.
+
+| Item | Result | Notes |
+| --- | --- | --- |
+| `.env` file | `exists` | Created from `.env.example` and filled manually. |
+| `.env.example` file | `exists` | Baseline template exists. |
+| Permissions | `600` | Owner-only read/write. |
+| Owner | `root:root` | Verified. |
+| Example key count | `42` | Key names were not printed. |
+| Environment key count | `42` | Key names were not printed. |
+| Missing key count | `0` | Complete key coverage. |
+| Extra key count | `0` | No unexpected keys. |
+| Empty value count | `0` | No empty values detected. |
+| Placeholder value count | `0` | No placeholder-like values detected. |
+| Values printed | `no` | Environment values were not exposed. |
+| Key names printed | `no` | Environment key names were not exposed. |
+| Secret marker scan | `passed` | Local audit log contains no secret-like markers. |
+
+Safe rule:
+
+- do not print `.env`;
+- do not commit `.env`;
+- do not copy `.env` values into documentation or chat;
+- keep permissions at `600`.

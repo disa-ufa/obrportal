@@ -156,3 +156,26 @@ Workspace files verified:
 - `frontend`;
 - `docs`;
 - `scripts`.
+
+## Production environment rollout inventory result - 2026-05-24
+
+| Item | Value | Status |
+| --- | --- | --- |
+| Production `.env` | `exists` | prepared |
+| Permissions | `600` | verified |
+| Owner | `root:root` | verified |
+| Key coverage | `42/42` | verified without printing names |
+| Missing keys | `0` | verified |
+| Extra keys | `0` | verified |
+| Empty values | `0` | verified |
+| Placeholder values | `0` | verified |
+| Compose stack | `not started` | intentional |
+| Caddy HTTPS placeholder | `active` | preserved |
+| Existing `amnezia-awg` | `running` | preserved |
+| Existing UDP `34503` | `active` | preserved |
+
+Safe audit guarantees:
+
+- `.env` values were not printed;
+- `.env` key names were not printed;
+- local audit log was not committed.
