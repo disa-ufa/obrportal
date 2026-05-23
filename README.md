@@ -3258,3 +3258,69 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.4 - production fact collection result / server facts update
+
+---
+
+## Checkpoint 8.4 - production fact collection result / server facts update
+
+Контур production fact collection result подготовлен для Stage 8: зафиксирована структура безопасного документа для записи результата сбора не-секретных фактов с production-сервера и последующего обновления `production-server-facts.md`.
+
+Закрыто:
+
+- 8.4.1 - production fact collection result document
+- 8.4.2 - diagnostics для production fact collection result / server facts update
+- 8.4.3 - README checkpoint для production fact collection result / server facts update
+
+Результат:
+
+- добавлен `docs/production-fact-collection-result.md`;
+- добавлен `scripts/check_production_fact_collection_result.py`;
+- `.github/workflows/ci.yml` запускает `Run production fact collection result guard`;
+- `check_ci_local_gate.py` учитывает production fact collection result guard;
+- `check_release_readiness.py` учитывает production fact collection result guard и support file;
+- `check_frontend_smoke_coverage.py` учитывает новый guard script;
+- `smoke_frontend_core.py` контролирует наличие production fact collection result diagnostics и fact collection result-документа;
+- production fact collection result фиксирует collection status, sanitized server facts summary, sanitized command result checklist, server facts update target, secret exclusion rules, local verification commands и acceptance criteria.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 inventory base: `415f3dd`
+- Stage 8 server facts base: `f2b1d13`
+- Stage 8 preflight base: `53066d6`
+
+Основные файлы:
+
+- `docs/production-fact-collection-result.md`
+- `scripts/check_production_fact_collection_result.py`
+- `.github/workflows/ci.yml`
+- `scripts/check_ci_local_gate.py`
+- `scripts/check_release_readiness.py`
+- `scripts/check_frontend_smoke_coverage.py`
+- `scripts/smoke_frontend_core.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.5 - production server facts collection execution / sanitized facts update
