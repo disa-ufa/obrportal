@@ -791,6 +791,40 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_domain_reverse_proxy_decision.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_STAGE7_COMMIT",
+            "REQUIRED_STAGE8_CHECKPOINT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_SOURCE_DOCUMENTS",
+            "REQUIRED_TABLE_ITEMS",
+            "REQUIRED_ROUTES",
+            "REQUIRED_PORTS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_domain_reverse_proxy_decision_diagnostics",
+            "production domain reverse proxy decision diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-domain-reverse-proxy-decision.md",
+        [
+            "# Production domain and reverse proxy decision",
+            "## Release baseline",
+            "## Source documents",
+            "## Domain decision",
+            "## Reverse proxy options",
+            "## Target routing model",
+            "## Port exposure model",
+            "## Required decisions before installation",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

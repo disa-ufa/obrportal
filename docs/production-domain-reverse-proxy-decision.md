@@ -183,3 +183,9 @@ curl -I http://127.0.0.1:5173 || true
 - Public/private port exposure model is documented.
 - Existing `amnezia-awg` and UDP `34503` preservation is documented.
 - No secrets are committed to Git.
+
+## Domain/proxy decision diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_domain_reverse_proxy_decision.py`
