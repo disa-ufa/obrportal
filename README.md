@@ -3132,3 +3132,65 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.2 - production server facts / real deployment target configuration
+
+---
+
+## Checkpoint 8.2 - production server facts / real deployment target configuration
+
+Контур production server facts подготовлен для Stage 8: зафиксирована структура документа для хранения не-секретных фактов реального production-сервера перед выкладкой.
+
+Закрыто:
+
+- 8.2.1 - production server facts document
+- 8.2.2 - diagnostics для production server facts / real deployment target configuration
+- 8.2.3 - README checkpoint для production server facts / real deployment target configuration
+
+Результат:
+
+- добавлен `docs/production-server-facts.md`;
+- добавлен `scripts/check_production_server_facts.py`;
+- `.github/workflows/ci.yml` запускает `Run production server facts guard`;
+- `check_ci_local_gate.py` учитывает production server facts guard;
+- `check_release_readiness.py` учитывает production server facts guard и support file;
+- `check_frontend_smoke_coverage.py` учитывает новый guard script;
+- `smoke_frontend_core.py` контролирует наличие production server facts diagnostics и server facts-документа;
+- production server facts фиксирует server identity, deployment paths, domain/HTTPS facts, reverse proxy facts, Docker/runtime facts, port exposure facts, production environment facts, backup/rollback facts, server preflight commands и production acceptance criteria.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 inventory base: `415f3dd`
+
+Основные файлы:
+
+- `docs/production-server-facts.md`
+- `scripts/check_production_server_facts.py`
+- `.github/workflows/ci.yml`
+- `scripts/check_ci_local_gate.py`
+- `scripts/check_release_readiness.py`
+- `scripts/check_frontend_smoke_coverage.py`
+- `scripts/smoke_frontend_core.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.3 - production server preflight execution / fact collection
