@@ -126,3 +126,9 @@ uname -a
 - Private service ports are not publicly exposed.
 - Preflight commands are documented.
 - No secrets are committed to Git.
+
+## Inventory diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_rollout_inventory.py`

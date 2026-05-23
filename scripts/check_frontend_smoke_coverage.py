@@ -32,6 +32,7 @@ REQUIRED_FRONTEND_GUARD_SCRIPTS = [
     "scripts/check_production_reverse_proxy_checklist.py",
     "scripts/check_production_backup_monitoring_checklist.py",
     "scripts/check_production_deployment_runbook.py",
+    "scripts/check_production_rollout_inventory.py",
     "scripts/check_frontend_bundle_encoding.py",
     "scripts/check_no_todo_markers.py",
 ]

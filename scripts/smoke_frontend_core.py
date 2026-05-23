@@ -633,6 +633,37 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_rollout_inventory.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_STAGE7_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_TABLE_ITEMS",
+            "REQUIRED_SERVICES",
+            "REQUIRED_PORTS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_rollout_inventory_diagnostics",
+            "production rollout inventory diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-rollout-inventory.md",
+        [
+            "# Production rollout inventory",
+            "## Release baseline",
+            "## Deployment target",
+            "## Domain inventory",
+            "## Required production services",
+            "## Required server ports",
+            "## Rollout acceptance criteria",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 
