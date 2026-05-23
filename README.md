@@ -3799,3 +3799,103 @@ python .\scripts\check_frontend_bundle_encoding.py
 Следующий функциональный блок:
 
 - 8.10 - production domain real selection / DNS A record setup and verification
+
+---
+
+## Checkpoint 8.10 - production domain real selection / DNS A record setup and verification
+
+Контур production domain real selection / DNS A record setup and verification выполнен для Stage 8: выбран реальный production-домен, создан DNS A-record и результат проверки зафиксирован в документации.
+
+Закрыто:
+
+- 8.10.1 - выбрать реальный production domain и проверить DNS A-record
+- 8.10.2 - зафиксировать реальный domain/DNS verification в docs
+- 8.10.3 - README checkpoint для production domain real selection / DNS A record setup and verification
+
+Результат:
+
+- выбран production domain: `portal.rcdo02.ru`; 
+- создан DNS A-record: `portal.rcdo02.ru -> 89.127.203.70`; 
+- локальная DNS-проверка через `Resolve-DnsName` прошла успешно;
+- server-side DNS-проверка через `getent hosts` и `dig +short A` прошла успешно;
+- DNS AAAA-record отсутствует/deferred, IPv6 rollout не выполняется;
+- порты `80` и `443` до установки reverse proxy закрыты, это ожидаемо;
+- secret marker scan по временному DNS verification log прошёл успешно;
+- временный локальный файл `tmp/stage_8_10_1_dns_verification.txt` не коммитился;
+- `docs/production-domain-dns-verification.md` содержит real DNS verification result;
+- `docs/production-domain-reverse-proxy-decision.md` содержит real domain decision result.
+
+Фактическая DNS-модель:
+
+- production domain: `portal.rcdo02.ru`; 
+- DNS A-record target: `89.127.203.70`; 
+- frontend public URL: `https://portal.rcdo02.ru`; 
+- backend public model: `same-domain /api/`; 
+- health URL: `https://portal.rcdo02.ru/health`; 
+- readiness URL: `https://portal.rcdo02.ru/api/v1/ready`; 
+- reverse proxy: `Caddy recommended`; 
+- HTTPS entrypoint: pending до установки Caddy.
+
+Текущее состояние сервера:
+
+- server: `306733.fornex.cloud`; 
+- public IPv4: `89.127.203.70`; 
+- Docker Compose: `2.40.3+ds1-0ubuntu1~24.04.1`; 
+- `/opt/obrportal`: `exists`; 
+- `/opt/obrportal-backups`: `exists`; 
+- production `.env`: `missing`; 
+- reverse proxy: `not installed yet`; 
+- existing container: `amnezia-awg running`; 
+- existing UDP port: `34503/udp active`; 
+- public `80/443`: closed before reverse proxy installation.
+
+Критичные правила дальше:
+
+- не менять DNS A-record без отдельного решения;
+- не трогать `amnezia-awg` и UDP `34503`; 
+- не печатать и не коммитить production `.env`; 
+- следующий шаг — установка и настройка Caddy как HTTPS entrypoint;
+- backend/PostgreSQL/Redis/MinIO не публиковать напрямую наружу;
+- после установки Caddy проверить `http://portal.rcdo02.ru`, `https://portal.rcdo02.ru`, `/health`, `/api/v1/ready`.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 DNS checkpoint: `45e9ded`
+- Real DNS verification result: `24d2315`
+
+Основные файлы:
+
+- `docs/production-domain-dns-verification.md`
+- `docs/production-domain-reverse-proxy-decision.md`
+- `scripts/check_production_domain_dns_verification.py`
+- `scripts/check_production_domain_reverse_proxy_decision.py`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.11 - production Caddy installation / HTTPS entrypoint setup
