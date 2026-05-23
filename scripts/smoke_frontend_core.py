@@ -825,6 +825,38 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_domain_dns_verification.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_STAGE7_COMMIT",
+            "REQUIRED_STAGE8_CHECKPOINT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_SOURCE_DOCUMENTS",
+            "REQUIRED_TABLE_ITEMS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_domain_dns_verification_diagnostics",
+            "production domain DNS verification diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-domain-dns-verification.md",
+        [
+            "# Production domain DNS verification",
+            "## Release baseline",
+            "## Source documents",
+            "## Production domain decision",
+            "## DNS setup requirement",
+            "## Local DNS verification commands",
+            "## Server-side DNS verification commands",
+            "## Decision gate before reverse proxy installation",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

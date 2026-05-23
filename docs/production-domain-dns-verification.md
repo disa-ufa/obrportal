@@ -112,3 +112,9 @@ curl -I "http://$DOMAIN" || true
 - Reverse proxy installation is blocked until DNS is verified.
 - Existing `amnezia-awg` and UDP `34503` preservation is documented.
 - No secrets are committed to Git.
+
+## DNS verification diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_domain_dns_verification.py`

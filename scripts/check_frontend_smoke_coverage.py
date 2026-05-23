@@ -38,6 +38,7 @@ REQUIRED_FRONTEND_GUARD_SCRIPTS = [
     "scripts/check_production_fact_collection_result.py",
     "scripts/check_production_server_remediation_plan.py",
     "scripts/check_production_domain_reverse_proxy_decision.py",
+    "scripts/check_production_domain_dns_verification.py",
     "scripts/check_frontend_bundle_encoding.py",
     "scripts/check_no_todo_markers.py",
 ]
