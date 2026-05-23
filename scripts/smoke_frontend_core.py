@@ -726,6 +726,39 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_fact_collection_result.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_STAGE7_COMMIT",
+            "REQUIRED_STAGE8_INVENTORY_COMMIT",
+            "REQUIRED_STAGE8_SERVER_FACTS_COMMIT",
+            "REQUIRED_STAGE8_PREFLIGHT_COMMIT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_SOURCE_DOCUMENTS",
+            "REQUIRED_TABLE_ITEMS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_fact_collection_result_diagnostics",
+            "production fact collection result diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-fact-collection-result.md",
+        [
+            "# Production fact collection result",
+            "## Release baseline",
+            "## Source documents",
+            "## Collection status",
+            "## Sanitized server facts summary",
+            "## Server facts update target",
+            "## Acceptance criteria",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

@@ -118,3 +118,9 @@ python .\scripts\check_text_encoding.py
 - Secret exclusion rules are documented.
 - Local verification commands are documented.
 - No secrets are committed to Git.
+
+## Result diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_fact_collection_result.py`
