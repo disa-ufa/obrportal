@@ -145,3 +145,30 @@ Run before preparing production deployment:
 - Document generation works.
 - Public verification works.
 - Rollback path is documented and tested on a staging or production-like environment.
+
+## Docker Compose startup deployment result - 2026-05-24
+
+Stage 8 deployment startup reached the local-service-ready state.
+
+Completed deployment actions:
+
+- final pre-compose safety gate;
+- production `.env` safe audit;
+- Docker Compose stack startup;
+- local backend health verification;
+- local backend readiness verification;
+- local frontend verification;
+- localhost-only port bind remediation.
+
+Current deployment state:
+
+- backend, frontend, PostgreSQL, Redis and MinIO are running;
+- service ports are private and bound to `127.0.0.1`;
+- Caddy is still serving the temporary HTTPS placeholder;
+- next step is Caddy route activation.
+
+Public exposure model:
+
+- public `80/443`: Caddy;
+- public `34503/udp`: existing `amnezia-awg`;
+- app service ports: localhost-only.

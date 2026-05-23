@@ -193,3 +193,19 @@ Next reverse proxy action:
   - `/health` -> backend service;
   - `/api/v1/ready` -> backend service.
 
+## Pre-route application stack result - 2026-05-24
+
+Before replacing the Caddy placeholder, the application stack was started and verified locally.
+
+| Route target | Local upstream | Status |
+| --- | --- | --- |
+| Frontend | `127.0.0.1:5173` | `HTTP/1.1 200 OK` |
+| Backend health | `127.0.0.1:8000/health` | `ok` |
+| Backend readiness | `127.0.0.1:8000/api/v1/ready` | `ok` |
+
+Security result:
+
+- backend/frontend/database/cache/storage ports are bound to `127.0.0.1`;
+- public HTTP/HTTPS remains owned by Caddy;
+- temporary Caddy placeholder is still active;
+- next reverse proxy step can safely route public HTTPS traffic to local app upstreams.

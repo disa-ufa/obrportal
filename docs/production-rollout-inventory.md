@@ -179,3 +179,29 @@ Safe audit guarantees:
 - `.env` values were not printed;
 - `.env` key names were not printed;
 - local audit log was not committed.
+
+## Docker Compose startup rollout inventory result - 2026-05-24
+
+| Item | Value | Status |
+| --- | --- | --- |
+| Workspace HEAD | `4686cf5b58701be138582ae5fe5fe6a616965a12` | verified |
+| Compose config | `valid` | verified |
+| Compose stack | `started` | verified |
+| Backend health | `ok` | local |
+| Backend readiness | `ok` | local |
+| Frontend | `HTTP/1.1 200 OK` | local |
+| Backend bind | `127.0.0.1:8000` | private |
+| Frontend bind | `127.0.0.1:5173` | private |
+| PostgreSQL bind | `127.0.0.1:5432` | private |
+| Redis bind | `127.0.0.1:6379` | private |
+| MinIO API bind | `127.0.0.1:9000` | private |
+| MinIO console bind | `127.0.0.1:9001` | private |
+| Public HTTP/HTTPS | `Caddy only` | `80/443` |
+| Existing VPN container | `amnezia-awg` | preserved |
+| Existing VPN UDP port | `34503` | preserved |
+
+Inventory decision:
+
+- app services are ready for Caddy reverse proxy configuration;
+- direct public access to backend/frontend/database/cache/storage is not used;
+- Caddy remains the only public HTTP/HTTPS entrypoint.

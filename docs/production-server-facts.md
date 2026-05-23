@@ -309,3 +309,47 @@ Secret marker scan result: passed.
 - Verify backend health/readiness locally on server.
 - Replace temporary Caddy placeholder with reverse proxy routes after app services are healthy.
 - Run public deployment smoke checks for `/`, `/health`, `/api/v1/ready`.
+
+## Docker Compose startup and localhost port bind safe facts - 2026-05-24
+
+Sources:
+
+- `tmp/stage_8_14_1_pre_compose_safety.txt` (not committed);
+- `tmp/stage_8_14_2_compose_startup.txt` (not committed);
+- `tmp/stage_8_14_2a_localhost_port_bind_override.txt` (not committed, failed first override attempt);
+- `tmp/stage_8_14_2a_localhost_port_bind_override_fix.txt` (not committed, final successful result).
+
+Secret marker scan result: passed.
+
+| Fact | Value | Notes |
+| --- | --- | --- |
+| Workspace HEAD | `4686cf5b58701be138582ae5fe5fe6a616965a12` | Matches `origin/develop` at startup. |
+| Pre-compose safety check | `passed` | `.env`, workspace, Caddy and `amnezia-awg` checked before startup. |
+| Compose config | `valid` | Validated before startup. |
+| First compose startup | `compose_exit_code=0` | App stack started successfully. |
+| Initial security finding | `external service ports exposed` | `8000`, `5173`, `5432`, `6379`, `9000`, `9001` were exposed on `0.0.0.0` by base compose config. |
+| Remediation | `docker-compose.override.yml` | Added production localhost-only port bindings. |
+| First override attempt | `failed` | Lists were merged; Redis bind conflict occurred. |
+| Override fix | `ports: !override` | Replaced base port lists instead of merging them. |
+| Fixed compose startup | `compose_exit_code=0` | Stack recreated successfully. |
+| Backend local health | `ok` | `http://127.0.0.1:8000/health` returned OK. |
+| Backend local readiness | `ok` | `http://127.0.0.1:8000/api/v1/ready` returned OK. |
+| Frontend local check | `HTTP/1.1 200 OK` | `http://127.0.0.1:5173` responded. |
+| Backend bind | `127.0.0.1:8000` | Not exposed directly to public network. |
+| Frontend bind | `127.0.0.1:5173` | Not exposed directly to public network. |
+| PostgreSQL bind | `127.0.0.1:5432` | Not exposed directly to public network. |
+| Redis bind | `127.0.0.1:6379` | Not exposed directly to public network. |
+| MinIO API bind | `127.0.0.1:9000` | Not exposed directly to public network. |
+| MinIO console bind | `127.0.0.1:9001` | Not exposed directly to public network. |
+| Caddy placeholder | `preserved` | Still returns `HTTP/2 200`. |
+| Existing `amnezia-awg` | `preserved` | Container remains running. |
+| Existing UDP `34503` | `preserved` | Port remains active. |
+| Environment values | `not printed` | `.env` content was not exposed. |
+| Environment key names | `not printed` | `.env` key names were not exposed. |
+
+### Remaining rollout blockers after Docker Compose startup
+
+- Replace temporary Caddy placeholder with reverse proxy routes.
+- Verify public URLs through Caddy: `/`, `/health`, `/api/v1/ready`.
+- Run public smoke checks through `https://portal.rcdo02.ru`.
+- Record reverse proxy route result in documentation.

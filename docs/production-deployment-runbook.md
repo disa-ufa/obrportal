@@ -296,3 +296,33 @@ Next runbook action:
 - run final pre-compose safety check;
 - start app stack with Docker Compose;
 - verify local service health before changing Caddy routes.
+
+## Docker Compose startup result - 2026-05-24
+
+The production application stack has been started and remediated to localhost-only service bindings.
+
+| Item | Result | Notes |
+| --- | --- | --- |
+| Final pre-compose safety check | `passed` | Workspace, `.env`, Caddy, compose config and `amnezia-awg` checked. |
+| Stack startup | `compose_exit_code=0` | Docker Compose stack started. |
+| Backend health | `ok` | Local `/health` check passed. |
+| Backend readiness | `ok` | Local `/api/v1/ready` check passed. |
+| Frontend local check | `HTTP/1.1 200 OK` | Local frontend check passed. |
+| Security remediation | `completed` | Service ports are bound to `127.0.0.1` only. |
+| Caddy state | `placeholder preserved` | Public HTTPS still returns placeholder. |
+| Existing `amnezia-awg` | `preserved` | Not touched. |
+
+Current local service bindings:
+
+- backend: `127.0.0.1:8000`;
+- frontend: `127.0.0.1:5173`;
+- PostgreSQL: `127.0.0.1:5432`;
+- Redis: `127.0.0.1:6379`;
+- MinIO API: `127.0.0.1:9000`;
+- MinIO console: `127.0.0.1:9001`.
+
+Next runbook action:
+
+- replace temporary Caddy placeholder with reverse proxy routes to local app services;
+- verify public `/`, `/health`, `/api/v1/ready`;
+- keep database/cache/storage ports private.

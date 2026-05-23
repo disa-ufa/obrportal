@@ -322,3 +322,30 @@ Remaining remediation:
 - start app stack in a controlled step;
 - verify backend/frontend health;
 - replace Caddy placeholder with production reverse proxy routes.
+
+## Docker Compose startup remediation result - 2026-05-24
+
+Completed:
+
+- final pre-compose safety check passed;
+- workspace updated to `4686cf5b58701be138582ae5fe5fe6a616965a12`;
+- Docker Compose config validated;
+- Docker Compose stack started;
+- backend local `/health` check passed;
+- backend local `/api/v1/ready` check passed;
+- frontend local HTTP check passed;
+- initial direct external port exposure was detected;
+- `docker-compose.override.yml` was introduced for production localhost-only bindings;
+- failed first override attempt was backed up;
+- override was corrected with Compose `!override`;
+- stack was recreated successfully;
+- app ports now bind only to `127.0.0.1`;
+- Caddy HTTPS placeholder remained active;
+- existing `amnezia-awg` and UDP `34503` remained preserved;
+- `.env` values and key names were not printed.
+
+Remaining remediation:
+
+- configure Caddy reverse proxy routes;
+- verify public HTTPS routes;
+- record public smoke result.
