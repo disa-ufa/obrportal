@@ -759,6 +759,38 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "scripts/check_production_server_remediation_plan.py",
+        [
+            "REQUIRED_RELEASE_TAG",
+            "REQUIRED_RELEASE_COMMIT",
+            "REQUIRED_STAGE7_COMMIT",
+            "REQUIRED_STAGE8_CHECKPOINT",
+            "REQUIRED_SECTIONS",
+            "REQUIRED_SOURCE_DOCUMENTS",
+            "REQUIRED_TABLE_ITEMS",
+            "REQUIRED_COMMANDS",
+            "REQUIRED_MARKERS",
+            "def get_production_server_remediation_plan_diagnostics",
+            "production server remediation plan diagnostics passed",
+        ],
+    )
+
+    require_contains(
+        "docs/production-server-remediation-plan.md",
+        [
+            "# Production server remediation plan",
+            "## Release baseline",
+            "## Source documents",
+            "## Current sanitized server state",
+            "## Remediation order",
+            "## Step 2 - install Docker Compose plugin",
+            "## Step 7 - production `.env` creation",
+            "## Acceptance criteria",
+            "v0.1.0-stage6",
+        ],
+    )
+
     print("Frontend core behavior smoke passed")
 
 

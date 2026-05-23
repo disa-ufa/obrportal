@@ -233,3 +233,9 @@ python .\scripts\check_text_encoding.py
 - Production `.env` is not committed.
 - Safe verification commands are documented.
 - No secrets are committed to Git.
+
+## Remediation diagnostics
+
+Required diagnostic command:
+
+- `python .\scripts\check_production_server_remediation_plan.py`
