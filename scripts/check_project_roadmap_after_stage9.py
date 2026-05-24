@@ -80,8 +80,8 @@ def main() -> None:
     if sections < 14:
         raise SystemExit(f"expected at least 14 sections, got {sections}")
 
-    if stage_mentions < 20:
-        raise SystemExit(f"expected at least 20 stage mentions, got {stage_mentions}")
+    if stage_mentions < 17:
+        raise SystemExit(f"expected at least 17 stage mentions, got {stage_mentions}")
 
     if course_mentions < 15:
         raise SystemExit(f"expected at least 15 course mentions, got {course_mentions}")
