@@ -4825,3 +4825,86 @@ Final guard commands before main fast-forward:
 - 8.17.2 - commit Stage 8 final stabilization summary;
 - 8.17.3 - final local gate before `main` fast-forward;
 - 8.17.4 - fast-forward `main` from `develop`.
+
+---
+
+## Checkpoint 9.1 - production operations baseline
+
+Контур production operations baseline выполнен для Stage 9: после закрытия Stage 8 создан эксплуатационный baseline, описывающий текущее production-состояние, public/private exposure model, monitoring baseline, backup/restore baseline, handover baseline, update procedure и incident response basics.
+
+Закрыто:
+
+- 9.1.1 - production operations baseline document;
+- 9.1.2 - production operations baseline diagnostics guard;
+- 9.1.3 - README checkpoint для production operations baseline.
+
+Результат:
+
+- создан `docs/production-operations-baseline.md`; 
+- создан `scripts/check_production_operations_baseline.py`; 
+- diagnostics guard прошёл успешно;
+- все Stage 8 production diagnostics остались зелёными;
+- frontend smoke/check coverage guard прошёл;
+- no TODO/stub/not-implemented markers guard прошёл;
+- source BOM guard прошёл;
+- text encoding guard прошёл.
+
+Production operations baseline фиксирует:
+
+- production domain: `portal.rcdo02.ru`; 
+- public URL: `https://portal.rcdo02.ru`; 
+- Caddy как единственный public HTTP/HTTPS entrypoint;
+- backend/frontend/PostgreSQL/Redis/MinIO как localhost-only services;
+- server-only `.env`, `docker-compose.override.yml`, `/etc/caddy/Caddyfile`; 
+- сохранение `amnezia-awg` и UDP `34503`; 
+- monitoring baseline;
+- backup baseline;
+- restore baseline;
+- operational handover baseline;
+- update procedure baseline;
+- incident response baseline;
+- Stage 9 planned sequence;
+- acceptance criteria.
+
+Текущее production-состояние после 9.1:
+
+- Stage 8 production rollout завершён;
+- `main` и `develop` синхронизированы на Stage 8 commit `88990b2`; 
+- Stage 9 начат в `develop`; 
+- текущий `develop`: `1cae1f3`; 
+- production public routes ранее подтверждены как `200`; 
+- app/service ports остаются private localhost-only;
+- production `.env` не печатался и не коммитился;
+- server-only files остаются вне git.
+
+Новый diagnostics guard:
+
+- `python .\scripts\check_production_operations_baseline.py`
+
+Контрольные проверки Stage 9.1:
+
+- python .\scripts\check_production_operations_baseline.py
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 9.2 - production monitoring smoke script
