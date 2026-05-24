@@ -411,3 +411,59 @@ Decision:
 - preserve `/opt/obrportal/docker-compose.override.yml`;
 - preserve `/etc/caddy/Caddyfile`;
 - preserve `amnezia-awg`.
+
+## 20. Controlled production workspace sync result - 2026-05-24
+
+Source:
+
+- local safe report `tmp/stage_10_11_6_workspace_sync_result.txt` was reviewed locally and is not committed.
+
+Sync target:
+
+| Item | Result |
+| --- | --- |
+| Target tag | `v0.1.0-stage10-pre-init` |
+| Target commit | `f0f98f9` |
+| Production git HEAD after sync | `f0f98f9` |
+| Production git branch | `develop` |
+
+Preserved server-only files:
+
+| Item | Result |
+| --- | --- |
+| Production `.env` | exists |
+| Server-only compose override | exists |
+| Caddyfile | exists |
+| Caddy status | `active` |
+
+Runtime result:
+
+| Item | Result |
+| --- | --- |
+| Docker Compose rebuild | completed |
+| Backend container | running |
+| Frontend container | running |
+| PostgreSQL container | running / healthy |
+| Redis container | running / healthy |
+| MinIO container | running / healthy |
+| Public frontend smoke | passed |
+| Public health smoke | passed |
+| Public readiness smoke | passed |
+| App/service ports | localhost-only |
+| Secret marker scan | passed |
+| Production `.env` content printed | `no` |
+| Secret values printed | `no` |
+| Migration executed | `no` |
+| Seed executed | `no` |
+
+Decision:
+
+- controlled production workspace sync is accepted;
+- production code is now at `v0.1.0-stage10-pre-init`;
+- backup-before-init was completed before sync;
+- migrations can be planned as the next controlled step;
+- seed commands are still blocked until migrations are completed;
+- production `.env` remains server-only;
+- `docker-compose.override.yml` remains server-only;
+- Caddy remains the public HTTP/HTTPS entrypoint;
+- `amnezia-awg` remains untouched.

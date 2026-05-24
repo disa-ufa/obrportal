@@ -57,6 +57,14 @@ REQUIRED_MARKERS = [
     "Production `.env` SHA256 check",
     "`postgres_table_marker_count=0` is expected",
     "backup-before-init is accepted",
+    "Controlled production workspace sync result - 2026-05-24",
+    "Production git HEAD after sync",
+    "production code is now at `v0.1.0-stage10-pre-init`",
+    "controlled production workspace sync is accepted",
+    "Docker Compose rebuild",
+    "Public readiness smoke",
+    "migrations can be planned as the next controlled step",
+    "seed commands are still blocked until migrations are completed",
 ]
 
 REQUIRED_SECTIONS = [
@@ -79,6 +87,7 @@ REQUIRED_SECTIONS = [
     "## 17. Acceptance criteria",
     "## 18. Pre-init server check result - 2026-05-24",
     "## 19. Backup-before-init result - 2026-05-24",
+    "## 20. Controlled production workspace sync result - 2026-05-24",
 ]
 
 
@@ -108,8 +117,8 @@ def main() -> None:
     backup_mentions = text.lower().count("backup")
     admin_mentions = text.lower().count("admin")
 
-    if sections < 19:
-        raise SystemExit(f"expected at least 19 sections, got {sections}")
+    if sections < 20:
+        raise SystemExit(f"expected at least 20 sections, got {sections}")
 
     if table_items < 25:
         raise SystemExit(f"expected at least 25 table separators, got {table_items}")
