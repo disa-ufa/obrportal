@@ -33,71 +33,73 @@ ObrPortal — образовательный портал и back-office foundat
 v0.1.0-stage6-ops9
 ```
 
-Текущий commit:
+Текущий commit в `develop`:
+
+```text
+a1b5962 docs: add production initialization runbook
+```
+
+Текущий `main`:
 
 ```text
 79c64c0 docs: stabilize stage 9.9 checkpoint
 ```
 
-Stage 9 полностью закрыт:
+Stage 9 полностью закрыт и помечен тегом:
 
 ```text
-9.1 — production operations baseline
-9.2 — production monitoring smoke
-9.3 — backup inventory precheck
-9.4 — protected backup artifact
-9.5 — restore dry-run metadata verification
-9.6 — operational runbook / incident checklist
-9.7 — maintenance / update checklist
-9.8 — handover package / operator summary
-9.9 — final Stage 9 local gate / release readiness summary
+v0.1.0-stage6-ops9
 ```
 
-Текущий рабочий этап:
+Stage 10 уже закрыто в `develop`:
 
 ```text
-Stage 10 — project roadmap stabilization and controlled production readiness
-```
-
-Сейчас закрыто:
-
-```text
-10.1 — post Stage 9 roadmap
+10.1 - post Stage 9 roadmap
+10.2 - README актуализирован под Stage 10
+10.3 - Stage 9 / Stage 10 roadmap guards добавлены в CI
+10.4 - frontend API base variable mismatch исправлен
+10.5 - demo credentials убраны из production frontend
+10.6 - production initialization runbook подготовлен
 ```
 
 Конкретно сейчас выполняется:
 
 ```text
-10.2 — README актуализирован под Stage 10
+10.7 - README checkpoint после production initialization runbook
 ```
 
 Следующие ближайшие технические шаги:
 
 ```text
-10.3 — добавить Stage 9 / Stage 10 roadmap guards в CI
-10.4 — исправить frontend API base variable mismatch
-10.5 — убрать demo credentials из production login form
-10.6 — подготовить production initialization runbook
+10.8 - final develop gate перед production initialization
+10.9 - fast-forward main после зелёного gate
+10.10 - tag pre-production-init checkpoint
+10.11 - controlled production initialization по runbook
 ```
 
 Важная корректировка дорожной карты:
 
 ```text
-Stage 12 — Course authoring / конструктор курсов
+Stage 12 - Course authoring / конструктор курсов
 ```
 
 Конструктор курсов выделен в отдельный крупный этап. Он не должен быть спрятан внутри общего LMS-блока.
 
-Документ дорожной карты:
+Ключевые документы Stage 10:
 
 ```text
 docs/project-roadmap-after-stage9.md
+docs/production-initialization-runbook.md
 ```
 
-Проверка дорожной карты:
+Ключевые проверки Stage 10:
 
 ```text
 python .\scripts\check_project_roadmap_after_stage9.py
+python .\scripts\check_readme_stage10_state.py
+python .\scripts\check_frontend_api_base_config.py
+python .\scripts\check_frontend_no_demo_credentials.py
+python .\scripts\check_production_initialization_runbook.py
 ```
 
 
@@ -6010,3 +6012,56 @@ Final safety boundaries:
 - tag: `v0.1.0-stage6-ops9`;
 - production operations contour закрыт;
 - дальнейшая разработка продолжается в `develop`.
+---
+
+## Checkpoint 10.6 - production initialization runbook
+
+Подготовлен безопасный runbook для контролируемой production-инициализации.
+
+Закрыто:
+
+- 10.6.1 - создан `docs/production-initialization-runbook.md`;
+- 10.6.2 - создан `scripts/check_production_initialization_runbook.py`;
+- 10.6.3 - initialization runbook guard добавлен в CI/local gate.
+
+Runbook фиксирует:
+
+- pre-initialization local checks;
+- pre-initialization diagnostics;
+- production connection safety;
+- backup-before-init;
+- migration procedure;
+- database structure verification;
+- seed roles and permissions;
+- create real production admin;
+- create real organization profile;
+- post-initialization public smoke;
+- post-initialization auth smoke;
+- backup-after-init;
+- rollback boundaries;
+- acceptance criteria.
+
+Ключевые правила безопасности:
+
+- не печатать production `.env`;
+- не печатать секреты;
+- не коммитить `.env`; 
+- не выполнять `docker compose down -v`; 
+- не удалять Docker volumes;
+- не делать restore production DB без отдельного restore plan;
+- не делать restore MinIO без отдельного restore plan;
+- не трогать `amnezia-awg`; 
+- не использовать demo credentials в production.
+
+Новая проверка:
+
+- `python .\scripts\check_production_initialization_runbook.py`
+
+Текущее состояние после 10.6:
+
+- `develop`: `a1b5962`; 
+- `main`: `79c64c0`; 
+- tag: `v0.1.0-stage6-ops9`; 
+- production initialization ещё не выполнялась;
+- production server, БД, Caddy, Docker и `.env` на этом шаге не трогались;
+- следующий шаг: final develop gate перед production initialization.
