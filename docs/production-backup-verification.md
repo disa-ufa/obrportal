@@ -174,6 +174,12 @@ Do not:
 - touch `amnezia-awg`;
 - expose private ports publicly.
 
+Additional explicit safety markers:
+
+- do not upload backup artifacts to public storage;
+- do not copy backup artifacts outside protected server backup directories;
+- do not include production secrets in documentation.
+
 Allowed next step:
 
 - create a protected backup artifact on the server;
