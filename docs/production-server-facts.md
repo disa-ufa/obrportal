@@ -353,3 +353,52 @@ Secret marker scan result: passed.
 - Verify public URLs through Caddy: `/`, `/health`, `/api/v1/ready`.
 - Run public smoke checks through `https://portal.rcdo02.ru`.
 - Record reverse proxy route result in documentation.
+
+## Caddy reverse proxy route activation safe facts - 2026-05-24
+
+Sources:
+
+- `tmp/stage_8_15_1_caddy_routes_activation.txt` (not committed, first activation with frontend `403`);
+- `tmp/stage_8_15_1a_caddy_frontend_host_fix.txt` (not committed, final successful result).
+
+Secret marker scan result: passed.
+
+| Fact | Value | Notes |
+| --- | --- | --- |
+| Domain | `portal.rcdo02.ru` | Production domain. |
+| Caddyfile backup | `created` | Existing `/etc/caddy/Caddyfile` was backed up before replacement. |
+| Caddy validation | `caddy_validate_exit_code=0` | Configuration valid. |
+| Caddy reload | `caddy_reload_exit_code=0` | Reload successful. |
+| Initial frontend route | `HTTP/2 403` | Vite frontend rejected public Host header. |
+| Frontend route fix | `header_up Host 127.0.0.1:5173` | Applied for frontend upstream. |
+| Public frontend | `200` | `https://portal.rcdo02.ru` returns frontend HTML. |
+| Public health | `200` | `https://portal.rcdo02.ru/health` returns backend health. |
+| Public readiness | `200` | `https://portal.rcdo02.ru/api/v1/ready` returns backend readiness. |
+| Backend local health | `ok` | Local backend remained healthy. |
+| Backend local readiness | `ok` | Local backend readiness remained healthy. |
+| Frontend local check | `HTTP/1.1 200 OK` | Local frontend remained healthy. |
+| Backend bind | `127.0.0.1:8000` | Private localhost-only. |
+| Frontend bind | `127.0.0.1:5173` | Private localhost-only. |
+| PostgreSQL bind | `127.0.0.1:5432` | Private localhost-only. |
+| Redis bind | `127.0.0.1:6379` | Private localhost-only. |
+| MinIO API bind | `127.0.0.1:9000` | Private localhost-only. |
+| MinIO console bind | `127.0.0.1:9001` | Private localhost-only. |
+| Public HTTP/HTTPS | `Caddy only` | Caddy remains the public HTTP/HTTPS entrypoint. |
+| Existing `amnezia-awg` | `preserved` | Container remains running. |
+| Existing UDP `34503` | `preserved` | Port remains active. |
+| Environment values | `not printed` | `.env` content was not exposed. |
+| Environment key names | `not printed` | `.env` key names were not exposed. |
+
+### Active Caddy route model
+
+- `/health` -> `127.0.0.1:8000`;
+- `/api/*` -> `127.0.0.1:8000`;
+- `/` and frontend assets -> `127.0.0.1:5173`;
+- frontend upstream receives `Host: 127.0.0.1:5173`;
+- public entrypoint remains `https://portal.rcdo02.ru`.
+
+### Remaining rollout blockers after Caddy route activation
+
+- Record README checkpoint for Stage 8.15.
+- Run final production public smoke/checkpoint if needed.
+- Keep server-only overrides and Caddyfile backups out of git.

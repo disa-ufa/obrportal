@@ -205,3 +205,29 @@ Inventory decision:
 - app services are ready for Caddy reverse proxy configuration;
 - direct public access to backend/frontend/database/cache/storage is not used;
 - Caddy remains the only public HTTP/HTTPS entrypoint.
+
+## Caddy reverse proxy rollout inventory result - 2026-05-24
+
+| Item | Value | Status |
+| --- | --- | --- |
+| Domain | `portal.rcdo02.ru` | active |
+| Public frontend | `https://portal.rcdo02.ru` | `200` |
+| Public health | `https://portal.rcdo02.ru/health` | `200` |
+| Public readiness | `https://portal.rcdo02.ru/api/v1/ready` | `200` |
+| Caddy validation | `0` | passed |
+| Caddy reload | `0` | passed |
+| Frontend upstream | `127.0.0.1:5173` | private |
+| Backend upstream | `127.0.0.1:8000` | private |
+| PostgreSQL bind | `127.0.0.1:5432` | private |
+| Redis bind | `127.0.0.1:6379` | private |
+| MinIO API bind | `127.0.0.1:9000` | private |
+| MinIO console bind | `127.0.0.1:9001` | private |
+| Public HTTP/HTTPS | `Caddy only` | active |
+| Existing VPN container | `amnezia-awg` | preserved |
+| Existing VPN UDP port | `34503` | preserved |
+
+Inventory decision:
+
+- Caddy reverse proxy route activation is complete;
+- public HTTPS smoke is green;
+- app service ports remain private.

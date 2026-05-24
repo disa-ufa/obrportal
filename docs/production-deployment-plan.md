@@ -172,3 +172,25 @@ Public exposure model:
 - public `80/443`: Caddy;
 - public `34503/udp`: existing `amnezia-awg`;
 - app service ports: localhost-only.
+
+## Caddy reverse proxy deployment result - 2026-05-24
+
+Stage 8 deployment reached the public HTTPS route-ready state.
+
+Completed deployment actions:
+
+- Caddyfile backup;
+- Caddy route activation;
+- frontend Host header fix for reverse proxy mode;
+- public frontend smoke;
+- public backend health smoke;
+- public backend readiness smoke;
+- private localhost-only port verification.
+
+Current deployment state:
+
+- public frontend is available at `https://portal.rcdo02.ru`;
+- backend public health is available at `https://portal.rcdo02.ru/health`;
+- backend public readiness is available at `https://portal.rcdo02.ru/api/v1/ready`;
+- app stack remains behind Caddy on localhost-only bindings;
+- Caddy is the only public HTTP/HTTPS entrypoint.

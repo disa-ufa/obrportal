@@ -232,3 +232,25 @@ Current state:
 - HTTPS is working on `portal.rcdo02.ru`.
 - Backend/frontend are not deployed yet.
 - Current Caddyfile intentionally returns a temporary placeholder.
+
+## Production domain reverse proxy activation result - 2026-05-24
+
+The production domain `portal.rcdo02.ru` now routes through Caddy to the local application stack.
+
+| Check | Result | Notes |
+| --- | --- | --- |
+| Domain | `portal.rcdo02.ru` | Active. |
+| Caddy validation | `0` | Passed. |
+| Caddy reload | `0` | Passed. |
+| Frontend route | `200` | `https://portal.rcdo02.ru`. |
+| Health route | `200` | `https://portal.rcdo02.ru/health`. |
+| Readiness route | `200` | `https://portal.rcdo02.ru/api/v1/ready`. |
+| Public HTTP/HTTPS model | `Caddy only` | Application ports remain private. |
+| App/service binds | `127.0.0.1 only` | Backend, frontend, PostgreSQL, Redis, MinIO. |
+| Existing `amnezia-awg` | `preserved` | UDP `34503` remains active. |
+
+Decision outcome:
+
+- keep Caddy as the production reverse proxy;
+- keep app stack behind localhost-only binds;
+- do not expose backend/frontend/database/cache/storage directly.

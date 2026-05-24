@@ -326,3 +326,32 @@ Next runbook action:
 - replace temporary Caddy placeholder with reverse proxy routes to local app services;
 - verify public `/`, `/health`, `/api/v1/ready`;
 - keep database/cache/storage ports private.
+
+## Caddy reverse proxy route activation result - 2026-05-24
+
+Production Caddy reverse proxy routes are active and public HTTPS smoke checks passed.
+
+| Item | Result | Notes |
+| --- | --- | --- |
+| Caddyfile backup | `created` | Existing config was backed up before replacement. |
+| Caddy validation | `0` | `caddy validate` passed. |
+| Caddy reload | `0` | `systemctl reload caddy` succeeded. |
+| Public frontend | `200` | `https://portal.rcdo02.ru`. |
+| Public health | `200` | `https://portal.rcdo02.ru/health`. |
+| Public readiness | `200` | `https://portal.rcdo02.ru/api/v1/ready`. |
+| Frontend Host fix | `applied` | Frontend upstream receives `Host: 127.0.0.1:5173`. |
+| Local app stack | `preserved` | Backend/frontend remained healthy. |
+| Localhost-only ports | `preserved` | App/service ports remain private. |
+| Existing `amnezia-awg` | `preserved` | Not touched. |
+
+Current route map:
+
+- `/health` -> backend `127.0.0.1:8000`;
+- `/api/*` -> backend `127.0.0.1:8000`;
+- `/` -> frontend `127.0.0.1:5173`.
+
+Next runbook action:
+
+- record Stage 8.15 checkpoint in README;
+- continue with final production smoke/stabilization tasks;
+- do not expose database/cache/storage ports publicly.

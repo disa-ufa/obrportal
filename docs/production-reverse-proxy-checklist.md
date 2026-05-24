@@ -209,3 +209,25 @@ Security result:
 - public HTTP/HTTPS remains owned by Caddy;
 - temporary Caddy placeholder is still active;
 - next reverse proxy step can safely route public HTTPS traffic to local app upstreams.
+
+## Production Caddy route activation result - 2026-05-24
+
+The temporary Caddy placeholder has been replaced with production reverse proxy routes.
+
+| Public route | Upstream | Result |
+| --- | --- | --- |
+| `/` | `127.0.0.1:5173` | `200` |
+| `/health` | `127.0.0.1:8000` | `200` |
+| `/api/*` | `127.0.0.1:8000` | `200` for `/api/v1/ready` |
+
+Frontend reverse proxy fix:
+
+- initial `/` route returned `403`;
+- the frontend upstream was fixed with `header_up Host 127.0.0.1:5173`;
+- after reload, `https://portal.rcdo02.ru` returned `200`.
+
+Security result:
+
+- public HTTP/HTTPS is served by Caddy only;
+- backend/frontend/database/cache/storage ports remain bound to `127.0.0.1`;
+- existing `amnezia-awg` and UDP `34503` were preserved.

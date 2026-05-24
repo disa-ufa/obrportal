@@ -349,3 +349,28 @@ Remaining remediation:
 - configure Caddy reverse proxy routes;
 - verify public HTTPS routes;
 - record public smoke result.
+
+## Caddy reverse proxy remediation result - 2026-05-24
+
+Completed:
+
+- Caddy placeholder was replaced with reverse proxy routes;
+- `/health` route points to backend on `127.0.0.1:8000`;
+- `/api/*` route points to backend on `127.0.0.1:8000`;
+- frontend route points to `127.0.0.1:5173`;
+- initial public frontend `403` was detected;
+- frontend Host header was fixed with `header_up Host 127.0.0.1:5173`;
+- public frontend check returned `200`;
+- public backend health check returned `200`;
+- public backend readiness check returned `200`;
+- Caddy validation passed;
+- Caddy reload succeeded;
+- app/service ports remained localhost-only;
+- existing `amnezia-awg` and UDP `34503` remained preserved;
+- `.env` values and key names were not printed.
+
+Remaining remediation:
+
+- document README checkpoint;
+- keep Caddy as the only public HTTP/HTTPS entrypoint;
+- keep database/cache/storage private.
