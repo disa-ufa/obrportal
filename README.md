@@ -5762,3 +5762,162 @@ Safety boundaries:
 Следующий функциональный блок:
 
 - 9.9 - final Stage 9 local gate / release readiness summary
+---
+
+## Checkpoint 9.9 - final Stage 9 local gate / release readiness summary
+
+Контур final Stage 9 local gate / release readiness summary выполнен: создан финальный документ Stage 9, добавлен diagnostics guard, исправлен missing marker, полный набор production diagnostics и local guards прошёл зелёным. `main` пока не fast-forwarded и остаётся на Stage 8 checkpoint до отдельного финального решения.
+
+Закрыто:
+
+- 9.9.1 - production Stage 9 final gate document;
+- 9.9.2 - production Stage 9 final gate diagnostics guard;
+- 9.9.2-fix - final gate missing marker fix;
+- 9.9.3 - README checkpoint для final Stage 9 local gate.
+
+Результат:
+
+- создан `docs/production-stage9-final-gate.md`;
+- создан `scripts/check_production_stage9_final_gate.py`;
+- final gate document содержит Stage 9 closure matrix;
+- final gate document содержит production documents list;
+- final gate document содержит diagnostics scripts list;
+- final gate document содержит production health baseline;
+- final gate document содержит runtime safety baseline;
+- final gate document содержит backup/restore final status;
+- final gate document содержит final local gate command list;
+- final gate document содержит final safety boundaries;
+- final gate document явно фиксирует, что `main` не обновляется на этом шаге;
+- Stage 9 final gate diagnostics прошёл;
+- handover package diagnostics прошёл;
+- maintenance update checklist diagnostics прошёл;
+- operational runbook diagnostics прошёл;
+- production backup verification diagnostics прошёл;
+- production monitoring smoke прошёл;
+- production monitoring smoke diagnostics прошёл;
+- production operations baseline diagnostics прошёл;
+- все Stage 8 production diagnostics остались зелёными;
+- frontend smoke/check coverage guard прошёл;
+- no TODO/stub/not-implemented markers guard прошёл;
+- source BOM guard прошёл;
+- text encoding guard прошёл.
+
+Stage 9 closure matrix:
+
+- 9.1 - production operations baseline - closed;
+- 9.2 - production monitoring smoke - closed;
+- 9.3 - backup inventory precheck - closed;
+- 9.4 - protected backup artifact creation - closed;
+- 9.5 - restore dry-run metadata verification - closed;
+- 9.6 - operational runbook / incident checklist - closed;
+- 9.7 - maintenance / update checklist - closed;
+- 9.8 - handover package / operator summary - closed;
+- 9.9 - final local gate / release readiness summary - closed after this checkpoint commit.
+
+Production health baseline:
+
+- `https://portal.rcdo02.ru` -> `200`;
+- `https://portal.rcdo02.ru/login` -> `200`;
+- `https://portal.rcdo02.ru/admin` -> `200`;
+- `https://portal.rcdo02.ru/catalog` -> `200`;
+- `https://portal.rcdo02.ru/health` -> `200`;
+- `https://portal.rcdo02.ru/api/v1/ready` -> `200`.
+
+Runtime safety baseline:
+
+- Caddy remains public HTTP/HTTPS entrypoint;
+- backend remains `127.0.0.1:8000`;
+- frontend remains `127.0.0.1:5173`;
+- PostgreSQL remains `127.0.0.1:5432`;
+- Redis remains `127.0.0.1:6379`;
+- MinIO API remains `127.0.0.1:9000`;
+- MinIO console remains `127.0.0.1:9001`;
+- `amnezia-awg` remains preserved, UDP `34503`.
+
+Backup / restore final status:
+
+- protected backup artifact: `/opt/obrportal-backups/protected/stage_9_4_1b_20260524103807/obrportal_protected_backup_stage_9_4_1b_20260524103807.tar.gz`;
+- backup SHA256: `ea110112a1eef82c2ef048dbb8e0d03102442e9f695f6d5aa27c8a1a0d9eacad`;
+- restore dry-run directory: `/opt/obrportal-backups/restore-dry-run/stage_9_5_1_20260524105954`;
+- PostgreSQL dump is valid for current empty/minimal production database;
+- current production PostgreSQL public table count is `0`;
+- production restore was not performed;
+- database restore was not performed;
+- MinIO restore was not performed;
+- volume deletion was not performed;
+- service restart was not performed;
+- secret printing was not performed.
+
+Final safety boundaries:
+
+- do not print production `.env`;
+- do not print secret values;
+- do not commit `.env`;
+- do not commit server-only override;
+- do not commit server-only Caddyfile;
+- do not commit backup artifacts;
+- do not upload backup artifacts to public storage;
+- do not run `docker compose down -v`;
+- do not delete Docker volumes;
+- do not restore production database;
+- do not restore production MinIO data;
+- do not expose private service ports publicly;
+- do not touch `amnezia-awg` unless the incident is VPN-specific.
+
+Новая проверка:
+
+- `python .\scripts\check_production_stage9_final_gate.py`
+
+Текущее состояние после 9.9:
+
+- Stage 9 operations baseline создан;
+- production monitoring smoke создан;
+- production backup inventory precheck закрыт;
+- protected backup artifact создан;
+- restore dry-run metadata verification закрыт;
+- operational runbook создан;
+- maintenance update checklist создан;
+- handover package создан;
+- final Stage 9 local gate создан;
+- текущий `develop`: `4274705`;
+- `main` пока остаётся на Stage 8 checkpoint `88990b2`;
+- production public routes зелёные;
+- app/service ports остаются private localhost-only;
+- production `.env` не печатался и не коммитился;
+- server-only files остаются вне git.
+
+Контрольные проверки Stage 9.9:
+
+- python .\scripts\check_production_stage9_final_gate.py
+- python .\scripts\check_production_handover_package.py
+- python .\scripts\check_production_maintenance_update_checklist.py
+- python .\scripts\check_production_operational_runbook.py
+- python .\scripts\check_production_backup_verification.py
+- python .\scripts\smoke_production_monitoring.py
+- python .\scripts\check_production_monitoring_smoke.py
+- python .\scripts\check_production_operations_baseline.py
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий шаг после коммита 9.9:
+
+- финальная проверка `develop`;
+- затем отдельное решение о fast-forward `main` из `develop`.
