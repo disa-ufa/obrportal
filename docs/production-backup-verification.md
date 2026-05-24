@@ -24,18 +24,6 @@ Safe local log source:
 
 Secret marker scan result:
 
-- `- `9.3.1` - safe production backup inventory and backup coverage precheck.
-
-This step did not perform restore, did not delete volumes, did not restart services and did not print secrets.
-
-## 2. Source
-
-Safe local log source:
-
-- `tmp/stage_9_3_1_backup_inventory_precheck.txt` - not committed.
-
-Secret marker scan result:
-
 - `passed`.
 
 ## 3. Precheck decision
@@ -162,6 +150,16 @@ Result:
 | Caddyfile | `yes` | required without printing |
 | Caddy backups | `yes` | backup artifact only |
 | Deployment docs | `yes` | git-backed plus optional server copy |
+
+Source precheck markers:
+
+- `backup_target_postgres=required`;
+- `backup_target_minio=required`;
+- `backup_target_env=required_without_printing`;
+- `backup_target_compose_override=required_without_printing`;
+- `backup_target_caddyfile=required_without_printing`;
+- `backup_target_caddy_backups=required`;
+- `backup_target_deployment_docs=required`.
 
 ## 12. Safety rules for next backup steps
 
