@@ -231,3 +231,23 @@ Security result:
 - public HTTP/HTTPS is served by Caddy only;
 - backend/frontend/database/cache/storage ports remain bound to `127.0.0.1`;
 - existing `amnezia-awg` and UDP `34503` were preserved.
+
+## Final public HTTPS smoke result - 2026-05-24
+
+Final public HTTPS smoke passed after Caddy reverse proxy activation.
+
+| Public route | Result | Upstream |
+| --- | --- | --- |
+| `/` | `200` | frontend `127.0.0.1:5173` |
+| `/login` | `200` | frontend `127.0.0.1:5173` |
+| `/admin` | `200` | frontend `127.0.0.1:5173` |
+| `/catalog` | `200` | frontend `127.0.0.1:5173` |
+| `/health` | `200` | backend `127.0.0.1:8000` |
+| `/api/v1/ready` | `200` | backend `127.0.0.1:8000` |
+
+Security result:
+
+- Caddy validation passed;
+- app/service ports remain bound to `127.0.0.1`;
+- public HTTP/HTTPS is served by Caddy only;
+- existing `amnezia-awg` and UDP `34503` were preserved.

@@ -374,3 +374,25 @@ Remaining remediation:
 - document README checkpoint;
 - keep Caddy as the only public HTTP/HTTPS entrypoint;
 - keep database/cache/storage private.
+
+## Final production public smoke remediation result - 2026-05-24
+
+Completed:
+
+- final public smoke passed;
+- public frontend returned `200`;
+- public backend health returned `200`;
+- public backend readiness returned `200`;
+- public SPA routes `/login`, `/admin`, `/catalog` returned `200`;
+- Caddy validation passed;
+- local backend and frontend checks remained healthy;
+- localhost-only service bindings remained preserved;
+- existing `amnezia-awg` and UDP `34503` remained preserved;
+- production `.env` values and key names were not printed;
+- secret marker scan passed.
+
+Remaining remediation:
+
+- none for Stage 8 public HTTPS smoke;
+- keep Caddy as the only public HTTP/HTTPS entrypoint;
+- keep server-only override and Caddyfile backups out of git.

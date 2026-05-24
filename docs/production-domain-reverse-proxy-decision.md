@@ -254,3 +254,25 @@ Decision outcome:
 - keep Caddy as the production reverse proxy;
 - keep app stack behind localhost-only binds;
 - do not expose backend/frontend/database/cache/storage directly.
+
+## Final production domain public smoke result - 2026-05-24
+
+The production domain `portal.rcdo02.ru` passed final public HTTPS smoke.
+
+| Check | Result | Notes |
+| --- | --- | --- |
+| Frontend `/` | `200` | Public route through Caddy. |
+| Login `/login` | `200` | SPA route through Caddy. |
+| Admin `/admin` | `200` | SPA route through Caddy. |
+| Catalog `/catalog` | `200` | SPA route through Caddy. |
+| Health `/health` | `200` | Backend route through Caddy. |
+| Readiness `/api/v1/ready` | `200` | Backend route through Caddy. |
+| Caddy validation | `0` | Passed. |
+| App/service binds | `127.0.0.1 only` | Backend, frontend, PostgreSQL, Redis, MinIO. |
+| Existing `amnezia-awg` | `preserved` | UDP `34503` remains active. |
+
+Decision outcome:
+
+- production domain is ready for Stage 8 stabilization;
+- Caddy remains the production reverse proxy;
+- direct public access to backend/frontend/database/cache/storage remains disabled.

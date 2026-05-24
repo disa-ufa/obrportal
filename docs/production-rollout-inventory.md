@@ -231,3 +231,26 @@ Inventory decision:
 - Caddy reverse proxy route activation is complete;
 - public HTTPS smoke is green;
 - app service ports remain private.
+
+## Final production public smoke rollout inventory result - 2026-05-24
+
+| Item | Value | Status |
+| --- | --- | --- |
+| Final smoke | `passed` | verified |
+| Domain | `portal.rcdo02.ru` | active |
+| Frontend `/` | `200` | public |
+| Health `/health` | `200` | public |
+| Readiness `/api/v1/ready` | `200` | public |
+| Login `/login` | `200` | public SPA |
+| Admin `/admin` | `200` | public SPA |
+| Catalog `/catalog` | `200` | public SPA |
+| Caddy validation | `0` | passed |
+| Backend bind | `127.0.0.1:8000` | private |
+| Frontend bind | `127.0.0.1:5173` | private |
+| PostgreSQL bind | `127.0.0.1:5432` | private |
+| Redis bind | `127.0.0.1:6379` | private |
+| MinIO API bind | `127.0.0.1:9000` | private |
+| MinIO console bind | `127.0.0.1:9001` | private |
+| Public HTTP/HTTPS | `Caddy only` | active |
+| Existing VPN container | `amnezia-awg` | preserved |
+| Existing VPN UDP port | `34503` | preserved |

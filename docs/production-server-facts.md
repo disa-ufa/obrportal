@@ -402,3 +402,39 @@ Secret marker scan result: passed.
 - Record README checkpoint for Stage 8.15.
 - Run final production public smoke/checkpoint if needed.
 - Keep server-only overrides and Caddyfile backups out of git.
+
+## Final production public smoke safe facts - 2026-05-24
+
+Final production public smoke passed.
+
+| Fact | Value |
+| --- | --- |
+| Smoke decision | `final_public_smoke_passed` |
+| Domain | `portal.rcdo02.ru` |
+| Public frontend `/` | `200` |
+| Public health `/health` | `200` |
+| Public readiness `/api/v1/ready` | `200` |
+| Public login route `/login` | `200` |
+| Public admin route `/admin` | `200` |
+| Public catalog route `/catalog` | `200` |
+| Caddy validation | `caddy_validate_exit_code=0` |
+| Backend bind | `127.0.0.1:8000` |
+| Frontend bind | `127.0.0.1:5173` |
+| PostgreSQL bind | `127.0.0.1:5432` |
+| Redis bind | `127.0.0.1:6379` |
+| MinIO API bind | `127.0.0.1:9000` |
+| MinIO console bind | `127.0.0.1:9001` |
+| Public HTTP/HTTPS | `Caddy only` |
+| Existing `amnezia-awg` | `preserved` |
+| Existing UDP `34503` | `preserved` |
+| Server-only override | `docker-compose.override.yml`, intentionally untracked on server |
+| Server app HEAD | `4686cf5b58701be138582ae5fe5fe6a616965a12` |
+| Release tag | `v0.1.0-stage6` |
+| Environment values | `not printed` |
+| Environment key names | `not printed` |
+
+Final public route model:
+
+- `/`, `/login`, `/admin`, `/catalog` -> frontend through Caddy -> `127.0.0.1:5173`;
+- `/health`, `/api/v1/ready` -> backend through Caddy -> `127.0.0.1:8000`;
+- app services remain private behind Caddy.

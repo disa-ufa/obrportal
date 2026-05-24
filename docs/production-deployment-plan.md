@@ -194,3 +194,28 @@ Current deployment state:
 - backend public readiness is available at `https://portal.rcdo02.ru/api/v1/ready`;
 - app stack remains behind Caddy on localhost-only bindings;
 - Caddy is the only public HTTP/HTTPS entrypoint.
+
+## Final production public smoke deployment result - 2026-05-24
+
+Stage 8 deployment reached the final public-smoke-passed state.
+
+Completed final checks:
+
+- public frontend `/`;
+- public SPA routes `/login`, `/admin`, `/catalog`;
+- public backend `/health`;
+- public backend `/api/v1/ready`;
+- Caddy validation;
+- local backend/frontend upstream checks;
+- Docker Compose container status;
+- port privacy check;
+- `amnezia-awg` preservation check;
+- safe `.env` non-disclosure check.
+
+Current deployment state:
+
+- public application is available at `https://portal.rcdo02.ru`;
+- backend health/readiness are available through Caddy;
+- backend/frontend/database/cache/storage ports remain localhost-only;
+- Caddy is the only public HTTP/HTTPS entrypoint;
+- existing `amnezia-awg` remains active on UDP `34503`.

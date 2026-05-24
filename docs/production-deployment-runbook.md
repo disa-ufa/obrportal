@@ -355,3 +355,27 @@ Next runbook action:
 - record Stage 8.15 checkpoint in README;
 - continue with final production smoke/stabilization tasks;
 - do not expose database/cache/storage ports publicly.
+
+## Final production public smoke result - 2026-05-24
+
+Final production public smoke passed.
+
+| Check | Result |
+| --- | --- |
+| `/` | `200` |
+| `/health` | `200` |
+| `/api/v1/ready` | `200` |
+| `/login` | `200` |
+| `/admin` | `200` |
+| `/catalog` | `200` |
+| Caddy validation | `0` |
+| Local app stack | `preserved` |
+| Localhost-only ports | `preserved` |
+| Existing `amnezia-awg` | `preserved` |
+| Secret marker scan | `passed` |
+
+Operational note:
+
+- server-only `docker-compose.override.yml` is intentionally untracked on the server;
+- production `.env` values and key names were not printed;
+- database/cache/storage ports remain private.
