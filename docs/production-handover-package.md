@@ -120,10 +120,7 @@ Expected routes:
 | `https://portal.rcdo02.ru/health` | `200` |
 | `https://portal.rcdo02.ru/api/v1/ready` | `200` |
 
-Expected` |
-| `https://portal.rcdo02.ru/catalog` | `200` |
-| `https://portal.rcdo02.ru/health` | `200` |
-| `https://portal backend health:
+Expected backend health:
 
 - `/health`: `status=ok`, `app=ObrPortal`, `version=0.1.0-stage6`;
 - `/api/v1/ready`: `status=ok`, `database=ok`, `redis=ok`, `storage=ok`.
