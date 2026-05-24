@@ -4908,3 +4908,101 @@ Production operations baseline фиксирует:
 Следующий функциональный блок:
 
 - 9.2 - production monitoring smoke script
+
+---
+
+## Checkpoint 9.2 - production monitoring smoke
+
+Контур production monitoring smoke выполнен для Stage 9: добавлен повторяемый smoke-скрипт публичного HTTPS-мониторинга, документация и diagnostics guard. Скрипт проверяет production routes без SSH, без чтения `.env`, без изменения Docker Compose, Caddy, volumes и `amnezia-awg`.
+
+Закрыто:
+
+- 9.2.1 - production monitoring smoke script;
+- 9.2.2 - production monitoring smoke documentation;
+- 9.2.3 - production monitoring smoke diagnostics guard;
+- 9.2.4 - README checkpoint для production monitoring smoke.
+
+Результат:
+
+- создан `scripts/smoke_production_monitoring.py`; 
+- создан `docs/production-monitoring-smoke.md`; 
+- создан `scripts/check_production_monitoring_smoke.py`; 
+- production monitoring smoke прошёл успешно;
+- production monitoring smoke diagnostics прошёл успешно;
+- production operations baseline diagnostics прошёл успешно;
+- все Stage 8 production diagnostics остались зелёными;
+- frontend smoke/check coverage guard прошёл;
+- no TODO/stub/not-implemented markers guard прошёл;
+- source BOM guard прошёл;
+- text encoding guard прошёл.
+
+Проверяемые public routes:
+
+- `https://portal.rcdo02.ru` -> `200`; 
+- `https://portal.rcdo02.ru/login` -> `200`; 
+- `https://portal.rcdo02.ru/admin` -> `200`; 
+- `https://portal.rcdo02.ru/catalog` -> `200`; 
+- `https://portal.rcdo02.ru/health` -> `200`; 
+- `https://portal.rcdo02.ru/api/v1/ready` -> `200`.
+
+Backend response expectations:
+
+- `/health`: `status=ok`, `app=ObrPortal`, `version=0.1.0-stage6`; 
+- `/api/v1/ready`: `status=ok`, `database=ok`, `redis=ok`, `storage=ok`.
+
+Safety model:
+
+- smoke script does not read production `.env`; 
+- smoke script does not print secrets;
+- smoke script does not connect over SSH;
+- smoke script does not restart services;
+- smoke script does not modify Caddy;
+- smoke script does not modify Docker Compose;
+- smoke script does not touch volumes;
+- smoke script does not touch `amnezia-awg`.
+
+Новые проверки:
+
+- `python .\scripts\smoke_production_monitoring.py`
+- `python .\scripts\check_production_monitoring_smoke.py`
+
+Текущее состояние после 9.2:
+
+- Stage 9 operations baseline создан;
+- production monitoring smoke создан;
+- текущий `develop`: `04ea095`; 
+- `main` пока остаётся на Stage 8 checkpoint `88990b2`; 
+- production public routes зелёные;
+- app/service ports остаются private localhost-only;
+- production `.env` не печатался и не коммитился;
+- server-only files остаются вне git.
+
+Контрольные проверки Stage 9.2:
+
+- python .\scripts\smoke_production_monitoring.py
+- python .\scripts\check_production_monitoring_smoke.py
+- python .\scripts\check_production_operations_baseline.py
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 9.3 - production backup verification
