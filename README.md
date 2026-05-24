@@ -5615,3 +5615,150 @@ Backup / restore references:
 Следующий функциональный блок:
 
 - 9.8 - handover package / operator summary
+---
+
+## Checkpoint 9.8 - handover package / operator summary
+
+Контур handover package / operator summary выполнен для Stage 9: создан production handover package, который объединяет production access summary, runtime topology, operational docs, diagnostics scripts, health checks, backup/restore references, server-only files, maintenance, incident, update flow, safety boundaries и responsibility matrix.
+
+Закрыто:
+
+- 9.8.1 - production handover package;
+- 9.8.2 - production handover package diagnostics guard;
+- 9.8.2-fix - section 7 corruption fix;
+- 9.8.2-fix-2 - hardened corrupted marker guard;
+- 9.8.3 - README checkpoint для handover package / operator summary.
+
+Результат:
+
+- создан `docs/production-handover-package.md`;
+- создан `scripts/check_production_handover_package.py`;
+- исправлен corrupted fragment в разделе public health checks;
+- guard усилен через `FORBIDDEN_MARKERS`;
+- handover package diagnostics прошёл;
+- maintenance update checklist diagnostics прошёл;
+- operational runbook diagnostics прошёл;
+- production backup verification diagnostics прошёл;
+- production monitoring smoke прошёл;
+- production monitoring smoke diagnostics прошёл;
+- production operations baseline diagnostics прошёл;
+- все Stage 8 production diagnostics остались зелёными;
+- frontend smoke/check coverage guard прошёл;
+- no TODO/stub/not-implemented markers guard прошёл;
+- source BOM guard прошёл;
+- text encoding guard прошёл.
+
+Handover package фиксирует:
+
+- production access summary;
+- runtime topology;
+- current repository state;
+- core operational documents;
+- core diagnostics scripts;
+- standard public health checks;
+- backup handover summary;
+- restore handover summary;
+- server-only files handover;
+- maintenance handover;
+- incident handover;
+- update handover;
+- handover safety boundaries;
+- responsibility matrix;
+- acceptance criteria.
+
+Production access:
+
+- public URL: `https://portal.rcdo02.ru`;
+- health URL: `https://portal.rcdo02.ru/health`;
+- readiness URL: `https://portal.rcdo02.ru/api/v1/ready`;
+- login route: `https://portal.rcdo02.ru/login`;
+- admin route: `https://portal.rcdo02.ru/admin`;
+- catalog route: `https://portal.rcdo02.ru/catalog`;
+- public IPv4: `89.127.203.70`;
+- server hostname: `306733.fornex.cloud`.
+
+Runtime topology:
+
+- Caddy is public HTTP/HTTPS entrypoint;
+- frontend: `127.0.0.1:5173`;
+- backend: `127.0.0.1:8000`;
+- PostgreSQL: `127.0.0.1:5432`;
+- Redis: `127.0.0.1:6379`;
+- MinIO API: `127.0.0.1:9000`;
+- MinIO console: `127.0.0.1:9001`;
+- existing VPN: `amnezia-awg`, UDP `34503`.
+
+Backup / restore references:
+
+- protected backup artifact: `/opt/obrportal-backups/protected/stage_9_4_1b_20260524103807/obrportal_protected_backup_stage_9_4_1b_20260524103807.tar.gz`;
+- backup SHA256: `ea110112a1eef82c2ef048dbb8e0d03102442e9f695f6d5aa27c8a1a0d9eacad`;
+- restore dry-run directory: `/opt/obrportal-backups/restore-dry-run/stage_9_5_1_20260524105954`;
+- current production PostgreSQL public table count is `0`;
+- current PostgreSQL dump is valid but minimal.
+
+Safety boundaries:
+
+- production database restore is forbidden without explicit restore/deployment plan;
+- production MinIO restore is forbidden without explicit restore/deployment plan;
+- Docker volume deletion is forbidden;
+- `docker compose down -v` is forbidden;
+- public exposure of backend/frontend/PostgreSQL/Redis/MinIO is forbidden;
+- secret printing is forbidden;
+- server-only file commits are forbidden;
+- backup artifact commits are forbidden;
+- unrelated changes to `amnezia-awg` are forbidden.
+
+Новая проверка:
+
+- `python .\scripts\check_production_handover_package.py`
+
+Текущее состояние после 9.8:
+
+- Stage 9 operations baseline создан;
+- production monitoring smoke создан;
+- production backup inventory precheck закрыт;
+- protected backup artifact создан;
+- restore dry-run metadata verification закрыт;
+- operational runbook создан;
+- maintenance update checklist создан;
+- handover package создан;
+- текущий `develop`: `aa11efc`;
+- `main` пока остаётся на Stage 8 checkpoint `88990b2`;
+- production public routes зелёные;
+- app/service ports остаются private localhost-only;
+- production `.env` не печатался и не коммитился;
+- server-only files остаются вне git.
+
+Контрольные проверки Stage 9.8:
+
+- python .\scripts\check_production_handover_package.py
+- python .\scripts\check_production_maintenance_update_checklist.py
+- python .\scripts\check_production_operational_runbook.py
+- python .\scripts\check_production_backup_verification.py
+- python .\scripts\smoke_production_monitoring.py
+- python .\scripts\check_production_monitoring_smoke.py
+- python .\scripts\check_production_operations_baseline.py
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 9.9 - final Stage 9 local gate / release readiness summary
