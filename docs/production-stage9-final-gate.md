@@ -71,6 +71,7 @@ Decision:
 
 | Script | Status |
 | --- | --- |
+| `scripts/check_production_stage9_final_gate.py` | created |
 | `scripts/smoke_production_monitoring.py` | created |
 | `scripts/check_production_monitoring_smoke.py` | created |
 | `scripts/check_production_operations_baseline.py` | created |
