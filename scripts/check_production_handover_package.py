@@ -52,6 +52,13 @@ REQUIRED_MARKERS = [
     "do not touch `amnezia-awg` unless the incident is VPN-specific",
 ]
 
+
+FORBIDDEN_MARKERS = [
+    "Expected` |",
+    "https://portal backend health",
+    "Expected` |\\n",
+]
+
 REQUIRED_SECTIONS = [
     "## 1. Purpose",
     "## 2. Production access summary",
@@ -88,6 +95,14 @@ def main() -> None:
         print("production handover package diagnostics failed")
         print("missing markers:")
         for marker in missing:
+            print(f" - {marker}")
+        raise SystemExit(1)
+
+    forbidden = [marker for marker in FORBIDDEN_MARKERS if marker in text]
+    if forbidden:
+        print("production handover package diagnostics failed")
+        print("forbidden/corrupted markers:")
+        for marker in forbidden:
             print(f" - {marker}")
         raise SystemExit(1)
 
