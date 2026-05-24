@@ -348,3 +348,66 @@ Decision:
 - preserve production `.env`;
 - preserve Caddy;
 - preserve `amnezia-awg`.
+
+## 19. Backup-before-init result - 2026-05-24
+
+Source:
+
+- local safe report `tmp/stage_10_11_5_backup_before_init_20260524190057.txt` was reviewed locally and is not committed;
+- local safe validation report `tmp/stage_10_11_5b_backup_before_init_validation.txt` was reviewed locally and is not committed.
+
+First attempt:
+
+- result: `failed / superseded`;
+- PostgreSQL dump was created;
+- PostgreSQL restore list was not created;
+- MinIO archive was not valid because `tar` was not available inside the MinIO container;
+- protected tar existed but was not accepted as complete backup-before-init.
+
+Retry and validation:
+
+| Item | Result |
+| --- | --- |
+| Accepted backup directory | `/opt/obrportal-backups/protected/stage_10_11_5a_pre_init_retry_20260524190539` |
+| Accepted backup tar | `/opt/obrportal-backups/protected/stage_10_11_5a_pre_init_retry_20260524190539.tar.gz` |
+| Backup tar SHA256 | `5dcfaaf495bd3200ecf9af8fe00618ebec40563cce3b7c7e38188ae6e2f479be` |
+| Backup tar exists | `yes` |
+| Backup tar SHA256 check | `yes` |
+| Backup tar valid | `yes` |
+| PostgreSQL dump exists | `yes` |
+| PostgreSQL dump SHA256 check | `yes` |
+| PostgreSQL restore list exists | `yes` |
+| PostgreSQL restore list SHA256 check | `yes` |
+| PostgreSQL restore list lines | `15` |
+| PostgreSQL table marker count | `0` |
+| MinIO archive exists | `yes` |
+| MinIO archive SHA256 check | `yes` |
+| MinIO archive valid | `yes` |
+| Production `.env` backup exists | `yes` |
+| Production `.env` SHA256 check | `yes` |
+| Compose override backup exists | `yes` |
+| Compose override SHA256 check | `yes` |
+| Caddyfile backup exists | `yes` |
+| Caddyfile SHA256 check | `yes` |
+| Secret marker scan | `passed` |
+| Production `.env` content printed | `no` |
+| Secret values printed | `no` |
+| Migration executed | `no` |
+| Seed executed | `no` |
+| Workspace sync executed | `no` |
+
+Important note:
+
+- `postgres_table_marker_count=0` is expected for the current pre-initialization production database;
+- Stage 9 already documented the production database as empty/minimal before migrations;
+- this backup is accepted as backup-before-init for the current live state before workspace sync and before migrations.
+
+Decision:
+
+- backup-before-init is accepted;
+- migrations are still blocked until controlled production workspace sync is completed;
+- next step is controlled sync of `/opt/obrportal` to `v0.1.0-stage10-pre-init`;
+- preserve `/opt/obrportal/.env`;
+- preserve `/opt/obrportal/docker-compose.override.yml`;
+- preserve `/etc/caddy/Caddyfile`;
+- preserve `amnezia-awg`.

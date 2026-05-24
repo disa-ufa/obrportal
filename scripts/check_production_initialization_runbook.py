@@ -46,6 +46,17 @@ REQUIRED_MARKERS = [
     "do not run `alembic upgrade head` yet",
     "first create backup-before-init of the current live state",
     "controlled production workspace sync to `v0.1.0-stage10-pre-init`",
+    "Backup-before-init result - 2026-05-24",
+    "failed / superseded",
+    "Accepted backup directory",
+    "stage_10_11_5a_pre_init_retry_20260524190539",
+    "5dcfaaf495bd3200ecf9af8fe00618ebec40563cce3b7c7e38188ae6e2f479be",
+    "Backup tar SHA256 check",
+    "PostgreSQL restore list SHA256 check",
+    "MinIO archive SHA256 check",
+    "Production `.env` SHA256 check",
+    "`postgres_table_marker_count=0` is expected",
+    "backup-before-init is accepted",
 ]
 
 REQUIRED_SECTIONS = [
@@ -67,6 +78,7 @@ REQUIRED_SECTIONS = [
     "## 16. Rollback boundaries",
     "## 17. Acceptance criteria",
     "## 18. Pre-init server check result - 2026-05-24",
+    "## 19. Backup-before-init result - 2026-05-24",
 ]
 
 
@@ -96,8 +108,8 @@ def main() -> None:
     backup_mentions = text.lower().count("backup")
     admin_mentions = text.lower().count("admin")
 
-    if sections < 18:
-        raise SystemExit(f"expected at least 18 sections, got {sections}")
+    if sections < 19:
+        raise SystemExit(f"expected at least 19 sections, got {sections}")
 
     if table_items < 25:
         raise SystemExit(f"expected at least 25 table separators, got {table_items}")
