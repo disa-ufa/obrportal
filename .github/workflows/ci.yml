@@ -39,6 +39,7 @@ jobs:
         run: |
           python scripts/check_frontend_api_errors.py
           python scripts/check_frontend_mojibake.py
+          python scripts/check_frontend_api_base_config.py
 
       - name: Run frontend forbidden pattern guard
         run: |

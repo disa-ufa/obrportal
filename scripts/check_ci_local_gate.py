@@ -25,6 +25,7 @@ REQUIRED_CI_COMMANDS = [
     "python scripts/check_source_bom.py",
     "python scripts/check_frontend_api_errors.py",
     "python scripts/check_frontend_mojibake.py",
+    "python scripts/check_frontend_api_base_config.py",
     "python scripts/frontend_guard.py",
     "python scripts/check_ci_local_gate.py",
     "python scripts/check_release_readiness.py",
