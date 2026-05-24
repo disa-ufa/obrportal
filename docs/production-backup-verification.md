@@ -199,3 +199,75 @@ Accepted because:
 - no restore was performed;
 - no destructive action was performed;
 - secret marker scan passed.
+
+## 14. Protected backup artifact creation result
+
+Step:
+
+- `9.4.1b` - protected backup artifact creation retry.
+
+Result:
+
+| Check | Result |
+| --- | --- |
+| Protected backup artifact creation | `done` |
+| Retry marker | `protected_backup_artifact_creation_retry_done` |
+| Restore performed | `no` |
+| Volume delete performed | `no` |
+| Service restart performed | `no` |
+| PostgreSQL dump | `postgres_dump_exit_code=0` |
+| PostgreSQL dump non-empty | `postgres_dump_nonempty` |
+| PostgreSQL dump header | `postgres_dump_header_valid` |
+| PostgreSQL gzip | `postgres_gzip_exit_code=0` |
+| PostgreSQL backup | `postgres_backup_created` |
+| MinIO copy | `minio_copy_exit_code=0` |
+| MinIO tar | `minio_tar_exit_code=0` |
+| MinIO gzip | `minio_gzip_exit_code=0` |
+| MinIO backup | `minio_backup_created` |
+| Final artifact tar | `backup_artifact_tar_exit_code=0` |
+| Final artifact | `backup_artifact_created` |
+| Artifact gzip test | `backup_artifact_gzip_test_exit_code=0` |
+| Artifact tar list test | `backup_artifact_tar_list_exit_code=0` |
+| Artifact metadata | `backup_artifact_metadata_verified` |
+| Secret marker scan | `passed` |
+| Caddy | `preserved` |
+| `amnezia-awg` | `preserved` |
+| Public health after backup | `preserved` |
+
+Artifact metadata:
+
+| Field | Value |
+| --- | --- |
+| Run directory | `/opt/obrportal-backups/protected/stage_9_4_1b_20260524103807` |
+| Artifact path | `/opt/obrportal-backups/protected/stage_9_4_1b_20260524103807/obrportal_protected_backup_stage_9_4_1b_20260524103807.tar.gz` |
+| Artifact size | `12425 bytes` |
+| Artifact permissions | `600` |
+| Artifact SHA256 | `ea110112a1eef82c2ef048dbb8e0d03102442e9f695f6d5aa27c8a1a0d9eacad` |
+
+Artifact contents verified by metadata only:
+
+- PostgreSQL dump archive: `postgres/postgres_dump.sql.gz`;
+- MinIO data archive: `storage/minio_data.tar.gz`;
+- server-only files copied without printing contents;
+- metadata files created without secrets;
+- final `.tar.gz` passed gzip test;
+- final `.tar.gz` passed tar list test.
+
+Public health after backup:
+
+| Public route | Result |
+| --- | --- |
+| `https://portal.rcdo02.ru` | `200` |
+| `https://portal.rcdo02.ru/health` | `200` |
+| `https://portal.rcdo02.ru/api/v1/ready` | `200` |
+
+Safety result:
+
+- production `.env` content was not printed;
+- production `.env` key names were not printed;
+- server-only file contents were not printed;
+- restore was not performed;
+- Docker volumes were not deleted;
+- services were not restarted;
+- Caddy was preserved;
+- `amnezia-awg` was preserved.

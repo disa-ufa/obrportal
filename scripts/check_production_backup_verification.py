@@ -42,6 +42,25 @@ REQUIRED_MARKERS = [
     "Do not:",
     "Allowed next step",
     "Acceptance criteria",
+    "Protected backup artifact creation result",
+    "protected_backup_artifact_creation_retry_done",
+    "postgres_dump_exit_code=0",
+    "postgres_dump_nonempty",
+    "postgres_dump_header_valid",
+    "postgres_gzip_exit_code=0",
+    "postgres_backup_created",
+    "minio_copy_exit_code=0",
+    "minio_tar_exit_code=0",
+    "minio_gzip_exit_code=0",
+    "minio_backup_created",
+    "backup_artifact_tar_exit_code=0",
+    "backup_artifact_created",
+    "backup_artifact_gzip_test_exit_code=0",
+    "backup_artifact_tar_list_exit_code=0",
+    "backup_artifact_metadata_verified",
+    "/opt/obrportal-backups/protected/stage_9_4_1b_20260524103807",
+    "obrportal_protected_backup_stage_9_4_1b_20260524103807.tar.gz",
+    "ea110112a1eef82c2ef048dbb8e0d03102442e9f695f6d5aa27c8a1a0d9eacad",
 ]
 
 REQUIRED_SECTIONS = [
@@ -58,6 +77,7 @@ REQUIRED_SECTIONS = [
     "## 11. Backup coverage targets",
     "## 12. Safety rules for next backup steps",
     "## 13. Acceptance criteria for inventory precheck",
+    "## 14. Protected backup artifact creation result",
 ]
 
 
@@ -88,8 +108,8 @@ def main() -> None:
     if table_items < 80:
         raise SystemExit(f"expected at least 80 table separators, got {table_items}")
 
-    if sections < 13:
-        raise SystemExit(f"expected at least 13 sections, got {sections}")
+    if sections < 14:
+        raise SystemExit(f"expected at least 14 sections, got {sections}")
 
     if ports < 6:
         raise SystemExit(f"expected at least 6 localhost port markers, got {ports}")
