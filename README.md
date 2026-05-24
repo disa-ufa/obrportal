@@ -4558,3 +4558,158 @@ Active Caddy route model:
 Следующий функциональный блок:
 
 - 8.16 - final production public smoke / Stage 8 stabilization checkpoint
+
+---
+
+## Checkpoint 8.16 - final production public smoke / Stage 8 stabilization checkpoint
+
+Контур final production public smoke / Stage 8 stabilization checkpoint выполнен: production-портал доступен через публичный HTTPS-домен, backend health/readiness доступны через Caddy, SPA routes отвечают `200`, app/service ports остаются private localhost-only.
+
+Закрыто:
+
+- 8.16.1 - final production public smoke
+- 8.16.2 - record final production public smoke result in docs
+- 8.16.3 - README checkpoint для final production public smoke / Stage 8 stabilization checkpoint
+
+Final production public smoke:
+
+- `https://portal.rcdo02.ru` -> `200`; 
+- `https://portal.rcdo02.ru/health` -> `200`; 
+- `https://portal.rcdo02.ru/api/v1/ready` -> `200`; 
+- `https://portal.rcdo02.ru/login` -> `200`; 
+- `https://portal.rcdo02.ru/admin` -> `200`; 
+- `https://portal.rcdo02.ru/catalog` -> `200`; 
+- final smoke decision: `final_public_smoke_passed`; 
+- Caddy validation: `caddy_validate_exit_code=0`; 
+- secret marker scan: `passed`; 
+- production `.env` values were not printed;
+- production `.env` key names were not printed;
+- temporary local smoke log under `tmp/` was not committed.
+
+Production route model:
+
+- `/`, `/login`, `/admin`, `/catalog` -> frontend through Caddy -> `127.0.0.1:5173`; 
+- `/health`, `/api/v1/ready` -> backend through Caddy -> `127.0.0.1:8000`; 
+- public entrypoint -> `https://portal.rcdo02.ru`; 
+- public HTTP/HTTPS -> Caddy only.
+
+Private service bindings:
+
+- backend: `127.0.0.1:8000`; 
+- frontend: `127.0.0.1:5173`; 
+- PostgreSQL: `127.0.0.1:5432`; 
+- Redis: `127.0.0.1:6379`; 
+- MinIO API: `127.0.0.1:9000`; 
+- MinIO console: `127.0.0.1:9001`.
+
+Public exposure model:
+
+- public `80/443`: Caddy;
+- public `34503/udp`: existing `amnezia-awg`; 
+- app service ports: localhost-only;
+- backend/frontend/database/cache/storage are not exposed directly to public network.
+
+Документально зафиксировано:
+
+- `docs/production-server-facts.md` содержит Final production public smoke safe facts;
+- `docs/production-deployment-runbook.md` содержит Final production public smoke result;
+- `docs/production-server-remediation-plan.md` содержит Final production public smoke remediation result;
+- `docs/production-rollout-inventory.md` содержит Final production public smoke rollout inventory result;
+- `docs/production-deployment-plan.md` содержит Final production public smoke deployment result;
+- `docs/production-reverse-proxy-checklist.md` содержит Final public HTTPS smoke result;
+- `docs/production-domain-reverse-proxy-decision.md` содержит Final production domain public smoke result.
+
+Текущее production-состояние:
+
+- server: `306733.fornex.cloud`; 
+- public IPv4: `89.127.203.70`; 
+- domain: `portal.rcdo02.ru`; 
+- HTTPS URL: `https://portal.rcdo02.ru`; 
+- Caddy: `v2.11.3`; 
+- `/opt/obrportal`: repository workspace prepared;
+- production `.env`: `exists`, `600`, `root:root`; 
+- server-only `docker-compose.override.yml`: intentionally untracked on server;
+- Docker Compose stack: `running`; 
+- backend: `running`, private localhost bind;
+- frontend: `running`, private localhost bind;
+- PostgreSQL: `running`, private localhost bind;
+- Redis: `running`, private localhost bind;
+- MinIO: `running`, private localhost bind;
+- Caddy reverse proxy routes: `active`; 
+- existing container: `amnezia-awg running`; 
+- existing UDP port: `34503/udp active`.
+
+Важно по server workspace:
+
+- running production app code HEAD на сервере: `4686cf5b58701be138582ae5fe5fe6a616965a12`; 
+- последующие коммиты `5f45978`, `d4363fc`, `406cb6b`, `8382ab0`, `b536847` документируют rollout/checkpoints и не требуют rebuild app stack;
+- server-only `docker-compose.override.yml` должен оставаться на сервере и не должен попадать в git.
+
+Критичные правила дальше:
+
+- не удалять server-side `docker-compose.override.yml`; 
+- не возвращать app/service ports на `0.0.0.0`; 
+- не печатать production `.env`; 
+- не коммитить production `.env`; 
+- не трогать `amnezia-awg` и UDP `34503`; 
+- Caddy остаётся единственным public HTTP/HTTPS entrypoint;
+- database/cache/storage остаются private localhost-only;
+- перед любым изменением `/etc/caddy/Caddyfile` сохранять backup;
+- server-only Caddyfile, override-файлы и `.env` не коммитить в репозиторий.
+
+Stage 8 stabilization result:
+
+- production server prepared;
+- production `.env` prepared safely;
+- Docker Compose stack started;
+- security issue with external app/service ports remediated;
+- Caddy HTTPS reverse proxy activated;
+- final public smoke passed;
+- Stage 8 production route is stable.
+
+Релизная база:
+
+- `v0.1.0-stage6`
+- `ac6f339d40567a107dd19f02ec778fbeb5e19971`
+- Stage 7 base: `c7cd9ac4763bfab9f905b311eaf1ef4df9f30381`
+- Stage 8 Caddy checkpoint: `8382ab0`
+- Stage 8 final public smoke result: `b536847`
+
+Основные файлы:
+
+- `docs/production-server-facts.md`
+- `docs/production-deployment-runbook.md`
+- `docs/production-server-remediation-plan.md`
+- `docs/production-rollout-inventory.md`
+- `docs/production-deployment-plan.md`
+- `docs/production-reverse-proxy-checklist.md`
+- `docs/production-domain-reverse-proxy-decision.md`
+- server-only `/etc/caddy/Caddyfile`
+- server-only `/opt/obrportal/docker-compose.override.yml`
+
+Контрольные проверки:
+
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 8.17 - Stage 8 final stabilization summary / main fast-forward decision
