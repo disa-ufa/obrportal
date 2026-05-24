@@ -5483,3 +5483,135 @@ Backup / restore references:
 Следующий функциональный блок:
 
 - 9.7 - maintenance / update checklist
+
+---
+
+## Checkpoint 9.7 - maintenance / update checklist
+
+Контур maintenance / update checklist выполнен для Stage 9: создан production checklist для безопасных обновлений, maintenance-действий, Caddy/Docker Compose изменений, backup/restore maintenance, post-update verification и rollback basics.
+
+Закрыто:
+
+- 9.7.1 - production maintenance update checklist;
+- 9.7.2 - production maintenance update checklist diagnostics guard;
+- 9.7.3 - README checkpoint для maintenance / update checklist.
+
+Результат:
+
+- создан `docs/production-maintenance-update-checklist.md`; 
+- создан `scripts/check_production_maintenance_update_checklist.py`; 
+- maintenance update checklist diagnostics прошёл;
+- operational runbook diagnostics прошёл;
+- production backup verification diagnostics прошёл;
+- production monitoring smoke прошёл;
+- production monitoring smoke diagnostics прошёл;
+- production operations baseline diagnostics прошёл;
+- все Stage 8 production diagnostics остались зелёными;
+- frontend smoke/check coverage guard прошёл;
+- no TODO/stub/not-implemented markers guard прошёл;
+- source BOM guard прошёл;
+- text encoding guard прошёл.
+
+Maintenance checklist фиксирует:
+
+- current branch baseline;
+- pre-update local checklist;
+- production smoke before maintenance;
+- server-only file protection;
+- allowed update types;
+- forbidden actions during routine maintenance;
+- Docker Compose update checklist;
+- Caddy update checklist;
+- backup maintenance checklist;
+- restore maintenance checklist;
+- post-update verification checklist;
+- rollback checklist;
+- acceptance criteria.
+
+Safety model:
+
+- do not print production `.env`; 
+- do not print secret values;
+- do not commit `.env`; 
+- never commit `.env`; 
+- do not commit server-only override;
+- do not commit server-only Caddyfile;
+- do not commit backup artifacts;
+- do not run `docker compose down -v`; 
+- do not delete Docker volumes;
+- do not expose private ports publicly;
+- do not restart PostgreSQL without explicit reason;
+- do not restart MinIO without explicit reason;
+- do not touch `amnezia-awg` unless the incident is specifically about VPN.
+
+Protected production assumptions:
+
+- backend remains `127.0.0.1:8000`; 
+- frontend remains `127.0.0.1:5173`; 
+- PostgreSQL remains `127.0.0.1:5432`; 
+- Redis remains `127.0.0.1:6379`; 
+- MinIO API remains `127.0.0.1:9000`; 
+- MinIO console remains `127.0.0.1:9001`; 
+- Caddy remains public HTTP/HTTPS entrypoint;
+- `amnezia-awg` and UDP `34503` remain preserved.
+
+Backup / restore references:
+
+- protected backup artifact: `/opt/obrportal-backups/protected/stage_9_4_1b_20260524103807/obrportal_protected_backup_stage_9_4_1b_20260524103807.tar.gz`; 
+- backup SHA256: `ea110112a1eef82c2ef048dbb8e0d03102442e9f695f6d5aa27c8a1a0d9eacad`; 
+- restore dry-run directory: `/opt/obrportal-backups/restore-dry-run/stage_9_5_1_20260524105954`; 
+- current production PostgreSQL public table count is `0`; 
+- current PostgreSQL dump is valid but minimal.
+
+Новая проверка:
+
+- `python .\scripts\check_production_maintenance_update_checklist.py`
+
+Текущее состояние после 9.7:
+
+- Stage 9 operations baseline создан;
+- production monitoring smoke создан;
+- production backup inventory precheck закрыт;
+- protected backup artifact создан;
+- restore dry-run metadata verification закрыт;
+- operational runbook создан;
+- maintenance update checklist создан;
+- текущий `develop`: `abdf2cd`; 
+- `main` пока остаётся на Stage 8 checkpoint `88990b2`; 
+- production public routes зелёные;
+- app/service ports остаются private localhost-only;
+- production `.env` не печатался и не коммитился;
+- server-only files остаются вне git.
+
+Контрольные проверки Stage 9.7:
+
+- python .\scripts\check_production_maintenance_update_checklist.py
+- python .\scripts\check_production_operational_runbook.py
+- python .\scripts\check_production_backup_verification.py
+- python .\scripts\smoke_production_monitoring.py
+- python .\scripts\check_production_monitoring_smoke.py
+- python .\scripts\check_production_operations_baseline.py
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 9.8 - handover package / operator summary
