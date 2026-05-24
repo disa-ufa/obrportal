@@ -132,6 +132,7 @@ jobs:
         run: |
           python scripts/check_project_roadmap_after_stage9.py
           python scripts/check_readme_stage10_state.py
+          python scripts/check_production_initialization_runbook.py
 
       - name: Show Docker versions
         run: |
