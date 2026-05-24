@@ -116,6 +116,21 @@ jobs:
         run: |
           python scripts/check_production_domain_dns_verification.py
 
+      - name: Run production operations Stage 9 guards
+        run: |
+          python scripts/check_production_operations_baseline.py
+          python scripts/check_production_monitoring_smoke.py
+          python scripts/check_production_backup_verification.py
+          python scripts/check_production_operational_runbook.py
+          python scripts/check_production_maintenance_update_checklist.py
+          python scripts/check_production_handover_package.py
+          python scripts/check_production_stage9_final_gate.py
+
+      - name: Run post Stage 9 roadmap guards
+        run: |
+          python scripts/check_project_roadmap_after_stage9.py
+          python scripts/check_readme_stage10_state.py
+
       - name: Show Docker versions
         run: |
           docker version
