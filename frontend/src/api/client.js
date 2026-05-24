@@ -1,4 +1,18 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const RAW_API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ??
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.PROD ? "" : "http://localhost:8000")
+);
+
+const API_BASE_URL = `${RAW_API_BASE_URL || ""}`.trim().replace(/\/+$/, "");
+
+function buildApiUrl(path) {
+  if (!path.startsWith("/")) {
+    throw new Error(`API path must start with "/": ${path}`);
+  }
+
+  return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
+}
 
 export function getStoredToken() {
   return localStorage.getItem("obrportal_access_token");
@@ -23,7 +37,7 @@ async function request(path, options = {}) {
     ...(options.headers || {}),
   };
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(path), {
     ...options,
     headers,
   });
@@ -138,7 +152,7 @@ function normalizeDownloadedFilename(filename, blob) {
 export async function downloadAccountDocument(documentId) {
   const token = getStoredToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/account/documents/${documentId}/download`, {
+  const response = await fetch(buildApiUrl(`/api/v1/account/documents/${documentId}/download`), {
     method: "GET",
     headers: {
       "Accept": "application/pdf, application/octet-stream",
@@ -540,7 +554,7 @@ export async function deleteAdminDocument(documentId) {
 export async function downloadAdminDocumentGenerationEvent(documentId, eventId) {
   const token = getStoredToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/admin/documents/${documentId}/generation-events/${eventId}/download`, {
+  const response = await fetch(buildApiUrl(`/api/v1/admin/documents/${documentId}/generation-events/${eventId}/download`), {
     method: "GET",
     headers: {
       "Accept": "application/pdf, application/octet-stream",
@@ -588,7 +602,7 @@ export async function downloadAdminDocumentGenerationEvent(documentId, eventId) 
 export async function downloadAdminDocument(documentId) {
   const token = getStoredToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/admin/documents/${documentId}/download`, {
+  const response = await fetch(buildApiUrl(`/api/v1/admin/documents/${documentId}/download`), {
     method: "GET",
     headers: {
       "Accept": "application/pdf, application/octet-stream",
