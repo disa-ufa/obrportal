@@ -5006,3 +5006,117 @@ Safety model:
 Следующий функциональный блок:
 
 - 9.3 - production backup verification
+
+---
+
+## Checkpoint 9.3 - production backup inventory precheck
+
+Контур production backup inventory precheck выполнен для Stage 9: безопасно собран inventory резервного копирования, зафиксированы backup root, server-only files, Docker volumes, container inventory, port privacy и coverage targets. Restore не выполнялся, volumes не удалялись, сервисы не перезапускались, секреты не печатались.
+
+Закрыто:
+
+- 9.3.1 - safe production backup inventory / backup coverage precheck;
+- 9.3.2 - record production backup inventory precheck result in docs;
+- 9.3.3 - production backup verification diagnostics guard;
+- 9.3.4 - README checkpoint для production backup inventory precheck.
+
+Результат:
+
+- создан `docs/production-backup-verification.md`; 
+- создан `scripts/check_production_backup_verification.py`; 
+- backup inventory precheck выполнен безопасно;
+- secret marker scan прошёл;
+- production backup verification diagnostics прошёл;
+- production monitoring smoke прошёл;
+- production operations baseline diagnostics прошёл;
+- все Stage 8 production diagnostics остались зелёными;
+- frontend smoke/check coverage guard прошёл;
+- no TODO/stub/not-implemented markers guard прошёл;
+- source BOM guard прошёл;
+- text encoding guard прошёл.
+
+Backup root:
+
+- `/opt/obrportal-backups`; 
+- observed directories: `caddy`, `compose`, `deployment`, `env`, `postgres`, `proxy`, `storage`.
+
+Runtime data volumes:
+
+- `obrportal_postgres_data` — PostgreSQL data;
+- `obrportal_minio_data` — MinIO object storage data.
+
+Backup coverage targets:
+
+- PostgreSQL;
+- MinIO;
+- production `.env` without printing;
+- server-only `docker-compose.override.yml` without printing;
+- server-only `/etc/caddy/Caddyfile` without printing;
+- Caddy backups;
+- deployment docs.
+
+Safety result:
+
+- restore was not performed;
+- volume delete was not performed;
+- service restart was not performed;
+- production `.env` content was not printed;
+- production `.env` key names were not printed;
+- server-only file contents were not printed;
+- Caddy was preserved;
+- `amnezia-awg` was preserved;
+- localhost-only ports were checked;
+- app/service ports remain private.
+
+Public health during precheck:
+
+- `https://portal.rcdo02.ru` -> `200`; 
+- `https://portal.rcdo02.ru/health` -> `200`; 
+- `https://portal.rcdo02.ru/api/v1/ready` -> `200`.
+
+Новые проверки:
+
+- `python .\scripts\check_production_backup_verification.py`
+
+Текущее состояние после 9.3:
+
+- Stage 9 operations baseline создан;
+- production monitoring smoke создан;
+- production backup verification document создан;
+- текущий `develop`: `2914431`; 
+- `main` пока остаётся на Stage 8 checkpoint `88990b2`; 
+- production public routes зелёные;
+- app/service ports остаются private localhost-only;
+- production `.env` не печатался и не коммитился;
+- server-only files остаются вне git.
+
+Контрольные проверки Stage 9.3:
+
+- python .\scripts\check_production_backup_verification.py
+- python .\scripts\smoke_production_monitoring.py
+- python .\scripts\check_production_monitoring_smoke.py
+- python .\scripts\check_production_operations_baseline.py
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 9.4 - protected backup artifact creation / metadata verification
