@@ -295,3 +295,56 @@ Production initialization is accepted when:
 - restore metadata dry-run after initialization passes;
 - no secrets were printed;
 - no server-only files were committed.
+
+## 18. Pre-init server check result - 2026-05-24
+
+Source:
+
+- local safe report `tmp/stage_10_11_1_pre_init_server_check.txt` was reviewed locally and is not committed.
+
+Secret scan:
+
+- result: `passed`;
+- production `.env` content was not printed;
+- secret values were not printed.
+
+Confirmed production facts:
+
+| Item | Result |
+| --- | --- |
+| Production directory | `/opt/obrportal` |
+| Server git HEAD | `4686cf5` |
+| Server git branch | `develop` |
+| Required pre-init tag | `v0.1.0-stage10-pre-init` |
+| Required pre-init commit | `f0f98f9` |
+| Tag fetched on server | `yes` |
+| Production `.env` | exists |
+| Production `.env` permissions | `600` |
+| Production `.env` owner | `root:root` |
+| Server-only compose override | exists |
+| Caddyfile | exists |
+| Caddy status | `active` |
+| Docker Compose stack | running |
+| App/service ports | localhost-only |
+| Public frontend smoke | passed |
+| Public health smoke | passed |
+| Public readiness smoke | passed |
+| Secret marker scan | passed |
+
+Blocker before migrations:
+
+- production workspace is behind the required pre-init checkpoint;
+- `/opt/obrportal` currently runs code from `4686cf5`;
+- local/repository pre-init checkpoint is `f0f98f9`;
+- migrations must not be executed until a controlled production workspace sync is completed.
+
+Decision:
+
+- do not run `alembic upgrade head` yet;
+- do not run seed commands yet;
+- first create backup-before-init of the current live state;
+- then perform controlled production workspace sync to `v0.1.0-stage10-pre-init`;
+- preserve server-only `docker-compose.override.yml`;
+- preserve production `.env`;
+- preserve Caddy;
+- preserve `amnezia-awg`.

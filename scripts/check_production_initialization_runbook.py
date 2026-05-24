@@ -38,6 +38,14 @@ REQUIRED_MARKERS = [
     "do not restore production database",
     "do not restore production MinIO data",
     "do not touch `amnezia-awg`",
+    "Pre-init server check result - 2026-05-24",
+    "Server git HEAD",
+    "`4686cf5`",
+    "`f0f98f9`",
+    "production workspace is behind the required pre-init checkpoint",
+    "do not run `alembic upgrade head` yet",
+    "first create backup-before-init of the current live state",
+    "controlled production workspace sync to `v0.1.0-stage10-pre-init`",
 ]
 
 REQUIRED_SECTIONS = [
@@ -58,6 +66,7 @@ REQUIRED_SECTIONS = [
     "## 15. Post-initialization backup",
     "## 16. Rollback boundaries",
     "## 17. Acceptance criteria",
+    "## 18. Pre-init server check result - 2026-05-24",
 ]
 
 
@@ -87,8 +96,8 @@ def main() -> None:
     backup_mentions = text.lower().count("backup")
     admin_mentions = text.lower().count("admin")
 
-    if sections < 17:
-        raise SystemExit(f"expected at least 17 sections, got {sections}")
+    if sections < 18:
+        raise SystemExit(f"expected at least 18 sections, got {sections}")
 
     if table_items < 25:
         raise SystemExit(f"expected at least 25 table separators, got {table_items}")
