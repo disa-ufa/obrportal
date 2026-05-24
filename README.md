@@ -27,32 +27,79 @@ ObrPortal — образовательный портал и back-office foundat
 
 ## Текущая контрольная точка
 
-Текущий этап:
+Текущий стабильный release checkpoint:
 
 ```text
-Stage 6 — DevOps-фундамент, Auth/RBAC, Admin Panel, Public Portal, Account, Courses, Enrollments, Documents
+v0.1.0-stage6-ops9
 ```
 
-Текущий рабочий пункт:
+Текущий commit:
 
 ```text
-6.40 — стабилизация, актуализация документации и фиксация состояния проекта
+79c64c0 docs: stabilize stage 9.9 checkpoint
 ```
 
-Конкретно сейчас закрываем:
+Stage 9 полностью закрыт:
 
 ```text
-6.40.1 — актуализация README.md
+9.1 — production operations baseline
+9.2 — production monitoring smoke
+9.3 — backup inventory precheck
+9.4 — protected backup artifact
+9.5 — restore dry-run metadata verification
+9.6 — operational runbook / incident checklist
+9.7 — maintenance / update checklist
+9.8 — handover package / operator summary
+9.9 — final Stage 9 local gate / release readiness summary
 ```
 
-После этого выполняется:
+Текущий рабочий этап:
 
 ```text
-6.40.2 — полный quality gate
-6.40.3 — commit / push / fast-forward merge develop → main
+Stage 10 — project roadmap stabilization and controlled production readiness
 ```
 
-К следующему функциональному блоку `6.41 — генерация документов` переходим только после зелёной контрольной точки 6.40.
+Сейчас закрыто:
+
+```text
+10.1 — post Stage 9 roadmap
+```
+
+Конкретно сейчас выполняется:
+
+```text
+10.2 — README актуализирован под Stage 10
+```
+
+Следующие ближайшие технические шаги:
+
+```text
+10.3 — добавить Stage 9 / Stage 10 roadmap guards в CI
+10.4 — исправить frontend API base variable mismatch
+10.5 — убрать demo credentials из production login form
+10.6 — подготовить production initialization runbook
+```
+
+Важная корректировка дорожной карты:
+
+```text
+Stage 12 — Course authoring / конструктор курсов
+```
+
+Конструктор курсов выделен в отдельный крупный этап. Он не должен быть спрятан внутри общего LMS-блока.
+
+Документ дорожной карты:
+
+```text
+docs/project-roadmap-after-stage9.md
+```
+
+Проверка дорожной карты:
+
+```text
+python .\scripts\check_project_roadmap_after_stage9.py
+```
+
 
 ---
 
@@ -5921,3 +5968,45 @@ Final safety boundaries:
 
 - финальная проверка `develop`;
 - затем отдельное решение о fast-forward `main` из `develop`.
+---
+
+## Checkpoint 10.1 - post Stage 9 project roadmap
+
+После закрытия Stage 9 зафиксирована актуальная дорожная карта дальнейшей разработки.
+
+Закрыто:
+
+- 10.1.1 - создан `docs/project-roadmap-after-stage9.md`;
+- 10.1.2 - создан `scripts/check_project_roadmap_after_stage9.py`;
+- 10.1.2-fix - стабилизирован порог `stage_mentions`.
+
+Ключевое решение:
+
+- `Stage 12 - Course authoring / конструктор курсов` выделен отдельным крупным этапом;
+- разработка и составление курсов не скрывается внутри общего LMS-блока;
+- learning flow вынесен отдельно в Stage 13;
+- documents/certificates вынесены отдельно в Stage 14.
+
+Актуальная дорожная карта:
+
+- Stage 10 - Production data initialization / controlled readiness;
+- Stage 11 - Production hardening;
+- Stage 12 - Course authoring / конструктор курсов;
+- Stage 13 - Learning flow / прохождение курсов;
+- Stage 14 - Documents / certificates / verification;
+- Stage 15 - Admin UX / operator workflow;
+- Stage 16 - Integrations;
+- Stage 17 - Backup and monitoring automation;
+- Stage 18 - Beta release / acceptance.
+
+Новая проверка:
+
+- `python .\scripts\check_project_roadmap_after_stage9.py`
+
+Текущее состояние после 10.1:
+
+- `develop`: `c71eb14`;
+- `main`: `79c64c0`;
+- tag: `v0.1.0-stage6-ops9`;
+- production operations contour закрыт;
+- дальнейшая разработка продолжается в `develop`.
