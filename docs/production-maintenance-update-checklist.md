@@ -128,6 +128,7 @@ Do not:
 - do not print production `.env`;
 - do not print secret values;
 - do not commit `.env`;
+- never commit `.env`;
 - do not commit server-only override;
 - do not commit server-only Caddyfile;
 - do not commit backup artifacts;
