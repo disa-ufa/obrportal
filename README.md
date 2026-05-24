@@ -5237,3 +5237,126 @@ Public health after backup:
 Следующий функциональный блок:
 
 - 9.5 - restore dry-run plan / safe restore metadata verification
+
+---
+
+## Checkpoint 9.5 - restore dry-run metadata verification
+
+Контур restore dry-run metadata verification выполнен для Stage 9: backup artifact безопасно проверен без production restore, без восстановления production DB/MinIO, без удаления volumes, без перезапуска сервисов и без вывода секретов.
+
+Закрыто:
+
+- 9.5.1 - safe restore metadata verification;
+- 9.5.1a - PostgreSQL restore dry-run structure diagnostics;
+- 9.5.2 - record safe restore metadata verification result in docs;
+- 9.5.3 - README checkpoint для restore dry-run metadata verification.
+
+Результат:
+
+- backup artifact exists;
+- backup artifact SHA256 matches expected;
+- backup artifact gzip test прошёл;
+- backup artifact tar list test прошёл;
+- dry-run extraction прошёл;
+- PostgreSQL dump archive exists;
+- PostgreSQL dump gzip test прошёл;
+- PostgreSQL dump header valid;
+- MinIO archive exists;
+- MinIO archive gzip test прошёл;
+- MinIO archive tar list test прошёл;
+- server-only `.env` найден без вывода содержимого;
+- server-only compose override найден без вывода содержимого;
+- server-only Caddyfile найден без вывода содержимого;
+- secret marker scan прошёл;
+- public health после dry-run сохранился.
+
+Restore dry-run directory:
+
+- `/opt/obrportal-backups/restore-dry-run/stage_9_5_1_20260524105954`.
+
+PostgreSQL clarification:
+
+- dump is valid and gzip-readable;
+- dump header is valid;
+- `dump_line_count=26`; 
+- `dump_create_table_count=0`; 
+- `dump_create_schema_count=0`; 
+- `dump_copy_count=0`; 
+- `dump_insert_count=0`; 
+- `dump_alembic_marker_count=0`; 
+- `live_public_table_count=0`; 
+- `live_schema_count=4`; 
+- `live_database_connection_ok`; 
+- отсутствие schema/table/data markers принято как ожидаемое для текущей empty/minimal production DB.
+
+Safety result:
+
+- production restore was not performed;
+- database restore was not performed;
+- MinIO restore was not performed;
+- Docker volumes were not deleted;
+- services were not restarted;
+- production `.env` content was not printed;
+- production `.env` key names were not printed;
+- server-only file contents were not printed;
+- table data was not printed;
+- Caddy was preserved;
+- `amnezia-awg` was preserved.
+
+Public health after restore dry-run:
+
+- `https://portal.rcdo02.ru` -> `200`; 
+- `https://portal.rcdo02.ru/health` -> `200`; 
+- `https://portal.rcdo02.ru/api/v1/ready` -> `200`.
+
+Документально зафиксировано:
+
+- `docs/production-backup-verification.md` содержит safe restore metadata verification result;
+- `docs/production-backup-verification.md` содержит PostgreSQL empty production database clarification;
+- `scripts/check_production_backup_verification.py` усилен markers для restore dry-run result;
+- `check_production_backup_verification.py` прошёл успешно.
+
+Текущее состояние после 9.5:
+
+- Stage 9 operations baseline создан;
+- production monitoring smoke создан;
+- production backup inventory precheck закрыт;
+- protected backup artifact создан;
+- restore dry-run metadata verification закрыт;
+- текущий `develop`: `66d6da4`; 
+- `main` пока остаётся на Stage 8 checkpoint `88990b2`; 
+- production public routes зелёные;
+- app/service ports остаются private localhost-only;
+- production `.env` не печатался и не коммитился;
+- server-only files остаются вне git.
+
+Контрольные проверки Stage 9.5:
+
+- python .\scripts\check_production_backup_verification.py
+- python .\scripts\smoke_production_monitoring.py
+- python .\scripts\check_production_monitoring_smoke.py
+- python .\scripts\check_production_operations_baseline.py
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 9.6 - operational runbook / incident checklist
