@@ -5120,3 +5120,120 @@ Public health during precheck:
 Следующий функциональный блок:
 
 - 9.4 - protected backup artifact creation / metadata verification
+
+---
+
+## Checkpoint 9.4 - protected backup artifact creation / metadata verification
+
+Контур protected backup artifact creation / metadata verification выполнен для Stage 9: создан защищённый backup artifact на сервере, проверены PostgreSQL dump, MinIO data backup, server-only files, metadata, SHA256, gzip/tar-list verification и public health после backup.
+
+Закрыто:
+
+- 9.4.1 - protected backup artifact creation;
+- 9.4.1a - partial backup diagnostics;
+- 9.4.1b - protected backup artifact creation retry;
+- 9.4.2 - record protected backup artifact result in docs;
+- 9.4.3 - README checkpoint для protected backup artifact.
+
+Результат:
+
+- protected backup artifact создан;
+- PostgreSQL dump создан успешно;
+- PostgreSQL dump non-empty;
+- PostgreSQL dump header valid;
+- PostgreSQL dump gzip прошёл;
+- MinIO data copy прошёл;
+- MinIO tar/gzip прошёл;
+- final artifact tar создан;
+- final artifact gzip test прошёл;
+- final artifact tar list test прошёл;
+- artifact metadata verified;
+- secret marker scan прошёл;
+- public health после backup сохранился;
+- Caddy preserved;
+- `amnezia-awg` preserved.
+
+Backup artifact:
+
+- run directory: `/opt/obrportal-backups/protected/stage_9_4_1b_20260524103807`; 
+- artifact path: `/opt/obrportal-backups/protected/stage_9_4_1b_20260524103807/obrportal_protected_backup_stage_9_4_1b_20260524103807.tar.gz`; 
+- artifact size: `12425 bytes`; 
+- artifact permissions: `600`; 
+- artifact SHA256: `ea110112a1eef82c2ef048dbb8e0d03102442e9f695f6d5aa27c8a1a0d9eacad`.
+
+Artifact contents verified by metadata only:
+
+- `postgres/postgres_dump.sql.gz`; 
+- `storage/minio_data.tar.gz`; 
+- `server-files/production.env` copied without printing contents;
+- `server-files/docker-compose.override.yml` copied without printing contents;
+- `server-files/Caddyfile` copied without printing contents;
+- metadata files created without secrets.
+
+Safety result:
+
+- restore was not performed;
+- Docker volumes were not deleted;
+- services were not restarted;
+- production `.env` content was not printed;
+- production `.env` key names were not printed;
+- server-only file contents were not printed;
+- backup artifact remains on protected server path;
+- backup artifact was not committed to git;
+- temporary local logs were not committed.
+
+Public health after backup:
+
+- `https://portal.rcdo02.ru` -> `200`; 
+- `https://portal.rcdo02.ru/health` -> `200`; 
+- `https://portal.rcdo02.ru/api/v1/ready` -> `200`.
+
+Документально зафиксировано:
+
+- `docs/production-backup-verification.md` содержит protected backup artifact creation result;
+- `scripts/check_production_backup_verification.py` усилен markers для artifact result;
+- `check_production_backup_verification.py` прошёл успешно.
+
+Текущее состояние после 9.4:
+
+- Stage 9 operations baseline создан;
+- production monitoring smoke создан;
+- production backup inventory precheck закрыт;
+- protected backup artifact создан;
+- текущий `develop`: `c549a44`; 
+- `main` пока остаётся на Stage 8 checkpoint `88990b2`; 
+- production public routes зелёные;
+- app/service ports остаются private localhost-only;
+- production `.env` не печатался и не коммитился;
+- server-only files остаются вне git.
+
+Контрольные проверки Stage 9.4:
+
+- python .\scripts\check_production_backup_verification.py
+- python .\scripts\smoke_production_monitoring.py
+- python .\scripts\check_production_monitoring_smoke.py
+- python .\scripts\check_production_operations_baseline.py
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 9.5 - restore dry-run plan / safe restore metadata verification
