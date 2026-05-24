@@ -5360,3 +5360,126 @@ Public health after restore dry-run:
 Следующий функциональный блок:
 
 - 9.6 - operational runbook / incident checklist
+
+---
+
+## Checkpoint 9.6 - operational runbook / incident checklist
+
+Контур operational runbook / incident checklist выполнен для Stage 9: создан эксплуатационный runbook для production, описаны daily checks, public monitoring smoke, incident triage, safe status commands, restart rules, backup/restore rules, update procedure, rollback basics, secret handling, server-only files и escalation checklist.
+
+Закрыто:
+
+- 9.6.1 - production operational runbook;
+- 9.6.2 - production operational runbook diagnostics guard;
+- 9.6.3 - README checkpoint для operational runbook / incident checklist.
+
+Результат:
+
+- создан `docs/production-operational-runbook.md`; 
+- создан `scripts/check_production_operational_runbook.py`; 
+- operational runbook diagnostics прошёл;
+- production backup verification diagnostics прошёл;
+- production monitoring smoke прошёл;
+- production monitoring smoke diagnostics прошёл;
+- production operations baseline diagnostics прошёл;
+- все Stage 8 production diagnostics остались зелёными;
+- frontend smoke/check coverage guard прошёл;
+- no TODO/stub/not-implemented markers guard прошёл;
+- source BOM guard прошёл;
+- text encoding guard прошёл.
+
+Operational runbook фиксирует:
+
+- production baseline: server, domain, public URL, Caddy, private services;
+- public checks для `/`, `/login`, `/admin`, `/catalog`, `/health`, `/api/v1/ready`; 
+- daily operator checklist;
+- safe server status commands;
+- incident triage checklist;
+- restart rules;
+- backup and restore rules;
+- update procedure;
+- rollback basics;
+- secret handling;
+- server-only files;
+- escalation checklist;
+- acceptance criteria.
+
+Safety model:
+
+- do not print production `.env`; 
+- do not expose private service ports;
+- do not run `docker compose down -v`; 
+- do not delete Docker volumes;
+- do not touch `amnezia-awg` unless the incident is specifically about VPN;
+- never commit `.env`; 
+- never commit server-only override;
+- never commit server-only Caddyfile;
+- do not upload backup artifacts to public storage.
+
+Production operational references:
+
+- public URL: `https://portal.rcdo02.ru`; 
+- backend: `127.0.0.1:8000`; 
+- frontend: `127.0.0.1:5173`; 
+- PostgreSQL: `127.0.0.1:5432`; 
+- Redis: `127.0.0.1:6379`; 
+- MinIO API: `127.0.0.1:9000`; 
+- MinIO console: `127.0.0.1:9001`; 
+- existing VPN: `amnezia-awg`, UDP `34503`.
+
+Backup / restore references:
+
+- protected backup artifact: `/opt/obrportal-backups/protected/stage_9_4_1b_20260524103807/obrportal_protected_backup_stage_9_4_1b_20260524103807.tar.gz`; 
+- backup SHA256: `ea110112a1eef82c2ef048dbb8e0d03102442e9f695f6d5aa27c8a1a0d9eacad`; 
+- restore dry-run directory: `/opt/obrportal-backups/restore-dry-run/stage_9_5_1_20260524105954`.
+
+Новая проверка:
+
+- `python .\scripts\check_production_operational_runbook.py`
+
+Текущее состояние после 9.6:
+
+- Stage 9 operations baseline создан;
+- production monitoring smoke создан;
+- production backup inventory precheck закрыт;
+- protected backup artifact создан;
+- restore dry-run metadata verification закрыт;
+- operational runbook создан;
+- текущий `develop`: `621add4`; 
+- `main` пока остаётся на Stage 8 checkpoint `88990b2`; 
+- production public routes зелёные;
+- app/service ports остаются private localhost-only;
+- production `.env` не печатался и не коммитился;
+- server-only files остаются вне git.
+
+Контрольные проверки Stage 9.6:
+
+- python .\scripts\check_production_operational_runbook.py
+- python .\scripts\check_production_backup_verification.py
+- python .\scripts\smoke_production_monitoring.py
+- python .\scripts\check_production_monitoring_smoke.py
+- python .\scripts\check_production_operations_baseline.py
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий функциональный блок:
+
+- 9.7 - maintenance / update checklist
