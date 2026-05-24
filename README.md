@@ -4713,3 +4713,115 @@ Stage 8 stabilization result:
 Следующий функциональный блок:
 
 - 8.17 - Stage 8 final stabilization summary / main fast-forward decision
+
+---
+
+## Checkpoint 8.17 - Stage 8 final stabilization summary / main fast-forward decision
+
+Stage 8 production rollout стабилизирован: сервер подготовлен, production `.env` создан безопасно, Docker Compose stack запущен, прямые app/service ports закрыты на localhost-only, Caddy reverse proxy активирован, final production public smoke пройден.
+
+Закрыто в Stage 8:
+
+- 8.1 - production rollout inventory;
+- 8.2 - production server facts;
+- 8.3 - production server preflight execution;
+- 8.4 - production fact collection result;
+- 8.5 - sanitized production server facts;
+- 8.6 - production server remediation plan;
+- 8.7 - sanitized production remediation result;
+- 8.8 - production domain reverse proxy decision;
+- 8.9 - production domain DNS verification;
+- 8.10 - production DNS verification result;
+- 8.11 - Caddy HTTPS entrypoint;
+- 8.12 - production repository workspace preparation;
+- 8.13 - production `.env` safe preparation;
+- 8.14 - Docker Compose stack startup and localhost-only port remediation;
+- 8.15 - Caddy reverse proxy route activation and public HTTPS smoke;
+- 8.16 - final production public smoke;
+- 8.17 - final Stage 8 stabilization summary / main fast-forward decision.
+
+Production public state:
+
+- `https://portal.rcdo02.ru` -> `200`; 
+- `https://portal.rcdo02.ru/health` -> `200`; 
+- `https://portal.rcdo02.ru/api/v1/ready` -> `200`; 
+- `https://portal.rcdo02.ru/login` -> `200`; 
+- `https://portal.rcdo02.ru/admin` -> `200`; 
+- `https://portal.rcdo02.ru/catalog` -> `200`; 
+- final smoke decision: `final_public_smoke_passed`; 
+- Caddy validation: `caddy_validate_exit_code=0`; 
+- secret marker scan: `passed`.
+
+Production private bindings:
+
+- backend: `127.0.0.1:8000`; 
+- frontend: `127.0.0.1:5173`; 
+- PostgreSQL: `127.0.0.1:5432`; 
+- Redis: `127.0.0.1:6379`; 
+- MinIO API: `127.0.0.1:9000`; 
+- MinIO console: `127.0.0.1:9001`.
+
+Public exposure model:
+
+- public `80/443`: Caddy;
+- public `34503/udp`: existing `amnezia-awg`; 
+- app service ports: localhost-only;
+- backend/frontend/database/cache/storage are not exposed directly to public network.
+
+Server-only files:
+
+- `/opt/obrportal/.env` exists on server, `600`, `root:root`, not committed;
+- `/opt/obrportal/docker-compose.override.yml` exists on server, intentionally untracked, not committed;
+- `/etc/caddy/Caddyfile` active on server, not committed;
+- Caddyfile backups are stored on server under `/opt/obrportal-backups/caddy`; 
+- temporary local logs under `tmp/` were not committed.
+
+Important server workspace note:
+
+- running production app code HEAD: `4686cf5b58701be138582ae5fe5fe6a616965a12`; 
+- commits after `4686cf5` are documentation/checkpoint commits and do not require app stack rebuild;
+- server-only override must remain on server and must not be added to git.
+
+Stage 8 final develop head:
+
+- `994a137` — `docs: stabilize stage 8.16 checkpoint`; 
+- previous final smoke docs: `b536847`; 
+- Caddy checkpoint: `8382ab0`; 
+- compose checkpoint: `d4363fc`; 
+- env checkpoint: `4686cf5`.
+
+Main fast-forward decision:
+
+- `develop` is ready to be fast-forwarded into `main` after final confirmation;
+- no application rebuild is required solely for documentation/checkpoint commits;
+- before merge: run local guard checks one more time and confirm `git status --short` is clean;
+- after merge: push `main`, then return to `develop`.
+
+Final guard commands before main fast-forward:
+
+- python .\scripts\check_production_domain_dns_verification.py
+- python .\scripts\check_production_domain_reverse_proxy_decision.py
+- python .\scripts\check_production_server_remediation_plan.py
+- python .\scripts\check_production_fact_collection_result.py
+- python .\scripts\check_production_server_preflight_execution.py
+- python .\scripts\check_production_server_facts.py
+- python .\scripts\check_production_rollout_inventory.py
+- python .\scripts\check_production_deployment_runbook.py
+- python .\scripts\check_production_backup_monitoring_checklist.py
+- python .\scripts\check_production_reverse_proxy_checklist.py
+- python .\scripts\check_production_server_checklist.py
+- python .\scripts\check_production_environment_template.py
+- python .\scripts\check_production_deployment_plan.py
+- python .\scripts\check_ci_local_gate.py
+- python .\scripts\check_release_readiness.py
+- python .\scripts\smoke_frontend_core.py
+- python .\scripts\check_frontend_smoke_coverage.py
+- python .\scripts\check_no_todo_markers.py
+- python .\scripts\check_source_bom.py
+- python .\scripts\check_text_encoding.py
+
+Следующий шаг:
+
+- 8.17.2 - commit Stage 8 final stabilization summary;
+- 8.17.3 - final local gate before `main` fast-forward;
+- 8.17.4 - fast-forward `main` from `develop`.
