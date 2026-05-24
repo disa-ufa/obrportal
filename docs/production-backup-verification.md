@@ -271,3 +271,95 @@ Safety result:
 - services were not restarted;
 - Caddy was preserved;
 - `amnezia-awg` was preserved.
+
+## 15. Safe restore metadata verification result
+
+Step:
+
+- `9.5.1` - safe restore metadata verification;
+- `9.5.1a` - PostgreSQL restore dry-run structure diagnostics.
+
+Result:
+
+| Check | Result |
+| --- | --- |
+| Restore metadata verification | `done` |
+| Production restore performed | `no` |
+| Database restore performed | `no` |
+| MinIO restore performed | `no` |
+| Volume delete performed | `no` |
+| Service restart performed | `no` |
+| Backup artifact exists | `yes` |
+| Backup artifact SHA256 | `matches expected` |
+| Backup artifact gzip test | `backup_artifact_gzip_test_exit_code=0` |
+| Backup artifact tar list test | `backup_artifact_tar_list_exit_code=0` |
+| Dry-run extraction | `restore_dry_run_extract_exit_code=0` |
+| PostgreSQL dump archive | `restore_postgres_dump_archive_exists` |
+| PostgreSQL dump gzip test | `restore_postgres_dump_gzip_test_exit_code=0` |
+| PostgreSQL dump header | `dump_header_valid` |
+| MinIO archive | `restore_minio_archive_exists` |
+| MinIO archive gzip test | `restore_minio_archive_gzip_test_exit_code=0` |
+| MinIO archive tar list test | `restore_minio_archive_tar_list_exit_code=0` |
+| Server-only `.env` | `restore_env_file_exists_without_printing` |
+| Server-only compose override | `restore_compose_override_exists_without_printing` |
+| Server-only Caddyfile | `restore_caddyfile_exists_without_printing` |
+| Secret marker scan | `passed` |
+| Public health after dry-run | `preserved` |
+
+Restore dry-run directory:
+
+- `/opt/obrportal-backups/restore-dry-run/stage_9_5_1_20260524105954`.
+
+Restore dry-run safety result:
+
+- production `.env` content was not printed;
+- production `.env` key names were not printed;
+- server-only file contents were not printed;
+- table data was not printed;
+- production database was not restored;
+- production MinIO data was not restored;
+- Docker volumes were not deleted;
+- services were not restarted;
+- Caddy was preserved;
+- `amnezia-awg` was preserved.
+
+Public health after restore dry-run:
+
+| Public route | Result |
+| --- | --- |
+| `https://portal.rcdo02.ru` | `200` |
+| `https://portal.rcdo02.ru/health` | `200` |
+| `https://portal.rcdo02.ru/api/v1/ready` | `200` |
+
+## 16. PostgreSQL empty production database clarification
+
+During `9.5.1`, the initial restore metadata script expected schema markers in the PostgreSQL dump. The dump passed gzip validation and had a valid PostgreSQL header, but no schema markers were found.
+
+Follow-up diagnostics `9.5.1a` confirmed that this is expected for the current production database state:
+
+| Check | Result |
+| --- | --- |
+| Dump line count | `dump_line_count=26` |
+| Dump CREATE TABLE count | `dump_create_table_count=0` |
+| Dump CREATE SCHEMA count | `dump_create_schema_count=0` |
+| Dump COPY count | `dump_copy_count=0` |
+| Dump INSERT count | `dump_insert_count=0` |
+| Dump Alembic marker count | `dump_alembic_marker_count=0` |
+| Live public table count | `live_public_table_count=0` |
+| Live schema count | `live_schema_count=4` |
+| Live database connection | `live_database_connection_ok` |
+
+Decision:
+
+- PostgreSQL dump is valid for the current empty/minimal production database;
+- absence of `CREATE TABLE`, `COPY`, `INSERT INTO` and `CREATE SCHEMA` markers is not treated as a failure while `live_public_table_count=0`;
+- future backups after production data/migrations are present should be expected to include schema/table markers;
+- restore metadata verification is accepted as metadata-only dry-run, not as production restore.
+
+Important:
+
+- no production restore was performed;
+- no production data was modified;
+- no table data was printed;
+- secret marker scan passed;
+- public health remained green.
