@@ -233,15 +233,11 @@ function getUserRoleCodes(user) {
 function isLearnerUser(user) {
   const roleCodes = getUserRoleCodes(user);
 
-  return (
-    user?.email === "learner@obrportal.local" ||
-    roleCodes.includes("learner_fl") ||
-    roleCodes.includes("learner_org")
-  );
+  return roleCodes.includes("learner_fl") || roleCodes.includes("learner_org");
 }
 
 function isAdminUser(user) {
-  return user?.email === "admin@obrportal.local" || getUserRoleCodes(user).includes("admin");
+  return getUserRoleCodes(user).includes("admin");
 }
 
 function getUserRoleLabel(user) {
@@ -917,7 +913,6 @@ export function AdminEnrollmentsPage() {
 
   const preferredCreateUser = useMemo(
     () =>
-      sortedUsers.find((user) => user.email === "learner@obrportal.local") ||
       sortedUsers.find(isLearnerUser) ||
       null,
     [sortedUsers]
@@ -1633,7 +1628,7 @@ export function AdminEnrollmentsPage() {
                   ))}
                 </select>
                 <p className="mt-2 text-xs leading-5 text-slate-500">
-                  Слушатели отображаются выше администраторов. В demo-режиме автоматически подставляется learner@obrportal.local.
+                  Слушатели отображаются выше администраторов. Для назначения выберите пользователя с ролью слушателя.
                 </p>
               </AdminFormField>
 
