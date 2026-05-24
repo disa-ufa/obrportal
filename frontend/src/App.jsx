@@ -25,8 +25,8 @@ import { usePageMeta } from "./hooks/usePageMeta";
 import { useAppRouteState } from "./hooks/useAppRouteState";
 
 export default function App() {
-  const [email, setEmail] = useState("admin@obrportal.local");
-  const [password, setPassword] = useState("Admin123Local2026!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
   const {
     health,
