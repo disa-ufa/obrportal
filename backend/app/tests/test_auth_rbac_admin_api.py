@@ -4018,6 +4018,7 @@ def test_admin_can_filter_admin_courses() -> None:
 
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     slug = unique_course_slug()
+    title = f"Unique Admin Filter Course {slug}"
 
     status, created_course = request_json(
         "POST",
@@ -4025,7 +4026,7 @@ def test_admin_can_filter_admin_courses() -> None:
         token=token,
         body={
             "slug": slug,
-            "title": f"Unique Admin Filter Course {slug}",
+            "title": title,
             "description": f"Filter target description {slug}",
             "is_active": False,
         },
