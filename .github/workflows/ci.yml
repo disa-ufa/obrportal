@@ -50,6 +50,10 @@ jobs:
         run: |
           python scripts/check_frontend_static_serving.py
 
+      - name: Run production frontend static runbook guard
+        run: |
+          python scripts/check_production_frontend_static_runbook.py
+
       - name: Run CI/local gate consistency guard
         run: |
           python scripts/check_ci_local_gate.py
