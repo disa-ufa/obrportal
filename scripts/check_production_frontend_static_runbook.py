@@ -8,7 +8,7 @@ DOC = ROOT / "docs" / "production-frontend-static-runbook.md"
 
 REQUIRED_MARKERS = [
     "# Production frontend static serving runbook",
-    "Status: drafted",
+    "Status: accepted",
     "Stage: 10.12",
     "Production domain: portal.rcdo02.ru",
     "Vite dev frontend server",
@@ -33,6 +33,8 @@ REQUIRED_MARKERS = [
     "database restore",
     "MinIO restore",
     "Caddy remains public HTTPS entrypoint",
+    "static_frontend_enabled=yes",
+    "Production switch result - 2026-05-26",
 ]
 
 REQUIRED_SECTIONS = [

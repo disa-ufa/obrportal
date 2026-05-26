@@ -1,6 +1,6 @@
 # Production frontend static serving runbook
 
-Status: drafted
+Status: accepted
 Stage: 10.12
 Production domain: portal.rcdo02.ru
 
@@ -116,3 +116,32 @@ Do not run:
 ## 10. Acceptance criteria
 
 The switch is accepted only when nginx static frontend container is running, /healthz returns ok, public /login and /admin return frontend HTML, backend /api/v1/ready remains green, browser admin login works, secrets are not printed, Caddy remains public HTTPS entrypoint, and backend/database/redis/minio are not exposed publicly.
+
+## 11. Production switch result - 2026-05-26
+
+Status: accepted
+
+Production frontend was switched from Vite dev server to static nginx frontend.
+
+Accepted evidence:
+
+- production git head: 07aa32c;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend container health: healthy;
+- local /healthz returned ok;
+- local /, /login, /admin, /catalog returned HTTP 200;
+- public /, /login, /admin, /catalog returned HTTP 200;
+- public /health returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- dependencies were not recreated during the successful switch;
+- secrets_printed=no;
+- static_frontend_enabled=yes.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_10_12_4_static_frontend_final_smoke_20260526165019.txt
+
+Rollback backup retained on server:
+
+- /opt/obrportal/tmp/docker-compose.override.yml.backup-static-nodeps-20260526164845
