@@ -1,4 +1,4 @@
-﻿# Production frontend static serving runbook
+# Production frontend static serving runbook
 
 Status: drafted
 Stage: 10.12
