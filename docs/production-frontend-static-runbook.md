@@ -145,3 +145,40 @@ Accepted production report:
 Rollback backup retained on server:
 
 - /opt/obrportal/tmp/docker-compose.override.yml.backup-static-nodeps-20260526164845
+
+## 12. Autostart persistence result - 2026-05-26
+
+Status: accepted
+
+Production static frontend persistence was verified and accepted.
+
+Accepted evidence:
+
+- production git head: 113cb89;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- postgres restart policy: unless-stopped;
+- redis restart policy: unless-stopped;
+- minio restart policy: unless-stopped;
+- backend restart policy: unless-stopped;
+- Docker systemd service: enabled and active;
+- Caddy systemd service: enabled and active;
+- local /healthz returned ok;
+- local /login and /admin returned HTTP 200;
+- public /login and /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- static_frontend_persistent=yes;
+- restart_policy_applied=yes;
+- static_frontend_stable=yes.
+
+Accepted production reports:
+
+- /opt/obrportal/tmp/stage_10_13_1_static_frontend_autostart_persistence_20260526165829.txt
+- /opt/obrportal/tmp/stage_10_13_2_static_frontend_stable_health_20260526165955.txt
+
+Rollback backup retained on server:
+
+- /opt/obrportal/tmp/docker-compose.override.yml.backup-autostart-20260526165829

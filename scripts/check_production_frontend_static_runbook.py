@@ -35,6 +35,13 @@ REQUIRED_MARKERS = [
     "Caddy remains public HTTPS entrypoint",
     "static_frontend_enabled=yes",
     "Production switch result - 2026-05-26",
+    "Caddy systemd service: enabled and active",
+    "Docker systemd service: enabled and active",
+    "frontend restart policy: unless-stopped",
+    "static_frontend_stable=yes",
+    "restart_policy_applied=yes",
+    "static_frontend_persistent=yes",
+    "Autostart persistence result - 2026-05-26",
 ]
 
 REQUIRED_SECTIONS = [
