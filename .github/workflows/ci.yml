@@ -46,6 +46,10 @@ jobs:
         run: |
           python scripts/frontend_guard.py
 
+      - name: Run frontend static serving guard
+        run: |
+          python scripts/check_frontend_static_serving.py
+
       - name: Run CI/local gate consistency guard
         run: |
           python scripts/check_ci_local_gate.py
