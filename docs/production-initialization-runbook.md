@@ -467,3 +467,64 @@ Decision:
 - `docker-compose.override.yml` remains server-only;
 - Caddy remains the public HTTP/HTTPS entrypoint;
 - `amnezia-awg` remains untouched.
+
+## 21. Production initialization execution result - 2026-05-26
+
+Status: `passed`
+
+Accepted production state:
+
+| Item | Result |
+| --- | --- |
+| Production git checkpoint | `f0f98f9` during controlled initialization |
+| Repository checkpoint after CI smoke fix | `6f6e37a` |
+| Production directory | `/opt/obrportal` |
+| Public domain | `portal.rcdo02.ru` |
+| Public IP | `89.127.203.70` |
+| DNS A record | `portal.rcdo02.ru -> 89.127.203.70` |
+| HTTPS reverse proxy | Caddy active |
+| Docker Compose stack | backend, frontend, postgres, redis, minio running |
+| Alembic revision | `6421_org_doc_profile (head)` |
+| Roles and permissions seed | passed |
+| Production admin | one real active admin exists |
+| Bad admin seed attempt | disabled and admin role removed |
+| Demo credentials in production | not created |
+| Local ready smoke | passed |
+| Public health smoke | passed |
+| Public ready smoke | passed |
+| CORS preflight for login | passed |
+| Browser admin login | passed |
+| Admin API loading | passed |
+| Secrets printed | no |
+| Real password printed | no |
+
+Accepted smoke evidence:
+
+- `https://portal.rcdo02.ru/health` returned `status=ok`;
+- `https://portal.rcdo02.ru/api/v1/ready` returned `database=ok`, `redis=ok`, `storage=ok`;
+- `OPTIONS /api/v1/auth/login` returned successful CORS preflight for `https://portal.rcdo02.ru`;
+- browser login opened `/admin`;
+- admin UI showed `health: ok`, `ready: ok`, `authenticated`, `admin api: loaded`.
+
+Known non-blocking follow-up items:
+
+- unify visible UI labels where public page shows `STAGE 7` and admin page shows `STAGE 6`;
+- replace production frontend Vite dev server with a static production build served by Caddy or a lightweight static container;
+- keep monitoring GitHub Actions until latest `main` workflow is green.
+
+## 22. Local post-fix gate result - 2026-05-26
+
+Status: `passed`
+
+Local verification after commit `6f6e37a`:
+
+| Check | Result |
+| --- | --- |
+| `python scripts/check_frontend_api_base_config.py` | passed |
+| `python scripts/smoke_frontend_api_client.py` | passed |
+| `python scripts/frontend_guard.py` | passed |
+| `python scripts/smoke_frontend_admin_pages.py` | passed |
+| `docker compose exec frontend npm run build` | passed |
+| `docker compose exec -e TEST_BASE_URL=http://127.0.0.1:8000 backend pytest app/tests -q` | `214 passed, 4 warnings` |
+
+The Vite chunk-size warning is accepted as non-blocking for this checkpoint.
