@@ -401,3 +401,72 @@ Source markers:
 - По этому адресу нет опубликованной карточки курса;
 - Программа курса пока готовится к публикации;
 - Уроки в этом модуле пока готовятся.
+
+## 16. Stage 12.3 course detail empty states frontend deploy - 2026-05-27
+
+Status: accepted
+
+Stage 12.3 course detail empty and service states were deployed to the production static frontend and accepted.
+
+Accepted evidence:
+
+- production git head: cbb5d3a;
+- Stage 12.3 course detail learner workflow guard passed;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.2 catalog UX polish tag head verified: 1d5c91f;
+- source marker CourseDetailServiceState was present;
+- source marker course-detail-loading-state was present;
+- source marker course-detail-not-found-state was present;
+- source marker course-detail-state-title was present;
+- source marker course-detail-state-description was present;
+- source marker course-detail-state-catalog-action was present;
+- source marker course-detail-state-verify-action was present;
+- source marker CourseOutlineEmptyState was present;
+- source marker CourseOutlineModuleEmptyState was present;
+- source marker course-outline-empty-state was present;
+- source marker course-outline-module-empty-state was present;
+- source marker CourseDetailServiceState loading render was present;
+- source marker CourseOutlineEmptyState render was present;
+- source marker CourseOutlineModuleEmptyState render was present;
+- source marker loading text was present;
+- source marker not found text was present;
+- source marker course outline empty text was present;
+- source marker course outline module empty text was present;
+- doc marker course detail empty states section was present;
+- doc marker frontend-only boundary was present;
+- doc marker no API changes was present;
+- doc marker no backend runtime changes was present;
+- frontend static image was rebuilt;
+- frontend container was recreated;
+- frontend health became healthy;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /catalog returned HTTP 200;
+- public /account returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=yes;
+- backend_runtime_changed=no;
+- stage12_3_course_detail_empty_states_frontend_deploy_retry=passed;
+- stage12_3_course_detail_empty_states_frontend_deploy=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_3_5_course_detail_empty_states_frontend_deploy_retry_20260527203631.txt
