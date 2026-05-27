@@ -8,7 +8,7 @@ DOC = ROOT / "docs" / "production-operations-runbook.md"
 
 REQUIRED_MARKERS = [
     "# Production operations runbook",
-    "Status: drafted",
+    "Status: accepted",
     "Stage: 11",
     "Production domain: portal.rcdo02.ru",
     "Production hardened tag: v0.1.0-stage10-production-hardened",
@@ -35,6 +35,15 @@ REQUIRED_MARKERS = [
     "capture backend and frontend logs",
     "incident response baseline",
     "no secrets are added to repository",
+    "/opt/obrportal/tmp/stage_11_1_operations_baseline_server_check_20260527134624.txt",
+    "Caddy service was enabled and active",
+    "Docker service was enabled and active",
+    "/opt/obrportal/tmp size was 156K",
+    "/opt/obrportal/backups size was 92K",
+    "root filesystem usage was 40%",
+    "operations_baseline_server_check=passed",
+    "production git head after sync: 189fae3",
+    "Server baseline check result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [

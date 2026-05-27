@@ -1,6 +1,6 @@
 # Production operations runbook
 
-Status: drafted
+Status: accepted
 Stage: 11
 Production domain: portal.rcdo02.ru
 Production server: 89.127.203.70
@@ -140,3 +140,35 @@ Stage 11 baseline is accepted when:
 - monitoring baseline is documented;
 - incident response baseline is documented;
 - no secrets are added to repository.
+
+## 10. Server baseline check result - 2026-05-27
+
+Status: accepted
+
+Production operations baseline was checked on the production server and accepted.
+
+Accepted evidence:
+
+- production git head after sync: 189fae3;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public / returned HTTP 200;
+- public /login returned HTTP 200;
+- public /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- root filesystem usage was 40%;
+- /opt/obrportal/backups size was 92K;
+- /opt/obrportal/tmp size was 156K;
+- Docker service was enabled and active;
+- Caddy service was enabled and active;
+- secrets_printed=no;
+- operations_baseline_server_check=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_11_1_operations_baseline_server_check_20260527134624.txt
