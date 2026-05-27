@@ -444,3 +444,23 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_2_5_catalog_empty_states_frontend_deploy_20260527193314.txt
+
+## 18. Stage 12.2 catalog UX polish checkpoint tag - 2026-05-27
+
+Status: accepted
+
+Stage 12.2 catalog UX polish checkpoint tag was created and pushed to the remote repository.
+
+Accepted evidence:
+
+- checkpoint tag: v0.1.0-stage12-2-catalog-ux-polish;
+- tagged git head: 1d5c91f;
+- tag message: Stage 12.2 catalog UX polish checkpoint: learner journey hint, empty states, guards, runtime smoke and production deploy;
+- tag was pushed to origin;
+- develop, origin/develop, main and origin/main were aligned at 1d5c91f;
+- Stage 12.2 catalog learner workflow document was accepted;
+- Stage 12.2 catalog learner journey hint was deployed and accepted;
+- Stage 12.2 catalog empty states were deployed and accepted;
+- Stage 12.2 catalog learner workflow guard was accepted;
+- Stage 12.1 account workflow smoke remained green;
+- production docs sync passed before tag creation.
