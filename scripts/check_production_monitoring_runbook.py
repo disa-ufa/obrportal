@@ -8,7 +8,7 @@ DOC = ROOT / "docs" / "production-monitoring-runbook.md"
 
 REQUIRED_MARKERS = [
     "# Production monitoring smoke runbook",
-    "Status: drafted",
+    "Status: accepted",
     "Stage: 11.3",
     "Production domain: portal.rcdo02.ru",
     "Production hardened tag: v0.1.0-stage10-production-hardened",
@@ -41,6 +41,22 @@ REQUIRED_MARKERS = [
     "/opt/obrportal/tmp",
     "secrets_printed=no",
     "monitoring report is created",
+    "/opt/obrportal/tmp/stage_11_3_1_monitoring_smoke_20260527143628.txt",
+    "monitoring_smoke_result=passed",
+    "monitoring_smoke_report_created=yes",
+    "post_hardening_backup_present=yes",
+    "/opt/obrportal/tmp size: 184K",
+    "/opt/obrportal/backups size: 92K",
+    "root filesystem usage: 40%",
+    "backend status: running",
+    "minio health: healthy",
+    "redis health: healthy",
+    "postgres health: healthy",
+    "local_backend_ready=ok",
+    "local_frontend_healthz=ok",
+    "public_ready=ok",
+    "production git head after sync: 562b04a",
+    "Production monitoring smoke result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [

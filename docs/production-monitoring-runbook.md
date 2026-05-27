@@ -1,6 +1,6 @@
 # Production monitoring smoke runbook
 
-Status: drafted
+Status: accepted
 Stage: 11.3
 Production domain: portal.rcdo02.ru
 Production server: 89.127.203.70
@@ -144,3 +144,46 @@ Monitoring smoke is accepted when:
 - no internal service port is exposed publicly;
 - no secrets are printed;
 - monitoring report is created.
+
+## 11. Production monitoring smoke result - 2026-05-27
+
+Status: accepted
+
+Production monitoring smoke was completed and accepted.
+
+Accepted evidence:
+
+- production git head after sync: 562b04a;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- public_root_http=200;
+- public_login_http=200;
+- public_admin_http=200;
+- public_ready=ok;
+- local_frontend_healthz=ok;
+- local_backend_ready=ok;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- postgres health: healthy;
+- redis health: healthy;
+- minio health: healthy;
+- backend status: running;
+- Docker service: enabled and active;
+- Caddy service: enabled and active;
+- root filesystem usage: 40%;
+- /opt/obrportal/backups size: 92K;
+- /opt/obrportal/tmp size: 184K;
+- post_hardening_backup_present=yes;
+- internal ports 5173, 8000, 5432, 6379, 9000 and 9001 were bound to 127.0.0.1;
+- secrets_printed=no;
+- monitoring_smoke_report_created=yes;
+- monitoring_smoke_result=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_11_3_1_monitoring_smoke_20260527143628.txt
