@@ -265,3 +265,52 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_1_3_account_contract_guard_server_check_20260527160847.txt
+
+## 15. Stage 12.1 account workflow smoke server check result - 2026-05-27
+
+Status: accepted
+
+Stage 12.1 runtime account workflow smoke was checked on the production server and accepted.
+
+Accepted evidence:
+
+- production git head: 3bda3a2;
+- server-only smoke learner environment was loaded without sourcing .env;
+- smoke learner user was seeded on production;
+- smoke learner role: learner_fl;
+- Stage 12.1 account workflow smoke passed;
+- account summary without token returned HTTP 401;
+- account summary with learner token returned ok;
+- account courses without token returned HTTP 401;
+- account courses with learner token returned ok;
+- account course detail was safely skipped when learner had no courses;
+- account documents without token returned HTTP 401;
+- account documents with learner token returned ok;
+- missing account document download returned HTTP 404;
+- account document download was safely skipped when no downloadable documents existed;
+- frontend /account returned HTTP 200;
+- frontend /login returned HTTP 200;
+- frontend /catalog returned HTTP 200;
+- frontend /verify-document returned HTTP 200;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- public / returned HTTP 200;
+- public /login returned HTTP 200;
+- public /account returned HTTP 200;
+- public /catalog returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- server_only_smoke_user_seeded=yes;
+- stage12_1_account_workflow_smoke_server_check=passed;
+- production_runtime_changed=no.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_1_5_account_workflow_smoke_server_check_seeded_retry_20260527170759.txt
