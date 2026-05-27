@@ -59,6 +59,47 @@ function getCourseLessonTypeLabel(contentType) {
   }
 }
 
+
+function CourseOutlineEmptyState() {
+  return (
+    <div
+      data-testid="course-outline-empty-state"
+      className="mt-6 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200"
+    >
+      <div
+        data-testid="course-outline-empty-title"
+        className="text-base font-bold text-slate-900"
+      >
+        Программа курса пока готовится к публикации
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Карточка уже доступна, но модули и уроки ещё не опубликованы. Можно
+        вернуться в каталог или проверить страницу позже.
+      </p>
+    </div>
+  );
+}
+
+function CourseOutlineModuleEmptyState() {
+  return (
+    <div
+      data-testid="course-outline-module-empty-state"
+      className="mt-4 rounded-2xl bg-white p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200"
+    >
+      <div
+        data-testid="course-outline-module-empty-title"
+        className="font-semibold text-slate-900"
+      >
+        Уроки в этом модуле пока готовятся
+      </div>
+      <p className="mt-1">
+        Модуль опубликован как часть структуры программы, но материалы уроков
+        будут добавлены отдельно.
+      </p>
+    </div>
+  );
+}
+
 function CourseOutlineSection({ modules = [] }) {
   const courseModules = Array.isArray(modules) ? modules : [];
 
@@ -83,9 +124,7 @@ function CourseOutlineSection({ modules = [] }) {
       </div>
 
       {courseModules.length === 0 ? (
-        <div className="mt-6 rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
-          Программа курса пока не опубликована.
-        </div>
+        <CourseOutlineEmptyState />
       ) : (
         <div className="mt-6 space-y-4">
           {courseModules.map((module) => {
@@ -117,9 +156,7 @@ function CourseOutlineSection({ modules = [] }) {
                 </div>
 
                 {lessons.length === 0 ? (
-                  <div className="mt-4 rounded-2xl bg-white p-4 text-sm text-slate-500 ring-1 ring-slate-200">
-                    Уроки пока не добавлены.
-                  </div>
+                  <CourseOutlineModuleEmptyState />
                 ) : (
                   <div className="mt-4 space-y-3">
                     {lessons.map((lesson) => (
@@ -449,6 +486,74 @@ function getPrimaryActionLabel(enrollment, user) {
 }
 
 
+
+function CourseDetailServiceState({ variant, error, onPageChange }) {
+  const isLoading = variant === "loading";
+  const testId = isLoading ? "course-detail-loading-state" : "course-detail-not-found-state";
+  const title = isLoading
+    ? "Загружаем карточку программы"
+    : "По этому адресу нет опубликованной карточки курса";
+  const eyebrow = isLoading ? "Загрузка" : "Программа не найдена";
+  const description = isLoading
+    ? "Получаем описание программы, структуру обучения и статус записи в личном кабинете."
+    : error || "Вернитесь в каталог и выберите активную опубликованную программу.";
+
+  return (
+    <section
+      data-testid={testId}
+      className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10"
+    >
+      <div className={isLoading ? "text-sm font-semibold uppercase tracking-wide text-blue-600" : "text-sm font-semibold uppercase tracking-wide text-red-600"}>
+        {eyebrow}
+      </div>
+      <h1
+        data-testid="course-detail-state-title"
+        className="mt-2 text-3xl font-bold text-slate-900"
+      >
+        {title}
+      </h1>
+      <p
+        data-testid="course-detail-state-description"
+        className="mt-4 max-w-2xl text-sm leading-6 text-slate-600"
+      >
+        {description}
+      </p>
+
+      {isLoading ? (
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          {["Описание", "Структура", "Статус записи"].map((item) => (
+            <div
+              key={item}
+              className="h-16 animate-pulse rounded-2xl bg-slate-100 ring-1 ring-slate-200"
+              aria-label={`Загружается: ${item}`}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            data-testid="course-detail-state-catalog-action"
+            onClick={() => onPageChange("catalog")}
+            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            В каталог
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-state-verify-action"
+            onClick={() => onPageChange("verify-document")}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            Проверить документ
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function CourseDetailLearnerJourneyHint({
   course,
   existingEnrollment,
@@ -717,34 +822,16 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     }
   }
   if (loading) {
-    return (
-      <div className="rounded-[2rem] bg-white p-8 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
-        Загружаем карточку программы...
-      </div>
-    );
+    return <CourseDetailServiceState variant="loading" onPageChange={onPageChange} />;
   }
 
   if (!course) {
     return (
-      <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
-        <div className="text-sm font-semibold uppercase tracking-wide text-red-600">
-          Программа не найдена
-        </div>
-        <h1 className="mt-2 text-3xl font-bold text-slate-900">
-          По этому адресу нет опубликованной карточки курса
-        </h1>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
-          {error || "Вернитесь в каталог и выберите активную программу."}
-        </p>
-
-        <button
-          type="button"
-          onClick={() => onPageChange("catalog")}
-          className="mt-6 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          В каталог
-        </button>
-      </div>
+      <CourseDetailServiceState
+        variant="not-found"
+        error={error}
+        onPageChange={onPageChange}
+      />
     );
   }
 

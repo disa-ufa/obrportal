@@ -364,3 +364,40 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_3_3_course_detail_journey_hint_frontend_deploy_20260527201137.txt
+
+## 15. Stage 12.3 course detail empty and service states - 2026-05-27
+
+Status: implemented locally
+
+Stage 12.3 improves course detail service and empty states for loading, missing course detail, course without modules and module without lessons.
+
+Implementation boundaries:
+
+- frontend-only change;
+- no database migrations;
+- no API changes;
+- no backend runtime changes;
+- no auth or RBAC changes;
+- existing CourseDetailLearnerJourneyHint remains rendered before CourseSelfEnrollmentDiagnostics;
+- existing self-enrollment behavior remains unchanged;
+- existing CourseOutlineSection remains rendered.
+
+Source markers:
+
+- CourseDetailServiceState;
+- course-detail-loading-state;
+- course-detail-not-found-state;
+- course-detail-state-title;
+- course-detail-state-description;
+- course-detail-state-catalog-action;
+- course-detail-state-verify-action;
+- CourseOutlineEmptyState;
+- CourseOutlineModuleEmptyState;
+- course-outline-empty-state;
+- course-outline-module-empty-state;
+- course-outline-empty-title;
+- course-outline-module-empty-title;
+- Загружаем карточку программы;
+- По этому адресу нет опубликованной карточки курса;
+- Программа курса пока готовится к публикации;
+- Уроки в этом модуле пока готовятся.
