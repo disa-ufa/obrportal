@@ -470,3 +470,24 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_3_5_course_detail_empty_states_frontend_deploy_retry_20260527203631.txt
+
+## 17. Stage 12.3 course detail UX polish checkpoint tag - 2026-05-27
+
+Status: accepted
+
+Stage 12.3 course detail UX polish checkpoint tag was created and pushed to the remote repository.
+
+Accepted evidence:
+
+- checkpoint tag: v0.1.0-stage12-3-course-detail-ux-polish;
+- tagged git head: 5f88a8c;
+- tag message: Stage 12.3 course detail UX polish checkpoint: learner journey hint, empty states, guards, runtime smoke and production deploy;
+- tag was pushed to origin;
+- develop, origin/develop, main and origin/main were aligned at 5f88a8c;
+- Stage 12.3 course detail learner workflow document was accepted;
+- Stage 12.3 course detail learner journey hint was deployed and accepted;
+- Stage 12.3 course detail empty states were deployed and accepted;
+- Stage 12.3 course detail learner workflow guard was accepted;
+- Stage 12.2 catalog workflow guard remained green;
+- Stage 12.1 account workflow smoke remained green;
+- production docs sync passed before tag creation.
