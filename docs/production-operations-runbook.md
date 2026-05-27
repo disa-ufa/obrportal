@@ -172,3 +172,30 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_11_1_operations_baseline_server_check_20260527134624.txt
+
+## 11. Stage 11 operations baseline release tag result - 2026-05-27
+
+Status: accepted
+
+Final Stage 11 operations-baseline checkpoint tag was created and pushed.
+
+Accepted evidence:
+
+- release tag: v0.1.0-stage11-operations-baseline;
+- tagged commit: 323db72;
+- tagged commit message: docs: accept production incident response runbook;
+- develop, origin/develop, main and origin/main pointed to 323db72 before tagging;
+- production server was synchronized to 323db72 before tagging;
+- production operations baseline was accepted;
+- isolated production restore drill was accepted;
+- production monitoring smoke was accepted;
+- production release procedure was accepted;
+- production incident response runbook was accepted;
+- frontend remained obrportal-frontend-static:prod;
+- public /login and /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_11_5_2_incident_final_sync_20260527150606.txt
