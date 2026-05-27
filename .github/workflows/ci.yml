@@ -66,6 +66,10 @@ jobs:
         run: |
           python scripts/check_production_monitoring_runbook.py
 
+      - name: Run production release runbook guard
+        run: |
+          python scripts/check_production_release_runbook.py
+
       - name: Run CI/local gate consistency guard
         run: |
           python scripts/check_ci_local_gate.py
