@@ -8,7 +8,7 @@ DOC = ROOT / "docs" / "production-incident-runbook.md"
 
 REQUIRED_MARKERS = [
     "# Production incident response and log retention runbook",
-    "Status: drafted",
+    "Status: accepted",
     "Stage: 11.5",
     "Production domain: portal.rcdo02.ru",
     "Production hardened tag: v0.1.0-stage10-production-hardened",
@@ -48,6 +48,27 @@ REQUIRED_MARKERS = [
     "Incident report format",
     "secrets_printed=no",
     "no secrets are added to repository",
+    "/opt/obrportal/tmp/stage_11_5_1_incident_runbook_server_check_20260527150145.txt",
+    "incident_runbook_server_check=passed",
+    "internal ports 5173, 8000, 5432, 6379, 9000 and 9001 were bound to 127.0.0.1",
+    "post_hardening_backup_present=yes",
+    "/opt/obrportal/backups size: 92K",
+    "/opt/obrportal/tmp size: 204K",
+    "root filesystem usage: 40%",
+    "temporary_log_tail_files_removed=yes",
+    "docker_log_tail_command_executed=yes",
+    "caddy_log_tail_command_executed=yes",
+    "frontend_log_tail_captured=yes",
+    "backend_log_tail_captured=yes",
+    "public /admin returned HTTP 200",
+    "public /login returned HTTP 200",
+    "public / returned HTTP 200",
+    "local /healthz returned ok",
+    "frontend image: obrportal-frontend-static:prod",
+    "git branch: develop",
+    "production incident runbook guard passed",
+    "production git head after sync: e678445",
+    "Server incident runbook check result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [

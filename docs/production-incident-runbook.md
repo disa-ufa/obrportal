@@ -1,6 +1,6 @@
 # Production incident response and log retention runbook
 
-Status: drafted
+Status: accepted
 Stage: 11.5
 Production domain: portal.rcdo02.ru
 Production server: 89.127.203.70
@@ -224,3 +224,49 @@ Incident response baseline is accepted when:
 - log retention policy is documented;
 - safe tmp cleanup policy is documented;
 - no secrets are added to repository.
+
+## 12. Server incident runbook check result - 2026-05-27
+
+Status: accepted
+
+Production incident response and log retention runbook was checked on the production server and accepted.
+
+Accepted evidence:
+
+- production git head after sync: e678445;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- git branch: develop;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- local /healthz returned ok;
+- local /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- public / returned HTTP 200;
+- public /login returned HTTP 200;
+- public /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- backend_log_tail_captured=yes;
+- frontend_log_tail_captured=yes;
+- caddy_log_tail_command_executed=yes;
+- docker_log_tail_command_executed=yes;
+- temporary_log_tail_files_removed=yes;
+- root filesystem usage: 40%;
+- /opt/obrportal/tmp size: 204K;
+- /opt/obrportal/backups size: 92K;
+- post_hardening_backup_present=yes;
+- Docker service was enabled and active;
+- Caddy service was enabled and active;
+- internal ports 5173, 8000, 5432, 6379, 9000 and 9001 were bound to 127.0.0.1;
+- secrets_printed=no;
+- incident_runbook_server_check=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_11_5_1_incident_runbook_server_check_20260527150145.txt
