@@ -358,3 +358,32 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_2_3_catalog_journey_hint_frontend_deploy_20260527191807.txt
+
+## 16. Stage 12.2 catalog empty states - 2026-05-27
+
+Status: implemented locally
+
+Stage 12.2 improves catalog empty states for two cases: no published programs and filtered catalog with no matching results.
+
+Implementation boundaries:
+
+- frontend-only change;
+- no database migrations;
+- no API changes;
+- no backend runtime changes;
+- no auth or RBAC changes;
+- existing CatalogLearnerJourneyHint remains rendered before CatalogDiagnostics;
+- existing course cards and course detail navigation remain unchanged.
+
+Source markers:
+
+- CatalogEmptyState;
+- catalog-empty-state;
+- catalog-empty-state-title;
+- catalog-empty-state-hint;
+- catalog-empty-state-reset-action;
+- catalog-empty-state-account-action;
+- catalog-empty-state-verify-action;
+- Пока нет опубликованных программ;
+- По текущим фильтрам ничего не найдено;
+- Сбросить фильтры.

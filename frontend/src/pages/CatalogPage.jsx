@@ -390,6 +390,81 @@ function CatalogLearnerJourneyHint({ user, accountCourses, onPageChange }) {
   );
 }
 
+
+function CatalogEmptyState({ courses, query, formatFilter, resetFilters, onPageChange }) {
+  const hasPublishedCourses = courses.length > 0;
+  const hasActiveFilters = query.trim() || formatFilter !== "all";
+
+  const title = hasPublishedCourses
+    ? "По текущим фильтрам ничего не найдено"
+    : "Пока нет опубликованных программ";
+
+  const description = hasPublishedCourses
+    ? "Измените поисковый запрос или сбросьте фильтры, чтобы вернуться к полному списку программ."
+    : "Каталог уже готов к отображению программ. Когда администратор опубликует курсы, они появятся здесь автоматически.";
+
+  const hint = hasPublishedCourses && hasActiveFilters
+    ? "Сейчас применены условия поиска или фильтра формата."
+    : "Можно перейти в личный кабинет или проверить ранее выданный документ.";
+
+  return (
+    <section
+      data-testid="catalog-empty-state"
+      className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200"
+    >
+      <div className="max-w-3xl">
+        <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+          Пустая выдача
+        </div>
+        <h2
+          data-testid="catalog-empty-state-title"
+          className="mt-2 text-2xl font-bold text-slate-900"
+        >
+          {title}
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
+        <p
+          data-testid="catalog-empty-state-hint"
+          className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200"
+        >
+          {hint}
+        </p>
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        {hasPublishedCourses && (
+          <button
+            type="button"
+            data-testid="catalog-empty-state-reset-action"
+            onClick={resetFilters}
+            className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+          >
+            Сбросить фильтры
+          </button>
+        )}
+
+        <button
+          type="button"
+          data-testid="catalog-empty-state-account-action"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Личный кабинет
+        </button>
+
+        <button
+          type="button"
+          data-testid="catalog-empty-state-verify-action"
+          onClick={() => onPageChange("verify-document")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Проверить документ
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function CatalogPage({ onPageChange, onOpenCourse, user }) {
   const [courses, setCourses] = useState([]);
   const [accountCourses, setAccountCourses] = useState([]);
@@ -572,13 +647,13 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
           {error}
         </div>
       ) : filteredCourses.length === 0 ? (
-        <div className="rounded-[2rem] bg-white p-8 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
-          <div className="font-semibold text-slate-900">Программы не найдены</div>
-          <p className="mt-2 leading-6">
-            По выбранным условиям ничего не найдено. Попробуйте изменить фильтры
-            или вернуться к полному списку программ.
-          </p>
-        </div>
+        <CatalogEmptyState
+          courses={courses}
+          query={query}
+          formatFilter={formatFilter}
+          resetFilters={resetFilters}
+          onPageChange={onPageChange}
+        />
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {filteredCourses.map((course) => {
