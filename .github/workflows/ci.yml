@@ -82,6 +82,10 @@ jobs:
         run: |
           python scripts/check_stage12_1_learner_account_workflow.py
 
+      - name: Run Stage 12.1 account contract guard
+        run: |
+          python scripts/check_stage12_1_account_contract.py
+
       - name: Run CI/local gate consistency guard
         run: |
           python scripts/check_ci_local_gate.py
