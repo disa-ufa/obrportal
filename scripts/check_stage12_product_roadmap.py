@@ -8,7 +8,7 @@ DOC = ROOT / "docs" / "stage-12-product-roadmap.md"
 
 REQUIRED_MARKERS = [
     "# Stage 12 product roadmap",
-    "Status: drafted",
+    "Status: accepted",
     "Stage: 12",
     "Production baseline tag: v0.1.0-stage11-operations-baseline",
     "Stage 12 defines the next product-development phase",
@@ -43,6 +43,17 @@ REQUIRED_MARKERS = [
     "docker compose exec frontend npm run build",
     "docker compose exec backend pytest app/tests -q",
     "no production runtime change is made by this roadmap step",
+    "/opt/obrportal/tmp/stage_12_0_1_roadmap_server_check_20260527151954.txt",
+    "production_runtime_changed=no",
+    "stage12_roadmap_server_check=passed",
+    "public /admin returned HTTP 200",
+    "public /login returned HTTP 200",
+    "public / returned HTTP 200",
+    "local /healthz returned ok",
+    "frontend image: obrportal-frontend-static:prod",
+    "Stage 12 product roadmap guard passed",
+    "production git head after sync: 33945ad",
+    "Stage 12 roadmap server check result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [

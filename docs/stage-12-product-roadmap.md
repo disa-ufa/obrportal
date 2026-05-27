@@ -1,6 +1,6 @@
 # Stage 12 product roadmap
 
-Status: drafted
+Status: accepted
 Stage: 12
 Project: ObrPortal
 Production baseline tag: v0.1.0-stage11-operations-baseline
@@ -213,3 +213,40 @@ Stage 12 roadmap is accepted when:
 - safety rules are documented;
 - local quality gate is documented;
 - no production runtime change is made by this roadmap step.
+
+## 15. Stage 12 roadmap server check result - 2026-05-27
+
+Status: accepted
+
+Stage 12 product roadmap was checked on the production server and accepted.
+
+Accepted evidence:
+
+- production git head after sync: 33945ad;
+- Stage 12 product roadmap guard passed;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- local /healthz returned ok;
+- local /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- public / returned HTTP 200;
+- public /login returned HTTP 200;
+- public /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- Docker service was enabled and active;
+- Caddy service was enabled and active;
+- secrets_printed=no;
+- stage12_roadmap_server_check=passed;
+- production_runtime_changed=no.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_0_1_roadmap_server_check_20260527151954.txt
