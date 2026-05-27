@@ -1182,6 +1182,46 @@ function CompletionDocumentsDiagnostics({
   );
 }
 
+function AccountEmptyState({ title, description, actionLabel, onAction, href, tone = "blue" }) {
+  const toneClasses =
+    tone === "amber"
+      ? "bg-amber-50 text-amber-900 ring-amber-200"
+      : "bg-blue-50 text-blue-900 ring-blue-200";
+
+  const buttonClasses =
+    tone === "amber"
+      ? "bg-amber-600 text-white hover:bg-amber-700"
+      : "bg-blue-600 text-white hover:bg-blue-700";
+
+  return (
+    <div className={`rounded-3xl p-5 text-sm leading-6 ring-1 ${toneClasses}`}>
+      <div className="text-base font-semibold text-slate-950">{title}</div>
+      <p className="mt-2 max-w-3xl">{description}</p>
+
+      {(actionLabel && (onAction || href)) && (
+        <div className="mt-4">
+          {href ? (
+            <a
+              href={href}
+              className={`inline-flex rounded-full px-5 py-2.5 text-sm font-semibold transition ${buttonClasses}`}
+            >
+              {actionLabel}
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={onAction}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${buttonClasses}`}
+            >
+              {actionLabel}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AccountCourseDocumentCard({ course, documents, onDownload, downloadLoadingId }) {
   const documentItem = getCourseCompletionDocument(course, documents);
 
@@ -1739,18 +1779,12 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
             Загрузка программ...
           </div>
         ) : courses.length === 0 ? (
-          <div className="space-y-4">
-            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-              У вас пока нет назначенных программ.
-            </div>
-            <button
-              type="button"
-              onClick={() => onPageChange("catalog")}
-              className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-            >
-              Перейти в каталог
-            </button>
-          </div>
+          <AccountEmptyState
+            title="Пока нет назначенных программ"
+            description="Когда администратор назначит обучение или вы выберете доступную программу из каталога, она появится в этом разделе. Здесь будут видны статус, прогресс, уроки и итоговый документ после завершения."
+            actionLabel="Перейти в каталог"
+            onAction={() => onPageChange("catalog")}
+          />
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="xl:col-span-2">
@@ -1763,8 +1797,14 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
             </div>
 
             {visibleCourses.length === 0 && (
-              <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200 xl:col-span-2">
-                Нет программ с выбранным статусом.
+              <div className="xl:col-span-2">
+                <AccountEmptyState
+                  title="Нет программ с выбранным статусом"
+                  description="Сбросьте фильтр или выберите другой статус, чтобы увидеть остальные назначенные программы."
+                  actionLabel="Показать все программы"
+                  onAction={() => setCourseStatusFilter("")}
+                  tone="amber"
+                />
               </div>
             )}
 
@@ -1960,9 +2000,12 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
             Загрузка документов...
           </div>
         ) : documents.length === 0 ? (
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-            У вас пока нет доступных документов.
-          </div>
+          <AccountEmptyState
+            title="Пока нет доступных документов"
+            description="Итоговые документы появятся здесь после завершения программы и публикации администратором. Когда документ будет доступен, вы сможете скачать его и открыть публичную проверку по номеру или QR-коду."
+            actionLabel="Перейти к программам"
+            href="#account-courses"
+          />
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="xl:col-span-2">
@@ -1975,8 +2018,14 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
             </div>
 
             {visibleDocuments.length === 0 && (
-              <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200 xl:col-span-2">
-                Нет документов с выбранным статусом.
+              <div className="xl:col-span-2">
+                <AccountEmptyState
+                  title="Нет документов с выбранным статусом"
+                  description="Сбросьте фильтр или выберите другой статус, чтобы увидеть остальные документы в личном кабинете."
+                  actionLabel="Показать все документы"
+                  onAction={() => setDocumentStatusFilter("")}
+                  tone="amber"
+                />
               </div>
             )}
 
