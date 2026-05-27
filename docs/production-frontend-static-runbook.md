@@ -182,3 +182,44 @@ Accepted production reports:
 Rollback backup retained on server:
 
 - /opt/obrportal/tmp/docker-compose.override.yml.backup-autostart-20260526165829
+
+## 13. Controlled restart verification result - 2026-05-27
+
+Status: accepted
+
+Controlled production container restart verification was completed and accepted.
+
+Scope:
+
+- postgres restart;
+- redis restart;
+- minio restart;
+- backend restart;
+- frontend restart.
+
+Accepted evidence:
+
+- production git head during restart verification: 113cb89;
+- frontend image after restart: obrportal-frontend-static:prod;
+- frontend command after restart: nginx -g daemon off;
+- frontend health after stable check: healthy;
+- frontend restart policy: unless-stopped;
+- postgres restart policy: unless-stopped;
+- redis restart policy: unless-stopped;
+- minio restart policy: unless-stopped;
+- backend restart policy: unless-stopped;
+- local /healthz returned ok;
+- local /login and /admin returned HTTP 200;
+- local /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- public /login and /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- controlled_restart_verified=yes;
+- static_frontend_after_restart=yes;
+- controlled_restart_stable=yes;
+- static_frontend_healthy_after_restart=yes;
+- secrets_printed=no.
+
+Accepted production reports:
+
+- /opt/obrportal/tmp/stage_10_14_1_controlled_container_restart_20260527130633.txt
+- /opt/obrportal/tmp/stage_10_14_2_controlled_restart_stable_health_20260527130858.txt

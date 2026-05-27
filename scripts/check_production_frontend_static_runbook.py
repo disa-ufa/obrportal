@@ -42,6 +42,15 @@ REQUIRED_MARKERS = [
     "restart_policy_applied=yes",
     "static_frontend_persistent=yes",
     "Autostart persistence result - 2026-05-26",
+    "frontend restart",
+    "backend restart",
+    "postgres restart",
+    "frontend health after stable check: healthy",
+    "static_frontend_healthy_after_restart=yes",
+    "controlled_restart_stable=yes",
+    "static_frontend_after_restart=yes",
+    "controlled_restart_verified=yes",
+    "Controlled restart verification result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [
