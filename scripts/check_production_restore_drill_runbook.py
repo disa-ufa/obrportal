@@ -8,7 +8,7 @@ DOC = ROOT / "docs" / "production-restore-drill-runbook.md"
 
 REQUIRED_MARKERS = [
     "# Production restore drill runbook",
-    "Status: drafted",
+    "Status: accepted",
     "Stage: 11.2",
     "Production hardened tag: v0.1.0-stage10-production-hardened",
     "The restore drill must validate backup usability without changing production data",
@@ -31,6 +31,20 @@ REQUIRED_MARKERS = [
     "do not remove production volumes",
     "do not remove production backup",
     "/opt/obrportal/tmp",
+    "/opt/obrportal/tmp/stage_11_2_2_isolated_restore_drill_no_owner_20260527142258.txt",
+    "restore_drill_result=passed",
+    "restore_drill_cleanup_done=yes",
+    "restore_drill_isolated=yes",
+    "production_volumes_untouched=yes",
+    "temporary_restore_container_removed=yes",
+    "restored_alembic_revision=6421_org_doc_profile",
+    "public_table_count=17",
+    "restore_owner_mode=no_owner_no_privileges",
+    "restore_result=passed",
+    "restore_ports_published=no",
+    "checksum_verification=passed",
+    "production_after_failed_restore_drill=ok",
+    "Isolated restore drill result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [

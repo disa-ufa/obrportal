@@ -1,6 +1,6 @@
 # Production restore drill runbook
 
-Status: drafted
+Status: accepted
 Stage: 11.2
 Production domain: portal.rcdo02.ru
 Production hardened tag: v0.1.0-stage10-production-hardened
@@ -108,3 +108,45 @@ The report must include:
 - table count or schema check result;
 - production smoke result after drill;
 - cleanup result.
+
+## 9. Isolated restore drill result - 2026-05-27
+
+Status: accepted
+
+Isolated restore drill was completed and accepted.
+
+Initial restore attempt result:
+
+- first restore attempt failed safely because production owner role obrportal did not exist in the temporary isolated database;
+- temporary restore container was removed;
+- production remained healthy after the failed attempt;
+- production_after_failed_restore_drill=ok.
+
+Accepted successful restore drill evidence:
+
+- production git head during drill: d872522;
+- backup source: /opt/obrportal/backups/post-hardening-20260527-132749/postgres.dump;
+- checksum_verification=passed;
+- restore container was started with network=none;
+- restore_ports_published=no;
+- dump_copied=yes;
+- restore_result=passed;
+- restore_owner_mode=no_owner_no_privileges;
+- public_table_count=17;
+- restored core tables included alembic_version, courses, document_records, enrollments, permissions, roles and users;
+- restored_alembic_revision=6421_org_doc_profile;
+- temporary container ports were empty;
+- temporary_restore_container_removed=yes;
+- production /api/v1/ready remained database=ok, redis=ok, storage=ok;
+- public /login returned HTTP 200 after drill;
+- public /admin returned HTTP 200 after drill;
+- production_volumes_untouched=yes;
+- restore_drill_isolated=yes;
+- restore_drill_cleanup_done=yes;
+- restore_drill_result=passed;
+- secrets_printed=no.
+
+Accepted production reports:
+
+- /opt/obrportal/tmp/stage_11_2_1a_post_failed_restore_drill_smoke_20260527142238.txt
+- /opt/obrportal/tmp/stage_11_2_2_isolated_restore_drill_no_owner_20260527142258.txt
