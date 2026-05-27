@@ -396,3 +396,43 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_4_3_public_verification_journey_frontend_deploy_20260527212724.txt
+
+## 16. Stage 12.4 public verification form and service states - 2026-05-28
+
+Status: implemented locally
+
+Stage 12.4 adds stable frontend markers for the public verification form, input, submit action, error state, not-found state and result state.
+
+Implementation boundaries:
+
+- frontend-only change;
+- no database migrations;
+- no API changes;
+- no backend runtime changes;
+- no auth or RBAC changes;
+- existing verifyPublicDocument(value) API call remains unchanged;
+- existing /verify-document route remains unchanged;
+- existing /verify/:code route remains unchanged;
+- existing PublicVerificationJourneyHint remains rendered;
+- existing PublicVerificationDiagnostics remains rendered;
+- existing PublicVerificationQrOperationsPanel remains rendered;
+- existing ResultCard remains rendered.
+
+Source markers:
+
+- public-verification-form-section;
+- public-verification-form;
+- public-verification-query-input;
+- public-verification-submit;
+- public-verification-error-state;
+- public-verification-not-found-state;
+- public-verification-result-card;
+- public-verification-result-reset-action;
+- public-verification-result-catalog-action;
+- public-verification-result-home-action;
+- public-verification-not-found-reset-action;
+- public-verification-not-found-contacts-action;
+- role="alert";
+- role="status";
+- aria-live="assertive";
+- aria-live="polite".

@@ -620,7 +620,10 @@ function ResultCard({ result, onReset, onPageChange }) {
       : "-";
 
   return (
-    <div className={`rounded-[2rem] bg-white p-6 shadow-sm ring-1 ${tone.card}`}>
+    <div
+      data-testid="public-verification-result-card"
+      className={`rounded-[2rem] bg-white p-6 shadow-sm ring-1 ${tone.card}`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${tone.badge}`}>
           {tone.label}
@@ -691,6 +694,7 @@ function ResultCard({ result, onReset, onPageChange }) {
       <div className="mt-6 flex flex-wrap gap-3">
         <button
           type="button"
+          data-testid="public-verification-result-reset-action"
           onClick={onReset}
           className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
         >
@@ -699,6 +703,7 @@ function ResultCard({ result, onReset, onPageChange }) {
 
         <button
           type="button"
+          data-testid="public-verification-result-catalog-action"
           onClick={() => onPageChange("catalog")}
           className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
         >
@@ -707,6 +712,7 @@ function ResultCard({ result, onReset, onPageChange }) {
 
         <button
           type="button"
+          data-testid="public-verification-result-home-action"
           onClick={() => onPageChange("home")}
           className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
         >
@@ -847,13 +853,21 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
         onPageChange={onPageChange}
       />
 
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <form onSubmit={handleSubmit} className="grid gap-3 lg:grid-cols-[1fr_auto]">
+      <section
+        data-testid="public-verification-form-section"
+        className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+      >
+        <form
+          data-testid="public-verification-form"
+          onSubmit={handleSubmit}
+          className="grid gap-3 lg:grid-cols-[1fr_auto]"
+        >
           <label className="block">
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               {RU.queryLabel}
             </span>
             <input
+              data-testid="public-verification-query-input"
               type="text"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -864,6 +878,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
 
           <div className="flex items-end">
             <button
+              data-testid="public-verification-submit"
               type="submit"
               disabled={loading || !normalizedQuery}
               className="h-12 rounded-full bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
@@ -890,14 +905,24 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
       />
 
       {error && (
-        <div className="rounded-[2rem] bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200">
+        <div
+          data-testid="public-verification-error-state"
+          role="alert"
+          aria-live="assertive"
+          className="rounded-[2rem] bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200"
+        >
           <div className="font-semibold">{RU.verificationFailed}</div>
           <p className="mt-2 leading-6">{error}</p>
         </div>
       )}
 
       {notFound && (
-        <div className="rounded-[2rem] bg-amber-50 p-6 text-sm text-amber-800 ring-1 ring-amber-200">
+        <div
+          data-testid="public-verification-not-found-state"
+          role="status"
+          aria-live="polite"
+          className="rounded-[2rem] bg-amber-50 p-6 text-sm text-amber-800 ring-1 ring-amber-200"
+        >
           <div className="text-lg font-bold">{RU.documentNotFound}</div>
           <p className="mt-2 leading-6">
             {RU.notFoundPrefix}{" "}
@@ -906,6 +931,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
+              data-testid="public-verification-not-found-reset-action"
               onClick={handleReset}
               className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
@@ -913,6 +939,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
             </button>
             <button
               type="button"
+              data-testid="public-verification-not-found-contacts-action"
               onClick={() => onPageChange("contacts")}
               className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
             >

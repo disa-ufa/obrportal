@@ -92,6 +92,9 @@ DOC_MARKERS = [
     "source marker PublicVerificationJourneyHint was present",
     "production git head: b9c18bf",
     "Stage 12.4 public verification journey frontend deploy - 2026-05-27",
+    "existing verifyPublicDocument(value) API call remains unchanged",
+    "Stage 12.4 adds stable frontend markers for the public verification form",
+    "Stage 12.4 public verification form and service states - 2026-05-28",
 ]
 
 VERIFY_PAGE_MARKERS = [
@@ -116,6 +119,24 @@ VERIFY_PAGE_MARKERS = [
     "public-verification-journey-title",
     "public-verification-journey",
     "PublicVerificationJourneyHint",
+    "verifyPublicDocument(value)",
+    'aria-live="polite"',
+    'aria-live="assertive"',
+    'role="status"',
+    'role="alert"',
+    "public-verification-not-found-contacts-action",
+    "public-verification-not-found-reset-action",
+    "public-verification-result-home-action",
+    "public-verification-result-catalog-action",
+    "public-verification-result-reset-action",
+    "public-verification-result-card",
+    "public-verification-not-found-state",
+    "public-verification-error-state",
+    "disabled={loading || !normalizedQuery}",
+    "public-verification-submit",
+    "public-verification-query-input",
+    "public-verification-form",
+    "public-verification-form-section",
 ]
 
 ACCOUNT_MARKERS = [
