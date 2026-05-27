@@ -74,6 +74,10 @@ jobs:
         run: |
           python scripts/check_production_incident_runbook.py
 
+      - name: Run Stage 12 product roadmap guard
+        run: |
+          python scripts/check_stage12_product_roadmap.py
+
       - name: Run CI/local gate consistency guard
         run: |
           python scripts/check_ci_local_gate.py
