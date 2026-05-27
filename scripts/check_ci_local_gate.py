@@ -64,6 +64,7 @@ REQUIRED_CI_COMMANDS = [
     "python scripts/smoke_frontend_admin_pages.py",
     "python scripts/smoke_public_pages.py",
     "python scripts/smoke_account_page.py",
+    "python scripts/smoke_stage12_1_account_workflow.py",
     "python scripts/smoke_frontend_hooks_layout.py",
     "python scripts/smoke_frontend_utils_routes.py",
     "python scripts/smoke_frontend_core.py",

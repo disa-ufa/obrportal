@@ -246,6 +246,7 @@ jobs:
           python scripts/smoke_documents_page.py
           python scripts/smoke_document_generation_flow.py
           python scripts/smoke_account_page.py
+          python scripts/smoke_stage12_1_account_workflow.py
           python scripts/smoke_public_pages.py
           python scripts/smoke_auth_pages.py
           python scripts/smoke_admin_renderer.py
