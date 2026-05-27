@@ -387,3 +387,60 @@ Source markers:
 - Пока нет опубликованных программ;
 - По текущим фильтрам ничего не найдено;
 - Сбросить фильтры.
+
+## 17. Stage 12.2 catalog empty states frontend deploy - 2026-05-27
+
+Status: accepted
+
+Stage 12.2 catalog empty states were deployed to the production static frontend and accepted.
+
+Accepted evidence:
+
+- production git head: b699d50;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- source marker CatalogEmptyState was present;
+- source marker CatalogEmptyState render was present;
+- source marker catalog empty state test id was present;
+- source marker catalog empty state title test id was present;
+- source marker catalog empty state hint test id was present;
+- source marker catalog empty state reset action test id was present;
+- source marker catalog empty state account action test id was present;
+- source marker catalog empty state verify action test id was present;
+- source marker no published programs text was present;
+- source marker no filter results text was present;
+- source marker reset filters text was present;
+- doc marker catalog empty states section was present;
+- doc marker catalog empty states frontend-only boundary was present;
+- frontend static image was rebuilt;
+- frontend container was recreated;
+- frontend health became healthy;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /catalog returned HTTP 200;
+- public /account returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=yes;
+- backend_runtime_changed=no;
+- stage12_2_catalog_empty_states_frontend_deploy=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_2_5_catalog_empty_states_frontend_deploy_20260527193314.txt
