@@ -267,3 +267,41 @@ Accepted server-side evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_10_15_1_public_surface_audit_20260527132138.txt
+
+## 15. Post-hardening production backup result - 2026-05-27
+
+Status: accepted
+
+Post-hardening production backup was completed and accepted after static frontend hardening, controlled restart verification and public surface audit.
+
+Accepted evidence:
+
+- production git head during backup: c4caf9f;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- backend /api/v1/ready returned database=ok, redis=ok, storage=ok before backup;
+- backup directory was created with chmod 700;
+- PostgreSQL custom-format dump was created;
+- PostgreSQL dump checksum file was created;
+- PostgreSQL dump checksum verification returned OK;
+- server-only docker-compose.override.yml was copied;
+- resolved Docker Compose config was saved;
+- Docker Compose ps output was saved;
+- Docker images list was saved;
+- backup metadata was saved without secrets;
+- post-backup /healthz returned ok;
+- post-backup public /login returned HTTP 200;
+- post-backup public /admin returned HTTP 200;
+- post-backup public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- post_hardening_backup_created=yes.
+
+Accepted backup directory:
+
+- /opt/obrportal/backups/post-hardening-20260527-132749
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_10_16_1_post_hardening_backup_20260527132749.txt

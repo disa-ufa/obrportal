@@ -64,6 +64,14 @@ REQUIRED_MARKERS = [
     "443/tcp HTTPS/Caddy: open",
     "22/tcp SSH: open",
     "Production public surface audit result - 2026-05-27",
+    "post-backup public /admin returned HTTP 200",
+    "post-backup public /login returned HTTP 200",
+    "backup metadata was saved without secrets",
+    "server-only docker-compose.override.yml was copied",
+    "/opt/obrportal/backups/post-hardening-20260527-132749",
+    "PostgreSQL dump checksum verification returned OK",
+    "post_hardening_backup_created=yes",
+    "Post-hardening production backup result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [
