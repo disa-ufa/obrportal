@@ -1,0 +1,235 @@
+# Stage 12.4. Document verification workflow
+
+Status: in progress
+
+Stage 12.4 focuses on public document verification, QR/code based verification, learner document visibility, and safe document authenticity checks.
+
+This stage must stay safe and incremental:
+
+- no database migrations;
+- no API contract changes unless a separate backend test is added first;
+- no authentication or RBAC weakening;
+- no production rebuild without successful local guards;
+- no secrets in docs, logs, screenshots or reports;
+- public verification must not expose private learner data beyond intended fields;
+- invalid verification codes must be handled safely;
+- revoked documents must remain visibly invalid;
+- draft documents must not be treated as valid public documents;
+- all Stage 12.1 learner-account behavior must remain green;
+- all Stage 12.2 catalog behavior must remain green;
+- all Stage 12.3 course-detail behavior must remain green;
+- every deploy must state whether frontend_runtime_changed or backend_runtime_changed.
+
+## 1. Baseline state
+
+Accepted baseline:
+
+- current git head before Stage 12.4 implementation: 006e160;
+- Stage 12.1 account UX polish was completed;
+- tag v0.1.0-stage12-1-account-ux-polish exists;
+- Stage 12.2 catalog UX polish was completed;
+- tag v0.1.0-stage12-2-catalog-ux-polish exists;
+- Stage 12.3 course detail UX polish was completed;
+- tag v0.1.0-stage12-3-course-detail-ux-polish exists;
+- public /verify-document route exists;
+- public /verify/:code route exists;
+- VerifyDocumentPage exists;
+- VerifyDocumentCodeRoute exists;
+- frontend API client exposes verifyPublicDocument;
+- frontend API client calls GET /api/v1/public/documents/verify;
+- account page displays learner documents;
+- account page has DocumentVerificationQrBlock integration;
+- account page has public verification readiness logic;
+- account page has completion document diagnostics;
+- admin documents page manages document status, file availability, revocation and publication.
+
+## 2. Product goal
+
+Goal:
+
+- make public document verification clear for external users;
+- explain what can be checked by document number, verification code or QR link;
+- show successful verification in a structured way;
+- show invalid or missing documents safely;
+- explain revoked and draft states without exposing extra data;
+- connect public verification with learner account documents;
+- keep verification public, safe and narrow.
+
+## 3. User states
+
+The document verification workflow must explicitly handle these states:
+
+- visitor opens /verify-document manually;
+- visitor opens /verify/:code from QR link;
+- visitor enters empty verification value;
+- visitor enters invalid verification value;
+- visitor enters valid document number;
+- visitor enters valid verification code;
+- verification request is loading;
+- verification request fails;
+- verified document is available;
+- verified document is revoked;
+- verified document is draft or not publicly valid;
+- learner sees available documents in account;
+- learner sees draft documents in account;
+- learner sees revoked documents in account;
+- learner has no documents yet.
+
+## 4. Public verification page contract
+
+VerifyDocumentPage must keep these behavior markers:
+
+- import verifyPublicDocument from frontend API client;
+- keep VerifyDocumentPage export;
+- keep form-based manual verification;
+- keep route based verification through VerifyDocumentCodeRoute;
+- keep safe error handling;
+- keep loading state;
+- keep result state;
+- keep input value state;
+- keep navigation to account;
+- keep navigation to catalog;
+- keep public /verify-document route;
+- keep public /verify/:code route.
+
+## 5. Account documents contract
+
+Account document workflow must keep these behavior markers:
+
+- getAccountDocuments;
+- downloadAccountDocument;
+- DocumentVerificationQrBlock;
+- hasDocumentVerificationTarget;
+- canShowPublicDocumentVerification;
+- getAccountDocumentNotice;
+- getAccountDocumentDownloadLabel;
+- canDownloadDocument;
+- CompletionDocumentsDiagnostics;
+- account-completion-documents-diagnostics;
+- account-completion-documents-summary;
+- account-completion-documents-quality;
+- account-completion-documents-attention;
+- account-completion-documents-links;
+- account-documents;
+- public verification for available documents;
+- revoked documents are not treated as valid active documents.
+
+## 6. Admin documents contract
+
+Admin document workflow must keep these behavior markers:
+
+- DocumentsPage;
+- document status editing;
+- draft status;
+- available status;
+- revoked status;
+- file upload or replacement;
+- missing file warning;
+- revocation reason;
+- document number;
+- verification code;
+- public verification depends on publication and verification target.
+
+## 7. API contract
+
+Stage 12.4 starts without API changes.
+
+Existing API calls that must remain stable:
+
+- GET /api/v1/public/documents/verify?number=...;
+- GET /api/v1/account/documents;
+- GET /api/v1/account/documents/{document_id}/download;
+- GET /api/v1/admin/documents;
+- POST /api/v1/admin/documents;
+- PATCH /api/v1/admin/documents/{document_id};
+- DELETE /api/v1/admin/documents/{document_id};
+- POST /api/v1/admin/documents/{document_id}/regenerate;
+- GET /api/v1/admin/documents/{document_id}/download;
+- GET /api/v1/admin/documents/{document_id}/generation-events.
+
+## 8. First implementation target
+
+The first safe implementation target is frontend-only public verification UX polish:
+
+- improve the /verify-document hero and explanation;
+- add a compact verification journey block;
+- clarify what data is checked;
+- clarify what invalid, revoked and unavailable states mean;
+- improve loading and empty result states;
+- keep API calls unchanged;
+- keep Stage 12.1 smoke green;
+- keep Stage 12.2 catalog guard green;
+- keep Stage 12.3 course detail guard green;
+- add source markers to guard before production deploy.
+
+## 9. Acceptance checks
+
+Local acceptance must include:
+
+- python scripts/check_stage12_4_document_verification_workflow.py;
+- python scripts/check_stage12_3_course_detail_learner_workflow.py;
+- python scripts/check_stage12_2_catalog_learner_workflow.py;
+- python scripts/smoke_stage12_1_account_workflow.py;
+- python scripts/check_stage12_1_account_contract.py;
+- python scripts/check_stage12_1_learner_account_workflow.py;
+- python scripts/check_stage12_product_roadmap.py;
+- python scripts/check_ci_local_gate.py;
+- python scripts/check_text_encoding.py;
+- python scripts/check_source_bom.py;
+- docker compose exec frontend npm run build.
+
+## 10. Production acceptance
+
+Production acceptance must include:
+
+- git head check;
+- Stage 12.4 guard passed;
+- Stage 12.3 course detail guard passed;
+- Stage 12.2 catalog guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend health healthy;
+- public /verify-document returned HTTP 200;
+- public /catalog returned HTTP 200;
+- public /account returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed must be explicit;
+- backend_runtime_changed must be explicit;
+- RESULT=PASSED.
+
+## 11. Safety boundaries
+
+Do not do these inside Stage 12.4 without a separate explicit checkpoint:
+
+- no database schema changes;
+- no document authenticity algorithm changes;
+- no QR generation backend changes;
+- no document generation template changes;
+- no permission model changes;
+- no auth token storage changes;
+- no admin document API refactor;
+- no learner account API refactor;
+- no public verification API refactor;
+- no Caddy/Nginx production config changes;
+- no production backend restart for frontend-only UX changes.
+
+## 12. Current checkpoint
+
+Current checkpoint:
+
+- Stage 12.4 document verification workflow document created;
+- Stage 12.4 document verification workflow guard created;
+- initial Stage 12.4 scope is documentation and contract only;
+- implementation has not changed runtime yet;
+- frontend_runtime_changed=no;
+- backend_runtime_changed=no.
