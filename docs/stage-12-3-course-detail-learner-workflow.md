@@ -273,3 +273,34 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_3_1_course_detail_workflow_docs_sync_20260527195749.txt
+
+## 13. Stage 12.3 course detail learner journey hint - 2026-05-27
+
+Status: implemented locally
+
+Stage 12.3 adds a frontend-only learner journey hint to the public course detail page.
+
+Implementation boundaries:
+
+- frontend-only change;
+- no database migrations;
+- no API changes;
+- no backend runtime changes;
+- no auth or RBAC changes;
+- existing self-enrollment behavior remains unchanged;
+- existing CourseSelfEnrollmentDiagnostics remains rendered;
+- existing CourseOutlineSection remains rendered;
+- existing catalog, account and verify-document navigation remains unchanged.
+
+Source markers:
+
+- CourseDetailLearnerJourneyHint;
+- course-detail-learner-journey;
+- course-detail-learner-journey-steps;
+- course-detail-learner-journey-next-step;
+- course-detail-learner-journey-primary-action;
+- course-detail-learner-journey-account-action;
+- course-detail-learner-journey-verify-action;
+- Карточка курса → запись → личный кабинет;
+- После записи курс откроется в личном кабинете;
+- CourseDetailLearnerJourneyHint is rendered before CourseSelfEnrollmentDiagnostics.

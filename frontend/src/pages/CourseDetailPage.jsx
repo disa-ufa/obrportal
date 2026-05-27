@@ -448,6 +448,134 @@ function getPrimaryActionLabel(enrollment, user) {
   return "Открыть личный кабинет";
 }
 
+
+function CourseDetailLearnerJourneyHint({
+  course,
+  existingEnrollment,
+  user,
+  enrollLoading,
+  onPrimaryAction,
+  onPageChange,
+}) {
+  const structure = getCourseStructureStats(course);
+  const enrollmentLabel = existingEnrollment
+    ? getEnrollmentStatusLabel(existingEnrollment.status)
+    : user
+      ? "Можно записаться"
+      : "Требуется регистрация";
+
+  const statusTone = existingEnrollment
+    ? getEnrollmentStatusTone(existingEnrollment.status)
+    : user
+      ? "bg-green-50 text-green-700 ring-green-200"
+      : "bg-amber-50 text-amber-800 ring-amber-200";
+
+  const nextStepText = !user
+    ? "Зарегистрируйтесь, чтобы сохранить выбранную программу и продолжить запись."
+    : existingEnrollment?.status === "completed"
+      ? "Обучение завершено. Итоговые документы доступны в личном кабинете и проверяются по публичному коду."
+      : existingEnrollment
+        ? "Курс уже есть в личном кабинете. Продолжите обучение или проверьте статус программы."
+        : "После записи курс откроется в личном кабинете, где будет доступен прогресс и итоговый документ.";
+
+  return (
+    <section
+      data-testid="course-detail-learner-journey"
+      className="rounded-[2rem] bg-slate-900 p-6 text-white shadow-sm"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-200">
+            Маршрут по программе
+          </div>
+          <h2 className="mt-2 text-2xl font-bold">
+            Карточка курса → запись → личный кабинет
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-200">
+            На этой странице можно проверить содержание программы, записаться на курс
+            или перейти к уже назначенному обучению.
+          </p>
+        </div>
+
+        <div className={`rounded-2xl px-4 py-3 text-sm font-semibold ring-1 ${statusTone}`}>
+          {enrollmentLabel}
+        </div>
+      </div>
+
+      <div
+        data-testid="course-detail-learner-journey-steps"
+        className="mt-5 grid gap-3 md:grid-cols-3"
+      >
+        {[
+          [
+            "1",
+            "Проверьте содержание",
+            `Модулей: ${structure.modulesCount}, уроков: ${structure.lessonsCount}, обязательных: ${structure.requiredLessonsCount}.`,
+          ],
+          [
+            "2",
+            "Запишитесь или войдите",
+            "Для записи нужен личный кабинет. Анонимному пользователю сначала откроется регистрация.",
+          ],
+          [
+            "3",
+            "Получите результат",
+            `После прохождения формируется итоговый документ: ${formatCourseDocument(course)}.`,
+          ],
+        ].map(([number, title, description]) => (
+          <div
+            key={number}
+            className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-slate-900">
+              {number}
+            </div>
+            <div className="mt-3 font-semibold">{title}</div>
+            <div className="mt-2 text-sm leading-6 text-slate-200">{description}</div>
+          </div>
+        ))}
+      </div>
+
+      <div
+        data-testid="course-detail-learner-journey-next-step"
+        className="mt-5 rounded-2xl bg-white/10 p-4 text-sm leading-6 text-slate-200 ring-1 ring-white/15"
+      >
+        {nextStepText}
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        <button
+          type="button"
+          data-testid="course-detail-learner-journey-primary-action"
+          onClick={onPrimaryAction}
+          disabled={enrollLoading}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {enrollLoading ? "Записываем..." : getPrimaryActionLabel(existingEnrollment, user)}
+        </button>
+
+        <button
+          type="button"
+          data-testid="course-detail-learner-journey-account-action"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
+        >
+          Личный кабинет
+        </button>
+
+        <button
+          type="button"
+          data-testid="course-detail-learner-journey-verify-action"
+          onClick={() => onPageChange("verify-document")}
+          className="rounded-full bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
+        >
+          Проверить документ
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user }) {
   const [course, setCourse] = useState(null);
   const [relatedCourses, setRelatedCourses] = useState([]);
@@ -758,6 +886,15 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           </button>
         </div>
       </section>
+
+      <CourseDetailLearnerJourneyHint
+        course={course}
+        existingEnrollment={existingEnrollment}
+        user={user}
+        enrollLoading={enrollLoading}
+        onPrimaryAction={handleEnroll}
+        onPageChange={onPageChange}
+      />
 
       <CourseSelfEnrollmentDiagnostics
         course={course}
