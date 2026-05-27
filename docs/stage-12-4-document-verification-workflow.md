@@ -233,3 +233,65 @@ Current checkpoint:
 - implementation has not changed runtime yet;
 - frontend_runtime_changed=no;
 - backend_runtime_changed=no.
+
+## 13. Stage 12.4 document verification workflow docs sync - 2026-05-27
+
+Status: accepted
+
+Stage 12.4 document verification workflow documentation and guard were synced to production and accepted.
+
+Accepted evidence:
+
+- production git head: 8131e18;
+- Stage 12.4 document verification workflow guard passed;
+- Stage 12.3 course detail learner workflow guard passed;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.3 course detail UX polish tag head verified: 5f88a8c;
+- Stage 12.4 document title marker was present;
+- Stage 12.4 baseline head marker was present;
+- Stage 12.4 guard created marker was present;
+- source marker VerifyDocumentPage was present;
+- source marker verifyPublicDocument was present;
+- source marker setLoading was present;
+- source marker setError was present;
+- source marker setResult was present;
+- API marker verifyPublicDocument was present;
+- API marker /api/v1/public/documents/verify was present;
+- API marker getAccountDocuments was present;
+- API marker downloadAccountDocument was present;
+- account marker DocumentVerificationQrBlock was present;
+- account marker canShowPublicDocumentVerification was present;
+- account marker CompletionDocumentsDiagnostics was present;
+- route marker /verify/:code was present;
+- route marker /verify-document was present;
+- route marker VerifyDocumentCodeRoute was present;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /verify-document returned HTTP 200;
+- public /catalog returned HTTP 200;
+- public /account returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=no;
+- backend_runtime_changed=no;
+- stage12_4_document_verification_workflow_docs_sync=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_4_1_document_verification_workflow_docs_sync_20260527210622.txt
