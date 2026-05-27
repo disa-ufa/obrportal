@@ -55,8 +55,9 @@ VERIFY_PAGE_MARKERS = [
     "error",
     "result",
     "onPageChange",
-    "Проверить",
-    "Документ",
+    "setResult",
+    "setError",
+    "setLoading",
 ]
 
 ACCOUNT_MARKERS = [
