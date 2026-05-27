@@ -34,6 +34,14 @@ DOC_MARKERS = [
     "GET /api/v1/public/courses/{slug}",
     "POST /api/v1/account/courses/{course_id}/enroll",
     "Stage 12.2 catalog learner workflow guard created",
+    "/opt/obrportal/tmp/stage_12_2_1_catalog_workflow_docs_sync_unicode_retry_20260527190258.txt",
+    "stage12_2_catalog_workflow_docs_sync=passed",
+    "source marker pending enrollment slug was present",
+    "source marker course self-enrollment diagnostics was present",
+    "source marker catalog action enroll was present",
+    "source marker catalog diagnostics was present",
+    "production git head: 392bc53",
+    "Stage 12.2 catalog workflow docs sync - 2026-05-27",
 ]
 
 CATALOG_MARKERS = [

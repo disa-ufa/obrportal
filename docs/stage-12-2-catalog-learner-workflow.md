@@ -220,3 +220,57 @@ Current checkpoint:
 - implementation has not changed runtime yet;
 - frontend_runtime_changed=no;
 - backend_runtime_changed=no.
+
+## 13. Stage 12.2 catalog workflow docs sync - 2026-05-27
+
+Status: accepted
+
+Stage 12.2 catalog learner workflow documentation and guard were synced to production and accepted.
+
+Accepted evidence:
+
+- production git head: 392bc53;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- source marker catalog diagnostics was present;
+- source marker catalog public diagnostics test id was present;
+- source marker catalog action enroll was present;
+- source marker catalog action account was present;
+- source marker catalog completed status was present;
+- source marker catalog open course was present;
+- source marker catalog account link was present;
+- source marker catalog verify document link was present;
+- source marker course self-enrollment diagnostics was present;
+- source marker pending enrollment slug was present;
+- source marker course register and enroll action was present;
+- source marker course account action was present;
+- source marker course conflict handling was present;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /catalog returned HTTP 200;
+- public /account returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=no;
+- backend_runtime_changed=no;
+- stage12_2_catalog_workflow_docs_sync=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_2_1_catalog_workflow_docs_sync_unicode_retry_20260527190258.txt
