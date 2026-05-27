@@ -45,6 +45,13 @@ Access rules:
 - organization-only data must not be exposed on learner pages;
 - object-level access control must be preserved.
 
+Additional learner data safety rules:
+
+- learner pages must not expose admin-only data;
+- learner pages must not expose organization-only data;
+- learner document state must not expose documents of other users;
+- learner enrollment state must not expose enrollments of other users.
+
 ## 4. Learner account page requirements
 
 The account page should show:
