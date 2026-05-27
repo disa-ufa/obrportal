@@ -515,3 +515,23 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_1_14_account_card_visuals_guard_sync_20260527182517.txt
+
+## 21. Stage 12.1 account UX polish checkpoint tag - 2026-05-27
+
+Status: accepted
+
+Stage 12.1 account UX polish checkpoint tag was created and pushed to the remote repository.
+
+Accepted evidence:
+
+- checkpoint tag: v0.1.0-stage12-1-account-ux-polish;
+- tagged git head: 4f1ffec;
+- tag message: Stage 12.1 account UX polish checkpoint: empty states, card visuals, guards, runtime smoke and production deploy;
+- tag was pushed to origin;
+- develop, origin/develop, main and origin/main were aligned at 4f1ffec;
+- Stage 12.1 account empty states UX improvement was deployed and accepted;
+- Stage 12.1 account card visuals UX improvement was deployed and accepted;
+- Stage 12.1 account empty states guard was accepted;
+- Stage 12.1 account card visuals guard was accepted;
+- Stage 12.1 runtime account workflow smoke was accepted;
+- production docs sync passed before tag creation.
