@@ -424,3 +424,50 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_1_10_account_empty_states_guard_fix_sync_20260527175921.txt
+
+## 19. Stage 12.1 account card visuals frontend deploy - 2026-05-27
+
+Status: accepted
+
+Stage 12.1 account course and document card visual improvement was deployed to the production static frontend and accepted.
+
+Accepted evidence:
+
+- production git head: 64fd637;
+- source marker account card hover shadow was present;
+- source marker account card title typography was present;
+- source marker account card grid spacing was present;
+- source marker account document primary download button was present;
+- frontend static image was rebuilt;
+- frontend container was recreated;
+- frontend health became healthy;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.1 account workflow smoke passed;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /account returned HTTP 200;
+- public /catalog returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=yes;
+- backend_runtime_changed=no;
+- stage12_1_account_card_visuals_frontend_deploy=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_1_12_account_card_visuals_frontend_deploy_20260527181525.txt
