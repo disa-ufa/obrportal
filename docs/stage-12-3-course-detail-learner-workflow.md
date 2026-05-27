@@ -1,0 +1,217 @@
+# Stage 12.3. Course detail learner workflow
+
+Status: in progress
+
+Stage 12.3 focuses on the public course detail page and the learner journey from course detail to registration, self-enrollment, account progress and document verification.
+
+This stage must stay safe and incremental:
+
+- no database migrations;
+- no API contract changes unless a separate backend test is added first;
+- no authentication or RBAC weakening;
+- no production rebuild without successful local guards;
+- no secrets in docs, logs, screenshots or reports;
+- all frontend changes must preserve existing public routes;
+- all Stage 12.1 learner-account behavior must remain green;
+- all Stage 12.2 catalog behavior must remain green;
+- production sync must be documented only after successful smoke;
+- every UX change must have source markers and a guard;
+- every deploy must state whether frontend_runtime_changed or backend_runtime_changed.
+
+## 1. Baseline state
+
+Accepted baseline:
+
+- current git head before Stage 12.3 implementation: 4fd61c4;
+- Stage 12.1 account UX polish was completed;
+- tag v0.1.0-stage12-1-account-ux-polish exists;
+- Stage 12.2 catalog UX polish was completed;
+- tag v0.1.0-stage12-2-catalog-ux-polish exists;
+- public /courses/:slug route exists;
+- public /catalog route exists;
+- public /account route exists;
+- public /verify-document route exists;
+- CourseDetailPage loads public course detail through getPublicCourseDetail;
+- CourseDetailPage loads related public courses through getPublicCourses;
+- CourseDetailPage loads learner enrollments through getAccountCourses when user is authenticated;
+- CourseDetailPage supports self-enrollment through enrollAccountCourse;
+- CourseDetailPage stores obrportal_pending_enrollment_slug for anonymous registration flow;
+- CourseDetailPage handles 409 enrollment conflict;
+- CourseDetailPage renders CourseSelfEnrollmentDiagnostics;
+- CourseDetailPage renders CourseOutlineSection;
+- CourseDetailPage keeps navigation to catalog, account and verify-document.
+
+## 2. Product goal
+
+Goal:
+
+- make the course detail page more understandable for learners;
+- explain what the learner receives after enrollment;
+- clarify the next action for anonymous users, learners without enrollment, active learners and completed learners;
+- make the relationship between course detail, catalog, account and document verification obvious;
+- keep self-enrollment behavior safe and predictable;
+- preserve all existing Stage 12.1 and Stage 12.2 behavior.
+
+## 3. User states
+
+The course detail workflow must explicitly handle these states:
+
+- anonymous visitor;
+- authenticated learner without enrollment;
+- authenticated learner with assigned enrollment;
+- authenticated learner with active enrollment;
+- authenticated learner with completed enrollment;
+- authenticated learner with cancelled enrollment;
+- loading course detail;
+- course detail not found;
+- course with no modules;
+- course with modules but no lessons;
+- course with optional lessons only;
+- self-enrollment loading;
+- self-enrollment success;
+- self-enrollment error;
+- self-enrollment conflict 409.
+
+## 4. Course detail page contract
+
+CourseDetailPage must keep these behavior markers:
+
+- import getPublicCourseDetail from frontend API client;
+- import getPublicCourses from frontend API client;
+- import getAccountCourses from frontend API client;
+- import enrollAccountCourse from frontend API client;
+- keep formatApiError for API errors;
+- keep formatCourseDocument;
+- keep formatCoursePrice;
+- keep getEnrollmentStatusLabel;
+- keep getEnrollmentStatusTone;
+- keep getCourseLessonTypeLabel;
+- keep getCourseStructureStats;
+- keep getCourseDetailDiagnostics;
+- keep CourseSelfEnrollmentDiagnostics;
+- keep CourseOutlineSection;
+- keep getPrimaryActionLabel;
+- keep action label Зарегистрироваться и записаться;
+- keep action label Записаться;
+- keep action label Открыть личный кабинет;
+- keep action label Посмотреть документы в кабинете;
+- keep pending enrollment slug obrportal_pending_enrollment_slug;
+- keep successful enrollment message Курс добавлен в личный кабинет;
+- keep 409 enrollment conflict handling;
+- keep not found fallback Программа не найдена;
+- keep loading state Загружаем карточку программы;
+- keep navigation back to catalog;
+- keep navigation to account;
+- keep navigation to verify-document;
+- keep related courses navigation through onOpenCourse(item.slug).
+
+## 5. Route contract
+
+Public routing must preserve:
+
+- /courses/:slug;
+- /catalog;
+- /account;
+- /login;
+- /register;
+- /verify-document;
+- PublicRoutes;
+- CourseDetailPublicRoute;
+- handleNavigatePublicPage;
+- handleOpenPublicCourse.
+
+## 6. API contract
+
+Stage 12.3 starts without API changes.
+
+Existing API calls that must remain stable:
+
+- GET /api/v1/public/courses;
+- GET /api/v1/public/courses/{slug};
+- GET /api/v1/account/courses;
+- POST /api/v1/account/courses/{course_id}/enroll;
+- GET /api/v1/account/summary;
+- GET /api/v1/account/documents;
+- GET /api/v1/account/documents/{document_id}/download.
+
+## 7. First implementation target
+
+The first safe implementation target is frontend-only course detail UX polish:
+
+- improve the hero/next-step explanation;
+- add a compact learner journey block for course detail;
+- clarify what happens after enrollment;
+- clarify document verification after completion;
+- keep all API calls unchanged;
+- keep Stage 12.1 smoke green;
+- keep Stage 12.2 catalog guard green;
+- add source markers to guard before production deploy.
+
+## 8. Acceptance checks
+
+Local acceptance must include:
+
+- python scripts/check_stage12_3_course_detail_learner_workflow.py;
+- python scripts/check_stage12_2_catalog_learner_workflow.py;
+- python scripts/smoke_stage12_1_account_workflow.py;
+- python scripts/check_stage12_1_account_contract.py;
+- python scripts/check_stage12_1_learner_account_workflow.py;
+- python scripts/check_stage12_product_roadmap.py;
+- python scripts/check_ci_local_gate.py;
+- python scripts/check_text_encoding.py;
+- python scripts/check_source_bom.py;
+- docker compose exec frontend npm run build.
+
+## 9. Production acceptance
+
+Production acceptance must include:
+
+- git head check;
+- tag check when relevant;
+- Stage 12.3 guard passed;
+- Stage 12.2 catalog guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend health healthy;
+- public /catalog returned HTTP 200;
+- public /account returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed must be explicit;
+- backend_runtime_changed must be explicit;
+- RESULT=PASSED.
+
+## 10. Safety boundaries
+
+Do not do these inside Stage 12.3 without a separate explicit checkpoint:
+
+- no database schema changes;
+- no auth token storage changes;
+- no permission model changes;
+- no admin API refactor;
+- no learner account API refactor;
+- no public course API refactor;
+- no document generation changes;
+- no Caddy/Nginx production config changes;
+- no production backend restart for frontend-only UX changes.
+
+## 11. Current checkpoint
+
+Current checkpoint:
+
+- Stage 12.3 course detail learner workflow document created;
+- Stage 12.3 course detail learner workflow guard created;
+- initial Stage 12.3 scope is documentation and contract only;
+- implementation has not changed runtime yet;
+- frontend_runtime_changed=no;
+- backend_runtime_changed=no.
