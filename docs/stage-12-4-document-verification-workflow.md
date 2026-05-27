@@ -295,3 +295,37 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_4_1_document_verification_workflow_docs_sync_20260527210622.txt
+
+## 14. Stage 12.4 public verification journey hint - 2026-05-28
+
+Status: implemented locally
+
+Stage 12.4 adds a frontend-only public verification journey hint to make the /verify-document page clearer before the user submits a document number, verification code or QR-derived code.
+
+Implementation boundaries:
+
+- frontend-only change;
+- no database migrations;
+- no API changes;
+- no backend runtime changes;
+- no auth or RBAC changes;
+- existing verifyPublicDocument API call remains unchanged;
+- existing /verify-document route remains unchanged;
+- existing /verify/:code route remains unchanged;
+- existing loading, error, not found and result states remain unchanged;
+- existing PublicVerificationDiagnostics remains rendered;
+- existing PublicVerificationQrOperationsPanel remains rendered;
+- existing ResultCard remains rendered.
+
+Source markers:
+
+- PublicVerificationJourneyHint;
+- public-verification-journey;
+- public-verification-journey-title;
+- public-verification-journey-steps;
+- public-verification-journey-current-state;
+- public-verification-journey-safe-data;
+- public-verification-journey-account-action;
+- public-verification-journey-catalog-action;
+- Проверка документа → код/номер → результат;
+- Публичная проверка не открывает файл документа.

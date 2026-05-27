@@ -218,6 +218,144 @@ function getPublicVerificationSourceStats({
   };
 }
 
+
+function PublicVerificationJourneyHint({
+  normalizedQuery,
+  submittedQuery,
+  result,
+  loading,
+  error,
+  notFound,
+  onPageChange,
+}) {
+  const hasQuery = Boolean(normalizedQuery || submittedQuery);
+
+  const currentState = result
+    ? result.registry_status === "available"
+      ? "Документ подтверждён"
+      : result.registry_status === "revoked"
+        ? "Документ отозван"
+        : "Документ требует уточнения"
+    : notFound
+      ? "Документ не найден"
+      : error
+        ? "Ошибка проверки"
+        : loading
+          ? "Проверяем реестр"
+          : hasQuery
+            ? "Запрос готов к проверке"
+            : "Ожидаем номер или код";
+
+  const nextAction = result
+    ? "Сверьте номер, владельца, программу и статус документа."
+    : notFound
+      ? "Проверьте введённый номер или код и при необходимости обратитесь в организацию."
+      : error
+        ? "Повторите проверку позже или уточните статус документа у организации."
+        : loading
+          ? "Дождитесь ответа публичного реестра."
+          : hasQuery
+            ? "Нажмите кнопку проверки, чтобы получить результат."
+            : "Введите номер документа, код проверки или откройте QR-ссылку.";
+
+  const steps = [
+    {
+      title: "1. Номер или код",
+      text: "Введите номер документа, код проверки или перейдите по QR-ссылке из выданного документа.",
+    },
+    {
+      title: "2. Публичный реестр",
+      text: "Страница отправляет только проверочное значение и получает публичный статус документа.",
+    },
+    {
+      title: "3. Результат",
+      text: "Показываем статус, номер, программу, владельца и организацию без выдачи файла документа.",
+    },
+  ];
+
+  return (
+    <section
+      data-testid="public-verification-journey"
+      className="rounded-[2rem] bg-gradient-to-br from-blue-50 via-white to-slate-50 p-6 shadow-sm ring-1 ring-blue-100 md:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Сценарий проверки
+          </div>
+          <h2
+            data-testid="public-verification-journey-title"
+            className="mt-2 text-2xl font-bold text-slate-900"
+          >
+            Проверка документа → код/номер → результат
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+            Публичная проверка помогает быстро подтвердить статус документа,
+            не открывая личный кабинет и не раскрывая файл документа.
+          </p>
+        </div>
+
+        <div
+          data-testid="public-verification-journey-current-state"
+          className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200"
+        >
+          {currentState}
+        </div>
+      </div>
+
+      <div
+        data-testid="public-verification-journey-steps"
+        className="mt-6 grid gap-3 md:grid-cols-3"
+      >
+        {steps.map((step) => (
+          <div
+            key={step.title}
+            className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="text-sm font-bold text-slate-900">{step.title}</div>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{step.text}</p>
+          </div>
+        ))}
+      </div>
+
+      <div
+        data-testid="public-verification-journey-safe-data"
+        className="mt-5 rounded-2xl bg-white p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
+      >
+        <div className="font-semibold text-slate-900">
+          Публичная проверка не открывает файл документа
+        </div>
+        <p className="mt-1">
+          Она показывает только сведения, необходимые для подтверждения
+          подлинности: статус, номер, код проверки, программу, владельца и
+          организацию-издателя.
+        </p>
+        <p className="mt-2 font-semibold text-slate-900">{nextAction}</p>
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        <button
+          type="button"
+          data-testid="public-verification-journey-account-action"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          Личный кабинет
+        </button>
+
+        <button
+          type="button"
+          data-testid="public-verification-journey-catalog-action"
+          onClick={() => onPageChange("catalog")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Каталог курсов
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function PublicVerificationQrOperationsPanel({
   sourceStats,
   onPageChange,
@@ -698,6 +836,16 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
           {RU.intro}
         </p>
       </section>
+
+      <PublicVerificationJourneyHint
+        normalizedQuery={normalizedQuery}
+        submittedQuery={submittedQuery}
+        result={result}
+        loading={loading}
+        error={error}
+        notFound={notFound}
+        onPageChange={onPageChange}
+      />
 
       <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <form onSubmit={handleSubmit} className="grid gap-3 lg:grid-cols-[1fr_auto]">

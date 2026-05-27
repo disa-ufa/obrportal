@@ -64,6 +64,11 @@ DOC_MARKERS = [
     "Stage 12.4 document verification workflow guard passed",
     "production git head: 8131e18",
     "Stage 12.4 document verification workflow docs sync - 2026-05-27",
+    "no backend runtime changes",
+    "no API changes",
+    "frontend-only change",
+    "Stage 12.4 adds a frontend-only public verification journey hint",
+    "Stage 12.4 public verification journey hint - 2026-05-28",
 ]
 
 VERIFY_PAGE_MARKERS = [
@@ -77,6 +82,17 @@ VERIFY_PAGE_MARKERS = [
     "setResult",
     "setError",
     "setLoading",
+    "<PublicVerificationJourneyHint",
+    "Публичная проверка не открывает файл документа",
+    "Проверка документа → код/номер → результат",
+    "public-verification-journey-catalog-action",
+    "public-verification-journey-account-action",
+    "public-verification-journey-safe-data",
+    "public-verification-journey-current-state",
+    "public-verification-journey-steps",
+    "public-verification-journey-title",
+    "public-verification-journey",
+    "PublicVerificationJourneyHint",
 ]
 
 ACCOUNT_MARKERS = [
