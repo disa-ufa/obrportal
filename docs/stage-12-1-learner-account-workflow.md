@@ -471,3 +471,47 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_1_12_account_card_visuals_frontend_deploy_20260527181525.txt
+
+## 20. Stage 12.1 account card visuals guard sync - 2026-05-27
+
+Status: accepted
+
+Stage 12.1 account card visual markers were added to the account contract guard and verified on production.
+
+Accepted evidence:
+
+- production git head: 3d5da81;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.1 account workflow smoke passed;
+- source marker account card hover shadow was present;
+- source marker account card title typography was present;
+- source marker account card grid spacing was present;
+- source marker account document primary download button was present;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /account returned HTTP 200;
+- public /catalog returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=no;
+- backend_runtime_changed=no;
+- stage12_1_account_card_visuals_guard_sync=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_1_14_account_card_visuals_guard_sync_20260527182517.txt
