@@ -314,3 +314,48 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_1_5_account_workflow_smoke_server_check_seeded_retry_20260527170759.txt
+
+## 16. Stage 12.1 account empty states frontend deploy result - 2026-05-27
+
+Status: accepted
+
+Stage 12.1 account empty states UX improvement was deployed to the production static frontend and accepted.
+
+Accepted evidence:
+
+- production git head: 701e6a8;
+- frontend source marker AccountEmptyState was present;
+- frontend source marker amber tone was present;
+- frontend source marker course filter reset was present;
+- frontend source marker document filter reset was present;
+- frontend source marker documents empty link was present;
+- frontend static image was rebuilt;
+- frontend container was recreated;
+- frontend health became healthy;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- public /account returned HTTP 200;
+- public /catalog returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- secrets_printed=no;
+- frontend_runtime_changed=already_deployed;
+- backend_runtime_changed=no;
+- stage12_1_account_empty_states_frontend_deploy=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_1_7_account_empty_states_frontend_deploy_ascii_retry_20260527172748.txt
