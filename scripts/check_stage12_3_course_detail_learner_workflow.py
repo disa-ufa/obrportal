@@ -52,6 +52,7 @@ COURSE_DETAIL_MARKERS = [
     "getCourseStructureStats",
     "getCourseDetailDiagnostics",
     "CourseSelfEnrollmentDiagnostics",
+    "CourseDetailPage",
     "CourseOutlineSection",
     "getPrimaryActionLabel",
     "course-self-enrollment-diagnostics",
@@ -96,7 +97,6 @@ ROUTE_MARKERS = [
     'path="/courses/:slug"',
     "handleNavigatePublicPage",
     "handleOpenPublicCourse",
-    "CourseDetailPage",
 ]
 
 def read(path: Path) -> str:
