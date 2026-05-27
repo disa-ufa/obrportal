@@ -535,3 +535,48 @@ Accepted evidence:
 - Stage 12.1 account card visuals guard was accepted;
 - Stage 12.1 runtime account workflow smoke was accepted;
 - production docs sync passed before tag creation.
+
+## 22. Stage 12.1 account UX polish tag docs sync - 2026-05-27
+
+Status: accepted
+
+Stage 12.1 account UX polish checkpoint documentation was synced to production and accepted.
+
+Accepted evidence:
+
+- production git head: d4134c2;
+- checkpoint tag: v0.1.0-stage12-1-account-ux-polish;
+- checkpoint tag head: 4f1ffec;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.1 account workflow smoke passed;
+- source marker AccountEmptyState was present;
+- source marker account card hover shadow was present;
+- source marker account card title typography was present;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /account returned HTTP 200;
+- public /catalog returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=no;
+- backend_runtime_changed=no;
+- stage12_1_account_ux_polish_tag_docs_sync=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_1_16_account_ux_polish_tag_docs_sync_20260527184003.txt
