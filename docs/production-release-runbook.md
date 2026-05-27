@@ -1,6 +1,6 @@
 # Production release runbook
 
-Status: drafted
+Status: accepted
 Stage: 11.4
 Production domain: portal.rcdo02.ru
 Production server: 89.127.203.70
@@ -195,3 +195,41 @@ Production release is accepted when:
 - public /api/v1/ready returns database=ok, redis=ok, storage=ok;
 - no secrets are printed;
 - release report is created.
+
+## 12. Server release runbook check result - 2026-05-27
+
+Status: accepted
+
+Production release runbook was checked on the production server and accepted.
+
+Accepted evidence:
+
+- production git head after sync: 6971ec7;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- server git status contained only allowed server-only files;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- alembic current: 6421_org_doc_profile (head);
+- alembic heads: 6421_org_doc_profile (head);
+- local /healthz returned ok;
+- local /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- public / returned HTTP 200;
+- public /login returned HTTP 200;
+- public /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- internal ports 5173, 8000, 5432, 6379, 9000 and 9001 were bound to 127.0.0.1;
+- Docker service was enabled and active;
+- Caddy service was enabled and active;
+- secrets_printed=no;
+- release_runbook_server_check=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_11_4_1_release_runbook_server_check_20260527145103.txt

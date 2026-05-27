@@ -8,7 +8,7 @@ DOC = ROOT / "docs" / "production-release-runbook.md"
 
 REQUIRED_MARKERS = [
     "# Production release runbook",
-    "Status: drafted",
+    "Status: accepted",
     "Stage: 11.4",
     "Production domain: portal.rcdo02.ru",
     "Production hardened tag: v0.1.0-stage10-production-hardened",
@@ -50,6 +50,20 @@ REQUIRED_MARKERS = [
     "/opt/obrportal/tmp",
     "secrets_printed=no",
     "release report is created",
+    "/opt/obrportal/tmp/stage_11_4_1_release_runbook_server_check_20260527145103.txt",
+    "release_runbook_server_check=passed",
+    "Caddy service was enabled and active",
+    "Docker service was enabled and active",
+    "internal ports 5173, 8000, 5432, 6379, 9000 and 9001 were bound to 127.0.0.1",
+    "public /admin returned HTTP 200",
+    "public /login returned HTTP 200",
+    "public / returned HTTP 200",
+    "alembic heads: 6421_org_doc_profile (head)",
+    "alembic current: 6421_org_doc_profile (head)",
+    "server git status contained only allowed server-only files",
+    "production release runbook guard passed",
+    "production git head after sync: 6971ec7",
+    "Server release runbook check result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [
