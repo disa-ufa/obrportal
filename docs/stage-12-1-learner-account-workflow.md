@@ -1,6 +1,6 @@
 # Stage 12.1 learner account workflow
 
-Status: drafted
+Status: accepted
 Stage: 12.1
 Project: ObrPortal
 Parent roadmap: docs/stage-12-product-roadmap.md
@@ -185,3 +185,41 @@ Before merging Stage 12.1 implementation, run:
 - python scripts/check_source_bom.py;
 - docker compose exec frontend npm run build;
 - docker compose exec backend pytest app/tests -q.
+
+## 13. Stage 12.1 learner workflow server check result - 2026-05-27
+
+Status: accepted
+
+Stage 12.1 learner account workflow was checked on the production server and accepted.
+
+Accepted evidence:
+
+- production git head after sync: 60f7f91;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- local /healthz returned ok;
+- local /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- public / returned HTTP 200;
+- public /login returned HTTP 200;
+- public /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- Docker service was enabled and active;
+- Caddy service was enabled and active;
+- secrets_printed=no;
+- stage12_1_learner_workflow_server_check=passed;
+- production_runtime_changed=no.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_1_1_learner_workflow_server_check_20260527153049.txt

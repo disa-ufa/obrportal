@@ -8,7 +8,7 @@ DOC = ROOT / "docs" / "stage-12-1-learner-account-workflow.md"
 
 REQUIRED_MARKERS = [
     "# Stage 12.1 learner account workflow",
-    "Status: drafted",
+    "Status: accepted",
     "Stage: 12.1",
     "Parent roadmap: docs/stage-12-product-roadmap.md",
     "Production baseline tag: v0.1.0-stage11-operations-baseline",
@@ -46,6 +46,18 @@ REQUIRED_MARKERS = [
     "python scripts/check_stage12_1_learner_account_workflow.py",
     "docker compose exec frontend npm run build",
     "docker compose exec backend pytest app/tests -q",
+    "/opt/obrportal/tmp/stage_12_1_1_learner_workflow_server_check_20260527153049.txt",
+    "production_runtime_changed=no",
+    "stage12_1_learner_workflow_server_check=passed",
+    "public /admin returned HTTP 200",
+    "public /login returned HTTP 200",
+    "public / returned HTTP 200",
+    "local /healthz returned ok",
+    "frontend image: obrportal-frontend-static:prod",
+    "Stage 12 product roadmap guard passed",
+    "Stage 12.1 learner account workflow guard passed",
+    "production git head after sync: 60f7f91",
+    "Stage 12.1 learner workflow server check result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [
