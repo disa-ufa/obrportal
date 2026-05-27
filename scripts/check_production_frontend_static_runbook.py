@@ -51,6 +51,19 @@ REQUIRED_MARKERS = [
     "static_frontend_after_restart=yes",
     "controlled_restart_verified=yes",
     "Controlled restart verification result - 2026-05-27",
+    "public_surface_audit_server_side=passed",
+    "external_internal_ports_closed=yes",
+    "compose_ports_localhost_only=yes",
+    "Docker Compose published ports are bound to 127.0.0.1 only",
+    "9001/tcp MinIO console: closed",
+    "9000/tcp MinIO API: closed",
+    "6379/tcp Redis: closed",
+    "5432/tcp Postgres: closed",
+    "8000/tcp backend internal: closed",
+    "5173/tcp frontend internal: closed",
+    "443/tcp HTTPS/Caddy: open",
+    "22/tcp SSH: open",
+    "Production public surface audit result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [

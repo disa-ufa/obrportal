@@ -223,3 +223,47 @@ Accepted production reports:
 
 - /opt/obrportal/tmp/stage_10_14_1_controlled_container_restart_20260527130633.txt
 - /opt/obrportal/tmp/stage_10_14_2_controlled_restart_stable_health_20260527130858.txt
+
+## 14. Production public surface audit result - 2026-05-27
+
+Status: accepted
+
+Production public surface audit was completed and accepted.
+
+Accepted external surface from client:
+
+- 22/tcp SSH: open;
+- 80/tcp HTTP/Caddy: open;
+- 443/tcp HTTPS/Caddy: open;
+- 5173/tcp frontend internal: closed;
+- 8000/tcp backend internal: closed;
+- 5432/tcp Postgres: closed;
+- 6379/tcp Redis: closed;
+- 9000/tcp MinIO API: closed;
+- 9001/tcp MinIO console: closed.
+
+Accepted server-side evidence:
+
+- Docker Compose published ports are bound to 127.0.0.1 only;
+- frontend port 5173 is bound to 127.0.0.1 only;
+- backend port 8000 is bound to 127.0.0.1 only;
+- Postgres port 5432 is bound to 127.0.0.1 only;
+- Redis port 6379 is bound to 127.0.0.1 only;
+- MinIO ports 9000 and 9001 are bound to 127.0.0.1 only;
+- Caddy listens publicly on 80/tcp and 443/tcp;
+- SSH listens publicly on 22/tcp;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- restart policy for postgres, redis, minio, backend and frontend: unless-stopped;
+- local /healthz returned ok;
+- public /, /login and /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- compose_ports_localhost_only=yes;
+- external_internal_ports_closed=yes;
+- public_surface_audit_server_side=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_10_15_1_public_surface_audit_20260527132138.txt
