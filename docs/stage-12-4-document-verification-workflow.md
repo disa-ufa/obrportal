@@ -329,3 +329,70 @@ Source markers:
 - public-verification-journey-catalog-action;
 - Проверка документа → код/номер → результат;
 - Публичная проверка не открывает файл документа.
+
+## 15. Stage 12.4 public verification journey frontend deploy - 2026-05-27
+
+Status: accepted
+
+Stage 12.4 public verification journey hint was deployed to the production static frontend and accepted.
+
+Accepted evidence:
+
+- production git head: b9c18bf;
+- Stage 12.4 document verification workflow guard passed;
+- Stage 12.3 course detail learner workflow guard passed;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.3 course detail UX polish tag head verified: 5f88a8c;
+- source marker PublicVerificationJourneyHint was present;
+- source marker PublicVerificationJourneyHint render was present;
+- source marker public-verification-journey was present;
+- source marker public-verification-journey-title was present;
+- source marker public-verification-journey-steps was present;
+- source marker public-verification-journey-current-state was present;
+- source marker public-verification-journey-safe-data was present;
+- source marker public-verification-journey-account-action was present;
+- source marker public-verification-journey-catalog-action was present;
+- source marker verifyPublicDocument(value) was unchanged;
+- source marker PublicVerificationDiagnostics remained rendered;
+- source marker PublicVerificationQrOperationsPanel remained rendered;
+- source marker ResultCard remained rendered;
+- source marker public verification heading was present;
+- source marker public verification safe data text was present;
+- doc marker public verification journey section was present;
+- doc marker frontend-only boundary was present;
+- doc marker no API changes was present;
+- doc marker no backend runtime changes was present;
+- frontend static image was rebuilt;
+- frontend container was recreated;
+- frontend health became healthy;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /verify-document returned HTTP 200;
+- public /verify/DOCV-SMOKE returned HTTP 200;
+- public /catalog returned HTTP 200;
+- public /account returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=yes;
+- backend_runtime_changed=no;
+- stage12_4_public_verification_journey_frontend_deploy=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_4_3_public_verification_journey_frontend_deploy_20260527212724.txt
