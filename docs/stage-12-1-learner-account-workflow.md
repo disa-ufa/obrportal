@@ -359,3 +359,22 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_1_7_account_empty_states_frontend_deploy_ascii_retry_20260527172748.txt
+
+## 17. Stage 12.1 account baseline checkpoint tag - 2026-05-27
+
+Status: accepted
+
+Stage 12.1 account baseline checkpoint tag was created and pushed to the remote repository.
+
+Accepted evidence:
+
+- checkpoint tag: v0.1.0-stage12-1-account-baseline;
+- tagged git head: de466a2;
+- tag message: Stage 12.1 account baseline checkpoint: workflow docs, account contract guard, runtime smoke, empty states UX and production deploy;
+- tag was pushed to origin;
+- develop, origin/develop, main and origin/main were aligned at de466a2;
+- Stage 12.1 workflow documentation was accepted;
+- Stage 12.1 account contract guard was accepted;
+- Stage 12.1 runtime account workflow smoke was accepted;
+- Stage 12.1 account empty states UX improvement was deployed and accepted;
+- production final docs sync passed before tag creation.
