@@ -1811,7 +1811,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
             {visibleCourses.map((course) => (
               <article
                 key={course.enrollment_id}
-                className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
+                className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span
@@ -1829,7 +1829,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   )}
                 </div>
 
-                <h2 className="mt-4 text-2xl font-bold text-slate-900">
+                <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-950">
                   {course.course_title}
                 </h2>
 
@@ -1839,8 +1839,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   </p>
                 )}
 
-                <div className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <div className="mt-5 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                     <div className="text-xs uppercase tracking-wide text-slate-500">
                       Часы
                     </div>
@@ -1849,7 +1849,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                     <div className="text-xs uppercase tracking-wide text-slate-500">
                       Итоговый документ
                     </div>
@@ -1858,7 +1858,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                     <div className="text-xs uppercase tracking-wide text-slate-500">
                       Организация
                     </div>
@@ -1867,7 +1867,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                     <div className="text-xs uppercase tracking-wide text-slate-500">
                       Группа
                     </div>
@@ -1878,8 +1878,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                 </div>
 
                 {(course.started_at || course.completed_at) && (
-                  <div className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                  <div className="mt-5 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
+                    <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                       <div className="text-xs uppercase tracking-wide text-slate-500">
                         Начато
                       </div>
@@ -1888,7 +1888,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                       </div>
                     </div>
 
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                    <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                       <div className="text-xs uppercase tracking-wide text-slate-500">
                         Завершено
                       </div>
@@ -2038,7 +2038,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
               return (
                 <article
                 key={documentItem.id}
-                className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
+                className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span
@@ -2068,7 +2068,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   </span>
                 </div>
 
-                <h2 className="mt-4 text-2xl font-bold text-slate-900">
+                <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-950">
                   {documentItem.title}
                 </h2>
 
@@ -2077,8 +2077,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                   <p className="mt-1 leading-6">{documentNotice.text}</p>
                 </div>
 
-                <div className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <div className="mt-5 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                     <div className="text-xs uppercase tracking-wide text-slate-500">
                       Номер документа
                     </div>
@@ -2087,7 +2087,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                     <div className="text-xs uppercase tracking-wide text-slate-500">
                       Код проверки
                     </div>
@@ -2096,7 +2096,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                     <div className="text-xs uppercase tracking-wide text-slate-500">
                       Курс
                     </div>
@@ -2107,7 +2107,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                 </div>
 
                 {documentItem.status === "revoked" && (
-                  <div className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+                  <div className="mt-5 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
                     <div className="rounded-2xl bg-red-50 p-4 text-red-800 ring-1 ring-red-200">
                       <div className="text-xs font-semibold uppercase tracking-wide text-red-600">
                         {"\u0414\u0430\u0442\u0430 \u043e\u0442\u0437\u044b\u0432\u0430"}
@@ -2157,7 +2157,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
                     type="button"
                     onClick={() => handleDownload(documentItem.id)}
                     disabled={!downloadAvailable || downloadLoadingId === documentItem.id}
-                    className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white ring-1 ring-slate-900 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {downloadLoadingId === documentItem.id
                       ? "Готовим..."
