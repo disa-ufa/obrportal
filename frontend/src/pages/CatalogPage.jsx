@@ -300,6 +300,96 @@ function CatalogDiagnostics({
   );
 }
 
+
+function CatalogLearnerJourneyHint({ user, accountCourses, onPageChange }) {
+  const enrollments = Array.isArray(accountCourses) ? accountCourses : [];
+  const assignedCount = countWhere(enrollments, (course) => course.status === "assigned");
+  const activeCount = countWhere(enrollments, (course) => course.status === "active");
+  const completedCount = countWhere(enrollments, (course) => course.status === "completed");
+
+  const primaryActionLabel = user
+    ? enrollments.length > 0
+      ? "Открыть мои программы"
+      : "Открыть личный кабинет"
+    : "Войти или зарегистрироваться";
+
+  const primaryActionPage = user ? "account" : "register";
+
+  const statusText = user
+    ? enrollments.length > 0
+      ? `В кабинете: назначено ${assignedCount}, в процессе ${activeCount}, завершено ${completedCount}.`
+      : "После записи программа появится в личном кабинете."
+    : "После регистрации выбранная программа будет сохранена и доступна для записи.";
+
+  return (
+    <section
+      data-testid="catalog-learner-journey"
+      className="rounded-[2rem] bg-slate-900 p-6 text-white shadow-sm"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-200">
+            Маршрут обучения
+          </div>
+          <h2 className="mt-2 text-2xl font-bold">
+            Каталог → карточка курса → личный кабинет
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-200">
+            Выберите программу в каталоге, откройте подробную карточку, запишитесь или
+            перейдите к уже назначенному обучению в личном кабинете.
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white ring-1 ring-white/20">
+          {statusText}
+        </div>
+      </div>
+
+      <div
+        data-testid="catalog-learner-journey-steps"
+        className="mt-5 grid gap-3 md:grid-cols-3"
+      >
+        {[
+          ["1", "Выберите программу", "Используйте поиск и фильтр формата, чтобы найти подходящий курс."],
+          ["2", "Откройте карточку", "Посмотрите описание, объём, документ и структуру обучения."],
+          ["3", "Продолжите в кабинете", "После записи курс и итоговые документы будут доступны в личном кабинете."],
+        ].map(([number, title, description]) => (
+          <div
+            key={number}
+            className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-slate-900">
+              {number}
+            </div>
+            <div className="mt-3 font-semibold">{title}</div>
+            <div className="mt-2 text-sm leading-6 text-slate-200">{description}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        <button
+          type="button"
+          data-testid="catalog-learner-journey-primary-action"
+          onClick={() => onPageChange(primaryActionPage)}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+        >
+          {primaryActionLabel}
+        </button>
+
+        <button
+          type="button"
+          data-testid="catalog-learner-journey-verify-action"
+          onClick={() => onPageChange("verify-document")}
+          className="rounded-full bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
+        >
+          Проверить документ
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function CatalogPage({ onPageChange, onOpenCourse, user }) {
   const [courses, setCourses] = useState([]);
   const [accountCourses, setAccountCourses] = useState([]);
@@ -452,6 +542,12 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
           {user && <span>Мои записи в каталоге: {accountCourses.length}</span>}
         </div>
       </section>
+
+      <CatalogLearnerJourneyHint
+        user={user}
+        accountCourses={accountCourses}
+        onPageChange={onPageChange}
+      />
 
       <CatalogDiagnostics
         courses={courses}

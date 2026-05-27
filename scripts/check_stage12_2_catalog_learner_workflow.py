@@ -34,6 +34,8 @@ DOC_MARKERS = [
     "GET /api/v1/public/courses/{slug}",
     "POST /api/v1/account/courses/{course_id}/enroll",
     "Stage 12.2 catalog learner workflow guard created",
+    "Stage 12.2 catalog learner journey hint - 2026-05-27",
+    "CatalogLearnerJourneyHint is rendered before CatalogDiagnostics",
     "/opt/obrportal/tmp/stage_12_2_1_catalog_workflow_docs_sync_unicode_retry_20260527190258.txt",
     "stage12_2_catalog_workflow_docs_sync=passed",
     "source marker pending enrollment slug was present",
@@ -65,6 +67,15 @@ CATALOG_MARKERS = [
     'onPageChange("verify-document")',
     "onOpenCourse(course.slug)",
     "resetFilters",
+    "Открыть мои программы",
+    "Войти или зарегистрироваться",
+    "Каталог → карточка курса → личный кабинет",
+    "catalog-learner-journey-verify-action",
+    "catalog-learner-journey-primary-action",
+    "catalog-learner-journey-steps",
+    "catalog-learner-journey",
+    "CatalogLearnerJourneyHint",
+    "<CatalogLearnerJourneyHint",
 ]
 
 COURSE_DETAIL_MARKERS = [

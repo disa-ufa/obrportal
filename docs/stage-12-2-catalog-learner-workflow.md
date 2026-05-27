@@ -274,3 +274,32 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_2_1_catalog_workflow_docs_sync_unicode_retry_20260527190258.txt
+
+## 14. Stage 12.2 catalog learner journey hint - 2026-05-27
+
+Status: implemented locally
+
+Stage 12.2 adds a frontend-only learner journey hint to the public catalog.
+
+Implementation boundaries:
+
+- no database migrations;
+- no API changes;
+- no backend runtime changes;
+- no auth or RBAC changes;
+- CatalogPage keeps public course loading through getPublicCourses;
+- CatalogPage keeps learner enrollment loading through getAccountCourses;
+- Stage 12.1 account workflow must remain green.
+
+Source markers:
+
+- CatalogLearnerJourneyHint;
+- catalog-learner-journey;
+- catalog-learner-journey-steps;
+- catalog-learner-journey-primary-action;
+- catalog-learner-journey-verify-action;
+- Каталог → карточка курса → личный кабинет;
+- Войти или зарегистрироваться;
+- Открыть мои программы;
+- Проверить документ.
+- CatalogLearnerJourneyHint is rendered before CatalogDiagnostics.
