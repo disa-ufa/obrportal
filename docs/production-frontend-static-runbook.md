@@ -305,3 +305,30 @@ Accepted backup directory:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_10_16_1_post_hardening_backup_20260527132749.txt
+
+## 16. Production hardened release tag result - 2026-05-27
+
+Status: accepted
+
+Final Stage 10 production-hardened checkpoint tag was created and pushed.
+
+Accepted evidence:
+
+- release tag: v0.1.0-stage10-production-hardened;
+- tagged commit: 69e964f;
+- tagged commit message: docs: record post-hardening production backup;
+- develop, origin/develop, main and origin/main pointed to 69e964f before tagging;
+- production server was synchronized to 69e964f before tagging;
+- final checkpoint sync passed;
+- static frontend remained obrportal-frontend-static:prod;
+- frontend command remained nginx -g daemon off;
+- frontend health remained healthy;
+- public /login and /admin returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- post-hardening backup was already created and verified;
+- secrets_printed=no;
+- final_checkpoint_synced=yes.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_10_17_1_final_checkpoint_sync_20260527133605.txt

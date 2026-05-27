@@ -72,6 +72,11 @@ REQUIRED_MARKERS = [
     "PostgreSQL dump checksum verification returned OK",
     "post_hardening_backup_created=yes",
     "Post-hardening production backup result - 2026-05-27",
+    "post-hardening backup was already created and verified",
+    "final_checkpoint_synced=yes",
+    "tagged commit: 69e964f",
+    "v0.1.0-stage10-production-hardened",
+    "Production hardened release tag result - 2026-05-27",
 ]
 
 REQUIRED_SECTIONS = [
