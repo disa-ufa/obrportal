@@ -25,6 +25,15 @@ Forbidden actions on production:
 - printing secrets;
 - committing backup files to git.
 
+Additional safety requirements:
+
+- do not run destructive cleanup on production;
+- do not use production database as a restore target;
+- do not mount production postgres volume into a temporary container;
+- do not publish temporary restore container ports to public interfaces;
+- temporary restore credentials must not be reused as production credentials;
+- production services must not be stopped for the drill.
+
 ## 3. Backup source
 
 Accepted backup source is the post-hardening backup:
