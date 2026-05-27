@@ -36,6 +36,21 @@ DOC_MARKERS = [
     "GET /api/v1/public/courses/{slug}",
     "POST /api/v1/account/courses/{course_id}/enroll",
     "Stage 12.3 course detail learner workflow guard created",
+    "/opt/obrportal/tmp/stage_12_3_1_course_detail_workflow_docs_sync_20260527195749.txt",
+    "stage12_3_course_detail_workflow_docs_sync=passed",
+    "API marker enrollAccountCourse was present",
+    "API marker getPublicCourseDetail was present",
+    "route marker CourseDetailPublicRoute was present",
+    "route marker /courses/:slug was present",
+    "source marker err.status === 409 was present",
+    "source marker obrportal_pending_enrollment_slug was present",
+    "source marker CourseOutlineSection was present",
+    "source marker CourseSelfEnrollmentDiagnostics was present",
+    "source marker CourseDetailPage was present",
+    "Stage 12.2 catalog UX polish tag head verified: 1d5c91f",
+    "Stage 12.3 course detail learner workflow guard passed",
+    "production git head: 9329159",
+    "Stage 12.3 course detail workflow docs sync - 2026-05-27",
 ]
 
 COURSE_DETAIL_MARKERS = [

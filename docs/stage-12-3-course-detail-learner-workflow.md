@@ -215,3 +215,61 @@ Current checkpoint:
 - implementation has not changed runtime yet;
 - frontend_runtime_changed=no;
 - backend_runtime_changed=no.
+
+## 12. Stage 12.3 course detail workflow docs sync - 2026-05-27
+
+Status: accepted
+
+Stage 12.3 course detail learner workflow documentation and guard were synced to production and accepted.
+
+Accepted evidence:
+
+- production git head: 9329159;
+- Stage 12.3 course detail learner workflow guard passed;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.2 catalog UX polish tag head verified: 1d5c91f;
+- Stage 12.3 document title marker was present;
+- Stage 12.3 baseline head marker was present;
+- Stage 12.3 guard created marker was present;
+- source marker CourseDetailPage was present;
+- source marker CourseSelfEnrollmentDiagnostics was present;
+- source marker CourseOutlineSection was present;
+- source marker obrportal_pending_enrollment_slug was present;
+- source marker err.status === 409 was present;
+- source marker register and enroll action was present;
+- source marker account action was present;
+- source marker document action was present;
+- route marker /courses/:slug was present;
+- route marker CourseDetailPublicRoute was present;
+- API marker getPublicCourseDetail was present;
+- API marker enrollAccountCourse was present;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /catalog returned HTTP 200;
+- public /account returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=no;
+- backend_runtime_changed=no;
+- stage12_3_course_detail_workflow_docs_sync=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_3_1_course_detail_workflow_docs_sync_20260527195749.txt
