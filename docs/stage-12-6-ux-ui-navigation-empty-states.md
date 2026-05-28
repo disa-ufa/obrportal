@@ -184,3 +184,23 @@ Forbidden in this baseline step:
 - changing production docker-compose.override.yml in git;
 - rendering raw backend error objects;
 - broad unrelated refactoring.
+
+## Stage 12.6 admin users loading and empty states - 2026-05-28
+
+Goal: improve UsersPage loading, table, and empty-state observability without backend API changes, RBAC changes, authentication changes, object-level access changes, database migrations, or production docker-compose override changes.
+
+Recorded changes:
+- `UsersPage` keeps the existing users table, filters, quick filters, related links, and selected user detail workflow.
+- Loading state now has stable marker `admin-users-loading-state`.
+- Empty result state now has stable marker `admin-users-empty-state`.
+- Non-empty table state now has stable marker `admin-users-table-state`.
+- Existing `LoadingBlock`, `SmallTable`, and `getFilteredEmptyText` behavior remains in use.
+- Existing admin user API client methods are unchanged.
+- Secrets were not printed.
+- Backend runtime was not changed.
+- Database schema was not changed.
+
+Verification markers:
+- `admin-users-loading-state`
+- `admin-users-empty-state`
+- `admin-users-table-state`

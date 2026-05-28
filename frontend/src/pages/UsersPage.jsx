@@ -286,9 +286,12 @@ export function UsersPage({
             </div>
 
             {loading ? (
-              <LoadingBlock text="Загружаем пользователей..." />
+              <div data-testid="admin-users-loading-state" aria-live="polite">
+                <LoadingBlock text="Загружаем пользователей..." />
+              </div>
             ) : (
-              <SmallTable
+              <div data-testid={filteredUsers.length ? "admin-users-table-state" : "admin-users-empty-state"}>
+                <SmallTable
                 emptyText={getFilteredEmptyText(
                   hasActiveFilters,
                   "Пользователей по фильтру нет.",
@@ -354,7 +357,8 @@ export function UsersPage({
                     ),
                   },
                 ]}
-              />
+                />
+              </div>
             )}
           </div>
         )}

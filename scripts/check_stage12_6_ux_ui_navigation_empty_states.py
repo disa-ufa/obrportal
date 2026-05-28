@@ -29,6 +29,10 @@ FRONTEND_FILES = [
 REQUIRED_FILES = [DOC, ROADMAP, API_CLIENT, API_ERRORS, ADMIN_RENDERER, *FRONTEND_FILES]
 
 DOC_MARKERS = [
+    "Stage 12.6 admin users loading and empty states - 2026-05-28",
+    "admin-users-loading-state",
+    "admin-users-empty-state",
+    "admin-users-table-state",
     "# Stage 12.6 UX/UI navigation and empty states",
     "Status: in progress",
     "Baseline tag: v0.1.0-stage12-5-admin-moderation-audit-workflow",
@@ -73,6 +77,16 @@ ADMIN_RENDERER_MARKERS = [
 API_CLIENT_MARKERS = ["async function request", "response.ok", "throw"]
 API_ERROR_MARKERS = ["getApiErrorMessage"]
 
+USERS_PAGE_STATE_MARKERS = [
+    "admin-users-page",
+    "admin-users-loading-state",
+    "admin-users-empty-state",
+    "admin-users-table-state",
+    "getFilteredEmptyText",
+    "LoadingBlock",
+    "SmallTable",
+]
+
 
 def read(path: Path) -> str:
     if not path.exists():
@@ -113,6 +127,11 @@ def main() -> None:
     markers += check_markers("admin renderer", ADMIN_RENDERER, ADMIN_RENDERER_MARKERS)
     markers += check_markers("api client", API_CLIENT, API_CLIENT_MARKERS)
     markers += check_markers("api errors", API_ERRORS, API_ERROR_MARKERS)
+    markers += check_markers(
+        "users page Stage 12.6 loading and empty states",
+        Path("frontend/src/pages/UsersPage.jsx"),
+        USERS_PAGE_STATE_MARKERS,
+    )
     markers += check_page_exports()
 
     doc_text = read(DOC)
