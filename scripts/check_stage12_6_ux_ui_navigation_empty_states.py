@@ -29,6 +29,12 @@ FRONTEND_FILES = [
 REQUIRED_FILES = [DOC, ROADMAP, API_CLIENT, API_ERRORS, ADMIN_RENDERER, *FRONTEND_FILES]
 
 DOC_MARKERS = [
+    "Stage 12.6 production deploy record - 2026-05-28",
+    "production git head: dc176d6",
+    "frontend_runtime_changed=yes after deploy",
+    "public_login_http=200",
+    "public_admin_http=200",
+    "public_ready_status=ok",
     "Stage 12.6 admin users loading and empty states - 2026-05-28",
     "admin-users-loading-state",
     "admin-users-empty-state",

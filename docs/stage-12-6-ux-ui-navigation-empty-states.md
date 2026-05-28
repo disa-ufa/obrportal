@@ -204,3 +204,38 @@ Verification markers:
 - `admin-users-loading-state`
 - `admin-users-empty-state`
 - `admin-users-table-state`
+
+## Stage 12.6 production deploy record - 2026-05-28
+
+Production deployment was verified after the Stage 12.6 admin users loading and empty states polish.
+
+Production git state:
+- branch: `main`
+- deployed head: `dc176d6`
+- commit: `Polish stage 12.6 admin users loading and empty states`
+
+Production verification:
+- backend container was running.
+- frontend container was running and healthy.
+- postgres, redis, and minio were running and healthy.
+- `GET /health` returned `status=ok`.
+- `GET /api/v1/ready` returned `database=ok`, `redis=ok`, and `storage=ok`.
+- local frontend smoke returned HTTP 200.
+- public `/login` returned HTTP 200.
+- public `/admin` returned HTTP 200.
+- public `/api/v1/ready` returned `status=ok`.
+
+Operational notes:
+- production untracked paths `backups/`, `tmp/`, and `docker-compose.override.yml` were preserved.
+- no secrets were printed.
+- no database migrations were added for this UX polish step.
+- no backend API contract changes were introduced.
+- no RBAC, authentication, or object-level access weakening was introduced.
+
+Verification markers:
+- `Stage 12.6 production deploy record - 2026-05-28`
+- `production git head: dc176d6`
+- `frontend_runtime_changed=yes after deploy`
+- `public_login_http=200`
+- `public_admin_http=200`
+- `public_ready_status=ok`
