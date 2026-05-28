@@ -713,7 +713,7 @@ export function AuditPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div data-testid="admin-audit-page" className="space-y-6">
       {user && (
         <>
           <AuditSummaryCards
@@ -737,10 +737,21 @@ export function AuditPage({
         subtitle="Последние события audit_events с фильтрацией по action, entity и actor."
       >
         {!user ? (
-          <p className="text-slate-600">Войдите под admin, чтобы увидеть аудит.</p>
+          <p data-testid="admin-audit-unauthorized-state" className="text-slate-600">Войдите под admin, чтобы увидеть аудит.</p>
         ) : (
           <div className="space-y-5">
-            <form onSubmit={handleSubmit} className="space-y-4 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
+            <div
+              data-testid="admin-audit-readonly-notice"
+              className="rounded-3xl bg-blue-50 p-5 text-sm leading-6 text-blue-900 ring-1 ring-blue-100"
+            >
+              Журнал аудита работает в режиме только для чтения: администратор может фильтровать, открывать карточку события и переходить в связанные разделы, но не изменяет audit_events из интерфейса.
+            </div>
+
+            <form
+              data-testid="admin-audit-filters"
+              onSubmit={handleSubmit}
+              className="space-y-4 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200"
+            >
               <div>
                 <h3 className="text-base font-semibold text-slate-900">
                   Фильтры аудита
@@ -751,100 +762,123 @@ export function AuditPage({
               </div>
 
               {filterError && (
-                <Alert title="Не удалось применить фильтр" tone="red">
-                  {filterError}
-                </Alert>
+                <div
+                  data-testid="admin-audit-filter-error-state"
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  <Alert title="Не удалось применить фильтр" tone="red">
+                    {filterError}
+                  </Alert>
+                </div>
               )}
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                <AdminFilterField label="Action" hint="Например: admin.user_created">
-                  <TextInput
+                <div data-testid="admin-audit-filter-action">
+                  <AdminFilterField label="Action" hint="Например: admin.user_created">
+                    <TextInput
                     value={filters.action}
                     onChange={(event) => updateFilter("action", event.target.value)}
                     placeholder="admin.user_created"
-                    disabled={loading}
-                  />
-                </AdminFilterField>
+                      disabled={loading}
+                    />
+                  </AdminFilterField>
+                </div>
 
-                <AdminFilterField label="Entity type" hint="user / role / organization">
+                <div data-testid="admin-audit-filter-entity-type">
+                  <AdminFilterField label="Entity type" hint="user / role / organization">
                   <TextInput
                     value={filters.entity_type}
                     onChange={(event) => updateFilter("entity_type", event.target.value)}
                     placeholder="organization"
-                    disabled={loading}
-                  />
-                </AdminFilterField>
+                      disabled={loading}
+                    />
+                  </AdminFilterField>
+                </div>
 
-                <AdminFilterField label="Entity ID">
+                <div data-testid="admin-audit-filter-entity-id">
+                  <AdminFilterField label="Entity ID">
                   <TextInput
                     value={filters.entity_id}
                     onChange={(event) => updateFilter("entity_id", event.target.value)}
                     placeholder="UUID"
-                    disabled={loading}
-                  />
-                </AdminFilterField>
+                      disabled={loading}
+                    />
+                  </AdminFilterField>
+                </div>
 
-                <AdminFilterField label="Actor user ID">
+                <div data-testid="admin-audit-filter-actor-user-id">
+                  <AdminFilterField label="Actor user ID">
                   <TextInput
                     value={filters.actor_user_id}
                     onChange={(event) => updateFilter("actor_user_id", event.target.value)}
                     placeholder="UUID"
-                    disabled={loading}
-                  />
-                </AdminFilterField>
+                      disabled={loading}
+                    />
+                  </AdminFilterField>
+                </div>
 
-                <AdminFilterField label="Лимит" hint="1–200">
+                <div data-testid="admin-audit-filter-limit">
+                  <AdminFilterField label="Лимит" hint="1–200">
                   <TextInput
                     type="number"
                     min="1"
                     max="200"
                     value={filters.limit}
                     onChange={(event) => updateFilter("limit", event.target.value)}
-                    disabled={loading}
-                  />
-                </AdminFilterField>
+                      disabled={loading}
+                    />
+                  </AdminFilterField>
+                </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <ActionButton type="submit" tone="blue" disabled={loading}>
+              <div data-testid="admin-audit-filter-actions" className="flex flex-wrap gap-2">
+                <ActionButton data-testid="admin-audit-apply-filters-action" type="submit" tone="blue" disabled={loading}>
                   {loading ? "Загружаем..." : "Применить фильтр"}
                 </ActionButton>
-                <ActionButton type="button" tone="light" onClick={handleReset} disabled={loading}>
+                <ActionButton data-testid="admin-audit-reset-filters-action" type="button" tone="light" onClick={handleReset} disabled={loading}>
                   Сбросить
                 </ActionButton>
               </div>
             </form>
 
-            <QuickValueFilters
-              title="Быстрый фильтр по action"
+            <div data-testid="admin-audit-quick-action-filter">
+              <QuickValueFilters
+                title="Быстрый фильтр по action"
               value={filters.action}
               items={actionOptions}
               counts={auditCounts.actions}
               disabled={loading}
               onChange={(value) => handleQuickFilter("action", value)}
-              emptyLabel="Все действия"
-            />
+                emptyLabel="Все действия"
+              />
+            </div>
 
-            <QuickValueFilters
-              title="Быстрый фильтр по entity type"
+            <div data-testid="admin-audit-quick-entity-type-filter">
+              <QuickValueFilters
+                title="Быстрый фильтр по entity type"
               value={filters.entity_type}
               items={entityTypeOptions}
               counts={auditCounts.entityTypes}
               disabled={loading}
               onChange={(value) => handleQuickFilter("entity_type", value)}
-              emptyLabel="Все сущности"
-            />
+                emptyLabel="Все сущности"
+              />
+            </div>
 
-            <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+            <div data-testid="admin-audit-result-summary" className="flex flex-wrap gap-3 text-sm text-slate-500">
               <span>Показано событий: {auditEvents.length}</span>
               <span>Событий с actor: {auditCounts.actors}</span>
               <span>Лимит выдачи: {filters.limit || DEFAULT_FILTERS.limit}</span>
             </div>
 
             {loading ? (
-              <LoadingBlock text="Загружаем аудит..." />
+              <div data-testid="admin-audit-loading-state" aria-live="polite">
+                <LoadingBlock text="Загружаем аудит..." />
+              </div>
             ) : (
-              <SmallTable
+              <div data-testid={auditEvents.length ? "admin-audit-table" : "admin-audit-empty-state"}>
+                <SmallTable
                 emptyText="Событий аудита нет."
                 rows={auditEvents}
                 selectedRowId={selectedAuditEvent?.id}
@@ -899,8 +933,9 @@ export function AuditPage({
                       const entityAdminPath = buildEntityAdminPath(row);
 
                       return (
-                        <div className="flex flex-wrap gap-2">
+                        <div data-testid="admin-audit-row-actions" className="flex flex-wrap gap-2">
                           <ActionButton
+                            data-testid="admin-audit-open-detail-action"
                             onClick={() => onOpenAuditEvent(row.id)}
                             disabled={selectedAuditEventLoading}
                           >
@@ -940,20 +975,35 @@ export function AuditPage({
                       );
                     },
                   },
-                ]}
-              />
+                  ]}
+                />
+              </div>
             )}
           </div>
         )}
       </SectionCard>
 
       {user && (
-        <AuditEventDetailPanel
-          auditEventDetail={selectedAuditEvent}
-          loading={selectedAuditEventLoading}
-          error={selectedAuditEventError}
-          onClose={onCloseAuditEvent}
-        />
+        <div data-testid="admin-audit-detail-panel">
+          {selectedAuditEventLoading && (
+            <div data-testid="admin-audit-detail-loading" className="sr-only" aria-live="polite">
+              Загружаем карточку события аудита.
+            </div>
+          )}
+
+          {selectedAuditEventError && (
+            <div data-testid="admin-audit-detail-error" className="sr-only" role="alert">
+              Ошибка загрузки карточки события аудита.
+            </div>
+          )}
+
+          <AuditEventDetailPanel
+            auditEventDetail={selectedAuditEvent}
+            loading={selectedAuditEventLoading}
+            error={selectedAuditEventError}
+            onClose={onCloseAuditEvent}
+          />
+        </div>
       )}
     </div>
   );

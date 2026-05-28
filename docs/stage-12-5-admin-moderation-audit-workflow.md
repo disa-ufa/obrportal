@@ -296,3 +296,54 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_5_1_admin_moderation_audit_workflow_docs_sync_retry_20260528075808.txt
+
+## 15. Stage 12.5 audit page service states - 2026-05-28
+
+Status: implemented locally
+
+Stage 12.5 adds stable frontend markers and service-state boundaries for the admin audit page.
+
+Implementation boundaries:
+
+- frontend-only change;
+- no database migrations;
+- no backend API changes;
+- no audit mutation workflow;
+- no RBAC weakening;
+- no object-level access weakening;
+- existing getAdminAuditEvents filters remain unchanged;
+- existing getAdminAuditEventDetail detail loading remains unchanged;
+- AuditPage remains read-only;
+- audit_events are inspected, not mutated;
+- frontend_runtime_changed=yes after deploy;
+- backend_runtime_changed=no.
+
+Source markers:
+
+- admin-audit-page;
+- admin-audit-unauthorized-state;
+- admin-audit-readonly-notice;
+- admin-audit-filters;
+- admin-audit-filter-action;
+- admin-audit-filter-entity-type;
+- admin-audit-filter-entity-id;
+- admin-audit-filter-actor-user-id;
+- admin-audit-filter-limit;
+- admin-audit-filter-actions;
+- admin-audit-apply-filters-action;
+- admin-audit-reset-filters-action;
+- admin-audit-filter-error-state;
+- admin-audit-quick-action-filter;
+- admin-audit-quick-entity-type-filter;
+- admin-audit-result-summary;
+- admin-audit-loading-state;
+- admin-audit-empty-state;
+- admin-audit-table;
+- admin-audit-row-actions;
+- admin-audit-open-detail-action;
+- admin-audit-detail-panel;
+- admin-audit-detail-loading;
+- admin-audit-detail-error;
+- role="alert";
+- aria-live="assertive";
+- aria-live="polite".
