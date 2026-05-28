@@ -297,3 +297,37 @@ Verification markers:
 - `public_login_http=200`
 - `public_admin_http=200`
 - `public_ready_http=200`
+
+## 15. Stage 12.7 admin groups CSV export - 2026-05-28
+
+Goal: add a low-risk frontend-only CSV export for the currently visible admin learning groups list.
+
+Scope:
+- `GroupsPage` exports only the already loaded and currently filtered `filteredGroups` collection.
+- Export respects the current search, organization and status filters.
+- Export uses the shared `downloadCsvFile` and `buildDatedCsvFilename` helpers.
+- Export filename prefix is `obrportal-admin-groups`.
+- No backend API contract changes were added.
+- No database migrations were added.
+- No authentication, RBAC or object-level access changes were added.
+- No destructive imports were introduced.
+
+CSV columns:
+- `id`
+- `name`
+- `code`
+- `organization_name`
+- `organization_id`
+- `is_active`
+- `description`
+- `created_at`
+- `updated_at`
+
+Verification markers:
+- `Stage 12.7 admin groups CSV export - 2026-05-28`
+- `groups list export for admin role only`
+- `admin-groups-export-summary`
+- `admin-groups-export-csv-button`
+- `obrportal-admin-groups`
+- `GROUP_CSV_EXPORT_COLUMNS`
+- `handleExportGroupsCsv`

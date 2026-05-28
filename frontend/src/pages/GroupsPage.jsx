@@ -19,6 +19,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
 import { AdminTextInput as TextInput } from "../components/admin/AdminTextInput";
@@ -1360,6 +1361,26 @@ export function GroupsPage({
     navigateToGroupFilters({}, { replace: true });
   }
 
+  function handleExportGroupsCsv() {
+    const rows = filteredGroups.map((group) => ({
+      id: group.id,
+      name: group.name || "",
+      code: group.code || "",
+      organization_name: organizationsMap[group.organization_id] || "",
+      organization_id: group.organization_id || "",
+      is_active: group.is_active ? "yes" : "no",
+      description: group.description || "",
+      created_at: group.created_at || "",
+      updated_at: group.updated_at || "",
+    }));
+
+    downloadCsvFile({
+      filename: buildDatedCsvFilename("obrportal-admin-groups"),
+      columns: GROUP_CSV_EXPORT_COLUMNS,
+      rows,
+    });
+  }
+
   return (
     <div className="space-y-6">
       <SectionCard
@@ -1454,6 +1475,29 @@ export function GroupsPage({
                     ? counts.inactive || 0
                     : counts.all || 0}
             />
+
+            <div
+              data-testid="admin-groups-export-summary"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+            >
+              <div>
+                <div className="text-sm font-semibold text-slate-900">Экспорт групп</div>
+                <p className="mt-1 text-xs text-slate-600">
+                  CSV содержит текущую выборку после поиска, фильтра организации и статуса:
+                  {" "}{filteredGroups.length} из {groups.length}.
+                </p>
+              </div>
+
+              <ActionButton
+                type="button"
+                tone="light"
+                onClick={handleExportGroupsCsv}
+                disabled={loading || filteredGroups.length === 0}
+                data-testid="admin-groups-export-csv-button"
+              >
+                Скачать CSV
+              </ActionButton>
+            </div>
 
             <div className="flex flex-wrap gap-3 text-sm text-slate-500">
               <span>Показано групп: {filteredGroups.length}</span>
