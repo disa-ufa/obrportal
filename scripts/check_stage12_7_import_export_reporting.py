@@ -23,6 +23,13 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin enrollments CSV export production deploy - 2026-05-28",
+    "production git head: 475748b",
+    "admin enrollments CSV export deployed",
+    "local_frontend_http=200",
+    "public_login_http=200",
+    "public_admin_http=200",
+    "public_ready_http=200",
     "Stage 12.7 admin enrollments CSV export - 2026-05-28",
     "enrollments list export for admin role only",
     "admin-enrollments-export-summary",
