@@ -8,6 +8,7 @@ ORGANIZATIONS_PAGE = Path("frontend/src/pages/OrganizationsPage.jsx")
 GROUPS_PAGE = Path("frontend/src/pages/GroupsPage.jsx")
 ADMIN_COURSES_PAGE = Path("frontend/src/pages/AdminCoursesPage.jsx")
 ADMIN_ENROLLMENTS_PAGE = Path("frontend/src/pages/AdminEnrollmentsPage.jsx")
+DOCUMENTS_PAGE = Path("frontend/src/pages/DocumentsPage.jsx")
 EXPORT_CSV = Path("frontend/src/utils/exportCsv.js")
 
 REQUIRED_FILES = [
@@ -19,10 +20,16 @@ REQUIRED_FILES = [
     GROUPS_PAGE,
     ADMIN_COURSES_PAGE,
     ADMIN_ENROLLMENTS_PAGE,
+    DOCUMENTS_PAGE,
     EXPORT_CSV,
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin documents CSV export - 2026-05-28",
+    "documents list export for admin role only",
+    "admin-documents-export-summary",
+    "admin-documents-export-csv-button",
+    "obrportal-admin-documents",
     "Stage 12.7 admin enrollments CSV export production deploy - 2026-05-28",
     "production git head: 475748b",
     "admin enrollments CSV export deployed",
@@ -194,6 +201,18 @@ ENROLLMENT_FRONTEND_STAGE_MARKERS = [
 ]
 
 
+
+DOCUMENT_FRONTEND_STAGE_MARKERS = [
+    "DocumentsPage",
+    "displayedDocuments",
+    "DOCUMENT_CSV_EXPORT_COLUMNS",
+    "handleExportDocumentsCsv",
+    "admin-documents-export-summary",
+    "admin-documents-export-csv-button",
+    "obrportal-admin-documents",
+]
+
+
 EXPORT_UTIL_MARKERS = [
     "CSV_UTF8_BOM",
     "DEFAULT_CSV_DELIMITER",
@@ -259,6 +278,7 @@ def main() -> None:
     group_frontend_count = require_markers(GROUPS_PAGE, GROUP_FRONTEND_STAGE_MARKERS)
     course_frontend_count = require_markers(ADMIN_COURSES_PAGE, COURSE_FRONTEND_STAGE_MARKERS)
     enrollment_frontend_count = require_markers(ADMIN_ENROLLMENTS_PAGE, ENROLLMENT_FRONTEND_STAGE_MARKERS)
+    document_frontend_count = require_markers(DOCUMENTS_PAGE, DOCUMENT_FRONTEND_STAGE_MARKERS)
     export_count = require_markers(EXPORT_CSV, EXPORT_UTIL_MARKERS)
 
     print(
@@ -269,6 +289,7 @@ def main() -> None:
         f"group_frontend_markers={group_frontend_count}, "
         f"course_frontend_markers={course_frontend_count}, "
         f"enrollment_frontend_markers={enrollment_frontend_count}, "
+        f"document_frontend_markers={document_frontend_count}, "
         f"export_markers={export_count}, secrets_printed=no, "
         "frontend_runtime_changed=yes, backend_runtime_changed=no"
     )

@@ -30,11 +30,53 @@ import {
   buildEnrollmentsPath,
   buildOrganizationsPath,
 } from "../utils/adminLinks";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 
 const DOCUMENT_STATUSES = [
   { value: "available", label: "Доступен" },
   { value: "draft", label: "Черновик" },
   { value: "revoked", label: "Отозван" },
+];
+
+const DOCUMENT_CSV_STATUS_LABELS = {
+  available: "Доступен",
+  draft: "Черновик",
+  revoked: "Отозван",
+};
+
+const DOCUMENT_CSV_EXPORT_COLUMNS = [
+  { key: "id", title: "ID" },
+  { key: "document_number", title: "Номер документа" },
+  { key: "verification_code", title: "Код проверки" },
+  { key: "title", title: "Название" },
+  { key: "document_type", title: "Тип документа" },
+  { key: "status", title: "Статус" },
+  { key: "status_label", title: "Статус, название" },
+  { key: "file_available", title: "Файл доступен" },
+  { key: "generated_pdf", title: "PDF сформирован" },
+  { key: "generation_source", title: "Источник генерации" },
+  { key: "generation_template_version", title: "Версия шаблона" },
+  { key: "user_id", title: "ID пользователя" },
+  { key: "user_email", title: "Email пользователя" },
+  { key: "user_full_name", title: "ФИО пользователя" },
+  { key: "course_id", title: "ID курса" },
+  { key: "course_title", title: "Курс" },
+  { key: "course_slug", title: "Slug курса" },
+  { key: "enrollment_id", title: "ID назначения" },
+  { key: "enrollment_status", title: "Статус назначения" },
+  { key: "enrollment_status_label", title: "Статус назначения, название" },
+  { key: "organization_id", title: "ID организации" },
+  { key: "organization_name", title: "Организация" },
+  { key: "learning_group_id", title: "ID группы" },
+  { key: "learning_group_name", title: "Учебная группа" },
+  { key: "action_required", title: "Требует действия" },
+  { key: "verification_url", title: "Публичная проверка" },
+  { key: "documents_filter_url", title: "Фильтр документов" },
+  { key: "audit_url", title: "Аудит документа" },
+  { key: "revoked_at", title: "Дата отзыва" },
+  { key: "revocation_reason", title: "Причина отзыва" },
+  { key: "created_at", title: "Создано" },
+  { key: "updated_at", title: "Обновлено" },
 ];
 
 const DOCUMENT_API_ERROR_MESSAGES = {
@@ -1523,6 +1565,77 @@ export function DocumentsPage() {
     await navigateToDocumentFilters({}, { replace: true });
   }
 
+  function handleExportDocumentsCsv() {
+    const rows = displayedDocuments.map((documentItem) => {
+      const enrollment =
+        enrollments.find((item) => item.id === documentItem.enrollment_id) || null;
+      const course =
+        courses.find((item) => item.id === (documentItem.course_id || enrollment?.course_id)) ||
+        null;
+      const organization =
+        organizations.find(
+          (item) => item.id === (documentItem.organization_id || enrollment?.organization_id)
+        ) || null;
+      const enrollmentStatus = documentItem.enrollment_status || enrollment?.status || "";
+      const verificationTarget =
+        documentItem.verification_code || documentItem.document_number || "";
+      const verificationUrl = verificationTarget
+        ? buildDocumentVerificationPath(verificationTarget)
+        : "";
+      const documentsFilterUrl = documentItem.enrollment_id
+        ? buildDocumentsPath({ enrollment_id: documentItem.enrollment_id })
+        : documentItem.user_id
+          ? buildDocumentsPath({ user_id: documentItem.user_id })
+          : "";
+
+      return {
+        id: documentItem.id,
+        document_number: documentItem.document_number || "",
+        verification_code: documentItem.verification_code || "",
+        title: documentItem.title || "",
+        document_type: documentItem.document_type || "",
+        status: documentItem.status || "",
+        status_label:
+          DOCUMENT_CSV_STATUS_LABELS[documentItem.status] ||
+          getDocumentStatusLabel(documentItem.status),
+        file_available: documentItem.file_available ? "yes" : "no",
+        generated_pdf: isGeneratedCompletionDocument(documentItem) ? "yes" : "no",
+        generation_source: documentItem.generation_source || "",
+        generation_template_version: documentItem.generation_template_version || "",
+        user_id: documentItem.user_id || "",
+        user_email: documentItem.user_email || "",
+        user_full_name: documentItem.user_full_name || "",
+        course_id: documentItem.course_id || enrollment?.course_id || "",
+        course_title: documentItem.course_title || course?.title || "",
+        course_slug: course?.slug || "",
+        enrollment_id: documentItem.enrollment_id || "",
+        enrollment_status: enrollmentStatus,
+        enrollment_status_label: getEnrollmentStatusLabel(enrollmentStatus),
+        organization_id: documentItem.organization_id || enrollment?.organization_id || "",
+        organization_name: documentItem.organization_name || organization?.name || "",
+        learning_group_id: documentItem.learning_group_id || enrollment?.learning_group_id || "",
+        learning_group_name:
+          documentItem.learning_group_name || enrollment?.learning_group_name || "",
+        action_required: isDocumentActionRequired(documentItem) ? "yes" : "no",
+        verification_url: verificationUrl,
+        documents_filter_url: documentsFilterUrl,
+        audit_url: documentItem.id
+          ? buildAuditPath({ entity_type: "document", entity_id: documentItem.id })
+          : "",
+        revoked_at: documentItem.revoked_at || "",
+        revocation_reason: documentItem.revocation_reason || "",
+        created_at: documentItem.created_at || "",
+        updated_at: documentItem.updated_at || "",
+      };
+    });
+
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-documents"),
+      DOCUMENT_CSV_EXPORT_COLUMNS,
+      rows
+    );
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
@@ -1952,6 +2065,30 @@ export function DocumentsPage() {
             <span>Показано документов: {displayedDocuments.length}</span>
             <span>Всего по текущим фильтрам: {documentStatusCounts.all || 0}</span>
             <span>Требуют действия: {documentActionRequiredCount}</span>
+          </div>
+
+          <div
+            data-testid="admin-documents-export-summary"
+            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div>
+              <div className="text-sm font-semibold text-slate-900">Экспорт документов</div>
+              <p className="mt-1 text-xs text-slate-600">
+                CSV содержит текущую выборку после фильтров по пользователю, назначению,
+                организации, статусу, типу документа, поиску и признаку действия:
+                {" "}{displayedDocuments.length} из {documentStatusCounts.all || displayedDocuments.length}.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              data-testid="admin-documents-export-csv-button"
+              onClick={handleExportDocumentsCsv}
+              disabled={loading || displayedDocuments.length === 0}
+              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Скачать CSV
+            </button>
           </div>
 
           {loading ? (

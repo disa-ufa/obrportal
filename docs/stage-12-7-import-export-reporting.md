@@ -518,3 +518,62 @@ Verification markers:
 - `public_login_http=200`
 - `public_admin_http=200`
 - `public_ready_http=200`
+
+## 18. Stage 12.7 admin documents CSV export - 2026-05-28
+
+Goal: add a low-risk frontend-only CSV export for the currently visible admin documents registry.
+
+Scope:
+- `DocumentsPage` exports only the already loaded and currently visible `displayedDocuments` collection.
+- Export respects current user, enrollment, organization, status, document type, query and action-required filters.
+- Export includes document-level fields and already loaded relation labels.
+- Export uses the shared `downloadCsvFile` and `buildDatedCsvFilename` helpers.
+- Export filename prefix is `obrportal-admin-documents`.
+- No backend API contract changes were added.
+- No database migrations were added.
+- No authentication, RBAC or object-level access changes were added.
+- No binary files are exported.
+- No destructive imports were introduced.
+
+CSV columns:
+- `id`
+- `document_number`
+- `verification_code`
+- `title`
+- `document_type`
+- `status`
+- `status_label`
+- `file_available`
+- `generated_pdf`
+- `generation_source`
+- `generation_template_version`
+- `user_id`
+- `user_email`
+- `user_full_name`
+- `course_id`
+- `course_title`
+- `course_slug`
+- `enrollment_id`
+- `enrollment_status`
+- `enrollment_status_label`
+- `organization_id`
+- `organization_name`
+- `learning_group_id`
+- `learning_group_name`
+- `action_required`
+- `verification_url`
+- `documents_filter_url`
+- `audit_url`
+- `revoked_at`
+- `revocation_reason`
+- `created_at`
+- `updated_at`
+
+Verification markers:
+- `Stage 12.7 admin documents CSV export - 2026-05-28`
+- `documents list export for admin role only`
+- `admin-documents-export-summary`
+- `admin-documents-export-csv-button`
+- `obrportal-admin-documents`
+- `DOCUMENT_CSV_EXPORT_COLUMNS`
+- `handleExportDocumentsCsv`
