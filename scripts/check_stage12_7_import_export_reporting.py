@@ -3,14 +3,28 @@ from pathlib import Path
 DOC = Path("docs/stage-12-7-import-export-reporting.md")
 ROADMAP = Path("docs/stage-12-product-roadmap.md")
 PREVIOUS_STAGE_DOC = Path("docs/stage-12-6-ux-ui-navigation-empty-states.md")
+USERS_PAGE = Path("frontend/src/pages/UsersPage.jsx")
+EXPORT_CSV = Path("frontend/src/utils/exportCsv.js")
 
 REQUIRED_FILES = [
     DOC,
     ROADMAP,
     PREVIOUS_STAGE_DOC,
+    USERS_PAGE,
+    EXPORT_CSV,
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin users CSV export - 2026-05-28",
+    "admin-users-export-summary",
+    "admin-users-export-csv-button",
+    "obrportal-admin-users",
+    "downloadCsvFile",
+    "buildDatedCsvFilename",
+    "frontend_runtime_changed=yes",
+    "backend_runtime_changed=no",
+    "database_migrations_added=no",
+    "api_contract_changed=no",
     "# Stage 12.7 Import/export and reporting",
     "Status: in progress",
     "Stage: 12.7",
@@ -63,6 +77,29 @@ PREVIOUS_STAGE_MARKERS = [
     "public_ready_status=ok",
 ]
 
+
+FRONTEND_STAGE_MARKERS = [
+    "UsersPage",
+    "filteredUsers",
+    "USER_CSV_EXPORT_COLUMNS",
+    "formatUserExportRoles",
+    "handleExportUsersCsv",
+    "admin-users-export-summary",
+    "admin-users-export-csv-button",
+    "obrportal-admin-users",
+]
+
+EXPORT_UTIL_MARKERS = [
+    "CSV_UTF8_BOM",
+    "DEFAULT_CSV_DELIMITER",
+    "buildCsvContent",
+    "buildDatedCsvFilename",
+    "downloadCsvFile",
+    "text/csv;charset=utf-8",
+    "createObjectURL",
+    "revokeObjectURL",
+]
+
 SECRET_MARKERS = [
     "BOT_TOKEN=",
     "SECRET_KEY=",
@@ -112,11 +149,15 @@ def main() -> None:
     doc_count = require_markers(DOC, DOC_MARKERS)
     roadmap_count = require_markers(ROADMAP, ROADMAP_MARKERS)
     previous_count = require_markers(PREVIOUS_STAGE_DOC, PREVIOUS_STAGE_MARKERS)
+    frontend_count = require_markers(USERS_PAGE, FRONTEND_STAGE_MARKERS)
+    export_count = require_markers(EXPORT_CSV, EXPORT_UTIL_MARKERS)
 
     print(
         "stage 12.7 import/export and reporting diagnostics passed: "
         f"doc_markers={doc_count}, roadmap_markers={roadmap_count}, "
-        f"previous_stage_markers={previous_count}, secrets_printed=no, runtime_changed=no"
+        f"previous_stage_markers={previous_count}, frontend_markers={frontend_count}, "
+        f"export_markers={export_count}, secrets_printed=no, "
+        "frontend_runtime_changed=yes, backend_runtime_changed=no"
     )
 
 

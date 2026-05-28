@@ -152,3 +152,32 @@ Expected result:
 - stage 12.7 import/export and reporting diagnostics passed;
 - secrets_printed=no;
 - runtime_changed=no;
+
+## 13. Stage 12.7 admin users CSV export - 2026-05-28
+
+Goal: add a low-risk frontend-only CSV export for the currently visible admin users list.
+
+Scope:
+
+- exports only the filtered users already visible to the signed-in admin;
+- does not add backend API endpoints;
+- does not change authentication, RBAC or object-level access;
+- does not add database migrations;
+- does not export secrets, internal configs or binary files;
+- uses UTF-8 BOM and semicolon delimiter for safer spreadsheet opening;
+- keeps export disabled when the current filtered list is empty.
+
+Recorded frontend markers:
+
+- `admin-users-export-summary`;
+- `admin-users-export-csv-button`;
+- `obrportal-admin-users`;
+- `downloadCsvFile`;
+- `buildDatedCsvFilename`.
+
+Runtime impact:
+
+- frontend_runtime_changed=yes;
+- backend_runtime_changed=no;
+- database_migrations_added=no;
+- api_contract_changed=no.

@@ -17,6 +17,7 @@ import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildSearchText, normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 import { ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS } from "../utils/adminClasses";
 import { buildDocumentsPath, buildEnrollmentsPath, buildUsersPath } from "../utils/adminLinks";
 
@@ -64,6 +65,22 @@ const USER_ACTIVITY_FILTERS = [
   { value: "active", label: "Активные" },
   { value: "inactive", label: "Отключённые" },
 ];
+
+
+const USER_CSV_EXPORT_COLUMNS = [
+  { label: "Email", value: (item) => item.email || "" },
+  { label: "ФИО", value: (item) => item.full_name || "" },
+  { label: "Телефон", value: (item) => item.phone || "" },
+  { label: "Роли", value: formatUserExportRoles },
+  { label: "Активен", value: (item) => (item.is_active ? "да" : "нет") },
+  { label: "Email подтверждён", value: (item) => (item.is_email_verified ? "да" : "нет") },
+];
+
+function formatUserExportRoles(user) {
+  return (user.roles || [])
+    .map((role) => (role.name ? `${role.code} (${role.name})` : role.code))
+    .join(", ");
+}
 
 function getUserFiltersFromSearch(search) {
   const params = new URLSearchParams(search);
@@ -193,6 +210,14 @@ export function UsersPage({
     navigateToUserFilters({}, { replace: true });
   }
 
+  function handleExportUsersCsv() {
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-users"),
+      USER_CSV_EXPORT_COLUMNS,
+      filteredUsers
+    );
+  }
+
   return (
     <div data-testid="admin-users-page" className="space-y-6">
       <SectionCard
@@ -280,9 +305,22 @@ export function UsersPage({
                     : counts.all || 0}
             />
 
-            <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+            <div
+              data-testid="admin-users-export-summary"
+              className="flex flex-wrap items-center gap-3 text-sm text-slate-500"
+            >
               <span>Показано пользователей: {filteredUsers.length}</span>
               <span>Всего по текущему поиску: {userCounts.all || 0}</span>
+              <span>Экспорт CSV: {filteredUsers.length} строк</span>
+              <button
+                type="button"
+                data-testid="admin-users-export-csv-button"
+                onClick={handleExportUsersCsv}
+                disabled={loading || filteredUsers.length === 0}
+                className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Экспорт CSV
+              </button>
             </div>
 
             {loading ? (
