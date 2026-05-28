@@ -114,6 +114,16 @@ DOC_MARKERS = [
     "source marker verifyPublicDocument value call was unchanged",
     "production git head: 31a0eae",
     "Stage 12.4 public verification service states frontend deploy - 2026-05-27",
+    "Stage 12.1 account workflow smoke remained green",
+    "Stage 12.2 catalog workflow guard remained green",
+    "Stage 12.3 course detail workflow guard remained green",
+    "Stage 12.4 document verification workflow guard was accepted",
+    "Stage 12.4 public verification service states were deployed and accepted",
+    "Stage 12.4 public verification journey hint was deployed and accepted",
+    "develop, origin/develop, main and origin/main were aligned at 417e65a",
+    "tagged git head: 417e65a",
+    "checkpoint tag: v0.1.0-stage12-4-document-verification-ux-polish",
+    "Stage 12.4 document verification UX polish checkpoint tag - 2026-05-28",
 ]
 
 VERIFY_PAGE_MARKERS = [

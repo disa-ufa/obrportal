@@ -511,3 +511,25 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_4_5_public_verification_service_states_frontend_deploy_20260527215246.txt
+
+## 18. Stage 12.4 document verification UX polish checkpoint tag - 2026-05-28
+
+Status: accepted
+
+Stage 12.4 document verification UX polish checkpoint tag was created and pushed to the remote repository.
+
+Accepted evidence:
+
+- checkpoint tag: v0.1.0-stage12-4-document-verification-ux-polish;
+- tagged git head: 417e65a;
+- tag message: Stage 12.4 document verification UX polish checkpoint: public verification journey, service states, guards, runtime smoke and production deploy;
+- tag was pushed to origin;
+- develop, origin/develop, main and origin/main were aligned at 417e65a;
+- Stage 12.4 document verification workflow document was accepted;
+- Stage 12.4 public verification journey hint was deployed and accepted;
+- Stage 12.4 public verification service states were deployed and accepted;
+- Stage 12.4 document verification workflow guard was accepted;
+- Stage 12.3 course detail workflow guard remained green;
+- Stage 12.2 catalog workflow guard remained green;
+- Stage 12.1 account workflow smoke remained green;
+- production docs sync passed before tag creation.
