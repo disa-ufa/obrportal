@@ -365,3 +365,42 @@ Verification markers:
 - `public_login_http=200`
 - `public_admin_http=200`
 - `public_ready_http=200`
+
+## 16. Stage 12.7 admin courses CSV export - 2026-05-28
+
+Goal: add a low-risk frontend-only CSV export for the currently visible admin courses list.
+
+Scope:
+- `AdminCoursesPage` exports only the already loaded and currently visible `courses` collection.
+- Export respects the current search and activity filters.
+- Export includes course-level fields and already loaded module/lesson counts.
+- Export uses the shared `downloadCsvFile` and `buildDatedCsvFilename` helpers.
+- Export filename prefix is `obrportal-admin-courses`.
+- No backend API contract changes were added.
+- No database migrations were added.
+- No authentication, RBAC or object-level access changes were added.
+- No destructive imports were introduced.
+
+CSV columns:
+- `id`
+- `slug`
+- `title`
+- `is_active`
+- `hours`
+- `format`
+- `document_type`
+- `modules_count`
+- `lessons_count`
+- `public_url`
+- `description`
+- `created_at`
+- `updated_at`
+
+Verification markers:
+- `Stage 12.7 admin courses CSV export - 2026-05-28`
+- `courses list export for admin role only`
+- `admin-courses-export-summary`
+- `admin-courses-export-csv-button`
+- `obrportal-admin-courses`
+- `COURSE_CSV_EXPORT_COLUMNS`
+- `handleExportCoursesCsv`

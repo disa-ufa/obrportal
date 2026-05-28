@@ -33,6 +33,7 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { buildAuditPath, buildCoursesPath, buildDocumentsPath, buildEnrollmentsPath } from "../utils/adminLinks";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 
 const RU = {
   all: "\u0412\u0441\u0435",
@@ -187,6 +188,22 @@ const COURSE_ACTIVE_FILTERS = [
   { value: "", label: RU.all },
   { value: "true", label: RU.activePlural },
   { value: "false", label: RU.inactivePlural },
+];
+
+const COURSE_CSV_EXPORT_COLUMNS = [
+  { key: "id", title: "ID" },
+  { key: "slug", title: "Slug" },
+  { key: "title", title: "Название" },
+  { key: "is_active", title: "Активна" },
+  { key: "hours", title: "Объем, часов" },
+  { key: "format", title: "Формат" },
+  { key: "document_type", title: "Итоговый документ" },
+  { key: "modules_count", title: "Модулей" },
+  { key: "lessons_count", title: "Уроков" },
+  { key: "public_url", title: "Публичная карточка" },
+  { key: "description", title: "Описание" },
+  { key: "created_at", title: "Создана" },
+  { key: "updated_at", title: "Обновлена" },
 ];
 
 const EMPTY_COURSE_FORM = {
@@ -2214,6 +2231,35 @@ export function AdminCoursesPage() {
     await navigateToCourseFilters({}, { replace: true });
   }
 
+  function handleExportCoursesCsv() {
+    const rows = courses.map((course) => {
+      const modules = courseModulesByCourseId[course.id] || [];
+      const lessons = modules.flatMap((module) => courseLessonsByModuleId[module.id] || []);
+
+      return {
+        id: course.id,
+        slug: course.slug || "",
+        title: course.title || "",
+        is_active: course.is_active ? "yes" : "no",
+        hours: course.hours ?? "",
+        format: course.format || "",
+        document_type: course.document_type || "",
+        modules_count: modules.length,
+        lessons_count: lessons.length,
+        public_url: course.slug ? `/courses/${course.slug}` : "",
+        description: course.description || "",
+        created_at: course.created_at || "",
+        updated_at: course.updated_at || "",
+      };
+    });
+
+    downloadCsvFile({
+      filename: buildDatedCsvFilename("obrportal-admin-courses"),
+      columns: COURSE_CSV_EXPORT_COLUMNS,
+      rows,
+    });
+  }
+
   return (
     <div className="space-y-6">
       <SectionCard
@@ -2326,6 +2372,29 @@ export function AdminCoursesPage() {
                   ? counts.inactive || 0
                   : counts.all || 0}
           />
+
+          <div
+            data-testid="admin-courses-export-summary"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div>
+              <div className="text-sm font-semibold text-slate-900">Экспорт программ</div>
+              <p className="mt-1 text-xs text-slate-600">
+                CSV содержит текущую выборку после поиска и фильтра активности:
+                {" "}{courses.length} из {courseCounts.all || courses.length}.
+              </p>
+            </div>
+
+            <ActionButton
+              type="button"
+              tone="light"
+              onClick={handleExportCoursesCsv}
+              disabled={loading || courses.length === 0}
+              data-testid="admin-courses-export-csv-button"
+            >
+              Скачать CSV
+            </ActionButton>
+          </div>
 
           {error && (
             <Alert title={RU.error} tone="red">
