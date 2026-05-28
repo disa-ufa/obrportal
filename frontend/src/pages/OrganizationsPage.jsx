@@ -17,6 +17,7 @@ import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
 import { buildEnrollmentsPath, buildGroupsPath, buildOrganizationsPath } from "../utils/adminLinks";
 
@@ -106,6 +107,17 @@ function calculateOrganizationCounts(items) {
   return counts;
 }
 
+const ORGANIZATION_CSV_EXPORT_COLUMNS = [
+  { label: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435", value: (item) => item.name || "" },
+  { label: "\u0418\u041d\u041d", value: (item) => item.inn || "" },
+  { label: "\u041a\u041f\u041f", value: (item) => item.kpp || "" },
+  { label: "\u041e\u0413\u0420\u041d", value: (item) => item.ogrn || "" },
+  { label: "\u042e\u0440\u0438\u0434\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0430\u0434\u0440\u0435\u0441", value: (item) => item.legal_address || "" },
+  { label: "\u0424\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0430\u0434\u0440\u0435\u0441", value: (item) => item.actual_address || "" },
+  { label: "Email", value: (item) => item.email || "" },
+  { label: "\u0422\u0435\u043b\u0435\u0444\u043e\u043d", value: (item) => item.phone || "" },
+];
+
 export function OrganizationsPage({
   user,
   organizations,
@@ -190,6 +202,14 @@ export function OrganizationsPage({
     navigateToOrganizationFilters({}, { replace: true });
   }
 
+  function handleExportOrganizationsCsv() {
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-organizations"),
+      ORGANIZATION_CSV_EXPORT_COLUMNS,
+      filteredOrganizations
+    );
+  }
+
   return (
     <div className="space-y-6">
       <SectionCard
@@ -265,9 +285,22 @@ export function OrganizationsPage({
               onChange={handleScopeChange}
             />
 
-            <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+            <div
+              data-testid="admin-organizations-export-summary"
+              className="flex flex-wrap items-center gap-3 text-sm text-slate-500"
+            >
               <span>Показано организаций: {filteredOrganizations.length}</span>
               <span>Всего по текущему поиску: {organizationCounts.all || 0}</span>
+              <span>Экспорт CSV: {filteredOrganizations.length} строк</span>
+              <button
+                type="button"
+                data-testid="admin-organizations-export-csv-button"
+                onClick={handleExportOrganizationsCsv}
+                disabled={loading || filteredOrganizations.length === 0}
+                className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Экспорт CSV
+              </button>
             </div>
 
             {loading ? (

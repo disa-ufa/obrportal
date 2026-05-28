@@ -4,6 +4,7 @@ DOC = Path("docs/stage-12-7-import-export-reporting.md")
 ROADMAP = Path("docs/stage-12-product-roadmap.md")
 PREVIOUS_STAGE_DOC = Path("docs/stage-12-6-ux-ui-navigation-empty-states.md")
 USERS_PAGE = Path("frontend/src/pages/UsersPage.jsx")
+ORGANIZATIONS_PAGE = Path("frontend/src/pages/OrganizationsPage.jsx")
 EXPORT_CSV = Path("frontend/src/utils/exportCsv.js")
 
 REQUIRED_FILES = [
@@ -11,6 +12,7 @@ REQUIRED_FILES = [
     ROADMAP,
     PREVIOUS_STAGE_DOC,
     USERS_PAGE,
+    ORGANIZATIONS_PAGE,
     EXPORT_CSV,
 ]
 
@@ -18,6 +20,10 @@ DOC_MARKERS = [
     "Stage 12.7 admin users CSV export production deploy - 2026-05-28",
     "production git head: 203832d",
     "stage12_7_admin_users_csv_export_production_deploy=passed",
+    "Stage 12.7 admin organizations CSV export - 2026-05-28",
+    "admin-organizations-export-summary",
+    "admin-organizations-export-csv-button",
+    "obrportal-admin-organizations",
     "Stage 12.7 admin users CSV export - 2026-05-28",
     "admin-users-export-summary",
     "admin-users-export-csv-button",
@@ -92,6 +98,17 @@ FRONTEND_STAGE_MARKERS = [
     "obrportal-admin-users",
 ]
 
+
+ORGANIZATION_FRONTEND_STAGE_MARKERS = [
+    "OrganizationsPage",
+    "filteredOrganizations",
+    "ORGANIZATION_CSV_EXPORT_COLUMNS",
+    "handleExportOrganizationsCsv",
+    "admin-organizations-export-summary",
+    "admin-organizations-export-csv-button",
+    "obrportal-admin-organizations",
+]
+
 EXPORT_UTIL_MARKERS = [
     "CSV_UTF8_BOM",
     "DEFAULT_CSV_DELIMITER",
@@ -153,12 +170,14 @@ def main() -> None:
     roadmap_count = require_markers(ROADMAP, ROADMAP_MARKERS)
     previous_count = require_markers(PREVIOUS_STAGE_DOC, PREVIOUS_STAGE_MARKERS)
     frontend_count = require_markers(USERS_PAGE, FRONTEND_STAGE_MARKERS)
+    organization_frontend_count = require_markers(ORGANIZATIONS_PAGE, ORGANIZATION_FRONTEND_STAGE_MARKERS)
     export_count = require_markers(EXPORT_CSV, EXPORT_UTIL_MARKERS)
 
     print(
         "stage 12.7 import/export and reporting diagnostics passed: "
         f"doc_markers={doc_count}, roadmap_markers={roadmap_count}, "
         f"previous_stage_markers={previous_count}, frontend_markers={frontend_count}, "
+        f"organization_frontend_markers={organization_frontend_count}, "
         f"export_markers={export_count}, secrets_printed=no, "
         "frontend_runtime_changed=yes, backend_runtime_changed=no"
     )

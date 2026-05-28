@@ -219,3 +219,47 @@ Deployment markers:
 - `backend_runtime_changed=no`;
 - `database_migrations_added=no`;
 - `api_contract_changed=no`.
+
+## 14. Stage 12.7 admin organizations CSV export - 2026-05-28
+
+Goal: add a low-risk frontend-only CSV export for the currently visible admin organizations list.
+
+Scope:
+
+- exports only the filtered organizations already visible to the signed-in admin;
+- does not add backend API endpoints;
+- does not change authentication, RBAC or object-level access;
+- does not add database migrations;
+- does not export secrets, internal configs or binary files;
+- uses the existing UTF-8 CSV export utility;
+- keeps export disabled when the current filtered list is empty.
+
+Recorded frontend markers:
+
+- `admin-organizations-export-summary`;
+- `admin-organizations-export-csv-button`;
+- `obrportal-admin-organizations`;
+- `ORGANIZATION_CSV_EXPORT_COLUMNS`;
+- `handleExportOrganizationsCsv`.
+
+Runtime impact:
+
+- frontend_runtime_changed=yes;
+- backend_runtime_changed=no;
+- database_migrations_added=no;
+- api_contract_changed=no.
+
+Verification commands:
+
+- `python scripts/check_stage12_7_import_export_reporting.py`;
+- `python scripts/check_stage12_6_ux_ui_navigation_empty_states.py`;
+- `python scripts/check_text_encoding.py`;
+- `python scripts/check_source_bom.py`;
+- `docker compose exec frontend npm run build`.
+
+Expected result:
+
+- organization CSV export markers are present;
+- Stage 12.7 guard passes;
+- frontend build passes;
+- secrets_printed=no.
