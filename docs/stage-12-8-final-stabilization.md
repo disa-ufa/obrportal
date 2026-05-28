@@ -121,3 +121,33 @@ Stage 12.8 baseline is accepted when:
 - `production health verification`
 - `final Stage 12 acceptance`
 - `production_runtime_changed=no`
+
+## 10. Stage 12.8 baseline server check - 2026-05-28
+
+Goal: record production server synchronization and health verification for the Stage 12.8 baseline.
+
+Server verification result:
+- production git head: `805f21a`;
+- deployed commit: `docs: add stage 12.8 final stabilization baseline`;
+- server project path: `/opt/obrportal`;
+- branch: `main`;
+- backend health endpoint returned OK;
+- backend ready endpoint returned OK;
+- public ready endpoint returned OK.
+
+Safety notes:
+- No runtime containers were rebuilt.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were added.
+- Server-local untracked paths `backups/`, `tmp/`, and `docker-compose.override.yml` were left untouched.
+- Secrets were not printed.
+- `production_runtime_changed=no`.
+
+Verification markers:
+- `Stage 12.8 baseline server check - 2026-05-28`
+- `production git head: 805f21a`
+- `Stage 12.8 baseline server check passed`
+- `backend_health=ok`
+- `backend_ready=ok`
+- `public_ready=ok`

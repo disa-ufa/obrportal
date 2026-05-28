@@ -31,6 +31,12 @@ REQUIRED_GUARDS = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.8 baseline server check - 2026-05-28",
+    "production git head: 805f21a",
+    "Stage 12.8 baseline server check passed",
+    "backend_health=ok",
+    "backend_ready=ok",
+    "public_ready=ok",
     "Status: in progress",
     "Stage: 12.8",
     "Stage 12.8 final stabilization and Stage 12 tag",
