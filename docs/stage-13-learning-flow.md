@@ -1,6 +1,6 @@
 # Stage 13 Learning flow / прохождение курсов
 
-Status: in progress
+Status: accepted
 Stage: 13
 Project: ObrPortal
 Baseline tag: v0.1.0-stage12-complete
@@ -328,3 +328,66 @@ Verification markers:
 - `account_learning_client_existing=yes`
 - `account_page_mojibake_check=clean`
 - `stage13_2_runtime_changed=no`
+
+## 15. Stage 13 final acceptance - 2026-05-29
+
+Goal: record final acceptance of Stage 13 Learning flow / прохождение курсов.
+
+Accepted Stage 13 scope:
+- learner course list;
+- learner course detail page;
+- modules and lessons display;
+- lesson completion;
+- progress calculation;
+- course completion;
+- link to generated documents.
+
+Final verification result:
+- Stage 13 guard passed;
+- Stage 12.8 guard passed;
+- Stage 12.7 guard passed;
+- project roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- focused account course detail and lesson progress tests were accepted earlier: `7 passed`;
+- selected account learning flow smoke tests were accepted earlier: `5 passed`;
+- frontend production build passed;
+- backend full test suite passed: `214 passed`;
+- current learner flow remains on the existing `/api/v1/account/courses` API;
+- no duplicate `/api/v1/learning` namespace was introduced.
+
+Production baseline before final acceptance record:
+- production git head: `212c1cf`;
+- branch: `main`;
+- server project path: `/opt/obrportal`;
+- backend health endpoint returned OK;
+- backend ready endpoint returned OK;
+- public ready endpoint returned OK.
+
+Safety notes:
+- This final acceptance record is documentation/guard-only.
+- No runtime containers need to be rebuilt for this record.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Server-local untracked paths `backups/`, `tmp/`, and `docker-compose.override.yml` must remain untouched.
+- Secrets were not printed.
+- `production_runtime_changed=no`.
+
+Final Stage 13 tag:
+- `v0.1.0-stage13-learning-flow-complete`.
+
+Verification markers:
+- `Stage 13 final acceptance - 2026-05-29`
+- `Stage 13 accepted`
+- `learner_course_list_accepted=yes`
+- `learner_course_detail_accepted=yes`
+- `modules_and_lessons_display_accepted=yes`
+- `lesson_completion_accepted=yes`
+- `progress_calculation_accepted=yes`
+- `course_completion_accepted=yes`
+- `document_link_flow_accepted=yes`
+- `frontend production build passed`
+- `214 passed`
+- `v0.1.0-stage13-learning-flow-complete`

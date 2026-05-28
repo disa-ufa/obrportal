@@ -17,6 +17,19 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Status: accepted",
+    "Stage 13 final acceptance - 2026-05-29",
+    "Stage 13 accepted",
+    "learner_course_list_accepted=yes",
+    "learner_course_detail_accepted=yes",
+    "modules_and_lessons_display_accepted=yes",
+    "lesson_completion_accepted=yes",
+    "progress_calculation_accepted=yes",
+    "course_completion_accepted=yes",
+    "document_link_flow_accepted=yes",
+    "frontend production build passed",
+    "214 passed",
+    "v0.1.0-stage13-learning-flow-complete",
     "Stage 13.2 frontend learner progress UX checkpoint - 2026-05-29",
     "account_page_learning_progress_ux_existing=yes",
     "account_page_lesson_completion_ui_existing=yes",
@@ -49,7 +62,7 @@ DOC_MARKERS = [
     "backend_health=ok",
     "backend_ready=ok",
     "public_ready=ok",
-    "Status: in progress",
+    "Status: accepted",
     "Stage: 13",
     "Stage 13 Learning flow / прохождение курсов",
     "Stage 13 baseline",
