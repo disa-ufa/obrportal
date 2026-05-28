@@ -21,6 +21,13 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin courses CSV export production deploy - 2026-05-28",
+    "production git head: aa976e9",
+    "admin courses CSV export deployed",
+    "local_frontend_http=200",
+    "public_login_http=200",
+    "public_admin_http=200",
+    "public_ready_http=200",
     "Stage 12.7 admin courses CSV export - 2026-05-28",
     "courses list export for admin role only",
     "admin-courses-export-summary",
