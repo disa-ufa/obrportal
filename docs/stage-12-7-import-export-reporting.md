@@ -1,6 +1,6 @@
 # Stage 12.7 Import/export and reporting
 
-Status: in progress
+Status: accepted
 Stage: 12.7
 Project: ObrPortal
 Baseline tag: v0.1.0-stage12-6-ux-navigation-empty-states
@@ -723,3 +723,59 @@ Verification markers:
 - `public_login_http=200`
 - `public_admin_http=200`
 - `public_ready_http=200`
+
+## Stage 12.7 final acceptance - 2026-05-28
+
+Goal: record final acceptance of Stage 12.7 import/export and reporting after all planned frontend-only CSV exports were implemented, deployed and verified.
+
+Accepted CSV export scope:
+- admin users CSV export;
+- admin organizations CSV export;
+- admin groups CSV export;
+- admin courses CSV export;
+- admin enrollments CSV export;
+- admin documents CSV export;
+- admin audit CSV export.
+
+Final repository state:
+- final local and main branch head before acceptance record: `24b25a4`;
+- latest deployed runtime commit: `053703a`;
+- latest server docs-only head before final acceptance record: `24b25a4`;
+- production branch: `main`;
+- production path: `/opt/obrportal`.
+
+Final verification result:
+- Stage 12.7 guard passed;
+- Stage 12.6 guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- frontend production build passed;
+- backend test suite passed: `214 passed`;
+- secrets were not printed;
+- backend runtime behavior was not changed by the final acceptance record;
+- no database migrations were added;
+- no backend API contract changes were added;
+- no authentication or RBAC weakening was introduced.
+
+Final Stage 12.7 tags:
+- `v0.1.0-stage12-7-import-export-reporting-baseline`;
+- `v0.1.0-stage12-7-import-export-reporting`;
+- `v0.1.0-stage12-7-admin-organizations-csv-export`;
+- `v0.1.0-stage12-7-admin-groups-csv-export`;
+- `v0.1.0-stage12-7-admin-courses-csv-export`;
+- `v0.1.0-stage12-7-admin-enrollments-csv-export`;
+- `v0.1.0-stage12-7-admin-documents-csv-export`;
+- `v0.1.0-stage12-7-admin-audit-csv-export`.
+
+Verification markers:
+- `Stage 12.7 final acceptance - 2026-05-28`
+- `Stage 12.7 accepted`
+- `admin users CSV export accepted`
+- `admin organizations CSV export accepted`
+- `admin groups CSV export accepted`
+- `admin courses CSV export accepted`
+- `admin enrollments CSV export accepted`
+- `admin documents CSV export accepted`
+- `admin audit CSV export accepted`
+- `214 passed`
+- `frontend production build passed`

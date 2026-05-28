@@ -27,6 +27,17 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 final acceptance - 2026-05-28",
+    "Stage 12.7 accepted",
+    "admin users CSV export accepted",
+    "admin organizations CSV export accepted",
+    "admin groups CSV export accepted",
+    "admin courses CSV export accepted",
+    "admin enrollments CSV export accepted",
+    "admin documents CSV export accepted",
+    "admin audit CSV export accepted",
+    "214 passed",
+    "frontend production build passed",
     "Stage 12.7 admin audit CSV export production deploy - 2026-05-28",
     "production git head: 053703a",
     "admin audit CSV export deployed",
@@ -117,7 +128,7 @@ DOC_MARKERS = [
     "database_migrations_added=no",
     "api_contract_changed=no",
     "# Stage 12.7 Import/export and reporting",
-    "Status: in progress",
+    "Status: accepted",
     "Stage: 12.7",
     "Baseline tag: v0.1.0-stage12-6-ux-navigation-empty-states",
     "documentation-only and guard-only",
