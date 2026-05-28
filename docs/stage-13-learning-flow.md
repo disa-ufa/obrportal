@@ -218,3 +218,62 @@ Verification markers:
 - `completion_document_hook_existing=yes`
 - `frontend_account_learning_client_existing=yes`
 - `stage13_inventory_runtime_changed=no`
+
+## 13. Stage 13.1 backend learning flow contract tests - 2026-05-29
+
+Goal: record focused backend contract verification for the existing learner-scoped account learning flow.
+
+Verification result:
+- current local git head before checkpoint: `7aae3d8`;
+- focused account course detail and lesson progress tests passed: `7 passed`;
+- selected account learning flow tests from `test_auth_rbac_admin_api.py` passed: `5 passed`;
+- `backend/app/tests/test_account_course_detail_api.py` is accepted as dedicated course detail contract coverage;
+- `backend/app/tests/test_account_lesson_progress_api.py` is accepted as dedicated lesson progress and completion contract coverage;
+- selected self-enrollment/start/complete tests from `backend/app/tests/test_auth_rbac_admin_api.py` are accepted as existing account flow smoke coverage.
+
+Covered learner API contracts:
+- `GET /api/v1/account/courses`;
+- `GET /api/v1/account/courses/{enrollment_id}`;
+- `POST /api/v1/account/courses/{course_id}/enroll`;
+- `POST /api/v1/account/courses/{enrollment_id}/start`;
+- `POST /api/v1/account/courses/{enrollment_id}/lessons/{lesson_id}/complete`;
+- `POST /api/v1/account/courses/{enrollment_id}/complete`.
+
+Covered behavior:
+- learner can list own enrolled courses;
+- learner can open own course detail;
+- inactive modules and lessons are not exposed in learner detail;
+- learner cannot access another learner's enrollment;
+- unauthenticated access is rejected;
+- learner can complete a lesson;
+- lesson completion is idempotent;
+- progress counters and percent fields are recalculated;
+- required lesson completion is required before course completion;
+- completed course cannot be changed;
+- self-enrollment accepts active courses;
+- duplicate self-enrollment is rejected;
+- inactive course self-enrollment is rejected;
+- learner can start and complete a self-enrolled course.
+
+Decision:
+- Stage 13 continues using the existing `/api/v1/account/courses` learner API.
+- A duplicate `/api/v1/learning` namespace must not be introduced for the same flow.
+- The next runtime step should be limited to contract hardening or UX polish, not API duplication.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API namespace was added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- `stage13_1_runtime_changed=no`.
+
+Verification markers:
+- `Stage 13.1 backend learning flow contract tests - 2026-05-29`
+- `focused_account_learning_tests=7_passed`
+- `account_flow_smoke_tests=5_passed`
+- `existing_account_learning_api_reused=yes`
+- `no_learning_namespace_duplication=yes`
+- `learner_scoped_ownership_contract_verified=yes`
+- `progress_and_completion_contract_verified=yes`
+- `stage13_1_runtime_changed=no`

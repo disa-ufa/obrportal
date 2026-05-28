@@ -17,6 +17,14 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 13.1 backend learning flow contract tests - 2026-05-29",
+    "focused_account_learning_tests=7_passed",
+    "account_flow_smoke_tests=5_passed",
+    "existing_account_learning_api_reused=yes",
+    "no_learning_namespace_duplication=yes",
+    "learner_scoped_ownership_contract_verified=yes",
+    "progress_and_completion_contract_verified=yes",
+    "stage13_1_runtime_changed=no",
     "Stage 13 learning flow inventory - 2026-05-29",
     "stage13_inventory_report=tmp/stage13_inventory_compact.txt",
     "learner_scoped_account_courses_existing=yes",
