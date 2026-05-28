@@ -181,3 +181,41 @@ Runtime impact:
 - backend_runtime_changed=no;
 - database_migrations_added=no;
 - api_contract_changed=no.
+
+## 14. Stage 12.7 admin users CSV export production deploy - 2026-05-28
+
+Production deploy result: passed.
+
+Deployed production git head:
+
+- `203832d` — `feat: add stage 12.7 admin users CSV export`.
+
+Production verification:
+
+- backend container is up;
+- frontend container is up and healthy;
+- local backend `/health` returns `status=ok`;
+- local backend `/api/v1/ready` returns `status=ok`, `database=ok`, `redis=ok`, `storage=ok`;
+- local frontend returns HTTP 200;
+- public `/login` returns HTTP 200;
+- public `/admin` returns HTTP 200;
+- public `/api/v1/ready` returns `status=ok`, `database=ok`, `redis=ok`, `storage=ok`.
+
+Operational notes:
+
+- first backend health checks immediately after container recreation returned transient connection errors;
+- after backend startup completed, local and public health checks passed;
+- no database migrations were added;
+- no backend API contract changes were added;
+- backend runtime behavior was not changed by the CSV export feature;
+- frontend runtime changed intentionally for admin users CSV export;
+- secrets were not printed.
+
+Deployment markers:
+
+- `production git head: 203832d`;
+- `stage12_7_admin_users_csv_export_production_deploy=passed`;
+- `frontend_runtime_changed=yes`;
+- `backend_runtime_changed=no`;
+- `database_migrations_added=no`;
+- `api_contract_changed=no`.

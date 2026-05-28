@@ -15,6 +15,9 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin users CSV export production deploy - 2026-05-28",
+    "production git head: 203832d",
+    "stage12_7_admin_users_csv_export_production_deploy=passed",
     "Stage 12.7 admin users CSV export - 2026-05-28",
     "admin-users-export-summary",
     "admin-users-export-csv-button",
