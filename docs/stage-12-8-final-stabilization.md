@@ -1,6 +1,6 @@
 # Stage 12.8 Final stabilization and Stage 12 tag
 
-Status: in progress
+Status: accepted
 Stage: 12.8
 Project: ObrPortal
 Baseline tag: v0.1.0-stage12-7-import-export-reporting-complete
@@ -151,3 +151,71 @@ Verification markers:
 - `backend_health=ok`
 - `backend_ready=ok`
 - `public_ready=ok`
+
+## 11. Stage 12.8 final Stage 12 acceptance - 2026-05-28
+
+Goal: record final acceptance of the complete Stage 12 product contour after Stage 12.1 through Stage 12.8 were verified.
+
+Accepted Stage 12 scope:
+- Stage 12.1 learner account and profile workflow;
+- Stage 12.2 catalog learner workflow;
+- Stage 12.3 course detail learner workflow;
+- Stage 12.4 document generation and QR verification workflow;
+- Stage 12.5 admin moderation and audit workflow;
+- Stage 12.6 UX/UI navigation and empty states;
+- Stage 12.7 import/export and reporting;
+- Stage 12.8 final stabilization and Stage 12 tag.
+
+Final verification result:
+- Stage 12.8 guard passed;
+- Stage 12.7 guard passed;
+- Stage 12.6 guard passed;
+- Stage 12.5 guard passed;
+- Stage 12.4 guard passed;
+- Stage 12.3 guard passed;
+- Stage 12.2 guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- frontend production build passed;
+- backend test suite passed: `214 passed`;
+- local git status was clean before this final acceptance record.
+
+Production baseline before final acceptance record:
+- production git head: `292787a`;
+- branch: `main`;
+- server project path: `/opt/obrportal`;
+- backend health endpoint returned OK;
+- backend ready endpoint returned OK;
+- public ready endpoint returned OK.
+
+Safety notes:
+- This final acceptance record is documentation/guard-only.
+- No runtime containers need to be rebuilt for this record.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Server-local untracked paths `backups/`, `tmp/`, and `docker-compose.override.yml` must remain untouched.
+- Secrets were not printed.
+- `production_runtime_changed=no`.
+
+Final Stage 12 tag:
+- `v0.1.0-stage12-complete`.
+
+Verification markers:
+- `Stage 12.8 final Stage 12 acceptance - 2026-05-28`
+- `Stage 12 accepted`
+- `Stage 12.1 accepted`
+- `Stage 12.2 accepted`
+- `Stage 12.3 accepted`
+- `Stage 12.4 accepted`
+- `Stage 12.5 accepted`
+- `Stage 12.6 accepted`
+- `Stage 12.7 accepted`
+- `Stage 12.8 accepted`
+- `frontend production build passed`
+- `214 passed`
+- `v0.1.0-stage12-complete`
