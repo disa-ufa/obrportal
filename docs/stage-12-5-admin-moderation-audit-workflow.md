@@ -419,3 +419,54 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_5_3_admin_audit_service_states_frontend_deploy_retry_20260528101536.txt
+
+## 17. Stage 12.5 enrollment moderation service states - 2026-05-28
+
+Status: implemented locally
+
+Stage 12.5 adds stable frontend markers and service-state boundaries for the admin enrollment moderation workflow.
+
+Implementation boundaries:
+
+- frontend-only change;
+- no database migrations;
+- no backend API changes;
+- no RBAC weakening;
+- no object-level access weakening;
+- existing getAdminEnrollments list loading remains unchanged;
+- existing createAdminEnrollment mutation remains unchanged;
+- existing createAdminGroupEnrollments mutation remains unchanged;
+- existing updateAdminEnrollment mutation remains unchanged;
+- existing deleteAdminEnrollment mutation remains unchanged;
+- existing getAdminWorklistSummary loading remains unchanged;
+- enrollment moderation actions remain explicit admin actions;
+- frontend_runtime_changed=yes after deploy;
+- backend_runtime_changed=no.
+
+Source markers:
+
+- admin-enrollments-page;
+- admin-enrollments-moderation-notice;
+- admin-enrollments-error-state;
+- admin-enrollments-success-state;
+- admin-enrollments-create-section;
+- admin-enrollments-create-form;
+- admin-enrollments-bulk-section;
+- admin-enrollments-bulk-form;
+- admin-enrollments-list-section;
+- admin-enrollments-filters;
+- admin-enrollments-search-input;
+- admin-enrollments-status-filter;
+- admin-enrollments-apply-filters-action;
+- admin-enrollments-reset-filters-action;
+- admin-enrollments-loading-state;
+- admin-enrollments-empty-state;
+- admin-enrollments-list;
+- admin-enrollment-card;
+- admin-enrollment-complete-action;
+- admin-enrollment-edit-action;
+- admin-enrollment-delete-action;
+- admin-enrollment-edit-form;
+- role="alert";
+- aria-live="assertive";
+- aria-live="polite".

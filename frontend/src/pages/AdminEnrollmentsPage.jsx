@@ -1565,7 +1565,7 @@ export function AdminEnrollmentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div data-testid="admin-enrollments-page" className="space-y-6">
       <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Администрирование
@@ -1579,16 +1579,28 @@ export function AdminEnrollmentsPage() {
         </p>
       </section>
 
+      <div
+        data-testid="admin-enrollments-moderation-notice"
+        className="rounded-3xl bg-blue-50 p-5 text-sm leading-6 text-blue-900 ring-1 ring-blue-100"
+      >
+        Административные назначения — рабочая зона модерации обучения: администратор проверяет назначенные записи,
+        массовые назначения, статусы, готовность документов и переходы в аудит без изменения модели RBAC.
+      </div>
+
       {error && (
-        <Alert title="Ошибка" tone="red">
-          {error}
-        </Alert>
+        <div data-testid="admin-enrollments-error-state" role="alert" aria-live="assertive">
+          <Alert title="Ошибка" tone="red">
+            {error}
+          </Alert>
+        </div>
       )}
 
       {successMessage && (
-        <Alert title="Готово" tone="green">
-          {successMessage}
-        </Alert>
+        <div data-testid="admin-enrollments-success-state" aria-live="polite">
+          <Alert title="Готово" tone="green">
+            {successMessage}
+          </Alert>
+        </div>
       )}
 
       <EnrollmentSummaryCards
@@ -1611,8 +1623,9 @@ export function AdminEnrollmentsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)]">
         <div className="space-y-6">
-        <SectionCard title="Создать назначение" subtitle="POST /api/v1/admin/enrollments">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div data-testid="admin-enrollments-create-section">
+          <SectionCard title="Создать назначение" subtitle="POST /api/v1/admin/enrollments">
+            <form data-testid="admin-enrollments-create-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4">
               <AdminFormField contentClassName="mt-2" label="Пользователь">
                 <select
@@ -1733,11 +1746,13 @@ export function AdminEnrollmentsPage() {
                 Очистить
               </button>
             </div>
-          </form>
-        </SectionCard>
+            </form>
+          </SectionCard>
+        </div>
 
-        <SectionCard title="Массовое назначение группе" subtitle="POST /api/v1/admin/enrollments/group">
-          <form onSubmit={handleBulkSubmit} className="space-y-4">
+        <div data-testid="admin-enrollments-bulk-section">
+          <SectionCard title="Массовое назначение группе" subtitle="POST /api/v1/admin/enrollments/group">
+            <form data-testid="admin-enrollments-bulk-form" onSubmit={handleBulkSubmit} className="space-y-4">
             <p className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100">
               Выберите учебную группу и программу. Система создаст назначения для всех участников группы, а дубликаты пропустит.
             </p>
@@ -1820,13 +1835,16 @@ export function AdminEnrollmentsPage() {
                 Очистить
               </button>
             </div>
-          </form>
-        </SectionCard>
+            </form>
+          </SectionCard>
+        </div>
         </div>
 
-        <SectionCard title="Список назначений" subtitle="GET /api/v1/admin/enrollments">
-          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.15fr_1fr_1fr_1fr_1fr_1fr_auto_auto]">
+        <div data-testid="admin-enrollments-list-section">
+          <SectionCard title="Список назначений" subtitle="GET /api/v1/admin/enrollments">
+          <form data-testid="admin-enrollments-filters" onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.15fr_1fr_1fr_1fr_1fr_1fr_auto_auto]">
             <input
+              data-testid="admin-enrollments-search-input"
               type="search"
               value={filterQuery}
               onChange={(event) => setFilterQuery(event.target.value)}
@@ -1874,6 +1892,7 @@ export function AdminEnrollmentsPage() {
             </select>
 
             <select
+              data-testid="admin-enrollments-status-filter"
               value={filterStatus}
               onChange={(event) => setFilterStatus(event.target.value)}
               className={INPUT_CLASS}
@@ -1899,11 +1918,11 @@ export function AdminEnrollmentsPage() {
               ))}
             </select>
 
-            <button type="submit" className={BUTTON_DARK_CLASS}>
+            <button data-testid="admin-enrollments-apply-filters-action" type="submit" className={BUTTON_DARK_CLASS}>
               Применить
             </button>
 
-            <button type="button" onClick={handleResetFilter} className={BUTTON_LIGHT_CLASS}>
+            <button data-testid="admin-enrollments-reset-filters-action" type="button" onClick={handleResetFilter} className={BUTTON_LIGHT_CLASS}>
               Сбросить
             </button>
           </form>
@@ -1979,11 +1998,12 @@ export function AdminEnrollmentsPage() {
           </div>
 
           {loading ? (
-            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+            <div data-testid="admin-enrollments-loading-state" aria-live="polite" className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
               Загружаем назначения...
             </div>
           ) : visibleEnrollments.length === 0 ? (
-            <AdminEmptyState
+            <div data-testid="admin-enrollments-empty-state">
+              <AdminEmptyState
               title={
                 showActionRequiredOnly
                   ? "Назначения, требующие действия, не найдены"
@@ -1999,11 +2019,12 @@ export function AdminEnrollmentsPage() {
                   ? "Показать все назначения"
                   : "Сбросить фильтр"
               }
-              onReset={showActionRequiredOnly ? handleToggleActionRequiredFilter : handleResetFilter}
-            />
+                onReset={showActionRequiredOnly ? handleToggleActionRequiredFilter : handleResetFilter}
+              />
+            </div>
 
           ) : (
-            <div className="space-y-4">
+            <div data-testid="admin-enrollments-list" className="space-y-4">
               {visibleEnrollments.map((enrollment) => {
                 const isEditing = editingEnrollmentId === enrollment.id;
                 const isActionRunning = actionEnrollmentId === enrollment.id;
@@ -2018,6 +2039,7 @@ export function AdminEnrollmentsPage() {
                 return (
                   <article
                     key={enrollment.id}
+                    data-testid="admin-enrollment-card"
                     className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
                   >
                     <div className="flex flex-wrap items-center gap-2">
@@ -2231,6 +2253,7 @@ export function AdminEnrollmentsPage() {
                           {enrollment.status !== "completed" && enrollment.status !== "cancelled" && (
                             <button
                               type="button"
+                              data-testid="admin-enrollment-complete-action"
                               onClick={() => handleCompleteEnrollment(enrollment)}
                               className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                             >
@@ -2240,6 +2263,7 @@ export function AdminEnrollmentsPage() {
 
                           <button
                             type="button"
+                            data-testid="admin-enrollment-edit-action"
                             onClick={() => handleStartEdit(enrollment)}
                             disabled={isActionRunning}
                             className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
@@ -2249,6 +2273,7 @@ export function AdminEnrollmentsPage() {
 
                           <button
                             type="button"
+                            data-testid="admin-enrollment-delete-action"
                             onClick={() => handleDelete(enrollment)}
                             disabled={isActionRunning}
                             className={BUTTON_RED_CLASS}
@@ -2259,6 +2284,7 @@ export function AdminEnrollmentsPage() {
                       </>
                     ) : (
                       <form
+                        data-testid="admin-enrollment-edit-form"
                         onSubmit={(event) => handleEditSubmit(event, enrollment.id)}
                         className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
                       >
@@ -2359,7 +2385,8 @@ export function AdminEnrollmentsPage() {
               })}
             </div>
           )}
-        </SectionCard>
+          </SectionCard>
+        </div>
       </div>
     </div>
   );
