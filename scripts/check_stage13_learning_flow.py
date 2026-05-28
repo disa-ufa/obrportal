@@ -17,6 +17,14 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 13 learning flow inventory - 2026-05-29",
+    "stage13_inventory_report=tmp/stage13_inventory_compact.txt",
+    "learner_scoped_account_courses_existing=yes",
+    "account_course_detail_existing=yes",
+    "lesson_progress_existing=yes",
+    "completion_document_hook_existing=yes",
+    "frontend_account_learning_client_existing=yes",
+    "stage13_inventory_runtime_changed=no",
     "Stage 13 baseline server check - 2026-05-28",
     "production git head: 6f78013",
     "Stage 13 baseline server check passed",

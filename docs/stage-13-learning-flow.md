@@ -173,3 +173,48 @@ Verification markers:
 - `backend_health=ok`
 - `backend_ready=ok`
 - `public_ready=ok`
+
+## 12. Stage 13 learning flow inventory - 2026-05-29
+
+Goal: record the current learner-scoped learning flow inventory before runtime stabilization.
+
+Inventory result:
+- current local git head: `3c4cdbf`;
+- working tree was clean before inventory recording;
+- compact inventory report was generated at `tmp/stage13_inventory_compact.txt`;
+- account backend already exposes learner-scoped course list via `GET /api/v1/account/courses`;
+- account backend already exposes learner-scoped course detail via `GET /api/v1/account/courses/{enrollment_id}`;
+- account backend already exposes lesson completion via `POST /api/v1/account/courses/{enrollment_id}/lessons/{lesson_id}/complete`;
+- account backend already exposes self-enrollment via `POST /api/v1/account/courses/{course_id}/enroll`;
+- account backend already exposes course start via `POST /api/v1/account/courses/{enrollment_id}/start`;
+- account backend already exposes course completion via `POST /api/v1/account/courses/{enrollment_id}/complete`;
+- account backend uses `Enrollment.user_id == current_user.id` for learner ownership checks;
+- account backend uses `LessonProgress` for completed lessons;
+- account backend calls `ensure_completion_document_for_enrollment` on course completion;
+- account schemas already include `AccountCourseItemResponse`, `AccountCourseDetailResponse`, `AccountCourseModuleResponse`, `AccountCourseLessonResponse` and `AccountCoursesResponse`;
+- course detail schema already includes `progress_percent`, `required_progress_percent`, `lessons_total`, `lessons_completed`, `required_lessons_total`, `required_lessons_completed`, `modules` and `lessons`;
+- frontend API client already exposes `getAccountCourses`, `getAccountCourseDetail`, `completeAccountCourseLesson`, `enrollAccountCourse`, `startAccountCourse`, `completeAccountCourse`, `getAccountDocuments` and `downloadAccountDocument`.
+
+Decision:
+- Stage 13 must not duplicate the existing account learning API under a new `/learning` namespace.
+- The next runtime step should stabilize and verify the existing `/api/v1/account/courses` learner flow.
+- Priority is contract tests, smoke coverage, ownership/403/404 checks, progress consistency and UX polish.
+- No database migration is required for the inventory step.
+
+Safety notes:
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were added.
+- Secrets were not printed.
+- `stage13_inventory_runtime_changed=no`.
+
+Verification markers:
+- `Stage 13 learning flow inventory - 2026-05-29`
+- `stage13_inventory_report=tmp/stage13_inventory_compact.txt`
+- `learner_scoped_account_courses_existing=yes`
+- `account_course_detail_existing=yes`
+- `lesson_progress_existing=yes`
+- `completion_document_hook_existing=yes`
+- `frontend_account_learning_client_existing=yes`
+- `stage13_inventory_runtime_changed=no`
