@@ -9,6 +9,7 @@ GROUPS_PAGE = Path("frontend/src/pages/GroupsPage.jsx")
 ADMIN_COURSES_PAGE = Path("frontend/src/pages/AdminCoursesPage.jsx")
 ADMIN_ENROLLMENTS_PAGE = Path("frontend/src/pages/AdminEnrollmentsPage.jsx")
 DOCUMENTS_PAGE = Path("frontend/src/pages/DocumentsPage.jsx")
+AUDIT_PAGE = Path("frontend/src/pages/AuditPage.jsx")
 EXPORT_CSV = Path("frontend/src/utils/exportCsv.js")
 
 REQUIRED_FILES = [
@@ -21,10 +22,16 @@ REQUIRED_FILES = [
     ADMIN_COURSES_PAGE,
     ADMIN_ENROLLMENTS_PAGE,
     DOCUMENTS_PAGE,
+    AUDIT_PAGE,
     EXPORT_CSV,
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin audit CSV export - 2026-05-28",
+    "audit events export for admin role only",
+    "admin-audit-export-summary",
+    "admin-audit-export-csv-button",
+    "obrportal-admin-audit-events",
     "Stage 12.7 admin documents CSV export production deploy - 2026-05-28",
     "production git head: 19639b5",
     "admin documents CSV export deployed",
@@ -225,6 +232,18 @@ DOCUMENT_FRONTEND_STAGE_MARKERS = [
 ]
 
 
+
+AUDIT_FRONTEND_STAGE_MARKERS = [
+    "AuditPage",
+    "auditEvents",
+    "AUDIT_CSV_EXPORT_COLUMNS",
+    "handleExportAuditCsv",
+    "admin-audit-export-summary",
+    "admin-audit-export-csv-button",
+    "obrportal-admin-audit-events",
+]
+
+
 EXPORT_UTIL_MARKERS = [
     "CSV_UTF8_BOM",
     "DEFAULT_CSV_DELIMITER",
@@ -291,6 +310,7 @@ def main() -> None:
     course_frontend_count = require_markers(ADMIN_COURSES_PAGE, COURSE_FRONTEND_STAGE_MARKERS)
     enrollment_frontend_count = require_markers(ADMIN_ENROLLMENTS_PAGE, ENROLLMENT_FRONTEND_STAGE_MARKERS)
     document_frontend_count = require_markers(DOCUMENTS_PAGE, DOCUMENT_FRONTEND_STAGE_MARKERS)
+    audit_frontend_count = require_markers(AUDIT_PAGE, AUDIT_FRONTEND_STAGE_MARKERS)
     for path in [
         USERS_PAGE,
         ORGANIZATIONS_PAGE,
@@ -298,6 +318,7 @@ def main() -> None:
         ADMIN_COURSES_PAGE,
         ADMIN_ENROLLMENTS_PAGE,
         DOCUMENTS_PAGE,
+        AUDIT_PAGE,
     ]:
         if "downloadCsvFile({" in path.read_text(encoding="utf-8"):
             raise SystemExit(
@@ -316,6 +337,7 @@ def main() -> None:
         f"course_frontend_markers={course_frontend_count}, "
         f"enrollment_frontend_markers={enrollment_frontend_count}, "
         f"document_frontend_markers={document_frontend_count}, "
+        f"audit_frontend_markers={audit_frontend_count}, "
         f"export_markers={export_count}, secrets_printed=no, "
         "frontend_runtime_changed=yes, backend_runtime_changed=no"
     )

@@ -14,6 +14,7 @@ import { TABLE_LINK_CLASS, buildAuditPath, buildEntityAdminPath } from "../utils
 import { formatRuDateTimeNativeUnsafe as formatDate } from "../utils/dateFormat";
 import { AdminSubtleTextInput as TextInput } from "../components/admin/AdminTextInput";
 import { AdminQuickValueFilters as QuickValueFilters } from "../components/admin/AdminQuickValueFilters";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 
 const DEFAULT_FILTERS = {
   action: "",
@@ -22,6 +23,44 @@ const DEFAULT_FILTERS = {
   actor_user_id: "",
   limit: "50",
 };
+
+const AUDIT_CSV_EXPORT_COLUMNS = [
+  { key: "id", title: "ID события" },
+  { key: "created_at", title: "Дата события" },
+  { key: "action", title: "Action" },
+  { key: "action_tone", title: "Тип действия" },
+  { key: "entity_type", title: "Entity type" },
+  { key: "entity_id", title: "Entity ID" },
+  { key: "entity_audit_url", title: "Фильтр по сущности" },
+  { key: "actor_user_id", title: "Actor user ID" },
+  { key: "actor_user_email", title: "Actor email" },
+  { key: "actor_user_full_name", title: "Actor ФИО" },
+  { key: "actor_audit_url", title: "Фильтр по actor" },
+  { key: "action_audit_url", title: "Фильтр по action" },
+  { key: "request_id", title: "Request ID" },
+  { key: "ip_address", title: "IP адрес" },
+  { key: "user_agent", title: "User agent" },
+  { key: "metadata", title: "Metadata" },
+  { key: "details", title: "Details" },
+  { key: "old_values", title: "Old values" },
+  { key: "new_values", title: "New values" },
+];
+
+function stringifyAuditCsvValue(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
 
 function normalizeFilters(filters) {
   return {
@@ -712,6 +751,47 @@ export function AuditPage({
     await navigateToAuditFilters(DEFAULT_FILTERS, { replace: true });
   }
 
+  function handleExportAuditCsv() {
+    const rows = (Array.isArray(auditEvents) ? auditEvents : []).map((event) => {
+      const entityAuditUrl =
+        event.entity_type && event.entity_id
+          ? buildAuditPath({ entity_type: event.entity_type, entity_id: event.entity_id })
+          : "";
+      const actorAuditUrl = event.actor_user_id
+        ? buildAuditPath({ actor_user_id: event.actor_user_id })
+        : "";
+      const actionAuditUrl = event.action ? buildAuditPath({ action: event.action }) : "";
+
+      return {
+        id: event.id,
+        created_at: event.created_at || "",
+        action: event.action || "",
+        action_tone: getActionTone(event.action),
+        entity_type: event.entity_type || "",
+        entity_id: event.entity_id || "",
+        entity_audit_url: entityAuditUrl,
+        actor_user_id: event.actor_user_id || "",
+        actor_user_email: event.actor_user_email || "",
+        actor_user_full_name: event.actor_user_full_name || "",
+        actor_audit_url: actorAuditUrl,
+        action_audit_url: actionAuditUrl,
+        request_id: event.request_id || "",
+        ip_address: event.ip_address || "",
+        user_agent: event.user_agent || "",
+        metadata: stringifyAuditCsvValue(event.metadata),
+        details: stringifyAuditCsvValue(event.details),
+        old_values: stringifyAuditCsvValue(event.old_values),
+        new_values: stringifyAuditCsvValue(event.new_values),
+      };
+    });
+
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-audit-events"),
+      AUDIT_CSV_EXPORT_COLUMNS,
+      rows
+    );
+  }
+
   return (
     <div data-testid="admin-audit-page" className="space-y-6">
       {user && (
@@ -870,6 +950,29 @@ export function AuditPage({
               <span>Показано событий: {auditEvents.length}</span>
               <span>Событий с actor: {auditCounts.actors}</span>
               <span>Лимит выдачи: {filters.limit || DEFAULT_FILTERS.limit}</span>
+            </div>
+
+            <div
+              data-testid="admin-audit-export-summary"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+            >
+              <div>
+                <div className="text-sm font-semibold text-slate-900">Экспорт журнала аудита</div>
+                <p className="mt-1 text-xs text-slate-600">
+                  CSV содержит текущую read-only выдачу audit_events после фильтров по action,
+                  entity, actor и лимиту: {auditEvents.length} событий.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                data-testid="admin-audit-export-csv-button"
+                onClick={handleExportAuditCsv}
+                disabled={loading || auditEvents.length === 0}
+                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Скачать CSV
+              </button>
             </div>
 
             {loading ? (

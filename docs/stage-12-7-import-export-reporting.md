@@ -641,3 +641,49 @@ Verification markers:
 - `public_login_http=200`
 - `public_admin_http=200`
 - `public_ready_http=200`
+
+## 19. Stage 12.7 admin audit CSV export - 2026-05-28
+
+Goal: add a low-risk frontend-only CSV export for the currently visible read-only admin audit events list.
+
+Scope:
+- `AuditPage` exports only the already loaded `auditEvents` collection.
+- Export respects current action, entity type, entity id, actor user id and limit filters.
+- Export includes audit event fields and read-only navigation URLs for investigation.
+- Export uses the shared `downloadCsvFile(filename, columns, rows)` and `buildDatedCsvFilename` helpers.
+- Export filename prefix is `obrportal-admin-audit-events`.
+- No backend API contract changes were added.
+- No database migrations were added.
+- No authentication, RBAC or object-level access changes were added.
+- No destructive imports were introduced.
+- Audit remains read-only from the admin UI.
+
+CSV columns:
+- `id`
+- `created_at`
+- `action`
+- `action_tone`
+- `entity_type`
+- `entity_id`
+- `entity_audit_url`
+- `actor_user_id`
+- `actor_user_email`
+- `actor_user_full_name`
+- `actor_audit_url`
+- `action_audit_url`
+- `request_id`
+- `ip_address`
+- `user_agent`
+- `metadata`
+- `details`
+- `old_values`
+- `new_values`
+
+Verification markers:
+- `Stage 12.7 admin audit CSV export - 2026-05-28`
+- `audit events export for admin role only`
+- `admin-audit-export-summary`
+- `admin-audit-export-csv-button`
+- `obrportal-admin-audit-events`
+- `AUDIT_CSV_EXPORT_COLUMNS`
+- `handleExportAuditCsv`
