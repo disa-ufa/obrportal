@@ -27,6 +27,13 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin audit CSV export production deploy - 2026-05-28",
+    "production git head: 053703a",
+    "admin audit CSV export deployed",
+    "local_frontend_http=200",
+    "public_login_http=200",
+    "public_admin_http=200",
+    "public_ready_http=200",
     "Stage 12.7 admin audit CSV export - 2026-05-28",
     "audit events export for admin role only",
     "admin-audit-export-summary",

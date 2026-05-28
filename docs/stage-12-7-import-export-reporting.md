@@ -687,3 +687,39 @@ Verification markers:
 - `obrportal-admin-audit-events`
 - `AUDIT_CSV_EXPORT_COLUMNS`
 - `handleExportAuditCsv`
+
+## Stage 12.7 admin audit CSV export production deploy - 2026-05-28
+
+Goal: record production deployment of the admin audit CSV export UI/runtime after successful main branch rollout.
+
+Production deployment result:
+- production git head: 053703a
+- deployed commit: `feat: add stage 12.7 admin audit CSV export`
+- server project path: `/opt/obrportal`
+- branch: `main`
+- frontend image was rebuilt with `docker compose up -d --build frontend`
+- backend container restarted successfully as part of compose dependency resolution
+- backend health endpoint returned OK
+- backend ready endpoint returned OK
+- local frontend smoke returned HTTP 200
+- public login route returned HTTP 200
+- public admin route returned HTTP 200
+- public ready endpoint returned HTTP 200
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added in the deployment documentation step.
+- No authentication or RBAC weakening was introduced.
+- Audit export remains read-only.
+- CSV export uses the shared positional helper signature: `downloadCsvFile(filename, columns, rows)`.
+- Existing server-local untracked paths `backups/`, `tmp/`, and `docker-compose.override.yml` were left untouched.
+- Secrets were not printed.
+
+Verification markers:
+- `Stage 12.7 admin audit CSV export production deploy - 2026-05-28`
+- `production git head: 053703a`
+- `admin audit CSV export deployed`
+- `local_frontend_http=200`
+- `public_login_http=200`
+- `public_admin_http=200`
+- `public_ready_http=200`
