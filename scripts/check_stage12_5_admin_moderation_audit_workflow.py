@@ -1,0 +1,215 @@
+from pathlib import Path
+
+DOC = Path("docs/stage-12-5-admin-moderation-audit-workflow.md")
+ROADMAP = Path("docs/stage-12-product-roadmap.md")
+APP = Path("frontend/src/App.jsx")
+ADMIN_RENDERER = Path("frontend/src/routes/AdminPageRenderer.jsx")
+DASHBOARD_PAGE = Path("frontend/src/pages/DashboardPage.jsx")
+USERS_PAGE = Path("frontend/src/pages/UsersPage.jsx")
+ORGANIZATIONS_PAGE = Path("frontend/src/pages/OrganizationsPage.jsx")
+GROUPS_PAGE = Path("frontend/src/pages/GroupsPage.jsx")
+COURSES_PAGE = Path("frontend/src/pages/AdminCoursesPage.jsx")
+ENROLLMENTS_PAGE = Path("frontend/src/pages/AdminEnrollmentsPage.jsx")
+DOCUMENTS_PAGE = Path("frontend/src/pages/DocumentsPage.jsx")
+ROLES_PAGE = Path("frontend/src/pages/RolesPage.jsx")
+PERMISSIONS_PAGE = Path("frontend/src/pages/PermissionsPage.jsx")
+AUDIT_PAGE = Path("frontend/src/pages/AuditPage.jsx")
+USER_DETAIL_PANEL = Path("frontend/src/components/admin/UserDetailPanel.jsx")
+USER_FORM = Path("frontend/src/components/admin/UserForm.jsx")
+ORG_DETAIL_PANEL = Path("frontend/src/components/admin/OrganizationDetailPanel.jsx")
+ORG_FORM = Path("frontend/src/components/admin/OrganizationForm.jsx")
+ROLE_DETAIL_PANEL = Path("frontend/src/components/admin/RoleDetailPanel.jsx")
+ROLE_FORM = Path("frontend/src/components/admin/RoleForm.jsx")
+API_CLIENT = Path("frontend/src/api/client.js")
+
+REQUIRED_FILES = [
+    DOC,
+    ROADMAP,
+    APP,
+    ADMIN_RENDERER,
+    DASHBOARD_PAGE,
+    USERS_PAGE,
+    ORGANIZATIONS_PAGE,
+    GROUPS_PAGE,
+    COURSES_PAGE,
+    ENROLLMENTS_PAGE,
+    DOCUMENTS_PAGE,
+    ROLES_PAGE,
+    PERMISSIONS_PAGE,
+    AUDIT_PAGE,
+    USER_DETAIL_PANEL,
+    USER_FORM,
+    ORG_DETAIL_PANEL,
+    ORG_FORM,
+    ROLE_DETAIL_PANEL,
+    ROLE_FORM,
+    API_CLIENT,
+]
+
+DOC_MARKERS = [
+    "# Stage 12.5. Admin moderation and audit workflow",
+    "Status: in progress",
+    "no database migrations in the baseline documentation step",
+    "no API contract changes unless backend tests are added first",
+    "no authentication or RBAC weakening",
+    "no object-level access weakening",
+    "audit page remains read-only unless a separate accepted checkpoint changes it",
+    "no production config changes",
+    "no secrets in docs, logs, screenshots or reports",
+    "frontend_runtime_changed=no",
+    "backend_runtime_changed=no",
+    "current git head before Stage 12.5 implementation: 130c8d4",
+    "tag v0.1.0-stage12-1-account-ux-polish exists",
+    "tag v0.1.0-stage12-2-catalog-ux-polish exists",
+    "tag v0.1.0-stage12-3-course-detail-ux-polish exists",
+    "tag v0.1.0-stage12-4-document-verification-ux-polish exists",
+    "Stage 12 product roadmap defines Stage 12.5 as admin moderation and audit workflow",
+    "admin audit page exists",
+    "audit page is read-only by default",
+    "raw backend error objects must not be rendered directly",
+    "Stage 12.5 admin moderation and audit workflow guard created",
+]
+
+ROADMAP_MARKERS = [
+    "Stage 12.5 admin moderation and audit workflow",
+    "make audit events easier to inspect",
+    "audit page remains read-only unless explicitly changed",
+    "admin pages remain accessible only to allowed roles",
+    "forms show validation errors clearly",
+    "tests cover critical admin access paths",
+]
+
+ADMIN_ROUTE_MARKERS = [
+    "dashboard",
+    "users",
+    "organizations",
+    "groups",
+    "courses",
+    "enrollments",
+    "documents",
+    "roles",
+    "permissions",
+    "audit",
+]
+
+ADMIN_PAGE_MARKERS = [
+    ("dashboard_page", DASHBOARD_PAGE, ["DashboardPage"]),
+    ("users_page", USERS_PAGE, ["UsersPage"]),
+    ("organizations_page", ORGANIZATIONS_PAGE, ["OrganizationsPage"]),
+    ("groups_page", GROUPS_PAGE, ["GroupsPage"]),
+    ("courses_page", COURSES_PAGE, ["AdminCoursesPage"]),
+    ("enrollments_page", ENROLLMENTS_PAGE, ["AdminEnrollmentsPage"]),
+    ("documents_page", DOCUMENTS_PAGE, ["DocumentsPage"]),
+    ("roles_page", ROLES_PAGE, ["RolesPage"]),
+    ("permissions_page", PERMISSIONS_PAGE, ["PermissionsPage"]),
+    ("audit_page", AUDIT_PAGE, ["AuditPage"]),
+]
+
+ADMIN_COMPONENT_MARKERS = [
+    ("user_detail_panel", USER_DETAIL_PANEL, ["UserDetailPanel"]),
+    ("user_form", USER_FORM, ["UserForm"]),
+    ("organization_detail_panel", ORG_DETAIL_PANEL, ["OrganizationDetailPanel"]),
+    ("organization_form", ORG_FORM, ["OrganizationForm"]),
+    ("role_detail_panel", ROLE_DETAIL_PANEL, ["RoleDetailPanel"]),
+    ("role_form", ROLE_FORM, ["RoleForm"]),
+]
+
+API_MARKERS = [
+    "admin",
+    "users",
+    "organizations",
+    "groups",
+    "courses",
+    "enrollments",
+    "documents",
+    "roles",
+    "permissions",
+    "audit",
+]
+
+def read(path: Path) -> str:
+    if not path.exists():
+        raise SystemExit(f"Missing required file: {path}")
+    return path.read_text(encoding="utf-8")
+
+def require_markers(name: str, text: str, markers: list[str]) -> None:
+    missing = [marker for marker in markers if marker not in text]
+    if missing:
+        print(f"{name}: missing markers:")
+        for marker in missing:
+            print(f" - {marker}")
+        raise SystemExit(1)
+
+def main() -> None:
+    for path in REQUIRED_FILES:
+        if not path.exists():
+            raise SystemExit(f"Missing required file: {path}")
+
+    doc_text = read(DOC)
+    roadmap_text = read(ROADMAP)
+    app_text = read(APP)
+    renderer_text = read(ADMIN_RENDERER)
+    api_text = read(API_CLIENT)
+
+    require_markers("doc", doc_text, DOC_MARKERS)
+    require_markers("roadmap", roadmap_text, ROADMAP_MARKERS)
+    require_markers("admin_routes", app_text + "\n" + renderer_text, ADMIN_ROUTE_MARKERS)
+    require_markers("api_client", api_text, API_MARKERS)
+
+    for name, path, markers in ADMIN_PAGE_MARKERS:
+        require_markers(name, read(path), markers)
+
+    for name, path, markers in ADMIN_COMPONENT_MARKERS:
+        require_markers(name, read(path), markers)
+
+    sections = doc_text.count("\n## ")
+    safety_markers = sum(1 for marker in [
+        "no database migrations",
+        "no API contract changes",
+        "no authentication or RBAC weakening",
+        "no object-level access weakening",
+        "no audit mutation workflow",
+        "audit page remains read-only",
+        "no production config changes",
+        "no secrets",
+        "frontend_runtime_changed",
+        "backend_runtime_changed",
+    ] if marker in doc_text)
+
+    state_markers = sum(1 for marker in [
+        "admin opens dashboard",
+        "admin opens users list",
+        "admin opens user detail panel",
+        "admin opens organizations list",
+        "admin opens organization detail panel",
+        "admin opens groups list",
+        "admin opens courses list",
+        "admin opens enrollment review page",
+        "admin opens documents page",
+        "admin opens roles page",
+        "admin opens permissions page",
+        "admin opens audit page",
+        "admin sees loading state",
+        "admin sees empty state",
+        "admin sees validation error",
+        "admin sees API error",
+        "unauthorized user must not access admin pages",
+    ] if marker in doc_text)
+
+    total_markers = (
+        len(DOC_MARKERS)
+        + len(ROADMAP_MARKERS)
+        + len(ADMIN_ROUTE_MARKERS)
+        + len(API_MARKERS)
+        + sum(len(markers) for _, _, markers in ADMIN_PAGE_MARKERS)
+        + sum(len(markers) for _, _, markers in ADMIN_COMPONENT_MARKERS)
+    )
+
+    print(
+        "stage 12.5 admin moderation and audit workflow diagnostics passed: "
+        f"sections={sections}, safety_markers={safety_markers}, "
+        f"state_markers={state_markers}, markers={total_markers}"
+    )
+
+if __name__ == "__main__":
+    main()
