@@ -17,6 +17,13 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 13 baseline server check - 2026-05-28",
+    "production git head: 6f78013",
+    "Stage 13 baseline server check passed",
+    "stage13_baseline_tag=ok",
+    "backend_health=ok",
+    "backend_ready=ok",
+    "public_ready=ok",
     "Status: in progress",
     "Stage: 13",
     "Stage 13 Learning flow / прохождение курсов",

@@ -141,3 +141,35 @@ Before merging Stage 13 runtime implementation, additionally run:
 - `link to generated documents`
 - `learner-scoped`
 - `production_runtime_changed=no`
+
+## 11. Stage 13 baseline server check - 2026-05-28
+
+Goal: record production server synchronization and health verification for the Stage 13 learning flow baseline.
+
+Server verification result:
+- production git head: `6f78013`;
+- deployed commit: `docs: add stage 13 learning flow baseline`;
+- server project path: `/opt/obrportal`;
+- branch: `main`;
+- baseline tag is available on server: `v0.1.0-stage13-learning-flow-baseline`;
+- backend health endpoint returned OK;
+- backend ready endpoint returned OK;
+- public ready endpoint returned OK.
+
+Safety notes:
+- No runtime containers were rebuilt.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were added.
+- Server-local untracked paths `backups/`, `tmp/`, and `docker-compose.override.yml` were left untouched.
+- Secrets were not printed.
+- `production_runtime_changed=no`.
+
+Verification markers:
+- `Stage 13 baseline server check - 2026-05-28`
+- `production git head: 6f78013`
+- `Stage 13 baseline server check passed`
+- `stage13_baseline_tag=ok`
+- `backend_health=ok`
+- `backend_ready=ok`
+- `public_ready=ok`
