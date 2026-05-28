@@ -277,3 +277,54 @@ Verification markers:
 - `learner_scoped_ownership_contract_verified=yes`
 - `progress_and_completion_contract_verified=yes`
 - `stage13_1_runtime_changed=no`
+
+## 14. Stage 13.2 frontend learner progress UX checkpoint - 2026-05-29
+
+Goal: record frontend learner progress UX inventory for the existing account learning flow.
+
+Verification result:
+- current local git head before checkpoint: `69a13fc`;
+- `frontend/src/pages/AccountPage.jsx` contains account learning API usage;
+- `frontend/src/pages/AccountPage.jsx` contains course detail loading;
+- `frontend/src/pages/AccountPage.jsx` contains lesson completion action wiring;
+- `frontend/src/pages/AccountPage.jsx` contains course start and course completion action wiring;
+- `frontend/src/pages/AccountPage.jsx` contains progress fields: `progress_percent` and `required_progress_percent`;
+- `frontend/src/pages/AccountPage.jsx` contains lesson counters: `lessons_total`, `lessons_completed`, `required_lessons_total`, `required_lessons_completed`;
+- `frontend/src/pages/AccountPage.jsx` contains module and lesson display markers;
+- `frontend/src/pages/AccountPage.jsx` contains `LearningProgressDiagnostics`;
+- `frontend/src/pages/AccountPage.jsx` contains `CompletionDocumentsDiagnostics`;
+- `frontend/src/api/client.js` contains account learning client functions;
+- mojibake check for `AccountPage.jsx` returned clean.
+
+Accepted frontend learning functions:
+- `getAccountCourses`;
+- `getAccountCourseDetail`;
+- `completeAccountCourseLesson`;
+- `startAccountCourse`;
+- `completeAccountCourse`;
+- `getAccountDocuments`;
+- `downloadAccountDocument`.
+
+Decision:
+- Stage 13.2 accepts the existing `AccountPage.jsx` learner progress UX as the current frontend baseline.
+- The next runtime step should be focused UX polish only if a concrete gap is found.
+- No frontend runtime changes were required for this checkpoint.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- `stage13_2_runtime_changed=no`.
+
+Verification markers:
+- `Stage 13.2 frontend learner progress UX checkpoint - 2026-05-29`
+- `account_page_learning_progress_ux_existing=yes`
+- `account_page_lesson_completion_ui_existing=yes`
+- `account_page_course_completion_ui_existing=yes`
+- `learning_progress_diagnostics_existing=yes`
+- `completion_documents_diagnostics_existing=yes`
+- `account_learning_client_existing=yes`
+- `account_page_mojibake_check=clean`
+- `stage13_2_runtime_changed=no`

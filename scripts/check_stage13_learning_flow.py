@@ -17,6 +17,15 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 13.2 frontend learner progress UX checkpoint - 2026-05-29",
+    "account_page_learning_progress_ux_existing=yes",
+    "account_page_lesson_completion_ui_existing=yes",
+    "account_page_course_completion_ui_existing=yes",
+    "learning_progress_diagnostics_existing=yes",
+    "completion_documents_diagnostics_existing=yes",
+    "account_learning_client_existing=yes",
+    "account_page_mojibake_check=clean",
+    "stage13_2_runtime_changed=no",
     "Stage 13.1 backend learning flow contract tests - 2026-05-29",
     "focused_account_learning_tests=7_passed",
     "account_flow_smoke_tests=5_passed",
