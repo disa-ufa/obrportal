@@ -29,6 +29,7 @@ import {
   buildGroupsPath,
   buildOrganizationsPath,
 } from "../utils/adminLinks";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 
 const ENROLLMENT_STATUSES = [
   { value: "assigned", label: "Назначен" },
@@ -43,6 +44,29 @@ const ENROLLMENT_STATUS_FILTERS = [
   { value: "active", label: "В процессе" },
   { value: "completed", label: "Завершены" },
   { value: "cancelled", label: "Отменены" },
+];
+
+const ENROLLMENT_CSV_EXPORT_COLUMNS = [
+  { key: "id", title: "ID" },
+  { key: "user_id", title: "ID пользователя" },
+  { key: "user_email", title: "Email пользователя" },
+  { key: "user_full_name", title: "ФИО пользователя" },
+  { key: "course_id", title: "ID курса" },
+  { key: "course_title", title: "Курс" },
+  { key: "course_slug", title: "Slug курса" },
+  { key: "organization_id", title: "ID организации" },
+  { key: "organization_name", title: "Организация" },
+  { key: "learning_group_id", title: "ID группы" },
+  { key: "learning_group_name", title: "Учебная группа" },
+  { key: "status", title: "Статус" },
+  { key: "status_label", title: "Статус, название" },
+  { key: "started_at", title: "Дата начала" },
+  { key: "completed_at", title: "Дата завершения" },
+  { key: "action_required", title: "Требует действия" },
+  { key: "documents_url", title: "Документы" },
+  { key: "course_url", title: "Публичная карточка курса" },
+  { key: "created_at", title: "Создано" },
+  { key: "updated_at", title: "Обновлено" },
 ];
 
 const INPUT_CLASS =
@@ -1564,6 +1588,41 @@ export function AdminEnrollmentsPage() {
     await navigateToEnrollmentFilters({}, { replace: true });
   }
 
+  function handleExportEnrollmentsCsv() {
+    const rows = visibleEnrollments.map((enrollment) => {
+      const organization = organizationsById[enrollment.organization_id] || null;
+
+      return {
+        id: enrollment.id,
+        user_id: enrollment.user_id || "",
+        user_email: enrollment.user_email || "",
+        user_full_name: enrollment.user_full_name || "",
+        course_id: enrollment.course_id || "",
+        course_title: enrollment.course_title || "",
+        course_slug: enrollment.course_slug || "",
+        organization_id: enrollment.organization_id || "",
+        organization_name: enrollment.organization_name || organization?.name || "",
+        learning_group_id: enrollment.learning_group_id || "",
+        learning_group_name: getEnrollmentGroupName(enrollment),
+        status: enrollment.status || "",
+        status_label: getStatusLabel(enrollment.status),
+        started_at: enrollment.started_at || "",
+        completed_at: enrollment.completed_at || "",
+        action_required: enrollment.status === "assigned" || enrollment.status === "completed" ? "yes" : "no",
+        documents_url: enrollment.id ? `/admin/documents?enrollment_id=${enrollment.id}` : "",
+        course_url: enrollment.course_slug ? `/courses/${enrollment.course_slug}` : "",
+        created_at: enrollment.created_at || "",
+        updated_at: enrollment.updated_at || "",
+      };
+    });
+
+    downloadCsvFile({
+      filename: buildDatedCsvFilename("obrportal-admin-enrollments"),
+      columns: ENROLLMENT_CSV_EXPORT_COLUMNS,
+      rows,
+    });
+  }
+
   return (
     <div data-testid="admin-enrollments-page" className="space-y-6">
       <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
@@ -1995,6 +2054,29 @@ export function AdminEnrollmentsPage() {
             <span>Показано назначений: {visibleEnrollments.length}</span>
             <span>Всего по текущим фильтрам: {statusCounts.all || 0}</span>
             <span>{"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}: {actionRequiredCount}</span>
+          </div>
+
+          <div
+            data-testid="admin-enrollments-export-summary"
+            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div>
+              <div className="text-sm font-semibold text-slate-900">Экспорт назначений</div>
+              <p className="mt-1 text-xs text-slate-600">
+                CSV содержит текущую выборку после поиска, статуса, пользователя, курса, организации и группы:
+                {" "}{visibleEnrollments.length} из {statusCounts.all || visibleEnrollments.length}.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              data-testid="admin-enrollments-export-csv-button"
+              onClick={handleExportEnrollmentsCsv}
+              disabled={loading || visibleEnrollments.length === 0}
+              className={BUTTON_LIGHT_CLASS}
+            >
+              Скачать CSV
+            </button>
           </div>
 
           {loading ? (

@@ -438,3 +438,49 @@ Verification markers:
 - `public_login_http=200`
 - `public_admin_http=200`
 - `public_ready_http=200`
+
+## 17. Stage 12.7 admin enrollments CSV export - 2026-05-28
+
+Goal: add a low-risk frontend-only CSV export for the currently visible admin enrollments list.
+
+Scope:
+- `AdminEnrollmentsPage` exports only the already loaded and currently visible `visibleEnrollments` collection.
+- Export respects current search, user, course, organization, status, group and action-required filters.
+- Export includes enrollment-level fields and already loaded relation labels.
+- Export uses the shared `downloadCsvFile` and `buildDatedCsvFilename` helpers.
+- Export filename prefix is `obrportal-admin-enrollments`.
+- No backend API contract changes were added.
+- No database migrations were added.
+- No authentication, RBAC or object-level access changes were added.
+- No destructive imports were introduced.
+
+CSV columns:
+- `id`
+- `user_id`
+- `user_email`
+- `user_full_name`
+- `course_id`
+- `course_title`
+- `course_slug`
+- `organization_id`
+- `organization_name`
+- `learning_group_id`
+- `learning_group_name`
+- `status`
+- `status_label`
+- `started_at`
+- `completed_at`
+- `action_required`
+- `documents_url`
+- `course_url`
+- `created_at`
+- `updated_at`
+
+Verification markers:
+- `Stage 12.7 admin enrollments CSV export - 2026-05-28`
+- `enrollments list export for admin role only`
+- `admin-enrollments-export-summary`
+- `admin-enrollments-export-csv-button`
+- `obrportal-admin-enrollments`
+- `ENROLLMENT_CSV_EXPORT_COLUMNS`
+- `handleExportEnrollmentsCsv`
