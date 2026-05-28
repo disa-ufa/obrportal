@@ -237,3 +237,62 @@ Current checkpoint:
 - implementation has not changed runtime yet;
 - frontend_runtime_changed=no;
 - backend_runtime_changed=no.
+
+## 14. Stage 12.5 admin moderation and audit workflow docs sync - 2026-05-28
+
+Status: accepted
+
+Stage 12.5 admin moderation and audit workflow documentation and guard were synced to production and accepted.
+
+Accepted evidence:
+
+- production git head: 9803b47;
+- Stage 12.5 admin moderation and audit workflow guard passed;
+- Stage 12.4 document verification workflow guard passed;
+- Stage 12.3 course detail learner workflow guard passed;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.4 document verification UX polish tag head verified: 417e65a;
+- Stage 12.5 document title marker was present;
+- Stage 12.5 baseline head marker was present;
+- Stage 12.5 guard created marker was present;
+- Stage 12.5 audit read-only marker was present;
+- source marker AuditPage was present;
+- source marker UsersPage was present;
+- source marker AdminEnrollmentsPage was present;
+- source marker DocumentsPage was present;
+- admin route marker dashboard was present;
+- admin route marker users was present;
+- admin route marker enrollments was present;
+- admin route marker audit was present;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /admin returned HTTP 200;
+- public /admin/audit returned HTTP 200;
+- public /admin/users returned HTTP 200;
+- public /admin/enrollments returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=no;
+- backend_runtime_changed=no;
+- stage12_5_admin_moderation_audit_workflow_docs_sync=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_5_1_admin_moderation_audit_workflow_docs_sync_retry_20260528075808.txt
