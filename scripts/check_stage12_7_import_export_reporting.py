@@ -25,6 +25,10 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 CSV download helper compatibility fix - 2026-05-28",
+    "CSV exports use positional downloadCsvFile signature",
+    "downloadCsvFile(filename, columns, rows)",
+    "object-style downloadCsvFile calls are forbidden in Stage 12.7 pages",
     "Stage 12.7 admin documents CSV export - 2026-05-28",
     "documents list export for admin role only",
     "admin-documents-export-summary",
@@ -279,6 +283,20 @@ def main() -> None:
     course_frontend_count = require_markers(ADMIN_COURSES_PAGE, COURSE_FRONTEND_STAGE_MARKERS)
     enrollment_frontend_count = require_markers(ADMIN_ENROLLMENTS_PAGE, ENROLLMENT_FRONTEND_STAGE_MARKERS)
     document_frontend_count = require_markers(DOCUMENTS_PAGE, DOCUMENT_FRONTEND_STAGE_MARKERS)
+    for path in [
+        USERS_PAGE,
+        ORGANIZATIONS_PAGE,
+        GROUPS_PAGE,
+        ADMIN_COURSES_PAGE,
+        ADMIN_ENROLLMENTS_PAGE,
+        DOCUMENTS_PAGE,
+    ]:
+        if "downloadCsvFile({" in path.read_text(encoding="utf-8"):
+            raise SystemExit(
+                f"[fail] object-style downloadCsvFile call is not compatible with "
+                f"downloadCsvFile(filename, columns, rows): {path}"
+            )
+
     export_count = require_markers(EXPORT_CSV, EXPORT_UTIL_MARKERS)
 
     print(

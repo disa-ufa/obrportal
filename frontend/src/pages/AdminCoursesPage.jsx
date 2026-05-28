@@ -2253,11 +2253,11 @@ export function AdminCoursesPage() {
       };
     });
 
-    downloadCsvFile({
-      filename: buildDatedCsvFilename("obrportal-admin-courses"),
-      columns: COURSE_CSV_EXPORT_COLUMNS,
-      rows,
-    });
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-courses"),
+      COURSE_CSV_EXPORT_COLUMNS,
+      rows
+    );
   }
 
   return (

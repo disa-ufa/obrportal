@@ -1374,11 +1374,11 @@ export function GroupsPage({
       updated_at: group.updated_at || "",
     }));
 
-    downloadCsvFile({
-      filename: buildDatedCsvFilename("obrportal-admin-groups"),
-      columns: GROUP_CSV_EXPORT_COLUMNS,
-      rows,
-    });
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-groups"),
+      GROUP_CSV_EXPORT_COLUMNS,
+      rows
+    );
   }
 
   return (

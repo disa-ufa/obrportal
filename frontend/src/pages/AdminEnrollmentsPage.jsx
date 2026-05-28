@@ -1616,11 +1616,11 @@ export function AdminEnrollmentsPage() {
       };
     });
 
-    downloadCsvFile({
-      filename: buildDatedCsvFilename("obrportal-admin-enrollments"),
-      columns: ENROLLMENT_CSV_EXPORT_COLUMNS,
-      rows,
-    });
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-enrollments"),
+      ENROLLMENT_CSV_EXPORT_COLUMNS,
+      rows
+    );
   }
 
   return (

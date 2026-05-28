@@ -577,3 +577,30 @@ Verification markers:
 - `obrportal-admin-documents`
 - `DOCUMENT_CSV_EXPORT_COLUMNS`
 - `handleExportDocumentsCsv`
+
+## Stage 12.7 CSV download helper compatibility fix - 2026-05-28
+
+Goal: normalize Stage 12.7 CSV export calls to match the shared frontend helper signature.
+
+Reason:
+- `downloadCsvFile` uses positional arguments: `downloadCsvFile(filename, columns, rows)`.
+- Some Stage 12.7 pages used object-style calls after incremental CSV export rollout.
+- The mismatch can pass build checks but fail at runtime when an administrator clicks the CSV export button.
+
+Fixed pages:
+- `AdminCoursesPage`
+- `AdminEnrollmentsPage`
+- `GroupsPage`
+
+Safety notes:
+- No backend API contract changes were added.
+- No database migrations were added.
+- No authentication or RBAC changes were added.
+- Existing CSV helper implementation was not changed.
+- Existing users, organizations and documents positional calls were preserved.
+
+Verification markers:
+- `Stage 12.7 CSV download helper compatibility fix - 2026-05-28`
+- `CSV exports use positional downloadCsvFile signature`
+- `downloadCsvFile(filename, columns, rows)`
+- `object-style downloadCsvFile calls are forbidden in Stage 12.7 pages`
