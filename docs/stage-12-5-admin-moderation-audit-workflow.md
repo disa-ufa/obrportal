@@ -564,3 +564,37 @@ Verification markers:
 - `admin-user-form`
 - `admin-user-detail-content`
 - `admin-user-moderation-service-states`
+
+## Stage 12.5 admin user moderation production deploy - 2026-05-28
+
+Goal: record the production deployment of the Stage 12.5 admin user moderation UX states after the public smoke checks passed.
+
+Production deployment:
+- deployed git head: `0b38b64`
+- production branch: `main`
+- production path: `/opt/obrportal`
+- public host: `portal.rcdo02.ru`
+
+Verified production checks:
+- backend `/health` returned `ok`
+- backend `/api/v1/ready` returned `database=ok`, `redis=ok`, `storage=ok`
+- local frontend returned HTTP 200
+- public `/login` returned HTTP 200
+- public `/admin` returned HTTP 200
+- public `/api/v1/ready` returned `ok`
+
+Safety notes:
+- no secrets were printed
+- no database migrations were added
+- no backend runtime contract was changed
+- server-only untracked paths were not committed: `backups/`, `docker-compose.override.yml`, `tmp/`
+- existing authentication, RBAC, and object-level access rules remain unchanged
+
+Verification markers:
+- `production git head: 0b38b64`
+- `production deploy path: /opt/obrportal`
+- `production public login http=200`
+- `production public admin http=200`
+- `production ready database redis storage ok`
+- `production frontend local http=200`
+

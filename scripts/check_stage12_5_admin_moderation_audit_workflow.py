@@ -47,6 +47,14 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.5 admin user moderation production deploy - 2026-05-28",
+    "production git head: 0b38b64",
+    "production deploy path: /opt/obrportal",
+    "production public login http=200",
+    "production public admin http=200",
+    "production ready database redis storage ok",
+    "production frontend local http=200",
+    "server-only untracked paths were not committed",
     "Stage 12.5 admin user moderation service states - 2026-05-28",
     "admin-users-page",
     "admin-users-moderation-notice",
