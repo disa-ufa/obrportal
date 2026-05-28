@@ -19,6 +19,13 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin groups CSV export production deploy - 2026-05-28",
+    "production git head: 69f38ab",
+    "admin groups CSV export deployed",
+    "local_frontend_http=200",
+    "public_login_http=200",
+    "public_admin_http=200",
+    "public_ready_http=200",
     "Stage 12.7 admin groups CSV export - 2026-05-28",
     "groups list export for admin role only",
     "admin-groups-export-summary",
