@@ -25,6 +25,14 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin documents CSV export production deploy - 2026-05-28",
+    "production git head: 19639b5",
+    "admin documents CSV export deployed",
+    "CSV helper compatibility fix deployed",
+    "local_frontend_http=200",
+    "public_login_http=200",
+    "public_admin_http=200",
+    "public_ready_http=200",
     "Stage 12.7 CSV download helper compatibility fix - 2026-05-28",
     "CSV exports use positional downloadCsvFile signature",
     "downloadCsvFile(filename, columns, rows)",
