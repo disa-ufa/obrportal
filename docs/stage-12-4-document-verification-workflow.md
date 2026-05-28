@@ -436,3 +436,78 @@ Source markers:
 - role="status";
 - aria-live="assertive";
 - aria-live="polite".
+
+## 17. Stage 12.4 public verification service states frontend deploy - 2026-05-27
+
+Status: accepted
+
+Stage 12.4 public verification form and service states were deployed to the production static frontend and accepted.
+
+Accepted evidence:
+
+- production git head: 31a0eae;
+- Stage 12.4 document verification workflow guard passed;
+- Stage 12.3 course detail learner workflow guard passed;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.3 course detail UX polish tag head verified: 5f88a8c;
+- source marker verifyPublicDocument value call was unchanged;
+- source marker public-verification-form-section was present;
+- source marker public-verification-form was present;
+- source marker public-verification-query-input was present;
+- source marker public-verification-submit was present;
+- source marker submit disabled guard was present;
+- source marker public-verification-error-state was present;
+- source marker error alert role was present;
+- source marker error aria live assertive was present;
+- source marker public-verification-not-found-state was present;
+- source marker not found status role was present;
+- source marker not found aria live polite was present;
+- source marker public-verification-not-found-reset-action was present;
+- source marker public-verification-not-found-contacts-action was present;
+- source marker public-verification-result-card was present;
+- source marker public-verification-result-reset-action was present;
+- source marker public-verification-result-catalog-action was present;
+- source marker public-verification-result-home-action was present;
+- source marker PublicVerificationJourneyHint remained rendered;
+- source marker PublicVerificationDiagnostics remained rendered;
+- source marker PublicVerificationQrOperationsPanel remained rendered;
+- source marker ResultCard remained rendered;
+- doc marker public verification service states section was present;
+- doc marker frontend-only boundary was present;
+- doc marker no API changes was present;
+- doc marker no backend runtime changes was present;
+- doc marker verifyPublicDocument API unchanged was present;
+- frontend static image was rebuilt;
+- frontend container was recreated;
+- frontend health became healthy;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /verify-document returned HTTP 200;
+- public /verify/DOCV-SMOKE returned HTTP 200;
+- public /catalog returned HTTP 200;
+- public /account returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=yes;
+- backend_runtime_changed=no;
+- stage12_4_public_verification_service_states_frontend_deploy=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_4_5_public_verification_service_states_frontend_deploy_20260527215246.txt
