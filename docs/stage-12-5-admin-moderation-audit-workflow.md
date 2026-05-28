@@ -470,3 +470,75 @@ Source markers:
 - role="alert";
 - aria-live="assertive";
 - aria-live="polite".
+
+## 18. Stage 12.5 enrollment moderation states frontend deploy - 2026-05-28
+
+Status: accepted
+
+Stage 12.5 enrollment moderation service states were deployed to the production static frontend and accepted.
+
+Accepted evidence:
+
+- production git head: bd968e3;
+- Stage 12.5 admin moderation and audit workflow guard passed;
+- Stage 12.4 document verification workflow guard passed;
+- Stage 12.3 course detail learner workflow guard passed;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.4 document verification UX polish tag head verified: 417e65a;
+- source marker admin-enrollments-page was present;
+- source marker admin-enrollments-moderation-notice was present;
+- source marker admin-enrollments-error-state was present;
+- source marker admin-enrollments-success-state was present;
+- source marker admin-enrollments-create-section was present;
+- source marker admin-enrollments-create-form was present;
+- source marker admin-enrollments-bulk-section was present;
+- source marker admin-enrollments-bulk-form was present;
+- source marker admin-enrollments-list-section was present;
+- source marker admin-enrollments-filters was present;
+- source marker admin-enrollments-search-input was present;
+- source marker admin-enrollments-status-filter was present;
+- source marker admin-enrollments-apply-filters-action was present;
+- source marker admin-enrollments-reset-filters-action was present;
+- source marker admin-enrollments-loading-state was present;
+- source marker admin-enrollments-empty-state was present;
+- source marker admin-enrollments-list was present;
+- source marker admin-enrollment-card was present;
+- source marker admin-enrollment-complete-action was present;
+- source marker admin-enrollment-edit-action was present;
+- source marker admin-enrollment-delete-action was present;
+- source marker admin-enrollment-edit-form was present;
+- frontend static image was rebuilt;
+- frontend container was recreated;
+- frontend health became healthy;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /admin returned HTTP 200;
+- public /admin/enrollments returned HTTP 200;
+- public /admin/audit returned HTTP 200;
+- public /admin/users returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=yes;
+- backend_runtime_changed=no;
+- stage12_5_admin_enrollment_moderation_states_frontend_deploy=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_5_5_admin_enrollment_moderation_states_frontend_deploy_20260528103648.txt

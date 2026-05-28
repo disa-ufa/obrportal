@@ -122,6 +122,18 @@ DOC_MARKERS = [
     "existing getAdminEnrollments list loading remains unchanged",
     "Stage 12.5 adds stable frontend markers and service-state boundaries for the admin enrollment moderation workflow",
     "Stage 12.5 enrollment moderation service states - 2026-05-28",
+    "/opt/obrportal/tmp/stage_12_5_5_admin_enrollment_moderation_states_frontend_deploy_20260528103648.txt",
+    "stage12_5_admin_enrollment_moderation_states_frontend_deploy=passed",
+    "source marker admin-enrollment-delete-action was present",
+    "source marker admin-enrollment-edit-action was present",
+    "source marker admin-enrollment-complete-action was present",
+    "source marker admin-enrollment-card was present",
+    "source marker admin-enrollments-empty-state was present",
+    "source marker admin-enrollments-loading-state was present",
+    "source marker admin-enrollments-moderation-notice was present",
+    "source marker admin-enrollments-page was present",
+    "production git head: bd968e3",
+    "Stage 12.5 enrollment moderation states frontend deploy - 2026-05-28",
 ]
 
 ROADMAP_MARKERS = [
