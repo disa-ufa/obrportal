@@ -347,3 +347,75 @@ Source markers:
 - role="alert";
 - aria-live="assertive";
 - aria-live="polite".
+
+## 16. Stage 12.5 audit page service states frontend deploy - 2026-05-28
+
+Status: accepted
+
+Stage 12.5 audit page service states were deployed to the production static frontend and accepted.
+
+Accepted evidence:
+
+- production git head: d51be52;
+- Stage 12.5 admin moderation and audit workflow guard passed;
+- Stage 12.4 document verification workflow guard passed;
+- Stage 12.3 course detail learner workflow guard passed;
+- Stage 12.2 catalog learner workflow guard passed;
+- Stage 12.1 account workflow smoke passed;
+- Stage 12.1 account contract guard passed;
+- Stage 12.1 learner account workflow guard passed;
+- Stage 12 product roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- Stage 12.4 document verification UX polish tag head verified: 417e65a;
+- source marker admin-audit-page was present;
+- source marker admin-audit-unauthorized-state was present;
+- source marker admin-audit-readonly-notice was present;
+- source marker admin-audit-filters was present;
+- source marker admin-audit-filter-action was present;
+- source marker admin-audit-filter-entity-type was present;
+- source marker admin-audit-filter-entity-id was present;
+- source marker admin-audit-filter-actor-user-id was present;
+- source marker admin-audit-filter-limit was present;
+- source marker admin-audit-filter-error-state was present;
+- source marker admin-audit-quick-action-filter was present;
+- source marker admin-audit-quick-entity-type-filter was present;
+- source marker admin-audit-result-summary was present;
+- source marker admin-audit-loading-state was present;
+- source marker admin-audit-empty-state was present;
+- source marker admin-audit-table was present;
+- source marker admin-audit-row-actions was present;
+- source marker admin-audit-open-detail-action was present;
+- source marker admin-audit-detail-panel was present;
+- source marker admin-audit-detail-loading was present;
+- source marker admin-audit-detail-error was present;
+- source marker audit_events was present;
+- frontend static image was rebuilt;
+- frontend container was recreated;
+- frontend health became healthy;
+- production incident runbook guard passed;
+- production release runbook guard passed;
+- production monitoring runbook guard passed;
+- production restore drill runbook guard passed;
+- production operations runbook guard passed;
+- frontend static serving guard passed;
+- production frontend static runbook guard passed;
+- frontend image: obrportal-frontend-static:prod;
+- frontend command: nginx -g daemon off;
+- frontend health: healthy;
+- frontend restart policy: unless-stopped;
+- public /admin returned HTTP 200;
+- public /admin/audit returned HTTP 200;
+- public /admin/users returned HTTP 200;
+- public /admin/enrollments returned HTTP 200;
+- public /verify-document returned HTTP 200;
+- public /api/v1/ready returned database=ok, redis=ok, storage=ok;
+- secrets_printed=no;
+- frontend_runtime_changed=yes;
+- backend_runtime_changed=no;
+- stage12_5_admin_audit_service_states_frontend_deploy=passed.
+
+Accepted production report:
+
+- /opt/obrportal/tmp/stage_12_5_3_admin_audit_service_states_frontend_deploy_retry_20260528101536.txt

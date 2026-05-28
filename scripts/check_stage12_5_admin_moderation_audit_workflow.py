@@ -100,6 +100,19 @@ DOC_MARKERS = [
     "frontend-only change",
     "Stage 12.5 adds stable frontend markers and service-state boundaries for the admin audit page",
     "Stage 12.5 audit page service states - 2026-05-28",
+    "/opt/obrportal/tmp/stage_12_5_3_admin_audit_service_states_frontend_deploy_retry_20260528101536.txt",
+    "stage12_5_admin_audit_service_states_frontend_deploy=passed",
+    "frontend_runtime_changed=yes",
+    "frontend health became healthy",
+    "frontend container was recreated",
+    "frontend static image was rebuilt",
+    "source marker admin-audit-detail-panel was present",
+    "source marker admin-audit-empty-state was present",
+    "source marker admin-audit-loading-state was present",
+    "source marker admin-audit-readonly-notice was present",
+    "source marker admin-audit-page was present",
+    "production git head: d51be52",
+    "Stage 12.5 audit page service states frontend deploy - 2026-05-28",
 ]
 
 ROADMAP_MARKERS = [
