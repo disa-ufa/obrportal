@@ -420,7 +420,7 @@ export function UserDetailPanel({
       )}
 
       {userDetail && !loading && (
-        <div className="space-y-5">
+        <div data-testid="admin-user-detail-content" className="space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-lg font-bold text-slate-900">
@@ -479,6 +479,15 @@ export function UserDetailPanel({
               {actionError}
             </Alert>
           )}
+
+          <div
+            data-testid="admin-user-moderation-service-states"
+            className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200"
+          >
+            Карточка пользователя показывает состояния модерации: активность,
+            подтверждение email, MFA, телефон, роли, связанные назначения,
+            документы и аудит.
+          </div>
 
           {isEditing ? (
             <UserForm

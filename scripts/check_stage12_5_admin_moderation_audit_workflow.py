@@ -47,6 +47,12 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.5 admin user moderation service states - 2026-05-28",
+    "admin-users-page",
+    "admin-users-moderation-notice",
+    "admin-user-form",
+    "admin-user-detail-content",
+    "admin-user-moderation-service-states",
     "# Stage 12.5. Admin moderation and audit workflow",
     "Status: in progress",
     "no database migrations in the baseline documentation step",
@@ -160,7 +166,15 @@ ADMIN_ROUTE_MARKERS = [
 
 ADMIN_PAGE_MARKERS = [
     ("dashboard_page", DASHBOARD_PAGE, ["DashboardPage"]),
-    ("users_page", USERS_PAGE, ["UsersPage"]),
+    ("users_page", USERS_PAGE, [
+        "UsersPage",
+        "admin-users-page",
+        "admin-users-moderation-notice",
+        "USER_ACTIVITY_FILTERS",
+        "AdminQuickFilterButtons",
+        "buildDocumentsPath({ user_id: row.id })",
+        "buildEnrollmentsPath({ user_id: row.id })",
+    ]),
     ("organizations_page", ORGANIZATIONS_PAGE, ["OrganizationsPage"]),
     ("groups_page", GROUPS_PAGE, ["GroupsPage"]),
     ("courses_page", COURSES_PAGE, ["AdminCoursesPage"]),
@@ -229,8 +243,25 @@ ADMIN_PAGE_MARKERS = [
 ]
 
 ADMIN_COMPONENT_MARKERS = [
-    ("user_detail_panel", USER_DETAIL_PANEL, ["UserDetailPanel"]),
-    ("user_form", USER_FORM, ["UserForm"]),
+    ("user_detail_panel", USER_DETAIL_PANEL, [
+        "UserDetailPanel",
+        "admin-user-detail-content",
+        "admin-user-moderation-service-states",
+        "user-attention-diagnostics",
+        "user-related-records-links",
+        "user-action-required-enrollments-link",
+        "user-audit-link",
+        "formatUserApiError",
+    ]),
+    ("user_form", USER_FORM, [
+        "UserForm",
+        "admin-user-form",
+        "USER_API_ERROR_MESSAGES",
+        "formatUserApiError",
+        "duplicateRoleAssignment",
+        "lastAdminDeactivate",
+        "invalidPassword",
+    ]),
     ("organization_detail_panel", ORG_DETAIL_PANEL, ["OrganizationDetailPanel"]),
     ("organization_form", ORG_FORM, ["OrganizationForm"]),
     ("role_detail_panel", ROLE_DETAIL_PANEL, ["RoleDetailPanel"]),

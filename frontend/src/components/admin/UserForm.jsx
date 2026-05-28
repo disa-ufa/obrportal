@@ -166,7 +166,7 @@ export function UserForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form data-testid="admin-user-form" onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <Alert title="Не удалось сохранить пользователя" tone="red">
           {error}

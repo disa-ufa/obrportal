@@ -194,7 +194,7 @@ export function UsersPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div data-testid="admin-users-page" className="space-y-6">
       <SectionCard
         title="Пользователи"
         subtitle="Список пользователей из backend."
@@ -214,6 +214,14 @@ export function UsersPage({
           <p className="text-slate-600">Войдите под admin, чтобы увидеть пользователей.</p>
         ) : (
           <div className="space-y-5">
+            <div
+              data-testid="admin-users-moderation-notice"
+              className="rounded-2xl bg-blue-50 p-4 text-sm text-blue-900 ring-1 ring-blue-100"
+            >
+              Раздел пользователей используется для административной модерации доступа:
+              проверьте активность, подтверждение email, роли и связанные записи перед изменениями.
+            </div>
+
             <AdminFilterPanel
               columnsClassName="lg:grid-cols-[1fr_220px_220px_auto]"
               onReset={resetFilters}

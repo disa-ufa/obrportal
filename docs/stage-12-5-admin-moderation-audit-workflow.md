@@ -542,3 +542,25 @@ Accepted evidence:
 Accepted production report:
 
 - /opt/obrportal/tmp/stage_12_5_5_admin_enrollment_moderation_states_frontend_deploy_20260528103648.txt
+
+## Stage 12.5 admin user moderation service states - 2026-05-28
+
+Goal: strengthen admin user moderation UX states without backend contract changes, RBAC changes, authentication changes, object-level access changes, database migrations, or runtime backend changes.
+
+Recorded changes:
+- `UsersPage` has stable markers `admin-users-page` and `admin-users-moderation-notice`.
+- `UserForm` has stable marker `admin-user-form`.
+- `UserDetailPanel` has stable markers `admin-user-detail-content` and `admin-user-moderation-service-states`.
+- Existing create, update, activate, deactivate, password reset, role assignment, and role removal flows are preserved.
+- Existing related links to enrollments, documents, roles, and audit are preserved.
+- Existing admin user API client methods are unchanged.
+- Secrets were not printed.
+- No database migrations were added.
+- Backend runtime was not changed.
+
+Verification markers:
+- `admin-users-page`
+- `admin-users-moderation-notice`
+- `admin-user-form`
+- `admin-user-detail-content`
+- `admin-user-moderation-service-states`
