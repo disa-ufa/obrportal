@@ -17,6 +17,13 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 12.7 admin organizations CSV export production deploy - 2026-05-28",
+    "production git head: 07917d7",
+    "admin organizations CSV export deployed",
+    "local_frontend_http=200",
+    "public_login_http=200",
+    "public_admin_http=200",
+    "public_ready_http=200",
     "Stage 12.7 admin users CSV export production deploy - 2026-05-28",
     "production git head: 203832d",
     "stage12_7_admin_users_csv_export_production_deploy=passed",
