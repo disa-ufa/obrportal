@@ -136,6 +136,21 @@ DOC_MARKERS = [
     "user_form_safe_api_error_message_used=yes",
     "user_form_domain_error_messages_preserved=yes",
     "user_form_friendly_errors_runtime_changed=yes",
+    "Stage 15.13.1 frontend core smoke guard alignment - 2026-05-29",
+    "frontend_core_smoke_api_errors_guard_aligned=yes",
+    "frontend_core_smoke_get_api_error_status_expected=yes",
+    "frontend_core_smoke_safe_api_error_message_expected=yes",
+    "frontend_core_smoke_guard_aligned=yes",
+    "Stage 15.13.2 admin components smoke guard alignment - 2026-05-29",
+    "admin_components_smoke_user_form_guard_aligned=yes",
+    "admin_components_smoke_user_form_get_api_error_status_expected=yes",
+    "admin_components_smoke_user_form_safe_api_error_message_expected=yes",
+    "admin_components_smoke_guard_aligned=yes",
+    "Stage 15.13.3 frontend utils routes smoke guard alignment - 2026-05-29",
+    "frontend_utils_routes_smoke_api_errors_guard_aligned=yes",
+    "frontend_utils_routes_smoke_get_api_error_status_expected=yes",
+    "frontend_utils_routes_smoke_safe_api_error_message_expected=yes",
+    "frontend_utils_routes_smoke_guard_aligned=yes",
 ]
 
 ROADMAP_MARKERS = [

@@ -621,3 +621,124 @@ Verification markers:
 - `user_form_safe_api_error_message_used=yes`
 - `user_form_domain_error_messages_preserved=yes`
 - `user_form_friendly_errors_runtime_changed=yes`
+
+## 24. Stage 15.13.1 frontend core smoke guard alignment - 2026-05-29
+
+Goal: align the frontend core smoke guard with the strengthened shared API error formatter.
+
+Runtime/guard change:
+- updated `scripts/smoke_frontend_core.py`;
+- replaced obsolete `apiErrors.js` fragment expectations with the Stage 15.11 safe formatter fragments;
+- smoke guard now checks `getApiErrorStatus`, `getSafeApiErrorMessage`, technical detail hiding and response-status/detail handling;
+- no frontend runtime code was changed in this fix.
+
+CI reason:
+- GitHub Actions failed on `Run auth RBAC and organization cabinet smoke checks`;
+- local reproduction isolated the failing script to `scripts/smoke_frontend_core.py`;
+- failure was caused by stale expected fragments for `frontend/src/utils/apiErrors.js`.
+
+Verification plan:
+- `scripts/smoke_frontend_core.py` must pass locally;
+- full smoke chain from the failed CI group must pass locally;
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass;
+- GitHub Actions must be re-run through push to `develop` and `main`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `frontend_core_smoke_guard_aligned=yes`.
+
+Verification markers:
+- `Stage 15.13.1 frontend core smoke guard alignment - 2026-05-29`
+- `frontend_core_smoke_api_errors_guard_aligned=yes`
+- `frontend_core_smoke_get_api_error_status_expected=yes`
+- `frontend_core_smoke_safe_api_error_message_expected=yes`
+- `frontend_core_smoke_guard_aligned=yes`
+
+## 25. Stage 15.13.2 admin components smoke guard alignment - 2026-05-29
+
+Goal: align the admin components smoke guard with the Stage 15.13 safe user form error formatter.
+
+Runtime/guard change:
+- updated `scripts/smoke_admin_components.py`;
+- replaced obsolete `UserForm.jsx` fragment expectations with the safe formatter fragments;
+- smoke guard now checks `getApiErrorStatus`, `getSafeApiErrorMessage` and safe fallback usage in `formatUserApiError`;
+- no frontend runtime code was changed in this fix.
+
+CI reason:
+- local smoke chain passed `scripts/smoke_frontend_core.py`;
+- local reproduction then isolated the next failing script to `scripts/smoke_admin_components.py`;
+- failure was caused by stale expected fragments for `frontend/src/components/admin/UserForm.jsx`.
+
+Verification plan:
+- `scripts/smoke_admin_components.py` must pass locally;
+- full smoke chain from the failed CI group must pass locally;
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass;
+- GitHub Actions must be re-run through push to `develop` and `main`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `admin_components_smoke_guard_aligned=yes`.
+
+Verification markers:
+- `Stage 15.13.2 admin components smoke guard alignment - 2026-05-29`
+- `admin_components_smoke_user_form_guard_aligned=yes`
+- `admin_components_smoke_user_form_get_api_error_status_expected=yes`
+- `admin_components_smoke_user_form_safe_api_error_message_expected=yes`
+- `admin_components_smoke_guard_aligned=yes`
+
+## 26. Stage 15.13.3 frontend utils routes smoke guard alignment - 2026-05-29
+
+Goal: align the frontend utils/routes smoke guard with the Stage 15.11 safe API error formatter.
+
+Runtime/guard change:
+- updated `scripts/smoke_frontend_utils_routes.py`;
+- replaced obsolete `apiErrors.js` fragment expectations with the safe formatter fragments;
+- smoke guard now checks `getApiErrorStatus`, `getSafeApiErrorMessage`, technical detail hiding and response-status/detail handling;
+- no frontend runtime code was changed in this fix.
+
+CI reason:
+- local smoke chain passed `scripts/smoke_frontend_core.py`;
+- local smoke chain passed `scripts/smoke_admin_components.py`;
+- local reproduction then isolated the next failing script to `scripts/smoke_frontend_utils_routes.py`;
+- failure was caused by stale expected fragments for `frontend/src/utils/apiErrors.js`.
+
+Verification plan:
+- `scripts/smoke_frontend_utils_routes.py` must pass locally;
+- full smoke chain from the failed CI group must pass locally;
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass;
+- GitHub Actions must be re-run through push to `develop` and `main`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `frontend_utils_routes_smoke_guard_aligned=yes`.
+
+Verification markers:
+- `Stage 15.13.3 frontend utils routes smoke guard alignment - 2026-05-29`
+- `frontend_utils_routes_smoke_api_errors_guard_aligned=yes`
+- `frontend_utils_routes_smoke_get_api_error_status_expected=yes`
+- `frontend_utils_routes_smoke_safe_api_error_message_expected=yes`
+- `frontend_utils_routes_smoke_guard_aligned=yes`

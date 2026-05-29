@@ -673,7 +673,7 @@ def main() -> None:
     require_contains(
         "frontend/src/components/admin/UserForm.jsx",
         [
-            'import { getApiErrorMessage } from "../../utils/apiErrors";',
+            'import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../../utils/apiErrors";',
             'import { useState } from "react";',
             'import { ActionButton } from "../ui/ActionButton";',
             'import { Alert } from "../ui/Alert";',
@@ -701,8 +701,10 @@ def main() -> None:
             "invalidPassword:",
             "invalidRequest:",
             "export function formatUserApiError(err, fallback)",
-            "const status = err?.status ? `${err.status}` : \"\";",
+            "const status = getApiErrorStatus(err);",
             "const message = getApiErrorMessage(err);",
+            "const safeMessage = getSafeApiErrorMessage(message, fallback);",
+            "readableMessage = safeMessage;",
             "normalizedMessage.includes(\"role assignment\")",
             "normalizedMessage.includes(\"organization\")",
             "normalizedMessage.includes(\"last active admin\")",
