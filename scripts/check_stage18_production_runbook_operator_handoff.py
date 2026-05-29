@@ -37,6 +37,13 @@ DOC_MARKERS = [
     "stage18_update_procedure_defined=yes",
     "stage18_post_deploy_smoke_defined=yes",
     "stage18_rollback_procedure_defined=yes",
+    "Stage 18.2 operator admin handoff notes - 2026-05-30",
+    "stage18_operator_admin_handoff_recorded=yes",
+    "stage18_admin_access_path_defined=yes",
+    "stage18_dashboard_handoff_defined=yes",
+    "stage18_users_organizations_handoff_defined=yes",
+    "stage18_documents_verification_handoff_defined=yes",
+    "stage18_support_escalation_path_defined=yes",
 ]
 
 STAGE14_MARKERS = [

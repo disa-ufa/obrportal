@@ -138,3 +138,82 @@ Verification markers:
 - `stage18_update_procedure_defined=yes`
 - `stage18_post_deploy_smoke_defined=yes`
 - `stage18_rollback_procedure_defined=yes`
+
+## 3. Operator/admin handoff notes - 2026-05-30
+
+Goal: define operator/admin handoff notes for day-to-day use after production deployment.
+
+Current git head before operator handoff notes: `c3cc94d`.
+
+Operator/admin access path:
+- open frontend application URL;
+- log in with an admin account;
+- confirm successful redirect to admin area;
+- open dashboard;
+- verify key admin sections are available according to permissions.
+
+Core admin/operator sections:
+1. Dashboard:
+   - use as the starting point for operational monitoring;
+   - check worklists/counters;
+   - follow links to users, organizations, enrollments, courses and documents.
+
+2. Users:
+   - search and filter users;
+   - open user detail panel;
+   - create/update users only with correct role/organization;
+   - use friendly error messages for correction, not raw API errors.
+
+3. Organizations:
+   - search and filter organizations;
+   - open organization detail panel;
+   - create/update organization records carefully;
+   - verify organization-related users and course/enrollment relations before operational changes.
+
+4. Groups and roles/permissions:
+   - verify groups before assigning learners/operators;
+   - change roles/permissions only with explicit administrative intent;
+   - do not weaken RBAC rules during routine operation.
+
+5. Courses and enrollments:
+   - search/filter courses and enrollments;
+   - use active filters summary to confirm current list context;
+   - verify enrollment status before document/certificate operations.
+
+6. Documents and verification:
+   - use documents page for document-related operations;
+   - verify status and allowed download path;
+   - use public verification by document number for external confirmation;
+   - QR/verification block must remain available for completed documents.
+
+Expected friendly behavior:
+- validation errors should be shown as user-friendly messages;
+- forbidden/unauthorized states should not expose raw technical details;
+- missing records should show controlled not-found states;
+- raw API exception strings must not be shown to operators.
+
+Escalation path:
+- if UI shows unexpected blank screen, capture browser console and current URL;
+- if backend API fails, capture endpoint, status code and timestamp;
+- if document download/verification fails, capture document number, user role and expected access path;
+- if Docker service fails, collect `docker compose ps` and relevant service logs;
+- never send real `.env` or secret values in support messages.
+
+Safety notes:
+- This checkpoint documents operator/admin handoff notes only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage18_operator_admin_handoff_recorded=yes`.
+
+Verification markers:
+- `Stage 18.2 operator admin handoff notes - 2026-05-30`
+- `stage18_operator_admin_handoff_recorded=yes`
+- `stage18_admin_access_path_defined=yes`
+- `stage18_dashboard_handoff_defined=yes`
+- `stage18_users_organizations_handoff_defined=yes`
+- `stage18_documents_verification_handoff_defined=yes`
+- `stage18_support_escalation_path_defined=yes`
