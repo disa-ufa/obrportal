@@ -487,3 +487,38 @@ Verification markers:
 - `admin_organizations_active_filters_accepted=yes`
 - `admin_courses_active_filters_accepted=yes`
 - `active_filters_ux_accepted=yes`
+
+## 20. Stage 15.10 friendly operator errors inventory - 2026-05-29
+
+Goal: record current operator-friendly API error handling before runtime hardening.
+
+Inventory result:
+- current local git head before checkpoint: `ad27bd9`;
+- compact inventory report was generated at `tmp/stage15_friendly_operator_errors_inventory.txt`;
+- shared API error utility exists: `frontend/src/utils/apiErrors.js`;
+- admin user, organization, course, enrollment, document and audit pages exist;
+- admin user and organization form/detail components exist;
+- the project already contains shared messages for authentication, access denied, not found, conflict, validation and server errors.
+
+Decision:
+- Stage 15 should improve the existing shared API error utility and existing page-specific formatters.
+- The next runtime step should be small and focused: strengthen `apiErrors.js` first, then reuse it from pages as needed.
+- Raw backend details should not be shown directly when a safe operator-friendly message exists.
+- No backend API or database migration is required for this inventory step.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- The inventory report in `tmp/` is a local working artifact and must not be committed.
+- `friendly_operator_errors_inventory_runtime_changed=no`.
+
+Verification markers:
+- `Stage 15.10 friendly operator errors inventory - 2026-05-29`
+- `stage15_friendly_operator_errors_inventory=tmp/stage15_friendly_operator_errors_inventory.txt`
+- `api_errors_utility_inventory=yes`
+- `admin_pages_error_inventory=yes`
+- `admin_forms_error_inventory=yes`
+- `friendly_operator_errors_inventory_runtime_changed=no`

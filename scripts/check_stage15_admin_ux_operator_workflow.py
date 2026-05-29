@@ -115,6 +115,12 @@ DOC_MARKERS = [
     "admin_organizations_active_filters_accepted=yes",
     "admin_courses_active_filters_accepted=yes",
     "active_filters_ux_accepted=yes",
+    "Stage 15.10 friendly operator errors inventory - 2026-05-29",
+    "stage15_friendly_operator_errors_inventory=tmp/stage15_friendly_operator_errors_inventory.txt",
+    "api_errors_utility_inventory=yes",
+    "admin_pages_error_inventory=yes",
+    "admin_forms_error_inventory=yes",
+    "friendly_operator_errors_inventory_runtime_changed=no",
 ]
 
 ROADMAP_MARKERS = [
