@@ -20,6 +20,11 @@ DOC_MARKERS = [
     "stage16_runtime_changed=no",
     "stage16_depends_on_stage14_complete=yes",
     "stage16_depends_on_stage15_complete=yes",
+    "Stage 16.1 full local regression checklist inventory - 2026-05-29",
+    "stage16_full_regression_checklist_inventory=yes",
+    "stage16_backend_pytest_required=yes",
+    "stage16_frontend_build_required=yes",
+    "stage16_smoke_chain_required=yes",
 ]
 
 STAGE14_MARKERS = [
