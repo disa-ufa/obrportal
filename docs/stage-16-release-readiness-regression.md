@@ -181,3 +181,37 @@ Verification markers:
 - `stage16_backend_pytest_passed=yes`
 - `stage16_smoke_chain_passed=yes`
 - `stage16_frontend_build_passed=yes`
+
+## 4. CI readiness checkpoint - 2026-05-29
+
+Goal: record CI readiness after the full local Stage 16.2 regression pass.
+
+Current git head before CI readiness checkpoint: `c1ad73e`.
+
+Readiness result:
+- local `develop` branch is synchronized with `origin/develop`;
+- local `main` branch is synchronized with `origin/main`;
+- `develop` and `main` point to the same accepted Stage 16.2 commit;
+- Stage 16.2 full local regression passed;
+- local working tree is clean before this checkpoint;
+- GitHub Actions must be green on `develop` and `main` before moving to demo/release acceptance.
+
+Accepted previous checkpoint:
+- `c1ad73e` — Stage 16 full regression pass recorded.
+
+Safety notes:
+- This checkpoint documents CI readiness only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage16_ci_readiness_checkpoint=yes`.
+
+Verification markers:
+- `Stage 16.3 CI readiness checkpoint - 2026-05-29`
+- `stage16_ci_readiness_checkpoint=yes`
+- `stage16_main_develop_synced=yes`
+- `stage16_full_regression_recorded=yes`
+- `stage16_ready_for_demo_checklist=yes`

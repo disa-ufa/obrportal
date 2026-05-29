@@ -30,6 +30,11 @@ DOC_MARKERS = [
     "stage16_backend_pytest_passed=yes",
     "stage16_smoke_chain_passed=yes",
     "stage16_frontend_build_passed=yes",
+    "Stage 16.3 CI readiness checkpoint - 2026-05-29",
+    "stage16_ci_readiness_checkpoint=yes",
+    "stage16_main_develop_synced=yes",
+    "stage16_full_regression_recorded=yes",
+    "stage16_ready_for_demo_checklist=yes",
 ]
 
 STAGE14_MARKERS = [
