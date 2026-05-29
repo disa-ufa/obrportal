@@ -157,6 +157,12 @@ DOC_MARKERS = [
     "organization_form_domain_error_messages_preserved=yes",
     "organization_form_smoke_guard_aligned=yes",
     "organization_form_friendly_errors_runtime_changed=yes",
+    "Stage 15.15 role form friendly errors - 2026-05-29",
+    "role_form_get_api_error_status_used=yes",
+    "role_form_safe_api_error_message_used=yes",
+    "role_form_domain_error_messages_preserved=yes",
+    "role_form_smoke_guard_aligned=yes",
+    "role_form_friendly_errors_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [

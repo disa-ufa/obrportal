@@ -779,3 +779,40 @@ Verification markers:
 - `organization_form_domain_error_messages_preserved=yes`
 - `organization_form_smoke_guard_aligned=yes`
 - `organization_form_friendly_errors_runtime_changed=yes`
+
+## 28. Stage 15.15 role form friendly errors - 2026-05-29
+
+Goal: connect the strengthened shared safe error helpers to the admin role form formatter.
+
+Runtime/guard change:
+- updated `frontend/src/components/admin/RoleForm.jsx`;
+- `formatRoleApiError` now uses `getApiErrorStatus`;
+- unknown role-form API messages now pass through `getSafeApiErrorMessage`;
+- existing domain-specific Russian messages for roles, permissions, duplicates, system-role protection, assignments and validation are preserved;
+- updated `scripts/smoke_admin_components.py` expectations for the role form;
+- no backend API changes were required.
+
+Verification plan:
+- `scripts/smoke_admin_components.py` must pass locally;
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass;
+- GitHub Actions must pass on `develop` and `main`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `role_form_friendly_errors_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.15 role form friendly errors - 2026-05-29`
+- `role_form_get_api_error_status_used=yes`
+- `role_form_safe_api_error_message_used=yes`
+- `role_form_domain_error_messages_preserved=yes`
+- `role_form_smoke_guard_aligned=yes`
+- `role_form_friendly_errors_runtime_changed=yes`
