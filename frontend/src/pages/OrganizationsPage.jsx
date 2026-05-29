@@ -8,6 +8,7 @@ import {
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
+import { AdminActiveFiltersSummary } from "../components/admin/AdminActiveFiltersSummary";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { ActionButton } from "../components/ui/ActionButton";
@@ -166,6 +167,25 @@ export function OrganizationsPage({
     [baseFilteredOrganizations, scopeFilter]
   );
 
+  const activeOrganizationFilterItems = useMemo(() => {
+    const items = [];
+
+    if (searchQuery.trim()) {
+      items.push({ key: "q", label: "Поиск", value: searchQuery.trim() });
+    }
+
+    if (scopeFilter !== "all") {
+      const scope = ORGANIZATION_SCOPE_FILTERS.find((item) => item.value === scopeFilter);
+      items.push({
+        key: "scope",
+        label: "Данные",
+        value: scope?.label || scopeFilter,
+      });
+    }
+
+    return items;
+  }, [searchQuery, scopeFilter]);
+
   const hasActiveFilters = Boolean(searchQuery.trim()) || scopeFilter !== "all";
 
   function buildOrganizationFilters(overrides = {}) {
@@ -283,6 +303,13 @@ export function OrganizationsPage({
               counts={organizationCounts}
               disabled={loading}
               onChange={handleScopeChange}
+            />
+
+            <AdminActiveFiltersSummary
+              items={activeOrganizationFilterItems}
+              onReset={resetFilters}
+              testId="admin-organizations-active-filters-summary"
+              emptyText="Фильтры организаций не применены."
             />
 
             <div

@@ -97,6 +97,11 @@ DOC_MARKERS = [
     "admin_users_active_filter_chips=yes",
     "admin_users_filter_reset_reused=yes",
     "users_active_filters_runtime_changed=yes",
+    "Stage 15.7 organizations active filters UX - 2026-05-29",
+    "admin_organizations_active_filters_summary_added=yes",
+    "admin_organizations_active_filter_chips=yes",
+    "admin_organizations_filter_reset_reused=yes",
+    "organizations_active_filters_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [
