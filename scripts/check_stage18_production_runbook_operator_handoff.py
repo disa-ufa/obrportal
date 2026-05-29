@@ -30,6 +30,13 @@ DOC_MARKERS = [
     "stage18_depends_on_stage15_complete=yes",
     "stage18_depends_on_stage16_complete=yes",
     "stage18_depends_on_stage17_complete=yes",
+    "Stage 18.1 production runbook inventory - 2026-05-30",
+    "stage18_production_runbook_inventory_recorded=yes",
+    "stage18_pre_deploy_checks_defined=yes",
+    "stage18_backup_before_deploy_defined=yes",
+    "stage18_update_procedure_defined=yes",
+    "stage18_post_deploy_smoke_defined=yes",
+    "stage18_rollback_procedure_defined=yes",
 ]
 
 STAGE14_MARKERS = [
