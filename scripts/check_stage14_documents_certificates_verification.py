@@ -16,6 +16,20 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 14 document implementation inventory - 2026-05-29",
+    "stage14_inventory_report=tmp/stage14_documents_inventory.txt",
+    "stage14_inventory_summary=tmp/stage14_documents_inventory_summary.txt",
+    "document_pdf_service_existing=yes",
+    "document_templates_service_existing=yes",
+    "completion_documents_service_existing=yes",
+    "document_storage_service_existing=yes",
+    "document_record_model_existing=yes",
+    "account_documents_api_existing=yes",
+    "public_document_verification_api_existing=yes",
+    "admin_documents_api_existing=yes",
+    "frontend_documents_pages_existing=yes",
+    "focused_document_pdf_tests=9_passed",
+    "document_inventory_runtime_changed=no",
     "Status: in progress",
     "Stage 14 Documents / certificates / verification",
     "Stage 14 baseline",
