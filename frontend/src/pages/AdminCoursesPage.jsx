@@ -1,4 +1,4 @@
-import { getApiErrorMessage } from "../utils/apiErrors";
+import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -313,8 +313,9 @@ function getCourseStatusLabel(course) {
   return course.is_active ? RU.active : RU.inactive;
 }
 function formatCourseApiError(err, fallback) {
-  const status = err?.status ? `${err.status}` : "";
+  const status = getApiErrorStatus(err);
   const message = getApiErrorMessage(err);
+  const safeMessage = getSafeApiErrorMessage(message, fallback);
   const normalizedMessage = message.toLowerCase();
 
   let readableMessage = fallback;
@@ -332,7 +333,7 @@ function formatCourseApiError(err, fallback) {
   } else if (status === "422" && normalizedMessage.includes("slug")) {
     readableMessage = RU.courseSlugInvalid;
   } else if (message) {
-    readableMessage = message;
+    readableMessage = safeMessage;
   }
 
   return `${status} ${readableMessage}`.trim();
@@ -465,8 +466,9 @@ function buildModuleEditForm(module) {
 }
 
 function formatCourseModuleApiError(err, fallback) {
-  const status = err?.status ? `${err.status}` : "";
+  const status = getApiErrorStatus(err);
   const message = getApiErrorMessage(err);
+  const safeMessage = getSafeApiErrorMessage(message, fallback);
   const normalizedMessage = message.toLowerCase();
 
   let readableMessage = fallback;
@@ -478,7 +480,7 @@ function formatCourseModuleApiError(err, fallback) {
   } else if (status === "409" && normalizedMessage.includes("position")) {
     readableMessage = RU.modulePositionDuplicate;
   } else if (message) {
-    readableMessage = message;
+    readableMessage = safeMessage;
   }
 
   return `${status} ${readableMessage}`.trim();
@@ -569,8 +571,9 @@ function buildLessonEditForm(lesson) {
 }
 
 function formatCourseLessonApiError(err, fallback) {
-  const status = err?.status ? `${err.status}` : "";
+  const status = getApiErrorStatus(err);
   const message = getApiErrorMessage(err);
+  const safeMessage = getSafeApiErrorMessage(message, fallback);
   const normalizedMessage = message.toLowerCase();
 
   let readableMessage = fallback;
@@ -582,7 +585,7 @@ function formatCourseLessonApiError(err, fallback) {
   } else if (status === "409" && normalizedMessage.includes("position")) {
     readableMessage = RU.lessonPositionDuplicate;
   } else if (message) {
-    readableMessage = message;
+    readableMessage = safeMessage;
   }
 
   return `${status} ${readableMessage}`.trim();

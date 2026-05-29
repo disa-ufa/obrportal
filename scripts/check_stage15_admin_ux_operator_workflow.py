@@ -188,6 +188,11 @@ DOC_MARKERS = [
     "groups_page_safe_api_error_message_used=yes",
     "groups_page_domain_error_messages_preserved=yes",
     "groups_page_friendly_errors_runtime_changed=yes",
+    "Stage 15.21 admin courses page friendly errors - 2026-05-29",
+    "admin_courses_page_get_api_error_status_used=yes",
+    "admin_courses_page_safe_api_error_message_used=yes",
+    "admin_courses_page_domain_error_messages_preserved=yes",
+    "admin_courses_page_friendly_errors_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [
