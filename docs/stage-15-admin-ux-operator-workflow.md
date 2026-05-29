@@ -1061,3 +1061,44 @@ Verification markers:
 - `stage15_raw_friendly_errors_rescan=tmp/stage15_raw_friendly_errors_rescan.txt`
 - `raw_friendly_errors_rescan_completed=yes`
 - `raw_friendly_errors_rescan_runtime_changed=no`
+
+## 36. Stage 15.23 friendly errors hardening accepted - 2026-05-29
+
+Goal: accept the completed Stage 15 friendly error hardening block for admin/operator UX.
+
+Accepted runtime scope:
+- strengthened shared safe API error formatter in `frontend/src/utils/apiErrors.js`;
+- aligned stale smoke guards with the safe API error formatter;
+- connected safe friendly errors to admin forms:
+  - `UserForm.jsx`;
+  - `OrganizationForm.jsx`;
+  - `RoleForm.jsx`;
+- connected safe friendly errors to admin pages:
+  - `AdminEnrollmentsPage.jsx`;
+  - `DocumentsPage.jsx`;
+  - `GroupsPage.jsx`;
+  - `AdminCoursesPage.jsx`;
+- preserved domain-specific Russian operator messages;
+- removed raw-risk operator-visible patterns found by the Stage 15.17 scan.
+
+Accepted verification:
+- Stage 15.22 raw friendly errors rescan found `0` raw-risk hits;
+- raw manual `err?.status` formatter patterns were eliminated from the targeted admin formatter scope;
+- direct `readableMessage = message` / `readableMessage = rawMessage` patterns were eliminated from the targeted admin formatter scope;
+- direct `set...Error(err.message/error.message)` raw-risk patterns were not found after rescan;
+- current local git head before acceptance checkpoint: `20c5975`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `friendly_errors_hardening_accepted=yes`.
+
+Verification markers:
+- `Stage 15.23 friendly errors hardening accepted - 2026-05-29`
+- `friendly_errors_forms_scope_accepted=yes`
+- `friendly_errors_admin_pages_scope_accepted=yes`
+- `friendly_errors_raw_rescan_zero_hits=yes`
+- `friendly_errors_hardening_accepted=yes`

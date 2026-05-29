@@ -197,6 +197,11 @@ DOC_MARKERS = [
     "stage15_raw_friendly_errors_rescan=tmp/stage15_raw_friendly_errors_rescan.txt",
     "raw_friendly_errors_rescan_completed=yes",
     "raw_friendly_errors_rescan_runtime_changed=no",
+    "Stage 15.23 friendly errors hardening accepted - 2026-05-29",
+    "friendly_errors_forms_scope_accepted=yes",
+    "friendly_errors_admin_pages_scope_accepted=yes",
+    "friendly_errors_raw_rescan_zero_hits=yes",
+    "friendly_errors_hardening_accepted=yes",
 ]
 
 ROADMAP_MARKERS = [
