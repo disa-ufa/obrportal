@@ -32,6 +32,13 @@ DOC_MARKERS = [
     "stage17_env_example_inventory=yes",
     "stage17_ports_inventory=yes",
     "stage17_no_runtime_change=yes",
+    "Stage 17.2 docker services health inventory - 2026-05-30",
+    "stage17_docker_services_health_recorded=yes",
+    "stage17_backend_health_ok=yes",
+    "stage17_frontend_health_ok=yes",
+    "stage17_postgres_health_ok=yes",
+    "stage17_redis_health_ok=yes",
+    "stage17_minio_health_ok=yes",
 ]
 
 STAGE14_MARKERS = [

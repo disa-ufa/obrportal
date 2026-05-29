@@ -139,3 +139,50 @@ Verification markers:
 - `stage17_env_example_inventory=yes`
 - `stage17_ports_inventory=yes`
 - `stage17_no_runtime_change=yes`
+
+## 3. Docker services health inventory - 2026-05-30
+
+Goal: record actual local Docker Compose service health before production deployment verification.
+
+Current git head before health inventory recording: `f989205`.
+
+Observed Docker services:
+- `obrportal-backend` is up and exposes `0.0.0.0:8000->8000/tcp`;
+- `obrportal-frontend` is up and exposes `0.0.0.0:5173->5173/tcp`;
+- `obrportal-postgres` is up and healthy, exposes `0.0.0.0:5432->5432/tcp`;
+- `obrportal-redis` is up and exposes `0.0.0.0:6379->6379/tcp`;
+- `obrportal-minio` is up and healthy, exposes `0.0.0.0:9000-9001->9000-9001/tcp`.
+
+Observed health checks:
+- backend `/docs` check returned `200 OK`;
+- frontend root check returned `200 OK`;
+- PostgreSQL `pg_isready` returned `accepting connections`;
+- Redis `redis-cli ping` returned `PONG`;
+- MinIO `/minio/health/live` returned `200 OK`.
+
+Local artifact:
+- full local UTF-8 health log saved at `tmp_stage17_2_docker_services_health_utf8.txt`;
+- this local log must not be committed.
+
+Notes:
+- Docker command text in `docker compose ps` may contain console-encoding artifacts in the `COMMAND` column;
+- this is non-blocking because service names, statuses, ports and health checks are valid.
+
+Safety notes:
+- This checkpoint documents service health only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage17_docker_services_health_recorded=yes`.
+
+Verification markers:
+- `Stage 17.2 docker services health inventory - 2026-05-30`
+- `stage17_docker_services_health_recorded=yes`
+- `stage17_backend_health_ok=yes`
+- `stage17_frontend_health_ok=yes`
+- `stage17_postgres_health_ok=yes`
+- `stage17_redis_health_ok=yes`
+- `stage17_minio_health_ok=yes`
