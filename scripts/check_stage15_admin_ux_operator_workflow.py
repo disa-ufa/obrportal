@@ -173,6 +173,11 @@ DOC_MARKERS = [
     "stage15_remaining_friendly_errors_scan=tmp/stage15_remaining_friendly_errors_scan.txt",
     "remaining_friendly_errors_raw_usage_scan=yes",
     "remaining_friendly_errors_scan_runtime_changed=no",
+    "Stage 15.18 admin enrollments friendly errors - 2026-05-29",
+    "admin_enrollments_get_api_error_status_used=yes",
+    "admin_enrollments_safe_api_error_message_used=yes",
+    "admin_enrollments_domain_error_messages_preserved=yes",
+    "admin_enrollments_friendly_errors_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [

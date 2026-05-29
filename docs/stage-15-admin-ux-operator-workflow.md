@@ -891,3 +891,38 @@ Verification markers:
 - `stage15_remaining_friendly_errors_scan=tmp/stage15_remaining_friendly_errors_scan.txt`
 - `remaining_friendly_errors_raw_usage_scan=yes`
 - `remaining_friendly_errors_scan_runtime_changed=no`
+
+## 31. Stage 15.18 admin enrollments friendly errors - 2026-05-29
+
+Goal: connect the strengthened shared safe error helpers to the admin enrollments page formatter.
+
+Runtime change:
+- updated `frontend/src/pages/AdminEnrollmentsPage.jsx`;
+- `formatEnrollmentApiError` now uses `getApiErrorStatus`;
+- unknown enrollment API messages now pass through `getSafeApiErrorMessage`;
+- existing domain-specific Russian messages for enrollments, duplicates, invalid statuses, groups, group membership and linked documents are preserved;
+- no backend API changes were required.
+
+Verification plan:
+- `scripts/smoke_frontend_admin_pages.py` must pass locally;
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass;
+- GitHub Actions must pass on `develop` and `main`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `admin_enrollments_friendly_errors_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.18 admin enrollments friendly errors - 2026-05-29`
+- `admin_enrollments_get_api_error_status_used=yes`
+- `admin_enrollments_safe_api_error_message_used=yes`
+- `admin_enrollments_domain_error_messages_preserved=yes`
+- `admin_enrollments_friendly_errors_runtime_changed=yes`

@@ -1,4 +1,4 @@
-import { getApiErrorMessage } from "../utils/apiErrors";
+import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -110,8 +110,9 @@ function getStatusLabel(value) {
   return ENROLLMENT_STATUSES.find((item) => item.value === value)?.label || value;
 }
 function formatEnrollmentApiError(err, fallback) {
-  const status = err?.status ? `${err.status}` : "";
+  const status = getApiErrorStatus(err);
   const message = getApiErrorMessage(err);
+  const safeMessage = getSafeApiErrorMessage(message, fallback);
   const normalizedMessage = message.toLowerCase();
 
   let readableMessage = fallback;
@@ -139,7 +140,7 @@ function formatEnrollmentApiError(err, fallback) {
   } else if (normalizedMessage.includes("learning group not found")) {
     readableMessage = ENROLLMENT_API_ERROR_MESSAGES.groupNotFound;
   } else if (message) {
-    readableMessage = message;
+    readableMessage = safeMessage;
   }
 
   return `${status} ${readableMessage}`.trim();
