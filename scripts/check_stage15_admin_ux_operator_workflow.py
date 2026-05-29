@@ -102,6 +102,11 @@ DOC_MARKERS = [
     "admin_organizations_active_filter_chips=yes",
     "admin_organizations_filter_reset_reused=yes",
     "organizations_active_filters_runtime_changed=yes",
+    "Stage 15.8 courses active filters UX - 2026-05-29",
+    "admin_courses_active_filters_summary_added=yes",
+    "admin_courses_active_filter_chips=yes",
+    "admin_courses_filter_reset_reused=yes",
+    "courses_active_filters_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [

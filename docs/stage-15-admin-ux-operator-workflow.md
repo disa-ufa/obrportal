@@ -410,3 +410,35 @@ Verification markers:
 - `admin_organizations_active_filter_chips=yes`
 - `admin_organizations_filter_reset_reused=yes`
 - `organizations_active_filters_runtime_changed=yes`
+
+## 18. Stage 15.8 courses active filters UX - 2026-05-29
+
+Goal: reuse the active filters summary component on the admin courses list.
+
+Runtime change:
+- connected `AdminActiveFiltersSummary` to `frontend/src/pages/AdminCoursesPage.jsx`;
+- visible filter chips now show search and course activity filters;
+- reset action reuses the existing safe `handleResetFilter` flow;
+- no backend API changes were required.
+
+Verification plan:
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `courses_active_filters_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.8 courses active filters UX - 2026-05-29`
+- `admin_courses_active_filters_summary_added=yes`
+- `admin_courses_active_filter_chips=yes`
+- `admin_courses_filter_reset_reused=yes`
+- `courses_active_filters_runtime_changed=yes`

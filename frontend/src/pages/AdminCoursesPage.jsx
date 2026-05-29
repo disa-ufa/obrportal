@@ -25,6 +25,7 @@ import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
+import { AdminActiveFiltersSummary } from "../components/admin/AdminActiveFiltersSummary";
 import { ActionButton } from "../components/ui/ActionButton";
 import { Alert } from "../components/ui/Alert";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
@@ -1599,6 +1600,25 @@ export function AdminCoursesPage() {
   const [form, setForm] = useState(EMPTY_COURSE_FORM);
   const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
 
+  const activeCourseFilterItems = useMemo(() => {
+    const items = [];
+
+    if (filterQuery.trim()) {
+      items.push({ key: "q", label: "Поиск", value: filterQuery.trim() });
+    }
+
+    if (filterActive) {
+      const status = COURSE_ACTIVE_FILTERS.find((item) => item.value === filterActive);
+      items.push({
+        key: "is_active",
+        label: "Статус",
+        value: status?.label || (filterActive === "true" ? RU.activePlural : RU.inactivePlural),
+      });
+    }
+
+    return items;
+  }, [filterQuery, filterActive]);
+
   const hasActiveFilters = Boolean(filterQuery || filterActive);
   const activeCount = courseCounts.active || 0;
   const inactiveCount = courseCounts.inactive || 0;
@@ -2371,6 +2391,13 @@ export function AdminCoursesPage() {
                 : item.value === "false"
                   ? counts.inactive || 0
                   : counts.all || 0}
+          />
+
+          <AdminActiveFiltersSummary
+            items={activeCourseFilterItems}
+            onReset={handleResetFilter}
+            testId="admin-courses-active-filters-summary"
+            emptyText="Фильтры программ не применены."
           />
 
           <div
