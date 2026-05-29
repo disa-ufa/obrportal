@@ -169,6 +169,10 @@ DOC_MARKERS = [
     "forms_friendly_errors_role_form_accepted=yes",
     "forms_friendly_errors_smoke_guards_accepted=yes",
     "forms_friendly_errors_accepted=yes",
+    "Stage 15.17 remaining friendly errors usage scan - 2026-05-29",
+    "stage15_remaining_friendly_errors_scan=tmp/stage15_remaining_friendly_errors_scan.txt",
+    "remaining_friendly_errors_raw_usage_scan=yes",
+    "remaining_friendly_errors_scan_runtime_changed=no",
 ]
 
 ROADMAP_MARKERS = [

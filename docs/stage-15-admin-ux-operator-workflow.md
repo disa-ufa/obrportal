@@ -860,3 +860,34 @@ Verification markers:
 - `forms_friendly_errors_role_form_accepted=yes`
 - `forms_friendly_errors_smoke_guards_accepted=yes`
 - `forms_friendly_errors_accepted=yes`
+
+## 30. Stage 15.17 remaining friendly errors usage scan - 2026-05-29
+
+Goal: scan remaining frontend pages, components and hooks for raw operator-visible API error usage after accepting the forms friendly errors block.
+
+Scan result:
+- current local git head before checkpoint: `135f6e3`;
+- scan report was generated at `tmp/stage15_remaining_friendly_errors_scan.txt`;
+- scan looked for direct `err.message`, `err.detail`, `error.message`, `error.detail`, raw `setError(...)` / `setActionError(...)` patterns, status-template rendering and usage of API error helpers;
+- total raw/helper pattern hits found: `55`;
+- scan is a local working artifact and must not be committed.
+
+Decision:
+- The next runtime steps should patch one page or panel group at a time.
+- Prefer replacing raw operator-visible backend text with `formatApiError` or `getSafeApiErrorMessage`.
+- Preserve domain-specific Russian operator messages where they already exist.
+- No backend API or database migration is required for this scan step.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- `remaining_friendly_errors_scan_runtime_changed=no`.
+
+Verification markers:
+- `Stage 15.17 remaining friendly errors usage scan - 2026-05-29`
+- `stage15_remaining_friendly_errors_scan=tmp/stage15_remaining_friendly_errors_scan.txt`
+- `remaining_friendly_errors_raw_usage_scan=yes`
+- `remaining_friendly_errors_scan_runtime_changed=no`
