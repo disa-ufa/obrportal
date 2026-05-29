@@ -44,6 +44,13 @@ DOC_MARKERS = [
     "stage18_users_organizations_handoff_defined=yes",
     "stage18_documents_verification_handoff_defined=yes",
     "stage18_support_escalation_path_defined=yes",
+    "Stage 18.3 release artifact summary - 2026-05-30",
+    "stage18_release_artifact_summary_recorded=yes",
+    "stage18_accepted_stage_tags_recorded=yes",
+    "stage18_documentation_artifacts_recorded=yes",
+    "stage18_diagnostic_guards_recorded=yes",
+    "stage18_release_handoff_rule_defined=yes",
+    "stage18_ready_for_final_acceptance=yes",
 ]
 
 STAGE14_MARKERS = [

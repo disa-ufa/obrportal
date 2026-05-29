@@ -217,3 +217,72 @@ Verification markers:
 - `stage18_users_organizations_handoff_defined=yes`
 - `stage18_documents_verification_handoff_defined=yes`
 - `stage18_support_escalation_path_defined=yes`
+
+## 4. Release artifact summary - 2026-05-30
+
+Goal: record accepted stages, tags and release artifacts for operator handoff.
+
+Current git head before release artifact summary: `8679559`.
+
+Accepted stage tags:
+- Stage 14 documents/certificates/verification: `v0.1.0-stage14-documents-verification-complete`;
+- Stage 15 admin UX/operator workflow: `v0.1.0-stage15-admin-ux-operator-workflow-complete`;
+- Stage 16 release readiness/regression: `v0.1.0-stage16-release-readiness-complete`;
+- Stage 17 production deployment readiness: `v0.1.0-stage17-production-deployment-readiness-complete`.
+
+Accepted documentation artifacts:
+- `docs/stage-14-documents-certificates-verification.md`;
+- `docs/stage-15-admin-ux-operator-workflow.md`;
+- `docs/stage-16-release-readiness-regression.md`;
+- `docs/stage-17-production-deployment-readiness.md`;
+- `docs/stage-18-production-runbook-operator-handoff.md`.
+
+Accepted diagnostic guards:
+- `scripts/check_stage14_documents_certificates_verification.py`;
+- `scripts/check_stage15_admin_ux_operator_workflow.py`;
+- `scripts/check_stage16_release_readiness_regression.py`;
+- `scripts/check_stage17_production_deployment_readiness.py`;
+- `scripts/check_stage18_production_runbook_operator_handoff.py`.
+
+Required release checks before final handoff:
+- Stage 18 guard passes;
+- Stage 17 guard passes;
+- Stage 16 guard passes;
+- Stage 15 guard passes;
+- Stage 14 guard passes;
+- text encoding guard passes;
+- source BOM guard passes;
+- GitHub Actions are green on `develop` and `main`;
+- `develop` and `main` are synchronized;
+- working tree is clean;
+- final Stage 18 tag is created only after acceptance.
+
+Known non-blocking warnings:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Release handoff rule:
+- tags are the source of truth for accepted checkpoints;
+- documentation guards are the source of truth for stage acceptance markers;
+- local smoke/log artifacts must not be committed unless sanitized and intentionally documented;
+- secrets and `.env` must never be included in release artifacts.
+
+Safety notes:
+- This checkpoint documents release artifact summary only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage18_release_artifact_summary_recorded=yes`.
+
+Verification markers:
+- `Stage 18.3 release artifact summary - 2026-05-30`
+- `stage18_release_artifact_summary_recorded=yes`
+- `stage18_accepted_stage_tags_recorded=yes`
+- `stage18_documentation_artifacts_recorded=yes`
+- `stage18_diagnostic_guards_recorded=yes`
+- `stage18_release_handoff_rule_defined=yes`
+- `stage18_ready_for_final_acceptance=yes`
