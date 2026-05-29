@@ -53,6 +53,13 @@ DOC_MARKERS = [
     "stage17_restore_checklist_defined=yes",
     "stage17_rollback_checklist_defined=yes",
     "stage17_no_destructive_deployment_without_confirmation=yes",
+    "Stage 17.5 production deployment readiness acceptance - 2026-05-30",
+    "stage17_production_deployment_readiness_accepted=yes",
+    "stage17_deployment_inventory_accepted=yes",
+    "stage17_docker_health_accepted=yes",
+    "stage17_production_smoke_checklist_accepted=yes",
+    "stage17_backup_restore_rollback_accepted=yes",
+    "stage17_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [

@@ -343,3 +343,51 @@ Verification markers:
 - `stage17_restore_checklist_defined=yes`
 - `stage17_rollback_checklist_defined=yes`
 - `stage17_no_destructive_deployment_without_confirmation=yes`
+
+## 6. Production deployment readiness acceptance - 2026-05-30
+
+Goal: accept Stage 17 production deployment readiness after deployment inventory, Docker health, production smoke checklist and backup/rollback checklist.
+
+Current git head before acceptance checkpoint: `0ed5e64`.
+
+Accepted Stage 17 scope:
+- Stage 17 baseline created;
+- deployment inventory recorded;
+- Docker Compose services health recorded;
+- backend, frontend, PostgreSQL, Redis and MinIO health checks passed locally;
+- production smoke checklist defined;
+- backup/restore and rollback checklist defined;
+- hard safety rules for destructive deployment actions documented.
+
+Accepted readiness state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 17 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 17 tag;
+- working tree must be clean before final Stage 17 tag.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents production deployment readiness acceptance only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage17_production_deployment_readiness_accepted=yes`.
+
+Verification markers:
+- `Stage 17.5 production deployment readiness acceptance - 2026-05-30`
+- `stage17_production_deployment_readiness_accepted=yes`
+- `stage17_deployment_inventory_accepted=yes`
+- `stage17_docker_health_accepted=yes`
+- `stage17_production_smoke_checklist_accepted=yes`
+- `stage17_backup_restore_rollback_accepted=yes`
+- `stage17_ready_for_final_tag=yes`
