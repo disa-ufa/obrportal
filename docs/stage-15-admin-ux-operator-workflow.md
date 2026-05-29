@@ -588,3 +588,36 @@ Verification markers:
 - `stage15_friendly_errors_usage_scan=tmp/stage15_friendly_errors_usage_scan.txt`
 - `friendly_errors_raw_usage_scan=yes`
 - `friendly_errors_usage_scan_runtime_changed=no`
+
+## 23. Stage 15.13 user form friendly errors - 2026-05-29
+
+Goal: connect the strengthened shared safe error helpers to the admin user form formatter.
+
+Runtime change:
+- updated `frontend/src/components/admin/UserForm.jsx`;
+- `formatUserApiError` now uses `getApiErrorStatus`;
+- unknown user-form API messages now pass through `getSafeApiErrorMessage`;
+- existing domain-specific Russian messages for users, roles, organizations, duplicates and validation are preserved;
+- no backend API changes were required.
+
+Verification plan:
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `user_form_friendly_errors_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.13 user form friendly errors - 2026-05-29`
+- `user_form_get_api_error_status_used=yes`
+- `user_form_safe_api_error_message_used=yes`
+- `user_form_domain_error_messages_preserved=yes`
+- `user_form_friendly_errors_runtime_changed=yes`

@@ -131,6 +131,11 @@ DOC_MARKERS = [
     "stage15_friendly_errors_usage_scan=tmp/stage15_friendly_errors_usage_scan.txt",
     "friendly_errors_raw_usage_scan=yes",
     "friendly_errors_usage_scan_runtime_changed=no",
+    "Stage 15.13 user form friendly errors - 2026-05-29",
+    "user_form_get_api_error_status_used=yes",
+    "user_form_safe_api_error_message_used=yes",
+    "user_form_domain_error_messages_preserved=yes",
+    "user_form_friendly_errors_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [
