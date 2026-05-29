@@ -190,3 +190,46 @@ Verification markers:
 - `frontend_api_client_existing=yes`
 - `backend_admin_api_anchor_existing=yes`
 - `admin_ux_inventory_runtime_changed=no`
+
+## 12. Stage 15.2 dashboard/worklists checkpoint - 2026-05-29
+
+Goal: record current dashboard/worklists operator UX before deciding whether runtime dashboard changes are needed.
+
+Checkpoint result:
+- current local git head before checkpoint: `476d540`;
+- compact inventory report was generated at `tmp/stage15_dashboard_worklists_inventory.txt`;
+- dashboard page already contains Admin API work center metrics;
+- dashboard page already contains signal cards for assignments, documents, inactive users, draft documents and revoked documents;
+- dashboard page already contains `dashboard-work-tasks`;
+- dashboard page already contains `dashboard-documents-task`;
+- dashboard page already contains `dashboard-enrollments-task`;
+- dashboard page already links worklists to filtered documents and enrollments through admin route builders;
+- admin link builder utility exists: `frontend/src/utils/adminLinks.js`;
+- admin work center component exists: `frontend/src/components/admin/AdminWorkCenter.jsx`.
+
+Decision:
+- Stage 15.2 accepts the existing dashboard/worklists UI as the current operator baseline.
+- The next runtime step should focus on filter usability and friendly operator errors in list pages.
+- No new dashboard rewrite is required before list-page UX hardening.
+- No database migration is required for this checkpoint.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- The inventory report in `tmp/` is a local working artifact and must not be committed.
+- `dashboard_worklists_runtime_changed=no`.
+
+Verification markers:
+- `Stage 15.2 dashboard/worklists checkpoint - 2026-05-29`
+- `stage15_dashboard_worklists_inventory=tmp/stage15_dashboard_worklists_inventory.txt`
+- `dashboard_work_center_existing=yes`
+- `dashboard_signal_cards_existing=yes`
+- `dashboard_work_tasks_existing=yes`
+- `dashboard_documents_task_existing=yes`
+- `dashboard_enrollments_task_existing=yes`
+- `admin_link_builder_existing=yes`
+- `admin_work_center_component_existing=yes`
+- `dashboard_worklists_runtime_changed=no`

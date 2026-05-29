@@ -54,6 +54,16 @@ DOC_MARKERS = [
     "frontend_api_client_existing=yes",
     "backend_admin_api_anchor_existing=yes",
     "admin_ux_inventory_runtime_changed=no",
+    "Stage 15.2 dashboard/worklists checkpoint - 2026-05-29",
+    "stage15_dashboard_worklists_inventory=tmp/stage15_dashboard_worklists_inventory.txt",
+    "dashboard_work_center_existing=yes",
+    "dashboard_signal_cards_existing=yes",
+    "dashboard_work_tasks_existing=yes",
+    "dashboard_documents_task_existing=yes",
+    "dashboard_enrollments_task_existing=yes",
+    "admin_link_builder_existing=yes",
+    "admin_work_center_component_existing=yes",
+    "dashboard_worklists_runtime_changed=no",
 ]
 
 ROADMAP_MARKERS = [
