@@ -126,3 +126,58 @@ Verification markers:
 - `stage16_backend_pytest_required=yes`
 - `stage16_frontend_build_required=yes`
 - `stage16_smoke_chain_required=yes`
+
+## 3. Full local regression run passed - 2026-05-29
+
+Goal: record the actual Stage 16.2 full local regression run result.
+
+Current git head before recording result: `6254d7c`.
+
+Regression result:
+- Stage 16 guard passed;
+- Stage 15 guard passed;
+- Stage 14 guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- backend pytest passed;
+- all required smoke scripts passed;
+- frontend production build passed;
+- final result: `STAGE 16.2 REGRESSION: PASSED`.
+
+Backend test result:
+- `docker compose exec -T backend pytest app/tests -q` passed;
+- observed result: `214 passed, 4 warnings`;
+- warnings are third-party/deprecation warnings and are non-blocking for Stage 16.2.
+
+Smoke result:
+- auth/RBAC smoke passed;
+- organization cabinet smoke checks passed;
+- documents and document generation smoke checks passed;
+- account workflow smoke checks passed;
+- public/auth pages smoke checks passed;
+- admin renderer/hooks/components/pages smoke checks passed;
+- frontend utils/routes/hooks/API client smoke checks passed.
+
+Build result:
+- frontend production build passed;
+- frontend chunk-size warning remains known non-blocking warning.
+
+Local artifact:
+- full local log saved at `tmp_stage16_2_full_regression_run.txt`;
+- this local log must not be committed.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage16_full_regression_run_passed=yes`.
+
+Verification markers:
+- `Stage 16.2 full local regression run passed - 2026-05-29`
+- `stage16_full_regression_run_passed=yes`
+- `stage16_backend_pytest_passed=yes`
+- `stage16_smoke_chain_passed=yes`
+- `stage16_frontend_build_passed=yes`

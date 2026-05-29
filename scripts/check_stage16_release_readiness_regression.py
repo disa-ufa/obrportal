@@ -25,6 +25,11 @@ DOC_MARKERS = [
     "stage16_backend_pytest_required=yes",
     "stage16_frontend_build_required=yes",
     "stage16_smoke_chain_required=yes",
+    "Stage 16.2 full local regression run passed - 2026-05-29",
+    "stage16_full_regression_run_passed=yes",
+    "stage16_backend_pytest_passed=yes",
+    "stage16_smoke_chain_passed=yes",
+    "stage16_frontend_build_passed=yes",
 ]
 
 STAGE14_MARKERS = [
