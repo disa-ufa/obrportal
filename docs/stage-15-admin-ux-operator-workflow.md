@@ -142,3 +142,51 @@ Before merging Stage 15 runtime implementation, additionally run:
 - `operator-friendly error messages`
 - `admin_ux_runtime_changed=no`
 - `secrets_printed=no`
+
+## 11. Stage 15.1 admin UX inventory - 2026-05-29
+
+Goal: record the current admin UX/operator workflow inventory before runtime UX changes.
+
+Inventory result:
+- current local git head before checkpoint: `52bfea7`;
+- compact inventory report was generated at `tmp/stage15_admin_ux_inventory.txt`;
+- dashboard page exists: `frontend/src/pages/DashboardPage.jsx`;
+- users page exists: `frontend/src/pages/UsersPage.jsx`;
+- organizations page exists: `frontend/src/pages/OrganizationsPage.jsx`;
+- courses page exists: `frontend/src/pages/AdminCoursesPage.jsx`;
+- enrollments page exists: `frontend/src/pages/AdminEnrollmentsPage.jsx`;
+- documents page exists: `frontend/src/pages/DocumentsPage.jsx`;
+- audit page exists: `frontend/src/pages/AuditPage.jsx`;
+- admin route renderer exists: `frontend/src/routes/AdminPageRenderer.jsx`;
+- frontend API client exists: `frontend/src/api/client.js`;
+- backend admin API anchor exists: `backend/app/api/v1/admin.py`.
+
+Decision:
+- Stage 15 should improve the existing admin surfaces instead of creating a second admin UI.
+- The next runtime step should focus on dashboard/worklist and filter usability first.
+- Bulk actions must not be added before explicit confirmation UX and backend/frontend tests.
+- No database migration is required for the inventory step.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- The inventory report in `tmp/` is a local working artifact and must not be committed.
+- `admin_ux_inventory_runtime_changed=no`.
+
+Verification markers:
+- `Stage 15.1 admin UX inventory - 2026-05-29`
+- `stage15_admin_ux_inventory=tmp/stage15_admin_ux_inventory.txt`
+- `dashboard_page_existing=yes`
+- `users_page_existing=yes`
+- `organizations_page_existing=yes`
+- `admin_courses_page_existing=yes`
+- `admin_enrollments_page_existing=yes`
+- `documents_page_existing=yes`
+- `audit_page_existing=yes`
+- `admin_route_renderer_existing=yes`
+- `frontend_api_client_existing=yes`
+- `backend_admin_api_anchor_existing=yes`
+- `admin_ux_inventory_runtime_changed=no`

@@ -41,6 +41,19 @@ DOC_MARKERS = [
     "operator-friendly error messages",
     "admin_ux_runtime_changed=no",
     "secrets_printed=no",
+    "Stage 15.1 admin UX inventory - 2026-05-29",
+    "stage15_admin_ux_inventory=tmp/stage15_admin_ux_inventory.txt",
+    "dashboard_page_existing=yes",
+    "users_page_existing=yes",
+    "organizations_page_existing=yes",
+    "admin_courses_page_existing=yes",
+    "admin_enrollments_page_existing=yes",
+    "documents_page_existing=yes",
+    "audit_page_existing=yes",
+    "admin_route_renderer_existing=yes",
+    "frontend_api_client_existing=yes",
+    "backend_admin_api_anchor_existing=yes",
+    "admin_ux_inventory_runtime_changed=no",
 ]
 
 ROADMAP_MARKERS = [
