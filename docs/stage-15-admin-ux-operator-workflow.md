@@ -1102,3 +1102,48 @@ Verification markers:
 - `friendly_errors_admin_pages_scope_accepted=yes`
 - `friendly_errors_raw_rescan_zero_hits=yes`
 - `friendly_errors_hardening_accepted=yes`
+
+## 37. Stage 15.24 admin UX/operator workflow final acceptance - 2026-05-29
+
+Goal: accept Stage 15 as completed after admin UX/operator workflow hardening.
+
+Accepted Stage 15 scope:
+- admin UX/operator workflow baseline documented;
+- dashboard/worklist and list pages UX inventory completed;
+- active filters summary added across key admin pages;
+- friendly API error formatter strengthened;
+- stale smoke guards aligned with the safe API error formatter;
+- safe friendly errors connected to admin forms:
+  - `UserForm.jsx`;
+  - `OrganizationForm.jsx`;
+  - `RoleForm.jsx`;
+- safe friendly errors connected to admin pages:
+  - `AdminEnrollmentsPage.jsx`;
+  - `DocumentsPage.jsx`;
+  - `GroupsPage.jsx`;
+  - `AdminCoursesPage.jsx`;
+- Stage 15.22 raw friendly errors rescan confirmed `0` raw-risk hits;
+- final accepted git head before checkpoint: `edc6963`.
+
+Verification result:
+- Stage 15 guard passed;
+- Stage 14 guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- frontend production build passed;
+- GitHub Actions must be green on `develop` and `main` before tagging.
+
+Safety notes:
+- No database migrations were added in the final acceptance checkpoint.
+- No backend API contract changes were added in the final acceptance checkpoint.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage15_admin_ux_operator_workflow_complete=yes`.
+
+Verification markers:
+- `Stage 15.24 admin UX/operator workflow final acceptance - 2026-05-29`
+- `stage15_active_filters_accepted=yes`
+- `stage15_friendly_errors_hardening_accepted=yes`
+- `stage15_raw_friendly_errors_zero_hits=yes`
+- `stage15_admin_ux_operator_workflow_complete=yes`

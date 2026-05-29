@@ -202,6 +202,11 @@ DOC_MARKERS = [
     "friendly_errors_admin_pages_scope_accepted=yes",
     "friendly_errors_raw_rescan_zero_hits=yes",
     "friendly_errors_hardening_accepted=yes",
+    "Stage 15.24 admin UX/operator workflow final acceptance - 2026-05-29",
+    "stage15_active_filters_accepted=yes",
+    "stage15_friendly_errors_hardening_accepted=yes",
+    "stage15_raw_friendly_errors_zero_hits=yes",
+    "stage15_admin_ux_operator_workflow_complete=yes",
 ]
 
 ROADMAP_MARKERS = [
