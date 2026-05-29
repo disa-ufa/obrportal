@@ -186,3 +186,84 @@ Verification markers:
 - `stage17_postgres_health_ok=yes`
 - `stage17_redis_health_ok=yes`
 - `stage17_minio_health_ok=yes`
+
+## 4. Production smoke checklist - 2026-05-30
+
+Goal: define the production smoke checklist after Docker services health has been verified.
+
+Current git head before production smoke checklist: `073d08a`.
+
+Required production smoke paths:
+1. Backend availability:
+   - backend `/docs` or health/API endpoint returns `200 OK`;
+   - backend container is up;
+   - backend logs have no crash loop.
+
+2. Frontend availability:
+   - frontend root page returns `200 OK`;
+   - frontend container is up;
+   - public routes render without blank screen.
+
+3. Authentication path:
+   - admin login succeeds;
+   - learner login succeeds;
+   - `/api/v1/auth/me` returns current authenticated user;
+   - invalid/expired token returns controlled unauthorized response.
+
+4. Public/catalog path:
+   - public home page opens;
+   - catalog page opens;
+   - course detail page opens;
+   - public pages do not require authentication.
+
+5. Learner/account path:
+   - account summary opens;
+   - account courses open;
+   - account documents open;
+   - available document download works;
+   - unavailable/missing document download returns controlled user-friendly state.
+
+6. Admin/operator path:
+   - dashboard opens;
+   - users, organizations, groups, roles/permissions pages open;
+   - courses, enrollments and documents pages open;
+   - active filters summary is visible on key list pages;
+   - friendly error formatting is preserved.
+
+7. Documents/verification path:
+   - completed enrollment document can be located;
+   - document status transition is controlled;
+   - document download works for allowed user/admin paths;
+   - public verification by document number returns expected result;
+   - QR/verification block remains available.
+
+8. Infrastructure path:
+   - PostgreSQL readiness check passes;
+   - Redis ping returns `PONG`;
+   - MinIO health endpoint returns `200 OK`;
+   - object storage-dependent document operations are verified.
+
+Pass criteria:
+- all smoke paths must pass before production acceptance;
+- failures must block deployment unless explicitly documented as non-blocking;
+- secrets must not be printed in smoke output;
+- smoke artifacts/logs must not be committed unless explicitly sanitized.
+
+Safety notes:
+- This checkpoint documents the production smoke checklist only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage17_production_smoke_checklist_recorded=yes`.
+
+Verification markers:
+- `Stage 17.3 production smoke checklist - 2026-05-30`
+- `stage17_production_smoke_checklist_recorded=yes`
+- `stage17_backend_smoke_required=yes`
+- `stage17_frontend_smoke_required=yes`
+- `stage17_auth_smoke_required=yes`
+- `stage17_documents_verification_smoke_required=yes`
+- `stage17_infrastructure_smoke_required=yes`

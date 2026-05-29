@@ -39,6 +39,13 @@ DOC_MARKERS = [
     "stage17_postgres_health_ok=yes",
     "stage17_redis_health_ok=yes",
     "stage17_minio_health_ok=yes",
+    "Stage 17.3 production smoke checklist - 2026-05-30",
+    "stage17_production_smoke_checklist_recorded=yes",
+    "stage17_backend_smoke_required=yes",
+    "stage17_frontend_smoke_required=yes",
+    "stage17_auth_smoke_required=yes",
+    "stage17_documents_verification_smoke_required=yes",
+    "stage17_infrastructure_smoke_required=yes",
 ]
 
 STAGE14_MARKERS = [
