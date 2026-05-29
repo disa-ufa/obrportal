@@ -442,3 +442,48 @@ Verification markers:
 - `admin_courses_active_filter_chips=yes`
 - `admin_courses_filter_reset_reused=yes`
 - `courses_active_filters_runtime_changed=yes`
+
+## 19. Stage 15.9 active filters UX accepted - 2026-05-29
+
+Goal: accept the completed active filters summary UX block for key admin list pages.
+
+Accepted runtime scope:
+- reusable active filters summary component exists: `frontend/src/components/admin/AdminActiveFiltersSummary.jsx`;
+- active filters summary is connected to enrollments;
+- active filters summary is connected to documents;
+- active filters summary is connected to users;
+- active filters summary is connected to organizations;
+- active filters summary is connected to courses.
+
+Accepted commits:
+- `5468225` — enrollments active filters summary;
+- `4359e6c` — documents active filters summary;
+- `627600e` — users active filters summary;
+- `18ebcce` — organizations active filters summary;
+- `fcff77d` — courses active filters summary.
+
+Verification result:
+- Stage 15 guard passed after each runtime step;
+- Stage 14 guard passed after each runtime step;
+- text encoding guard passed after each runtime step;
+- source BOM guard passed after each runtime step;
+- frontend production build passed after each runtime step;
+- current local git head before acceptance checkpoint: `fcff77d`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `active_filters_ux_accepted=yes`.
+
+Verification markers:
+- `Stage 15.9 active filters UX accepted - 2026-05-29`
+- `admin_active_filters_summary_component_accepted=yes`
+- `admin_enrollments_active_filters_accepted=yes`
+- `admin_documents_active_filters_accepted=yes`
+- `admin_users_active_filters_accepted=yes`
+- `admin_organizations_active_filters_accepted=yes`
+- `admin_courses_active_filters_accepted=yes`
+- `active_filters_ux_accepted=yes`

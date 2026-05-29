@@ -107,6 +107,14 @@ DOC_MARKERS = [
     "admin_courses_active_filter_chips=yes",
     "admin_courses_filter_reset_reused=yes",
     "courses_active_filters_runtime_changed=yes",
+    "Stage 15.9 active filters UX accepted - 2026-05-29",
+    "admin_active_filters_summary_component_accepted=yes",
+    "admin_enrollments_active_filters_accepted=yes",
+    "admin_documents_active_filters_accepted=yes",
+    "admin_users_active_filters_accepted=yes",
+    "admin_organizations_active_filters_accepted=yes",
+    "admin_courses_active_filters_accepted=yes",
+    "active_filters_ux_accepted=yes",
 ]
 
 ROADMAP_MARKERS = [
