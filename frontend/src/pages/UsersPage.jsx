@@ -9,6 +9,7 @@ import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
+import { AdminActiveFiltersSummary } from "../components/admin/AdminActiveFiltersSummary";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
@@ -166,6 +167,34 @@ export function UsersPage({
     [baseFilteredUsers, activityFilter]
   );
 
+  const activeUserFilterItems = useMemo(() => {
+    const items = [];
+
+    if (searchQuery.trim()) {
+      items.push({ key: "q", label: "Поиск", value: searchQuery.trim() });
+    }
+
+    if (activityFilter !== "all") {
+      const activity = USER_ACTIVITY_FILTERS.find((item) => item.value === activityFilter);
+      items.push({
+        key: "activity",
+        label: "Активность",
+        value: activity?.label || activityFilter,
+      });
+    }
+
+    if (roleFilter) {
+      const role = roles.find((item) => item.id === roleFilter);
+      items.push({
+        key: "role_id",
+        label: "Роль",
+        value: role ? `${role.code}${role.name ? ` — ${role.name}` : ""}` : roleFilter,
+      });
+    }
+
+    return items;
+  }, [searchQuery, activityFilter, roleFilter, roles]);
+
   const hasActiveFilters =
     searchQuery.trim() !== "" || activityFilter !== "all" || roleFilter !== "";
 
@@ -303,6 +332,13 @@ export function UsersPage({
                   : item.value === "inactive"
                     ? counts.inactive || 0
                     : counts.all || 0}
+            />
+
+            <AdminActiveFiltersSummary
+              items={activeUserFilterItems}
+              onReset={resetFilters}
+              testId="admin-users-active-filters-summary"
+              emptyText="Фильтры пользователей не применены."
             />
 
             <div

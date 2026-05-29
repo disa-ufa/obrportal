@@ -346,3 +346,35 @@ Verification markers:
 - `admin_documents_active_filter_chips=yes`
 - `admin_documents_filter_reset_reused=yes`
 - `documents_active_filters_runtime_changed=yes`
+
+## 16. Stage 15.6 users active filters UX - 2026-05-29
+
+Goal: reuse the active filters summary component on the admin users list.
+
+Runtime change:
+- connected `AdminActiveFiltersSummary` to `frontend/src/pages/UsersPage.jsx`;
+- visible filter chips now show search, activity and role filters;
+- reset action reuses the existing safe `resetFilters` flow;
+- no backend API changes were required.
+
+Verification plan:
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `users_active_filters_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.6 users active filters UX - 2026-05-29`
+- `admin_users_active_filters_summary_added=yes`
+- `admin_users_active_filter_chips=yes`
+- `admin_users_filter_reset_reused=yes`
+- `users_active_filters_runtime_changed=yes`
