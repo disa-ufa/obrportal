@@ -280,3 +280,37 @@ Verification markers:
 - `admin_quick_filters_component_existing=yes`
 - `admin_empty_state_component_existing=yes`
 - `list_pages_filters_errors_runtime_changed=no`
+
+## 14. Stage 15.4 enrollments active filters UX - 2026-05-29
+
+Goal: improve list-page operator UX by making active enrollment filters visible and resettable.
+
+Runtime change:
+- added reusable component `frontend/src/components/admin/AdminActiveFiltersSummary.jsx`;
+- connected active filter summary to `frontend/src/pages/AdminEnrollmentsPage.jsx`;
+- visible filter chips now show search, user, course, organization, status, group and action_required filters;
+- reset action reuses the existing safe `handleResetFilter` flow;
+- no backend API changes were required.
+
+Verification plan:
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `enrollments_active_filters_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.4 enrollments active filters UX - 2026-05-29`
+- `admin_active_filters_summary_component_added=yes`
+- `admin_enrollments_active_filters_summary_added=yes`
+- `admin_enrollments_active_filter_chips=yes`
+- `admin_enrollments_filter_reset_reused=yes`
+- `enrollments_active_filters_runtime_changed=yes`

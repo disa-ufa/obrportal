@@ -20,6 +20,7 @@ import { SectionCard } from "../components/ui/SectionCard";
 import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
+import { AdminActiveFiltersSummary } from "../components/admin/AdminActiveFiltersSummary";
 import { AdminFormField } from "../components/admin/AdminFormField";
 import {
   buildAuditPath,
@@ -1076,6 +1077,81 @@ export function AdminEnrollmentsPage() {
     ]
   );
 
+  const activeEnrollmentFilterItems = useMemo(() => {
+    const items = [];
+
+    if (filterQuery) {
+      items.push({ key: "q", label: "Поиск", value: filterQuery });
+    }
+
+    if (filterUserId) {
+      const user = sortedUsers.find((item) => item.id === filterUserId);
+      items.push({
+        key: "user_id",
+        label: "Пользователь",
+        value: user ? buildUserLabel(user) : filterUserId,
+      });
+    }
+
+    if (filterCourseId) {
+      const course = sortedCourses.find((item) => item.id === filterCourseId);
+      items.push({
+        key: "course_id",
+        label: "Программа",
+        value: course ? buildCourseLabel(course) : filterCourseId,
+      });
+    }
+
+    if (filterOrganizationId) {
+      const organization = sortedOrganizations.find((item) => item.id === filterOrganizationId);
+      items.push({
+        key: "organization_id",
+        label: "Организация",
+        value: organization?.name || filterOrganizationId,
+      });
+    }
+
+    if (filterStatus) {
+      items.push({
+        key: "status",
+        label: "Статус",
+        value: getStatusLabel(filterStatus),
+      });
+    }
+
+    if (filterGroupId) {
+      const group = sortedGroups.find((item) => item.id === filterGroupId);
+      items.push({
+        key: "learning_group_id",
+        label: "Учебная группа",
+        value: group ? buildGroupLabel(group, organizationsById) : filterGroupId,
+      });
+    }
+
+    if (filterActionRequired === "true") {
+      items.push({
+        key: "action_required",
+        label: "Требуют действия",
+        value: "Да",
+      });
+    }
+
+    return items;
+  }, [
+    filterQuery,
+    filterUserId,
+    filterCourseId,
+    filterOrganizationId,
+    filterStatus,
+    filterGroupId,
+    filterActionRequired,
+    sortedUsers,
+    sortedCourses,
+    sortedOrganizations,
+    sortedGroups,
+    organizationsById,
+  ]);
+
   function buildFilters(overrides = {}) {
     return {
       q: overrides.q ?? filterQuery,
@@ -2000,6 +2076,15 @@ export function AdminEnrollmentsPage() {
             className="mb-5 text-xs text-slate-500"
           >
             Счётчики быстрых фильтров рассчитаны по текущим фильтрам страницы.
+          </div>
+
+          <div className="mb-5">
+            <AdminActiveFiltersSummary
+              items={activeEnrollmentFilterItems}
+              onReset={handleResetFilter}
+              testId="admin-enrollments-active-filters-summary"
+              emptyText="Фильтры назначений не применены."
+            />
           </div>
 
           <div className="mb-5">

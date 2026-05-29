@@ -27,6 +27,7 @@ REQUIRED_FILES = [
     ROOT / "frontend" / "src" / "utils" / "adminLinks.js",
     ROOT / "frontend" / "src" / "components" / "admin" / "AdminQuickFilterButtons.jsx",
     ROOT / "frontend" / "src" / "components" / "admin" / "AdminEmptyState.jsx",
+    ROOT / "frontend" / "src" / "components" / "admin" / "AdminActiveFiltersSummary.jsx",
 ]
 
 DOC_MARKERS = [
@@ -80,6 +81,12 @@ DOC_MARKERS = [
     "admin_quick_filters_component_existing=yes",
     "admin_empty_state_component_existing=yes",
     "list_pages_filters_errors_runtime_changed=no",
+    "Stage 15.4 enrollments active filters UX - 2026-05-29",
+    "admin_active_filters_summary_component_added=yes",
+    "admin_enrollments_active_filters_summary_added=yes",
+    "admin_enrollments_active_filter_chips=yes",
+    "admin_enrollments_filter_reset_reused=yes",
+    "enrollments_active_filters_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [
