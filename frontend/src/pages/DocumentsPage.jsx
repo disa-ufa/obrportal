@@ -1,4 +1,4 @@
-import { getApiErrorMessage } from "../utils/apiErrors";
+import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -104,8 +104,9 @@ function getDocumentStatusLabel(status) {
   return DOCUMENT_STATUSES.find((item) => item.value === status)?.label || status || "-";
 }
 function formatDocumentApiError(err, fallback) {
-  const status = err?.status ? `${err.status}` : "";
+  const status = getApiErrorStatus(err);
   const message = getApiErrorMessage(err);
+  const safeMessage = getSafeApiErrorMessage(message, fallback);
   const normalizedMessage = message.toLowerCase();
 
   let readableMessage = fallback;
@@ -139,7 +140,7 @@ function formatDocumentApiError(err, fallback) {
   } else if (status === "422") {
     readableMessage = DOCUMENT_API_ERROR_MESSAGES.invalidRequest;
   } else if (message) {
-    readableMessage = message;
+    readableMessage = safeMessage;
   }
 
   return `${status} ${readableMessage}`.trim();

@@ -926,3 +926,38 @@ Verification markers:
 - `admin_enrollments_safe_api_error_message_used=yes`
 - `admin_enrollments_domain_error_messages_preserved=yes`
 - `admin_enrollments_friendly_errors_runtime_changed=yes`
+
+## 32. Stage 15.19 documents page friendly errors - 2026-05-29
+
+Goal: connect the strengthened shared safe error helpers to the admin documents page formatter.
+
+Runtime change:
+- updated `frontend/src/pages/DocumentsPage.jsx`;
+- `formatDocumentApiError` now uses `getApiErrorStatus`;
+- unknown document API messages now pass through `getSafeApiErrorMessage`;
+- existing domain-specific Russian messages for documents, statuses, duplicate numbers, revocation rules, file availability and file types are preserved;
+- no backend API changes were required.
+
+Verification plan:
+- `scripts/smoke_frontend_admin_pages.py` must pass locally;
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass;
+- GitHub Actions must pass on `develop` and `main`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `documents_page_friendly_errors_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.19 documents page friendly errors - 2026-05-29`
+- `documents_page_get_api_error_status_used=yes`
+- `documents_page_safe_api_error_message_used=yes`
+- `documents_page_domain_error_messages_preserved=yes`
+- `documents_page_friendly_errors_runtime_changed=yes`

@@ -178,6 +178,11 @@ DOC_MARKERS = [
     "admin_enrollments_safe_api_error_message_used=yes",
     "admin_enrollments_domain_error_messages_preserved=yes",
     "admin_enrollments_friendly_errors_runtime_changed=yes",
+    "Stage 15.19 documents page friendly errors - 2026-05-29",
+    "documents_page_get_api_error_status_used=yes",
+    "documents_page_safe_api_error_message_used=yes",
+    "documents_page_domain_error_messages_preserved=yes",
+    "documents_page_friendly_errors_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [
