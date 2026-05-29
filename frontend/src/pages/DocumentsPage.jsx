@@ -22,6 +22,7 @@ import { DocumentVerificationQrBlock } from "../components/documents/DocumentVer
 import { SectionCard } from "../components/ui/SectionCard";
 import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
 import { AdminEmptyState } from "../components/admin/AdminEmptyState";
+import { AdminActiveFiltersSummary } from "../components/admin/AdminActiveFiltersSummary";
 import { buildDocumentVerificationPath } from "../utils/documentVerification";
 import {
   buildAuditPath,
@@ -1037,6 +1038,80 @@ export function DocumentsPage() {
     });
   }, [filterEnrollmentId, selectedFilterEnrollment, file]);
 
+  const activeDocumentFilterItems = useMemo(() => {
+    const items = [];
+
+    if (filterQuery) {
+      items.push({ key: "q", label: "Поиск", value: filterQuery });
+    }
+
+    if (filterUserId) {
+      const user = users.find((item) => item.id === filterUserId);
+      items.push({
+        key: "user_id",
+        label: "Пользователь",
+        value: user
+          ? `${user.email}${user.full_name ? ` — ${user.full_name}` : ""}`
+          : filterUserId,
+      });
+    }
+
+    if (filterEnrollmentId) {
+      const enrollment = enrollments.find((item) => item.id === filterEnrollmentId);
+      items.push({
+        key: "enrollment_id",
+        label: "Назначение",
+        value: enrollment ? getEnrollmentOptionLabel(enrollment) : filterEnrollmentId,
+      });
+    }
+
+    if (filterOrganizationId) {
+      const organization = sortedOrganizations.find((item) => item.id === filterOrganizationId);
+      items.push({
+        key: "organization_id",
+        label: "Организация",
+        value: organization?.name || filterOrganizationId,
+      });
+    }
+
+    if (filterStatus) {
+      items.push({
+        key: "status",
+        label: "Статус",
+        value: getDocumentStatusLabel(filterStatus),
+      });
+    }
+
+    if (filterDocumentType) {
+      items.push({
+        key: "document_type",
+        label: "Тип документа",
+        value: filterDocumentType,
+      });
+    }
+
+    if (filterActionRequired === "true") {
+      items.push({
+        key: "action_required",
+        label: "Требуют действия",
+        value: "Да",
+      });
+    }
+
+    return items;
+  }, [
+    filterQuery,
+    filterUserId,
+    filterEnrollmentId,
+    filterOrganizationId,
+    filterStatus,
+    filterDocumentType,
+    filterActionRequired,
+    users,
+    enrollments,
+    sortedOrganizations,
+  ]);
+
   function buildDocumentFilters(overrides = {}) {
     return {
       user_id: overrides.user_id ?? filterUserId,
@@ -1939,6 +2014,15 @@ export function DocumentsPage() {
             className="mb-5 text-xs text-slate-500"
           >
             Счётчики быстрых фильтров рассчитаны по текущим фильтрам страницы.
+          </div>
+
+          <div className="mb-5">
+            <AdminActiveFiltersSummary
+              items={activeDocumentFilterItems}
+              onReset={handleResetFilter}
+              testId="admin-documents-active-filters-summary"
+              emptyText="Фильтры документов не применены."
+            />
           </div>
 
           <div className="mb-5">

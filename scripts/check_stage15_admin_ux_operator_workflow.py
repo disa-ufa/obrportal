@@ -87,6 +87,11 @@ DOC_MARKERS = [
     "admin_enrollments_active_filter_chips=yes",
     "admin_enrollments_filter_reset_reused=yes",
     "enrollments_active_filters_runtime_changed=yes",
+    "Stage 15.5 documents active filters UX - 2026-05-29",
+    "admin_documents_active_filters_summary_added=yes",
+    "admin_documents_active_filter_chips=yes",
+    "admin_documents_filter_reset_reused=yes",
+    "documents_active_filters_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [

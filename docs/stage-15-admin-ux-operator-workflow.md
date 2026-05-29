@@ -314,3 +314,35 @@ Verification markers:
 - `admin_enrollments_active_filter_chips=yes`
 - `admin_enrollments_filter_reset_reused=yes`
 - `enrollments_active_filters_runtime_changed=yes`
+
+## 15. Stage 15.5 documents active filters UX - 2026-05-29
+
+Goal: reuse the active filters summary component on the admin documents list.
+
+Runtime change:
+- connected `AdminActiveFiltersSummary` to `frontend/src/pages/DocumentsPage.jsx`;
+- visible filter chips now show search, user, enrollment, organization, status, document type and action_required filters;
+- reset action reuses the existing safe `handleResetFilter` flow;
+- no backend API changes were required.
+
+Verification plan:
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `documents_active_filters_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.5 documents active filters UX - 2026-05-29`
+- `admin_documents_active_filters_summary_added=yes`
+- `admin_documents_active_filter_chips=yes`
+- `admin_documents_filter_reset_reused=yes`
+- `documents_active_filters_runtime_changed=yes`
