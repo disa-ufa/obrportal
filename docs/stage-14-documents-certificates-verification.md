@@ -184,3 +184,79 @@ Verification markers:
 - `frontend_documents_pages_existing=yes`
 - `focused_document_pdf_tests=9_passed`
 - `document_inventory_runtime_changed=no`
+
+## 11. Stage 14 focused backend document tests - 2026-05-29
+
+Goal: record focused backend verification for the existing document/certificate/verification implementation.
+
+Focused document service tests:
+- `backend/app/tests/test_document_pdf.py`;
+- `backend/app/tests/test_document_templates.py`;
+- `backend/app/tests/test_document_storage.py`;
+- `backend/app/tests/test_config_document_metadata.py`;
+- result: `27 passed`;
+- ReportLab deprecation warning is non-blocking.
+
+Focused document API tests:
+- `test_admin_can_get_account_documents`;
+- `test_account_documents_without_token_returns_401`;
+- `test_public_can_verify_document`;
+- `test_public_verify_document_not_found_returns_404`;
+- `test_admin_can_get_account_document_download`;
+- `test_foreign_user_cannot_get_account_document_download`;
+- `test_account_document_download_without_token_returns_401`;
+- `test_admin_can_filter_documents_by_organization`;
+- `test_admin_can_list_admin_documents`;
+- `test_admin_can_create_document_with_file`;
+- `test_admin_create_document_duplicate_number_returns_409`;
+- `test_learner_cannot_create_admin_document`;
+- `test_admin_can_update_document_status_and_replace_file`;
+- `test_admin_update_document_duplicate_number_returns_409`;
+- result: `14 passed`.
+
+Verified behavior:
+- PDF rendering works;
+- QR drawing helpers work;
+- template text normalization works;
+- verification URL generation works;
+- unsafe HTML values are escaped;
+- private storage path traversal is rejected;
+- document download filename generation works;
+- document metadata defaults and env aliases are stable;
+- account documents require authentication;
+- public document verification returns valid document data;
+- missing public verification code returns 404;
+- account document download is ownership-scoped;
+- foreign user document download is rejected;
+- admin can list/filter documents;
+- admin can create document with file;
+- duplicate document number is rejected;
+- learner cannot create admin document;
+- admin can update document status and replace file;
+- duplicate number on update is rejected.
+
+Decision:
+- Stage 14 accepts existing focused backend document tests as current backend contract baseline.
+- The next step should inventory frontend/public verification UX before adding runtime changes.
+- No new document subsystem is needed.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- `document_backend_tests_runtime_changed=no`.
+
+Verification markers:
+- `Stage 14 focused backend document tests - 2026-05-29`
+- `focused_document_service_tests=27_passed`
+- `focused_document_api_tests=14_passed`
+- `document_pdf_tests_passed=yes`
+- `document_templates_tests_passed=yes`
+- `document_storage_tests_passed=yes`
+- `document_metadata_tests_passed=yes`
+- `public_document_verification_tests_passed=yes`
+- `account_document_download_tests_passed=yes`
+- `admin_document_management_tests_passed=yes`
+- `document_backend_tests_runtime_changed=no`

@@ -16,6 +16,17 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 14 focused backend document tests - 2026-05-29",
+    "focused_document_service_tests=27_passed",
+    "focused_document_api_tests=14_passed",
+    "document_pdf_tests_passed=yes",
+    "document_templates_tests_passed=yes",
+    "document_storage_tests_passed=yes",
+    "document_metadata_tests_passed=yes",
+    "public_document_verification_tests_passed=yes",
+    "account_document_download_tests_passed=yes",
+    "admin_document_management_tests_passed=yes",
+    "document_backend_tests_runtime_changed=no",
     "Stage 14 document implementation inventory - 2026-05-29",
     "stage14_inventory_report=tmp/stage14_documents_inventory.txt",
     "stage14_inventory_summary=tmp/stage14_documents_inventory_summary.txt",
