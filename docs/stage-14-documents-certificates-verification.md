@@ -260,3 +260,59 @@ Verification markers:
 - `account_document_download_tests_passed=yes`
 - `admin_document_management_tests_passed=yes`
 - `document_backend_tests_runtime_changed=no`
+
+## 12. Stage 14 frontend and public verification UX checkpoint - 2026-05-29
+
+Goal: record frontend/account/admin/public verification UX inventory for the existing document implementation.
+
+Frontend inventory result:
+- current local git head before checkpoint: `a0682d9`;
+- frontend/public verification UX inventory was generated at `tmp/stage14_frontend_verification_ux_inventory.txt`;
+- required frontend verification markers passed;
+- frontend production build passed earlier on the same head;
+- Vite chunk-size warning is non-blocking.
+
+Verified frontend/account/admin/public markers:
+- `frontend/src/pages/AccountPage.jsx` contains `getAccountDocuments`;
+- `frontend/src/pages/AccountPage.jsx` contains `downloadAccountDocument`;
+- `frontend/src/pages/DocumentsPage.jsx` contains `DocumentVerificationQrBlock`;
+- `frontend/src/pages/DocumentsPage.jsx` contains `document_number`;
+- `frontend/src/pages/DocumentsPage.jsx` contains `download`;
+- `frontend/src/pages/DocumentsPage.jsx` contains `data-testid`;
+- `frontend/src/pages/VerifyDocumentPage.jsx` contains `verify`;
+- `frontend/src/pages/VerifyDocumentPage.jsx` contains `verification`;
+- `frontend/src/pages/VerifyDocumentPage.jsx` contains `DocumentVerificationQrBlock`;
+- `frontend/src/pages/VerifyDocumentPage.jsx` contains `data-testid`;
+- `frontend/src/components/documents/DocumentVerificationQrBlock.jsx` contains `qr`;
+- `frontend/src/components/documents/DocumentVerificationQrBlock.jsx` contains `verification`;
+- `frontend/src/utils/documentVerification.js` contains `verification`;
+- `frontend/src/utils/documentVerification.js` contains `qr`;
+- `frontend/src/api/client.js` contains `getAccountDocuments`;
+- `frontend/src/api/client.js` contains `downloadAccountDocument`.
+
+Decision:
+- Stage 14 accepts the existing account/admin/public document UI as the current frontend baseline.
+- The next step should be final quality gate unless a concrete runtime gap is found.
+- No frontend runtime change is required by this checkpoint.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- The inventory report in `tmp/` is a local working artifact and must not be committed.
+- `document_frontend_ux_runtime_changed=no`.
+
+Verification markers:
+- `Stage 14 frontend and public verification UX checkpoint - 2026-05-29`
+- `stage14_frontend_ux_inventory=tmp/stage14_frontend_verification_ux_inventory.txt`
+- `required_frontend_markers=ok`
+- `account_document_download_ui_existing=yes`
+- `admin_documents_ui_existing=yes`
+- `public_document_verification_ui_existing=yes`
+- `document_qr_component_existing=yes`
+- `document_verification_utility_existing=yes`
+- `document_client_functions_existing=yes`
+- `frontend_build_passed=yes`
+- `document_frontend_ux_runtime_changed=no`

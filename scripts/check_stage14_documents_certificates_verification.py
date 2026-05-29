@@ -16,6 +16,17 @@ REQUIRED_FILES = [
 ]
 
 DOC_MARKERS = [
+    "Stage 14 frontend and public verification UX checkpoint - 2026-05-29",
+    "stage14_frontend_ux_inventory=tmp/stage14_frontend_verification_ux_inventory.txt",
+    "required_frontend_markers=ok",
+    "account_document_download_ui_existing=yes",
+    "admin_documents_ui_existing=yes",
+    "public_document_verification_ui_existing=yes",
+    "document_qr_component_existing=yes",
+    "document_verification_utility_existing=yes",
+    "document_client_functions_existing=yes",
+    "frontend_build_passed=yes",
+    "document_frontend_ux_runtime_changed=no",
     "Stage 14 focused backend document tests - 2026-05-29",
     "focused_document_service_tests=27_passed",
     "focused_document_api_tests=14_passed",
