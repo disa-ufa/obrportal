@@ -356,7 +356,7 @@ def main() -> None:
     require_contains(
         "frontend/src/components/admin/OrganizationForm.jsx",
         [
-            'import { getApiErrorMessage } from "../../utils/apiErrors";',
+            'import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../../utils/apiErrors";',
             'import { useState } from "react";',
             'import { ActionButton } from "../ui/ActionButton";',
             'import { Alert } from "../ui/Alert";',
@@ -375,8 +375,10 @@ def main() -> None:
             "deleteHasAssignments:",
             "invalidRequest:",
             "export function formatOrganizationApiError(err, fallback)",
-            "const status = err?.status ? `${err.status}` : \"\";",
+            "const status = getApiErrorStatus(err);",
             "const message = getApiErrorMessage(err);",
+            "const safeMessage = getSafeApiErrorMessage(message, fallback);",
+            "readableMessage = safeMessage;",
             "normalizedMessage.includes(\"inn\")",
             "normalizedMessage.includes(\"no fields\")",
             "function normalizeInitialValues(initialValues)",

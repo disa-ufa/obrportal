@@ -151,6 +151,12 @@ DOC_MARKERS = [
     "frontend_utils_routes_smoke_get_api_error_status_expected=yes",
     "frontend_utils_routes_smoke_safe_api_error_message_expected=yes",
     "frontend_utils_routes_smoke_guard_aligned=yes",
+    "Stage 15.14 organization form friendly errors - 2026-05-29",
+    "organization_form_get_api_error_status_used=yes",
+    "organization_form_safe_api_error_message_used=yes",
+    "organization_form_domain_error_messages_preserved=yes",
+    "organization_form_smoke_guard_aligned=yes",
+    "organization_form_friendly_errors_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [

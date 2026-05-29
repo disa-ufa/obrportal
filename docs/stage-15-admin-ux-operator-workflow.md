@@ -742,3 +742,40 @@ Verification markers:
 - `frontend_utils_routes_smoke_get_api_error_status_expected=yes`
 - `frontend_utils_routes_smoke_safe_api_error_message_expected=yes`
 - `frontend_utils_routes_smoke_guard_aligned=yes`
+
+## 27. Stage 15.14 organization form friendly errors - 2026-05-29
+
+Goal: connect the strengthened shared safe error helpers to the admin organization form formatter.
+
+Runtime/guard change:
+- updated `frontend/src/components/admin/OrganizationForm.jsx`;
+- `formatOrganizationApiError` now uses `getApiErrorStatus`;
+- unknown organization-form API messages now pass through `getSafeApiErrorMessage`;
+- existing domain-specific Russian messages for organizations, duplicates, assignments and validation are preserved;
+- updated `scripts/smoke_admin_components.py` expectations for the organization form;
+- no backend API changes were required.
+
+Verification plan:
+- `scripts/smoke_admin_components.py` must pass locally;
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass;
+- GitHub Actions must pass on `develop` and `main`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `organization_form_friendly_errors_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.14 organization form friendly errors - 2026-05-29`
+- `organization_form_get_api_error_status_used=yes`
+- `organization_form_safe_api_error_message_used=yes`
+- `organization_form_domain_error_messages_preserved=yes`
+- `organization_form_smoke_guard_aligned=yes`
+- `organization_form_friendly_errors_runtime_changed=yes`
