@@ -1,4 +1,4 @@
-import { getApiErrorMessage } from "../utils/apiErrors";
+import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -76,8 +76,9 @@ const GROUP_API_ERROR_MESSAGES = {
   invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u044b.",
 };
 function formatGroupApiError(err, fallback) {
-  const status = err?.status ? `${err.status}` : "";
+  const status = getApiErrorStatus(err);
   const message = getApiErrorMessage(err);
+  const safeMessage = getSafeApiErrorMessage(message, fallback);
   const normalizedMessage = message.toLowerCase();
 
   let readableMessage = fallback;
@@ -114,7 +115,7 @@ function formatGroupApiError(err, fallback) {
   } else if (status === "422") {
     readableMessage = GROUP_API_ERROR_MESSAGES.invalidRequest;
   } else if (message) {
-    readableMessage = message;
+    readableMessage = safeMessage;
   }
 
   return `${status} ${readableMessage}`.trim();

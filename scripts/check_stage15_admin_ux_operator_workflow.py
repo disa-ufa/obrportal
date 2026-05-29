@@ -183,6 +183,11 @@ DOC_MARKERS = [
     "documents_page_safe_api_error_message_used=yes",
     "documents_page_domain_error_messages_preserved=yes",
     "documents_page_friendly_errors_runtime_changed=yes",
+    "Stage 15.20 groups page friendly errors - 2026-05-29",
+    "groups_page_get_api_error_status_used=yes",
+    "groups_page_safe_api_error_message_used=yes",
+    "groups_page_domain_error_messages_preserved=yes",
+    "groups_page_friendly_errors_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [
