@@ -267,3 +267,79 @@ Verification markers:
 - `stage17_auth_smoke_required=yes`
 - `stage17_documents_verification_smoke_required=yes`
 - `stage17_infrastructure_smoke_required=yes`
+
+## 5. Backup/restore and rollback checklist - 2026-05-30
+
+Goal: define data safety, backup/restore and rollback rules before production deployment acceptance.
+
+Current git head before backup/restore checklist: `5a3a646`.
+
+Backup checklist before deployment:
+1. PostgreSQL backup:
+   - create a fresh database dump before deployment;
+   - store the dump outside the running container;
+   - verify backup file exists and is non-empty;
+   - record backup timestamp and commit/tag being deployed.
+
+2. MinIO/object storage backup:
+   - verify object storage bucket availability;
+   - backup document-related objects if production data is present;
+   - verify backup object count or archive integrity;
+   - do not delete buckets during deployment.
+
+3. Environment backup:
+   - backup production `.env` privately;
+   - never commit `.env`;
+   - verify `.env.example` contains placeholders only;
+   - verify deployment secrets are available before restart.
+
+4. Application state backup:
+   - record current git commit/tag before deployment;
+   - record current Docker image/container state;
+   - record current migration state if migrations are used.
+
+Restore checklist:
+- restore PostgreSQL dump into a clean database or controlled recovery target;
+- restore MinIO/object storage objects before document download verification;
+- verify backend starts after restore;
+- verify account/admin/document smoke paths after restore;
+- verify document verification path after restore.
+
+Rollback checklist:
+- stop deployment if health checks fail;
+- rollback to previous known-good git tag/commit;
+- restore previous `.env` if deployment config changed;
+- restore database backup if migration/data changes were applied;
+- restart services using the previous known-good configuration;
+- rerun production smoke checklist after rollback.
+
+Hard safety rules:
+- no destructive database command is allowed without explicit manual confirmation;
+- no production volume deletion is allowed during routine deployment;
+- no secret values may be printed in logs;
+- no backup artifacts may be committed to git;
+- rollback must be possible before accepting production deployment.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- third-party pytest deprecation warnings remain non-blocking;
+- Docker `COMMAND` column encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents backup/restore and rollback only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage17_backup_restore_rollback_checklist_recorded=yes`.
+
+Verification markers:
+- `Stage 17.4 backup restore rollback checklist - 2026-05-30`
+- `stage17_backup_restore_rollback_checklist_recorded=yes`
+- `stage17_postgres_backup_required=yes`
+- `stage17_object_storage_backup_required=yes`
+- `stage17_restore_checklist_defined=yes`
+- `stage17_rollback_checklist_defined=yes`
+- `stage17_no_destructive_deployment_without_confirmation=yes`

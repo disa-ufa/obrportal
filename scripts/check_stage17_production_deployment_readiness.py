@@ -46,6 +46,13 @@ DOC_MARKERS = [
     "stage17_auth_smoke_required=yes",
     "stage17_documents_verification_smoke_required=yes",
     "stage17_infrastructure_smoke_required=yes",
+    "Stage 17.4 backup restore rollback checklist - 2026-05-30",
+    "stage17_backup_restore_rollback_checklist_recorded=yes",
+    "stage17_postgres_backup_required=yes",
+    "stage17_object_storage_backup_required=yes",
+    "stage17_restore_checklist_defined=yes",
+    "stage17_rollback_checklist_defined=yes",
+    "stage17_no_destructive_deployment_without_confirmation=yes",
 ]
 
 STAGE14_MARKERS = [
