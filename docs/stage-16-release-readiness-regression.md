@@ -215,3 +215,85 @@ Verification markers:
 - `stage16_main_develop_synced=yes`
 - `stage16_full_regression_recorded=yes`
 - `stage16_ready_for_demo_checklist=yes`
+
+## 5. Demo/release checklist inventory - 2026-05-29
+
+Goal: define the repeatable demo and release acceptance checklist after Stage 16 regression and CI readiness.
+
+Current git head before demo/release checklist inventory: `9640315`.
+
+Demo readiness paths:
+1. Public user path:
+   - open public home page;
+   - open course catalog;
+   - open course detail page;
+   - verify public pages render without authentication errors.
+
+2. Learner/account path:
+   - login as learner;
+   - open account summary;
+   - open account courses;
+   - open account documents;
+   - verify available document download behavior;
+   - verify unavailable/missing document states are user-friendly.
+
+3. Admin/operator path:
+   - login as admin;
+   - open dashboard;
+   - open users page;
+   - open organizations page;
+   - open groups page;
+   - open roles/permissions pages;
+   - open courses page;
+   - open enrollments page;
+   - open documents page;
+   - verify active filters summary on key list pages;
+   - verify friendly error handling on forms/pages.
+
+4. Documents/certificates path:
+   - create or locate a completed enrollment document;
+   - verify document status transitions;
+   - verify QR/verification block presence;
+   - verify public document verification by number;
+   - verify document download for allowed user/admin paths.
+
+Release readiness checklist:
+- local full regression is passed and recorded;
+- Stage 16 guard is passed;
+- Stage 15 guard is passed;
+- Stage 14 guard is passed;
+- text encoding guard is passed;
+- source BOM guard is passed;
+- frontend production build is passed;
+- backend pytest is passed;
+- smoke chain is passed;
+- GitHub Actions are green on `develop` and `main`;
+- `develop` and `main` are synchronized;
+- working tree is clean before final tag;
+- known non-blocking warnings are documented.
+
+Known non-blocking warnings:
+- frontend chunk-size warning from Vite/Rolldown is non-blocking for Stage 16 release readiness;
+- backend pytest third-party deprecation warnings are non-blocking for Stage 16 release readiness.
+
+Out of scope:
+- no new runtime functionality in this checkpoint;
+- no database migrations;
+- no backend API contract changes;
+- no RBAC changes;
+- no destructive bulk actions.
+
+Safety notes:
+- This checkpoint documents demo/release checklist only.
+- No runtime code was changed.
+- Secrets were not printed.
+- `stage16_demo_release_checklist_inventory=yes`.
+
+Verification markers:
+- `Stage 16.4 demo release checklist inventory - 2026-05-29`
+- `stage16_demo_release_checklist_inventory=yes`
+- `stage16_public_demo_path_defined=yes`
+- `stage16_learner_demo_path_defined=yes`
+- `stage16_admin_operator_demo_path_defined=yes`
+- `stage16_documents_verification_demo_path_defined=yes`
+- `stage16_release_readiness_checklist_defined=yes`

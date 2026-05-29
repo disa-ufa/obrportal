@@ -35,6 +35,13 @@ DOC_MARKERS = [
     "stage16_main_develop_synced=yes",
     "stage16_full_regression_recorded=yes",
     "stage16_ready_for_demo_checklist=yes",
+    "Stage 16.4 demo release checklist inventory - 2026-05-29",
+    "stage16_demo_release_checklist_inventory=yes",
+    "stage16_public_demo_path_defined=yes",
+    "stage16_learner_demo_path_defined=yes",
+    "stage16_admin_operator_demo_path_defined=yes",
+    "stage16_documents_verification_demo_path_defined=yes",
+    "stage16_release_readiness_checklist_defined=yes",
 ]
 
 STAGE14_MARKERS = [
