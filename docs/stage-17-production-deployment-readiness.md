@@ -73,3 +73,69 @@ Verification markers:
 - `stage17_depends_on_stage14_complete=yes`
 - `stage17_depends_on_stage15_complete=yes`
 - `stage17_depends_on_stage16_complete=yes`
+
+## 2. Deployment inventory - 2026-05-29
+
+Goal: record the current deployment inventory before production deployment verification.
+
+Current git head before deployment inventory: `d3b62b8`.
+
+Docker Compose inventory:
+- compose file: `docker-compose.yml`;
+- detected services: `backend, frontend, postgres, redis, minio`;
+- required service group:
+  - `backend`;
+  - `frontend`;
+  - `postgres`;
+  - `redis`;
+  - `minio`.
+
+Detected exposed ports from compose:
+- no explicit host ports detected by inventory script
+
+Environment inventory:
+- example env file: `.env.example`;
+- detected example keys count: `43`;
+- required deployment-sensitive keys include:
+  - `DATABASE_URL`;
+  - `SECRET_KEY`;
+  - MinIO-related settings when object storage is enabled;
+  - CORS/frontend/backend URL settings when deployed outside local Docker network.
+
+Current `.env.example` safety decision:
+- `.env.example` may contain placeholders and variable names;
+- `.env.example` must not contain real production secrets;
+- `.env` must stay uncommitted;
+- real tokens/passwords must be supplied only through deployment secrets or private `.env`.
+
+Deployment readiness decisions:
+- production deployment must verify service health after `docker compose up -d`;
+- production deployment must verify backend API availability;
+- production deployment must verify frontend availability;
+- production deployment must verify database migrations before accepting release;
+- production deployment must verify object storage availability before document download/verification acceptance.
+
+Known local services:
+- backend API: expected local port `8000`;
+- frontend dev server: expected local port `5173`;
+- PostgreSQL: expected local port `5432`;
+- Redis: expected local port `6379`;
+- MinIO API/console: expected local ports `9000` and `9001`.
+
+Safety notes:
+- This checkpoint documents deployment inventory only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage17_deployment_inventory_recorded=yes`.
+
+Verification markers:
+- `Stage 17.1 deployment inventory - 2026-05-29`
+- `stage17_deployment_inventory_recorded=yes`
+- `stage17_compose_services_inventory=yes`
+- `stage17_env_example_inventory=yes`
+- `stage17_ports_inventory=yes`
+- `stage17_no_runtime_change=yes`

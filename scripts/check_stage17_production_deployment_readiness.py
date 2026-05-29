@@ -26,6 +26,12 @@ DOC_MARKERS = [
     "stage17_depends_on_stage14_complete=yes",
     "stage17_depends_on_stage15_complete=yes",
     "stage17_depends_on_stage16_complete=yes",
+    "Stage 17.1 deployment inventory - 2026-05-29",
+    "stage17_deployment_inventory_recorded=yes",
+    "stage17_compose_services_inventory=yes",
+    "stage17_env_example_inventory=yes",
+    "stage17_ports_inventory=yes",
+    "stage17_no_runtime_change=yes",
 ]
 
 STAGE14_MARKERS = [
