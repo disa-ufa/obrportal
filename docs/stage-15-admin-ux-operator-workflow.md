@@ -816,3 +816,47 @@ Verification markers:
 - `role_form_domain_error_messages_preserved=yes`
 - `role_form_smoke_guard_aligned=yes`
 - `role_form_friendly_errors_runtime_changed=yes`
+
+## 29. Stage 15.16 forms friendly errors accepted - 2026-05-29
+
+Goal: accept the completed friendly error handling block for key admin forms.
+
+Accepted runtime scope:
+- shared safe API error formatter is strengthened in `frontend/src/utils/apiErrors.js`;
+- `UserForm.jsx` uses `getApiErrorStatus` and `getSafeApiErrorMessage`;
+- `OrganizationForm.jsx` uses `getApiErrorStatus` and `getSafeApiErrorMessage`;
+- `RoleForm.jsx` uses `getApiErrorStatus` and `getSafeApiErrorMessage`;
+- domain-specific Russian operator messages are preserved for users, organizations and roles;
+- stale smoke guards were aligned with the safe API error formatter.
+
+Accepted commits:
+- `82b743a` — strengthen shared friendly API errors;
+- `135a89c` — user form friendly errors;
+- `d329ae2` — smoke guards aligned with safe API errors;
+- `5681c2f` — organization form friendly errors;
+- `e533be7` — role form friendly errors.
+
+Verification result:
+- admin components smoke passed after form updates;
+- Stage 15 guard passed after form updates;
+- Stage 14 guard passed after form updates;
+- text encoding guard passed after form updates;
+- source BOM guard passed after form updates;
+- frontend production build passed after form updates;
+- current local git head before acceptance checkpoint: `e533be7`.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `forms_friendly_errors_accepted=yes`.
+
+Verification markers:
+- `Stage 15.16 forms friendly errors accepted - 2026-05-29`
+- `forms_friendly_errors_user_form_accepted=yes`
+- `forms_friendly_errors_organization_form_accepted=yes`
+- `forms_friendly_errors_role_form_accepted=yes`
+- `forms_friendly_errors_smoke_guards_accepted=yes`
+- `forms_friendly_errors_accepted=yes`
