@@ -42,6 +42,11 @@ DOC_MARKERS = [
     "stage16_admin_operator_demo_path_defined=yes",
     "stage16_documents_verification_demo_path_defined=yes",
     "stage16_release_readiness_checklist_defined=yes",
+    "Stage 16.5 release readiness acceptance - 2026-05-29",
+    "stage16_release_readiness_accepted=yes",
+    "stage16_full_regression_accepted=yes",
+    "stage16_demo_release_checklist_accepted=yes",
+    "stage16_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [

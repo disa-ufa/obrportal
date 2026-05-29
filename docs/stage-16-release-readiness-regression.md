@@ -297,3 +297,49 @@ Verification markers:
 - `stage16_admin_operator_demo_path_defined=yes`
 - `stage16_documents_verification_demo_path_defined=yes`
 - `stage16_release_readiness_checklist_defined=yes`
+
+## 6. Release readiness acceptance - 2026-05-29
+
+Goal: accept Stage 16 release readiness after local regression, CI readiness and demo/release checklist definition.
+
+Current git head before acceptance checkpoint: `55e7fdb`.
+
+Accepted Stage 16 scope:
+- Stage 16 baseline created;
+- full local regression checklist defined;
+- full local regression run passed and recorded;
+- backend pytest passed with `214 passed, 4 warnings`;
+- smoke chain passed;
+- frontend production build passed;
+- CI readiness checkpoint recorded;
+- demo/release checklist defined;
+- known non-blocking warnings documented.
+
+Accepted readiness state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 full local regression is passed;
+- `develop` and `main` must be synchronized before final Stage 16 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 16 tag;
+- working tree must be clean before final Stage 16 tag.
+
+Known non-blocking warnings:
+- frontend chunk-size warning from Vite/Rolldown;
+- backend pytest third-party deprecation warnings.
+
+Safety notes:
+- This checkpoint documents release readiness acceptance only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage16_release_readiness_accepted=yes`.
+
+Verification markers:
+- `Stage 16.5 release readiness acceptance - 2026-05-29`
+- `stage16_release_readiness_accepted=yes`
+- `stage16_full_regression_accepted=yes`
+- `stage16_demo_release_checklist_accepted=yes`
+- `stage16_ready_for_final_tag=yes`
