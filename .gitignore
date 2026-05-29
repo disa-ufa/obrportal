@@ -21,3 +21,4 @@ storage/
 frontend/node_modules/
 backend/.venv/
 build/
+tmp/

@@ -52,7 +52,7 @@ DOC_MARKERS = [
     "frontend_documents_pages_existing=yes",
     "focused_document_pdf_tests=9_passed",
     "document_inventory_runtime_changed=no",
-    "Status: in progress",
+    "Status: accepted",
     "Stage 14 Documents / certificates / verification",
     "Stage 14 baseline",
     "v0.1.0-stage13-learning-flow-complete",
@@ -65,6 +65,19 @@ DOC_MARKERS = [
     "admin document visibility",
     "document_runtime_changed=no",
     "secrets_printed=no",
+    "Stage 14 final acceptance - 2026-05-29",
+    "Stage 14 accepted",
+    "documents_certificates_verification_accepted=yes",
+    "document_templates_accepted=yes",
+    "pdf_generation_accepted=yes",
+    "qr_code_accepted=yes",
+    "document_number_accepted=yes",
+    "public_verification_accepted=yes",
+    "account_document_download_accepted=yes",
+    "admin_document_visibility_accepted=yes",
+    "frontend production build passed",
+    "214 passed",
+    "v0.1.0-stage14-documents-verification-complete",
 ]
 
 ROADMAP_MARKERS = [

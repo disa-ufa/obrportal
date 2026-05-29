@@ -1,6 +1,6 @@
 # Stage 14 Documents / certificates / verification
 
-Status: in progress
+Status: accepted
 Stage: 14
 Project: ObrPortal
 Baseline tag: v0.1.0-stage13-learning-flow-complete
@@ -316,3 +316,62 @@ Verification markers:
 - `document_client_functions_existing=yes`
 - `frontend_build_passed=yes`
 - `document_frontend_ux_runtime_changed=no`
+
+## 13. Stage 14 final acceptance - 2026-05-29
+
+Goal: record final acceptance of Stage 14 Documents / certificates / verification.
+
+Accepted Stage 14 scope:
+- document templates;
+- PDF generation;
+- QR code;
+- document number;
+- public verification;
+- account document download;
+- admin document visibility;
+- safety checks around generated artifacts.
+
+Final verification result:
+- Stage 14 guard passed: `doc_markers=49`, `roadmap_markers=7`, `stage13_markers=5`, `required_files=6`;
+- Stage 13 guard passed;
+- Stage 12.8 guard passed;
+- project roadmap guard passed;
+- CI/local gate guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- frontend production build passed;
+- backend full test suite passed: `214 passed`;
+- focused backend document service tests were accepted earlier: `27 passed`;
+- focused document API tests were accepted earlier: `14 passed`;
+- focused document PDF tests were accepted earlier: `9 passed`;
+- Vite chunk-size warning is non-blocking;
+- ReportLab/passlib/jose deprecation warnings are non-blocking.
+
+Safety notes:
+- This final acceptance record is documentation/guard-only.
+- No runtime application code was changed for this acceptance record.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- Local generated `tmp/` artifacts must remain uncommitted and ignored.
+- `document_runtime_changed=no`.
+
+Final Stage 14 tag:
+- `v0.1.0-stage14-documents-verification-complete`.
+
+Verification markers:
+- `Stage 14 final acceptance - 2026-05-29`
+- `Stage 14 accepted`
+- `documents_certificates_verification_accepted=yes`
+- `document_templates_accepted=yes`
+- `pdf_generation_accepted=yes`
+- `qr_code_accepted=yes`
+- `document_number_accepted=yes`
+- `public_verification_accepted=yes`
+- `account_document_download_accepted=yes`
+- `admin_document_visibility_accepted=yes`
+- `frontend production build passed`
+- `214 passed`
+- `v0.1.0-stage14-documents-verification-complete`
+- `document_runtime_changed=no`
