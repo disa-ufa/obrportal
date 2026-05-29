@@ -23,6 +23,10 @@ REQUIRED_FILES = [
     ROOT / "frontend" / "src" / "pages" / "AuditPage.jsx",
     ROOT / "frontend" / "src" / "routes" / "AdminPageRenderer.jsx",
     ROOT / "backend" / "app" / "api" / "v1" / "admin.py",
+    ROOT / "frontend" / "src" / "utils" / "apiErrors.js",
+    ROOT / "frontend" / "src" / "utils" / "adminLinks.js",
+    ROOT / "frontend" / "src" / "components" / "admin" / "AdminQuickFilterButtons.jsx",
+    ROOT / "frontend" / "src" / "components" / "admin" / "AdminEmptyState.jsx",
 ]
 
 DOC_MARKERS = [
@@ -64,6 +68,18 @@ DOC_MARKERS = [
     "admin_link_builder_existing=yes",
     "admin_work_center_component_existing=yes",
     "dashboard_worklists_runtime_changed=no",
+    "Stage 15.3 list pages filters/errors inventory - 2026-05-29",
+    "stage15_list_pages_filters_errors_inventory=tmp/stage15_list_pages_filters_errors_inventory.txt",
+    "users_filters_errors_inventory=yes",
+    "organizations_filters_errors_inventory=yes",
+    "courses_filters_errors_inventory=yes",
+    "enrollments_filters_errors_inventory=yes",
+    "documents_filters_errors_inventory=yes",
+    "audit_filters_errors_inventory=yes",
+    "api_errors_utility_existing=yes",
+    "admin_quick_filters_component_existing=yes",
+    "admin_empty_state_component_existing=yes",
+    "list_pages_filters_errors_runtime_changed=no",
 ]
 
 ROADMAP_MARKERS = [

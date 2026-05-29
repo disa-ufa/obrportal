@@ -233,3 +233,50 @@ Verification markers:
 - `admin_link_builder_existing=yes`
 - `admin_work_center_component_existing=yes`
 - `dashboard_worklists_runtime_changed=no`
+
+## 13. Stage 15.3 list pages filters/errors inventory - 2026-05-29
+
+Goal: record current list-page filter and operator-friendly error UX before runtime hardening.
+
+Inventory result:
+- current local git head before checkpoint: `44b4712`;
+- compact inventory report was generated at `tmp/stage15_list_pages_filters_errors_inventory.txt`;
+- users page exists: `frontend/src/pages/UsersPage.jsx`;
+- organizations page exists: `frontend/src/pages/OrganizationsPage.jsx`;
+- courses page exists: `frontend/src/pages/AdminCoursesPage.jsx`;
+- enrollments page exists: `frontend/src/pages/AdminEnrollmentsPage.jsx`;
+- documents page exists: `frontend/src/pages/DocumentsPage.jsx`;
+- audit page exists: `frontend/src/pages/AuditPage.jsx`;
+- frontend API error utility exists: `frontend/src/utils/apiErrors.js`;
+- admin link builder utility exists: `frontend/src/utils/adminLinks.js`;
+- quick filter component exists: `frontend/src/components/admin/AdminQuickFilterButtons.jsx`;
+- empty state component exists: `frontend/src/components/admin/AdminEmptyState.jsx`.
+
+Decision:
+- Stage 15 should harden existing list pages instead of replacing them.
+- The next runtime step should be focused and limited to one list-page UX gap at a time.
+- Priority candidates are filter persistence, visible active-filter summaries and friendly action errors.
+- Bulk actions remain out of scope until confirmation UX and test coverage are explicitly added.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- The inventory report in `tmp/` is a local working artifact and must not be committed.
+- `list_pages_filters_errors_runtime_changed=no`.
+
+Verification markers:
+- `Stage 15.3 list pages filters/errors inventory - 2026-05-29`
+- `stage15_list_pages_filters_errors_inventory=tmp/stage15_list_pages_filters_errors_inventory.txt`
+- `users_filters_errors_inventory=yes`
+- `organizations_filters_errors_inventory=yes`
+- `courses_filters_errors_inventory=yes`
+- `enrollments_filters_errors_inventory=yes`
+- `documents_filters_errors_inventory=yes`
+- `audit_filters_errors_inventory=yes`
+- `api_errors_utility_existing=yes`
+- `admin_quick_filters_component_existing=yes`
+- `admin_empty_state_component_existing=yes`
+- `list_pages_filters_errors_runtime_changed=no`
