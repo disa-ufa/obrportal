@@ -1031,3 +1031,33 @@ Verification markers:
 - `admin_courses_page_safe_api_error_message_used=yes`
 - `admin_courses_page_domain_error_messages_preserved=yes`
 - `admin_courses_page_friendly_errors_runtime_changed=yes`
+
+## 35. Stage 15.22 raw friendly errors rescan - 2026-05-29
+
+Goal: verify whether raw operator-visible API error patterns remain after patching admin enrollments, documents, groups and courses pages.
+
+Scan result:
+- current local git head before checkpoint: `bed1b74`;
+- scan report was generated at `tmp/stage15_raw_friendly_errors_rescan.txt`;
+- scan focused only on raw-risk patterns: manual `err?.status`, direct `readableMessage = message`, direct `readableMessage = rawMessage`, and direct `set...Error(err.message/error.message)`;
+- total raw-risk pattern hits found: `0`;
+- scan is a local working artifact and must not be committed.
+
+Decision:
+- If total raw-risk hits are zero, the Stage 15 friendly error hardening block can be accepted.
+- If hits remain, patch the smallest remaining page/panel group first.
+- Safe helper usage such as `formatApiError`, `getSafeApiErrorMessage`, and `getApiErrorMessage` inside already-safe formatters is not treated as raw risk in this scan.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- `raw_friendly_errors_rescan_runtime_changed=no`.
+
+Verification markers:
+- `Stage 15.22 raw friendly errors rescan - 2026-05-29`
+- `stage15_raw_friendly_errors_rescan=tmp/stage15_raw_friendly_errors_rescan.txt`
+- `raw_friendly_errors_rescan_completed=yes`
+- `raw_friendly_errors_rescan_runtime_changed=no`

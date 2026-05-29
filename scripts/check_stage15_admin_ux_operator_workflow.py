@@ -193,6 +193,10 @@ DOC_MARKERS = [
     "admin_courses_page_safe_api_error_message_used=yes",
     "admin_courses_page_domain_error_messages_preserved=yes",
     "admin_courses_page_friendly_errors_runtime_changed=yes",
+    "Stage 15.22 raw friendly errors rescan - 2026-05-29",
+    "stage15_raw_friendly_errors_rescan=tmp/stage15_raw_friendly_errors_rescan.txt",
+    "raw_friendly_errors_rescan_completed=yes",
+    "raw_friendly_errors_rescan_runtime_changed=no",
 ]
 
 ROADMAP_MARKERS = [
