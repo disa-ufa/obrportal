@@ -127,6 +127,10 @@ DOC_MARKERS = [
     "api_errors_technical_details_hidden=yes",
     "api_errors_format_api_error_strengthened=yes",
     "shared_friendly_api_errors_runtime_changed=yes",
+    "Stage 15.12 friendly errors usage scan - 2026-05-29",
+    "stage15_friendly_errors_usage_scan=tmp/stage15_friendly_errors_usage_scan.txt",
+    "friendly_errors_raw_usage_scan=yes",
+    "friendly_errors_usage_scan_runtime_changed=no",
 ]
 
 ROADMAP_MARKERS = [

@@ -558,3 +558,33 @@ Verification markers:
 - `api_errors_technical_details_hidden=yes`
 - `api_errors_format_api_error_strengthened=yes`
 - `shared_friendly_api_errors_runtime_changed=yes`
+
+## 22. Stage 15.12 friendly errors usage scan - 2026-05-29
+
+Goal: scan frontend usage of API error helpers before connecting the strengthened shared formatter to more pages.
+
+Scan result:
+- current local git head before checkpoint: `82b743a`;
+- usage scan was generated at `tmp/stage15_friendly_errors_usage_scan.txt`;
+- scan looked for direct `err.message`, `err.detail`, `error.message`, `error.detail`, `setError(err...)`, `setActionError(err...)`, status-template rendering and existing API error helpers;
+- scan is a local working artifact and must not be committed.
+
+Decision:
+- The next runtime step should patch only one page/component group at a time.
+- Prefer replacing raw operator-visible error text with `formatApiError` or `getSafeApiErrorMessage`.
+- Preserve domain-specific messages where they already provide safer Russian operator text.
+- No backend API or database migration is required for this scan step.
+
+Safety notes:
+- No runtime code was changed in this checkpoint.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- Secrets were not printed.
+- `friendly_errors_usage_scan_runtime_changed=no`.
+
+Verification markers:
+- `Stage 15.12 friendly errors usage scan - 2026-05-29`
+- `stage15_friendly_errors_usage_scan=tmp/stage15_friendly_errors_usage_scan.txt`
+- `friendly_errors_raw_usage_scan=yes`
+- `friendly_errors_usage_scan_runtime_changed=no`
