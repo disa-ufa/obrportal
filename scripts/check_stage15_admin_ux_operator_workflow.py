@@ -121,6 +121,12 @@ DOC_MARKERS = [
     "admin_pages_error_inventory=yes",
     "admin_forms_error_inventory=yes",
     "friendly_operator_errors_inventory_runtime_changed=no",
+    "Stage 15.11 shared friendly API errors - 2026-05-29",
+    "api_errors_get_status_added=yes",
+    "api_errors_safe_message_added=yes",
+    "api_errors_technical_details_hidden=yes",
+    "api_errors_format_api_error_strengthened=yes",
+    "shared_friendly_api_errors_runtime_changed=yes",
 ]
 
 ROADMAP_MARKERS = [

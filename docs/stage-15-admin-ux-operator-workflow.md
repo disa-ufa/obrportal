@@ -522,3 +522,39 @@ Verification markers:
 - `admin_pages_error_inventory=yes`
 - `admin_forms_error_inventory=yes`
 - `friendly_operator_errors_inventory_runtime_changed=no`
+
+## 21. Stage 15.11 shared friendly API errors - 2026-05-29
+
+Goal: strengthen the shared frontend API error formatter so operators see safer, clearer messages.
+
+Runtime change:
+- updated `frontend/src/utils/apiErrors.js`;
+- added shared `networkError` and `technicalDetailsHidden` messages;
+- added `getApiErrorStatus`;
+- added `isTechnicalApiErrorMessage`;
+- added `getSafeApiErrorMessage`;
+- updated `formatApiError` to hide technical backend details when a safe operator-friendly message is available;
+- preserved existing exports: `COMMON_API_ERROR_MESSAGES`, `getApiErrorMessage`, `formatApiError`.
+
+Verification plan:
+- Stage 15 guard must pass;
+- Stage 14 guard must pass;
+- text encoding guard must pass;
+- source BOM guard must pass;
+- frontend production build must pass.
+
+Safety notes:
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC weakening was introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `shared_friendly_api_errors_runtime_changed=yes`.
+
+Verification markers:
+- `Stage 15.11 shared friendly API errors - 2026-05-29`
+- `api_errors_get_status_added=yes`
+- `api_errors_safe_message_added=yes`
+- `api_errors_technical_details_hidden=yes`
+- `api_errors_format_api_error_strengthened=yes`
+- `shared_friendly_api_errors_runtime_changed=yes`

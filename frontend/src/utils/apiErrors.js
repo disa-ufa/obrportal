@@ -1,15 +1,51 @@
 export const COMMON_API_ERROR_MESSAGES = {
-  fallback: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u0437\u0430\u043f\u0440\u043e\u0441.",
-  notAuthenticated: "\u041d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u043e \u0432\u043e\u0439\u0442\u0438 \u0432 \u0441\u0438\u0441\u0442\u0435\u043c\u0443.",
-  accessDenied: "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432 \u0434\u043b\u044f \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f.",
-  notFound: "\u0417\u0430\u043f\u0440\u043e\u0448\u0435\u043d\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b.",
-  conflict: "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043a\u043e\u043d\u0444\u043b\u0438\u043a\u0442\u0443\u0435\u0442 \u0441 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044e\u0449\u0438\u043c\u0438 \u0434\u0430\u043d\u043d\u044b\u043c\u0438.",
-  invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u043e\u0441\u0442\u044c \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0434\u0430\u043d\u043d\u044b\u0445.",
-  serverError: "\u0421\u0435\u0440\u0432\u0435\u0440 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435 \u0441\u043c\u043e\u0433 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u0442\u044c \u0437\u0430\u043f\u0440\u043e\u0441.",
+  fallback: "Не удалось выполнить запрос.",
+  notAuthenticated: "Необходимо войти в систему.",
+  accessDenied: "Недостаточно прав для выполнения действия.",
+  notFound: "Запрошенные данные не найдены.",
+  conflict: "Действие конфликтует с уже существующими данными.",
+  invalidRequest: "Проверьте корректность заполнения данных.",
+  serverError: "Сервер временно не смог обработать запрос.",
+  networkError: "Не удалось связаться с сервером. Проверьте соединение и повторите попытку.",
+  technicalDetailsHidden: "Технические детали скрыты. При повторении ошибки передайте разработчику код статуса.",
 };
 
+const TECHNICAL_MESSAGE_PATTERNS = [
+  /traceback/i,
+  /stack trace/i,
+  /sqlalchemy/i,
+  /integrityerror/i,
+  /operationalerror/i,
+  /programmingerror/i,
+  /database/i,
+  /sqlite/i,
+  /postgres/i,
+  /psycopg/i,
+  /asyncpg/i,
+  /exception/i,
+  /internal server error/i,
+  /failed to fetch/i,
+  /networkerror/i,
+  /typeerror/i,
+  /referenceerror/i,
+  /syntaxerror/i,
+  /\bat\s+[\w./\\-]+:\d+/i,
+];
+
+export function getApiErrorStatus(err) {
+  if (err?.status !== undefined && err?.status !== null && err.status !== "") {
+    return `${err.status}`;
+  }
+
+  if (err?.response?.status !== undefined && err?.response?.status !== null) {
+    return `${err.response.status}`;
+  }
+
+  return "";
+}
+
 export function getApiErrorMessage(err) {
-  const rawMessage = err?.detail || err?.message || "";
+  const rawMessage = err?.detail ?? err?.message ?? err?.response?.data?.detail ?? "";
 
   if (Array.isArray(rawMessage)) {
     return rawMessage
@@ -24,26 +60,55 @@ export function getApiErrorMessage(err) {
   return `${rawMessage || ""}`.trim();
 }
 
+export function isTechnicalApiErrorMessage(message) {
+  const normalized = `${message || ""}`.trim();
+
+  if (!normalized) {
+    return false;
+  }
+
+  return TECHNICAL_MESSAGE_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+export function getSafeApiErrorMessage(message, fallback = COMMON_API_ERROR_MESSAGES.fallback) {
+  const normalized = `${message || ""}`.trim();
+
+  if (!normalized) {
+    return fallback;
+  }
+
+  if (isTechnicalApiErrorMessage(normalized)) {
+    return COMMON_API_ERROR_MESSAGES.technicalDetailsHidden;
+  }
+
+  return normalized;
+}
+
 export function formatApiError(err, fallback = COMMON_API_ERROR_MESSAGES.fallback) {
-  const status = err?.status ? `${err.status}` : "";
+  const status = getApiErrorStatus(err);
   const message = getApiErrorMessage(err);
+  const safeMessage = getSafeApiErrorMessage(message, fallback);
 
   let readableMessage = fallback;
 
-  if (status === "401") {
+  if (!status && message) {
+    readableMessage = getSafeApiErrorMessage(message, COMMON_API_ERROR_MESSAGES.networkError);
+  } else if (status === "400") {
+    readableMessage = safeMessage || COMMON_API_ERROR_MESSAGES.invalidRequest;
+  } else if (status === "401") {
     readableMessage = COMMON_API_ERROR_MESSAGES.notAuthenticated;
   } else if (status === "403") {
     readableMessage = COMMON_API_ERROR_MESSAGES.accessDenied;
   } else if (status === "404") {
     readableMessage = fallback || COMMON_API_ERROR_MESSAGES.notFound;
   } else if (status === "409") {
-    readableMessage = message || COMMON_API_ERROR_MESSAGES.conflict;
+    readableMessage = safeMessage || COMMON_API_ERROR_MESSAGES.conflict;
   } else if (status === "422") {
     readableMessage = COMMON_API_ERROR_MESSAGES.invalidRequest;
   } else if (Number(status) >= 500) {
     readableMessage = COMMON_API_ERROR_MESSAGES.serverError;
   } else if (message) {
-    readableMessage = message;
+    readableMessage = safeMessage;
   }
 
   return `${status} ${readableMessage}`.trim();
