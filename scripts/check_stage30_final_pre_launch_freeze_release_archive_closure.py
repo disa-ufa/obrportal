@@ -81,6 +81,16 @@ DOC_MARKERS = [
     "stage30_depends_on_stage28_complete=yes",
     "stage30_depends_on_stage29_complete=yes",
     "stage30_real_launch_executed_no=yes",
+    "Stage 30.1 freeze archive registry - 2026-05-30",
+    "stage30_freeze_archive_registry_recorded=yes",
+    "stage30_freeze_boundary_recorded=yes",
+    "stage30_final_freeze_state_recorded=yes",
+    "stage30_change_control_rule_recorded=yes",
+    "stage30_final_accepted_tag_registry_recorded=yes",
+    "stage30_final_documentation_archive_registry_recorded=yes",
+    "stage30_final_guard_registry_recorded=yes",
+    "stage30_final_no_go_registry_recorded=yes",
+    "stage30_launch_lock_registry_recorded=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]
