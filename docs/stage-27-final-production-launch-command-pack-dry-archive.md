@@ -278,3 +278,83 @@ Verification markers:
 - `stage27_dry_production_command_policy_recorded=yes`
 - `stage27_health_smoke_reference_policy_recorded=yes`
 - `stage27_rollback_reference_policy_recorded=yes`
+
+## 4. Final command pack acceptance - 2026-05-30
+
+Goal: accept Stage 27 final production launch command pack dry archive without executing real production launch.
+
+Current git head before final command pack acceptance: `12216e9`.
+
+Accepted Stage 27 scope:
+- Stage 27 baseline created;
+- command categories archive recorded;
+- archive boundary recorded;
+- repository command category recorded;
+- guard command category recorded;
+- CI review command category recorded;
+- backup command category recorded;
+- deployment command category recorded;
+- health/smoke command category recorded;
+- rollback command category recorded;
+- dry launch command references recorded;
+- command reference boundary recorded;
+- repository verification references recorded;
+- local guard references recorded;
+- dry production command policy recorded;
+- health/smoke reference policy recorded;
+- rollback reference policy recorded.
+
+Accepted final command archive state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is complete;
+- Stage 19 production security/secrets hardening is complete;
+- Stage 20 final release candidate/launch checklist is complete;
+- Stage 21 production launch dry-run/deployment preparation is complete;
+- Stage 22 production launch go/no-go controlled execution gate is complete;
+- Stage 23 controlled production launch execution preparation is complete;
+- Stage 24 production launch final evidence package is complete;
+- Stage 25 final project closure/handoff package is complete;
+- Stage 26 pre-production operational rehearsal is complete;
+- Stage 27 final production launch command pack dry archive is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 27 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 27 tag;
+- working tree must be clean before final Stage 27 tag.
+
+Final production launch status:
+- real production launch was not executed;
+- production launch remains blocked without separate explicit confirmation;
+- required phrase remains: `CONFIRM PRODUCTION LAUNCH`;
+- commands recorded in this stage are references only;
+- destructive commands require separate explicit confirmation;
+- production `.env` must not be printed;
+- backup artifacts must not be committed;
+- database migrations require separate approval if any appear;
+- production launch remains a separate operational action after this tag.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final command pack acceptance only.
+- No command was executed against production.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage27_final_command_pack_accepted=yes`.
+
+Verification markers:
+- `Stage 27.3 final command pack acceptance - 2026-05-30`
+- `stage27_final_command_pack_accepted=yes`
+- `stage27_command_categories_archive_accepted=yes`
+- `stage27_dry_launch_command_references_accepted=yes`
+- `stage27_real_launch_executed_no=yes`
+- `stage27_ready_for_final_tag=yes`

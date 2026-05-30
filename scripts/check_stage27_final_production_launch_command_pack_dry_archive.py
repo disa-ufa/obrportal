@@ -87,6 +87,12 @@ DOC_MARKERS = [
     "stage27_dry_production_command_policy_recorded=yes",
     "stage27_health_smoke_reference_policy_recorded=yes",
     "stage27_rollback_reference_policy_recorded=yes",
+    "Stage 27.3 final command pack acceptance - 2026-05-30",
+    "stage27_final_command_pack_accepted=yes",
+    "stage27_command_categories_archive_accepted=yes",
+    "stage27_dry_launch_command_references_accepted=yes",
+    "stage27_real_launch_executed_no=yes",
+    "stage27_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]
