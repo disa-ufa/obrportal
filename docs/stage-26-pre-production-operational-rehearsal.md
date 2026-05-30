@@ -93,3 +93,89 @@ Verification markers:
 - `stage26_depends_on_stage24_complete=yes`
 - `stage26_depends_on_stage25_complete=yes`
 - `stage26_real_launch_executed_no=yes`
+
+## 2. Operational rehearsal checklist - 2026-05-30
+
+Goal: record operator rehearsal checklist without executing real production launch.
+
+Current git head before operational rehearsal checklist: `3707d43`.
+
+Rehearsal preconditions:
+- production launch remains blocked without `CONFIRM PRODUCTION LAUNCH`;
+- this checkpoint is documentation-only;
+- no deployment command is executed;
+- no destructive command is executed;
+- no migration command is executed;
+- no backup/restore command is executed;
+- no secret rotation command is executed;
+- `real_launch_executed=no`.
+
+Repository rehearsal checks:
+- verify `develop` and `main` are synchronized;
+- verify `origin/develop` and `origin/main` point to the same commit;
+- verify working tree is clean;
+- verify final Stage 25 tag is present;
+- verify current Stage 26 changes are committed and pushed before final tag.
+
+Guard rehearsal checks:
+- Stage 26 guard passes;
+- Stage 25 guard passes;
+- Stage 24 guard passes;
+- Stage 23 guard passes;
+- Stage 22 guard passes;
+- Stage 21 guard passes;
+- Stage 20 guard passes;
+- Stage 19 guard passes;
+- Stage 18 guard passes;
+- Stage 17 guard passes;
+- Stage 16 guard passes;
+- Stage 15 guard passes;
+- Stage 14 guard passes;
+- text encoding guard passes;
+- source BOM guard passes.
+
+CI rehearsal checks:
+- GitHub Actions must be reviewed for `develop`;
+- GitHub Actions must be reviewed for `main`;
+- failed/pending checks remain NO-GO for real launch;
+- no real launch is authorized by documentation alone.
+
+Operational rehearsal checks:
+- confirm production `.env` remains private and uncommitted;
+- confirm backup readiness is known;
+- confirm rollback readiness is known;
+- confirm smoke-test routes are known;
+- confirm operator/admin handoff is known;
+- confirm known non-blocking warnings are understood.
+
+NO-GO rehearsal triggers:
+- branch mismatch;
+- dirty working tree;
+- failed guard;
+- failed GitHub Actions;
+- missing private production `.env`;
+- backup readiness not confirmed;
+- rollback readiness not confirmed;
+- suspected secret exposure;
+- missing explicit confirmation phrase.
+
+Safety notes:
+- This checkpoint documents operational rehearsal checklist only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage26_operational_rehearsal_checklist_recorded=yes`.
+
+Verification markers:
+- `Stage 26.1 operational rehearsal checklist - 2026-05-30`
+- `stage26_operational_rehearsal_checklist_recorded=yes`
+- `stage26_rehearsal_preconditions_recorded=yes`
+- `stage26_repository_rehearsal_checks_recorded=yes`
+- `stage26_guard_rehearsal_checks_recorded=yes`
+- `stage26_ci_rehearsal_checks_recorded=yes`
+- `stage26_operational_rehearsal_checks_recorded=yes`
+- `stage26_no_go_rehearsal_triggers_recorded=yes`

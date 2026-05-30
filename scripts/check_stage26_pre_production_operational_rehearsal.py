@@ -65,6 +65,14 @@ DOC_MARKERS = [
     "stage26_depends_on_stage24_complete=yes",
     "stage26_depends_on_stage25_complete=yes",
     "stage26_real_launch_executed_no=yes",
+    "Stage 26.1 operational rehearsal checklist - 2026-05-30",
+    "stage26_operational_rehearsal_checklist_recorded=yes",
+    "stage26_rehearsal_preconditions_recorded=yes",
+    "stage26_repository_rehearsal_checks_recorded=yes",
+    "stage26_guard_rehearsal_checks_recorded=yes",
+    "stage26_ci_rehearsal_checks_recorded=yes",
+    "stage26_operational_rehearsal_checks_recorded=yes",
+    "stage26_no_go_rehearsal_triggers_recorded=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]
