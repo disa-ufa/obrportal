@@ -71,6 +71,12 @@ DOC_MARKERS = [
     "stage23_security_confirmation_defined=yes",
     "stage23_operator_confirmation_defined=yes",
     "stage23_final_launch_blocker_defined=yes",
+    "Stage 23.3 final controlled launch preparation acceptance - 2026-05-30",
+    "stage23_final_controlled_launch_preparation_accepted=yes",
+    "stage23_controlled_launch_execution_phases_accepted=yes",
+    "stage23_pre_launch_confirmation_package_accepted=yes",
+    "stage23_real_launch_executed_no=yes",
+    "stage23_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [
