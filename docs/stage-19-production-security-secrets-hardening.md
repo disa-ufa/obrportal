@@ -263,3 +263,62 @@ Verification markers:
 - `stage19_docker_env_policy_defined=yes`
 - `stage19_backup_artifact_security_defined=yes`
 - `stage19_operational_access_policy_defined=yes`
+
+## 5. Final production security acceptance - 2026-05-30
+
+Goal: accept Stage 19 production security and secrets hardening after secrets inventory, application security checklist and infrastructure security checklist.
+
+Current git head before final security acceptance: `0c3366e`.
+
+Accepted Stage 19 scope:
+- Stage 19 baseline created;
+- secrets inventory and git hygiene recorded;
+- local `.env` allowed only when ignored and untracked;
+- `.env.example` placeholder-only policy defined;
+- application security checklist recorded;
+- `SECRET_KEY`, JWT/token, CORS/URL and admin credentials policies defined;
+- error/logging and public access policies defined;
+- infrastructure security checklist recorded;
+- PostgreSQL/MinIO credentials, public ports, Docker/env, backup artifacts and operational access policies defined.
+
+Accepted security state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is complete;
+- Stage 19 production security/secrets hardening is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 19 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 19 tag;
+- working tree must be clean before final Stage 19 tag.
+
+Hard security rules:
+- no production `.env` in git;
+- no real secret values in docs, logs, support messages or commits;
+- no production credentials in `docker-compose.yml`;
+- no backup artifacts in git;
+- no destructive action without explicit confirmation;
+- rotate any secret immediately if exposure is suspected.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final production security acceptance only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage19_production_security_accepted=yes`.
+
+Verification markers:
+- `Stage 19.4 final production security acceptance - 2026-05-30`
+- `stage19_production_security_accepted=yes`
+- `stage19_secrets_inventory_accepted=yes`
+- `stage19_application_security_accepted=yes`
+- `stage19_infrastructure_security_accepted=yes`
+- `stage19_ready_for_final_tag=yes`

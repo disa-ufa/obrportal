@@ -58,6 +58,12 @@ DOC_MARKERS = [
     "stage19_docker_env_policy_defined=yes",
     "stage19_backup_artifact_security_defined=yes",
     "stage19_operational_access_policy_defined=yes",
+    "Stage 19.4 final production security acceptance - 2026-05-30",
+    "stage19_production_security_accepted=yes",
+    "stage19_secrets_inventory_accepted=yes",
+    "stage19_application_security_accepted=yes",
+    "stage19_infrastructure_security_accepted=yes",
+    "stage19_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [
