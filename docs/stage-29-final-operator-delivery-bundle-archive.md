@@ -218,3 +218,86 @@ Verification markers:
 - `stage29_operator_actions_review_registry_recorded=yes`
 - `stage29_operator_go_no_go_registry_recorded=yes`
 - `stage29_launch_lock_registry_recorded=yes`
+
+## 3. Operator handoff smoke rollback registry - 2026-05-30
+
+Goal: record final operator handoff, smoke and rollback registry without executing real production launch.
+
+Current git head before operator handoff/smoke/rollback registry: `cf74067`.
+
+Registry boundary:
+- production launch remains blocked without `CONFIRM PRODUCTION LAUNCH`;
+- this checkpoint records operator handoff/smoke/rollback guidance only;
+- no deployment command is executed;
+- no destructive command is executed;
+- no migration command is executed;
+- no backup/restore command is executed;
+- no secret rotation command is executed;
+- `real_launch_executed=no`.
+
+Operator handoff registry:
+- operator must know the final accepted stage chain;
+- operator must know final control tags;
+- operator must know where GitHub Actions are reviewed;
+- operator must know how to run local guard scripts;
+- operator must know that `.env` is private and uncommitted;
+- operator must know that backup artifacts must not be committed;
+- operator must know that real launch requires separate explicit confirmation.
+
+Smoke registry:
+- backend health smoke expectation is recorded;
+- frontend availability smoke expectation is recorded;
+- authentication smoke expectation is recorded;
+- admin workflow smoke expectation is recorded;
+- user/account smoke expectation is recorded;
+- document generation/verification smoke expectation is recorded;
+- public verification route smoke expectation is recorded;
+- database/Redis/object-storage readiness expectations are recorded.
+
+Rollback registry:
+- previous known-good tag/commit must be known before real launch;
+- rollback conditions must be known before real launch;
+- rollback owner/operator must be known before real launch;
+- rollback communication path must be known before real launch;
+- database rollback/restore requires separate approval;
+- object storage restore requires separate approval if production documents exist;
+- rollback commands are not executed in this stage.
+
+Final NO-GO registry:
+- branch mismatch remains NO-GO;
+- dirty working tree remains NO-GO;
+- failed local guard remains NO-GO;
+- failed GitHub Actions remains NO-GO;
+- missing production `.env` remains NO-GO;
+- unconfirmed backup readiness remains NO-GO;
+- unconfirmed rollback readiness remains NO-GO;
+- suspected secret exposure remains NO-GO;
+- missing `CONFIRM PRODUCTION LAUNCH` remains NO-GO.
+
+Operator acceptance evidence:
+- delivery bundle is documentation-only;
+- production deployment is not authorized by this checkpoint;
+- production launch remains a separate operational action;
+- the phrase `CONFIRM PRODUCTION LAUNCH` is still required;
+- `real_launch_executed=no`.
+
+Safety notes:
+- This checkpoint documents operator handoff/smoke/rollback registry only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage29_operator_handoff_smoke_rollback_registry_recorded=yes`.
+
+Verification markers:
+- `Stage 29.2 operator handoff smoke rollback registry - 2026-05-30`
+- `stage29_operator_handoff_smoke_rollback_registry_recorded=yes`
+- `stage29_registry_boundary_recorded=yes`
+- `stage29_operator_handoff_registry_recorded=yes`
+- `stage29_smoke_registry_recorded=yes`
+- `stage29_rollback_registry_recorded=yes`
+- `stage29_final_no_go_registry_recorded=yes`
+- `stage29_operator_acceptance_evidence_recorded=yes`

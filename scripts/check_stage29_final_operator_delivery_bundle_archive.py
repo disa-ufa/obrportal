@@ -86,6 +86,14 @@ DOC_MARKERS = [
     "stage29_operator_actions_review_registry_recorded=yes",
     "stage29_operator_go_no_go_registry_recorded=yes",
     "stage29_launch_lock_registry_recorded=yes",
+    "Stage 29.2 operator handoff smoke rollback registry - 2026-05-30",
+    "stage29_operator_handoff_smoke_rollback_registry_recorded=yes",
+    "stage29_registry_boundary_recorded=yes",
+    "stage29_operator_handoff_registry_recorded=yes",
+    "stage29_smoke_registry_recorded=yes",
+    "stage29_rollback_registry_recorded=yes",
+    "stage29_final_no_go_registry_recorded=yes",
+    "stage29_operator_acceptance_evidence_recorded=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]
