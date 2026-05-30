@@ -79,6 +79,14 @@ DOC_MARKERS = [
     "stage27_deployment_command_category_recorded=yes",
     "stage27_health_smoke_command_category_recorded=yes",
     "stage27_rollback_command_category_recorded=yes",
+    "Stage 27.2 dry launch command references - 2026-05-30",
+    "stage27_dry_launch_command_references_recorded=yes",
+    "stage27_command_reference_boundary_recorded=yes",
+    "stage27_repository_verification_references_recorded=yes",
+    "stage27_local_guard_references_recorded=yes",
+    "stage27_dry_production_command_policy_recorded=yes",
+    "stage27_health_smoke_reference_policy_recorded=yes",
+    "stage27_rollback_reference_policy_recorded=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]

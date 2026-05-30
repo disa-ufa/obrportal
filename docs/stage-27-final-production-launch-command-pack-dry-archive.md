@@ -191,3 +191,90 @@ Verification markers:
 - `stage27_deployment_command_category_recorded=yes`
 - `stage27_health_smoke_command_category_recorded=yes`
 - `stage27_rollback_command_category_recorded=yes`
+
+## 3. Dry launch command references - 2026-05-30
+
+Goal: record dry launch command references without executing any production command.
+
+Current git head before dry launch command references: `18de72e`.
+
+Command reference boundary:
+- production launch remains blocked without `CONFIRM PRODUCTION LAUNCH`;
+- commands below are references only;
+- no command in this section was executed as part of this checkpoint;
+- no deployment command is executed;
+- no destructive command is executed;
+- no migration command is executed;
+- no backup/restore command is executed;
+- no secret rotation command is executed;
+- `real_launch_executed=no`.
+
+Repository verification references:
+- `git switch main`;
+- `git pull --ff-only origin main`;
+- `git switch develop`;
+- `git branch -vv`;
+- `git status --short`;
+- `git tag --list "v0.1.0-stage*"`;
+- `git log --oneline -10`.
+
+Local guard references:
+- `python scripts/check_stage27_final_production_launch_command_pack_dry_archive.py`;
+- `python scripts/check_stage26_pre_production_operational_rehearsal.py`;
+- `python scripts/check_stage25_final_project_closure_handoff_package.py`;
+- `python scripts/check_stage24_production_launch_final_evidence_package.py`;
+- `python scripts/check_stage23_controlled_production_launch_execution_preparation.py`;
+- `python scripts/check_stage22_production_launch_go_no_go_controlled_execution.py`;
+- `python scripts/check_stage21_production_launch_dry_run_deployment_preparation.py`;
+- `python scripts/check_stage20_final_release_candidate_launch_checklist.py`;
+- `python scripts/check_stage19_production_security_secrets_hardening.py`;
+- `python scripts/check_stage18_production_runbook_operator_handoff.py`;
+- `python scripts/check_stage17_production_deployment_readiness.py`;
+- `python scripts/check_stage16_release_readiness_regression.py`;
+- `python scripts/check_stage15_admin_ux_operator_workflow.py`;
+- `python scripts/check_stage14_documents_certificates_verification.py`;
+- `python scripts/check_text_encoding.py`;
+- `python scripts/check_source_bom.py`.
+
+Dry production command reference policy:
+- production deployment commands are not listed as executable steps in this archive;
+- real deployment commands must be taken from the approved production runbook;
+- real deployment commands require `CONFIRM PRODUCTION LAUNCH`;
+- destructive commands require separate explicit confirmation;
+- migration commands require separate explicit approval if any appear;
+- backup/restore commands require separate explicit operational approval.
+
+Health and smoke reference policy:
+- health checks must not print secrets;
+- smoke checks must avoid destructive data changes;
+- smoke checks must include auth/admin/account/document/public verification paths;
+- failed health/smoke checks remain NO-GO;
+- rollback decision must be made before attempting repeated changes.
+
+Rollback reference policy:
+- rollback target commit/tag must be known before launch;
+- rollback procedure must be available before launch;
+- database rollback/restore requires separate approval;
+- object storage restore requires separate approval if production documents exist;
+- rollback commands are not executed in this stage.
+
+Safety notes:
+- This checkpoint documents dry launch command references only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage27_dry_launch_command_references_recorded=yes`.
+
+Verification markers:
+- `Stage 27.2 dry launch command references - 2026-05-30`
+- `stage27_dry_launch_command_references_recorded=yes`
+- `stage27_command_reference_boundary_recorded=yes`
+- `stage27_repository_verification_references_recorded=yes`
+- `stage27_local_guard_references_recorded=yes`
+- `stage27_dry_production_command_policy_recorded=yes`
+- `stage27_health_smoke_reference_policy_recorded=yes`
+- `stage27_rollback_reference_policy_recorded=yes`
