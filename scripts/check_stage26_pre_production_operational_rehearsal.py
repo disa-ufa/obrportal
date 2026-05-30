@@ -81,6 +81,12 @@ DOC_MARKERS = [
     "stage26_simulated_deployment_readiness_evidence_recorded=yes",
     "stage26_simulated_health_smoke_evidence_recorded=yes",
     "stage26_simulated_rollback_evidence_recorded=yes",
+    "Stage 26.3 final operational rehearsal acceptance - 2026-05-30",
+    "stage26_final_operational_rehearsal_accepted=yes",
+    "stage26_operational_rehearsal_checklist_accepted=yes",
+    "stage26_launch_simulation_evidence_accepted=yes",
+    "stage26_real_launch_executed_no=yes",
+    "stage26_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]

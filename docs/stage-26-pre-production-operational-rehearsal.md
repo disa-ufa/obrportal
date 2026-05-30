@@ -253,3 +253,78 @@ Verification markers:
 - `stage26_simulated_deployment_readiness_evidence_recorded=yes`
 - `stage26_simulated_health_smoke_evidence_recorded=yes`
 - `stage26_simulated_rollback_evidence_recorded=yes`
+
+## 4. Final operational rehearsal acceptance - 2026-05-30
+
+Goal: accept Stage 26 pre-production operational rehearsal and launch simulation without executing real production launch.
+
+Current git head before final operational rehearsal acceptance: `3f10bc7`.
+
+Accepted Stage 26 scope:
+- Stage 26 baseline created;
+- operational rehearsal checklist recorded;
+- rehearsal preconditions recorded;
+- repository rehearsal checks recorded;
+- guard rehearsal checks recorded;
+- CI rehearsal checks recorded;
+- operational rehearsal checks recorded;
+- NO-GO rehearsal triggers recorded;
+- launch simulation evidence recorded;
+- simulation boundary recorded;
+- simulated pre-launch evidence recorded;
+- simulated backup readiness evidence recorded;
+- simulated deployment readiness evidence recorded;
+- simulated health/smoke evidence recorded;
+- simulated rollback evidence recorded.
+
+Accepted final rehearsal state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is complete;
+- Stage 19 production security/secrets hardening is complete;
+- Stage 20 final release candidate/launch checklist is complete;
+- Stage 21 production launch dry-run/deployment preparation is complete;
+- Stage 22 production launch go/no-go controlled execution gate is complete;
+- Stage 23 controlled production launch execution preparation is complete;
+- Stage 24 production launch final evidence package is complete;
+- Stage 25 final project closure/handoff package is complete;
+- Stage 26 pre-production operational rehearsal is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 26 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 26 tag;
+- working tree must be clean before final Stage 26 tag.
+
+Final production launch status:
+- real production launch was not executed;
+- production launch remains blocked without separate explicit confirmation;
+- required phrase remains: `CONFIRM PRODUCTION LAUNCH`;
+- destructive commands require separate explicit confirmation;
+- production `.env` must not be printed;
+- backup artifacts must not be committed;
+- database migrations require separate approval if any appear;
+- production launch remains a separate operational action after this tag.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final operational rehearsal acceptance only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage26_final_operational_rehearsal_accepted=yes`.
+
+Verification markers:
+- `Stage 26.3 final operational rehearsal acceptance - 2026-05-30`
+- `stage26_final_operational_rehearsal_accepted=yes`
+- `stage26_operational_rehearsal_checklist_accepted=yes`
+- `stage26_launch_simulation_evidence_accepted=yes`
+- `stage26_real_launch_executed_no=yes`
+- `stage26_ready_for_final_tag=yes`
