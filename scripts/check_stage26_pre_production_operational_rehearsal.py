@@ -73,6 +73,14 @@ DOC_MARKERS = [
     "stage26_ci_rehearsal_checks_recorded=yes",
     "stage26_operational_rehearsal_checks_recorded=yes",
     "stage26_no_go_rehearsal_triggers_recorded=yes",
+    "Stage 26.2 launch simulation evidence - 2026-05-30",
+    "stage26_launch_simulation_evidence_recorded=yes",
+    "stage26_simulation_boundary_recorded=yes",
+    "stage26_simulated_pre_launch_evidence_recorded=yes",
+    "stage26_simulated_backup_readiness_evidence_recorded=yes",
+    "stage26_simulated_deployment_readiness_evidence_recorded=yes",
+    "stage26_simulated_health_smoke_evidence_recorded=yes",
+    "stage26_simulated_rollback_evidence_recorded=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]

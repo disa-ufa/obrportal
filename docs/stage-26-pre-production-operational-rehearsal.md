@@ -179,3 +179,77 @@ Verification markers:
 - `stage26_ci_rehearsal_checks_recorded=yes`
 - `stage26_operational_rehearsal_checks_recorded=yes`
 - `stage26_no_go_rehearsal_triggers_recorded=yes`
+
+## 3. Launch simulation evidence - 2026-05-30
+
+Goal: record launch simulation evidence without executing real production launch.
+
+Current git head before launch simulation evidence: `3219638`.
+
+Simulation boundary:
+- production launch remains blocked without `CONFIRM PRODUCTION LAUNCH`;
+- this checkpoint records simulated evidence only;
+- no deployment command is executed;
+- no destructive command is executed;
+- no migration command is executed;
+- no backup/restore command is executed;
+- no secret rotation command is executed;
+- `real_launch_executed=no`.
+
+Simulated pre-launch evidence:
+- accepted Stage 25 tag is expected;
+- `develop` and `main` synchronization must be verified;
+- working tree cleanliness must be verified;
+- GitHub Actions state must be reviewed;
+- local guards must pass;
+- private production `.env` must remain outside git.
+
+Simulated backup readiness evidence:
+- PostgreSQL backup readiness must be confirmed if production data exists;
+- object storage backup readiness must be confirmed if production documents exist;
+- backup artifacts must remain outside git;
+- previous known-good commit/tag must be known;
+- restore path must be known before real launch.
+
+Simulated deployment readiness evidence:
+- target commit/tag must be identified before real launch;
+- deployment command sequence must be known;
+- database migrations require separate approval if any appear;
+- Docker volumes must not be deleted;
+- rollback path must be ready before service changes.
+
+Simulated health and smoke evidence:
+- backend health check path must be known;
+- frontend health check path must be known;
+- PostgreSQL readiness check path must be known;
+- Redis ping check path must be known;
+- MinIO health check path must be known;
+- auth/admin/account/document/public verification smoke paths must be known.
+
+Simulated rollback evidence:
+- rollback is required if health checks fail;
+- rollback is required if smoke checks fail;
+- rollback is required if document verification fails;
+- rollback is required if data integrity concern appears;
+- rollback is required if secret exposure is suspected.
+
+Safety notes:
+- This checkpoint documents launch simulation evidence only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage26_launch_simulation_evidence_recorded=yes`.
+
+Verification markers:
+- `Stage 26.2 launch simulation evidence - 2026-05-30`
+- `stage26_launch_simulation_evidence_recorded=yes`
+- `stage26_simulation_boundary_recorded=yes`
+- `stage26_simulated_pre_launch_evidence_recorded=yes`
+- `stage26_simulated_backup_readiness_evidence_recorded=yes`
+- `stage26_simulated_deployment_readiness_evidence_recorded=yes`
+- `stage26_simulated_health_smoke_evidence_recorded=yes`
+- `stage26_simulated_rollback_evidence_recorded=yes`
