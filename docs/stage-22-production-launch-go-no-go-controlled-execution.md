@@ -79,3 +79,89 @@ Verification markers:
 - `stage22_depends_on_stage20_complete=yes`
 - `stage22_depends_on_stage21_complete=yes`
 - `stage22_no_real_production_launch_without_confirmation=yes`
+
+## 2. Go/no-go criteria and safety gates - 2026-05-30
+
+Goal: define final GO and NO-GO criteria before any controlled production execution.
+
+Current git head before go/no-go criteria: `cbf806a`.
+
+GO criteria:
+- `develop` and `main` are synchronized;
+- working tree is clean;
+- Stage 22 guard passes;
+- Stage 21 guard passes;
+- Stage 20 guard passes;
+- Stage 19 guard passes;
+- Stage 18 guard passes;
+- Stage 17 guard passes;
+- Stage 16 guard passes;
+- Stage 15 guard passes;
+- Stage 14 guard passes;
+- text encoding guard passes;
+- source BOM guard passes;
+- GitHub Actions are green for the launch commit/tag;
+- production backup readiness is confirmed;
+- rollback readiness is confirmed;
+- production `.env` remains private and uncommitted;
+- operator/admin smoke path is ready.
+
+NO-GO criteria:
+- any required guard fails;
+- GitHub Actions are red or inconclusive;
+- working tree is dirty;
+- `develop` and `main` are not synchronized;
+- production `.env` is staged, committed, printed or exposed;
+- backup readiness is not confirmed;
+- rollback path is not confirmed;
+- document verification smoke path is not ready;
+- destructive command is requested without explicit confirmation;
+- database migration is required but not separately approved.
+
+Backup gate:
+- PostgreSQL backup must be confirmed before launch if production data exists;
+- MinIO/object storage backup must be confirmed before launch if production documents exist;
+- backup artifacts must be stored outside git;
+- backup timestamps and previous known-good commit/tag must be recorded;
+- backup credentials must not be printed.
+
+Rollback gate:
+- previous known-good commit/tag must be known;
+- database restore procedure must be available if data changes;
+- object storage restore procedure must be available if documents change;
+- private `.env` restore path must be available if configuration changes;
+- smoke checks must be rerun after rollback.
+
+Secrets/privacy gate:
+- production `.env` must not be printed;
+- production credentials must not be committed;
+- logs must not include token/password/private key values;
+- support messages must include only non-secret diagnostics;
+- any suspected exposure requires immediate secret rotation.
+
+Explicit confirmation gate:
+- real production launch is blocked until a separate explicit confirmation is given;
+- required phrase: `CONFIRM PRODUCTION LAUNCH`;
+- without this phrase, Stage 22 remains documentation/go-no-go preparation only;
+- destructive commands require a separate explicit confirmation even after GO.
+
+Safety notes:
+- This checkpoint documents go/no-go criteria and safety gates only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage22_go_no_go_criteria_recorded=yes`.
+
+Verification markers:
+- `Stage 22.1 go no go criteria safety gates - 2026-05-30`
+- `stage22_go_no_go_criteria_recorded=yes`
+- `stage22_go_criteria_defined=yes`
+- `stage22_no_go_criteria_defined=yes`
+- `stage22_backup_gate_defined=yes`
+- `stage22_rollback_gate_defined=yes`
+- `stage22_secrets_privacy_gate_defined=yes`
+- `stage22_explicit_confirmation_gate_defined=yes`

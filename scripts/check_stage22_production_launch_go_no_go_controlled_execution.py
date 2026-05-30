@@ -49,6 +49,14 @@ DOC_MARKERS = [
     "stage22_depends_on_stage20_complete=yes",
     "stage22_depends_on_stage21_complete=yes",
     "stage22_no_real_production_launch_without_confirmation=yes",
+    "Stage 22.1 go no go criteria safety gates - 2026-05-30",
+    "stage22_go_no_go_criteria_recorded=yes",
+    "stage22_go_criteria_defined=yes",
+    "stage22_no_go_criteria_defined=yes",
+    "stage22_backup_gate_defined=yes",
+    "stage22_rollback_gate_defined=yes",
+    "stage22_secrets_privacy_gate_defined=yes",
+    "stage22_explicit_confirmation_gate_defined=yes",
 ]
 
 STAGE14_MARKERS = [
