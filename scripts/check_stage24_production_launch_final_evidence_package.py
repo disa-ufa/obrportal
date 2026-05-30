@@ -73,6 +73,12 @@ DOC_MARKERS = [
     "stage24_security_archive_recorded=yes",
     "stage24_known_warnings_recorded=yes",
     "stage24_launch_lock_recorded=yes",
+    "Stage 24.3 final evidence package acceptance - 2026-05-30",
+    "stage24_final_evidence_package_accepted=yes",
+    "stage24_stage_tag_evidence_inventory_accepted=yes",
+    "stage24_operational_archive_handoff_accepted=yes",
+    "stage24_real_launch_executed_no=yes",
+    "stage24_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [

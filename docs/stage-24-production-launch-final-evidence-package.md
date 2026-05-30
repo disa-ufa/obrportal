@@ -252,3 +252,76 @@ Verification markers:
 - `stage24_security_archive_recorded=yes`
 - `stage24_known_warnings_recorded=yes`
 - `stage24_launch_lock_recorded=yes`
+
+## 4. Final evidence package acceptance - 2026-05-30
+
+Goal: accept Stage 24 production launch final evidence package and operational archive without executing real production launch.
+
+Current git head before final evidence package acceptance: `f3f8774`.
+
+Accepted Stage 24 scope:
+- Stage 24 baseline created;
+- final stage/tag evidence inventory recorded;
+- accepted stage evidence recorded;
+- expected accepted tags recorded;
+- branch evidence requirements recorded;
+- guard evidence requirements recorded;
+- production launch status evidence recorded;
+- operational archive and handoff summary recorded;
+- operational archive contents recorded;
+- handoff references recorded;
+- backup and rollback archive recorded;
+- smoke and verification archive recorded;
+- security archive recorded;
+- known warnings recorded;
+- launch lock recorded.
+
+Accepted final archive state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is complete;
+- Stage 19 production security/secrets hardening is complete;
+- Stage 20 final release candidate/launch checklist is complete;
+- Stage 21 production launch dry-run/deployment preparation is complete;
+- Stage 22 production launch go/no-go controlled execution gate is complete;
+- Stage 23 controlled production launch execution preparation is complete;
+- Stage 24 production launch final evidence package is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 24 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 24 tag;
+- working tree must be clean before final Stage 24 tag.
+
+Final production launch status:
+- real production launch was not executed;
+- production launch remains blocked without separate explicit confirmation;
+- required phrase remains: `CONFIRM PRODUCTION LAUNCH`;
+- destructive commands require separate explicit confirmation;
+- production `.env` must not be printed;
+- backup artifacts must not be committed;
+- database migrations require separate approval if any appear;
+- production launch remains a separate operational action after this tag.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final evidence package acceptance only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage24_final_evidence_package_accepted=yes`.
+
+Verification markers:
+- `Stage 24.3 final evidence package acceptance - 2026-05-30`
+- `stage24_final_evidence_package_accepted=yes`
+- `stage24_stage_tag_evidence_inventory_accepted=yes`
+- `stage24_operational_archive_handoff_accepted=yes`
+- `stage24_real_launch_executed_no=yes`
+- `stage24_ready_for_final_tag=yes`
