@@ -35,6 +35,13 @@ DOC_MARKERS = [
     "stage19_depends_on_stage16_complete=yes",
     "stage19_depends_on_stage17_complete=yes",
     "stage19_depends_on_stage18_complete=yes",
+    "Stage 19.1 secrets inventory git hygiene - 2026-05-30",
+    "stage19_secrets_inventory_recorded=yes",
+    "stage19_env_local_allowed_if_ignored=yes",
+    "stage19_env_not_tracked_required=yes",
+    "stage19_env_example_placeholders_only=yes",
+    "stage19_no_secret_values_printed=yes",
+    "stage19_git_hygiene_rules_defined=yes",
 ]
 
 STAGE14_MARKERS = [

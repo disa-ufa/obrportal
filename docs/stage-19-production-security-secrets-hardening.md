@@ -71,3 +71,59 @@ Verification markers:
 - `stage19_depends_on_stage16_complete=yes`
 - `stage19_depends_on_stage17_complete=yes`
 - `stage19_depends_on_stage18_complete=yes`
+
+## 2. Secrets inventory and git hygiene - 2026-05-30
+
+Goal: record Stage 19.1 secrets inventory without reading or printing real secret values.
+
+Current git head before secrets inventory: `512425a`.
+
+Local `.env` status:
+- local `.env` exists: `true`;
+- local `.env` is ignored by git: `true`;
+- local `.env` is tracked by git: `false`.
+
+Accepted `.env` decision:
+- local `.env` may exist for Docker/local development;
+- `.env` must be ignored by git;
+- `.env` must not be tracked by git;
+- `.env` contents must not be printed in terminal output, logs, docs or support messages;
+- production `.env` must be stored privately outside the repository.
+
+`.env.example` decision:
+- `.env.example` may contain variable names and safe placeholders;
+- `.env.example` must not contain real production passwords, tokens, private keys or access keys;
+- `.env.example` is the public template for required deployment variables.
+
+Git hygiene checks:
+- `.gitignore` must include `.env`;
+- production secrets must not be committed;
+- backup artifacts must not be committed;
+- local smoke logs must not be committed unless sanitized and intentionally documented;
+- diagnostic scripts must avoid printing secret values.
+
+Secrets handling rules:
+- never paste real production `.env` into chat, issues, commits or logs;
+- rotate any secret immediately if it was exposed;
+- use deployment secrets/private server files for production values;
+- use placeholders in documentation;
+- record only presence/absence and safety status, not values.
+
+Safety notes:
+- This checkpoint documents secrets inventory and git hygiene only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage19_secrets_inventory_recorded=yes`.
+
+Verification markers:
+- `Stage 19.1 secrets inventory git hygiene - 2026-05-30`
+- `stage19_secrets_inventory_recorded=yes`
+- `stage19_env_local_allowed_if_ignored=yes`
+- `stage19_env_not_tracked_required=yes`
+- `stage19_env_example_placeholders_only=yes`
+- `stage19_no_secret_values_printed=yes`
+- `stage19_git_hygiene_rules_defined=yes`
