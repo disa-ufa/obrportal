@@ -86,3 +86,83 @@ Verification markers:
 - `stage23_depends_on_stage22_complete=yes`
 - `stage23_no_real_production_launch_without_confirmation=yes`
 - `stage23_real_launch_executed_no=yes`
+
+## 2. Controlled launch execution phases - 2026-05-30
+
+Goal: document controlled production launch execution phases without executing real production launch.
+
+Current git head before execution phases plan: `c5d643f`.
+
+Execution precondition:
+- real launch remains blocked without separate explicit confirmation;
+- required phrase remains: `CONFIRM PRODUCTION LAUNCH`;
+- this checkpoint records phases only;
+- this checkpoint keeps `real_launch_executed=no`.
+
+Phase 1 - pre-launch verification:
+- confirm `develop` and `main` are synchronized;
+- confirm working tree is clean;
+- confirm final accepted Stage 22 tag is present;
+- confirm GitHub Actions are green;
+- confirm all local guards pass;
+- confirm `.env` remains private and uncommitted.
+
+Phase 2 - backup verification:
+- confirm PostgreSQL backup readiness if production data exists;
+- confirm object storage backup readiness if production documents exist;
+- confirm backup storage is outside git;
+- confirm previous known-good commit/tag is recorded;
+- confirm restore path is available.
+
+Phase 3 - controlled update preparation:
+- confirm target commit/tag before update;
+- confirm deployment command plan is available;
+- confirm migrations are not run unless separately approved;
+- confirm Docker volumes are not deleted;
+- confirm rollback path is ready before service changes.
+
+Phase 4 - health verification:
+- confirm backend service health path;
+- confirm frontend service health path;
+- confirm PostgreSQL readiness check path;
+- confirm Redis ping check path;
+- confirm MinIO health check path;
+- confirm logs can be inspected without printing secrets.
+
+Phase 5 - post-launch smoke verification:
+- confirm home/catalog/course pages smoke path;
+- confirm auth login smoke path;
+- confirm admin dashboard/lists smoke path;
+- confirm account/course/document smoke path;
+- confirm document download smoke path;
+- confirm public verification smoke path;
+- confirm unauthorized/forbidden safe response smoke path.
+
+Phase 6 - rollback decision:
+- rollback is required if health checks fail;
+- rollback is required if smoke checks fail;
+- rollback is required if document verification fails;
+- rollback is required if data integrity concern appears;
+- rollback is required if secret exposure is suspected.
+
+Safety notes:
+- This checkpoint documents controlled launch execution phases only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage23_controlled_launch_execution_phases_recorded=yes`.
+
+Verification markers:
+- `Stage 23.1 controlled launch execution phases - 2026-05-30`
+- `stage23_controlled_launch_execution_phases_recorded=yes`
+- `stage23_pre_launch_verification_phase_defined=yes`
+- `stage23_backup_verification_phase_defined=yes`
+- `stage23_controlled_update_preparation_phase_defined=yes`
+- `stage23_health_verification_phase_defined=yes`
+- `stage23_post_launch_smoke_phase_defined=yes`
+- `stage23_rollback_decision_phase_defined=yes`
+- `stage23_execution_precondition_defined=yes`

@@ -54,6 +54,15 @@ DOC_MARKERS = [
     "stage23_depends_on_stage22_complete=yes",
     "stage23_no_real_production_launch_without_confirmation=yes",
     "stage23_real_launch_executed_no=yes",
+    "Stage 23.1 controlled launch execution phases - 2026-05-30",
+    "stage23_controlled_launch_execution_phases_recorded=yes",
+    "stage23_pre_launch_verification_phase_defined=yes",
+    "stage23_backup_verification_phase_defined=yes",
+    "stage23_controlled_update_preparation_phase_defined=yes",
+    "stage23_health_verification_phase_defined=yes",
+    "stage23_post_launch_smoke_phase_defined=yes",
+    "stage23_rollback_decision_phase_defined=yes",
+    "stage23_execution_precondition_defined=yes",
 ]
 
 STAGE14_MARKERS = [
