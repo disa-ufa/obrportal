@@ -91,3 +91,82 @@ Verification markers:
 - `stage25_depends_on_stage23_complete=yes`
 - `stage25_depends_on_stage24_complete=yes`
 - `stage25_real_launch_executed_no=yes`
+
+## 2. Final closure inventory - 2026-05-30
+
+Goal: record final project closure inventory for handoff package.
+
+Current git head before final closure inventory: `2013c8d`.
+
+Closed stage inventory:
+- Stage 14 documents/certificates/verification closed;
+- Stage 15 admin UX/operator workflow closed;
+- Stage 16 release readiness/regression closed;
+- Stage 17 production deployment readiness closed;
+- Stage 18 production runbook/operator handoff closed;
+- Stage 19 production security/secrets hardening closed;
+- Stage 20 final release candidate/launch checklist closed;
+- Stage 21 production launch dry-run/deployment preparation closed;
+- Stage 22 production launch go/no-go controlled execution gate closed;
+- Stage 23 controlled production launch execution preparation closed;
+- Stage 24 production launch final evidence package closed;
+- Stage 25 final project closure/handoff package in progress.
+
+Final tag inventory:
+- `v0.1.0-stage16-release-readiness-complete`;
+- `v0.1.0-stage17-production-deployment-readiness-complete`;
+- `v0.1.0-stage18-production-runbook-operator-handoff-complete`;
+- `v0.1.0-stage19-production-security-secrets-hardening-complete`;
+- `v0.1.0-stage20-final-release-candidate-launch-checklist-complete`;
+- `v0.1.0-stage21-production-launch-dry-run-complete`;
+- `v0.1.0-stage22-production-launch-go-no-go-complete`;
+- `v0.1.0-stage23-controlled-launch-preparation-complete`;
+- `v0.1.0-stage24-final-evidence-package-complete`.
+
+Final handoff inventory:
+- final project closure package;
+- final evidence package;
+- controlled launch preparation package;
+- go/no-go package;
+- dry-run package;
+- production runbook/operator handoff;
+- production security/secrets hardening notes;
+- deployment readiness notes;
+- release readiness/regression notes.
+
+Remaining before real production launch:
+- verify GitHub Actions are green;
+- verify `develop` and `main` are synchronized;
+- verify production `.env` exists only privately on target environment;
+- verify backup readiness;
+- verify rollback readiness;
+- verify smoke-test operator readiness;
+- provide separate explicit phrase `CONFIRM PRODUCTION LAUNCH`.
+
+Final launch status:
+- production launch has not been executed;
+- no destructive production command has been executed;
+- no production `.env` has been printed;
+- no backup artifact has been committed;
+- real launch remains locked;
+- `real_launch_executed=no`.
+
+Safety notes:
+- This checkpoint documents final closure inventory only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage25_final_closure_inventory_recorded=yes`.
+
+Verification markers:
+- `Stage 25.1 final closure inventory - 2026-05-30`
+- `stage25_final_closure_inventory_recorded=yes`
+- `stage25_closed_stage_inventory_recorded=yes`
+- `stage25_final_tag_inventory_recorded=yes`
+- `stage25_final_handoff_inventory_recorded=yes`
+- `stage25_remaining_before_launch_recorded=yes`
+- `stage25_final_launch_status_recorded=yes`

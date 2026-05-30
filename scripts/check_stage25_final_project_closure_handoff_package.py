@@ -61,6 +61,13 @@ DOC_MARKERS = [
     "stage25_depends_on_stage23_complete=yes",
     "stage25_depends_on_stage24_complete=yes",
     "stage25_real_launch_executed_no=yes",
+    "Stage 25.1 final closure inventory - 2026-05-30",
+    "stage25_final_closure_inventory_recorded=yes",
+    "stage25_closed_stage_inventory_recorded=yes",
+    "stage25_final_tag_inventory_recorded=yes",
+    "stage25_final_handoff_inventory_recorded=yes",
+    "stage25_remaining_before_launch_recorded=yes",
+    "stage25_final_launch_status_recorded=yes",
 ]
 
 STAGE14_MARKERS = [
