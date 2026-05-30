@@ -166,3 +166,88 @@ Verification markers:
 - `stage23_post_launch_smoke_phase_defined=yes`
 - `stage23_rollback_decision_phase_defined=yes`
 - `stage23_execution_precondition_defined=yes`
+
+## 3. Pre-launch confirmation package - 2026-05-30
+
+Goal: document the final pre-launch confirmation package without executing real production launch.
+
+Current git head before pre-launch confirmation package: `f2757a9`.
+
+Confirmation package status:
+- real launch remains blocked without separate explicit confirmation;
+- required phrase remains: `CONFIRM PRODUCTION LAUNCH`;
+- this checkpoint prepares confirmation package only;
+- this checkpoint keeps `real_launch_executed=no`.
+
+Required repository confirmation:
+- `develop` and `main` are synchronized;
+- working tree is clean;
+- final accepted Stage 22 tag is present;
+- latest Stage 23 documentation changes are committed and pushed;
+- no local smoke/debug/release artifacts are untracked;
+- no secret files are staged.
+
+Required CI and guard confirmation:
+- GitHub Actions are green for `develop`;
+- GitHub Actions are green for `main`;
+- Stage 23 guard passes;
+- Stage 22 guard passes;
+- Stage 21 guard passes;
+- Stage 20 guard passes;
+- Stage 19 guard passes;
+- Stage 18 guard passes;
+- Stage 17 guard passes;
+- Stage 16 guard passes;
+- Stage 15 guard passes;
+- Stage 14 guard passes;
+- text encoding guard passes;
+- source BOM guard passes.
+
+Required backup confirmation:
+- PostgreSQL backup readiness is confirmed if production data exists;
+- object storage backup readiness is confirmed if production documents exist;
+- backup storage is outside git;
+- backup timestamp is recorded outside repository documentation if needed;
+- previous known-good commit/tag is known.
+
+Required security confirmation:
+- production `.env` remains private and uncommitted;
+- production credentials are not printed;
+- logs do not contain token/password/private key values;
+- support messages contain only non-secret diagnostics;
+- secret rotation plan is known if exposure is suspected.
+
+Required operator confirmation:
+- admin login smoke path is known;
+- learner login smoke path is known;
+- document download smoke path is known;
+- public verification smoke path is known;
+- rollback decision points are known;
+- production launch owner/operator is identified outside repository documentation if needed.
+
+Final launch blocker:
+- this package does not authorize launch by itself;
+- production launch still requires separate explicit confirmation phrase: `CONFIRM PRODUCTION LAUNCH`;
+- destructive commands require separate explicit confirmation even after launch confirmation;
+- database migrations require separate approval if any appear.
+
+Safety notes:
+- This checkpoint documents pre-launch confirmation package only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage23_pre_launch_confirmation_package_recorded=yes`.
+
+Verification markers:
+- `Stage 23.2 pre launch confirmation package - 2026-05-30`
+- `stage23_pre_launch_confirmation_package_recorded=yes`
+- `stage23_repository_confirmation_defined=yes`
+- `stage23_ci_guard_confirmation_defined=yes`
+- `stage23_backup_confirmation_defined=yes`
+- `stage23_security_confirmation_defined=yes`
+- `stage23_operator_confirmation_defined=yes`
+- `stage23_final_launch_blocker_defined=yes`

@@ -63,6 +63,14 @@ DOC_MARKERS = [
     "stage23_post_launch_smoke_phase_defined=yes",
     "stage23_rollback_decision_phase_defined=yes",
     "stage23_execution_precondition_defined=yes",
+    "Stage 23.2 pre launch confirmation package - 2026-05-30",
+    "stage23_pre_launch_confirmation_package_recorded=yes",
+    "stage23_repository_confirmation_defined=yes",
+    "stage23_ci_guard_confirmation_defined=yes",
+    "stage23_backup_confirmation_defined=yes",
+    "stage23_security_confirmation_defined=yes",
+    "stage23_operator_confirmation_defined=yes",
+    "stage23_final_launch_blocker_defined=yes",
 ]
 
 STAGE14_MARKERS = [
