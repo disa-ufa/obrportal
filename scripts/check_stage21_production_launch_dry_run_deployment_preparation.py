@@ -61,6 +61,12 @@ DOC_MARKERS = [
     "stage21_post_launch_smoke_command_plan_defined=yes",
     "stage21_rollback_command_plan_defined=yes",
     "stage21_hard_execution_gate_defined=yes",
+    "Stage 21.3 final dry run acceptance - 2026-05-30",
+    "stage21_final_dry_run_accepted=yes",
+    "stage21_dry_run_health_plan_accepted=yes",
+    "stage21_deployment_command_plan_accepted=yes",
+    "stage21_real_launch_executed_no=yes",
+    "stage21_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [

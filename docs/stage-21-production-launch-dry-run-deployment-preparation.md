@@ -220,3 +220,72 @@ Verification markers:
 - `stage21_post_launch_smoke_command_plan_defined=yes`
 - `stage21_rollback_command_plan_defined=yes`
 - `stage21_hard_execution_gate_defined=yes`
+
+## 4. Final dry-run acceptance - 2026-05-30
+
+Goal: accept Stage 21 production launch dry-run and deployment execution preparation without executing real production launch.
+
+Current git head before final dry-run acceptance: `073c239`.
+
+Accepted Stage 21 scope:
+- Stage 21 baseline created;
+- dry-run guards and service health plan recorded;
+- guard sequence defined;
+- runtime checks defined;
+- service health plan defined;
+- dry-run safety boundaries defined;
+- dry-run acceptance criteria defined;
+- deployment execution command plan recorded;
+- pre-deploy command plan defined;
+- backup command plan defined;
+- update/restart command plan defined;
+- health-check command plan defined;
+- post-launch smoke command plan defined;
+- rollback command plan defined;
+- hard execution gate defined.
+
+Accepted dry-run state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is complete;
+- Stage 19 production security/secrets hardening is complete;
+- Stage 20 final release candidate/launch checklist is complete;
+- Stage 21 production launch dry-run/deployment preparation is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 21 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 21 tag;
+- working tree must be clean before final Stage 21 tag.
+
+Final dry-run rules:
+- real production launch was not executed;
+- production launch remains a separate explicit operational action;
+- no destructive command was executed;
+- no production `.env` was printed;
+- no backup artifact was committed;
+- no database migration was added or executed by this checkpoint;
+- no runtime code was changed by this checkpoint.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final dry-run acceptance only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage21_final_dry_run_accepted=yes`.
+
+Verification markers:
+- `Stage 21.3 final dry run acceptance - 2026-05-30`
+- `stage21_final_dry_run_accepted=yes`
+- `stage21_dry_run_health_plan_accepted=yes`
+- `stage21_deployment_command_plan_accepted=yes`
+- `stage21_real_launch_executed_no=yes`
+- `stage21_ready_for_final_tag=yes`
