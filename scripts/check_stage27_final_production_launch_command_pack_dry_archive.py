@@ -69,6 +69,16 @@ DOC_MARKERS = [
     "stage27_depends_on_stage25_complete=yes",
     "stage27_depends_on_stage26_complete=yes",
     "stage27_real_launch_executed_no=yes",
+    "Stage 27.1 command categories archive - 2026-05-30",
+    "stage27_command_categories_archive_recorded=yes",
+    "stage27_archive_boundary_recorded=yes",
+    "stage27_repository_command_category_recorded=yes",
+    "stage27_guard_command_category_recorded=yes",
+    "stage27_ci_review_command_category_recorded=yes",
+    "stage27_backup_command_category_recorded=yes",
+    "stage27_deployment_command_category_recorded=yes",
+    "stage27_health_smoke_command_category_recorded=yes",
+    "stage27_rollback_command_category_recorded=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]

@@ -99,3 +99,95 @@ Verification markers:
 - `stage27_depends_on_stage25_complete=yes`
 - `stage27_depends_on_stage26_complete=yes`
 - `stage27_real_launch_executed_no=yes`
+
+## 2. Command categories archive - 2026-05-30
+
+Goal: record final production launch command categories without executing any command.
+
+Current git head before command categories archive: `918b091`.
+
+Archive boundary:
+- production launch remains blocked without `CONFIRM PRODUCTION LAUNCH`;
+- this checkpoint records command categories only;
+- no deployment command is executed;
+- no destructive command is executed;
+- no migration command is executed;
+- no backup/restore command is executed;
+- no secret rotation command is executed;
+- `real_launch_executed=no`.
+
+Repository verification command category:
+- branch synchronization commands are documented as pre-launch checks;
+- working tree cleanliness commands are documented as pre-launch checks;
+- tag verification commands are documented as pre-launch checks;
+- log/history commands are documented as evidence checks.
+
+Local guard command category:
+- Stage 27 guard command is documented;
+- Stage 26 guard command is documented;
+- Stage 25 guard command is documented;
+- Stage 24 guard command is documented;
+- Stage 23 guard command is documented;
+- Stage 22 guard command is documented;
+- Stage 21 guard command is documented;
+- Stage 20 guard command is documented;
+- Stage 19 guard command is documented;
+- Stage 18 guard command is documented;
+- Stage 17 guard command is documented;
+- Stage 16 guard command is documented;
+- Stage 15 guard command is documented;
+- Stage 14 guard command is documented;
+- encoding and BOM guard commands are documented.
+
+CI review command category:
+- GitHub Actions review is documented as mandatory;
+- failed CI remains NO-GO;
+- pending CI remains NO-GO unless explicitly accepted;
+- documentation alone does not authorize launch.
+
+Backup readiness command category:
+- PostgreSQL backup readiness checks are documented;
+- object storage backup readiness checks are documented;
+- backup artifact storage outside git is documented;
+- restore path verification is documented.
+
+Deployment command category:
+- deployment commands are references only;
+- deployment commands remain blocked without explicit confirmation;
+- migrations require separate approval if any appear;
+- Docker volume deletion is forbidden unless separately approved.
+
+Health/smoke command category:
+- backend health checks are documented;
+- frontend health checks are documented;
+- database/Redis/MinIO checks are documented;
+- auth/admin/account/document/public verification smoke checks are documented.
+
+Rollback command category:
+- rollback command references are documented;
+- rollback criteria are documented;
+- previous known-good tag/commit requirement is documented;
+- rollback remains an operational action, not executed here.
+
+Safety notes:
+- This checkpoint documents command categories only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage27_command_categories_archive_recorded=yes`.
+
+Verification markers:
+- `Stage 27.1 command categories archive - 2026-05-30`
+- `stage27_command_categories_archive_recorded=yes`
+- `stage27_archive_boundary_recorded=yes`
+- `stage27_repository_command_category_recorded=yes`
+- `stage27_guard_command_category_recorded=yes`
+- `stage27_ci_review_command_category_recorded=yes`
+- `stage27_backup_command_category_recorded=yes`
+- `stage27_deployment_command_category_recorded=yes`
+- `stage27_health_smoke_command_category_recorded=yes`
+- `stage27_rollback_command_category_recorded=yes`
