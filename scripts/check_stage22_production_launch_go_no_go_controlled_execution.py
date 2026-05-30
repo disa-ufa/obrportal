@@ -66,6 +66,12 @@ DOC_MARKERS = [
     "stage22_data_readiness_defined=yes",
     "stage22_operator_readiness_defined=yes",
     "stage22_execution_lock_defined=yes",
+    "Stage 22.3 final go no go acceptance - 2026-05-30",
+    "stage22_final_go_no_go_accepted=yes",
+    "stage22_go_no_go_criteria_accepted=yes",
+    "stage22_controlled_execution_readiness_accepted=yes",
+    "stage22_real_launch_executed_no=yes",
+    "stage22_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [
