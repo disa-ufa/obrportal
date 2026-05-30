@@ -54,6 +54,11 @@ DOC_MARKERS = [
     "stage20_pre_launch_service_checks_defined=yes",
     "stage20_post_launch_smoke_checks_defined=yes",
     "stage20_rollback_readiness_defined=yes",
+    "Stage 20.3 final release candidate acceptance - 2026-05-30",
+    "stage20_final_release_candidate_accepted=yes",
+    "stage20_release_candidate_summary_accepted=yes",
+    "stage20_final_launch_checklist_accepted=yes",
+    "stage20_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [

@@ -234,3 +234,65 @@ Verification markers:
 - `stage20_pre_launch_service_checks_defined=yes`
 - `stage20_post_launch_smoke_checks_defined=yes`
 - `stage20_rollback_readiness_defined=yes`
+
+## 4. Final release candidate acceptance - 2026-05-30
+
+Goal: accept Stage 20 final release candidate and production launch checklist after release candidate summary and final launch checklist.
+
+Current git head before final release candidate acceptance: `04751ce`.
+
+Accepted Stage 20 scope:
+- Stage 20 baseline created;
+- release candidate summary recorded;
+- accepted stage chain recorded;
+- accepted final tags recorded;
+- final production launch checklist recorded;
+- pre-launch repository checks defined;
+- pre-launch guard checks defined;
+- pre-launch deployment checks defined;
+- pre-launch service checks defined;
+- post-launch smoke checks defined;
+- rollback readiness defined.
+
+Accepted final release candidate state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is complete;
+- Stage 19 production security/secrets hardening is complete;
+- Stage 20 final release candidate/launch checklist is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 20 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 20 tag;
+- working tree must be clean before final Stage 20 tag.
+
+Final release candidate rules:
+- no runtime code changes in this acceptance checkpoint;
+- no database migrations in this acceptance checkpoint;
+- no backend API contract changes in this acceptance checkpoint;
+- no authentication or RBAC changes in this acceptance checkpoint;
+- no destructive production action without explicit confirmation;
+- no real secret values in docs, logs, support messages or commits;
+- production launch remains a separate explicit operational action.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final release candidate acceptance only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage20_final_release_candidate_accepted=yes`.
+
+Verification markers:
+- `Stage 20.3 final release candidate acceptance - 2026-05-30`
+- `stage20_final_release_candidate_accepted=yes`
+- `stage20_release_candidate_summary_accepted=yes`
+- `stage20_final_launch_checklist_accepted=yes`
+- `stage20_ready_for_final_tag=yes`
