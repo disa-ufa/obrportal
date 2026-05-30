@@ -147,3 +147,90 @@ Verification markers:
 - `stage20_accepted_final_tags_recorded=yes`
 - `stage20_release_candidate_scope_recorded=yes`
 - `stage20_required_final_confirmations_recorded=yes`
+
+## 3. Final production launch checklist - 2026-05-30
+
+Goal: define the final production launch checklist for the release candidate.
+
+Current git head before final production launch checklist: `2b217f5`.
+
+Pre-launch repository checks:
+- working tree is clean;
+- `develop` and `main` are synchronized;
+- final accepted Stage 19 tag is present;
+- GitHub Actions are green for `develop` and `main`;
+- no untracked release/smoke/debug artifacts are present.
+
+Pre-launch guard checks:
+- Stage 20 guard passes;
+- Stage 19 guard passes;
+- Stage 18 guard passes;
+- Stage 17 guard passes;
+- Stage 16 guard passes;
+- Stage 15 guard passes;
+- Stage 14 guard passes;
+- text encoding guard passes;
+- source BOM guard passes.
+
+Pre-launch deployment checks:
+- production `.env` exists privately on the target host;
+- production `.env` is not committed and is not printed;
+- backup destination is available;
+- PostgreSQL backup is created before launch;
+- MinIO/object storage backup is created if production documents exist;
+- current production commit/tag is recorded before update.
+
+Pre-launch service checks:
+- backend service starts successfully;
+- frontend service starts successfully;
+- PostgreSQL readiness check passes;
+- Redis ping returns `PONG`;
+- MinIO health endpoint returns success;
+- reverse proxy / domain routing is verified if used.
+
+Post-launch smoke checks:
+- frontend home page opens;
+- catalog page opens;
+- course detail page opens;
+- admin login works;
+- learner login works;
+- account summary/courses/documents paths work;
+- admin dashboard opens;
+- admin users/organizations/courses/enrollments/documents pages open;
+- document download works for allowed users;
+- public document verification works;
+- forbidden/unauthorized paths return controlled safe responses.
+
+Launch acceptance rules:
+- launch is blocked if any required guard fails;
+- launch is blocked if real secrets are printed or committed;
+- launch is blocked if backup is missing when production data exists;
+- launch is blocked if document verification smoke fails;
+- launch is blocked if rollback path is not available.
+
+Rollback readiness:
+- previous known-good commit/tag is recorded;
+- database restore procedure is available;
+- object storage restore procedure is available if documents exist;
+- `.env` restore path is available if config changed;
+- smoke checklist must be rerun after rollback.
+
+Safety notes:
+- This checkpoint documents final launch checklist only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage20_final_launch_checklist_recorded=yes`.
+
+Verification markers:
+- `Stage 20.2 final production launch checklist - 2026-05-30`
+- `stage20_final_launch_checklist_recorded=yes`
+- `stage20_pre_launch_repo_checks_defined=yes`
+- `stage20_pre_launch_guard_checks_defined=yes`
+- `stage20_pre_launch_deployment_checks_defined=yes`
+- `stage20_pre_launch_service_checks_defined=yes`
+- `stage20_post_launch_smoke_checks_defined=yes`
+- `stage20_rollback_readiness_defined=yes`

@@ -46,6 +46,14 @@ DOC_MARKERS = [
     "stage20_accepted_final_tags_recorded=yes",
     "stage20_release_candidate_scope_recorded=yes",
     "stage20_required_final_confirmations_recorded=yes",
+    "Stage 20.2 final production launch checklist - 2026-05-30",
+    "stage20_final_launch_checklist_recorded=yes",
+    "stage20_pre_launch_repo_checks_defined=yes",
+    "stage20_pre_launch_guard_checks_defined=yes",
+    "stage20_pre_launch_deployment_checks_defined=yes",
+    "stage20_pre_launch_service_checks_defined=yes",
+    "stage20_post_launch_smoke_checks_defined=yes",
+    "stage20_rollback_readiness_defined=yes",
 ]
 
 STAGE14_MARKERS = [
