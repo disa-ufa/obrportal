@@ -71,3 +71,79 @@ Verification markers:
 - `stage20_depends_on_stage17_complete=yes`
 - `stage20_depends_on_stage18_complete=yes`
 - `stage20_depends_on_stage19_complete=yes`
+
+## 2. Release candidate summary - 2026-05-30
+
+Goal: record final release candidate scope before production launch checklist acceptance.
+
+Current git head before release candidate summary: `612ff7c`.
+
+Accepted release candidate chain:
+- Stage 14: documents/certificates/verification complete;
+- Stage 15: admin UX/operator workflow complete;
+- Stage 16: release readiness/regression complete;
+- Stage 17: production deployment readiness complete;
+- Stage 18: production runbook/operator handoff complete;
+- Stage 19: production security/secrets hardening complete;
+- Stage 20: final release candidate/launch checklist in progress.
+
+Accepted final tags:
+- `v0.1.0-stage14-documents-verification-complete`;
+- `v0.1.0-stage15-admin-ux-operator-workflow-complete`;
+- `v0.1.0-stage16-release-readiness-complete`;
+- `v0.1.0-stage17-production-deployment-readiness-complete`;
+- `v0.1.0-stage18-production-runbook-operator-handoff-complete`;
+- `v0.1.0-stage19-production-security-secrets-hardening-complete`.
+
+Release candidate includes:
+- document/certificate generation and verification acceptance;
+- admin/operator workflow acceptance;
+- full regression/readiness acceptance;
+- deployment readiness acceptance;
+- runbook/operator handoff acceptance;
+- security/secrets hardening acceptance;
+- final launch checklist baseline.
+
+Release candidate excludes:
+- unapproved runtime code changes;
+- unapproved database migrations;
+- unapproved RBAC changes;
+- production `.env` or real secret values;
+- destructive production actions without explicit confirmation.
+
+Required final launch confirmations:
+- working tree is clean;
+- `develop` and `main` are synchronized;
+- GitHub Actions are green;
+- Stage 20 guard passes;
+- Stage 19 guard passes;
+- Stage 18 guard passes;
+- Stage 17 guard passes;
+- Stage 16 guard passes;
+- Stage 15 guard passes;
+- Stage 14 guard passes;
+- text encoding guard passes;
+- source BOM guard passes.
+
+Known non-blocking warnings:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents release candidate summary only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage20_release_candidate_summary_recorded=yes`.
+
+Verification markers:
+- `Stage 20.1 release candidate summary - 2026-05-30`
+- `stage20_release_candidate_summary_recorded=yes`
+- `stage20_accepted_stage_chain_recorded=yes`
+- `stage20_accepted_final_tags_recorded=yes`
+- `stage20_release_candidate_scope_recorded=yes`
+- `stage20_required_final_confirmations_recorded=yes`

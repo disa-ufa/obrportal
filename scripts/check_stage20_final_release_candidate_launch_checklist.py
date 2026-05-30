@@ -40,6 +40,12 @@ DOC_MARKERS = [
     "stage20_depends_on_stage17_complete=yes",
     "stage20_depends_on_stage18_complete=yes",
     "stage20_depends_on_stage19_complete=yes",
+    "Stage 20.1 release candidate summary - 2026-05-30",
+    "stage20_release_candidate_summary_recorded=yes",
+    "stage20_accepted_stage_chain_recorded=yes",
+    "stage20_accepted_final_tags_recorded=yes",
+    "stage20_release_candidate_scope_recorded=yes",
+    "stage20_required_final_confirmations_recorded=yes",
 ]
 
 STAGE14_MARKERS = [
