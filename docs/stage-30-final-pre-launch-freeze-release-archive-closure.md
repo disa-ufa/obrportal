@@ -228,3 +228,94 @@ Verification markers:
 - `stage30_final_guard_registry_recorded=yes`
 - `stage30_final_no_go_registry_recorded=yes`
 - `stage30_launch_lock_registry_recorded=yes`
+
+## 3. Final pre-launch freeze acceptance and archive closure - 2026-05-30
+
+Goal: accept Stage 30 final pre-launch freeze and close the release archive without executing real production launch.
+
+Current git head before final freeze acceptance: `fa0d77e`.
+
+Accepted Stage 30 scope:
+- Stage 30 baseline created;
+- freeze/archive registry recorded;
+- freeze boundary recorded;
+- final freeze state recorded;
+- change-control rule recorded;
+- final accepted tag registry recorded;
+- final documentation archive registry recorded;
+- final guard registry recorded;
+- final NO-GO registry recorded;
+- launch lock registry recorded.
+
+Accepted final pre-launch state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is complete;
+- Stage 19 production security/secrets hardening is complete;
+- Stage 20 final release candidate/launch checklist is complete;
+- Stage 21 production launch dry-run/deployment preparation is complete;
+- Stage 22 production launch go/no-go controlled execution gate is complete;
+- Stage 23 controlled production launch execution preparation is complete;
+- Stage 24 production launch final evidence package is complete;
+- Stage 25 final project closure/handoff package is complete;
+- Stage 26 pre-production operational rehearsal is complete;
+- Stage 27 final production launch command pack dry archive is complete;
+- Stage 28 final release ledger/tag registry archive is complete;
+- Stage 29 final operator delivery bundle archive is complete;
+- Stage 30 final pre-launch freeze/release archive closure is accepted for tagging;
+- project state is `pre-launch ready`;
+- release archive state is `closed`;
+- runtime change state is `frozen`;
+- `develop` and `main` must be synchronized before final Stage 30 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 30 tag;
+- working tree must be clean before final Stage 30 tag.
+
+Final change-control state:
+- no new runtime changes after final Stage 30 tag without separate decision;
+- no database migrations after final Stage 30 tag without separate decision;
+- no backend API contract changes after final Stage 30 tag without separate decision;
+- no frontend workflow changes after final Stage 30 tag without separate decision;
+- no RBAC/auth changes after final Stage 30 tag without separate decision;
+- no deployment procedure changes after final Stage 30 tag without separate decision;
+- emergency changes require a new documented stage or hotfix record.
+
+Final production launch status:
+- real production launch was not executed;
+- production launch remains blocked without separate explicit confirmation;
+- required phrase remains: `CONFIRM PRODUCTION LAUNCH`;
+- pre-launch freeze does not authorize deployment;
+- release archive closure does not authorize deployment;
+- destructive commands require separate explicit confirmation;
+- production `.env` must not be printed;
+- backup artifacts must not be committed;
+- database migrations require separate approval if any appear;
+- production launch remains a separate operational action after this tag.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final pre-launch freeze acceptance only.
+- No command was executed against production.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage30_final_pre_launch_freeze_accepted=yes`.
+
+Verification markers:
+- `Stage 30.2 final pre launch freeze acceptance archive closure - 2026-05-30`
+- `stage30_final_pre_launch_freeze_accepted=yes`
+- `stage30_freeze_archive_registry_accepted=yes`
+- `stage30_release_archive_closed=yes`
+- `stage30_project_pre_launch_ready=yes`
+- `stage30_runtime_frozen=yes`
+- `stage30_real_launch_executed_no=yes`
+- `stage30_ready_for_final_tag=yes`

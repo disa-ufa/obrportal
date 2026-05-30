@@ -91,6 +91,14 @@ DOC_MARKERS = [
     "stage30_final_guard_registry_recorded=yes",
     "stage30_final_no_go_registry_recorded=yes",
     "stage30_launch_lock_registry_recorded=yes",
+    "Stage 30.2 final pre launch freeze acceptance archive closure - 2026-05-30",
+    "stage30_final_pre_launch_freeze_accepted=yes",
+    "stage30_freeze_archive_registry_accepted=yes",
+    "stage30_release_archive_closed=yes",
+    "stage30_project_pre_launch_ready=yes",
+    "stage30_runtime_frozen=yes",
+    "stage30_real_launch_executed_no=yes",
+    "stage30_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]
