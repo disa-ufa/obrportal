@@ -52,6 +52,15 @@ DOC_MARKERS = [
     "stage21_service_health_plan_defined=yes",
     "stage21_dry_run_safety_boundaries_defined=yes",
     "stage21_dry_run_acceptance_criteria_defined=yes",
+    "Stage 21.2 deployment execution command plan - 2026-05-30",
+    "stage21_deployment_execution_command_plan_recorded=yes",
+    "stage21_pre_deploy_command_plan_defined=yes",
+    "stage21_backup_command_plan_defined=yes",
+    "stage21_update_restart_command_plan_defined=yes",
+    "stage21_health_check_command_plan_defined=yes",
+    "stage21_post_launch_smoke_command_plan_defined=yes",
+    "stage21_rollback_command_plan_defined=yes",
+    "stage21_hard_execution_gate_defined=yes",
 ]
 
 STAGE14_MARKERS = [

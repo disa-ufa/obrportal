@@ -138,3 +138,85 @@ Verification markers:
 - `stage21_service_health_plan_defined=yes`
 - `stage21_dry_run_safety_boundaries_defined=yes`
 - `stage21_dry_run_acceptance_criteria_defined=yes`
+
+## 3. Deployment execution command plan - 2026-05-30
+
+Goal: document deployment execution command plan for a future explicit production launch without executing it now.
+
+Current git head before command plan: `8caa0aa`.
+
+Pre-deploy command plan:
+- confirm repository state with `git status --short`;
+- confirm current branch and remote tracking with `git branch -vv`;
+- confirm latest accepted tags with `git tag --list "v0.1.0-stage*"`;
+- confirm Docker services with `docker compose ps`;
+- confirm no local secret files are staged or committed.
+
+Backup command plan:
+- create PostgreSQL backup before production update;
+- create MinIO/object storage backup if production documents exist;
+- store backup artifacts outside git;
+- record backup timestamp and previous known-good commit/tag;
+- do not print database or object storage credentials.
+
+Update/restart command plan:
+- fetch latest repository state;
+- switch to the approved release tag or approved branch;
+- rebuild/recreate services only after backup confirmation;
+- run migrations only if separately approved;
+- restart services in controlled order;
+- do not delete Docker volumes during routine launch.
+
+Health-check command plan:
+- check backend service availability;
+- check frontend service availability;
+- check PostgreSQL readiness;
+- check Redis ping;
+- check MinIO health;
+- inspect logs only for non-secret diagnostics.
+
+Post-launch smoke command plan:
+- verify frontend home/catalog/course pages;
+- verify auth login paths;
+- verify admin dashboard and admin lists;
+- verify account/course/document paths;
+- verify document download for allowed users;
+- verify public document verification;
+- verify forbidden/unauthorized paths return safe responses.
+
+Rollback command plan:
+- stop rollout on failed health/smoke;
+- return to previous known-good commit/tag;
+- restore database backup if data changed;
+- restore object storage backup if documents changed;
+- restore private `.env` if config changed;
+- rerun health and smoke checks after rollback.
+
+Hard execution gate:
+- this command plan is documentation only;
+- real production launch requires a separate explicit confirmation;
+- destructive commands require a separate explicit confirmation;
+- production `.env` must not be printed;
+- production backup artifacts must not be committed.
+
+Safety notes:
+- This checkpoint documents deployment execution command plan only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage21_deployment_execution_command_plan_recorded=yes`.
+
+Verification markers:
+- `Stage 21.2 deployment execution command plan - 2026-05-30`
+- `stage21_deployment_execution_command_plan_recorded=yes`
+- `stage21_pre_deploy_command_plan_defined=yes`
+- `stage21_backup_command_plan_defined=yes`
+- `stage21_update_restart_command_plan_defined=yes`
+- `stage21_health_check_command_plan_defined=yes`
+- `stage21_post_launch_smoke_command_plan_defined=yes`
+- `stage21_rollback_command_plan_defined=yes`
+- `stage21_hard_execution_gate_defined=yes`
