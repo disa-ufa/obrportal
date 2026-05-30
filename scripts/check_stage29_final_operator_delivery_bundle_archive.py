@@ -77,6 +77,15 @@ DOC_MARKERS = [
     "stage29_depends_on_stage27_complete=yes",
     "stage29_depends_on_stage28_complete=yes",
     "stage29_real_launch_executed_no=yes",
+    "Stage 29.1 operator reading delivery registry - 2026-05-30",
+    "stage29_operator_reading_registry_recorded=yes",
+    "stage29_delivery_boundary_recorded=yes",
+    "stage29_operator_reading_order_recorded=yes",
+    "stage29_operator_control_point_tags_recorded=yes",
+    "stage29_operator_guard_registry_recorded=yes",
+    "stage29_operator_actions_review_registry_recorded=yes",
+    "stage29_operator_go_no_go_registry_recorded=yes",
+    "stage29_launch_lock_registry_recorded=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]
