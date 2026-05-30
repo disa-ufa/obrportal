@@ -286,3 +286,54 @@ Verification markers:
 - `stage18_diagnostic_guards_recorded=yes`
 - `stage18_release_handoff_rule_defined=yes`
 - `stage18_ready_for_final_acceptance=yes`
+
+## 5. Final runbook/operator handoff acceptance - 2026-05-30
+
+Goal: accept Stage 18 production runbook and operator handoff after runbook inventory, operator handoff notes and release artifact summary.
+
+Current git head before final acceptance: `476b72c`.
+
+Accepted Stage 18 scope:
+- Stage 18 baseline created;
+- production runbook inventory recorded;
+- pre-deploy checks defined;
+- backup-before-deploy procedure defined;
+- update procedure defined;
+- post-deploy smoke procedure defined;
+- rollback procedure defined;
+- operator/admin handoff notes recorded;
+- support escalation path defined;
+- release artifact summary recorded.
+
+Accepted handoff state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 18 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 18 tag;
+- working tree must be clean before final Stage 18 tag.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final runbook/operator handoff acceptance only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage18_production_runbook_operator_handoff_accepted=yes`.
+
+Verification markers:
+- `Stage 18.4 final runbook operator handoff acceptance - 2026-05-30`
+- `stage18_production_runbook_operator_handoff_accepted=yes`
+- `stage18_runbook_inventory_accepted=yes`
+- `stage18_operator_handoff_accepted=yes`
+- `stage18_release_artifact_summary_accepted=yes`
+- `stage18_ready_for_final_tag=yes`

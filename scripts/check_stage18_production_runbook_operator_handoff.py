@@ -51,6 +51,12 @@ DOC_MARKERS = [
     "stage18_diagnostic_guards_recorded=yes",
     "stage18_release_handoff_rule_defined=yes",
     "stage18_ready_for_final_acceptance=yes",
+    "Stage 18.4 final runbook operator handoff acceptance - 2026-05-30",
+    "stage18_production_runbook_operator_handoff_accepted=yes",
+    "stage18_runbook_inventory_accepted=yes",
+    "stage18_operator_handoff_accepted=yes",
+    "stage18_release_artifact_summary_accepted=yes",
+    "stage18_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [
