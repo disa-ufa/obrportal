@@ -89,3 +89,81 @@ Verification markers:
 - `stage24_depends_on_stage22_complete=yes`
 - `stage24_depends_on_stage23_complete=yes`
 - `stage24_real_launch_executed_no=yes`
+
+## 2. Final stage/tag evidence inventory - 2026-05-30
+
+Goal: record final stage and tag evidence inventory for operational archive.
+
+Current git head before final stage/tag evidence inventory: `ffae717`.
+
+Accepted stage evidence:
+- Stage 14 documents/certificates/verification accepted;
+- Stage 15 admin UX/operator workflow accepted;
+- Stage 16 release readiness/regression accepted;
+- Stage 17 production deployment readiness accepted;
+- Stage 18 production runbook/operator handoff accepted;
+- Stage 19 production security/secrets hardening accepted;
+- Stage 20 final release candidate/launch checklist accepted;
+- Stage 21 production launch dry-run/deployment preparation accepted;
+- Stage 22 production launch go/no-go controlled execution accepted;
+- Stage 23 controlled production launch execution preparation accepted;
+- Stage 24 final evidence package in progress.
+
+Expected accepted tags:
+- `v0.1.0-stage16-release-readiness-complete`;
+- `v0.1.0-stage17-production-deployment-readiness-complete`;
+- `v0.1.0-stage18-production-runbook-operator-handoff-complete`;
+- `v0.1.0-stage19-production-security-secrets-hardening-complete`;
+- `v0.1.0-stage20-final-release-candidate-launch-checklist-complete`;
+- `v0.1.0-stage21-production-launch-dry-run-complete`;
+- `v0.1.0-stage22-production-launch-go-no-go-complete`;
+- `v0.1.0-stage23-controlled-launch-preparation-complete`.
+
+Final branch evidence requirements:
+- `develop` and `main` must be synchronized before final Stage 24 tag;
+- `origin/develop` and `origin/main` must point to the same accepted commit;
+- working tree must be clean before final Stage 24 tag;
+- GitHub Actions must be reviewed for the final Stage 24 acceptance commit.
+
+Final guard evidence requirements:
+- Stage 24 guard passes;
+- Stage 23 guard passes;
+- Stage 22 guard passes;
+- Stage 21 guard passes;
+- Stage 20 guard passes;
+- Stage 19 guard passes;
+- Stage 18 guard passes;
+- Stage 17 guard passes;
+- Stage 16 guard passes;
+- Stage 15 guard passes;
+- Stage 14 guard passes;
+- text encoding guard passes;
+- source BOM guard passes.
+
+Production launch status evidence:
+- production launch has not been executed;
+- real launch remains blocked without `CONFIRM PRODUCTION LAUNCH`;
+- no destructive commands were executed;
+- no production `.env` was printed;
+- no production backup artifact was committed;
+- `real_launch_executed=no`.
+
+Safety notes:
+- This checkpoint documents final stage/tag evidence inventory only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage24_stage_tag_evidence_inventory_recorded=yes`.
+
+Verification markers:
+- `Stage 24.1 final stage tag evidence inventory - 2026-05-30`
+- `stage24_stage_tag_evidence_inventory_recorded=yes`
+- `stage24_accepted_stage_evidence_recorded=yes`
+- `stage24_expected_tags_recorded=yes`
+- `stage24_branch_evidence_requirements_recorded=yes`
+- `stage24_guard_evidence_requirements_recorded=yes`
+- `stage24_production_launch_status_evidence_recorded=yes`

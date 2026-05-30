@@ -57,6 +57,13 @@ DOC_MARKERS = [
     "stage24_depends_on_stage22_complete=yes",
     "stage24_depends_on_stage23_complete=yes",
     "stage24_real_launch_executed_no=yes",
+    "Stage 24.1 final stage tag evidence inventory - 2026-05-30",
+    "stage24_stage_tag_evidence_inventory_recorded=yes",
+    "stage24_accepted_stage_evidence_recorded=yes",
+    "stage24_expected_tags_recorded=yes",
+    "stage24_branch_evidence_requirements_recorded=yes",
+    "stage24_guard_evidence_requirements_recorded=yes",
+    "stage24_production_launch_status_evidence_recorded=yes",
 ]
 
 STAGE14_MARKERS = [
