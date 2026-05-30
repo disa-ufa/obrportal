@@ -50,6 +50,14 @@ DOC_MARKERS = [
     "stage19_admin_credentials_policy_defined=yes",
     "stage19_error_logging_policy_defined=yes",
     "stage19_public_access_policy_defined=yes",
+    "Stage 19.3 infrastructure security checklist - 2026-05-30",
+    "stage19_infrastructure_security_checklist_recorded=yes",
+    "stage19_postgres_credentials_policy_defined=yes",
+    "stage19_minio_credentials_policy_defined=yes",
+    "stage19_public_ports_policy_defined=yes",
+    "stage19_docker_env_policy_defined=yes",
+    "stage19_backup_artifact_security_defined=yes",
+    "stage19_operational_access_policy_defined=yes",
 ]
 
 STAGE14_MARKERS = [

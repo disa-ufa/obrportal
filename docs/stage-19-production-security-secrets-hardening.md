@@ -195,3 +195,71 @@ Verification markers:
 - `stage19_admin_credentials_policy_defined=yes`
 - `stage19_error_logging_policy_defined=yes`
 - `stage19_public_access_policy_defined=yes`
+
+## 4. Infrastructure security checklist - 2026-05-30
+
+Goal: define infrastructure-level security checks before production operation without printing secret values.
+
+Current git head before infrastructure security checklist: `0839194`.
+
+Required infrastructure security checks:
+1. PostgreSQL credentials:
+   - production database username/password must be private;
+   - database credentials must not be committed or printed;
+   - database access must be limited to intended services/network;
+   - backups must not contain exposed credentials in filenames or logs.
+
+2. MinIO/object storage credentials:
+   - production MinIO root/access credentials must be private;
+   - MinIO credentials must not be committed or printed;
+   - document buckets must not be deleted during routine deployment;
+   - object storage backup must be handled as sensitive operational data.
+
+3. Public port exposure:
+   - publicly exposed ports must be intentional and documented;
+   - backend/frontend exposure must match deployment architecture;
+   - database, Redis and MinIO ports must not be publicly exposed unless explicitly protected and justified;
+   - firewall/reverse-proxy rules must be reviewed before production operation.
+
+4. Docker and container configuration:
+   - Docker Compose must not contain real production secrets;
+   - environment values in compose files must use variable references/placeholders;
+   - production `.env` must remain private on the server;
+   - container logs must not expose secret values.
+
+5. Backup and artifact security:
+   - PostgreSQL dumps must be stored outside git;
+   - MinIO/object storage backups must be stored outside git;
+   - backup archives must be access-controlled;
+   - local smoke/debug logs must not be committed unless sanitized and intentionally documented.
+
+6. Operational access:
+   - server SSH access must be limited to authorized administrators;
+   - deployment credentials must be stored outside the repository;
+   - support/debug handoff must not include secrets;
+   - incident response must include immediate secret rotation if exposure is suspected.
+
+Accepted decision:
+- Stage 19.3 documents infrastructure security policy only;
+- real production credentials and network rules must be reviewed privately on the target server;
+- no real secrets are recorded in repository documentation.
+
+Safety notes:
+- This checkpoint documents infrastructure security only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage19_infrastructure_security_checklist_recorded=yes`.
+
+Verification markers:
+- `Stage 19.3 infrastructure security checklist - 2026-05-30`
+- `stage19_infrastructure_security_checklist_recorded=yes`
+- `stage19_postgres_credentials_policy_defined=yes`
+- `stage19_minio_credentials_policy_defined=yes`
+- `stage19_public_ports_policy_defined=yes`
+- `stage19_docker_env_policy_defined=yes`
+- `stage19_backup_artifact_security_defined=yes`
+- `stage19_operational_access_policy_defined=yes`
