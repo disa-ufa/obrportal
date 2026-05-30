@@ -73,6 +73,14 @@ DOC_MARKERS = [
     "stage28_depends_on_stage26_complete=yes",
     "stage28_depends_on_stage27_complete=yes",
     "stage28_real_launch_executed_no=yes",
+    "Stage 28.1 release ledger registry - 2026-05-30",
+    "stage28_release_ledger_registry_recorded=yes",
+    "stage28_ledger_boundary_recorded=yes",
+    "stage28_accepted_stage_registry_recorded=yes",
+    "stage28_final_tag_registry_recorded=yes",
+    "stage28_document_registry_recorded=yes",
+    "stage28_guard_registry_recorded=yes",
+    "stage28_launch_lock_registry_recorded=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]
