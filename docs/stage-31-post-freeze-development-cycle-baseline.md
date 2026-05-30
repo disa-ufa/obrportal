@@ -130,3 +130,52 @@ Verification markers:
 - `stage31_health_uses_settings_app_version=yes`
 - `stage31_no_stage6_runtime_metadata=yes`
 - `stage31_no_production_redeploy=yes`
+
+## 3. Local runtime metadata smoke - 2026-05-30
+
+Goal: confirm that Stage 31.1 release metadata cleanup works in local runtime after rebuild.
+
+Current git head before smoke evidence: `bbd4050`.
+
+Executed local runtime smoke:
+- `docker compose up -d --build backend frontend`;
+- `curl.exe -i http://127.0.0.1:8000/health`;
+- `curl.exe -i http://127.0.0.1:8000/api/v1/ready`;
+- `curl.exe -I http://127.0.0.1:5173/`;
+- `docker compose ps`;
+- `git status --short`;
+- `git log --oneline -7`.
+
+Observed local runtime result:
+- backend `/health` returned `200 OK`;
+- backend `/health` returned `version=0.1.0-stage31-dev`;
+- backend `/api/v1/ready` returned `database=ok`, `redis=ok`, `storage=ok`;
+- frontend root returned `200 OK`;
+- backend container was running;
+- frontend container was running;
+- postgres container was healthy;
+- redis container was healthy;
+- minio container was healthy;
+- active development head was `bbd4050`;
+- production branch `main` remained on Stage 30 frozen release `f8bdba6`.
+
+Safety boundary:
+- this was a local smoke check only;
+- no production redeploy was performed;
+- no `main` update was performed;
+- no database migrations were added;
+- no destructive commands were executed;
+- production server remains on `v0.1.0-stage30-pre-launch-freeze-complete`.
+
+Known non-blocking item:
+- Docker emitted a transient `error reading preface from client ... file has already been close` message before successful build;
+- build and containers completed successfully, so this is recorded as non-blocking.
+
+Verification markers:
+- `Stage 31.2 local runtime metadata smoke - 2026-05-30`
+- `stage31_local_runtime_metadata_smoke=yes`
+- `stage31_local_health_version_stage31_dev=yes`
+- `stage31_local_ready_dependencies_ok=yes`
+- `stage31_local_frontend_200=yes`
+- `stage31_no_production_redeploy=yes`
+- `stage31_main_remains_stage30=yes`
