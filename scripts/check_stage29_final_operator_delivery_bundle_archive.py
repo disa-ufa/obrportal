@@ -94,6 +94,12 @@ DOC_MARKERS = [
     "stage29_rollback_registry_recorded=yes",
     "stage29_final_no_go_registry_recorded=yes",
     "stage29_operator_acceptance_evidence_recorded=yes",
+    "Stage 29.3 final operator delivery acceptance - 2026-05-30",
+    "stage29_final_operator_delivery_accepted=yes",
+    "stage29_operator_delivery_registry_accepted=yes",
+    "stage29_operator_handoff_smoke_rollback_registry_accepted=yes",
+    "stage29_real_launch_executed_no=yes",
+    "stage29_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]
