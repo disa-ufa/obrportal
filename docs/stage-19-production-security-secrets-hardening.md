@@ -127,3 +127,71 @@ Verification markers:
 - `stage19_env_example_placeholders_only=yes`
 - `stage19_no_secret_values_printed=yes`
 - `stage19_git_hygiene_rules_defined=yes`
+
+## 3. Application security checklist - 2026-05-30
+
+Goal: define application-level security checks before production operation without printing secret values.
+
+Current git head before application security checklist: `cd057a8`.
+
+Required application security checks:
+1. `SECRET_KEY` / signing secret:
+   - production `SECRET_KEY` must be strong, private and unique;
+   - production `SECRET_KEY` must not use local/test/default values;
+   - `SECRET_KEY` must be supplied through private deployment configuration;
+   - `SECRET_KEY` must never be committed, printed or pasted into support messages.
+
+2. JWT/token configuration:
+   - access token expiration must be reviewed before production use;
+   - token validation must reject expired/invalid tokens;
+   - token payload must not include unnecessary sensitive data;
+   - authentication errors must be controlled and must not expose stack traces.
+
+3. CORS and URL configuration:
+   - production frontend URL must be explicit;
+   - production backend/API URL must be explicit;
+   - CORS origins must be limited to intended production domains;
+   - wildcard CORS must not be used for production unless explicitly justified and documented.
+
+4. Admin credentials policy:
+   - production admin account must not use default/test credentials;
+   - admin password must be strong and stored only as a hash;
+   - initial admin credential delivery must happen outside git/chat/logs;
+   - disabled/test users must not retain production admin access.
+
+5. Error and logging policy:
+   - raw exceptions must not be displayed to operators or public users;
+   - user-facing errors must stay friendly and safe;
+   - logs must not include passwords, tokens, private keys or `.env` contents;
+   - support/debug messages must include only non-secret context: endpoint, timestamp, status code and role.
+
+6. Public access policy:
+   - public pages must remain intentionally public;
+   - document verification must expose only intended verification data;
+   - account/admin/document download paths must require the correct authorization;
+   - forbidden/unauthorized responses must not leak protected data.
+
+Accepted decision:
+- Stage 19.2 documents the application security checklist only;
+- real production values must be reviewed privately during deployment;
+- no real secrets are recorded in repository documentation.
+
+Safety notes:
+- This checkpoint documents application security only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- `stage19_application_security_checklist_recorded=yes`.
+
+Verification markers:
+- `Stage 19.2 application security checklist - 2026-05-30`
+- `stage19_application_security_checklist_recorded=yes`
+- `stage19_secret_key_policy_defined=yes`
+- `stage19_jwt_token_policy_defined=yes`
+- `stage19_cors_url_policy_defined=yes`
+- `stage19_admin_credentials_policy_defined=yes`
+- `stage19_error_logging_policy_defined=yes`
+- `stage19_public_access_policy_defined=yes`

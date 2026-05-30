@@ -42,6 +42,14 @@ DOC_MARKERS = [
     "stage19_env_example_placeholders_only=yes",
     "stage19_no_secret_values_printed=yes",
     "stage19_git_hygiene_rules_defined=yes",
+    "Stage 19.2 application security checklist - 2026-05-30",
+    "stage19_application_security_checklist_recorded=yes",
+    "stage19_secret_key_policy_defined=yes",
+    "stage19_jwt_token_policy_defined=yes",
+    "stage19_cors_url_policy_defined=yes",
+    "stage19_admin_credentials_policy_defined=yes",
+    "stage19_error_logging_policy_defined=yes",
+    "stage19_public_access_policy_defined=yes",
 ]
 
 STAGE14_MARKERS = [
