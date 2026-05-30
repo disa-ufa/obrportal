@@ -68,6 +68,13 @@ DOC_MARKERS = [
     "stage25_final_handoff_inventory_recorded=yes",
     "stage25_remaining_before_launch_recorded=yes",
     "stage25_final_launch_status_recorded=yes",
+    "Stage 25.2 final handoff package summary - 2026-05-30",
+    "stage25_final_handoff_package_summary_recorded=yes",
+    "stage25_handoff_package_contents_recorded=yes",
+    "stage25_operator_admin_handoff_summary_recorded=yes",
+    "stage25_technical_handoff_summary_recorded=yes",
+    "stage25_launch_readiness_summary_recorded=yes",
+    "stage25_final_handoff_status_recorded=yes",
 ]
 
 STAGE14_MARKERS = [
