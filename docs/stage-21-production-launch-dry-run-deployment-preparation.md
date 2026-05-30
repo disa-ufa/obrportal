@@ -74,3 +74,67 @@ Verification markers:
 - `stage21_depends_on_stage19_complete=yes`
 - `stage21_depends_on_stage20_complete=yes`
 - `stage21_no_real_production_launch_without_confirmation=yes`
+
+## 2. Dry-run guards and service health plan - 2026-05-30
+
+Goal: define the safe dry-run guard and service health plan before real production launch.
+
+Current git head before dry-run plan: `228d96b`.
+
+Dry-run guard sequence:
+- Stage 21 guard passes;
+- Stage 20 guard passes;
+- Stage 19 guard passes;
+- Stage 18 guard passes;
+- Stage 17 guard passes;
+- Stage 16 guard passes;
+- Stage 15 guard passes;
+- Stage 14 guard passes;
+- text encoding guard passes;
+- source BOM guard passes.
+
+Dry-run runtime checks:
+- backend pytest can be run locally or in container;
+- frontend build can be run locally or in container;
+- Docker Compose services can be listed with `docker compose ps`;
+- backend container health/logs can be inspected without printing secrets;
+- frontend container health/logs can be inspected without printing secrets;
+- PostgreSQL readiness can be checked without printing credentials;
+- Redis ping can be checked without printing credentials;
+- MinIO health can be checked without printing credentials.
+
+Dry-run safety boundaries:
+- do not run destructive database commands;
+- do not run production migration commands unless separately approved;
+- do not delete Docker volumes;
+- do not print `.env`;
+- do not commit smoke/debug logs unless sanitized;
+- do not execute real production launch.
+
+Dry-run acceptance criteria:
+- all guards pass;
+- working tree is clean after dry-run documentation changes are committed;
+- no secrets are printed;
+- no production data is modified;
+- no destructive action is executed;
+- service health plan is documented and ready for real launch confirmation.
+
+Safety notes:
+- This checkpoint documents dry-run guards and service health plan only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage21_dry_run_guards_service_health_plan_recorded=yes`.
+
+Verification markers:
+- `Stage 21.1 dry run guards service health plan - 2026-05-30`
+- `stage21_dry_run_guards_service_health_plan_recorded=yes`
+- `stage21_guard_sequence_defined=yes`
+- `stage21_runtime_checks_defined=yes`
+- `stage21_service_health_plan_defined=yes`
+- `stage21_dry_run_safety_boundaries_defined=yes`
+- `stage21_dry_run_acceptance_criteria_defined=yes`

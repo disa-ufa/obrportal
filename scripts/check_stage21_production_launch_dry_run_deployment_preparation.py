@@ -45,6 +45,13 @@ DOC_MARKERS = [
     "stage21_depends_on_stage19_complete=yes",
     "stage21_depends_on_stage20_complete=yes",
     "stage21_no_real_production_launch_without_confirmation=yes",
+    "Stage 21.1 dry run guards service health plan - 2026-05-30",
+    "stage21_dry_run_guards_service_health_plan_recorded=yes",
+    "stage21_guard_sequence_defined=yes",
+    "stage21_runtime_checks_defined=yes",
+    "stage21_service_health_plan_defined=yes",
+    "stage21_dry_run_safety_boundaries_defined=yes",
+    "stage21_dry_run_acceptance_criteria_defined=yes",
 ]
 
 STAGE14_MARKERS = [
