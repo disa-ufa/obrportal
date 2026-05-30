@@ -64,6 +64,15 @@ DOC_MARKERS = [
     "stage24_branch_evidence_requirements_recorded=yes",
     "stage24_guard_evidence_requirements_recorded=yes",
     "stage24_production_launch_status_evidence_recorded=yes",
+    "Stage 24.2 operational archive handoff summary - 2026-05-30",
+    "stage24_operational_archive_handoff_recorded=yes",
+    "stage24_operational_archive_contents_recorded=yes",
+    "stage24_handoff_references_recorded=yes",
+    "stage24_backup_rollback_archive_recorded=yes",
+    "stage24_smoke_verification_archive_recorded=yes",
+    "stage24_security_archive_recorded=yes",
+    "stage24_known_warnings_recorded=yes",
+    "stage24_launch_lock_recorded=yes",
 ]
 
 STAGE14_MARKERS = [

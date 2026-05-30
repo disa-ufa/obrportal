@@ -167,3 +167,88 @@ Verification markers:
 - `stage24_branch_evidence_requirements_recorded=yes`
 - `stage24_guard_evidence_requirements_recorded=yes`
 - `stage24_production_launch_status_evidence_recorded=yes`
+
+## 3. Operational archive and handoff summary - 2026-05-30
+
+Goal: record operational archive and handoff summary for the final evidence package.
+
+Current git head before operational archive summary: `eae3200`.
+
+Operational archive contents:
+- Stage 14 document/certificate verification evidence;
+- Stage 15 admin UX/operator workflow evidence;
+- Stage 16 release readiness/regression evidence;
+- Stage 17 production deployment readiness evidence;
+- Stage 18 production runbook/operator handoff evidence;
+- Stage 19 production security/secrets hardening evidence;
+- Stage 20 final release candidate/launch checklist evidence;
+- Stage 21 production launch dry-run evidence;
+- Stage 22 production launch go/no-go evidence;
+- Stage 23 controlled launch preparation evidence;
+- Stage 24 final evidence package evidence.
+
+Handoff references:
+- deployment readiness documentation is available;
+- production runbook/operator handoff documentation is available;
+- security/secrets hardening documentation is available;
+- go/no-go and launch lock documentation is available;
+- controlled launch preparation documentation is available;
+- final evidence inventory documentation is available.
+
+Backup and rollback archive:
+- backup readiness requirements are documented;
+- rollback readiness requirements are documented;
+- previous known-good commit/tag requirements are documented;
+- database restore expectations are documented;
+- object storage restore expectations are documented if production documents exist;
+- backup artifacts must remain outside git.
+
+Smoke and verification archive:
+- public page smoke expectations are documented;
+- auth smoke expectations are documented;
+- admin/operator smoke expectations are documented;
+- account/course/document smoke expectations are documented;
+- public document verification smoke expectations are documented;
+- forbidden/unauthorized safe response expectations are documented.
+
+Security archive:
+- `.env` privacy requirement is documented;
+- real secrets must not be printed;
+- backup artifacts must not be committed;
+- logs must not include token/password/private key values;
+- suspected exposure requires secret rotation;
+- real production launch requires explicit confirmation.
+
+Known non-blocking warnings:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Launch lock:
+- production launch has not been executed;
+- real launch remains blocked without `CONFIRM PRODUCTION LAUNCH`;
+- destructive commands require separate explicit confirmation;
+- database migrations require separate approval if any appear;
+- `real_launch_executed=no`.
+
+Safety notes:
+- This checkpoint documents operational archive and handoff summary only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage24_operational_archive_handoff_recorded=yes`.
+
+Verification markers:
+- `Stage 24.2 operational archive handoff summary - 2026-05-30`
+- `stage24_operational_archive_handoff_recorded=yes`
+- `stage24_operational_archive_contents_recorded=yes`
+- `stage24_handoff_references_recorded=yes`
+- `stage24_backup_rollback_archive_recorded=yes`
+- `stage24_smoke_verification_archive_recorded=yes`
+- `stage24_security_archive_recorded=yes`
+- `stage24_known_warnings_recorded=yes`
+- `stage24_launch_lock_recorded=yes`
