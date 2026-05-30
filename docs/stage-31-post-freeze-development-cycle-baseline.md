@@ -179,3 +179,63 @@ Verification markers:
 - `stage31_local_frontend_200=yes`
 - `stage31_no_production_redeploy=yes`
 - `stage31_main_remains_stage30=yes`
+
+## 4. Final Stage 31 development cycle acceptance - 2026-05-30
+
+Goal: accept Stage 31 as the first post-freeze development cycle in `develop` without promoting it to `main` or production.
+
+Current git head before final Stage 31 acceptance: `272e777`.
+
+Accepted Stage 31 scope:
+- post-freeze development cycle baseline recorded;
+- production protection boundary recorded;
+- Stage 30 production/frozen checkpoint remains documented;
+- release metadata cleanup implemented in `develop`;
+- backend application version is configurable through `APP_VERSION`;
+- backend `FastAPI(version=...)` uses `settings.app_version`;
+- backend `/health` returns `settings.app_version`;
+- frontend package metadata advanced to `0.1.0-stage31-dev`;
+- local runtime smoke confirmed `/health` version `0.1.0-stage31-dev`;
+- local readiness smoke confirmed `database=ok`, `redis=ok`, `storage=ok`;
+- local frontend smoke confirmed `200 OK`.
+
+Branch state:
+- `develop` contains Stage 31 changes;
+- `main` remains on Stage 30 frozen release;
+- production server remains on `v0.1.0-stage30-pre-launch-freeze-complete`;
+- no production redeploy was performed by Stage 31;
+- no database migrations were introduced;
+- no destructive commands were required.
+
+Acceptance checks:
+- Stage 31.2 local runtime metadata smoke guard passed;
+- Stage 31.1 release metadata cleanup guard passed;
+- Stage 31 baseline guard passed;
+- Stage 30 final pre-launch freeze guard passed;
+- text encoding guard passed;
+- source BOM guard passed;
+- backend pytest passed previously with `214 passed, 4 warnings`;
+- frontend build passed previously with non-blocking chunk-size warning.
+
+Known non-blocking items:
+- frontend Vite chunk-size warning remains non-blocking;
+- Python dependency deprecation warnings remain non-blocking;
+- production `/health` still shows Stage 30 server metadata until a future accepted redeploy;
+- production remains intentionally behind `develop`.
+
+Final Stage 31 decision:
+- Stage 31 is accepted in `develop`;
+- Stage 31 is not promoted to `main`;
+- Stage 31 is not deployed to production;
+- future work may continue from `develop`;
+- production release requires a separate release decision.
+
+Verification markers:
+- `Stage 31.3 final development cycle acceptance - 2026-05-30`
+- `stage31_final_development_cycle_accepted=yes`
+- `stage31_release_metadata_cleanup_accepted=yes`
+- `stage31_local_runtime_smoke_accepted=yes`
+- `stage31_develop_contains_stage31=yes`
+- `stage31_main_remains_stage30=yes`
+- `stage31_no_production_redeploy=yes`
+- `stage31_ready_for_next_development_stage=yes`
