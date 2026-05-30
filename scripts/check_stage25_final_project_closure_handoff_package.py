@@ -75,6 +75,12 @@ DOC_MARKERS = [
     "stage25_technical_handoff_summary_recorded=yes",
     "stage25_launch_readiness_summary_recorded=yes",
     "stage25_final_handoff_status_recorded=yes",
+    "Stage 25.3 final project closure acceptance - 2026-05-30",
+    "stage25_final_project_closure_accepted=yes",
+    "stage25_final_closure_inventory_accepted=yes",
+    "stage25_final_handoff_package_summary_accepted=yes",
+    "stage25_real_launch_executed_no=yes",
+    "stage25_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = [

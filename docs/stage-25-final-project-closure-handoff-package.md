@@ -242,3 +242,75 @@ Verification markers:
 - `stage25_technical_handoff_summary_recorded=yes`
 - `stage25_launch_readiness_summary_recorded=yes`
 - `stage25_final_handoff_status_recorded=yes`
+
+## 4. Final project closure acceptance - 2026-05-30
+
+Goal: accept Stage 25 final project closure and handoff package without executing real production launch.
+
+Current git head before final project closure acceptance: `b7a0615`.
+
+Accepted Stage 25 scope:
+- Stage 25 baseline created;
+- final closure inventory recorded;
+- closed stage inventory recorded;
+- final tag inventory recorded;
+- final handoff inventory recorded;
+- remaining before real production launch recorded;
+- final launch status recorded;
+- final handoff package summary recorded;
+- handoff package contents recorded;
+- operator/admin handoff summary recorded;
+- technical handoff summary recorded;
+- launch readiness summary recorded;
+- final handoff status recorded.
+
+Accepted final project state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is complete;
+- Stage 19 production security/secrets hardening is complete;
+- Stage 20 final release candidate/launch checklist is complete;
+- Stage 21 production launch dry-run/deployment preparation is complete;
+- Stage 22 production launch go/no-go controlled execution gate is complete;
+- Stage 23 controlled production launch execution preparation is complete;
+- Stage 24 production launch final evidence package is complete;
+- Stage 25 final project closure/handoff package is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 25 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 25 tag;
+- working tree must be clean before final Stage 25 tag.
+
+Final production launch status:
+- real production launch was not executed;
+- production launch remains blocked without separate explicit confirmation;
+- required phrase remains: `CONFIRM PRODUCTION LAUNCH`;
+- destructive commands require separate explicit confirmation;
+- production `.env` must not be printed;
+- backup artifacts must not be committed;
+- database migrations require separate approval if any appear;
+- production launch remains a separate operational action after this tag.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final project closure acceptance only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage25_final_project_closure_accepted=yes`.
+
+Verification markers:
+- `Stage 25.3 final project closure acceptance - 2026-05-30`
+- `stage25_final_project_closure_accepted=yes`
+- `stage25_final_closure_inventory_accepted=yes`
+- `stage25_final_handoff_package_summary_accepted=yes`
+- `stage25_real_launch_executed_no=yes`
+- `stage25_ready_for_final_tag=yes`
