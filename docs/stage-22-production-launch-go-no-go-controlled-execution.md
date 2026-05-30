@@ -165,3 +165,87 @@ Verification markers:
 - `stage22_rollback_gate_defined=yes`
 - `stage22_secrets_privacy_gate_defined=yes`
 - `stage22_explicit_confirmation_gate_defined=yes`
+
+## 3. Controlled execution readiness checklist - 2026-05-30
+
+Goal: define controlled execution readiness checklist before any explicit production launch confirmation.
+
+Current git head before controlled execution readiness checklist: `3bc7b26`.
+
+Repository readiness:
+- `develop` and `main` are synchronized;
+- working tree is clean;
+- latest Stage 22 documentation changes are committed and pushed;
+- accepted Stage 21 tag is present;
+- no local smoke/debug/release artifacts are untracked;
+- no secret files are staged.
+
+CI readiness:
+- GitHub Actions must be green for `develop`;
+- GitHub Actions must be green for `main`;
+- failed or pending checks are treated as NO-GO;
+- final launch commit/tag must be traceable in git history.
+
+Local guard readiness:
+- Stage 22 guard passes;
+- Stage 21 guard passes;
+- Stage 20 guard passes;
+- Stage 19 guard passes;
+- Stage 18 guard passes;
+- Stage 17 guard passes;
+- Stage 16 guard passes;
+- Stage 15 guard passes;
+- Stage 14 guard passes;
+- text encoding guard passes;
+- source BOM guard passes.
+
+Runtime readiness:
+- backend tests are ready to run before launch;
+- frontend build is ready to run before launch;
+- Docker services status can be checked;
+- backend/frontend logs can be inspected without printing secrets;
+- PostgreSQL/Redis/MinIO health checks can be performed without printing credentials.
+
+Data readiness:
+- production database backup path is known;
+- object storage backup path is known if documents exist;
+- previous known-good commit/tag is known;
+- rollback procedure is available;
+- restore procedure is available if data or documents change.
+
+Operator readiness:
+- admin login smoke path is known;
+- learner login smoke path is known;
+- documents/download smoke path is known;
+- public verification smoke path is known;
+- support escalation path is known;
+- operator handoff/runbook is available.
+
+Execution lock:
+- this checklist does not execute production launch;
+- `CONFIRM PRODUCTION LAUNCH` is required before real launch;
+- destructive commands require separate explicit confirmation;
+- production `.env` must not be printed;
+- real launch remains blocked at this checkpoint.
+
+Safety notes:
+- This checkpoint documents controlled execution readiness only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage22_controlled_execution_readiness_recorded=yes`.
+
+Verification markers:
+- `Stage 22.2 controlled execution readiness checklist - 2026-05-30`
+- `stage22_controlled_execution_readiness_recorded=yes`
+- `stage22_repository_readiness_defined=yes`
+- `stage22_ci_readiness_defined=yes`
+- `stage22_local_guard_readiness_defined=yes`
+- `stage22_runtime_readiness_defined=yes`
+- `stage22_data_readiness_defined=yes`
+- `stage22_operator_readiness_defined=yes`
+- `stage22_execution_lock_defined=yes`

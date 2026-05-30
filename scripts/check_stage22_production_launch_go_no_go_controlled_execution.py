@@ -57,6 +57,15 @@ DOC_MARKERS = [
     "stage22_rollback_gate_defined=yes",
     "stage22_secrets_privacy_gate_defined=yes",
     "stage22_explicit_confirmation_gate_defined=yes",
+    "Stage 22.2 controlled execution readiness checklist - 2026-05-30",
+    "stage22_controlled_execution_readiness_recorded=yes",
+    "stage22_repository_readiness_defined=yes",
+    "stage22_ci_readiness_defined=yes",
+    "stage22_local_guard_readiness_defined=yes",
+    "stage22_runtime_readiness_defined=yes",
+    "stage22_data_readiness_defined=yes",
+    "stage22_operator_readiness_defined=yes",
+    "stage22_execution_lock_defined=yes",
 ]
 
 STAGE14_MARKERS = [
