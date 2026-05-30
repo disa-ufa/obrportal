@@ -89,6 +89,12 @@ DOC_MARKERS = [
     "stage28_final_guard_evidence_recorded=yes",
     "stage28_final_branch_ci_evidence_recorded=yes",
     "stage28_final_launch_lock_evidence_recorded=yes",
+    "Stage 28.3 final release ledger acceptance - 2026-05-30",
+    "stage28_final_release_ledger_accepted=yes",
+    "stage28_release_ledger_registry_accepted=yes",
+    "stage28_final_registry_evidence_accepted=yes",
+    "stage28_real_launch_executed_no=yes",
+    "stage28_ready_for_final_tag=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]

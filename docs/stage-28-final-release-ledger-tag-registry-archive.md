@@ -282,3 +282,82 @@ Verification markers:
 - `stage28_final_guard_evidence_recorded=yes`
 - `stage28_final_branch_ci_evidence_recorded=yes`
 - `stage28_final_launch_lock_evidence_recorded=yes`
+
+## 4. Final release ledger acceptance - 2026-05-30
+
+Goal: accept Stage 28 final release ledger and tag registry archive without executing real production launch.
+
+Current git head before final release ledger acceptance: `c33bffb`.
+
+Accepted Stage 28 scope:
+- Stage 28 baseline created;
+- release ledger registry recorded;
+- ledger boundary recorded;
+- accepted stage registry recorded;
+- final tag registry recorded;
+- document registry recorded;
+- guard registry recorded;
+- launch lock registry recorded;
+- final tag/document/guard registry evidence recorded;
+- registry evidence boundary recorded;
+- final tag evidence recorded;
+- final document evidence recorded;
+- final guard evidence recorded;
+- final branch/CI evidence recorded;
+- final launch lock evidence recorded.
+
+Accepted final release ledger state:
+- Stage 14 documents/certificates/verification is complete;
+- Stage 15 admin UX/operator workflow is complete;
+- Stage 16 release readiness/regression is complete;
+- Stage 17 production deployment readiness is complete;
+- Stage 18 production runbook/operator handoff is complete;
+- Stage 19 production security/secrets hardening is complete;
+- Stage 20 final release candidate/launch checklist is complete;
+- Stage 21 production launch dry-run/deployment preparation is complete;
+- Stage 22 production launch go/no-go controlled execution gate is complete;
+- Stage 23 controlled production launch execution preparation is complete;
+- Stage 24 production launch final evidence package is complete;
+- Stage 25 final project closure/handoff package is complete;
+- Stage 26 pre-production operational rehearsal is complete;
+- Stage 27 final production launch command pack dry archive is complete;
+- Stage 28 final release ledger/tag registry archive is accepted for tagging;
+- `develop` and `main` must be synchronized before final Stage 28 tag;
+- GitHub Actions must be green on `develop` and `main` before final Stage 28 tag;
+- working tree must be clean before final Stage 28 tag.
+
+Final production launch status:
+- real production launch was not executed;
+- production launch remains blocked without separate explicit confirmation;
+- required phrase remains: `CONFIRM PRODUCTION LAUNCH`;
+- ledger and registry archive does not authorize deployment;
+- destructive commands require separate explicit confirmation;
+- production `.env` must not be printed;
+- backup artifacts must not be committed;
+- database migrations require separate approval if any appear;
+- production launch remains a separate operational action after this tag.
+
+Known non-blocking items:
+- frontend chunk-size warning remains non-blocking;
+- backend pytest third-party deprecation warnings remain non-blocking;
+- Docker `COMMAND` column console-encoding artifacts remain non-blocking.
+
+Safety notes:
+- This checkpoint documents final release ledger acceptance only.
+- No command was executed against production.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage28_final_release_ledger_accepted=yes`.
+
+Verification markers:
+- `Stage 28.3 final release ledger acceptance - 2026-05-30`
+- `stage28_final_release_ledger_accepted=yes`
+- `stage28_release_ledger_registry_accepted=yes`
+- `stage28_final_registry_evidence_accepted=yes`
+- `stage28_real_launch_executed_no=yes`
+- `stage28_ready_for_final_tag=yes`
