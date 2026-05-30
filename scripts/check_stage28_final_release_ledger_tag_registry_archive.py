@@ -81,6 +81,14 @@ DOC_MARKERS = [
     "stage28_document_registry_recorded=yes",
     "stage28_guard_registry_recorded=yes",
     "stage28_launch_lock_registry_recorded=yes",
+    "Stage 28.2 final tag document guard registry evidence - 2026-05-30",
+    "stage28_final_registry_evidence_recorded=yes",
+    "stage28_registry_evidence_boundary_recorded=yes",
+    "stage28_final_tag_evidence_recorded=yes",
+    "stage28_final_document_evidence_recorded=yes",
+    "stage28_final_guard_evidence_recorded=yes",
+    "stage28_final_branch_ci_evidence_recorded=yes",
+    "stage28_final_launch_lock_evidence_recorded=yes",
 ]
 
 STAGE14_MARKERS = ["Stage 14", "documents", "verification"]

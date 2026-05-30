@@ -198,3 +198,87 @@ Verification markers:
 - `stage28_document_registry_recorded=yes`
 - `stage28_guard_registry_recorded=yes`
 - `stage28_launch_lock_registry_recorded=yes`
+
+## 3. Final tag/document/guard registry evidence - 2026-05-30
+
+Goal: record final tag, document and guard registry evidence without executing real production launch.
+
+Current git head before final registry evidence: `933cae8`.
+
+Registry evidence boundary:
+- production launch remains blocked without `CONFIRM PRODUCTION LAUNCH`;
+- this checkpoint records registry evidence only;
+- no deployment command is executed;
+- no destructive command is executed;
+- no migration command is executed;
+- no backup/restore command is executed;
+- no secret rotation command is executed;
+- `real_launch_executed=no`.
+
+Final tag evidence:
+- Stage 16 release readiness tag is recorded;
+- Stage 17 production deployment readiness tag is recorded;
+- Stage 18 production runbook/operator handoff tag is recorded;
+- Stage 19 production security/secrets hardening tag is recorded;
+- Stage 20 final release candidate tag is recorded;
+- Stage 21 production launch dry-run tag is recorded;
+- Stage 22 production launch go/no-go tag is recorded;
+- Stage 23 controlled launch preparation tag is recorded;
+- Stage 24 final evidence package tag is recorded;
+- Stage 25 final project closure tag is recorded;
+- Stage 26 operational rehearsal tag is recorded;
+- Stage 27 launch command pack tag is recorded;
+- Stage 28 final ledger tag remains pending until acceptance.
+
+Final document evidence:
+- Stage 14 through Stage 28 documentation chain is recorded;
+- production readiness documents are recorded;
+- runbook/operator handoff documents are recorded;
+- security/secrets hardening documents are recorded;
+- launch dry-run/go-no-go documents are recorded;
+- final evidence and closure documents are recorded;
+- command pack and release ledger documents are recorded.
+
+Final guard evidence:
+- Stage 14 through Stage 28 guard chain is recorded;
+- text encoding guard is recorded;
+- source BOM guard is recorded;
+- `.env` tracking guard expectation is recorded;
+- `.env.example` no-real-secrets expectation is recorded;
+- guard chain must pass before final Stage 28 tag.
+
+Final branch/CI evidence:
+- `develop` and `main` must be synchronized before final Stage 28 tag;
+- `origin/develop` and `origin/main` must point to the same accepted commit;
+- working tree must be clean before final Stage 28 tag;
+- GitHub Actions must be reviewed for final Stage 28 acceptance commit;
+- failed or pending CI remains NO-GO unless explicitly accepted.
+
+Final launch lock evidence:
+- real launch remains blocked;
+- required phrase remains `CONFIRM PRODUCTION LAUNCH`;
+- documentation-only checkpoints do not authorize deployment;
+- command archive does not authorize deployment;
+- destructive commands require separate explicit confirmation;
+- `real_launch_executed=no`.
+
+Safety notes:
+- This checkpoint documents final tag/document/guard registry evidence only.
+- No runtime code was changed.
+- No database migrations were added.
+- No backend API contract changes were added.
+- No authentication or RBAC changes were introduced.
+- No destructive bulk action was added.
+- Secrets were not printed.
+- Real production launch was not executed.
+- `stage28_final_registry_evidence_recorded=yes`.
+
+Verification markers:
+- `Stage 28.2 final tag document guard registry evidence - 2026-05-30`
+- `stage28_final_registry_evidence_recorded=yes`
+- `stage28_registry_evidence_boundary_recorded=yes`
+- `stage28_final_tag_evidence_recorded=yes`
+- `stage28_final_document_evidence_recorded=yes`
+- `stage28_final_guard_evidence_recorded=yes`
+- `stage28_final_branch_ci_evidence_recorded=yes`
+- `stage28_final_launch_lock_evidence_recorded=yes`
