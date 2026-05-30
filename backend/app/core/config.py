@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_name: str = "ObrPortal"
+    app_version: str = Field(
+        default="0.1.0-stage31-dev",
+        validation_alias=AliasChoices("APP_VERSION", "OBRPORTAL_APP_VERSION"),
+    )
     environment: str = "local"
     secret_key: str = Field(default="change-me-local-only")
     access_token_expire_minutes: int = 60

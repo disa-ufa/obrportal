@@ -104,3 +104,29 @@ Verification markers:
 - `stage31_no_runtime_changes=yes`
 - `stage31_no_database_migrations=yes`
 - `stage31_no_destructive_commands=yes`
+
+## 2. Release metadata cleanup - 2026-05-30
+
+Goal: remove stale hardcoded `0.1.0-stage6` release metadata from runtime surfaces and make application version configurable.
+
+Scope:
+- backend `FastAPI(version=...)` now uses `settings.app_version`;
+- backend `/health` now returns `settings.app_version`;
+- `.env.example` documents `APP_VERSION`;
+- frontend package metadata is advanced from `0.1.0-stage6` to `0.1.0-stage31-dev`;
+- production remains on Stage 30 until a separate redeploy decision.
+
+Safety boundary:
+- no production redeploy is performed by this checkpoint;
+- no database migrations are added;
+- no destructive commands are required;
+- no secrets are changed;
+- `main` remains production/frozen until a future release decision.
+
+Verification markers:
+- `Stage 31.1 release metadata cleanup - 2026-05-30`
+- `stage31_release_metadata_cleanup=yes`
+- `stage31_app_version_configurable=yes`
+- `stage31_health_uses_settings_app_version=yes`
+- `stage31_no_stage6_runtime_metadata=yes`
+- `stage31_no_production_redeploy=yes`
