@@ -7,30 +7,15 @@ ROOT = Path(__file__).resolve().parents[1]
 ADMIN_API_PATH = ROOT / "backend" / "app" / "api" / "v1" / "admin.py"
 STAGE32_DOC_PATH = ROOT / "docs" / "stage-32-performance-stability-baseline.md"
 
-STATIC_MARKERS = [
-    "async def get_user_roles(",
-    "select(",
-    "UserRole.id.label(\"id\")",
-    ".where(UserRole.user_id == user_id)",
-    "async def list_users(",
-    "users_result = await session.execute(select(User).order_by(User.email))",
-    "users = users_result.scalars().all()",
-    "for user in users:",
-    "roles = await get_user_roles(str(user.id), session)",
-    "response.append(build_admin_user_item(user, roles))",
-]
-
-MISSING_EXPECTED_QUERY_PARAMS = [
-    "limit: int",
-    "q: str",
-    "role: str",
-    "is_active: bool",
-]
-
 
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
+
+
+def require_markers(text: str, markers: list[str], label: str) -> None:
+    missing = [marker for marker in markers if marker not in text]
+    require(not missing, f"{label} missing markers: {missing}")
 
 
 def main() -> None:
@@ -40,38 +25,43 @@ def main() -> None:
     admin_py = ADMIN_API_PATH.read_text(encoding="utf-8")
     doc = STAGE32_DOC_PATH.read_text(encoding="utf-8")
 
-    missing_markers = [marker for marker in STATIC_MARKERS if marker not in admin_py]
-    require(not missing_markers, f"admin users endpoint profile markers missing: {missing_markers}")
-
-    list_users_section = admin_py.split("async def list_users(", 1)[1].split("@router.", 1)[0]
-
-    unexpected_supported_query_params = [
-        marker for marker in MISSING_EXPECTED_QUERY_PARAMS if marker in list_users_section
-    ]
-
-    require(
-        not unexpected_supported_query_params,
-        "Stage 32.2 profile expected current endpoint to lack query pagination/filter params, "
-        f"but found: {unexpected_supported_query_params}",
+    require_markers(
+        doc,
+        [
+            "Stage 32.2 admin users endpoint profiling - 2026-05-31",
+            "stage32_admin_users_n_plus_one_confirmed=yes",
+            "stage32_admin_users_limit_query_ignored_confirmed=yes",
+            "Stage 32.3 admin users endpoint optimization - 2026-05-31",
+            "stage32_admin_users_endpoint_optimized=yes",
+        ],
+        "stage32 doc",
     )
 
-    doc_markers = [
-        "Stage 32.2 admin users endpoint profiling - 2026-05-31",
-        "stage32_admin_users_endpoint_profiling=yes",
-        "stage32_admin_users_n_plus_one_confirmed=yes",
-        "stage32_admin_users_limit_query_ignored_confirmed=yes",
-        "stage32_admin_users_optimization_deferred=yes",
-        "stage32_no_production_redeploy=yes",
-    ]
+    require_markers(
+        admin_py,
+        [
+            "async def get_users_roles(",
+            "UserRole.user_id.in_(user_ids)",
+            "roles_by_user_id = await get_users_roles([user.id for user in users], session)",
+            "limit: int | None = Query(default=None, ge=1, le=200)",
+            "q: str | None = Query(default=None, max_length=320)",
+            "role: str | None = Query(default=None, max_length=64)",
+            "is_active: bool | None = Query(default=None)",
+        ],
+        "optimized admin users endpoint",
+    )
 
-    missing_doc_markers = [marker for marker in doc_markers if marker not in doc]
-    require(not missing_doc_markers, f"stage32 doc missing profile markers: {missing_doc_markers}")
+    list_users_section = admin_py.split("async def list_users(", 1)[1].split("@router.", 1)[0]
+    require(
+        "roles = await get_user_roles(str(user.id), session)" not in list_users_section,
+        "optimized list_users must not call get_user_roles inside the users loop",
+    )
 
     print(
         "stage 32 admin users endpoint profiling passed: "
-        "n_plus_one_confirmed=yes, "
-        "limit_query_ignored_confirmed=yes, "
-        "optimization_deferred=yes, "
+        "n_plus_one_confirmed=historical, "
+        "limit_query_ignored_confirmed=historical, "
+        "optimization_applied=yes, "
         "production_redeploy=no"
     )
 

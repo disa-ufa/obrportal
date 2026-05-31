@@ -145,3 +145,36 @@ Verification markers:
 - `stage32_admin_users_limit_query_ignored_confirmed=yes`
 - `stage32_admin_users_optimization_deferred=yes`
 - `stage32_no_production_redeploy=yes`
+
+## 4. Admin users endpoint optimization - 2026-05-31
+
+Goal: optimize `/api/v1/admin/users` after Stage 32.2 profiling confirmed the bottleneck.
+
+Optimization:
+- roles for listed users are loaded in one batch query through `get_users_roles`;
+- `list_users` no longer calls `get_user_roles` once per user;
+- `limit` is now applied to the SQL query;
+- `q` is now applied to email, phone, and full name;
+- `is_active` is now applied to the SQL query;
+- `role` is now applied through `UserRole` and `Role` joins.
+
+Expected result:
+- `/api/v1/admin/users?limit=20` should avoid loading the full user table;
+- `/api/v1/admin/users?limit=20&q=admin` should avoid scanning/serializing unrelated users in Python;
+- users list role serialization should avoid the previous N+1 role query pattern.
+
+Safety boundary:
+- no database migration is added;
+- no production redeploy is performed;
+- no `main` update is performed;
+- behavior remains backward-compatible for plain `/api/v1/admin/users`.
+
+Verification markers:
+- `Stage 32.3 admin users endpoint optimization - 2026-05-31`
+- `stage32_admin_users_endpoint_optimized=yes`
+- `stage32_admin_users_roles_batch_loaded=yes`
+- `stage32_admin_users_limit_filter_supported=yes`
+- `stage32_admin_users_q_filter_supported=yes`
+- `stage32_admin_users_is_active_filter_supported=yes`
+- `stage32_admin_users_role_filter_supported=yes`
+- `stage32_no_production_redeploy=yes`

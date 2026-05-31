@@ -4,6 +4,7 @@ import json
 import os
 from uuid import uuid4
 from urllib.error import HTTPError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
@@ -31,7 +32,11 @@ def unique_group_code() -> str:
 
 
 def get_user_id_by_email(token: str, email: str) -> str:
-    status, users = request_json("GET", "/api/v1/admin/users", token=token)
+    status, users = request_json(
+        "GET",
+        f"/api/v1/admin/users?{urlencode({'q': email, 'limit': 20})}",
+        token=token,
+    )
     assert status == 200
     assert isinstance(users, list)
 
@@ -292,6 +297,123 @@ def test_admin_can_read_user_detail() -> None:
     assert "updated_at" in detail
     assert isinstance(detail["roles"], list)
 
+
+
+def test_admin_can_filter_users_with_pagination_search_active_and_role() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    role_code = unique_role_code()
+    user_email = f"stage32-user-filter-{uuid4().hex[:12]}@example.test"
+    user_phone = unique_phone()
+    user_full_name = f"Stage32 User Filter {uuid4().hex[:8]}"
+
+    status, created_role = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {
+            "code": role_code,
+            "name": "Stage32 user filter role",
+            "description": "Temporary role for Stage 32 user filter test",
+        },
+        token=token,
+    )
+    assert status == 201
+    assert isinstance(created_role, dict)
+    role_id = str(created_role["id"])
+
+    status, created_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": user_email,
+            "password": "Stage32UserFilter123!",
+            "phone": user_phone,
+            "full_name": user_full_name,
+            "is_active": False,
+            "is_email_verified": True,
+        },
+        token=token,
+    )
+    assert status == 201
+    assert isinstance(created_user, dict)
+    user_id = str(created_user["id"])
+
+    status, limited_users = request_json(
+        "GET",
+        f"/api/v1/admin/users?{urlencode({'limit': 1})}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(limited_users, list)
+    assert len(limited_users) <= 1
+
+    status, search_by_email = request_json(
+        "GET",
+        f"/api/v1/admin/users?{urlencode({'q': user_email, 'limit': 20})}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(search_by_email, list)
+    assert [user["email"] for user in search_by_email] == [user_email]
+
+    status, inactive_filtered = request_json(
+        "GET",
+        f"/api/v1/admin/users?{urlencode({'q': user_email, 'is_active': 'false', 'limit': 20})}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(inactive_filtered, list)
+    assert [user["id"] for user in inactive_filtered] == [user_id]
+    assert inactive_filtered[0]["is_active"] is False
+
+    status, active_filtered = request_json(
+        "GET",
+        f"/api/v1/admin/users?{urlencode({'q': user_email, 'is_active': 'true', 'limit': 20})}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(active_filtered, list)
+    assert active_filtered == []
+
+    status, assigned_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{user_id}/roles",
+        {"role_id": role_id, "organization_id": None},
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(assigned_user, dict)
+    assigned_user_role_id = find_user_role_id(
+        assigned_user,
+        role_code=role_code,
+        organization_id=None,
+    )
+
+    status, role_filtered = request_json(
+        "GET",
+        f"/api/v1/admin/users?{urlencode({'q': user_email, 'role': role_code, 'limit': 20})}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(role_filtered, list)
+    assert [user["id"] for user in role_filtered] == [user_id]
+    assert any(role["code"] == role_code for role in role_filtered[0]["roles"])
+
+    status, removed_user_role = request_json(
+        "DELETE",
+        f"/api/v1/admin/users/{user_id}/roles/{assigned_user_role_id}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(removed_user_role, dict)
+
+    status, deleted_role = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{role_id}",
+        token=token,
+    )
+    assert status == 200
+    assert isinstance(deleted_role, dict)
+    assert deleted_role["status"] == "deleted"
 
 def test_admin_user_detail_not_found_returns_404() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -2623,7 +2745,6 @@ def create_test_course_with_enrollment_in_db(
 
 
 def test_admin_can_filter_enrollments_by_organization() -> None:
-    from urllib.parse import urlencode
 
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
@@ -3100,7 +3221,6 @@ def post_multipart_admin_document(
 
 
 def test_admin_can_filter_documents_by_organization() -> None:
-    from urllib.parse import urlencode
 
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
@@ -3814,7 +3934,6 @@ def test_learner_cannot_download_admin_document() -> None:
 
 
 def test_admin_can_filter_admin_documents() -> None:
-    from urllib.parse import urlencode
 
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
@@ -4014,7 +4133,6 @@ def test_admin_course_duplicate_slug_returns_409() -> None:
 
 
 def test_admin_can_filter_admin_courses() -> None:
-    from urllib.parse import urlencode
 
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     slug = unique_course_slug()

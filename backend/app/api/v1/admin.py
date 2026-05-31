@@ -137,6 +137,42 @@ async def get_user_roles(
         for row in roles_result.all()
     ]
 
+async def get_users_roles(
+    user_ids: list,
+    session: AsyncSession,
+) -> dict[str, list[AdminUserRoleItem]]:
+    if not user_ids:
+        return {}
+
+    roles_result = await session.execute(
+        select(
+            UserRole.user_id.label("user_id"),
+            UserRole.id.label("id"),
+            Role.id.label("role_id"),
+            Role.code,
+            Role.name,
+            UserRole.organization_id,
+        )
+        .join(Role, UserRole.role_id == Role.id)
+        .where(UserRole.user_id.in_(user_ids))
+        .order_by(UserRole.user_id, Role.code)
+    )
+
+    roles_by_user_id: dict[str, list[AdminUserRoleItem]] = {}
+
+    for row in roles_result.all():
+        roles_by_user_id.setdefault(str(row.user_id), []).append(
+            AdminUserRoleItem(
+                id=str(row.id),
+                role_id=str(row.role_id),
+                code=row.code,
+                name=row.name,
+                organization_id=str(row.organization_id) if row.organization_id else None,
+            )
+        )
+
+    return roles_by_user_id
+
 
 async def get_role_permissions(
     role_id: str,
@@ -919,17 +955,50 @@ async def get_admin_dashboard_summary(
 async def list_users(
     _: User = Depends(require_permission("admin.users.read")),
     session: AsyncSession = Depends(get_db),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    q: str | None = Query(default=None, max_length=320),
+    role: str | None = Query(default=None, max_length=64),
+    is_active: bool | None = Query(default=None),
 ) -> list[AdminUserItem]:
-    users_result = await session.execute(select(User).order_by(User.email))
+    query = select(User)
+
+    normalized_q = q.strip() if q else None
+    if normalized_q:
+        search_pattern = f"%{normalized_q}%"
+        query = query.where(
+            or_(
+                User.email.ilike(search_pattern),
+                User.phone.ilike(search_pattern),
+                User.full_name.ilike(search_pattern),
+            )
+        )
+
+    if is_active is not None:
+        query = query.where(User.is_active.is_(is_active))
+
+    normalized_role = role.strip().lower() if role else None
+    if normalized_role:
+        query = (
+            query
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Role, UserRole.role_id == Role.id)
+            .where(Role.code == normalized_role)
+            .distinct()
+        )
+
+    query = query.order_by(User.email)
+    if limit is not None:
+        query = query.limit(limit)
+
+    users_result = await session.execute(query)
     users = users_result.scalars().all()
 
-    response: list[AdminUserItem] = []
+    roles_by_user_id = await get_users_roles([user.id for user in users], session)
 
-    for user in users:
-        roles = await get_user_roles(str(user.id), session)
-        response.append(build_admin_user_item(user, roles))
-
-    return response
+    return [
+        build_admin_user_item(user, roles_by_user_id.get(str(user.id), []))
+        for user in users
+    ]
 
 
 @router.post("/users", response_model=AdminUserDetail, status_code=status.HTTP_201_CREATED)
