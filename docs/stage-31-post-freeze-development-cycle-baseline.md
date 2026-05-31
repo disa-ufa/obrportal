@@ -273,3 +273,38 @@ Verification markers:
 - `stage31_legacy_stage6_release_docs_preserved=yes`
 - `stage31_development_runtime_version_stage31_dev=yes`
 - `stage31_no_production_redeploy=yes`
+
+## 6. CI smoke block compatibility fix - 2026-05-31
+
+Goal: fix the GitHub Actions smoke block after Stage 31 release metadata refactoring.
+
+Observed CI failure:
+- GitHub Actions job `Test ObrPortal` passed backend pytest;
+- GitHub Actions job failed on `Run auth RBAC and organization cabinet smoke checks`;
+- frontend build was skipped because the smoke block failed.
+
+Local reproduction:
+- `smoke_auth_rbac.py` timed out on `GET /api/v1/account/documents`;
+- `smoke_frontend_core.py` still expected old `check_release_versioning.py` fragments;
+- the old expected fragments included `REQUIRED_VERSION`, `REQUIRED_HANDOFF_COMMANDS`, and `def get_release_versioning_diagnostics`;
+- Stage 31 intentionally changed release versioning to configurable app metadata.
+
+Fix:
+- `smoke_auth_rbac.py` now uses configurable `SMOKE_REQUEST_TIMEOUT`;
+- default smoke request timeout is increased to 60 seconds;
+- `smoke_frontend_core.py` now validates the Stage 31 release versioning guard structure;
+- release versioning smoke expectations now include `LEGACY_RELEASE_VERSION`, `DEVELOPMENT_VERSION`, `REQUIRED_LEGACY_HANDOFF_COMMANDS`, and `settings.app_version` markers.
+
+Safety boundary:
+- no production redeploy is performed;
+- no `main` update is performed;
+- no database migrations are added;
+- no destructive commands are required;
+- production remains on Stage 30 frozen release.
+
+Verification markers:
+- `Stage 31.5 CI smoke block compatibility fix - 2026-05-31`
+- `stage31_ci_smoke_block_compat=yes`
+- `stage31_smoke_auth_rbac_timeout_configurable=yes`
+- `stage31_smoke_frontend_core_release_versioning_stage31_compatible=yes`
+- `stage31_no_production_redeploy=yes`

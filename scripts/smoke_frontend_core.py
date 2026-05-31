@@ -385,13 +385,14 @@ def main() -> None:
     require_contains(
         "scripts/check_release_versioning.py",
         [
-            "REQUIRED_VERSION",
+            "LEGACY_RELEASE_VERSION",
+            "DEVELOPMENT_VERSION",
             "REQUIRED_CHANGELOG_SECTIONS",
             "REQUIRED_HANDOFF_SECTIONS",
-            "REQUIRED_HANDOFF_COMMANDS",
-            "def get_release_versioning_diagnostics",
-            "missingChangelogSections",
-            "missingHandoffSections",
+            "REQUIRED_LEGACY_HANDOFF_COMMANDS",
+            "backend_version_source=settings.app_version",
+            "health_version_source=settings.app_version",
+            "legacy_release_line=",
             "release versioning diagnostics passed",
         ],
     )
