@@ -239,3 +239,37 @@ Verification markers:
 - `stage31_main_remains_stage30=yes`
 - `stage31_no_production_redeploy=yes`
 - `stage31_ready_for_next_development_stage=yes`
+
+## 5. CI release versioning compatibility fix - 2026-05-30
+
+Goal: make the legacy release versioning guard compatible with Stage 31 configurable runtime metadata.
+
+Problem:
+- CI still runs `scripts/check_release_versioning.py`;
+- the old guard required hardcoded runtime version `0.1.0-stage6`;
+- Stage 31 intentionally replaced hardcoded backend version metadata with `settings.app_version`;
+- frontend package metadata moved to `0.1.0-stage31-dev`;
+- therefore CI failed on `develop` after Stage 31.1/31.2.
+
+Fix:
+- release versioning guard now treats Stage 6 as the historical release line in release documents;
+- release versioning guard now treats Stage 31 as the active development runtime metadata line;
+- backend version source must be `settings.app_version`;
+- backend `/health` version source must be `settings.app_version`;
+- `.env.example` must document `APP_VERSION=0.1.0-stage31-dev`;
+- frontend package metadata must be `0.1.0-stage31-dev`.
+
+Safety boundary:
+- no production redeploy is performed;
+- no `main` update is performed;
+- no database migrations are added;
+- no destructive commands are required;
+- production remains on Stage 30 frozen release.
+
+Verification markers:
+- `Stage 31.4 CI release versioning compatibility fix - 2026-05-30`
+- `stage31_ci_release_versioning_compat=yes`
+- `stage31_release_versioning_guard_accepts_configurable_app_version=yes`
+- `stage31_legacy_stage6_release_docs_preserved=yes`
+- `stage31_development_runtime_version_stage31_dev=yes`
+- `stage31_no_production_redeploy=yes`
