@@ -69,3 +69,38 @@ Verification markers:
 - `stage32_measure_before_optimize=yes`
 - `stage32_no_production_redeploy=yes`
 - `stage32_main_remains_stage30=yes`
+
+## 2. Admin endpoint stability measurements - 2026-05-31
+
+Goal: measure local stability of the admin endpoints that were previously involved in timeout investigations.
+
+Measurement scope:
+- `/api/v1/admin/users`;
+- `/api/v1/admin/users?limit=20`;
+- `/api/v1/admin/users?limit=20&q=admin`;
+- `/api/v1/admin/audit-events`;
+- `/api/v1/admin/audit-events?limit=20`;
+- `/api/v1/admin/audit-events?limit=50`.
+
+Measurement method:
+- authenticate as admin;
+- execute repeated read-only GET requests;
+- record elapsed time per endpoint;
+- fail on non-200 status;
+- fail on timeout;
+- fail on unexpected payload type.
+
+Safety boundary:
+- read-only local measurement only;
+- no production redeploy;
+- no `main` update;
+- no database migrations;
+- no destructive commands.
+
+Verification markers:
+- `Stage 32.1 admin endpoint stability measurements - 2026-05-31`
+- `stage32_admin_endpoint_stability_measurements=yes`
+- `stage32_admin_users_measured=yes`
+- `stage32_admin_audit_events_measured=yes`
+- `stage32_measurement_read_only=yes`
+- `stage32_no_production_redeploy=yes`
