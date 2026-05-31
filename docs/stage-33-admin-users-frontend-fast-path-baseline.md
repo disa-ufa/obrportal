@@ -48,3 +48,30 @@ Verification markers:
 - `stage33_frontend_unbounded_users_load_identified=yes`
 - `stage33_no_runtime_change=yes`
 - `stage33_no_production_redeploy=yes`
+
+## 2. Frontend API query builder - 2026-05-31
+
+Goal: add reusable query string support for admin users API calls.
+
+Implementation:
+- `buildQueryString(filters = {})` was added to `frontend/src/api/client.js`;
+- empty, null, and undefined filter values are skipped;
+- `getAdminUsers(filters = {})` now accepts filters;
+- `getAdminUsers()` without arguments remains backward-compatible;
+- users API calls can now request `/api/v1/admin/users?limit=...&q=...&is_active=...&role=...`.
+
+Safety boundary:
+- API client only;
+- no page behavior changes in this checkpoint;
+- no backend changes;
+- no database migration;
+- no `main` update;
+- no production redeploy.
+
+Verification markers:
+- `Stage 33.1 frontend API query builder - 2026-05-31`
+- `stage33_frontend_api_query_builder=yes`
+- `stage33_get_admin_users_filters_supported=yes`
+- `stage33_get_admin_users_backward_compatible=yes`
+- `stage33_no_backend_change=yes`
+- `stage33_no_production_redeploy=yes`

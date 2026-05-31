@@ -177,8 +177,11 @@ def main() -> None:
     require_contains(
         relative_path,
         [
-            "export async function getAdminUsers()",
-            'return request("/api/v1/admin/users");',
+            "export function buildQueryString(filters = {})",
+            "return query ? `?${query}` : \"\";",
+            "export async function getAdminUsers(filters = {})",
+            "const query = buildQueryString(filters);",
+            "return request(`/api/v1/admin/users${query}`);",
             "export async function getAdminUserDetail(userId)",
             "return request(`/api/v1/admin/users/${userId}`);",
             "export async function createAdminUser(payload)",
@@ -342,10 +345,10 @@ def main() -> None:
         ],
     )
 
-    require_occurs(relative_path, "Object.entries(filters).forEach(([key, value]) => {", 6)
-    require_occurs(relative_path, "if (value === undefined || value === null || `${value}`.trim() === \"\")", 6)
-    require_occurs(relative_path, "params.set(key, value);", 6)
-    require_occurs(relative_path, "const query = params.toString();", 6)
+    require_occurs(relative_path, "Object.entries(filters).forEach(([key, value]) => {", 7)
+    require_occurs(relative_path, "if (value === undefined || value === null || `${value}`.trim() === \"\")", 7)
+    require_occurs(relative_path, "params.set(key, value);", 7)
+    require_occurs(relative_path, "const query = params.toString();", 7)
     require_occurs(relative_path, "method: \"POST\"", 15)
     require_occurs(relative_path, "method: \"PATCH\"", 7)
     require_occurs(relative_path, "method: \"DELETE\"", 10)

@@ -235,8 +235,26 @@ export async function getReady() {
   return request("/api/v1/ready");
 }
 
-export async function getAdminUsers() {
-  return request("/api/v1/admin/users");
+export function buildQueryString(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return query ? `?${query}` : "";
+}
+
+export async function getAdminUsers(filters = {}) {
+  const query = buildQueryString(filters);
+
+  return request(`/api/v1/admin/users${query}`);
 }
 
 export async function getAdminUserDetail(userId) {

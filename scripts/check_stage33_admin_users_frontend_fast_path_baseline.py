@@ -19,8 +19,9 @@ DOC_MARKERS = [
 
 CURRENT_FRONTEND_MARKERS = {
     CLIENT_PATH: [
-        "export async function getAdminUsers()",
-        'return request("/api/v1/admin/users");',
+        "export function buildQueryString(filters = {})",
+        "export async function getAdminUsers(filters = {})",
+        "return request(`/api/v1/admin/users${query}`);",
     ],
     LOADER_PATH: [
         "getAdminUsers()",
@@ -69,7 +70,7 @@ def main() -> None:
     print(
         "stage 33 admin users frontend fast-path baseline diagnostics passed: "
         "baseline=yes, "
-        "frontend_unbounded_users_load_identified=yes, "
+        "frontend_loader_unbounded_users_load_still_identified=yes, "
         "backend_fast_path_reuse_planned=yes, "
         "runtime_changed=no, "
         "production_redeploy=no"
