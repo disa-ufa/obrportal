@@ -126,3 +126,22 @@ Verification markers:
 - `stage33_no_backend_change=yes`
 - `stage33_no_main_update=yes`
 - `stage33_no_production_redeploy=yes`
+
+## 5. Final frontend fast-path acceptance - 2026-06-01
+
+Stage 33 final acceptance records that the admin users frontend fast-path cycle is accepted on `develop`.
+
+Accepted state:
+- Stage 33.1 query builder is present;
+- Stage 33.2 admin UI fast-path loading is present;
+- Stage 33.3 archive is present;
+- GitHub Actions run `2112` passed on commit `294a90e`;
+- no `main` update or production redeploy was performed.
+
+Verification markers:
+- `Stage 33 final frontend fast-path acceptance - 2026-06-01`
+- `stage33_final_acceptance=yes`
+- `stage33_frontend_admin_users_fast_path_accepted=yes`
+- `stage33_ci_2112_success_recorded=yes`
+- `stage33_no_main_update=yes`
+- `stage33_no_production_redeploy=yes`
