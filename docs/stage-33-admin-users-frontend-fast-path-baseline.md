@@ -105,3 +105,24 @@ Verification markers:
 - `stage33_users_page_refresh_uses_fast_path=yes`
 - `stage33_no_backend_change=yes`
 - `stage33_no_production_redeploy=yes`
+
+## 4. Frontend fast-path measurement/archive - 2026-05-31
+
+Stage 33.3 archives the accepted frontend fast-path state after CI run `2111` passed on commit `2bc50d2`.
+
+Archived evidence:
+- `getAdminUsers(filters = {})` is available;
+- admin users are loaded through `buildAdminUsersFastPathFilters`;
+- `limit=200`, `q`, `is_active`, and role code mapping are documented;
+- admin hooks and frontend hooks/layout smoke checks are aligned with the fast-path loader;
+- no backend, database, main, or production change was performed.
+
+Verification markers:
+- `Stage 33.3 frontend fast-path measurement archive - 2026-05-31`
+- `stage33_frontend_fast_path_archive=yes`
+- `stage33_ci_2111_success=yes`
+- `stage33_admin_users_limit_200_archived=yes`
+- `stage33_admin_users_filter_mapping_archived=yes`
+- `stage33_no_backend_change=yes`
+- `stage33_no_main_update=yes`
+- `stage33_no_production_redeploy=yes`
