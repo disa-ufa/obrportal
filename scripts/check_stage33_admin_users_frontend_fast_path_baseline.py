@@ -24,7 +24,9 @@ CURRENT_FRONTEND_MARKERS = {
         "return request(`/api/v1/admin/users${query}`);",
     ],
     LOADER_PATH: [
-        "getAdminUsers()",
+        "ADMIN_USERS_FAST_PATH_LIMIT",
+        "buildAdminUsersFastPathFilters(usersFilters = {}, roles = [])",
+        "getAdminUsers(buildAdminUsersFastPathFilters(usersFilters, roles))",
         "Promise.all([",
     ],
     USERS_PAGE_PATH: [
@@ -70,7 +72,7 @@ def main() -> None:
     print(
         "stage 33 admin users frontend fast-path baseline diagnostics passed: "
         "baseline=yes, "
-        "frontend_loader_unbounded_users_load_still_identified=yes, "
+        "frontend_loader_fast_path_users_load_identified=yes, "
         "backend_fast_path_reuse_planned=yes, "
         "runtime_changed=no, "
         "production_redeploy=no"

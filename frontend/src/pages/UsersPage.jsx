@@ -198,6 +198,11 @@ export function UsersPage({
   const hasActiveFilters =
     searchQuery.trim() !== "" || activityFilter !== "all" || roleFilter !== "";
 
+  const currentUserFastPathFilters = useMemo(
+    () => buildUserFilters(),
+    [searchQuery, activityFilter, roleFilter]
+  );
+
   function buildUserFilters(overrides = {}) {
     return {
       q: overrides.q ?? searchQuery,
@@ -217,19 +222,32 @@ export function UsersPage({
     navigate(nextPath, options);
   }
 
+  function refreshUsersFastPath(filters = currentUserFastPathFilters) {
+    onRefreshAdminData({ usersFilters: filters });
+  }
+
   function handleSearchChange(value) {
+    const nextFilters = buildUserFilters({ q: value });
+
     setSearchQuery(value);
-    navigateToUserFilters(buildUserFilters({ q: value }));
+    navigateToUserFilters(nextFilters);
+    refreshUsersFastPath(nextFilters);
   }
 
   function handleActivityChange(value) {
+    const nextFilters = buildUserFilters({ activity: value });
+
     setActivityFilter(value);
-    navigateToUserFilters(buildUserFilters({ activity: value }));
+    navigateToUserFilters(nextFilters);
+    refreshUsersFastPath(nextFilters);
   }
 
   function handleRoleChange(value) {
+    const nextFilters = buildUserFilters({ role_id: value });
+
     setRoleFilter(value);
-    navigateToUserFilters(buildUserFilters({ role_id: value }));
+    navigateToUserFilters(nextFilters);
+    refreshUsersFastPath(nextFilters);
   }
 
   function resetFilters() {
@@ -237,6 +255,7 @@ export function UsersPage({
     setActivityFilter("all");
     setRoleFilter("");
     navigateToUserFilters({}, { replace: true });
+    refreshUsersFastPath({});
   }
 
   function handleExportUsersCsv() {
@@ -256,7 +275,7 @@ export function UsersPage({
           user ? (
             <AdminPageActions
               loading={loading}
-              onRefresh={onRefreshAdminData}
+              onRefresh={() => refreshUsersFastPath()}
               primaryLabel={isCreating ? "Скрыть форму" : "Создать пользователя"}
               primaryTone={isCreating ? "light" : "blue"}
               onPrimaryClick={() => setIsCreating((current) => !current)}

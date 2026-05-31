@@ -75,3 +75,33 @@ Verification markers:
 - `stage33_get_admin_users_backward_compatible=yes`
 - `stage33_no_backend_change=yes`
 - `stage33_no_production_redeploy=yes`
+
+## 3. Admin UI fast-path data loading - 2026-05-31
+
+Goal: connect the admin users UI data loading flow to the Stage 32 optimized backend fast path.
+
+Implementation:
+- `useAdminDataLoader.loadAdminData(options = {})` now accepts `usersFilters`;
+- admin bootstrap loads users through `getAdminUsers(buildAdminUsersFastPathFilters(...))`;
+- admin users loading uses explicit `limit=200`;
+- `q` is mapped to backend `q`;
+- `activity=active/inactive` is mapped to backend `is_active=true/false`;
+- frontend `role_id` is mapped to backend role code after roles are loaded;
+- Users page refresh and filter changes pass current filters to `loadAdminData({ usersFilters })`;
+- existing client-side filtering remains as a safe UI layer over the backend result.
+
+Safety boundary:
+- frontend runtime change only;
+- no backend changes;
+- no database migration;
+- no `main` update;
+- no production redeploy.
+
+Verification markers:
+- `Stage 33.2 admin UI fast-path data loading - 2026-05-31`
+- `stage33_admin_ui_fast_path_data_loading=yes`
+- `stage33_admin_users_limit_200=yes`
+- `stage33_admin_users_filter_mapping=yes`
+- `stage33_users_page_refresh_uses_fast_path=yes`
+- `stage33_no_backend_change=yes`
+- `stage33_no_production_redeploy=yes`
