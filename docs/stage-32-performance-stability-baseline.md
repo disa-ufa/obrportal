@@ -178,3 +178,28 @@ Verification markers:
 - `stage32_admin_users_is_active_filter_supported=yes`
 - `stage32_admin_users_role_filter_supported=yes`
 - `stage32_no_production_redeploy=yes`
+
+## 5. Post-optimization stability measurement archive - 2026-05-31
+
+Goal: close the Stage 32 optimization loop with archived evidence after `/api/v1/admin/users` optimization.
+
+Accepted evidence:
+- Stage 32.3 optimization was merged into `develop`;
+- GitHub Actions run `2104` completed successfully on commit `975d583`;
+- local targeted admin users filter test passed;
+- local full auth/RBAC admin API suite passed;
+- post-optimization measurements confirm that explicit `limit/q` admin users requests now use the fast path.
+
+Outcome:
+- the previous `/api/v1/admin/users` N+1 bottleneck is removed;
+- admin users list now supports real SQL-level `limit`, `q`, `is_active`, and `role` filtering;
+- unbounded plain `/api/v1/admin/users` remains backward-compatible;
+- production remains untouched.
+
+Verification markers:
+- `Stage 32.4 post-optimization stability measurement archive - 2026-05-31`
+- `stage32_post_optimization_stability_archive=yes`
+- `stage32_admin_users_optimization_ci_success=yes`
+- `stage32_admin_users_fast_path_confirmed=yes`
+- `stage32_plain_users_backward_compatible=yes`
+- `stage32_no_production_redeploy=yes`
