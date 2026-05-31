@@ -203,3 +203,39 @@ Verification markers:
 - `stage32_admin_users_fast_path_confirmed=yes`
 - `stage32_plain_users_backward_compatible=yes`
 - `stage32_no_production_redeploy=yes`
+
+## 6. Final performance/stability acceptance - 2026-05-31
+
+Goal: close Stage 32 after the admin users endpoint performance and stability cycle.
+
+Accepted chain:
+- Stage 32 baseline was merged into `develop`;
+- Stage 32.1 admin endpoint stability measurements were merged into `develop`;
+- Stage 32.2 admin users endpoint profiling was merged into `develop`;
+- Stage 32.3 admin users endpoint optimization was merged into `develop`;
+- Stage 32.4 post-optimization archive was merged into `develop`;
+- GitHub Actions run `2105` completed successfully on commit `68239ae`.
+
+Final outcome:
+- `/api/v1/admin/users` N+1 role loading bottleneck was identified and removed;
+- `get_users_roles` batch role loading is implemented;
+- `limit`, `q`, `is_active`, and `role` filters are supported for admin users list;
+- targeted admin users filter test passed locally;
+- full auth/RBAC admin API test suite passed locally;
+- post-optimization measurements were archived;
+- CI is green on `develop`.
+
+Safety boundary:
+- no production redeploy was performed;
+- no `main` update was performed;
+- no database migration was added;
+- production remains on Stage 30 frozen release.
+
+Verification markers:
+- `Stage 32 final performance/stability acceptance - 2026-05-31`
+- `stage32_final_performance_stability_accepted=yes`
+- `stage32_admin_users_n_plus_one_removed=yes`
+- `stage32_admin_users_filters_accepted=yes`
+- `stage32_ci_2105_success=yes`
+- `stage32_no_production_redeploy=yes`
+- `stage32_main_remains_stage30=yes`
