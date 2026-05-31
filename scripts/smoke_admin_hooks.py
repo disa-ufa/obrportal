@@ -354,7 +354,7 @@ def main() -> None:
         [
             "export async function checkAdminRbac()",
             'return request("/api/v1/admin/rbac-check");',
-            "export async function getAdminUsers()",
+            "export async function getAdminUsers(filters = {})",
             "export async function getAdminUserDetail(userId)",
             "export async function createAdminUser(payload)",
             "export async function updateAdminUser(userId, payload)",
