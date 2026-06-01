@@ -106,3 +106,24 @@ Verification markers:
 - `stage35_no_backend_change=yes`
 - `stage35_no_main_update=yes`
 - `stage35_no_production_redeploy=yes`
+
+## 4. Final admin organizations incremental refresh acceptance - 2026-06-01
+
+Stage 35 final acceptance records that the admin organizations incremental refresh cycle is accepted on `develop`.
+
+Accepted state:
+- Stage 35 baseline is present;
+- Stage 35.1 organizations-only refresh path is present;
+- Stage 35.2 organizations-only refresh archive is present;
+- GitHub Actions run `2120` passed on commit `2ad2233`;
+- no backend, database, `main`, or production change was performed.
+
+Verification markers:
+- `Stage 35 final admin organizations incremental refresh acceptance - 2026-06-01`
+- `stage35_final_acceptance=yes`
+- `stage35_admin_organizations_incremental_refresh_accepted=yes`
+- `stage35_ci_2120_success_recorded=yes`
+- `stage35_no_runtime_change=yes`
+- `stage35_no_backend_change=yes`
+- `stage35_no_main_update=yes`
+- `stage35_no_production_redeploy=yes`
