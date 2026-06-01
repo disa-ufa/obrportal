@@ -105,3 +105,24 @@ Verification markers:
 - `stage34_no_backend_change=yes`
 - `stage34_no_main_update=yes`
 - `stage34_no_production_redeploy=yes`
+
+## 4. Final admin users incremental refresh acceptance - 2026-06-01
+
+Stage 34 final acceptance records that the admin users incremental refresh cycle is accepted on `develop`.
+
+Accepted state:
+- Stage 34 baseline is present;
+- Stage 34.1 users-only refresh path is present;
+- Stage 34.2 users-only refresh archive is present;
+- GitHub Actions run `2116` passed on commit `07b83ec`;
+- no backend, database, `main`, or production change was performed.
+
+Verification markers:
+- `Stage 34 final admin users incremental refresh acceptance - 2026-06-01`
+- `stage34_final_acceptance=yes`
+- `stage34_admin_users_incremental_refresh_accepted=yes`
+- `stage34_ci_2116_success_recorded=yes`
+- `stage34_no_runtime_change=yes`
+- `stage34_no_backend_change=yes`
+- `stage34_no_main_update=yes`
+- `stage34_no_production_redeploy=yes`
