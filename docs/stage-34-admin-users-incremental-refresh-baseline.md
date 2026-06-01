@@ -83,3 +83,25 @@ Verification markers:
 - `stage34_no_backend_change=yes`
 - `stage34_no_main_update=yes`
 - `stage34_no_production_redeploy=yes`
+
+## 3. Users-only refresh archive - 2026-06-01
+
+Stage 34.2 archives the accepted users-only refresh state after CI run `2115` passed on commit `14478f3`.
+
+Archived evidence:
+- `refreshAdminUsers(usersFilters = {}, roles = [])` is present;
+- `UsersPage` prefers `onRefreshUsers(filters, roles)`;
+- full `loadAdminData` remains available for initial bootstrap and global refresh;
+- only `adminData.users` is replaced during users-only refresh;
+- unrelated admin datasets are preserved;
+- no backend, database, `main`, or production change was performed.
+
+Verification markers:
+- `Stage 34.2 users-only refresh archive - 2026-06-01`
+- `stage34_users_only_refresh_archive=yes`
+- `stage34_ci_2115_success=yes`
+- `stage34_users_only_refresh_accepted=yes`
+- `stage34_no_runtime_change=yes`
+- `stage34_no_backend_change=yes`
+- `stage34_no_main_update=yes`
+- `stage34_no_production_redeploy=yes`
