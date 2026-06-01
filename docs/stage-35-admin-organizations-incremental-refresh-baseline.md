@@ -54,3 +54,33 @@ Verification markers:
 - `stage35_no_backend_change=yes`
 - `stage35_no_main_update=yes`
 - `stage35_no_production_redeploy=yes`
+
+## 2. Organizations-only refresh path - 2026-06-01
+
+Goal: avoid full admin data reloads when only the admin organizations page is manually refreshed.
+
+Implementation:
+- `useAdminDataLoader` now returns `refreshAdminOrganizations()`;
+- `refreshAdminOrganizations` calls `getAdminOrganizations()`;
+- organizations-only refresh updates only `adminData.organizations`;
+- unrelated admin datasets are preserved through functional `setAdminData((current) => ({ ...current, organizations }))`;
+- `OrganizationsPage` now prefers `onRefreshOrganizations()` for manual refresh;
+- `onRefreshAdminData()` remains as fallback;
+- initial admin bootstrap still uses full `loadAdminData`.
+
+Safety boundary:
+- frontend-only runtime change;
+- no backend changes;
+- no database migration;
+- no `main` update;
+- no production redeploy.
+
+Verification markers:
+- `Stage 35.1 admin organizations-only refresh path - 2026-06-01`
+- `stage35_organizations_only_refresh_path=yes`
+- `stage35_refresh_admin_organizations_only_updates_organizations=yes`
+- `stage35_organizations_page_uses_on_refresh_organizations=yes`
+- `stage35_full_bootstrap_preserved=yes`
+- `stage35_no_backend_change=yes`
+- `stage35_no_main_update=yes`
+- `stage35_no_production_redeploy=yes`

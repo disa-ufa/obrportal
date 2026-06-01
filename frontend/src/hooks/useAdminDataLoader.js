@@ -12,6 +12,7 @@ import {
   EMPTY_ADMIN_DATA,
   getNowLabel,
   sortGroups,
+  sortOrganizations,
   sortUsers,
 } from "../utils/adminState";
 
@@ -108,6 +109,25 @@ export function useAdminDataLoader({
     }
   }
 
+  async function refreshAdminOrganizations() {
+    setAdminLoading(true);
+    setError("");
+
+    try {
+      const organizations = await getAdminOrganizations();
+
+      setAdminData((current) => ({
+        ...current,
+        organizations: sortOrganizations(organizations),
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить список организаций."));
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
   async function refreshAdminUsers(usersFilters = {}, roles = []) {
     setAdminLoading(true);
     setError("");
@@ -129,6 +149,7 @@ export function useAdminDataLoader({
 
   return {
     loadAdminData,
+    refreshAdminOrganizations,
     refreshAdminUsers,
   };
 }

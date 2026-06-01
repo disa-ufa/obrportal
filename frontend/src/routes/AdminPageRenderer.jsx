@@ -29,6 +29,7 @@ export function AdminPageRenderer({
   handleLogout,
   handleRbacCheck,
   loadAdminData,
+  refreshAdminOrganizations,
   refreshAdminUsers,
   selectedUser,
   selectedUserLoading,
@@ -131,6 +132,7 @@ export function AdminPageRenderer({
         onUpdateOrganization={handleUpdateOrganization}
         onDeleteOrganization={handleDeleteOrganization}
         onRefreshAdminData={loadAdminData}
+        onRefreshOrganizations={refreshAdminOrganizations}
       />
     );
   }

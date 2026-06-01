@@ -48,7 +48,7 @@ CURRENT_GLOBAL_RELOAD_MARKERS = {
         "function handleSearchChange(value)",
         "function handleScopeChange(value)",
         "function resetFilters()",
-        "onRefresh={onRefreshAdminData}",
+        "onRefreshAdminData,",
     ],
 }
 
