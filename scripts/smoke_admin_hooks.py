@@ -40,6 +40,7 @@ def main() -> None:
             "EMPTY_ADMIN_DATA,",
             "getNowLabel,",
             "sortGroups,",
+            "sortUsers,",
             "export function useAdminDataLoader({",
             "setAdminData,",
             "setAdminDataLoadedAt,",
@@ -49,6 +50,10 @@ def main() -> None:
             "export function buildAdminUsersFastPathFilters(usersFilters = {}, roles = [])",
             "const { usersFilters = {} } = options || {};",
             "async function loadAdminData(options = {})",
+            "async function refreshAdminUsers(usersFilters = {}, roles = [])",
+            "setAdminData((current) => ({",
+            "...current,",
+            "users: sortUsers(users),",
             "setAdminLoading(true);",
             "setError(\"\");",
             "await Promise.all([",
@@ -67,6 +72,7 @@ def main() -> None:
             "setAdminLoading(false);",
             "return {",
             "loadAdminData,",
+            "refreshAdminUsers,",
         ],
     )
 

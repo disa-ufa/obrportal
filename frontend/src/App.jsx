@@ -60,6 +60,7 @@ export default function App() {
 
   const {
     loadAdminData,
+    refreshAdminUsers,
   } = useAdminDataLoader({
     setAdminData,
     setAdminDataLoadedAt,
@@ -265,6 +266,7 @@ export default function App() {
     handleLogout,
     handleRbacCheck,
     loadAdminData,
+    refreshAdminUsers,
     selectedUser,
     selectedUserLoading,
     selectedUserError,

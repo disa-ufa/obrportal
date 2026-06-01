@@ -53,3 +53,33 @@ Verification markers:
 - `stage34_no_backend_change=yes`
 - `stage34_no_main_update=yes`
 - `stage34_no_production_redeploy=yes`
+
+## 2. Users-only refresh path - 2026-06-01
+
+Goal: avoid full admin data reloads when only admin users filters change.
+
+Implementation:
+- `useAdminDataLoader` now returns `refreshAdminUsers(usersFilters = {}, roles = [])`;
+- `refreshAdminUsers` calls `getAdminUsers(buildAdminUsersFastPathFilters(usersFilters, roles))`;
+- users-only refresh updates only `adminData.users`;
+- unrelated admin datasets are preserved through functional `setAdminData((current) => ({ ...current, users }))`;
+- `UsersPage` now prefers `onRefreshUsers(filters, roles)` for filter changes and manual users refresh;
+- `onRefreshAdminData({ usersFilters })` remains as fallback;
+- initial admin bootstrap still uses full `loadAdminData`.
+
+Safety boundary:
+- frontend-only runtime change;
+- no backend changes;
+- no database migration;
+- no `main` update;
+- no production redeploy.
+
+Verification markers:
+- `Stage 34.1 admin users-only refresh path - 2026-06-01`
+- `stage34_users_only_refresh_path=yes`
+- `stage34_refresh_admin_users_only_updates_users=yes`
+- `stage34_users_page_uses_on_refresh_users=yes`
+- `stage34_full_bootstrap_preserved=yes`
+- `stage34_no_backend_change=yes`
+- `stage34_no_main_update=yes`
+- `stage34_no_production_redeploy=yes`

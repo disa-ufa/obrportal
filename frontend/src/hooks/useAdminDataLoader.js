@@ -12,6 +12,7 @@ import {
   EMPTY_ADMIN_DATA,
   getNowLabel,
   sortGroups,
+  sortUsers,
 } from "../utils/adminState";
 
 export const ADMIN_USERS_FAST_PATH_LIMIT = 200;
@@ -107,7 +108,27 @@ export function useAdminDataLoader({
     }
   }
 
+  async function refreshAdminUsers(usersFilters = {}, roles = []) {
+    setAdminLoading(true);
+    setError("");
+
+    try {
+      const users = await getAdminUsers(buildAdminUsersFastPathFilters(usersFilters, roles));
+
+      setAdminData((current) => ({
+        ...current,
+        users: sortUsers(users),
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить список пользователей."));
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
   return {
     loadAdminData,
+    refreshAdminUsers,
   };
 }

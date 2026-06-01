@@ -29,6 +29,7 @@ export function AdminPageRenderer({
   handleLogout,
   handleRbacCheck,
   loadAdminData,
+  refreshAdminUsers,
   selectedUser,
   selectedUserLoading,
   selectedUserError,
@@ -110,6 +111,7 @@ export function AdminPageRenderer({
         onAssignUserRole={handleAssignUserRole}
         onRemoveUserRole={handleRemoveUserRole}
         onRefreshAdminData={loadAdminData}
+        onRefreshUsers={refreshAdminUsers}
       />
     );
   }

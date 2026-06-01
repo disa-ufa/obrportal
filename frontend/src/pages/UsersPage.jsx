@@ -134,6 +134,7 @@ export function UsersPage({
   onAssignUserRole,
   onRemoveUserRole,
   onRefreshAdminData,
+  onRefreshUsers,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -223,6 +224,11 @@ export function UsersPage({
   }
 
   function refreshUsersFastPath(filters = currentUserFastPathFilters) {
+    if (onRefreshUsers) {
+      onRefreshUsers(filters, roles);
+      return;
+    }
+
     onRefreshAdminData({ usersFilters: filters });
   }
 
