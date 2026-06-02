@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 
 ROOT = Path.cwd()
 ADMIN_RENDERER = ROOT / "frontend" / "src" / "routes" / "AdminPageRenderer.jsx"
