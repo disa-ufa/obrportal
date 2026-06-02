@@ -3,6 +3,7 @@ import {
   getAdminAuditEvents,
   getAdminCourses,
   getAdminDashboardSummary,
+  getAdminEnrollments,
   getAdminOrganizations,
   getAdminPermissions,
   getAdminRoles,
@@ -13,6 +14,7 @@ import {
   EMPTY_ADMIN_DATA,
   getNowLabel,
   sortCourses,
+  sortEnrollments,
   sortGroups,
   sortOrganizations,
   sortUsers,
@@ -20,6 +22,49 @@ import {
 
 export const ADMIN_USERS_FAST_PATH_LIMIT = 200;
 export const ADMIN_COURSES_FAST_PATH_LIMIT = 300;
+export const ADMIN_ENROLLMENTS_FAST_PATH_LIMIT = 300;
+
+export function buildAdminEnrollmentsFastPathFilters(enrollmentsFilters = {}) {
+  const filters = {
+    limit: ADMIN_ENROLLMENTS_FAST_PATH_LIMIT,
+  };
+
+  const searchQuery = `${enrollmentsFilters.q || ""}`.trim();
+
+  if (searchQuery) {
+    filters.q = searchQuery;
+  }
+
+  [
+    "user_id",
+    "course_id",
+    "organization_id",
+    "status",
+    "learning_group_id",
+  ].forEach((key) => {
+    const value = enrollmentsFilters[key];
+
+    if (value !== undefined && value !== null && `${value}`.trim() !== "") {
+      filters[key] = value;
+    }
+  });
+
+  if (
+    enrollmentsFilters.action_required === "true" ||
+    enrollmentsFilters.action_required === true
+  ) {
+    filters.action_required = true;
+  }
+
+  if (
+    enrollmentsFilters.action_required === "false" ||
+    enrollmentsFilters.action_required === false
+  ) {
+    filters.action_required = false;
+  }
+
+  return filters;
+}
 
 export function buildAdminCoursesFastPathFilters(coursesFilters = {}) {
   const filters = {
@@ -134,6 +179,27 @@ export function useAdminDataLoader({
     }
   }
 
+  async function refreshAdminEnrollments(enrollmentsFilters = {}) {
+    setAdminLoading(true);
+    setError("");
+
+    try {
+      const enrollments = await getAdminEnrollments(
+        buildAdminEnrollmentsFastPathFilters(enrollmentsFilters)
+      );
+
+      setAdminData((current) => ({
+        ...current,
+        enrollments: sortEnrollments(enrollments),
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить список назначений."));
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
   async function refreshAdminCourses(coursesFilters = {}) {
     setAdminLoading(true);
     setError("");
@@ -212,6 +278,7 @@ export function useAdminDataLoader({
 
   return {
     loadAdminData,
+    refreshAdminEnrollments,
     refreshAdminCourses,
     refreshAdminGroups,
     refreshAdminOrganizations,

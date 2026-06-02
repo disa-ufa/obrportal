@@ -29,6 +29,7 @@ export function AdminPageRenderer({
   handleLogout,
   handleRbacCheck,
   loadAdminData,
+  refreshAdminEnrollments,
   refreshAdminCourses,
   refreshAdminGroups,
   refreshAdminOrganizations,
@@ -90,7 +91,7 @@ export function AdminPageRenderer({
   }
 
   if (page === "enrollments") {
-    return <AdminEnrollmentsPage />;
+    return <AdminEnrollmentsPage onRefreshEnrollments={refreshAdminEnrollments} />;
   }
 
   if (page === "users") {
