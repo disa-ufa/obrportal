@@ -60,6 +60,7 @@ export default function App() {
 
   const {
     loadAdminData,
+    refreshAdminDocuments,
     refreshAdminEnrollments,
     refreshAdminCourses,
     refreshAdminGroups,
@@ -270,6 +271,7 @@ export default function App() {
     handleLogout,
     handleRbacCheck,
     loadAdminData,
+    refreshAdminDocuments,
     refreshAdminEnrollments,
     refreshAdminCourses,
     refreshAdminGroups,

@@ -3,6 +3,7 @@ import {
   getAdminAuditEvents,
   getAdminCourses,
   getAdminDashboardSummary,
+  getAdminDocuments,
   getAdminEnrollments,
   getAdminOrganizations,
   getAdminPermissions,
@@ -14,6 +15,7 @@ import {
   EMPTY_ADMIN_DATA,
   getNowLabel,
   sortCourses,
+  sortDocuments,
   sortEnrollments,
   sortGroups,
   sortOrganizations,
@@ -23,6 +25,49 @@ import {
 export const ADMIN_USERS_FAST_PATH_LIMIT = 200;
 export const ADMIN_COURSES_FAST_PATH_LIMIT = 300;
 export const ADMIN_ENROLLMENTS_FAST_PATH_LIMIT = 300;
+export const ADMIN_DOCUMENTS_FAST_PATH_LIMIT = 300;
+
+export function buildAdminDocumentsFastPathFilters(documentsFilters = {}) {
+  const filters = {
+    limit: ADMIN_DOCUMENTS_FAST_PATH_LIMIT,
+  };
+
+  const searchQuery = `${documentsFilters.q || ""}`.trim();
+
+  if (searchQuery) {
+    filters.q = searchQuery;
+  }
+
+  [
+    "user_id",
+    "enrollment_id",
+    "organization_id",
+    "status",
+    "document_type",
+  ].forEach((key) => {
+    const value = documentsFilters[key];
+
+    if (value !== undefined && value !== null && `${value}`.trim() !== "") {
+      filters[key] = value;
+    }
+  });
+
+  if (
+    documentsFilters.action_required === "true" ||
+    documentsFilters.action_required === true
+  ) {
+    filters.action_required = true;
+  }
+
+  if (
+    documentsFilters.action_required === "false" ||
+    documentsFilters.action_required === false
+  ) {
+    filters.action_required = false;
+  }
+
+  return filters;
+}
 
 export function buildAdminEnrollmentsFastPathFilters(enrollmentsFilters = {}) {
   const filters = {
@@ -179,6 +224,27 @@ export function useAdminDataLoader({
     }
   }
 
+  async function refreshAdminDocuments(documentsFilters = {}) {
+    setAdminLoading(true);
+    setError("");
+
+    try {
+      const documents = await getAdminDocuments(
+        buildAdminDocumentsFastPathFilters(documentsFilters)
+      );
+
+      setAdminData((current) => ({
+        ...current,
+        documents: sortDocuments(documents),
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить список документов."));
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
   async function refreshAdminEnrollments(enrollmentsFilters = {}) {
     setAdminLoading(true);
     setError("");
@@ -278,6 +344,7 @@ export function useAdminDataLoader({
 
   return {
     loadAdminData,
+    refreshAdminDocuments,
     refreshAdminEnrollments,
     refreshAdminCourses,
     refreshAdminGroups,

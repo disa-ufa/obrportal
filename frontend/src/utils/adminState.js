@@ -52,6 +52,15 @@ export function sortEnrollments(enrollments) {
   });
 }
 
+export function sortDocuments(documents) {
+  return [...documents].sort((left, right) => {
+    const leftLabel = `${left.document_number || ""} ${left.title || ""}`;
+    const rightLabel = `${right.document_number || ""} ${right.title || ""}`;
+
+    return leftLabel.localeCompare(rightLabel, "ru-RU");
+  });
+}
+
 export function sortRoles(roles) {
   return [...roles].sort((left, right) =>
     left.code.localeCompare(right.code, "ru-RU")
