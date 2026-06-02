@@ -1,14 +1,35 @@
-import { AuditPage } from "../pages/AuditPage";
-import { DashboardPage } from "../pages/DashboardPage";
-import { AdminCoursesPage } from "../pages/AdminCoursesPage";
-import { AdminEnrollmentsPage } from "../pages/AdminEnrollmentsPage";
-import { DocumentsPage } from "../pages/DocumentsPage";
-import { GroupsPage } from "../pages/GroupsPage";
-import { OrganizationsPage } from "../pages/OrganizationsPage";
-import { PermissionsPage } from "../pages/PermissionsPage";
-import { RolesPage } from "../pages/RolesPage";
-import { UsersPage } from "../pages/UsersPage";
+import { lazy, Suspense } from "react";
 import { getAdminPageFromPathname } from "../utils/adminRoutes";
+
+function lazyNamed(loader, exportName) {
+  return lazy(() =>
+    loader().then((module) => ({
+      default: module[exportName],
+    }))
+  );
+}
+
+const AuditPage = lazyNamed(() => import("../pages/AuditPage"), "AuditPage");
+const DashboardPage = lazyNamed(() => import("../pages/DashboardPage"), "DashboardPage");
+const AdminCoursesPage = lazyNamed(() => import("../pages/AdminCoursesPage"), "AdminCoursesPage");
+const AdminEnrollmentsPage = lazyNamed(() => import("../pages/AdminEnrollmentsPage"), "AdminEnrollmentsPage");
+const DocumentsPage = lazyNamed(() => import("../pages/DocumentsPage"), "DocumentsPage");
+const GroupsPage = lazyNamed(() => import("../pages/GroupsPage"), "GroupsPage");
+const OrganizationsPage = lazyNamed(() => import("../pages/OrganizationsPage"), "OrganizationsPage");
+const PermissionsPage = lazyNamed(() => import("../pages/PermissionsPage"), "PermissionsPage");
+const RolesPage = lazyNamed(() => import("../pages/RolesPage"), "RolesPage");
+const UsersPage = lazyNamed(() => import("../pages/UsersPage"), "UsersPage");
+
+function AdminPageLoadingFallback() {
+  return (
+    <div
+      data-testid="admin-page-loading-state"
+      className="rounded-3xl bg-white p-6 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200"
+    >
+      Загружаем административный раздел...
+    </div>
+  );
+}
 
 export function AdminPageRenderer({
   locationPathname,
@@ -90,16 +111,14 @@ export function AdminPageRenderer({
 }) {
   const page = getAdminPageFromPathname(locationPathname) || currentPage;
 
+  let content;
+
   if (page === "courses") {
-    return <AdminCoursesPage onRefreshCourses={refreshAdminCourses} />;
-  }
-
-  if (page === "enrollments") {
-    return <AdminEnrollmentsPage onRefreshEnrollments={refreshAdminEnrollments} />;
-  }
-
-  if (page === "users") {
-    return (
+    content = <AdminCoursesPage onRefreshCourses={refreshAdminCourses} />;
+  } else if (page === "enrollments") {
+    content = <AdminEnrollmentsPage onRefreshEnrollments={refreshAdminEnrollments} />;
+  } else if (page === "users") {
+    content = (
       <UsersPage
         user={user}
         users={adminData.users}
@@ -122,10 +141,8 @@ export function AdminPageRenderer({
         onRefreshUsers={refreshAdminUsers}
       />
     );
-  }
-
-  if (page === "organizations") {
-    return (
+  } else if (page === "organizations") {
+    content = (
       <OrganizationsPage
         user={user}
         organizations={adminData.organizations}
@@ -142,10 +159,8 @@ export function AdminPageRenderer({
         onRefreshOrganizations={refreshAdminOrganizations}
       />
     );
-  }
-
-  if (page === "groups") {
-    return (
+  } else if (page === "groups") {
+    content = (
       <GroupsPage
         user={user}
         groups={adminData.groups}
@@ -163,10 +178,8 @@ export function AdminPageRenderer({
         onRefreshGroups={refreshAdminGroups}
       />
     );
-  }
-
-  if (page === "roles") {
-    return (
+  } else if (page === "roles") {
+    content = (
       <RolesPage
         user={user}
         roles={adminData.roles}
@@ -186,10 +199,8 @@ export function AdminPageRenderer({
         onRemoveRolePermission={handleRemoveRolePermission}
       />
     );
-  }
-
-  if (page === "permissions") {
-    return (
+  } else if (page === "permissions") {
+    content = (
       <PermissionsPage
         user={user}
         permissions={adminData.permissions}
@@ -203,14 +214,10 @@ export function AdminPageRenderer({
         onRefreshPermissions={refreshAdminPermissions}
       />
     );
-  }
-
-  if (page === "documents") {
-    return <DocumentsPage onRefreshDocuments={refreshAdminDocuments} />;
-  }
-
-  if (page === "audit") {
-    return (
+  } else if (page === "documents") {
+    content = <DocumentsPage onRefreshDocuments={refreshAdminDocuments} />;
+  } else if (page === "audit") {
+    content = (
       <AuditPage
         user={user}
         auditEvents={adminData.auditEvents}
@@ -224,25 +231,31 @@ export function AdminPageRenderer({
         onRefreshAuditEvents={refreshAdminAuditEvents}
       />
     );
+  } else {
+    content = (
+      <DashboardPage
+        email={email}
+        password={password}
+        loading={authLoading || initializingAuth}
+        adminLoading={adminLoading}
+        error={error}
+        user={user}
+        rbac={rbac}
+        adminData={adminData}
+        adminDataLoadedAt={adminDataLoadedAt}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+        onRbacCheck={handleRbacCheck}
+        onRefreshAdminData={loadAdminData}
+      />
+    );
   }
 
   return (
-    <DashboardPage
-      email={email}
-      password={password}
-      loading={authLoading || initializingAuth}
-      adminLoading={adminLoading}
-      error={error}
-      user={user}
-      rbac={rbac}
-      adminData={adminData}
-      adminDataLoadedAt={adminDataLoadedAt}
-      onEmailChange={setEmail}
-      onPasswordChange={setPassword}
-      onLogin={handleLogin}
-      onLogout={handleLogout}
-      onRbacCheck={handleRbacCheck}
-      onRefreshAdminData={loadAdminData}
-    />
+    <Suspense fallback={<AdminPageLoadingFallback />}>
+      {content}
+    </Suspense>
   );
 }
