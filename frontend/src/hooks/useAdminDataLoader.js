@@ -1,6 +1,7 @@
 import { formatApiError } from "../utils/apiErrors";
 import {
   getAdminAuditEvents,
+  getAdminCourses,
   getAdminDashboardSummary,
   getAdminOrganizations,
   getAdminPermissions,
@@ -11,12 +12,36 @@ import {
 import {
   EMPTY_ADMIN_DATA,
   getNowLabel,
+  sortCourses,
   sortGroups,
   sortOrganizations,
   sortUsers,
 } from "../utils/adminState";
 
 export const ADMIN_USERS_FAST_PATH_LIMIT = 200;
+export const ADMIN_COURSES_FAST_PATH_LIMIT = 300;
+
+export function buildAdminCoursesFastPathFilters(coursesFilters = {}) {
+  const filters = {
+    limit: ADMIN_COURSES_FAST_PATH_LIMIT,
+  };
+
+  const searchQuery = `${coursesFilters.q || ""}`.trim();
+
+  if (searchQuery) {
+    filters.q = searchQuery;
+  }
+
+  if (coursesFilters.is_active === "true" || coursesFilters.is_active === true) {
+    filters.is_active = true;
+  }
+
+  if (coursesFilters.is_active === "false" || coursesFilters.is_active === false) {
+    filters.is_active = false;
+  }
+
+  return filters;
+}
 
 export function getAdminUsersRoleCode(roles = [], roleId = "") {
   if (!roleId) {
@@ -109,6 +134,25 @@ export function useAdminDataLoader({
     }
   }
 
+  async function refreshAdminCourses(coursesFilters = {}) {
+    setAdminLoading(true);
+    setError("");
+
+    try {
+      const courses = await getAdminCourses(buildAdminCoursesFastPathFilters(coursesFilters));
+
+      setAdminData((current) => ({
+        ...current,
+        courses: sortCourses(courses),
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить список программ."));
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
   async function refreshAdminGroups() {
     setAdminLoading(true);
     setError("");
@@ -168,6 +212,7 @@ export function useAdminDataLoader({
 
   return {
     loadAdminData,
+    refreshAdminCourses,
     refreshAdminGroups,
     refreshAdminOrganizations,
     refreshAdminUsers,
