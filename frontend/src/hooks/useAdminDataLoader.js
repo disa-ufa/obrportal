@@ -19,6 +19,9 @@ import {
   sortEnrollments,
   sortGroups,
   sortOrganizations,
+  sortPermissions,
+  sortRoles,
+  sortAuditEvents,
   sortUsers,
 } from "../utils/adminState";
 
@@ -209,9 +212,9 @@ export function useAdminDataLoader({
         courses: [],
         enrollments: [],
         documents: [],
-        roles,
-        permissions,
-        auditEvents,
+        roles: sortRoles(roles),
+        permissions: sortPermissions(permissions),
+        auditEvents: sortAuditEvents(auditEvents),
         dashboardSummary,
       });
       setAdminDataLoadedAt(getNowLabel());
@@ -219,6 +222,66 @@ export function useAdminDataLoader({
       setError(formatApiError(err, "Не удалось загрузить административные данные."));
       setAdminData(EMPTY_ADMIN_DATA);
       setAdminDataLoadedAt("");
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function refreshAdminRoles() {
+    setAdminLoading(true);
+    setError("");
+
+    try {
+      const roles = await getAdminRoles();
+
+      setAdminData((current) => ({
+        ...current,
+        roles: sortRoles(roles),
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить список ролей."));
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function refreshAdminPermissions() {
+    setAdminLoading(true);
+    setError("");
+
+    try {
+      const permissions = await getAdminPermissions();
+
+      setAdminData((current) => ({
+        ...current,
+        permissions: sortPermissions(permissions),
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить список прав."));
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function refreshAdminAuditEvents(auditFilters = {}) {
+    setAdminLoading(true);
+    setError("");
+
+    try {
+      const auditEvents = await getAdminAuditEvents(auditFilters);
+
+      setAdminData((current) => ({
+        ...current,
+        auditEvents: sortAuditEvents(auditEvents),
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+
+      return auditEvents;
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить журнал аудита."));
+      throw err;
     } finally {
       setAdminLoading(false);
     }
@@ -344,6 +407,9 @@ export function useAdminDataLoader({
 
   return {
     loadAdminData,
+    refreshAdminRoles,
+    refreshAdminPermissions,
+    refreshAdminAuditEvents,
     refreshAdminDocuments,
     refreshAdminEnrollments,
     refreshAdminCourses,

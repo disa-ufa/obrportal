@@ -66,3 +66,15 @@ export function sortRoles(roles) {
     left.code.localeCompare(right.code, "ru-RU")
   );
 }
+
+export function sortPermissions(permissions) {
+  return [...permissions].sort((left, right) =>
+    left.code.localeCompare(right.code, "ru-RU")
+  );
+}
+
+export function sortAuditEvents(auditEvents) {
+  return [...auditEvents].sort((left, right) =>
+    String(right.created_at || "").localeCompare(String(left.created_at || ""), "ru-RU")
+  );
+}
