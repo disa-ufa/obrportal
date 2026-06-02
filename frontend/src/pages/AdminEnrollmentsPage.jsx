@@ -853,6 +853,7 @@ function EnrollmentWorkflowPanel({ statusCounts, courses, groups }) {
 }
 
 export function AdminEnrollmentsPage() {
+  const { onRefreshEnrollments } = arguments[0] || {};
   const location = useLocation();
   const navigate = useNavigate();
   const initialFilters = getEnrollmentFiltersFromSearch(location.search);
@@ -1170,7 +1171,7 @@ export function AdminEnrollmentsPage() {
     const currentPath = `${location.pathname}${location.search}`;
 
     if (currentPath === nextPath) {
-      await loadData(filters);
+      await refreshEnrollmentsFastPath(filters);
       return;
     }
 
@@ -1238,6 +1239,21 @@ export function AdminEnrollmentsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function refreshEnrollmentsFastPath(filters = buildFilters()) {
+    const nextFilters = filters ?? buildFilters();
+    const localRefresh = loadData(nextFilters);
+
+    if (!onRefreshEnrollments) {
+      await localRefresh;
+      return;
+    }
+
+    await Promise.all([
+      localRefresh,
+      onRefreshEnrollments(nextFilters),
+    ]);
   }
 
   useEffect(() => {
@@ -1465,7 +1481,7 @@ export function AdminEnrollmentsPage() {
 
       setSuccessMessage(`Назначение создано: ${created.user_email} → ${created.course_title}`);
       resetForm();
-      await loadData(buildFilters());
+      await refreshEnrollmentsFastPath(buildFilters());
     } catch (err) {
       setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.createFailed));
     } finally {
@@ -1570,7 +1586,7 @@ export function AdminEnrollmentsPage() {
         status: "completed",
       });
 
-      await loadData(buildFilters());
+      await refreshEnrollmentsFastPath(buildFilters());
 
       setSuccessMessage(
         `Обучение завершено: ${updated.user_email} → ${updated.course_title}. Черновик документа создан.`
@@ -1601,7 +1617,7 @@ export function AdminEnrollmentsPage() {
 
       setSuccessMessage(`Назначение обновлено: ${updated.user_email} → ${updated.course_title}`);
       resetEditState();
-      await loadData(buildFilters());
+      await refreshEnrollmentsFastPath(buildFilters());
     } catch (err) {
       setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.updateFailed));
     } finally {
@@ -1630,7 +1646,7 @@ export function AdminEnrollmentsPage() {
       }
 
       setSuccessMessage(`Назначение удалено: ${enrollment.user_email} → ${enrollment.course_title}`);
-      await loadData(buildFilters());
+      await refreshEnrollmentsFastPath(buildFilters());
     } catch (err) {
       setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.deleteFailed));
     } finally {
