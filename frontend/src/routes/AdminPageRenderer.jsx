@@ -29,6 +29,7 @@ export function AdminPageRenderer({
   handleLogout,
   handleRbacCheck,
   loadAdminData,
+  refreshAdminDocuments,
   refreshAdminEnrollments,
   refreshAdminCourses,
   refreshAdminGroups,
@@ -200,7 +201,7 @@ export function AdminPageRenderer({
   }
 
   if (page === "documents") {
-    return <DocumentsPage />;
+    return <DocumentsPage onRefreshDocuments={refreshAdminDocuments} />;
   }
 
   if (page === "audit") {

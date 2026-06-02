@@ -849,6 +849,7 @@ function DocumentsWorkflowPanel({ documentStatusCounts, courses, enrollments }) 
 
 
 export function DocumentsPage() {
+  const { onRefreshDocuments } = arguments[0] || {};
   const location = useLocation();
   const navigate = useNavigate();
   const initialFilters = getDocumentFiltersFromSearch(location.search);
@@ -1141,7 +1142,7 @@ export function DocumentsPage() {
     const currentPath = `${location.pathname}${location.search}`;
 
     if (currentPath === nextPath) {
-      await loadData(filters);
+      await refreshDocumentsFastPath(filters);
       return;
     }
 
@@ -1198,6 +1199,21 @@ export function DocumentsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function refreshDocumentsFastPath(filters = buildDocumentFilters()) {
+    const nextFilters = filters ?? buildDocumentFilters();
+    const localRefresh = loadData(nextFilters);
+
+    if (!onRefreshDocuments) {
+      await localRefresh;
+      return;
+    }
+
+    await Promise.all([
+      localRefresh,
+      onRefreshDocuments(nextFilters),
+    ]);
   }
 
   useEffect(() => {
@@ -1362,7 +1378,7 @@ export function DocumentsPage() {
 
       setSuccessMessage(`Документ создан: ${created.document_number}`);
       resetForm();
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.createFailed));
     } finally {
@@ -1426,7 +1442,7 @@ export function DocumentsPage() {
 
       setSuccessMessage(`Документ обновлён: ${updated.document_number}`);
       resetEditState();
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.updateFailed));
     } finally {
@@ -1490,7 +1506,7 @@ export function DocumentsPage() {
       setSuccessMessage(
         `Статус документа ${updated.document_number} изменён: ${getDocumentStatusLabel(updated.status)}`
       );
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.statusChangeFailed));
     } finally {
@@ -1531,7 +1547,7 @@ export function DocumentsPage() {
       const regenerated = await regenerateAdminDocument(documentItem.id);
 
       setSuccessMessage(`PDF пересобран: ${regenerated.document_number}`);
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, "Не удалось пересобрать итоговый PDF."));
     } finally {
@@ -1596,7 +1612,7 @@ export function DocumentsPage() {
       }
 
       setSuccessMessage(`Документ удалён: ${documentItem.document_number}`);
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.deleteFailed));
     } finally {
