@@ -29,6 +29,9 @@ export function AdminPageRenderer({
   handleLogout,
   handleRbacCheck,
   loadAdminData,
+  refreshAdminRoles,
+  refreshAdminPermissions,
+  refreshAdminAuditEvents,
   refreshAdminDocuments,
   refreshAdminEnrollments,
   refreshAdminCourses,
@@ -178,6 +181,7 @@ export function AdminPageRenderer({
         onUpdateRole={handleUpdateRole}
         onDeleteRole={handleDeleteRole}
         onRefreshAdminData={loadAdminData}
+        onRefreshRoles={refreshAdminRoles}
         onAssignRolePermission={handleAssignRolePermission}
         onRemoveRolePermission={handleRemoveRolePermission}
       />
@@ -196,6 +200,7 @@ export function AdminPageRenderer({
         onOpenPermission={handleOpenPermission}
         onClosePermission={clearSelectedPermission}
         onRefreshAdminData={loadAdminData}
+        onRefreshPermissions={refreshAdminPermissions}
       />
     );
   }
@@ -216,6 +221,7 @@ export function AdminPageRenderer({
         onOpenAuditEvent={handleOpenAuditEvent}
         onCloseAuditEvent={clearSelectedAuditEvent}
         onApplyAuditFilters={handleApplyAuditFilters}
+        onRefreshAuditEvents={refreshAdminAuditEvents}
       />
     );
   }

@@ -618,6 +618,7 @@ export function AuditPage({
   onOpenAuditEvent,
   onCloseAuditEvent,
   onApplyAuditFilters,
+  onRefreshAuditEvents,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -695,7 +696,11 @@ export function AuditPage({
     try {
       const payload = getAuditFilterPayload(nextFilters);
 
-      await onApplyAuditFilters(payload);
+      if (onRefreshAuditEvents) {
+        await onRefreshAuditEvents(payload);
+      } else {
+        await onApplyAuditFilters(payload);
+      }
       setFilterError("");
     } catch (err) {
       setFilterError(formatApiError(err, "Не удалось применить фильтры журнала аудита."));

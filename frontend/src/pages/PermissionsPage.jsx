@@ -157,6 +157,7 @@ export function PermissionsPage({
   onOpenPermission,
   onClosePermission,
   onRefreshAdminData,
+  onRefreshPermissions,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -256,7 +257,7 @@ export function PermissionsPage({
         action={user ? (
           <AdminPageActions
             loading={loading}
-            onRefresh={onRefreshAdminData}
+            onRefresh={onRefreshPermissions || onRefreshAdminData}
           />
         ) : null}
       >

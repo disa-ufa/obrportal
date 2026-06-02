@@ -217,6 +217,7 @@ export function RolesPage({
   onUpdateRole,
   onDeleteRole,
   onRefreshAdminData,
+  onRefreshRoles,
   onAssignRolePermission,
   onRemoveRolePermission,
 }) {
@@ -316,7 +317,7 @@ export function RolesPage({
         action={user ? (
           <AdminPageActions
             loading={loading}
-            onRefresh={onRefreshAdminData}
+            onRefresh={onRefreshRoles || onRefreshAdminData}
             primaryLabel={showCreateForm ? "Скрыть форму" : "Создать роль"}
             primaryTone={showCreateForm ? "light" : "blue"}
             onPrimaryClick={() => setShowCreateForm((current) => !current)}
