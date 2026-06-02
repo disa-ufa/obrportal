@@ -54,3 +54,33 @@ Verification markers:
 - `stage36_no_backend_change=yes`
 - `stage36_no_main_update=yes`
 - `stage36_no_production_redeploy=yes`
+
+## 2. Groups-only refresh path - 2026-06-01
+
+Goal: avoid full admin data reloads when only the admin groups page is manually refreshed.
+
+Implementation:
+- `useAdminDataLoader` now returns `refreshAdminGroups()`;
+- `refreshAdminGroups` calls `getOrgLearningGroups()`;
+- groups-only refresh updates only `adminData.groups`;
+- unrelated admin datasets are preserved through functional `setAdminData((current) => ({ ...current, groups }))`;
+- `GroupsPage` now prefers `onRefreshGroups()` for manual refresh;
+- `onRefreshAdminData()` remains as fallback;
+- initial admin bootstrap still uses full `loadAdminData`.
+
+Safety boundary:
+- frontend-only runtime change;
+- no backend changes;
+- no database migration;
+- no `main` update;
+- no production redeploy.
+
+Verification markers:
+- `Stage 36.1 admin groups-only refresh path - 2026-06-01`
+- `stage36_groups_only_refresh_path=yes`
+- `stage36_refresh_admin_groups_only_updates_groups=yes`
+- `stage36_groups_page_uses_on_refresh_groups=yes`
+- `stage36_full_bootstrap_preserved=yes`
+- `stage36_no_backend_change=yes`
+- `stage36_no_main_update=yes`
+- `stage36_no_production_redeploy=yes`

@@ -49,7 +49,7 @@ CURRENT_GLOBAL_RELOAD_MARKERS = {
         "function handleOrganizationChange(value)",
         "function handleStatusChange(value)",
         "function resetFilters()",
-        "onRefresh={onRefreshAdminData}",
+        "onRefreshAdminData,",
     ],
 }
 

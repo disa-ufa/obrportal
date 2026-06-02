@@ -1238,6 +1238,7 @@ export function GroupsPage({
   onUpdateGroup,
   onDeleteGroup,
   onRefreshAdminData,
+  onRefreshGroups,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -1362,6 +1363,15 @@ export function GroupsPage({
     navigateToGroupFilters({}, { replace: true });
   }
 
+  function refreshGroupsFastPath() {
+    if (onRefreshGroups) {
+      onRefreshGroups();
+      return;
+    }
+
+    onRefreshAdminData();
+  }
+
   function handleExportGroupsCsv() {
     const rows = filteredGroups.map((group) => ({
       id: group.id,
@@ -1396,7 +1406,7 @@ export function GroupsPage({
           <div className="space-y-5">
             <AdminPageActions
               loading={loading}
-              onRefresh={onRefreshAdminData}
+              onRefresh={refreshGroupsFastPath}
               primaryLabel={showCreateForm ? "Скрыть форму" : "Добавить группу"}
               primaryTone={showCreateForm ? "light" : "blue"}
               onPrimaryClick={() => setShowCreateForm((current) => !current)}

@@ -29,6 +29,7 @@ export function AdminPageRenderer({
   handleLogout,
   handleRbacCheck,
   loadAdminData,
+  refreshAdminGroups,
   refreshAdminOrganizations,
   refreshAdminUsers,
   selectedUser,
@@ -153,6 +154,7 @@ export function AdminPageRenderer({
         onUpdateGroup={handleUpdateGroup}
         onDeleteGroup={handleDeleteGroup}
         onRefreshAdminData={loadAdminData}
+        onRefreshGroups={refreshAdminGroups}
       />
     );
   }

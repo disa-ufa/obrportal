@@ -109,6 +109,25 @@ export function useAdminDataLoader({
     }
   }
 
+  async function refreshAdminGroups() {
+    setAdminLoading(true);
+    setError("");
+
+    try {
+      const groups = await getOrgLearningGroups();
+
+      setAdminData((current) => ({
+        ...current,
+        groups: sortGroups(groups),
+      }));
+      setAdminDataLoadedAt(getNowLabel());
+    } catch (err) {
+      setError(formatApiError(err, "Не удалось обновить список учебных групп."));
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
   async function refreshAdminOrganizations() {
     setAdminLoading(true);
     setError("");
@@ -149,6 +168,7 @@ export function useAdminDataLoader({
 
   return {
     loadAdminData,
+    refreshAdminGroups,
     refreshAdminOrganizations,
     refreshAdminUsers,
   };
