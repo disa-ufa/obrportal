@@ -37,6 +37,12 @@ export function sortUsers(users) {
   );
 }
 
+export function sortCourses(courses) {
+  return [...courses].sort((left, right) =>
+    left.title.localeCompare(right.title, "ru-RU")
+  );
+}
+
 export function sortRoles(roles) {
   return [...roles].sort((left, right) =>
     left.code.localeCompare(right.code, "ru-RU")

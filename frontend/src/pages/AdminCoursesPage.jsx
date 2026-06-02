@@ -1568,6 +1568,7 @@ function CourseCard({
 }
 
 export function AdminCoursesPage() {
+  const { onRefreshCourses } = arguments[0] || {};
   const location = useLocation();
   const navigate = useNavigate();
   const initialFilters = getCourseFiltersFromSearch(location.search);
@@ -1700,7 +1701,7 @@ export function AdminCoursesPage() {
     const currentPath = `${location.pathname}${location.search}`;
 
     if (currentPath === nextPath) {
-      await loadData(filters);
+      await refreshCoursesFastPath(filters);
       return;
     }
 
@@ -1775,6 +1776,21 @@ export function AdminCoursesPage() {
     }
   }
 
+  async function refreshCoursesFastPath(filters = buildFilters()) {
+    const nextFilters = filters ?? buildFilters();
+    const localRefresh = loadData(nextFilters);
+
+    if (!onRefreshCourses) {
+      await localRefresh;
+      return;
+    }
+
+    await Promise.all([
+      localRefresh,
+      onRefreshCourses(nextFilters),
+    ]);
+  }
+
   useEffect(() => {
     const nextFilters = getCourseFiltersFromSearch(location.search);
 
@@ -1843,7 +1859,7 @@ export function AdminCoursesPage() {
       setSuccessMessage(`${RU.createdMessage}: ${created.title}`);
       resetForm();
       setShowCreateForm(false);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseApiError(err, RU.createFailed));
     } finally {
@@ -1880,7 +1896,7 @@ export function AdminCoursesPage() {
 
       setSuccessMessage(`${RU.updatedMessage}: ${updated.title}`);
       resetEditState();
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseApiError(err, RU.updateFailed));
     } finally {
@@ -1904,7 +1920,7 @@ export function AdminCoursesPage() {
           : `${RU.deactivatedMessage}: ${updated.title}`
       );
 
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseApiError(err, RU.statusChangeFailed));
     } finally {
@@ -1938,7 +1954,7 @@ export function AdminCoursesPage() {
       setLessonEditFormsByLessonId({});
 
       setSuccessMessage(`${RU.deletedMessage}: ${course.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseApiError(err, RU.deleteFailed));
     } finally {
@@ -1999,7 +2015,7 @@ export function AdminCoursesPage() {
       const created = await createAdminCourseLesson(module.id, buildLessonPayload(values));
 
       setSuccessMessage(`${RU.lessonCreatedMessage}: ${created.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseLessonApiError(err, RU.lessonCreateFailed));
     } finally {
@@ -2056,7 +2072,7 @@ export function AdminCoursesPage() {
 
       resetLessonEditState();
       setSuccessMessage(`${RU.lessonUpdatedMessage}: ${updated.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseLessonApiError(err, RU.lessonUpdateFailed));
     } finally {
@@ -2085,7 +2101,7 @@ export function AdminCoursesPage() {
       }
 
       setSuccessMessage(`${RU.lessonDeletedMessage}: ${lesson.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseLessonApiError(err, RU.lessonDeleteFailed));
     } finally {
@@ -2142,7 +2158,7 @@ export function AdminCoursesPage() {
       const created = await createAdminCourseModule(course.id, buildModulePayload(values));
 
       setSuccessMessage(`${RU.moduleCreatedMessage}: ${created.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseModuleApiError(err, RU.moduleCreateFailed));
     } finally {
@@ -2199,7 +2215,7 @@ export function AdminCoursesPage() {
 
       setSuccessMessage(`${RU.moduleUpdatedMessage}: ${updated.title}`);
       resetModuleEditState();
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseModuleApiError(err, RU.moduleUpdateFailed));
     } finally {
@@ -2230,7 +2246,7 @@ export function AdminCoursesPage() {
       resetLessonEditState();
 
       setSuccessMessage(`${RU.moduleDeletedMessage}: ${module.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseModuleApiError(err, RU.moduleDeleteFailed));
     } finally {
@@ -2291,7 +2307,7 @@ export function AdminCoursesPage() {
         action={
           <AdminPageActions
             loading={loading}
-            onRefresh={() => loadData(buildFilters())}
+            onRefresh={() => refreshCoursesFastPath(buildFilters())}
             primaryLabel={showCreateForm ? RU.hideForm : RU.addProgram}
             primaryTone={showCreateForm ? "light" : "blue"}
             onPrimaryClick={() => setShowCreateForm((current) => !current)}

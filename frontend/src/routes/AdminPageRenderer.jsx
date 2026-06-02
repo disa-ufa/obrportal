@@ -29,6 +29,7 @@ export function AdminPageRenderer({
   handleLogout,
   handleRbacCheck,
   loadAdminData,
+  refreshAdminCourses,
   refreshAdminGroups,
   refreshAdminOrganizations,
   refreshAdminUsers,
@@ -85,7 +86,7 @@ export function AdminPageRenderer({
   const page = getAdminPageFromPathname(locationPathname) || currentPage;
 
   if (page === "courses") {
-    return <AdminCoursesPage />;
+    return <AdminCoursesPage onRefreshCourses={refreshAdminCourses} />;
   }
 
   if (page === "enrollments") {
