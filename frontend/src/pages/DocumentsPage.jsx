@@ -2718,11 +2718,11 @@ export function DocumentsPage() {
                             code={documentItem.verification_code}
                             documentNumber={documentItem.document_number}
                             containerId={`admin-document-qr-${documentItem.id}`}
-                            title="QR-код проверки"
-                            description="QR-код можно использовать для размещения на документе или отправки слушателю."
+                            title="QR-код публичной проверки документа"
+                            description="QR-код ведёт на публичную страницу проверки по номеру или коду документа. Файл документа и личный кабинет не раскрываются."
                             showPublicLink
                             showCopyLink
-                            publicLinkLabel="Публичная проверка"
+                            publicLinkLabel="Открыть публичную проверку"
                             className="mt-5"
                           />
                         ) : (
@@ -2732,13 +2732,13 @@ export function DocumentsPage() {
                           >
                             <div className="font-semibold text-slate-800">
                               {documentItem.status === "revoked"
-                                ? "Публичная проверка скрыта: документ отозван"
-                                : "Публичная проверка скрыта до публикации"}
+                                ? "Публичная проверка недоступна: документ отозван"
+                                : "Публичная проверка появится после публикации"}
                             </div>
                             <div className="mt-1">
                               {documentItem.status === "revoked"
-                                ? "QR-код и публичная ссылка не показываются для отозванного документа."
-                                : "QR-код и публичная ссылка появятся после перевода документа в статус «Доступен»."}
+                                ? "QR-код и публичная ссылка скрыты, чтобы отозванный документ не использовали как действующий."
+                                : "После публикации появятся QR-код, публичная ссылка и кнопка проверки."}
                             </div>
                           </div>
                         )}
