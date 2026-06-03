@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 LEGACY_RELEASE_VERSION = "0.1.0-stage6"
-DEVELOPMENT_VERSION = "0.1.0-stage31-dev"
+DEVELOPMENT_VERSION = "0.1.0-stage64-dev"
 
 BACKEND_MAIN_PATH = ROOT / "backend" / "app" / "main.py"
 BACKEND_CONFIG_PATH = ROOT / "backend" / "app" / "core" / "config.py"
@@ -71,8 +71,8 @@ def main() -> None:
     if "app_version: str = Field(" not in backend_config:
         errors.append("backend settings.app_version field is missing")
 
-    if 'default="0.1.0-stage31-dev"' not in backend_config:
-        errors.append("backend settings.app_version default must be 0.1.0-stage31-dev")
+    if 'default="0.1.0-stage64-dev"' not in backend_config:
+        errors.append("backend settings.app_version default must be 0.1.0-stage64-dev")
 
     if 'AliasChoices("APP_VERSION", "OBRPORTAL_APP_VERSION")' not in backend_config:
         errors.append("backend settings.app_version must accept APP_VERSION/OBRPORTAL_APP_VERSION")
@@ -83,8 +83,8 @@ def main() -> None:
     if '"version": settings.app_version' not in backend_main:
         errors.append("/health version must use settings.app_version")
 
-    if "APP_VERSION=0.1.0-stage31-dev" not in env_example:
-        errors.append(".env.example must document APP_VERSION=0.1.0-stage31-dev")
+    if "APP_VERSION=0.1.0-stage64-dev" not in env_example:
+        errors.append(".env.example must document APP_VERSION=0.1.0-stage64-dev")
 
     if package.get("version") != DEVELOPMENT_VERSION:
         errors.append(
