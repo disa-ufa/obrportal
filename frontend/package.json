@@ -1,7 +1,7 @@
 {
   "name": "obrportal-frontend",
   "private": true,
-  "version": "0.1.0-stage31-dev",
+  "version": "0.1.0-stage64-dev",
   "type": "module",
   "scripts": {
     "dev": "vite",

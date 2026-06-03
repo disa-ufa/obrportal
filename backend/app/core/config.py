@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     app_name: str = "ObrPortal"
     app_version: str = Field(
-        default="0.1.0-stage31-dev",
+        default="0.1.0-stage64-dev",
         validation_alias=AliasChoices("APP_VERSION", "OBRPORTAL_APP_VERSION"),
     )
     environment: str = "local"
