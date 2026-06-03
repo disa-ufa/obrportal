@@ -138,7 +138,7 @@ function getPublicVerificationDiagnostics({
   }
 
   if (loading) {
-    items.push("Проверка: запрос к публичному реестру выполняется.");
+    items.push("Проверка: выполняется запрос к публичному реестру.");
   }
 
   if (error) {
@@ -287,69 +287,51 @@ function PublicVerificationJourneyHint({
             data-testid="public-verification-journey-title"
             className="mt-2 text-2xl font-bold text-slate-900"
           >
-            Проверка документа → код/номер → результат
+            Понятная публичная проверка документа
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-            Публичная проверка помогает быстро подтвердить статус документа,
-            не открывая личный кабинет и не раскрывая файл документа.
+            Проверка показывает только публичные сведения, необходимые для подтверждения подлинности:
+            статус, номер, владельца, программу и организацию-издателя. Файл документа и личный
+            кабинет не раскрываются.
           </p>
         </div>
 
-        <div
-          data-testid="public-verification-journey-current-state"
-          className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200"
-        >
-          {currentState}
+        <div className="rounded-2xl bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-blue-100">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Текущее состояние
+          </div>
+          <div data-testid="public-verification-current-state" className="mt-1 font-semibold text-slate-900">
+            {currentState}
+          </div>
+          <div data-testid="public-verification-next-action" className="mt-1 max-w-xs text-xs leading-5 text-slate-500">
+            {nextAction}
+          </div>
         </div>
       </div>
 
-      <div
-        data-testid="public-verification-journey-steps"
-        className="mt-6 grid gap-3 md:grid-cols-3"
-      >
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
         {steps.map((step) => (
-          <div
-            key={step.title}
-            className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
-          >
-            <div className="text-sm font-bold text-slate-900">{step.title}</div>
+          <article key={step.title} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+            <h3 className="text-sm font-semibold text-slate-900">{step.title}</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">{step.text}</p>
-          </div>
+          </article>
         ))}
       </div>
 
-      <div
-        data-testid="public-verification-journey-safe-data"
-        className="mt-5 rounded-2xl bg-white p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
-      >
-        <div className="font-semibold text-slate-900">
-          Публичная проверка не открывает файл документа
-        </div>
-        <p className="mt-1">
-          Она показывает только сведения, необходимые для подтверждения
-          подлинности: статус, номер, код проверки, программу, владельца и
-          организацию-издателя.
-        </p>
-        <p className="mt-2 font-semibold text-slate-900">{nextAction}</p>
-      </div>
-
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-wrap gap-3">
         <button
           type="button"
-          data-testid="public-verification-journey-account-action"
-          onClick={() => onPageChange("account")}
-          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          onClick={() => onPageChange?.("catalog")}
+          className="rounded-xl border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
         >
-          Личный кабинет
+          Перейти в каталог
         </button>
-
         <button
           type="button"
-          data-testid="public-verification-journey-catalog-action"
-          onClick={() => onPageChange("catalog")}
-          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          onClick={() => onPageChange?.("home")}
+          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
         >
-          Каталог курсов
+          На главную
         </button>
       </div>
     </section>
