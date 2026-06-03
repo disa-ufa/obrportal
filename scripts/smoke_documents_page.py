@@ -333,6 +333,31 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "frontend/src/pages/VerifyDocumentPage.jsx",
+        [
+            "Запрос: номер документа или код проверки ещё не введён.",
+            "Проверка: выполняется запрос к публичному реестру.",
+            "Статус: документ опубликован и подтверждается публичным реестром.",
+            "Документ подтверждён",
+            "Понятная публичная проверка документа",
+            "Проверка показывает только публичные сведения, необходимые для подтверждения подлинности",
+            "public-verification-current-state",
+            "public-verification-next-action",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/documents/DocumentVerificationQrBlock.jsx",
+        [
+            "QR-код публичной проверки",
+            "QR-код открывает публичную страницу проверки по безопасному коду документа",
+            "Открыть публичную проверку",
+            "QR-код публичной проверки документа",
+            "Скачать QR SVG",
+        ],
+    )
+
     print("Documents page behavior smoke passed")
 
 
