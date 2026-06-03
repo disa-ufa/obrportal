@@ -820,7 +820,7 @@ def main() -> None:
     require_contains(
         "frontend/src/routes/PublicRoutes.jsx",
         [
-            'import { OrganizationCabinetPage } from "../pages/OrganizationCabinetPage";',
+            "const OrganizationCabinetPage = lazyNamed(() => import(\"../pages/OrganizationCabinetPage\"), \"OrganizationCabinetPage\");",
             'path="/organization"',
             'userHasRole(user, "org_rep")',
             '<Navigate to="/organization" replace />',
