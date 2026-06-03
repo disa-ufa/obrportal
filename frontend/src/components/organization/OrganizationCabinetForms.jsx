@@ -185,6 +185,25 @@ export function OrganizationProfileCard({ organization, onSave }) {
           </div>
         </div>
       </div>
+
+      <div
+        data-testid="organization-document-profile-readiness"
+        className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm text-blue-900 ring-1 ring-blue-100"
+      >
+        <div className="font-semibold">
+          Профиль для итогового PDF
+        </div>
+        <p className="mt-1 leading-6">
+          Эти реквизиты используются при подготовке итоговых документов: ИНН, КПП, ОГРН,
+          юридический и фактический адрес помогают проверить организацию и корректность
+          документа.
+        </p>
+        <p className="mt-2 leading-6">
+          Если в PDF нужны отдельные данные подписанта, основание выдачи или место выдачи,
+          проверьте их у администратора: при неполном профиле система использует
+          fallback-настройки приложения.
+        </p>
+      </div>
         </>
       )}
     </div>
