@@ -245,11 +245,12 @@ export function OrganizationForm({
         data-testid="organization-document-profile-fields"
         className="rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-100"
       >
-        <div className="font-semibold text-slate-900">
-          Реквизиты для генерируемых документов
+        <div
+        data-testid="organization-form-document-profile-hint" className="font-semibold text-slate-900">
+          Профиль итогового PDF
         </div>
         <div className="mt-1 text-sm text-slate-600">
-          Эти поля будут использоваться в PDF-шаблонах удостоверений, сертификатов и справок.
+          Эти поля попадут в PDF-шаблоны удостоверений, сертификатов и справок: организация-выдавшая документ, место выдачи, подписант и основание выдачи. Заполните их до публикации документов, чтобы итоговый PDF не использовал fallback-настройки приложения.
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">

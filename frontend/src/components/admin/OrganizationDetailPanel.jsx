@@ -306,10 +306,10 @@ export function OrganizationDetailPanel({
                 className="rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-100"
               >
                 <div className="font-semibold text-slate-900">
-                  Реквизиты для генерируемых документов
+                  Профиль итогового PDF
                 </div>
                 <div className="mt-1 text-sm text-slate-600">
-                  Используются для PDF-шаблонов удостоверений, сертификатов и справок.
+                  Эти значения используются в PDF-шаблонах удостоверений, сертификатов и справок: организация-выдавшая документ, место выдачи, подписант и основание выдачи. Если поле пустое, при генерации документа может использоваться fallback-настройка приложения.
                 </div>
 
                 <div className="mt-4 grid gap-4 md:grid-cols-2">

@@ -1454,6 +1454,27 @@ def main() -> None:
     require_occurs("frontend/src/pages/AdminCoursesPage.jsx", "useState(", 8)
     require_occurs("frontend/src/pages/AdminEnrollmentsPage.jsx", "useState(", 10)
 
+    require_contains(
+        "frontend/src/components/admin/OrganizationForm.jsx",
+        [
+            "organization-form-document-profile-hint",
+            "Профиль итогового PDF",
+            "Эти поля попадут в PDF-шаблоны удостоверений, сертификатов и справок",
+            "Заполните их до публикации документов",
+            "fallback-настройки приложения",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/admin/OrganizationDetailPanel.jsx",
+        [
+            "organization-document-profile-card",
+            "Профиль итогового PDF",
+            "Эти значения используются в PDF-шаблонах удостоверений, сертификатов и справок",
+            "Если поле пустое, при генерации документа может использоваться fallback-настройка приложения.",
+        ],
+    )
+
     print("Frontend admin pages behavior smoke passed")
 
 
