@@ -94,6 +94,17 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/components/organization/OrganizationCabinetForms.jsx",
+        [
+            "organization-document-profile-readiness",
+            "Профиль для итогового PDF",
+            "Эти реквизиты используются при подготовке итоговых документов",
+            "Если в PDF нужны отдельные данные подписанта",
+            "fallback-настройки приложения",
+        ],
+    )
+
+    require_contains(
         "frontend/src/api/client.js",
         [
             "export async function getOrgProfile()",
