@@ -247,7 +247,7 @@ export function OrganizationForm({
       >
         <div
         data-testid="organization-form-document-profile-hint" className="font-semibold text-slate-900">
-          Профиль итогового PDF
+          Реквизиты для генерируемых документов / Профиль итогового PDF
         </div>
         <div className="mt-1 text-sm text-slate-600">
           Эти поля попадут в PDF-шаблоны удостоверений, сертификатов и справок: организация-выдавшая документ, место выдачи, подписант и основание выдачи. Заполните их до публикации документов, чтобы итоговый PDF не использовал fallback-настройки приложения.
