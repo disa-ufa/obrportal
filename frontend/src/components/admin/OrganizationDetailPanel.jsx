@@ -211,7 +211,7 @@ export function OrganizationDetailPanel({
                     data-testid="organization-attention-diagnostics-note"
                     className="mt-2 leading-6"
                   >
-                    Диагностика основана на реквизитах, адресах и PDF-профиле организации.
+                    Диагностика основана на реквизитах, адресах, PDF-профиле организации и блоке «Реквизиты для генерируемых документов».
                   </p>
                   <ul className="mt-2 list-disc space-y-1 pl-5">
                     {organizationAttentionItems.map((item) => (
