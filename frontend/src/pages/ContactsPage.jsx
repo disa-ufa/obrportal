@@ -47,22 +47,22 @@ export function ContactsPage({ onPageChange }) {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <ContactCard
           title="Телефон"
-          value="+7 (000) 000-00-00"
+          value="+7 (347) 200 10 17"
           hint="Единая линия по вопросам обучения, документов и регистрации."
         />
         <ContactCard
           title="E-mail"
-          value="info@obrportal.local"
+          value="rcdodist@gmail.com"
           hint="Общий адрес для обращений пользователей и организаций."
         />
         <ContactCard
           title="Режим работы"
-          value="Пн–Пт, 09:00–18:00"
+          value="Пн-Пт, 09:00-18:00"
           hint="Ответы на обращения и сопровождение клиентов в рабочее время."
         />
         <ContactCard
           title="Поддержка"
-          value="support@obrportal.local"
+          value="rcdodist@gmail.com"
           hint="Техническая и организационная поддержка по платформе."
         />
       </section>
