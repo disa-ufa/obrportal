@@ -1,0 +1,122 @@
+{
+  "stage": "80.3",
+  "name": "Learner Documents Backend/API Contract",
+  "status": "implementation_ready",
+  "scope": "docs-and-contract-only",
+  "production_checkpoint": {
+    "last_confirmed_stage": "80.2",
+    "last_confirmed_head": "10a3168",
+    "frontend_runtime_changed": false,
+    "backend_runtime_changed": false,
+    "database_migration_run": false
+  },
+  "inventory_baseline": {
+    "source_stage": "80.1",
+    "plan_stage": "80.2",
+    "document_routes_count": 11,
+    "course_or_enrollment_routes_count": 29,
+    "document_related_defs_count": 324,
+    "frontend_document_usage_count": 300
+  },
+  "contracts": [
+    {
+      "id": "learner_documents_list",
+      "title": "Learner documents list",
+      "method": "GET",
+      "path": "/api/v1/account/documents",
+      "auth": "required_current_account",
+      "description": "Returns documents visible to the current learner account.",
+      "query": {
+        "status": "optional string",
+        "course_id": "optional integer",
+        "enrollment_id": "optional integer"
+      },
+      "response": "LearnerDocumentListResponse",
+      "access_rule": "Only documents linked to the current learner context may be returned."
+    },
+    {
+      "id": "learner_document_download",
+      "title": "Learner document download/open",
+      "method": "GET",
+      "path": "/api/v1/account/documents/{document_id}/download",
+      "auth": "required_current_account",
+      "description": "Returns a safe file response or redirect for a learner-owned document.",
+      "response": "file_response_or_safe_redirect",
+      "access_rule": "The document must belong to the current learner context before file delivery."
+    },
+    {
+      "id": "public_document_verification",
+      "title": "Public document verification",
+      "method": "GET",
+      "path": "/api/v1/documents/verify",
+      "auth": "public_safe_response",
+      "description": "Verifies a document by public number or verification code and returns only safe public fields.",
+      "query": {
+        "value": "required document number or verification code"
+      },
+      "response": "PublicDocumentVerificationResponse",
+      "access_rule": "No private learner data or private storage paths may be returned."
+    }
+  ],
+  "learner_document_fields": [
+    "id",
+    "enrollment_id",
+    "course_id",
+    "title",
+    "document_type",
+    "status",
+    "file_available",
+    "download_url",
+    "document_number",
+    "verification_code",
+    "created_at",
+    "issued_at",
+    "course_title"
+  ],
+  "public_verification_fields": [
+    "status",
+    "document_number",
+    "verification_code",
+    "document_type",
+    "course_title",
+    "issued_at",
+    "organization_name",
+    "revoked_at",
+    "message"
+  ],
+  "stable_statuses": [
+    "available",
+    "pending",
+    "revoked",
+    "not_found",
+    "file_missing",
+    "error"
+  ],
+  "stable_errors": [
+    "UNAUTHENTICATED",
+    "FORBIDDEN",
+    "DOCUMENT_NOT_FOUND",
+    "DOCUMENT_REVOKED",
+    "FILE_NOT_READY",
+    "PUBLIC_VERIFICATION_NOT_FOUND",
+    "PUBLIC_VERIFICATION_ERROR"
+  ],
+  "access_control_requirements": [
+    "Learner list endpoint must filter by current learner context.",
+    "Learner download endpoint must validate document ownership before file delivery.",
+    "Admin and organization document endpoints must remain separate from learner endpoints.",
+    "Public verification endpoint must return only public-safe fields.",
+    "Private storage paths must never be exposed in public responses."
+  ],
+  "migration_decision": {
+    "migration_required_for_contract_stage": false,
+    "runtime_stage_must_recheck_schema": true,
+    "rule": "Stage 80.4 may add a migration only if the current schema cannot represent required contract fields safely."
+  },
+  "recommendation": {
+    "next_stage": "80.4",
+    "recommended_name": "Learner Documents Backend/API Runtime Contract Implementation",
+    "runtime_change_allowed_now": false,
+    "database_migration_allowed_now": false
+  }
+}
