@@ -94,10 +94,15 @@ def require_manifest() -> None:
         fail("current_stage must be 77.7 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint", {})
-    if checkpoint.get("last_confirmed_stage") != "77.6":
-        fail("last_confirmed_stage must be 77.6")
-    if checkpoint.get("last_confirmed_head") != "0bd101a":
-        fail("last_confirmed_head must be 0bd101a")
+    checkpoint_stage = checkpoint.get("last_confirmed_stage")
+    checkpoint_head = checkpoint.get("last_confirmed_head")
+    allowed_checkpoints = {
+        ("77.6", "0bd101a"),
+        ("78.1", "2903611"),
+    }
+
+    if (checkpoint_stage, checkpoint_head) not in allowed_checkpoints:
+        fail("production checkpoint must reference 77.6/0bd101a or compatible later stage 78.1/2903611")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
 
