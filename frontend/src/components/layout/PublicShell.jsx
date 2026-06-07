@@ -1,4 +1,4 @@
-﻿import { userHasRole } from "../../utils/adminState";
+import { userHasRole } from "../../utils/adminState";
 const PUBLIC_NAV_ITEMS = [
   { key: "home", label: "Главная" },
   { key: "catalog", label: "Каталог" },
