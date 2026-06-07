@@ -90,13 +90,14 @@ def require_manifest() -> None:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
     current_stage = manifest.get("current_stage")
-    if current_stage not in {"77.7", "78.1", "78.2", "78.3", "78.4", "78.5", "78.6", "78.7", "78.8", "78.9", "79.1", "79.2"}:
+    if current_stage not in {"77.7", "78.1", "78.2", "78.3", "78.4", "78.5", "78.6", "78.7", "78.8", "78.9", "79.1", "79.2", "79.3"}:
         fail("current_stage must be 77.7 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint", {})
     checkpoint_stage = checkpoint.get("last_confirmed_stage")
     checkpoint_head = checkpoint.get("last_confirmed_head")
     allowed_checkpoints = {
+        ("79.2", "9efd5d2"),
         ("79.1", "378d054"),
         ("78.9", "689ada5"),
         ("77.6", "0bd101a"),
@@ -124,7 +125,7 @@ def require_manifest() -> None:
         fail("stage 77.6 head must be 0bd101a")
 
     stage77_7 = stages["77.7"]
-    if stage77_7.get("status") not in {"implementation_ready", "merged_to_develop", "79.1", "79.2"}:
+    if stage77_7.get("status") not in {"implementation_ready", "merged_to_develop", "79.1", "79.2", "79.3"}:
         fail("stage 77.7 status must be implementation_ready or merged_to_develop")
     if stage77_7.get("deployment_type") != "repository-qa":
         fail("stage 77.7 deployment_type must be repository-qa")

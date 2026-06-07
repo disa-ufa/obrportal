@@ -767,6 +767,286 @@ function AdminDocumentRegistryDiagnostics({
   );
 }
 
+
+const LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS = {
+  stage: "Stage 79.3 ? Learner Documents UX Foundation",
+  title: "????????? ?????????",
+  subtitle:
+    "???????? ??????? ???????? ??????????: ??? ??? ????????, ????? ????? ?????????, ??? ??????? ???????? ? ??? ????????? ??? ???????????.",
+  availableDocuments: "????????? ?????????",
+  completedCourses: "??????????? ?????",
+  pendingDocuments: "??????? ?????????",
+  verificationReady: "?????? ? ????????",
+  emptyTitle: "????????? ???? ?? ???????",
+  emptyText:
+    "????? ?????????? ????? ???????? ???????? ???????? ????? ??? ????? ????? ????? ?????? ?? ???????????? ??????????.",
+  completedHandoffTitle: "?????? ???????????? ????? ? ?????????",
+  completedHandoffReady:
+    "??? ????? ??????????? ?????? ??? ???? ?????????????? ?????????. ?? ????? ??????? ??? ????????? ?? ??????/????.",
+  completedHandoffWaiting:
+    "???? ??????????? ????? ??? ??????????????? ?????????. ????????? ?????? ?? ??????????? ??????????? ??? ????????? ??????????.",
+  actionDocuments: "???????? ????????? ?????????",
+  actionCompleted: "??????????? ??????????",
+  actionVerify: "????????? ????????",
+  actionAll: "??? ?????????",
+};
+
+function getLearnerDocumentCourseTitle(documentItem, courses, enrollments) {
+  if (documentItem.course_title) {
+    return documentItem.course_title;
+  }
+
+  const enrollment = enrollments.find((item) => item.id === documentItem.enrollment_id) || null;
+  const courseId = documentItem.course_id || enrollment?.course_id || "";
+  const course = courses.find((item) => item.id === courseId) || null;
+
+  return course?.title || "???? ?? ??????";
+}
+
+function getLearnerDocumentsUXStats({ documents, enrollments }) {
+  const availableDocuments = documents.filter(
+    (documentItem) => documentItem.status === "available" && documentItem.file_available
+  );
+  const completedEnrollments = enrollments.filter(
+    (enrollment) => enrollment.status === "completed"
+  );
+  const documentEnrollmentIds = new Set(
+    documents.map((documentItem) => documentItem.enrollment_id).filter(Boolean)
+  );
+  const pendingCompletedEnrollments = completedEnrollments.filter(
+    (enrollment) => !documentEnrollmentIds.has(enrollment.id)
+  );
+  const verificationReadyDocuments = availableDocuments.filter(
+    (documentItem) => documentItem.document_number || documentItem.verification_code
+  );
+
+  return {
+    availableDocuments,
+    completedEnrollments,
+    pendingCompletedEnrollments,
+    verificationReadyDocuments,
+  };
+}
+
+function LearnerDocumentsUXFoundationPanel({
+  documents,
+  courses,
+  enrollments,
+  loading,
+  error,
+  getDocumentFilterPath,
+  getEnrollmentFilterPath,
+}) {
+  const stats = getLearnerDocumentsUXStats({ documents, enrollments });
+  const primaryDocument = stats.availableDocuments[0] || null;
+  const hasAnyLearnerSignal =
+    stats.availableDocuments.length > 0 ||
+    stats.completedEnrollments.length > 0 ||
+    stats.pendingCompletedEnrollments.length > 0;
+
+  const handoffText =
+    stats.pendingCompletedEnrollments.length > 0
+      ? LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedHandoffWaiting
+      : LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedHandoffReady;
+
+  return (
+    <SectionCard
+      title={LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.title}
+      subtitle={LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.subtitle}
+    >
+      <div data-testid="learner-documents-ux-foundation-panel" className="space-y-5">
+        <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+          {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.stage}
+        </div>
+
+        <div
+          data-testid="learner-documents-ux-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.availableDocuments}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.availableDocuments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedCourses}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.completedEnrollments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.pendingDocuments}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.pendingCompletedEnrollments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.verificationReady}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.verificationReadyDocuments.length}
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div
+            data-testid="learner-documents-ux-loading-state"
+            className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100"
+          >
+            ????????? ?????????, ??????????? ?????????? ? ??????? ??????????.
+          </div>
+        ) : null}
+
+        {error ? (
+          <div
+            data-testid="learner-documents-ux-error-state"
+            className="rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700 ring-1 ring-red-200"
+          >
+            ?? ??????? ???????? ?????? ??????????. ????????? ?????????? ? ????????? ????????.
+          </div>
+        ) : null}
+
+        {!loading && !error && !hasAnyLearnerSignal ? (
+          <div
+            data-testid="learner-documents-ux-empty-state"
+            className="rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
+          >
+            <div className="font-semibold text-slate-900">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.emptyTitle}
+            </div>
+            <p className="mt-2">{LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.emptyText}</p>
+          </div>
+        ) : null}
+
+        {hasAnyLearnerSignal ? (
+          <div
+            data-testid="learner-documents-completed-handoff"
+            className={`rounded-2xl p-5 text-sm leading-6 ring-1 ${
+              stats.pendingCompletedEnrollments.length > 0
+                ? "bg-amber-50 text-amber-900 ring-amber-200"
+                : "bg-green-50 text-green-800 ring-green-200"
+            }`}
+          >
+            <div className="font-semibold text-slate-900">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedHandoffTitle}
+            </div>
+            <p className="mt-2">{handoffText}</p>
+          </div>
+        ) : null}
+
+        {primaryDocument ? (
+          <div
+            data-testid="learner-documents-primary-document-card"
+            className="rounded-2xl bg-white p-5 ring-1 ring-slate-200"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  ????????? ????????? ????????
+                </div>
+                <div className="mt-2 text-lg font-bold text-slate-900">
+                  {primaryDocument.title || primaryDocument.document_type || "????????"}
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  {getLearnerDocumentCourseTitle(primaryDocument, courses, enrollments)}
+                </div>
+              </div>
+
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getDocumentStatusTone(primaryDocument.status)}`}>
+                {getDocumentStatusLabel(primaryDocument.status)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  ?????
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.document_number || "?"}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  ??? ????????
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.verification_code || "?"}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  ??????
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {formatDateTime(primaryDocument.created_at)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div
+          data-testid="learner-documents-ux-actions"
+          className="flex flex-wrap gap-3"
+        >
+          <Link
+            data-testid="learner-documents-available-action"
+            to={getDocumentFilterPath({ status: "available" })}
+            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionDocuments}
+          </Link>
+
+          <Link
+            data-testid="learner-documents-completed-action"
+            to={getEnrollmentFilterPath({ status: "completed" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionCompleted}
+          </Link>
+
+          <Link
+            data-testid="learner-documents-verify-action"
+            to={
+              primaryDocument?.verification_code || primaryDocument?.document_number
+                ? buildDocumentVerificationPath(
+                    primaryDocument.verification_code || primaryDocument.document_number
+                  )
+                : "/verify-document"
+            }
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionVerify}
+          </Link>
+
+          <Link
+            data-testid="learner-documents-all-action"
+            to={getDocumentFilterPath({ status: "", action_required: "" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionAll}
+          </Link>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 function DocumentsSummaryCards({ documentStatusCounts, documents, courses, enrollments }) {
   const filesCount = documents.filter((documentItem) => documentItem.file_available).length;
   const completedEnrollmentsCount = enrollments.filter(
@@ -1767,6 +2047,16 @@ export function DocumentsPage() {
         documentStatusCounts={documentStatusCounts}
         courses={courses}
         enrollments={enrollments}
+      />
+
+      <LearnerDocumentsUXFoundationPanel
+        documents={documents}
+        courses={courses}
+        enrollments={enrollments}
+        loading={loading}
+        error={error}
+        getDocumentFilterPath={getDocumentFilterPath}
+        getEnrollmentFilterPath={getEnrollmentFilterPath}
       />
 
       <AdminDocumentRegistryDiagnostics
