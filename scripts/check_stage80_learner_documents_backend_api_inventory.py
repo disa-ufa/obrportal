@@ -147,14 +147,16 @@ def require_manifest() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "80.1":
-        fail("current_stage must be 80.1")
+    if manifest.get("current_stage") not in {"80.1", "80.2"}:
+        fail("current_stage must be 80.1 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "79.6":
-        fail("production checkpoint stage must be 79.6")
-    if checkpoint.get("last_confirmed_head") != "4c5efe7":
-        fail("production checkpoint head must be 4c5efe7")
+    allowed_checkpoints = {
+        ("79.6", "4c5efe7"),
+        ("80.1", "a6eeef7"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 79.6/4c5efe7 or compatible later stage 80.1/a6eeef7")
     if checkpoint.get("frontend_runtime_changed") is not False:
         fail("checkpoint frontend_runtime_changed must be false")
     if checkpoint.get("backend_runtime_changed") is not False:
@@ -175,8 +177,8 @@ def require_manifest() -> None:
         fail("stage 79.6 head must be 4c5efe7")
 
     stage80_1 = stages["80.1"]
-    if stage80_1.get("status") != "implementation_ready":
-        fail("stage 80.1 status must be implementation_ready")
+    if stage80_1.get("status") not in {"implementation_ready", "production_confirmed"}:
+        fail("stage 80.1 status must be implementation_ready or production_confirmed")
     if stage80_1.get("deployment_type") != "docs-and-qa-only":
         fail("stage 80.1 deployment_type must be docs-and-qa-only")
     if stage80_1.get("frontend_runtime_changed_expected") is not False:
