@@ -28,8 +28,9 @@ REQUIRED_SAFETY_BOUNDARIES = {
     "preserve_server_only_untracked_paths",
 }
 
-REQUIRED_STAGE77_7_CHECKS = {
+REQUIRED_STAGE78_1_CHECKS = {
     "python .\\scripts\\check_release_manifest.py",
+    "python .\\scripts\\check_stage78_learner_course_progress_foundation.py",
     "python .\\scripts\\check_stage77_course_builder_final_qa.py",
     "python .\\scripts\\check_stage77_course_publication_ux.py",
     "python .\\scripts\\check_stage77_lesson_content_preview_ux.py",
@@ -40,18 +41,18 @@ REQUIRED_STAGE77_7_CHECKS = {
     "python .\\scripts\\check_source_bom.py",
     "python .\\scripts\\check_text_encoding.py",
     "python .\\scripts\\check_no_todo_markers.py",
-    "python .\\scripts\\smoke_frontend_admin_pages.py",
+    "python .\\scripts\\smoke_public_pages.py",
     "python .\\scripts\\smoke_frontend_hooks_layout.py",
     "docker compose exec frontend npm run build",
 }
 
-REQUIRED_STAGE77_7_CHANGED_FILES = {
+REQUIRED_STAGE78_1_CHANGED_FILES = {
+    "frontend/src/pages/CourseDetailPage.jsx",
     "docs/release-manifest.json",
-    "docs/stage77-course-builder-final-qa.md",
-    "docs/course-builder-final-qa-summary.md",
+    "docs/stage78-learner-course-progress-foundation.md",
     "scripts/check_release_manifest.py",
+    "scripts/check_stage78_learner_course_progress_foundation.py",
     "scripts/check_stage77_course_builder_final_qa.py",
-    "scripts/check_stage77_course_publication_ux.py",
 }
 
 
@@ -86,8 +87,8 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest["process"] != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest["current_stage"] != "77.7":
-        fail("current_stage must be 77.7")
+    if manifest["current_stage"] != "78.1":
+        fail("current_stage must be 78.1")
 
     branch_policy = manifest["current_branch_policy"]
     if branch_policy.get("development_base") != "develop":
@@ -120,7 +121,7 @@ def main() -> None:
         fail(f"missing safety boundaries: {sorted(missing_boundaries)}")
 
     stages = {stage.get("id"): stage for stage in manifest["stages"]}
-    for stage_id in ["74", "75", "75.1", "75.2", "76", "77.1", "77.2", "77.3", "77.4", "77.5", "77.6", "77.7"]:
+    for stage_id in ["74", "75", "75.1", "75.2", "76", "77.1", "77.2", "77.3", "77.4", "77.5", "77.6", "77.7", "78.1"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
@@ -131,38 +132,41 @@ def main() -> None:
         fail("stage 77.6 head must be 0bd101a")
     if stage77_6.get("deployment_type") != "frontend-only":
         fail("stage 77.6 deployment_type must be frontend-only")
-    if stage77_6.get("backend_runtime_changed") is not False:
-        fail("stage 77.6 backend_runtime_changed must be false")
-    if stage77_6.get("database_migration_run") is not False:
-        fail("stage 77.6 database_migration_run must be false")
 
     stage77_7 = stages["77.7"]
-    if stage77_7.get("status") != "implementation_ready":
-        fail("stage 77.7 status must be implementation_ready")
-    if stage77_7.get("branch") != "stage77-course-builder-final-qa":
-        fail("stage 77.7 branch must be stage77-course-builder-final-qa")
-    if stage77_7.get("base") != "develop":
-        fail("stage 77.7 base must be develop")
+    if stage77_7.get("status") != "merged_to_develop":
+        fail("stage 77.7 status must be merged_to_develop")
+    if stage77_7.get("head") != "8dfe560":
+        fail("stage 77.7 head must be 8dfe560")
     if stage77_7.get("deployment_type") != "repository-qa":
         fail("stage 77.7 deployment_type must be repository-qa")
-    if stage77_7.get("frontend_runtime_changed_expected") is not False:
-        fail("stage 77.7 frontend_runtime_changed_expected must be false")
-    if stage77_7.get("backend_runtime_changed_expected") is not False:
-        fail("stage 77.7 backend_runtime_changed_expected must be false")
-    if stage77_7.get("database_migration_expected") is not False:
-        fail("stage 77.7 database_migration_expected must be false")
 
-    missing_stage77_checks = REQUIRED_STAGE77_7_CHECKS - set(stage77_7.get("required_checks", []))
-    if missing_stage77_checks:
-        fail(f"stage 77.7 missing required checks: {sorted(missing_stage77_checks)}")
+    stage78_1 = stages["78.1"]
+    if stage78_1.get("status") != "implementation_ready":
+        fail("stage 78.1 status must be implementation_ready")
+    if stage78_1.get("branch") != "stage78-learner-course-progress-foundation":
+        fail("stage 78.1 branch must be stage78-learner-course-progress-foundation")
+    if stage78_1.get("base") != "develop":
+        fail("stage 78.1 base must be develop")
+    if stage78_1.get("deployment_type") != "frontend-only":
+        fail("stage 78.1 deployment_type must be frontend-only")
+    if stage78_1.get("backend_runtime_changed_expected") is not False:
+        fail("stage 78.1 backend_runtime_changed_expected must be false")
+    if stage78_1.get("database_migration_expected") is not False:
+        fail("stage 78.1 database_migration_expected must be false")
 
-    missing_changed_files = REQUIRED_STAGE77_7_CHANGED_FILES - set(stage77_7.get("changed_files", []))
+    missing_stage78_checks = REQUIRED_STAGE78_1_CHECKS - set(stage78_1.get("required_checks", []))
+    if missing_stage78_checks:
+        fail(f"stage 78.1 missing required checks: {sorted(missing_stage78_checks)}")
+
+    missing_changed_files = REQUIRED_STAGE78_1_CHANGED_FILES - set(stage78_1.get("changed_files", []))
     if missing_changed_files:
-        fail(f"stage 77.7 missing changed files: {sorted(missing_changed_files)}")
+        fail(f"stage 78.1 missing changed files: {sorted(missing_changed_files)}")
 
-    for doc in stage77_7.get("required_documents", []):
+    for doc in stage78_1.get("required_documents", []):
         require_file_exists(doc)
 
+    require_file_exists("scripts/check_stage78_learner_course_progress_foundation.py")
     require_file_exists("scripts/check_stage77_course_builder_final_qa.py")
     require_file_exists("scripts/check_stage77_course_publication_ux.py")
     require_file_exists("scripts/check_stage77_lesson_content_preview_ux.py")

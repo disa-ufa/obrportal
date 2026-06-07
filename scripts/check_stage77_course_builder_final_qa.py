@@ -89,8 +89,9 @@ def require_manifest() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "77.7":
-        fail("current_stage must be 77.7")
+    current_stage = manifest.get("current_stage")
+    if current_stage not in {"77.7", "78.1"}:
+        fail("current_stage must be 77.7 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint", {})
     if checkpoint.get("last_confirmed_stage") != "77.6":
@@ -110,10 +111,8 @@ def require_manifest() -> None:
         fail("stage 77.6 head must be 0bd101a")
 
     stage77_7 = stages["77.7"]
-    if stage77_7.get("status") != "implementation_ready":
-        fail("stage 77.7 status must be implementation_ready")
-    if stage77_7.get("branch") != "stage77-course-builder-final-qa":
-        fail("stage 77.7 branch must be stage77-course-builder-final-qa")
+    if stage77_7.get("status") not in {"implementation_ready", "merged_to_develop"}:
+        fail("stage 77.7 status must be implementation_ready or merged_to_develop")
     if stage77_7.get("deployment_type") != "repository-qa":
         fail("stage 77.7 deployment_type must be repository-qa")
     if stage77_7.get("frontend_runtime_changed_expected") is not False:
