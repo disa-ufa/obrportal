@@ -58,7 +58,7 @@
     {
       "id": "75",
       "name": "Public portal official content polish",
-      "status": "planned",
+      "status": "implementation_ready",
       "branch": "stage75-public-portal-content-polish",
       "base": "develop",
       "deployment_type": "frontend-only",
@@ -74,6 +74,7 @@
       ],
       "required_checks": [
         "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage75_public_content_polish.py",
         "python .\\scripts\\check_source_bom.py",
         "python .\\scripts\\check_text_encoding.py",
         "python .\\scripts\\check_no_todo_markers.py",
@@ -89,6 +90,37 @@
         "/privacy",
         "/offer",
         "/verify-document"
+      ],
+      "implementation_head": "pending_pr_merge",
+      "changed_files": [
+        "frontend/src/pages/HomePage.jsx",
+        "frontend/src/pages/ContactsPage.jsx",
+        "frontend/src/pages/FaqPage.jsx",
+        "frontend/src/pages/PrivacyPage.jsx",
+        "frontend/src/pages/OfferPage.jsx",
+        "frontend/src/pages/OrganizationInfoPage.jsx",
+        "docs/stage75-public-portal-content-polish.md",
+        "docs/release-manifest.json",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage75_public_content_polish.py"
+      ],
+      "content_acceptance_markers": [
+        "ГБОУ РЦДО",
+        "+7 (347) 200 10 17",
+        "rcdodist@gmail.com",
+        "0274931354",
+        "Условия использования портала",
+        "Политика обработки персональных данных",
+        "Частые вопросы"
+      ],
+      "forbidden_public_fragments": [
+        "+7 (000) 000-00-00",
+        "info@obrportal.local",
+        "support@obrportal.local",
+        "Публичный каркас",
+        "Что должно появиться на следующем проходе",
+        "Следующий проход",
+        "будущий корпоративный контур"
       ]
     }
   ]

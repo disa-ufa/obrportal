@@ -55,14 +55,13 @@ export function HomePage({ onPageChange, onOpenCourse }) {
     <div className="space-y-10">
       <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-12">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-          Публичный сайт и каталог
+          ГБОУ РЦДО
         </div>
         <h1 className="mt-3 max-w-4xl text-4xl font-bold tracking-tight text-slate-900 md:text-6xl">
-          Образовательная платформа для обучения, документов и проверки результатов
+          Образовательный портал ГБОУ РЦДО
         </h1>
         <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600">
-          Каталог программ, личный кабинет слушателя, электронные документы и публичная
-          проверка выданных документов в едином контуре ObrPortal.
+          Каталог программ, личный кабинет слушателя, итоговые документы и публичная проверка подлинности документов в едином образовательном портале.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
@@ -80,6 +79,14 @@ export function HomePage({ onPageChange, onOpenCourse }) {
             className="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
           >
             Проверить документ
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onPageChange("organization-info")}
+            className="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+          >
+            Сведения об организации
           </button>
         </div>
       </section>

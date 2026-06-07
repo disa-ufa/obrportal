@@ -101,8 +101,7 @@ export function OrganizationInfoPage({ onPageChange }) {
         </h1>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-600">
           Публичная страница с основными сведениями о ГБОУ РЦДО для пользователей,
-          представителей организаций и проверяющих лиц. Раздел подготовлен как безопасный
-          статический слой без изменений backend, базы данных, авторизации и RBAC.
+          представителей организаций и проверяющих лиц. Раздел содержит проверенные публичные сведения и не раскрывает внутренние административные данные.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -144,7 +143,7 @@ export function OrganizationInfoPage({ onPageChange }) {
             </h2>
           </div>
           <div className="rounded-full bg-green-50 px-4 py-2 text-xs font-semibold text-green-700 ring-1 ring-green-200">
-            Статический публичный блок
+            Проверенные сведения
           </div>
         </div>
 
@@ -182,11 +181,9 @@ export function OrganizationInfoPage({ onPageChange }) {
         className="rounded-[2rem] bg-amber-50 p-6 text-sm leading-6 text-amber-900 ring-1 ring-amber-200"
         data-testid="organization-info-documents-next-step"
       >
-        <div className="font-bold text-amber-950">Следующий безопасный шаг</div>
+        <div className="font-bold text-amber-950">Документы организации</div>
         <p className="mt-2">
-          После проверки официальных PDF-файлов можно добавить отдельные ссылки на устав,
-          лицензию, правила приема, локальные акты и другие обязательные документы. Непроверенные
-          реквизиты и номера документов на этой странице не публикуются.
+          Устав, лицензия, локальные акты и другие обязательные документы размещаются отдельными ссылками после проверки утвержденных PDF-файлов. Непроверенные реквизиты и номера документов на этой странице не публикуются.
         </p>
       </section>
     </div>

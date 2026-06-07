@@ -1,42 +1,45 @@
 # Stage 75 - Public portal official content polish
 
-Status: planned
+Status: implementation ready
 Project: ObrPortal
 Process: development-process-v2
 Base production checkpoint: Stage 74 deployed on `develop` at `865aaa8`
 
 ## 1. Goal
 
-Stage 75 packages public portal content improvements into one product stage instead of many micro-stages.
+Stage 75 packages visitor-facing content improvements into one product stage.
 
-The goal is to make the public portal look consistent and official across the visitor-facing routes while keeping backend, database, auth and RBAC unchanged unless a separate checkpoint explicitly changes that boundary.
+The goal is to make the public portal look consistent and official across the main public routes while keeping backend, database, auth and RBAC unchanged.
 
-## 2. Scope
+## 2. Implemented scope
 
-Candidate public routes:
+Frontend public pages updated:
 
-- `/`;
-- `/catalog`;
-- `/contacts`;
-- `/organization-info`;
-- `/faq`;
-- `/privacy`;
-- `/offer`;
-- `/verify-document`;
-- `/verify/:code`.
+- `/` - home page wording aligned with ГБОУ РЦДО context;
+- `/contacts` - official contact page with phone, e-mail, address and support scenarios;
+- `/organization-info` - Stage 74 page polished to use stable official wording;
+- `/faq` - public FAQ rewritten for the actual portal workflows;
+- `/privacy` - privacy page rewritten with operator information and user rights;
+- `/offer` - page reframed as portal usage terms instead of an unverified commercial offer.
 
-Content areas:
+Documentation and guards updated:
 
-- remove remaining internal demo wording from public pages;
-- align public text with ГБОУ РЦДО context;
-- keep official contacts consistent;
+- `docs/release-manifest.json` records Stage 75 implementation-ready state;
+- `scripts/check_release_manifest.py` accepts Stage 75 implementation state;
+- `scripts/check_stage75_public_content_polish.py` validates public content markers and blocks obsolete placeholder fragments.
+
+## 3. Content rules
+
+Stage 75 keeps these public content rules:
+
+- use official ГБОУ РЦДО context;
+- keep contacts consistent with Stage 73;
 - keep organization information consistent with Stage 74;
-- prepare a safe public documents area without publishing unverified document numbers;
-- improve navigation between public pages;
-- improve empty and explanatory states on public pages;
-- verify public bundle does not contain obsolete local placeholder contacts.
+- do not publish unverified license numbers or document details;
+- do not expose internal implementation details on public pages;
+- do not use demo contact placeholders.
 
-## 3. Out of scope
+## 4. Out of scope
 
 Stage 75 does not include:
 
@@ -46,25 +49,25 @@ Stage 75 does not include:
 - RBAC changes;
 - authentication changes;
 - document upload workflow changes;
-- publishing legal document numbers without verified source files;
+- publishing unverified legal document numbers;
 - production secret changes;
 - Caddy or Nginx configuration changes.
 
-## 4. Acceptance criteria
-
-Local acceptance:
+## 5. Local acceptance
 
 ```powershell
 python .\scripts\check_release_manifest.py
+python .\scripts\check_stage75_public_content_polish.py
 python .\scripts\check_stage74_organization_info_public_page.py
 python .\scripts\check_source_bom.py
 python .\scripts\check_text_encoding.py
 python .\scripts\check_no_todo_markers.py
 python .\scripts\smoke_public_pages.py
 docker compose exec frontend npm run build
+git diff --check
 ```
 
-Production acceptance for frontend-only deployment:
+## 6. Production acceptance for frontend-only deployment
 
 ```bash
 git rev-parse --short HEAD
@@ -79,19 +82,18 @@ curl -I https://portal.rcdo02.ru/privacy
 curl -I https://portal.rcdo02.ru/offer
 ```
 
-## 5. Safety notes
+## 7. Safety notes
 
-Stage 75 may be deployed as frontend-only if the implementation touches only frontend public page source files and documentation.
+Stage 75 is frontend-only if the implementation touches only public page source files, docs and guard scripts.
 
-If backend or database files change, Stage 75 must be split or upgraded to a backend/API stage with explicit approval.
-
-## 6. Current planned state
+Safety markers:
 
 ```text
-stage75_status=planned
+stage75_status=implementation_ready
 stage75_expected_deployment_type=frontend-only
 stage75_backend_runtime_changed=no
 stage75_database_migration_expected=no
 stage75_public_routes_smoke_required=yes
 stage75_release_manifest_required=yes
+stage75_public_content_guard_required=yes
 ```
