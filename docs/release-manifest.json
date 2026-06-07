@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "75",
+  "current_stage": "75.1",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "74",
-    "last_confirmed_head": "865aaa8",
+    "last_confirmed_stage": "75",
+    "last_confirmed_head": "e0049ab",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -19,7 +19,14 @@
     "database": "ok",
     "redis": "ok",
     "storage": "ok",
-    "organization_info_http": 200,
+    "public_routes_http": {
+      "/": 200,
+      "/contacts": 200,
+      "/faq": 200,
+      "/privacy": 200,
+      "/offer": 200,
+      "/organization-info": 200
+    },
     "backend_runtime_changed": false,
     "database_migration_run": false
   },
@@ -58,40 +65,37 @@
     {
       "id": "75",
       "name": "Public portal official content polish",
-      "status": "implementation_ready",
-      "branch": "stage75-public-portal-content-polish",
+      "status": "production_deployed",
+      "branch": "develop",
       "base": "develop",
+      "head": "e0049ab",
       "deployment_type": "frontend-only",
       "runtime_scope": [
         "frontend_public_pages"
       ],
-      "backend_runtime_changed_expected": false,
-      "database_migration_expected": false,
-      "required_documents": [
-        "docs/development-process-v2.md",
-        "docs/stage75-public-portal-content-polish.md",
-        "docs/release-manifest.json"
-      ],
-      "required_checks": [
-        "python .\\scripts\\check_release_manifest.py",
-        "python .\\scripts\\check_stage75_public_content_polish.py",
-        "python .\\scripts\\check_source_bom.py",
-        "python .\\scripts\\check_text_encoding.py",
-        "python .\\scripts\\check_no_todo_markers.py",
-        "python .\\scripts\\smoke_public_pages.py",
-        "docker compose exec frontend npm run build"
-      ],
-      "public_routes_to_smoke": [
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "public_routes_smoked": [
         "/",
-        "/catalog",
         "/contacts",
-        "/organization-info",
         "/faq",
         "/privacy",
         "/offer",
-        "/verify-document"
+        "/organization-info"
       ],
-      "implementation_head": "pending_pr_merge",
+      "production_evidence": {
+        "frontend_health": "healthy",
+        "backend_health": "ok",
+        "ready_status": "ok",
+        "public_routes_http": {
+          "/": 200,
+          "/contacts": 200,
+          "/faq": 200,
+          "/privacy": 200,
+          "/offer": 200,
+          "/organization-info": 200
+        }
+      },
       "changed_files": [
         "frontend/src/pages/HomePage.jsx",
         "frontend/src/pages/ContactsPage.jsx",
@@ -112,15 +116,58 @@
         "Условия использования портала",
         "Политика обработки персональных данных",
         "Частые вопросы"
+      ]
+    },
+    {
+      "id": "75.1",
+      "name": "Public UI technical labels cleanup",
+      "status": "implementation_ready",
+      "branch": "stage75-public-ui-cleanup",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "frontend_public_shell",
+        "frontend_admin_shell",
+        "frontend_public_meta"
       ],
-      "forbidden_public_fragments": [
-        "+7 (000) 000-00-00",
-        "info@obrportal.local",
-        "support@obrportal.local",
-        "Публичный каркас",
-        "Что должно появиться на следующем проходе",
-        "Следующий проход",
-        "будущий корпоративный контур"
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage75-public-ui-cleanup.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage75_public_ui_cleanup.py",
+        "python .\\scripts\\check_stage75_public_content_polish.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_public_pages.py",
+        "docker compose exec frontend npm run build"
+      ],
+      "changed_files": [
+        "frontend/src/components/layout/PublicShell.jsx",
+        "frontend/src/components/layout/AppShell.jsx",
+        "frontend/src/utils/publicRoutes.js",
+        "docs/release-manifest.json",
+        "docs/stage75-public-ui-cleanup.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage75_public_ui_cleanup.py"
+      ],
+      "acceptance_markers": [
+        "ГБОУ РЦДО",
+        "Образовательный портал",
+        "Административный контур",
+        "Условия использования",
+        "Условия использования портала — ObrPortal"
+      ],
+      "forbidden_visible_fragments": [
+        "ObrPortal · Stage 6",
+        "ObrPortal · Stage 7",
+        "Оферта — ObrPortal",
+        "Публичная оферта образовательной платформы"
       ]
     }
   ]

@@ -130,9 +130,9 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/offer") {
     return {
-      title: "Оферта — ObrPortal",
+      title: "Условия использования портала — ObrPortal",
       description:
-        "Публичная оферта образовательной платформы: предмет услуги, порядок акцепта, оплата, доступ к обучению и ответственность сторон.",
+        "Публичные условия использования образовательного портала: назначение сервиса, регистрация, доступ к обучению, итоговые документы и обращения пользователей.",
     };
   }
 
@@ -178,7 +178,7 @@ export const PUBLIC_ROUTE_META_DIAGNOSTIC_CASES = [
   { pathname: "/contacts", expectedPage: "contacts", expectedTitle: "Контакты — ObrPortal" },
   { pathname: "/faq", expectedPage: "faq", expectedTitle: "FAQ — ObrPortal" },
   { pathname: "/privacy", expectedPage: "privacy", expectedTitle: "Политика обработки персональных данных — ObrPortal" },
-  { pathname: "/offer", expectedPage: "offer", expectedTitle: "Оферта — ObrPortal" },
+  { pathname: "/offer", expectedPage: "offer", expectedTitle: "Условия использования портала — ObrPortal" },
   { pathname: "/login", expectedPage: "login", expectedTitle: "Вход — ObrPortal" },
   { pathname: "/register", expectedPage: "register", expectedTitle: "Регистрация — ObrPortal" },
   { pathname: "/account", expectedPage: "account", expectedTitle: "Личный кабинет — ObrPortal" },
