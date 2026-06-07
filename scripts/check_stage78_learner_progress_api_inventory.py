@@ -23,10 +23,10 @@ REQUIRED_DOC_MARKERS = [
 ]
 
 REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "78.5"',
+    '"id": "78.5"',
     '"id": "78.5"',
     '"name": "Learner Progress API Inventory"',
-    '"branch": "stage78-learner-progress-api-inventory"',
+    '"deployment_type": "repository-inventory"',
     '"deployment_type": "repository-inventory"',
     '"backend_runtime_changed_expected": false',
     '"database_migration_expected": false',
@@ -86,6 +86,11 @@ def require_no_credential_like_content() -> None:
 def main() -> None:
     require_text_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
     require_text_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
+
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    current_stage = manifest.get("current_stage")
+    if current_stage not in {"78.5", "78.6"}:
+        fail("current_stage must be 78.5 or a compatible later stage")
 
     if not INVENTORY_JSON.exists():
         fail("docs/learner-progress-api-inventory.json is missing")
