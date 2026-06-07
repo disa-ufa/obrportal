@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "78.3",
+  "current_stage": "78.4",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "78.2",
-    "last_confirmed_head": "ad9167e",
+    "last_confirmed_stage": "78.3",
+    "last_confirmed_head": "0c06af3",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -895,8 +895,8 @@
     {
       "id": "78.3",
       "name": "Learner lesson content preview UX",
-      "status": "implementation_ready",
-      "branch": "stage78-learner-lesson-content-preview-ux",
+      "status": "production_deployed",
+      "branch": "develop",
       "base": "develop",
       "deployment_type": "frontend-only",
       "runtime_scope": [
@@ -943,6 +943,75 @@
         "learner-lesson-content-preview-actions",
         "getLearnerLessonContentPreviewFacts",
         "CourseLearnerLessonContentPreviewPanel"
+      ],
+      "safety_notes": [
+        "frontend_only",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes"
+      ],
+      "head": "0c06af3",
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "production_evidence": {
+        "frontend_health": "healthy",
+        "backend_health": "ok",
+        "ready_status": "ok",
+        "stage78_3_public_bundle_found": true
+      }
+    },
+    {
+      "id": "78.4",
+      "name": "Learner completion action UX",
+      "status": "implementation_ready",
+      "branch": "stage78-learner-completion-action-ux",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "frontend_course_detail_page",
+        "learner_completion_action_panel",
+        "learner_completion_action_summary",
+        "learner_completion_action_checklist",
+        "learner_completion_action_actions"
+      ],
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage78-learner-completion-action-ux.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage78_learner_completion_action_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_content_preview_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_access_ux.py",
+        "python .\\scripts\\check_stage78_learner_course_progress_foundation.py",
+        "python .\\scripts\\check_stage77_course_builder_final_qa.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_public_pages.py",
+        "python .\\scripts\\smoke_frontend_hooks_layout.py",
+        "docker compose exec frontend npm run build"
+      ],
+      "changed_files": [
+        "frontend/src/pages/CourseDetailPage.jsx",
+        "docs/release-manifest.json",
+        "docs/stage78-learner-completion-action-ux.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage78_learner_completion_action_ux.py",
+        "scripts/check_stage78_learner_lesson_content_preview_ux.py"
+      ],
+      "acceptance_markers": [
+        "learner-completion-action-panel",
+        "learner-completion-action-status",
+        "learner-completion-action-summary",
+        "learner-completion-action-checklist",
+        "learner-completion-action-step",
+        "learner-completion-action-actions",
+        "getLearnerCompletionActionFacts",
+        "CourseLearnerCompletionActionPanel"
       ],
       "safety_notes": [
         "frontend_only",
