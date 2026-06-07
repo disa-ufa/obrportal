@@ -1051,6 +1051,293 @@ function LearnerDocumentsUXFoundationPanel({
   );
 }
 
+const LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS = {
+  stage: "Stage 79.5 - Learner Document Download UX Integration",
+  title: "- - -",
+  subtitle: "- -, - - - - - - -, - - - - ? - - -.",
+  ready: "- ? -",
+  available: "- -",
+  waiting: "- -",
+  completed: "- -",
+  verifyReady: "- -",
+  primaryTitle: "- - ? -",
+  noReadyTitle: "- - ?? - ? -",
+  noReadyText: "- - - -, - - - -. - - - - - ? - - -.",
+  downloadAction: "- / - -",
+  availableAction: "- - -",
+  completedAction: "- -",
+  verifyAction: "- -",
+  allAction: "- -",
+  fileStatus: "-",
+  fileReady: "-",
+  fileWaiting: "-",
+  documentNumber: "-",
+  verificationCode: "- -",
+  createdAt: "-",
+  course: "-",
+  genericDocument: "-",
+  emptyValue: "-",
+};
+
+function getLearnerDocumentDownloadUrl(documentItem) {
+  return (
+    documentItem.download_url ||
+    documentItem.file_url ||
+    documentItem.public_url ||
+    documentItem.url ||
+    ""
+  );
+}
+
+function isLearnerDocumentDownloadReady(documentItem) {
+  return documentItem.status === "available" && Boolean(documentItem.file_available);
+}
+
+function getLearnerDocumentDownloadStats({ documents, enrollments }) {
+  const availableDocuments = documents.filter(
+    (documentItem) => documentItem.status === "available"
+  );
+  const downloadableDocuments = availableDocuments.filter(isLearnerDocumentDownloadReady);
+  const completedEnrollments = enrollments.filter(
+    (enrollment) => enrollment.status === "completed"
+  );
+
+  const documentEnrollmentIds = new Set(
+    documents.map((documentItem) => documentItem.enrollment_id).filter(Boolean)
+  );
+  const waitingCompletedEnrollments = completedEnrollments.filter(
+    (enrollment) => !documentEnrollmentIds.has(enrollment.id)
+  );
+
+  const verificationReadyDocuments = availableDocuments.filter(
+    (documentItem) => documentItem.document_number || documentItem.verification_code
+  );
+
+  return {
+    availableDocuments,
+    downloadableDocuments,
+    completedEnrollments,
+    waitingCompletedEnrollments,
+    verificationReadyDocuments,
+  };
+}
+
+function LearnerDocumentDownloadUXPanel({
+  documents,
+  courses,
+  enrollments,
+  getDocumentFilterPath,
+  getEnrollmentFilterPath,
+}) {
+  const stats = getLearnerDocumentDownloadStats({ documents, enrollments });
+  const primaryDocument = stats.downloadableDocuments[0] || stats.availableDocuments[0] || null;
+  const primaryDownloadUrl = primaryDocument ? getLearnerDocumentDownloadUrl(primaryDocument) : "";
+  const primaryVerificationValue =
+    primaryDocument?.verification_code || primaryDocument?.document_number || "";
+  const primaryTone = primaryDocument
+    ? getDocumentStatusTone(primaryDocument.status)
+    : "bg-slate-50 text-slate-700 ring-slate-200";
+
+  return (
+    <SectionCard
+      title={LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.title}
+      subtitle={LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.subtitle}
+    >
+      <div data-testid="learner-document-download-ux-panel" className="space-y-5">
+        <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+          {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.stage}
+        </div>
+
+        <div
+          data-testid="learner-document-download-ux-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div
+            data-testid="learner-document-download-ready-count"
+            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.ready}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.downloadableDocuments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.available}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.availableDocuments.length}
+            </div>
+          </div>
+
+          <div
+            data-testid="learner-document-download-pending-count"
+            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.waiting}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.waitingCompletedEnrollments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.verifyReady}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.verificationReadyDocuments.length}
+            </div>
+          </div>
+        </div>
+
+        {primaryDocument ? (
+          <div
+            data-testid="learner-document-download-primary-card"
+            className="rounded-2xl bg-white p-5 ring-1 ring-slate-200"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.primaryTitle}
+                </div>
+                <div className="mt-2 text-lg font-bold text-slate-900">
+                  {primaryDocument.title || primaryDocument.document_type || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.genericDocument}
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  {getLearnerDocumentCourseTitle(primaryDocument, courses, enrollments)}
+                </div>
+              </div>
+
+              <span className={"rounded-full px-3 py-1 text-xs font-semibold ring-1 " + primaryTone}>
+                {getDocumentStatusLabel(primaryDocument.status)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-4">
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.fileStatus}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.file_available
+                    ? LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.fileReady
+                    : LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.fileWaiting}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.documentNumber}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.document_number || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.emptyValue}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.verificationCode}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.verification_code || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.emptyValue}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.createdAt}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {formatDateTime(primaryDocument.created_at)}
+                </div>
+              </div>
+            </div>
+
+            <div
+              data-testid="learner-document-download-actions"
+              className="mt-5 flex flex-wrap gap-3"
+            >
+              {primaryDownloadUrl ? (
+                <a
+                  data-testid="learner-document-download-open-action"
+                  href={primaryDownloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.downloadAction}
+                </a>
+              ) : (
+                <Link
+                  data-testid="learner-document-download-open-action"
+                  to={getDocumentFilterPath({ status: "available" })}
+                  className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.availableAction}
+                </Link>
+              )}
+
+              <Link
+                data-testid="learner-document-download-verify-action"
+                to={
+                  primaryVerificationValue
+                    ? buildDocumentVerificationPath(primaryVerificationValue)
+                    : "/verify-document"
+                }
+                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+              >
+                {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.verifyAction}
+              </Link>
+
+              <Link
+                data-testid="learner-document-download-documents-action"
+                to={getDocumentFilterPath({ status: "available" })}
+                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+              >
+                {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.availableAction}
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div
+            data-testid="learner-document-download-empty-state"
+            className="rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
+          >
+            <div className="font-semibold text-slate-900">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.noReadyTitle}
+            </div>
+            <p className="mt-2">{LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.noReadyText}</p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          <Link
+            data-testid="learner-document-download-completed-action"
+            to={getEnrollmentFilterPath({ status: "completed" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.completedAction}
+          </Link>
+
+          <Link
+            data-testid="learner-document-download-all-action"
+            to={getDocumentFilterPath({ status: "", action_required: "" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.allAction}
+          </Link>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+
 function DocumentsSummaryCards({ documentStatusCounts, documents, courses, enrollments }) {
   const filesCount = documents.filter((documentItem) => documentItem.file_available).length;
   const completedEnrollmentsCount = enrollments.filter(
@@ -2059,6 +2346,14 @@ export function DocumentsPage() {
         enrollments={enrollments}
         loading={loading}
         error={error}
+        getDocumentFilterPath={getDocumentFilterPath}
+        getEnrollmentFilterPath={getEnrollmentFilterPath}
+      />
+
+      <LearnerDocumentDownloadUXPanel
+        documents={documents}
+        courses={courses}
+        enrollments={enrollments}
         getDocumentFilterPath={getDocumentFilterPath}
         getEnrollmentFilterPath={getEnrollmentFilterPath}
       />

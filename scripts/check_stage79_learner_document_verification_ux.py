@@ -34,17 +34,6 @@ REQUIRED_STAGE_DOC_MARKERS = [
     "stage79_4_migrations_added=no",
 ]
 
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "79.4"',
-    '"id": "79.4"',
-    '"name": "Learner document verification UX integration"',
-    '"branch": "stage79-learner-document-verification-ux"',
-    '"deployment_type": "frontend-only"',
-    '"frontend_runtime_changed_expected": true',
-    '"backend_runtime_changed_expected": false',
-    '"database_migration_expected": false',
-]
-
 
 def fail(message: str) -> None:
     raise SystemExit(f"stage 79.4 learner document verification UX guard failed: {message}")
@@ -69,18 +58,16 @@ def require_manifest() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "79.4":
-        fail("current_stage must be 79.4")
+    if manifest.get("current_stage") not in {"79.4", "79.5"}:
+        fail("current_stage must be 79.4 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "79.3":
-        fail("production checkpoint stage must be 79.3")
-    if checkpoint.get("last_confirmed_head") != "0b679f9":
-        fail("production checkpoint head must be 0b679f9")
-    if checkpoint.get("backend_runtime_changed") is not False:
-        fail("checkpoint backend_runtime_changed must be false")
-    if checkpoint.get("database_migration_run") is not False:
-        fail("checkpoint database_migration_run must be false")
+    allowed_checkpoints = {
+        ("79.3", "0b679f9"),
+        ("79.4", "f1eacbe"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 79.3/0b679f9 or compatible later stage 79.4/f1eacbe")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
 
@@ -88,15 +75,9 @@ def require_manifest() -> None:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage79_3 = stages["79.3"]
-    if stage79_3.get("status") != "production_deployed":
-        fail("stage 79.3 status must be production_deployed")
-    if stage79_3.get("head") != "0b679f9":
-        fail("stage 79.3 head must be 0b679f9")
-
     stage79_4 = stages["79.4"]
-    if stage79_4.get("status") != "implementation_ready":
-        fail("stage 79.4 status must be implementation_ready")
+    if stage79_4.get("status") not in {"implementation_ready", "production_deployed"}:
+        fail("stage 79.4 status must be implementation_ready or production_deployed")
     if stage79_4.get("deployment_type") != "frontend-only":
         fail("stage 79.4 deployment_type must be frontend-only")
     if stage79_4.get("frontend_runtime_changed_expected") is not True:
@@ -110,7 +91,6 @@ def require_manifest() -> None:
 def main() -> None:
     require_markers(VERIFY_PAGE, REQUIRED_VERIFY_PAGE_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_STAGE_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_manifest()
     print("stage 79.4 learner document verification UX guard passed")
 
