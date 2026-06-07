@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,15 +27,6 @@ REQUIRED_DOC_MARKERS = [
     "stage77_2_release_manifest_required=yes",
     "stage77_2_guard_required=yes",
     "stage77_2_frontend_only=yes",
-]
-
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "77.2"',
-    '"id": "77.2"',
-    '"name": "Course builder card UX"',
-    '"branch": "stage77-course-builder-card-ux"',
-    '"course_builder_card_ux_panel"',
-    '"course_builder_quick_actions"',
 ]
 
 
@@ -90,11 +82,40 @@ def require_real_card_ux_labels() -> None:
         fail(f"COURSE_BUILDER_CARD_UX_LABELS misses real label markers: {missing}")
 
 
+def require_manifest_stage() -> None:
+    if not MANIFEST.exists():
+        fail("docs/release-manifest.json is missing")
+
+    try:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in docs/release-manifest.json: {exc}")
+
+    stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
+    stage = stages.get("77.2")
+
+    if not stage:
+        fail("release manifest misses stage 77.2")
+
+    if stage.get("name") != "Course builder card UX":
+        fail("stage 77.2 name must be Course builder card UX")
+
+    if stage.get("deployment_type") != "frontend-only":
+        fail("stage 77.2 deployment_type must be frontend-only")
+
+    status = stage.get("status")
+    if status not in {"implementation_ready", "production_deployed"}:
+        fail("stage 77.2 status must be implementation_ready or production_deployed")
+
+    if "course_builder_card_ux_panel" not in stage.get("runtime_scope", []):
+        fail("stage 77.2 runtime_scope must include course_builder_card_ux_panel")
+
+
 def main() -> None:
     require_markers(ADMIN_COURSES, REQUIRED_ADMIN_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_real_card_ux_labels()
+    require_manifest_stage()
     print("stage 77.2 course builder card UX guard passed")
 
 

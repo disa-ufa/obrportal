@@ -1234,6 +1234,232 @@ function CourseBuilderCardUxPanel({ course, modules, lessonsByModuleId }) {
   );
 }
 
+
+const COURSE_BUILDER_MODULE_LESSON_UX_LABELS = {
+  stage: "Stage 77.3 \u00b7 Module/Lesson UX",
+  title: "\u0421\u0432\u043e\u0434\u043a\u0430 \u043c\u043e\u0434\u0443\u043b\u044f",
+  subtitle:
+    "\u0411\u044b\u0441\u0442\u0440\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u044b \u043c\u043e\u0434\u0443\u043b\u044f: \u0443\u0440\u043e\u043a\u0438, \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c, \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0438 \u043a\u043e\u043d\u0442\u0435\u043d\u0442.",
+  ready: "\u041c\u043e\u0434\u0443\u043b\u044c \u0433\u043e\u0442\u043e\u0432",
+  needsWork: "\u041d\u0443\u0436\u043d\u0430 \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0430",
+  lessons: "\u0423\u0440\u043e\u043a\u0438",
+  activeLessons: "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435",
+  inactiveLessons: "\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0435",
+  requiredLessons: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435",
+  optionalLessons: "\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435",
+  lessonMap: "\u041a\u0430\u0440\u0442\u0430 \u0443\u0440\u043e\u043a\u043e\u0432",
+  attention: "\u0427\u0442\u043e \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0432\u043d\u0438\u043c\u0430\u043d\u0438\u044f",
+  noIssues: "\u0417\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u0439 \u043f\u043e \u043c\u043e\u0434\u0443\u043b\u044e \u043d\u0435\u0442.",
+  moduleInactive: "\u041c\u043e\u0434\u0443\u043b\u044c \u043d\u0435\u0430\u043a\u0442\u0438\u0432\u0435\u043d \u0438 \u043d\u0435 \u043f\u043e\u043f\u0430\u0434\u0435\u0442 \u0432 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435.",
+  moduleDescriptionMissing: "\u041d\u0435 \u0437\u0430\u0434\u0430\u043d\u043e \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f.",
+  moduleWithoutLessons: "\u0412 \u043c\u043e\u0434\u0443\u043b\u0435 \u043d\u0435\u0442 \u0443\u0440\u043e\u043a\u043e\u0432.",
+  moduleWithoutRequiredLessons: "\u0412 \u043c\u043e\u0434\u0443\u043b\u0435 \u043d\u0435\u0442 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u0443\u0440\u043e\u043a\u043e\u0432.",
+  lessonTitleMissing: "\u0443\u0440\u043e\u043a \u0431\u0435\u0437 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044f",
+  textContentMissing: "\u0442\u0435\u043a\u0441\u0442\u043e\u0432\u044b\u0439 \u0443\u0440\u043e\u043a \u0431\u0435\u0437 \u0442\u0435\u043a\u0441\u0442\u0430",
+  urlContentMissing: "\u0443\u0440\u043e\u043a \u0441\u043e \u0441\u0441\u044b\u043b\u043a\u043e\u0439/\u0444\u0430\u0439\u043b\u043e\u043c/\u0432\u0438\u0434\u0435\u043e \u0431\u0435\u0437 URL",
+  assignmentContentMissing: "\u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0431\u0435\u0437 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u043a\u0441\u0442\u0430",
+};
+
+function getCourseBuilderLessonContentIssue(lesson) {
+  const contentType = `${lesson.content_type || ""}`.toLowerCase();
+  const hasText = Boolean(`${lesson.content_text || ""}`.trim());
+  const hasUrl = Boolean(`${lesson.content_url || ""}`.trim());
+  const hasDescription = Boolean(`${lesson.description || ""}`.trim());
+
+  if (contentType === "text" && !hasText) {
+    return COURSE_BUILDER_MODULE_LESSON_UX_LABELS.textContentMissing;
+  }
+
+  if (["video", "file", "link"].includes(contentType) && !hasUrl) {
+    return COURSE_BUILDER_MODULE_LESSON_UX_LABELS.urlContentMissing;
+  }
+
+  if (contentType === "assignment" && !hasDescription && !hasText) {
+    return COURSE_BUILDER_MODULE_LESSON_UX_LABELS.assignmentContentMissing;
+  }
+
+  return "";
+}
+
+function getCourseBuilderModuleLessonUxFacts(module, lessons = []) {
+  const moduleLessons = Array.isArray(lessons) ? lessons : [];
+  const activeLessons = moduleLessons.filter((lesson) => lesson.is_active);
+  const requiredLessons = moduleLessons.filter((lesson) => lesson.is_required);
+  const inactiveLessons = moduleLessons.filter((lesson) => !lesson.is_active);
+  const optionalLessons = moduleLessons.filter((lesson) => !lesson.is_required);
+
+  const issues = [];
+
+  if (!module.is_active) {
+    issues.push(COURSE_BUILDER_MODULE_LESSON_UX_LABELS.moduleInactive);
+  }
+
+  if (!`${module.description || ""}`.trim()) {
+    issues.push(COURSE_BUILDER_MODULE_LESSON_UX_LABELS.moduleDescriptionMissing);
+  }
+
+  if (moduleLessons.length === 0) {
+    issues.push(COURSE_BUILDER_MODULE_LESSON_UX_LABELS.moduleWithoutLessons);
+  }
+
+  if (moduleLessons.length > 0 && requiredLessons.length === 0) {
+    issues.push(COURSE_BUILDER_MODULE_LESSON_UX_LABELS.moduleWithoutRequiredLessons);
+  }
+
+  moduleLessons.forEach((lesson) => {
+    const lessonLabel = `${RU.lessonNumber} ${lesson.position || lesson.id}`;
+
+    if (!`${lesson.title || ""}`.trim()) {
+      issues.push(`${lessonLabel}: ${COURSE_BUILDER_MODULE_LESSON_UX_LABELS.lessonTitleMissing}`);
+    }
+
+    const contentIssue = getCourseBuilderLessonContentIssue(lesson);
+
+    if (contentIssue) {
+      issues.push(`${lessonLabel}: ${contentIssue}`);
+    }
+  });
+
+  return {
+    issues,
+    ready: issues.length === 0,
+    lessonsTotal: moduleLessons.length,
+    activeLessons: activeLessons.length,
+    inactiveLessons: inactiveLessons.length,
+    requiredLessons: requiredLessons.length,
+    optionalLessons: optionalLessons.length,
+  };
+}
+
+function CourseBuilderModuleLessonUxPanel({ module, lessons }) {
+  const facts = getCourseBuilderModuleLessonUxFacts(module, lessons);
+  const moduleLessons = Array.isArray(lessons) ? lessons : [];
+
+  return (
+    <section
+      data-testid="course-builder-module-lesson-ux-panel"
+      className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.stage}
+          </div>
+          <h4 className="mt-1 text-sm font-bold text-slate-900">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.title}
+          </h4>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={facts.ready ? "green" : "red"}>
+          {facts.ready
+            ? COURSE_BUILDER_MODULE_LESSON_UX_LABELS.ready
+            : COURSE_BUILDER_MODULE_LESSON_UX_LABELS.needsWork}
+        </StatusBadge>
+      </div>
+
+      <div
+        data-testid="course-builder-module-lesson-ux-metrics"
+        className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+      >
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.lessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.lessonsTotal}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.activeLessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.activeLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.inactiveLessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.inactiveLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.requiredLessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.requiredLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.optionalLessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.optionalLessons}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="course-builder-module-lesson-ux-attention"
+        className={`mt-4 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          facts.issues.length
+            ? "bg-amber-50 text-amber-900 ring-amber-200"
+            : "bg-green-50 text-green-800 ring-green-200"
+        }`}
+      >
+        <div className="font-semibold text-slate-900">
+          {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.attention}
+        </div>
+
+        {facts.issues.length ? (
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {facts.issues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.noIssues}
+          </p>
+        )}
+      </div>
+
+      {moduleLessons.length ? (
+        <div
+          data-testid="course-builder-module-lesson-ux-map"
+          className="mt-4"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.lessonMap}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {moduleLessons.map((lesson) => (
+              <StatusBadge
+                key={lesson.id}
+                tone={lesson.is_active ? (lesson.is_required ? "green" : "blue") : "gray"}
+              >
+                {lesson.position}. {getLessonContentTypeLabel(lesson.content_type)}
+                {lesson.is_required ? " ? " + RU.lessonRequired : ""}
+              </StatusBadge>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function AdminCourseCatalogDiagnostics({
   catalogStats,
   diagnostics,
@@ -1595,6 +1821,11 @@ function CourseCard({
                           <p className="mt-3 text-sm leading-6 text-slate-600">
                             {module.description || RU.moduleDescriptionMissing}
                           </p>
+
+                          <CourseBuilderModuleLessonUxPanel
+                            module={module}
+                            lessons={moduleLessons}
+                          />
 
                           <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                             <div className="flex flex-wrap items-start justify-between gap-3">
