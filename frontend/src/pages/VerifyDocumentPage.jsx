@@ -219,6 +219,228 @@ function getPublicVerificationSourceStats({
 }
 
 
+const LEARNER_DOCUMENT_VERIFICATION_UX_LABELS = {
+  stage: "Stage 79.4 - Learner Document Verification UX Integration",
+  title: "???????? ????????? ?????????",
+  subtitle: "?????? ???????? ????????? ??????, ????? ????? ??? ??? ???????, ??? ???????? ????????? ???????? ? ???? ??????? ????? ????????.",
+  queryReady: "?????? ?????",
+  waitingQuery: "??????? ????? ??? ???",
+  checking: "???? ????????",
+  confirmed: "???????? ???????????",
+  revoked: "???????? ???????",
+  notFound: "???????? ?? ??????",
+  error: "?????? ????????",
+  summaryQuery: "??????????? ????????",
+  summaryStatus: "?????? ????????",
+  summaryQr: "QR/???",
+  summaryResult: "?????????",
+  nextStep: "????????? ???",
+  nextWaiting: "??????? ????? ????????? ??? ??? ????????. ???? ?? ?????? ?? ??????? ??????????, ???????? ????? ???? ??? ??????????? ? ??????.",
+  nextChecking: "????????? ?????? ?????????? ???????. ????? ???????? ???????? ??????? ?????? ?????????.",
+  nextConfirmed: "??????? ?????????, ?????????, ????? ????????? ? ???????????-????????. ??? ????????????? ??????????? QR-??????.",
+  nextRevoked: "???????? ??????, ?? ??? ?????? ??????? ?? ??????????. ????? ???????? ?????? ??????? ???????????.",
+  nextNotFound: "????????? ???????????? ?????? ??? ????. ???? ???????? ?????? ???? ????????, ?????????? ? ???????????.",
+  nextError: "????????? ???????? ????? ??? ???????? ?????? ????????? ? ???????????.",
+  openDocuments: "? ??????????",
+  openContacts: "???????? ???????????",
+  openCatalog: "??????? ??????",
+  yes: "??",
+  no: "???",
+  emptyValue: "-",
+};
+
+function getLearnerDocumentVerificationUXState({
+  normalizedQuery,
+  submittedQuery,
+  result,
+  loading,
+  error,
+  notFound,
+  sourceStats,
+}) {
+  const queryValue = submittedQuery || normalizedQuery || "";
+  const hasQuery = Boolean(queryValue);
+
+  const statusLabel = result
+    ? result.registry_status === "available"
+      ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.confirmed
+      : result.registry_status === "revoked"
+        ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.revoked
+        : RU.needsClarification
+    : notFound
+      ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.notFound
+      : error
+        ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.error
+        : loading
+          ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.checking
+          : hasQuery
+            ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.queryReady
+            : LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.waitingQuery;
+
+  const nextStep = result
+    ? result.registry_status === "available"
+      ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextConfirmed
+      : result.registry_status === "revoked"
+        ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextRevoked
+        : RU.clarificationDescription
+    : notFound
+      ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextNotFound
+      : error
+        ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextError
+        : loading
+          ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextChecking
+          : LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextWaiting;
+
+  return {
+    queryValue,
+    statusLabel,
+    nextStep,
+    hasResult: Boolean(result),
+    qrReady: Boolean(sourceStats?.qrReady),
+    isProblem: Boolean(error || notFound || result?.registry_status === "revoked"),
+    isConfirmed: result?.registry_status === "available",
+  };
+}
+
+function LearnerDocumentVerificationUXPanel({
+  normalizedQuery,
+  submittedQuery,
+  result,
+  loading,
+  error,
+  notFound,
+  sourceStats,
+  onPageChange,
+}) {
+  const state = getLearnerDocumentVerificationUXState({
+    normalizedQuery,
+    submittedQuery,
+    result,
+    loading,
+    error,
+    notFound,
+    sourceStats,
+  });
+
+  const statusTone = state.isProblem
+    ? "bg-amber-50 text-amber-800 ring-amber-200"
+    : state.isConfirmed
+      ? "bg-green-50 text-green-700 ring-green-200"
+      : "bg-blue-50 text-blue-700 ring-blue-200";
+
+  return (
+    <section
+      data-testid="learner-document-verification-ux-panel"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.stage}
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.title}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <span
+          data-testid="learner-document-verification-ux-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${statusTone}`}
+        >
+          {state.statusLabel}
+        </span>
+      </div>
+
+      <div
+        data-testid="learner-document-verification-ux-summary"
+        className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.summaryQuery}
+          </div>
+          <div className="mt-2 break-all text-sm font-semibold text-slate-900">
+            {state.queryValue || LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.emptyValue}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.summaryStatus}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {state.statusLabel}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.summaryQr}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {state.qrReady ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.yes : LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.no}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.summaryResult}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {state.hasResult ? getRegistryStatusLabel(result.registry_status) : LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.emptyValue}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="learner-document-verification-ux-next-step"
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${statusTone}`}
+      >
+        <div className="font-semibold text-slate-900">
+          {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextStep}
+        </div>
+        <p className="mt-2">{state.nextStep}</p>
+      </div>
+
+      <div
+        data-testid="learner-document-verification-ux-actions"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        <button
+          type="button"
+          data-testid="learner-document-verification-documents-action"
+          onClick={() => onPageChange("documents")}
+          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.openDocuments}
+        </button>
+
+        <button
+          type="button"
+          data-testid="learner-document-verification-contacts-action"
+          onClick={() => onPageChange("contacts")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.openContacts}
+        </button>
+
+        <button
+          type="button"
+          data-testid="learner-document-verification-catalog-action"
+          onClick={() => onPageChange("catalog")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.openCatalog}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+
 function PublicVerificationJourneyHint({
   normalizedQuery,
   submittedQuery,
@@ -824,6 +1046,17 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
           {RU.intro}
         </p>
       </section>
+
+      <LearnerDocumentVerificationUXPanel
+        normalizedQuery={normalizedQuery}
+        submittedQuery={submittedQuery}
+        result={result}
+        loading={loading}
+        error={error}
+        notFound={notFound}
+        sourceStats={verificationSourceStats}
+        onPageChange={onPageChange}
+      />
 
       <PublicVerificationJourneyHint
         normalizedQuery={normalizedQuery}

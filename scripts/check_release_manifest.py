@@ -6,8 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs" / "release-manifest.json"
 
-REQUIRED_STAGE79_3_CHECKS = {
+REQUIRED_STAGE79_4_CHECKS = {
     "python .\\scripts\\check_release_manifest.py",
+    "python .\\scripts\\check_stage79_learner_document_verification_ux.py",
     "python .\\scripts\\check_stage79_learner_documents_ux_foundation.py",
     "python .\\scripts\\check_stage79_learner_documents_ux_api_plan.py",
     "python .\\scripts\\check_stage79_learner_documents_api_inventory.py",
@@ -30,11 +31,12 @@ REQUIRED_STAGE79_3_CHECKS = {
     "git diff --check",
 }
 
-REQUIRED_STAGE79_3_CHANGED_FILES = {
-    "frontend/src/pages/DocumentsPage.jsx",
+REQUIRED_STAGE79_4_CHANGED_FILES = {
+    "frontend/src/pages/VerifyDocumentPage.jsx",
     "docs/release-manifest.json",
-    "docs/stage79-learner-documents-ux-foundation.md",
+    "docs/stage79-learner-document-verification-ux.md",
     "scripts/check_release_manifest.py",
+    "scripts/check_stage79_learner_document_verification_ux.py",
     "scripts/check_stage79_learner_documents_ux_foundation.py",
     "scripts/check_stage79_learner_documents_ux_api_plan.py",
     "scripts/check_stage79_learner_documents_api_inventory.py",
@@ -70,56 +72,56 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "79.3":
-        fail("current_stage must be 79.3")
+    if manifest.get("current_stage") != "79.4":
+        fail("current_stage must be 79.4")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "79.2":
-        fail("last_confirmed_stage must be 79.2")
-    if checkpoint.get("last_confirmed_head") != "9efd5d2":
-        fail("last_confirmed_head must be 9efd5d2")
+    if checkpoint.get("last_confirmed_stage") != "79.3":
+        fail("last_confirmed_stage must be 79.3")
+    if checkpoint.get("last_confirmed_head") != "0b679f9":
+        fail("last_confirmed_head must be 0b679f9")
     if checkpoint.get("backend_runtime_changed") is not False:
         fail("backend_runtime_changed must be false")
     if checkpoint.get("database_migration_run") is not False:
         fail("database_migration_run must be false")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["77.7", "78.9", "79.1", "79.2", "79.3"]:
+    for stage_id in ["77.7", "78.9", "79.1", "79.2", "79.3", "79.4"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage79_2 = stages["79.2"]
-    if stage79_2.get("status") != "production_confirmed":
-        fail("stage 79.2 status must be production_confirmed")
-    if stage79_2.get("head") != "9efd5d2":
-        fail("stage 79.2 head must be 9efd5d2")
-
     stage79_3 = stages["79.3"]
-    if stage79_3.get("status") != "implementation_ready":
-        fail("stage 79.3 status must be implementation_ready")
-    if stage79_3.get("branch") != "stage79-learner-documents-ux-foundation":
-        fail("stage 79.3 branch must be stage79-learner-documents-ux-foundation")
-    if stage79_3.get("deployment_type") != "frontend-only":
-        fail("stage 79.3 deployment_type must be frontend-only")
-    if stage79_3.get("frontend_runtime_changed_expected") is not True:
-        fail("stage 79.3 frontend_runtime_changed_expected must be true")
-    if stage79_3.get("backend_runtime_changed_expected") is not False:
-        fail("stage 79.3 backend_runtime_changed_expected must be false")
-    if stage79_3.get("database_migration_expected") is not False:
-        fail("stage 79.3 database_migration_expected must be false")
+    if stage79_3.get("status") != "production_deployed":
+        fail("stage 79.3 status must be production_deployed")
+    if stage79_3.get("head") != "0b679f9":
+        fail("stage 79.3 head must be 0b679f9")
 
-    missing_checks = REQUIRED_STAGE79_3_CHECKS - set(stage79_3.get("required_checks", []))
+    stage79_4 = stages["79.4"]
+    if stage79_4.get("status") != "implementation_ready":
+        fail("stage 79.4 status must be implementation_ready")
+    if stage79_4.get("branch") != "stage79-learner-document-verification-ux":
+        fail("stage 79.4 branch must be stage79-learner-document-verification-ux")
+    if stage79_4.get("deployment_type") != "frontend-only":
+        fail("stage 79.4 deployment_type must be frontend-only")
+    if stage79_4.get("frontend_runtime_changed_expected") is not True:
+        fail("stage 79.4 frontend_runtime_changed_expected must be true")
+    if stage79_4.get("backend_runtime_changed_expected") is not False:
+        fail("stage 79.4 backend_runtime_changed_expected must be false")
+    if stage79_4.get("database_migration_expected") is not False:
+        fail("stage 79.4 database_migration_expected must be false")
+
+    missing_checks = REQUIRED_STAGE79_4_CHECKS - set(stage79_4.get("required_checks", []))
     if missing_checks:
-        fail(f"stage 79.3 missing required checks: {sorted(missing_checks)}")
+        fail(f"stage 79.4 missing required checks: {sorted(missing_checks)}")
 
-    missing_files = REQUIRED_STAGE79_3_CHANGED_FILES - set(stage79_3.get("changed_files", []))
+    missing_files = REQUIRED_STAGE79_4_CHANGED_FILES - set(stage79_4.get("changed_files", []))
     if missing_files:
-        fail(f"stage 79.3 missing changed files: {sorted(missing_files)}")
+        fail(f"stage 79.4 missing changed files: {sorted(missing_files)}")
 
     for path in [
-        "frontend/src/pages/DocumentsPage.jsx",
-        "docs/stage79-learner-documents-ux-foundation.md",
-        "scripts/check_stage79_learner_documents_ux_foundation.py",
+        "frontend/src/pages/VerifyDocumentPage.jsx",
+        "docs/stage79-learner-document-verification-ux.md",
+        "scripts/check_stage79_learner_document_verification_ux.py",
     ]:
         if not (ROOT / path).exists():
             fail(f"required file missing: {path}")

@@ -73,14 +73,16 @@ def require_manifest() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "79.3":
-        fail("current_stage must be 79.3")
+    if manifest.get("current_stage") not in {"79.3", "79.4"}:
+        fail("current_stage must be 79.3 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "79.2":
-        fail("production checkpoint stage must be 79.2")
-    if checkpoint.get("last_confirmed_head") != "9efd5d2":
-        fail("production checkpoint head must be 9efd5d2")
+    allowed_checkpoints = {
+        ("79.2", "9efd5d2"),
+        ("79.3", "0b679f9"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 79.2/9efd5d2 or compatible later stage 79.3/0b679f9")
     if checkpoint.get("backend_runtime_changed") is not False:
         fail("checkpoint backend_runtime_changed must be false")
     if checkpoint.get("database_migration_run") is not False:
@@ -99,8 +101,8 @@ def require_manifest() -> None:
         fail("stage 79.2 head must be 9efd5d2")
 
     stage79_3 = stages["79.3"]
-    if stage79_3.get("status") != "implementation_ready":
-        fail("stage 79.3 status must be implementation_ready")
+    if stage79_3.get("status") not in {"implementation_ready", "production_deployed"}:
+        fail("stage 79.3 status must be implementation_ready or production_deployed")
     if stage79_3.get("deployment_type") != "frontend-only":
         fail("stage 79.3 deployment_type must be frontend-only")
     if stage79_3.get("frontend_runtime_changed_expected") is not True:
