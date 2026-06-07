@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "78.5",
+  "current_stage": "78.6",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
@@ -1028,8 +1028,8 @@
     {
       "id": "78.5",
       "name": "Learner Progress API Inventory",
-      "status": "implementation_ready",
-      "branch": "stage78-learner-progress-api-inventory",
+      "status": "repository_merged",
+      "branch": "develop",
       "base": "develop",
       "deployment_type": "repository-inventory",
       "runtime_scope": [
@@ -1082,6 +1082,80 @@
       "safety_notes": [
         "repository_inventory_only",
         "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes"
+      ],
+      "head": "22f5b17",
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "78.6",
+      "name": "Learner lesson completion API integration",
+      "status": "implementation_ready",
+      "branch": "stage78-learner-lesson-completion-api-integration",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "frontend_course_detail_page",
+        "account_course_detail_loading",
+        "lesson_completion_api_call",
+        "real_lesson_completion_state",
+        "real_progress_percent_refresh"
+      ],
+      "frontend_runtime_changed_expected": true,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage78-learner-lesson-completion-api-integration.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage78_learner_lesson_completion_api_integration.py",
+        "python .\\scripts\\check_stage78_learner_progress_api_inventory.py",
+        "python .\\scripts\\check_stage78_learner_completion_action_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_content_preview_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_access_ux.py",
+        "python .\\scripts\\check_stage78_learner_course_progress_foundation.py",
+        "python .\\scripts\\check_stage77_course_builder_final_qa.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_public_pages.py",
+        "python .\\scripts\\smoke_frontend_hooks_layout.py",
+        "docker compose exec frontend npm run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "frontend/src/pages/CourseDetailPage.jsx",
+        "docs/release-manifest.json",
+        "docs/stage78-learner-lesson-completion-api-integration.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage78_learner_lesson_completion_api_integration.py",
+        "scripts/check_stage78_learner_progress_api_inventory.py",
+        "scripts/check_stage78_learner_completion_action_ux.py",
+        "scripts/check_stage78_learner_lesson_content_preview_ux.py",
+        "scripts/check_stage78_learner_lesson_access_ux.py",
+        "scripts/check_stage78_learner_course_progress_foundation.py",
+        "scripts/check_stage77_course_builder_final_qa.py"
+      ],
+      "acceptance_markers": [
+        "completeAccountCourseLesson",
+        "getAccountCourseDetail",
+        "handleCompleteLesson",
+        "learner-completion-action-complete-button",
+        "learner-completion-action-success",
+        "learner-completion-action-error",
+        "mergeCourseWithAccountCourseDetail",
+        "real_lesson_completion_state"
+      ],
+      "safety_notes": [
+        "frontend_only",
+        "uses_existing_backend_endpoint",
         "no_backend_runtime_changes",
         "no_database_migrations",
         "no_auth_or_rbac_changes"

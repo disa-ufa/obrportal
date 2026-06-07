@@ -90,7 +90,7 @@ def require_manifest() -> None:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
     current_stage = manifest.get("current_stage")
-    if current_stage not in {"77.7", "78.1", "78.2", "78.3", "78.4", "78.5"}:
+    if current_stage not in {"77.7", "78.1", "78.2", "78.3", "78.4", "78.5", "78.6"}:
         fail("current_stage must be 77.7 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint", {})

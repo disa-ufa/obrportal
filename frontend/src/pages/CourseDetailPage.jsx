@@ -1,7 +1,7 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { useMemo } from "react";
-import { enrollAccountCourse, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
+import { completeAccountCourseLesson, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 
 function formatCourseDocument(course) {
@@ -11,6 +11,44 @@ function formatCourseDocument(course) {
 function formatCoursePrice(course) {
   return course?.price || "Стоимость уточняется";
 }
+
+function normalizeProgressPercent(value) {
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numberValue)));
+}
+
+function getEnrollmentId(enrollment) {
+  return enrollment?.enrollment_id || enrollment?.id || "";
+}
+
+function getLessonCompleted(lesson) {
+  return Boolean(lesson?.is_completed || lesson?.completed_at || lesson?.status === "completed");
+}
+
+function mergeCourseWithAccountCourseDetail(course, accountCourseDetail) {
+  if (!course || !accountCourseDetail) {
+    return course;
+  }
+
+  return {
+    ...course,
+    modules: Array.isArray(accountCourseDetail.modules) ? accountCourseDetail.modules : course.modules,
+    learner_progress: {
+      lessons_total: accountCourseDetail.lessons_total || 0,
+      lessons_completed: accountCourseDetail.lessons_completed || 0,
+      required_lessons_total: accountCourseDetail.required_lessons_total || 0,
+      required_lessons_completed: accountCourseDetail.required_lessons_completed || 0,
+      progress_percent: normalizeProgressPercent(accountCourseDetail.progress_percent),
+      required_progress_percent: normalizeProgressPercent(accountCourseDetail.required_progress_percent),
+    },
+  };
+}
+
 
 function getEnrollmentStatusLabel(status) {
   switch (status) {
@@ -293,6 +331,10 @@ function getLearnerCourseProgressStatus(existingEnrollment, user) {
     };
   }
 
+  const realProgressPercent = normalizeProgressPercent(
+    existingEnrollment.progress_percent ?? existingEnrollment.required_progress_percent
+  );
+
   if (existingEnrollment.status === "completed") {
     return {
       key: "completed",
@@ -307,7 +349,7 @@ function getLearnerCourseProgressStatus(existingEnrollment, user) {
       key: "active",
       label: LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.active,
       tone: "bg-green-50 text-green-700 ring-green-200",
-      percent: 25,
+      percent: realProgressPercent,
     };
   }
 
@@ -324,7 +366,7 @@ function getLearnerCourseProgressStatus(existingEnrollment, user) {
     key: "assigned",
     label: LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.assigned,
     tone: "bg-blue-50 text-blue-700 ring-blue-200",
-    percent: 10,
+    percent: realProgressPercent,
   };
 }
 
@@ -902,7 +944,9 @@ function getLearnerLessonContentPreviewAction(contentType) {
 function getLearnerLessonContentPreviewFacts(course, existingEnrollment, user) {
   const accessFacts = getLearnerLessonAccessFacts(course, existingEnrollment, user);
   const lesson =
+    accessFacts.availableLessons.find((item) => !getLessonCompleted(item)) ||
     accessFacts.firstAvailableLesson ||
+    accessFacts.lessons.find((item) => item.active && !getLessonCompleted(item)) ||
     accessFacts.lessons.find((item) => item.active) ||
     accessFacts.lessons[0] ||
     null;
@@ -1104,7 +1148,11 @@ const LEARNER_COMPLETION_ACTION_UX_LABELS = {
   openMaterial: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
   studyMaterial: "\u0418\u0437\u0443\u0447\u0438\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
   prepareCompletion: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u043e\u0442\u043c\u0435\u0442\u043a\u0443 \u043e \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0438",
-  completionWillBeSavedLater: "\u0424\u0438\u043a\u0441\u0430\u0446\u0438\u044f \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430 \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u043c \u044d\u0442\u0430\u043f\u043e\u043c.",
+  completionWillBeSavedLater: "\u0424\u0438\u043a\u0441\u0430\u0446\u0438\u044f \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0430: \u043a\u043d\u043e\u043f\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442 \u0444\u0430\u043a\u0442 \u0438\u0437\u0443\u0447\u0435\u043d\u0438\u044f \u0443\u0440\u043e\u043a\u0430.",
+  markLessonCompleted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439",
+  savingCompletion: "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441...",
+  lessonAlreadyCompleted: "\u0423\u0440\u043e\u043a \u0443\u0436\u0435 \u0438\u0437\u0443\u0447\u0435\u043d",
+  completionSaved: "\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043f\u043e \u0443\u0440\u043e\u043a\u0443 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d.",
   loginRequired: "\u0412\u043e\u0439\u0434\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u043d\u0430\u0447\u0430\u0442\u044c \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435.",
   enrollRequired: "\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441, \u0447\u0442\u043e\u0431\u044b \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043f\u043e \u0443\u0440\u043e\u043a\u0430\u043c.",
   noLessons: "\u0412 \u043a\u0443\u0440\u0441\u0435 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0443\u0440\u043e\u043a\u043e\u0432.",
@@ -1119,12 +1167,16 @@ function getLearnerCompletionActionFacts(course, existingEnrollment, user) {
   const locked = previewFacts.locked;
   const hasUrl = Boolean(previewFacts.url);
   const hasLesson = Boolean(lesson);
+  const completed = getLessonCompleted(lesson);
+  const canCompleteLesson = hasLesson && !locked && !completed;
 
   const actionStatus = !hasLesson
     ? LEARNER_COMPLETION_ACTION_UX_LABELS.empty
     : locked
       ? LEARNER_COMPLETION_ACTION_UX_LABELS.locked
-      : LEARNER_COMPLETION_ACTION_UX_LABELS.available;
+      : completed
+        ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted
+        : LEARNER_COMPLETION_ACTION_UX_LABELS.available;
 
   const nextAction = !hasLesson
     ? LEARNER_COMPLETION_ACTION_UX_LABELS.noLessons
@@ -1132,39 +1184,19 @@ function getLearnerCompletionActionFacts(course, existingEnrollment, user) {
       ? user
         ? LEARNER_COMPLETION_ACTION_UX_LABELS.enrollRequired
         : LEARNER_COMPLETION_ACTION_UX_LABELS.loginRequired
-      : hasUrl
-        ? LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial
-        : LEARNER_COMPLETION_ACTION_UX_LABELS.studyMaterial;
+      : completed
+        ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted
+        : hasUrl
+          ? LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial
+          : LEARNER_COMPLETION_ACTION_UX_LABELS.studyMaterial;
 
   const checklist = [
-    {
-      key: "open",
-      label: hasUrl
-        ? LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial
-        : LEARNER_COMPLETION_ACTION_UX_LABELS.studyMaterial,
-      ready: hasLesson && !locked,
-    },
-    {
-      key: "study",
-      label: LEARNER_COMPLETION_ACTION_UX_LABELS.studyMaterial,
-      ready: hasLesson && !locked,
-    },
-    {
-      key: "prepare",
-      label: LEARNER_COMPLETION_ACTION_UX_LABELS.prepareCompletion,
-      ready: hasLesson && !locked,
-    },
+    { key: "open", label: hasUrl ? LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial : LEARNER_COMPLETION_ACTION_UX_LABELS.studyMaterial, ready: hasLesson && !locked, completed },
+    { key: "study", label: LEARNER_COMPLETION_ACTION_UX_LABELS.studyMaterial, ready: hasLesson && !locked, completed },
+    { key: "prepare", label: LEARNER_COMPLETION_ACTION_UX_LABELS.prepareCompletion, ready: hasLesson && !locked, completed: canCompleteLesson || completed },
   ];
 
-  return {
-    lesson,
-    locked,
-    hasUrl,
-    actionStatus,
-    nextAction,
-    checklist,
-    previewFacts,
-  };
+  return { lesson, locked, hasUrl, completed, canCompleteLesson, actionStatus, nextAction, checklist, previewFacts };
 }
 
 function CourseLearnerCompletionActionPanel({
@@ -1173,155 +1205,55 @@ function CourseLearnerCompletionActionPanel({
   user,
   onPrimaryAction,
   onPageChange,
+  onCompleteLesson,
+  lessonCompletionLoading = false,
+  lessonCompletionError = "",
+  lessonCompletionSuccess = "",
 }) {
   const facts = getLearnerCompletionActionFacts(course, existingEnrollment, user);
   const lesson = facts.lesson;
 
   return (
-    <section
-      data-testid="learner-completion-action-panel"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
-    >
+    <section data-testid="learner-completion-action-panel" className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-            {LEARNER_COMPLETION_ACTION_UX_LABELS.stage}
-          </div>
-          <h2 className="mt-2 text-2xl font-bold text-slate-900">
-            {LEARNER_COMPLETION_ACTION_UX_LABELS.title}
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {LEARNER_COMPLETION_ACTION_UX_LABELS.subtitle}
-          </p>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">{LEARNER_COMPLETION_ACTION_UX_LABELS.stage}</div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">{LEARNER_COMPLETION_ACTION_UX_LABELS.title}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{LEARNER_COMPLETION_ACTION_UX_LABELS.subtitle}</p>
         </div>
-
-        <span
-          data-testid="learner-completion-action-status"
-          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
-            !lesson
-              ? "bg-slate-100 text-slate-600 ring-slate-200"
-              : facts.locked
-                ? "bg-amber-50 text-amber-800 ring-amber-200"
-                : "bg-green-50 text-green-700 ring-green-200"
-          }`}
-        >
-          {facts.actionStatus}
-        </span>
+        <span data-testid="learner-completion-action-status" className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200">{facts.actionStatus}</span>
       </div>
 
-      <div
-        data-testid="learner-completion-action-summary"
-        className="mt-5 grid gap-3 md:grid-cols-3"
-      >
-        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {LEARNER_COMPLETION_ACTION_UX_LABELS.currentLesson}
-          </div>
-          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
-            {lesson?.title || LEARNER_COMPLETION_ACTION_UX_LABELS.noLessons}
-          </div>
-        </div>
-
-        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {LEARNER_COMPLETION_ACTION_UX_LABELS.nextAction}
-          </div>
-          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
-            {facts.nextAction}
-          </div>
-        </div>
-
-        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {LEARNER_COMPLETION_ACTION_UX_LABELS.completionMode}
-          </div>
-          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
-            {LEARNER_COMPLETION_ACTION_UX_LABELS.completionWillBeSavedLater}
-          </div>
-        </div>
+      <div data-testid="learner-completion-action-summary" className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{LEARNER_COMPLETION_ACTION_UX_LABELS.currentLesson}</div><div className="mt-2 text-sm font-semibold leading-5 text-slate-900">{lesson?.title || LEARNER_COMPLETION_ACTION_UX_LABELS.noLessons}</div></div>
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{LEARNER_COMPLETION_ACTION_UX_LABELS.nextAction}</div><div className="mt-2 text-sm font-semibold leading-5 text-slate-900">{facts.nextAction}</div></div>
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{LEARNER_COMPLETION_ACTION_UX_LABELS.completionMode}</div><div className="mt-2 text-sm font-semibold leading-5 text-slate-900">{facts.completed ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted : LEARNER_COMPLETION_ACTION_UX_LABELS.completionWillBeSavedLater}</div></div>
       </div>
 
-      <div
-        data-testid="learner-completion-action-checklist"
-        className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-      >
-        <div className="text-sm font-bold text-slate-900">
-          {LEARNER_COMPLETION_ACTION_UX_LABELS.learnerAction || LEARNER_COMPLETION_ACTION_UX_LABELS.nextAction}
-        </div>
-
+      <div data-testid="learner-completion-action-checklist" className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div className="text-sm font-bold text-slate-900">{LEARNER_COMPLETION_ACTION_UX_LABELS.nextAction}</div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           {facts.checklist.map((item, index) => (
-            <div
-              key={item.key}
-              data-testid="learner-completion-action-step"
-              className="rounded-2xl bg-white p-4 ring-1 ring-slate-200"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-sm font-bold text-slate-900 ring-1 ring-slate-200">
-                {index + 1}
-              </div>
-              <div className="mt-3 text-sm font-semibold text-slate-900">
-                {item.label}
-              </div>
-              <div className="mt-2 text-xs font-semibold text-slate-500">
-                {item.ready ? LEARNER_COMPLETION_ACTION_UX_LABELS.available : LEARNER_COMPLETION_ACTION_UX_LABELS.locked}
-              </div>
+            <div key={item.key} data-testid="learner-completion-action-step" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-sm font-bold text-slate-900 ring-1 ring-slate-200">{index + 1}</div>
+              <div className="mt-3 text-sm font-semibold text-slate-900">{item.label}</div>
+              <div className="mt-2 text-xs font-semibold text-slate-500">{item.completed ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted : item.ready ? LEARNER_COMPLETION_ACTION_UX_LABELS.available : LEARNER_COMPLETION_ACTION_UX_LABELS.locked}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div
-        data-testid="learner-completion-action-note"
-        className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200"
-      >
-        {LEARNER_COMPLETION_ACTION_UX_LABELS.completionWillBeSavedLater}
-      </div>
+      <div data-testid="learner-completion-action-note" className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">{facts.completed ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted : LEARNER_COMPLETION_ACTION_UX_LABELS.completionWillBeSavedLater}</div>
 
-      <div
-        data-testid="learner-completion-action-actions"
-        className="mt-5 flex flex-wrap gap-3"
-      >
-        {facts.hasUrl && !facts.locked ? (
-          <a
-            data-testid="learner-completion-action-open-link"
-            href={
-              facts.previewFacts.url.startsWith("http://") || facts.previewFacts.url.startsWith("https://")
-                ? facts.previewFacts.url
-                : `https://${facts.previewFacts.url}`
-            }
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            {LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial}
-          </a>
-        ) : (
-          <button
-            type="button"
-            onClick={onPrimaryAction}
-            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            {facts.locked
-              ? LEARNER_COMPLETION_ACTION_UX_LABELS.enroll
-              : LEARNER_COMPLETION_ACTION_UX_LABELS.openAccount}
-          </button>
-        )}
+      {lessonCompletionSuccess ? <div data-testid="learner-completion-action-success" className="mt-5 rounded-2xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200">{lessonCompletionSuccess}</div> : null}
+      {lessonCompletionError ? <div data-testid="learner-completion-action-error" className="mt-5 rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700 ring-1 ring-red-200">{lessonCompletionError}</div> : null}
 
-        <button
-          type="button"
-          onClick={() => onPageChange("account")}
-          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-        >
-          {LEARNER_COMPLETION_ACTION_UX_LABELS.openAccount}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onPageChange("catalog")}
-          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-        >
-          {LEARNER_COMPLETION_ACTION_UX_LABELS.openCatalog}
-        </button>
+      <div data-testid="learner-completion-action-actions" className="mt-5 flex flex-wrap gap-3">
+        {facts.hasUrl && !facts.locked ? <a data-testid="learner-completion-action-open-link" href={facts.previewFacts.url.startsWith("http://") || facts.previewFacts.url.startsWith("https://") ? facts.previewFacts.url : `https://${facts.previewFacts.url}`} target="_blank" rel="noreferrer" className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700">{LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial}</a> : <button type="button" onClick={onPrimaryAction} className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700">{facts.locked ? LEARNER_COMPLETION_ACTION_UX_LABELS.enroll : LEARNER_COMPLETION_ACTION_UX_LABELS.openAccount}</button>}
+        {facts.canCompleteLesson ? <button type="button" data-testid="learner-completion-action-complete-button" onClick={() => onCompleteLesson?.(facts.lesson)} disabled={lessonCompletionLoading} className="rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60">{lessonCompletionLoading ? LEARNER_COMPLETION_ACTION_UX_LABELS.savingCompletion : LEARNER_COMPLETION_ACTION_UX_LABELS.markLessonCompleted}</button> : null}
+        {facts.completed ? <span data-testid="learner-completion-action-completed-badge" className="inline-flex items-center rounded-full bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 ring-1 ring-green-200">{LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted}</span> : null}
+        <button type="button" onClick={() => onPageChange("account")} className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100">{LEARNER_COMPLETION_ACTION_UX_LABELS.openAccount}</button>
+        <button type="button" onClick={() => onPageChange("catalog")} className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100">{LEARNER_COMPLETION_ACTION_UX_LABELS.openCatalog}</button>
       </div>
     </section>
   );
@@ -1787,6 +1719,10 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [enrollError, setEnrollError] = useState("");
   const [enrollSuccess, setEnrollSuccess] = useState("");
   const [existingEnrollment, setExistingEnrollment] = useState(null);
+  const [accountCourseDetail, setAccountCourseDetail] = useState(null);
+  const [lessonCompletionLoading, setLessonCompletionLoading] = useState(false);
+  const [lessonCompletionError, setLessonCompletionError] = useState("");
+  const [lessonCompletionSuccess, setLessonCompletionSuccess] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -1796,6 +1732,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         setCourse(null);
         setRelatedCourses([]);
         setExistingEnrollment(null);
+        setAccountCourseDetail(null);
         setLoading(false);
         setError("Курс не выбран.");
         return;
@@ -1811,28 +1748,40 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           user ? getAccountCourses() : Promise.resolve(null),
         ]);
 
+        const accountCourses = Array.isArray(accountCoursesResponse?.items)
+          ? accountCoursesResponse.items
+          : [];
+
+        const matchedEnrollment =
+          accountCourses.find(
+            (item) =>
+              item.course_id === courseResponse.id ||
+              item.course_slug === courseResponse.slug
+          ) || null;
+
+        let accountCourseDetailResponse = null;
+        const matchedEnrollmentId = getEnrollmentId(matchedEnrollment);
+
+        if (matchedEnrollmentId) {
+          try {
+            accountCourseDetailResponse = await getAccountCourseDetail(matchedEnrollmentId);
+          } catch {
+            accountCourseDetailResponse = null;
+          }
+        }
+
         if (!isMounted) {
           return;
         }
 
         setCourse(courseResponse);
+        setAccountCourseDetail(accountCourseDetailResponse);
         setRelatedCourses(
           Array.isArray(coursesResponse)
             ? coursesResponse.filter((item) => item.slug !== courseResponse.slug).slice(0, 2)
             : []
         );
-
-        const accountCourses = Array.isArray(accountCoursesResponse?.items)
-          ? accountCoursesResponse.items
-          : [];
-
-        setExistingEnrollment(
-          accountCourses.find(
-            (item) =>
-              item.course_id === courseResponse.id ||
-              item.course_slug === courseResponse.slug
-          ) || null
-        );
+        setExistingEnrollment(accountCourseDetailResponse || matchedEnrollment);
       } catch (err) {
         if (!isMounted) {
           return;
@@ -1841,6 +1790,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         setCourse(null);
         setRelatedCourses([]);
         setExistingEnrollment(null);
+        setAccountCourseDetail(null);
         setError(formatApiError(err, "Программа не найдена."));
       } finally {
         if (isMounted) {
@@ -1856,10 +1806,15 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     };
   }, [courseSlug, user?.id]);
 
+  const learnerCourse = useMemo(
+    () => mergeCourseWithAccountCourseDetail(course, accountCourseDetail),
+    [course, accountCourseDetail]
+  );
+
   const courseDiagnostics = useMemo(
     () =>
       getCourseDetailDiagnostics({
-        course,
+        course: learnerCourse,
         existingEnrollment,
         user,
         enrollLoading,
@@ -1867,8 +1822,34 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         enrollSuccess,
         relatedCourses,
       }),
-    [course, existingEnrollment, user, enrollLoading, enrollError, enrollSuccess, relatedCourses]
+    [learnerCourse, existingEnrollment, user, enrollLoading, enrollError, enrollSuccess, relatedCourses]
   );
+
+  async function handleCompleteLesson(lesson) {
+    const enrollmentId = getEnrollmentId(existingEnrollment);
+
+    if (!enrollmentId || !lesson?.id) {
+      setLessonCompletionError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0437\u0430\u043f\u0438\u0441\u044c \u0438\u043b\u0438 \u0443\u0440\u043e\u043a \u0434\u043b\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430.");
+      setLessonCompletionSuccess("");
+      return;
+    }
+
+    try {
+      setLessonCompletionLoading(true);
+      setLessonCompletionError("");
+      setLessonCompletionSuccess("");
+
+      const updatedCourseDetail = await completeAccountCourseLesson(enrollmentId, lesson.id);
+
+      setAccountCourseDetail(updatedCourseDetail);
+      setExistingEnrollment(updatedCourseDetail);
+      setLessonCompletionSuccess(LEARNER_COMPLETION_ACTION_UX_LABELS.completionSaved);
+    } catch (err) {
+      setLessonCompletionError(formatApiError(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043f\u043e \u0443\u0440\u043e\u043a\u0443."));
+    } finally {
+      setLessonCompletionLoading(false);
+    }
+  }
 
   async function handleEnroll() {
     if (!course) {
@@ -1897,8 +1878,19 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setEnrollSuccess("");
 
       const createdEnrollment = await enrollAccountCourse(course.id);
+      let createdCourseDetail = null;
+      const createdEnrollmentId = getEnrollmentId(createdEnrollment);
 
-      setExistingEnrollment(createdEnrollment);
+      if (createdEnrollmentId) {
+        try {
+          createdCourseDetail = await getAccountCourseDetail(createdEnrollmentId);
+        } catch {
+          createdCourseDetail = null;
+        }
+      }
+
+      setAccountCourseDetail(createdCourseDetail);
+      setExistingEnrollment(createdCourseDetail || createdEnrollment);
       setEnrollSuccess("Вы записаны на программу. Курс добавлен в личный кабинет.");
       onPageChange("account");
     } catch (err) {
@@ -2072,7 +2064,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       </section>
 
       <CourseDetailLearnerJourneyHint
-        course={course}
+        course={learnerCourse}
         existingEnrollment={existingEnrollment}
         user={user}
         enrollLoading={enrollLoading}
@@ -2081,7 +2073,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       />
 
       <CourseLearnerProgressFoundationPanel
-        course={course}
+        course={learnerCourse}
         existingEnrollment={existingEnrollment}
         user={user}
         onPrimaryAction={handleEnroll}
@@ -2089,7 +2081,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       />
 
       <CourseLearnerLessonAccessPanel
-        course={course}
+        course={learnerCourse}
         existingEnrollment={existingEnrollment}
         user={user}
         onPrimaryAction={handleEnroll}
@@ -2097,7 +2089,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       />
 
       <CourseLearnerLessonContentPreviewPanel
-        course={course}
+        course={learnerCourse}
         existingEnrollment={existingEnrollment}
         user={user}
         onPrimaryAction={handleEnroll}
@@ -2105,15 +2097,19 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       />
 
       <CourseLearnerCompletionActionPanel
-        course={course}
+        course={learnerCourse}
         existingEnrollment={existingEnrollment}
         user={user}
         onPrimaryAction={handleEnroll}
         onPageChange={onPageChange}
+        onCompleteLesson={handleCompleteLesson}
+        lessonCompletionLoading={lessonCompletionLoading}
+        lessonCompletionError={lessonCompletionError}
+        lessonCompletionSuccess={lessonCompletionSuccess}
       />
 
       <CourseSelfEnrollmentDiagnostics
-        course={course}
+        course={learnerCourse}
         existingEnrollment={existingEnrollment}
         user={user}
         enrollLoading={enrollLoading}
