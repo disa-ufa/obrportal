@@ -1088,6 +1088,245 @@ function CourseLearnerLessonContentPreviewPanel({
   );
 }
 
+
+const LEARNER_COMPLETION_ACTION_UX_LABELS = {
+  stage: "Stage 78.4 \u00b7 Learner Completion Action UX",
+  title: "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043f\u043e \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044e \u0443\u0440\u043e\u043a\u0430",
+  subtitle:
+    "\u0411\u043b\u043e\u043a \u043f\u043e\u043c\u043e\u0433\u0430\u0435\u0442 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044e \u043f\u043e\u043d\u044f\u0442\u044c, \u0447\u0442\u043e \u0441\u0434\u0435\u043b\u0430\u0442\u044c \u0441 \u0442\u0435\u043a\u0443\u0449\u0438\u043c \u0443\u0440\u043e\u043a\u043e\u043c: \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b, \u0438\u0437\u0443\u0447\u0438\u0442\u044c \u0435\u0433\u043e \u0438 \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c\u0441\u044f \u043a \u0444\u0438\u043a\u0441\u0430\u0446\u0438\u0438 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f.",
+  currentLesson: "\u0422\u0435\u043a\u0443\u0449\u0438\u0439 \u0443\u0440\u043e\u043a",
+  actionStatus: "\u0421\u0442\u0430\u0442\u0443\u0441 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f",
+  nextAction: "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0435\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435",
+  completionMode: "\u0420\u0435\u0436\u0438\u043c \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f",
+  available: "\u041c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u0442\u044c",
+  locked: "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u0437\u0430\u043a\u0440\u044b\u0442\u044b",
+  empty: "\u041d\u0435\u0442 \u0443\u0440\u043e\u043a\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f",
+  openMaterial: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+  studyMaterial: "\u0418\u0437\u0443\u0447\u0438\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+  prepareCompletion: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u043e\u0442\u043c\u0435\u0442\u043a\u0443 \u043e \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0438",
+  completionWillBeSavedLater: "\u0424\u0438\u043a\u0441\u0430\u0446\u0438\u044f \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430 \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u043c \u044d\u0442\u0430\u043f\u043e\u043c.",
+  loginRequired: "\u0412\u043e\u0439\u0434\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u043d\u0430\u0447\u0430\u0442\u044c \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435.",
+  enrollRequired: "\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441, \u0447\u0442\u043e\u0431\u044b \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043f\u043e \u0443\u0440\u043e\u043a\u0430\u043c.",
+  noLessons: "\u0412 \u043a\u0443\u0440\u0441\u0435 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0443\u0440\u043e\u043a\u043e\u0432.",
+  openAccount: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442",
+  enroll: "\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f",
+  openCatalog: "\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433",
+};
+
+function getLearnerCompletionActionFacts(course, existingEnrollment, user) {
+  const previewFacts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user);
+  const lesson = previewFacts.lesson;
+  const locked = previewFacts.locked;
+  const hasUrl = Boolean(previewFacts.url);
+  const hasLesson = Boolean(lesson);
+
+  const actionStatus = !hasLesson
+    ? LEARNER_COMPLETION_ACTION_UX_LABELS.empty
+    : locked
+      ? LEARNER_COMPLETION_ACTION_UX_LABELS.locked
+      : LEARNER_COMPLETION_ACTION_UX_LABELS.available;
+
+  const nextAction = !hasLesson
+    ? LEARNER_COMPLETION_ACTION_UX_LABELS.noLessons
+    : locked
+      ? user
+        ? LEARNER_COMPLETION_ACTION_UX_LABELS.enrollRequired
+        : LEARNER_COMPLETION_ACTION_UX_LABELS.loginRequired
+      : hasUrl
+        ? LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial
+        : LEARNER_COMPLETION_ACTION_UX_LABELS.studyMaterial;
+
+  const checklist = [
+    {
+      key: "open",
+      label: hasUrl
+        ? LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial
+        : LEARNER_COMPLETION_ACTION_UX_LABELS.studyMaterial,
+      ready: hasLesson && !locked,
+    },
+    {
+      key: "study",
+      label: LEARNER_COMPLETION_ACTION_UX_LABELS.studyMaterial,
+      ready: hasLesson && !locked,
+    },
+    {
+      key: "prepare",
+      label: LEARNER_COMPLETION_ACTION_UX_LABELS.prepareCompletion,
+      ready: hasLesson && !locked,
+    },
+  ];
+
+  return {
+    lesson,
+    locked,
+    hasUrl,
+    actionStatus,
+    nextAction,
+    checklist,
+    previewFacts,
+  };
+}
+
+function CourseLearnerCompletionActionPanel({
+  course,
+  existingEnrollment,
+  user,
+  onPrimaryAction,
+  onPageChange,
+}) {
+  const facts = getLearnerCompletionActionFacts(course, existingEnrollment, user);
+  const lesson = facts.lesson;
+
+  return (
+    <section
+      data-testid="learner-completion-action-panel"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {LEARNER_COMPLETION_ACTION_UX_LABELS.stage}
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {LEARNER_COMPLETION_ACTION_UX_LABELS.title}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {LEARNER_COMPLETION_ACTION_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <span
+          data-testid="learner-completion-action-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
+            !lesson
+              ? "bg-slate-100 text-slate-600 ring-slate-200"
+              : facts.locked
+                ? "bg-amber-50 text-amber-800 ring-amber-200"
+                : "bg-green-50 text-green-700 ring-green-200"
+          }`}
+        >
+          {facts.actionStatus}
+        </span>
+      </div>
+
+      <div
+        data-testid="learner-completion-action-summary"
+        className="mt-5 grid gap-3 md:grid-cols-3"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COMPLETION_ACTION_UX_LABELS.currentLesson}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {lesson?.title || LEARNER_COMPLETION_ACTION_UX_LABELS.noLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COMPLETION_ACTION_UX_LABELS.nextAction}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {facts.nextAction}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COMPLETION_ACTION_UX_LABELS.completionMode}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {LEARNER_COMPLETION_ACTION_UX_LABELS.completionWillBeSavedLater}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="learner-completion-action-checklist"
+        className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+      >
+        <div className="text-sm font-bold text-slate-900">
+          {LEARNER_COMPLETION_ACTION_UX_LABELS.learnerAction || LEARNER_COMPLETION_ACTION_UX_LABELS.nextAction}
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {facts.checklist.map((item, index) => (
+            <div
+              key={item.key}
+              data-testid="learner-completion-action-step"
+              className="rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-sm font-bold text-slate-900 ring-1 ring-slate-200">
+                {index + 1}
+              </div>
+              <div className="mt-3 text-sm font-semibold text-slate-900">
+                {item.label}
+              </div>
+              <div className="mt-2 text-xs font-semibold text-slate-500">
+                {item.ready ? LEARNER_COMPLETION_ACTION_UX_LABELS.available : LEARNER_COMPLETION_ACTION_UX_LABELS.locked}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div
+        data-testid="learner-completion-action-note"
+        className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200"
+      >
+        {LEARNER_COMPLETION_ACTION_UX_LABELS.completionWillBeSavedLater}
+      </div>
+
+      <div
+        data-testid="learner-completion-action-actions"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        {facts.hasUrl && !facts.locked ? (
+          <a
+            data-testid="learner-completion-action-open-link"
+            href={
+              facts.previewFacts.url.startsWith("http://") || facts.previewFacts.url.startsWith("https://")
+                ? facts.previewFacts.url
+                : `https://${facts.previewFacts.url}`
+            }
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial}
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={onPrimaryAction}
+            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {facts.locked
+              ? LEARNER_COMPLETION_ACTION_UX_LABELS.enroll
+              : LEARNER_COMPLETION_ACTION_UX_LABELS.openAccount}
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_COMPLETION_ACTION_UX_LABELS.openAccount}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("catalog")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_COMPLETION_ACTION_UX_LABELS.openCatalog}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function getCourseDetailDiagnostics({
   course,
   existingEnrollment,
@@ -1858,6 +2097,14 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       />
 
       <CourseLearnerLessonContentPreviewPanel
+        course={course}
+        existingEnrollment={existingEnrollment}
+        user={user}
+        onPrimaryAction={handleEnroll}
+        onPageChange={onPageChange}
+      />
+
+      <CourseLearnerCompletionActionPanel
         course={course}
         existingEnrollment={existingEnrollment}
         user={user}
