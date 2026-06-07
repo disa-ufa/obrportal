@@ -32,6 +32,7 @@ REQUIRED_SAFETY_BOUNDARIES = {
 
 REQUIRED_STAGE75_CHECKS = {
     "python .\\scripts\\check_release_manifest.py",
+    "python .\\scripts\\check_stage75_public_content_polish.py",
     "python .\\scripts\\check_source_bom.py",
     "python .\\scripts\\check_text_encoding.py",
     "python .\\scripts\\check_no_todo_markers.py",
@@ -50,6 +51,19 @@ REQUIRED_STAGE75_ROUTES = {
     "/verify-document",
 }
 
+REQUIRED_STAGE75_CHANGED_FILES = {
+    "frontend/src/pages/HomePage.jsx",
+    "frontend/src/pages/ContactsPage.jsx",
+    "frontend/src/pages/FaqPage.jsx",
+    "frontend/src/pages/PrivacyPage.jsx",
+    "frontend/src/pages/OfferPage.jsx",
+    "frontend/src/pages/OrganizationInfoPage.jsx",
+    "docs/stage75-public-portal-content-polish.md",
+    "docs/release-manifest.json",
+    "scripts/check_release_manifest.py",
+    "scripts/check_stage75_public_content_polish.py",
+}
+
 REQUIRED_PROCESS_MARKERS = [
     "Development process v2",
     "one stage covers a meaningful product package",
@@ -62,9 +76,10 @@ REQUIRED_PROCESS_MARKERS = [
 REQUIRED_STAGE75_MARKERS = [
     "Stage 75 - Public portal official content polish",
     "Base production checkpoint: Stage 74 deployed on `develop` at `865aaa8`",
-    "Stage 75 may be deployed as frontend-only",
-    "stage75_status=planned",
+    "Stage 75 is frontend-only",
+    "stage75_status=implementation_ready",
     "stage75_release_manifest_required=yes",
+    "stage75_public_content_guard_required=yes",
 ]
 
 
@@ -155,8 +170,8 @@ def main() -> None:
         fail("stage 74 deployment_type must be frontend-only")
 
     stage75 = stages["75"]
-    if stage75.get("status") != "planned":
-        fail("stage 75 status must be planned")
+    if stage75.get("status") != "implementation_ready":
+        fail("stage 75 status must be implementation_ready")
     if stage75.get("base") != "develop":
         fail("stage 75 base must be develop")
     if stage75.get("deployment_type") != "frontend-only":
@@ -174,9 +189,16 @@ def main() -> None:
     if missing_stage75_routes:
         fail(f"stage 75 missing public routes: {sorted(missing_stage75_routes)}")
 
+    missing_changed_files = REQUIRED_STAGE75_CHANGED_FILES - set(stage75.get("changed_files", []))
+    if missing_changed_files:
+        fail(f"stage 75 missing changed files: {sorted(missing_changed_files)}")
+
     for doc in stage75.get("required_documents", []):
         if not (ROOT / doc).exists():
             fail(f"stage 75 required document missing: {doc}")
+
+    if not (ROOT / "scripts" / "check_stage75_public_content_polish.py").exists():
+        fail("stage 75 public content guard is missing")
 
     require_markers(PROCESS_DOC, REQUIRED_PROCESS_MARKERS)
     require_markers(STAGE75_DOC, REQUIRED_STAGE75_MARKERS)

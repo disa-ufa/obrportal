@@ -1,41 +1,78 @@
+const OPERATOR_FACTS = [
+  {
+    label: "Оператор",
+    value: "ГБОУ РЦДО",
+  },
+  {
+    label: "Полное наименование",
+    value: "Государственное бюджетное общеобразовательное учреждение Республиканский центр дистанционного образования детей-инвалидов",
+  },
+  {
+    label: "ИНН",
+    value: "0274931354",
+  },
+  {
+    label: "Адрес",
+    value: "Республика Башкортостан, г. Уфа, ул. Авроры, 18/2",
+  },
+  {
+    label: "E-mail для обращений",
+    value: "rcdodist@gmail.com",
+  },
+];
+
 const PRIVACY_SECTIONS = [
   {
     title: "Цели обработки персональных данных",
     items: [
-      "Регистрация и авторизация пользователей",
-      "Оказание образовательных услуг",
-      "Формирование итоговых документов и реестров",
-      "Поддержка пользователей и сопровождение заказов",
+      "Регистрация и авторизация пользователей на портале",
+      "Организация доступа к образовательным программам и личному кабинету",
+      "Сопровождение обучения, фиксация статусов и результатов",
+      "Формирование, хранение и проверка итоговых документов",
+      "Обработка обращений пользователей и представителей организаций",
     ],
   },
   {
-    title: "Какие данные обрабатываются",
+    title: "Категории обрабатываемых данных",
     items: [
-      "Контактные данные пользователя",
-      "Данные, необходимые для обучения и выдачи документов",
-      "Технические данные работы платформы",
-      "История действий, связанных с использованием сервиса",
+      "ФИО, e-mail, телефон и иные данные, которые пользователь указывает при регистрации или обращении",
+      "Сведения о назначенных программах, статусах обучения и итоговых документах",
+      "Технические данные, необходимые для безопасной работы портала и журнала действий",
+      "Данные проверки документа, если пользователь использует публичный сервис проверки",
     ],
   },
   {
-    title: "Правовые основания",
+    title: "Правовые основания и принципы",
     items: [
-      "Исполнение договора и пользовательских сценариев платформы",
-      "Согласие субъекта персональных данных",
-      "Исполнение требований законодательства РФ",
-      "Защита прав и законных интересов оператора и пользователя",
+      "Обработка выполняется для работы образовательного портала и исполнения связанных образовательных сценариев",
+      "Объем данных ограничивается целями обработки и функциональностью портала",
+      "Доступ к персональным данным ограничивается ролями и правами пользователей",
+      "Публичная проверка документа не должна раскрывать лишние персональные сведения",
     ],
   },
   {
-    title: "Права субъекта ПДн",
+    title: "Права пользователя",
     items: [
-      "Получение информации об обработке данных",
-      "Актуализация и исправление сведений",
-      "Отзыв согласия в предусмотренных случаях",
-      "Обращение по вопросам удаления или ограничения обработки",
+      "Получить информацию об обработке своих персональных данных",
+      "Уточнить или исправить некорректные сведения через обращение в ГБОУ РЦДО",
+      "Направить обращение по вопросам обработки, ограничения обработки или удаления данных",
+      "Использовать контактные данные оператора для официального обращения",
     ],
   },
 ];
+
+function FactCard({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </div>
+      <div className="mt-2 text-sm font-semibold leading-6 text-slate-900">
+        {value}
+      </div>
+    </div>
+  );
+}
 
 function PrivacyCard({ title, items }) {
   return (
@@ -57,7 +94,7 @@ function PrivacyCard({ title, items }) {
 
 export function PrivacyPage({ onPageChange }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="public-privacy-page">
       <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Правовая информация
@@ -66,9 +103,9 @@ export function PrivacyPage({ onPageChange }) {
           Политика обработки персональных данных
         </h1>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-600">
-          Публичный каркас страницы политики ПДн. На этом этапе фиксируем структуру
-          обязательного раздела: цели обработки, состав данных, правовые основания,
-          сроки хранения и права субъекта.
+          Публичная информация о том, как ГБОУ РЦДО обрабатывает персональные данные
+          пользователей образовательного портала: цели обработки, категории данных,
+          права пользователя и контакт для обращений.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -86,6 +123,24 @@ export function PrivacyPage({ onPageChange }) {
           >
             Контакты
           </button>
+          <button
+            type="button"
+            onClick={() => onPageChange("organization-info")}
+            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+          >
+            Сведения об организации
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+        <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+          Оператор персональных данных
+        </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {OPERATOR_FACTS.map((fact) => (
+            <FactCard key={fact.label} label={fact.label} value={fact.value} />
+          ))}
         </div>
       </section>
 
@@ -99,22 +154,13 @@ export function PrivacyPage({ onPageChange }) {
         ))}
       </section>
 
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="text-2xl font-bold text-slate-900">
-          Что должно появиться на следующем проходе
-        </h2>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200">
-            Сроки хранения и сценарии удаления / архивирования
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200">
-            Контакт оператора персональных данных
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200">
-            Юридически согласованный текст финальной редакции
-          </div>
-        </div>
+      <section className="rounded-[2rem] bg-amber-50 p-6 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
+        <div className="font-bold text-amber-950">Важное уточнение</div>
+        <p className="mt-2">
+          Раздел содержит публичное описание обработки персональных данных на портале.
+          Утвержденные локальные акты и PDF-документы организации размещаются отдельно
+          после проверки официальных файлов.
+        </p>
       </section>
     </div>
   );
