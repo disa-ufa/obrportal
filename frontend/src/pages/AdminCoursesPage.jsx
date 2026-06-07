@@ -605,9 +605,211 @@ function getLessonContentTypeLabel(contentType) {
   return labels[normalized] || normalized || "-";
 }
 
+
+const COURSE_BUILDER_LESSON_EDITOR_UX_LABELS = {
+  stage: "Stage 77.4 \u00b7 Lesson Editor UX",
+  title: "\u041f\u043e\u0434\u0441\u043a\u0430\u0437\u043a\u0438 \u043f\u043e \u0443\u0440\u043e\u043a\u0443",
+  subtitle:
+    "\u0424\u043e\u0440\u043c\u0430 \u043f\u043e\u043c\u043e\u0433\u0430\u0435\u0442 \u043d\u0435 \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043f\u0443\u0441\u0442\u043e\u0439 \u0438\u043b\u0438 \u043d\u0435\u043f\u043e\u043b\u043d\u044b\u0439 \u0443\u0440\u043e\u043a: \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442, \u0447\u0442\u043e \u043d\u0443\u0436\u043d\u043e \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u0434\u043b\u044f \u0442\u0435\u043a\u0441\u0442\u0430, \u0432\u0438\u0434\u0435\u043e, \u0444\u0430\u0439\u043b\u0430, \u0441\u0441\u044b\u043b\u043a\u0438 \u0438\u043b\u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u044f.",
+  ready: "\u0423\u0440\u043e\u043a \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d",
+  needsWork: "\u041d\u0443\u0436\u043d\u043e \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u044c",
+  contentType: "\u0422\u0438\u043f \u043a\u043e\u043d\u0442\u0435\u043d\u0442\u0430",
+  requiredFields: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e \u0434\u043b\u044f \u044d\u0442\u043e\u0433\u043e \u0442\u0438\u043f\u0430",
+  missingFields: "\u0427\u0442\u043e \u0435\u0449\u0451 \u043d\u0443\u0436\u043d\u043e",
+  noMissingFields: "\u041e\u0441\u043d\u043e\u0432\u043d\u044b\u0435 \u043f\u043e\u043b\u044f \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u044b.",
+  publicationMode: "\u0420\u0435\u0436\u0438\u043c \u0443\u0440\u043e\u043a\u0430",
+  titleField: "\u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435",
+  positionField: "\u043f\u043e\u0437\u0438\u0446\u0438\u044f",
+  textField: "\u0442\u0435\u043a\u0441\u0442 \u0443\u0440\u043e\u043a\u0430",
+  urlField: "URL",
+  descriptionField: "\u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435",
+  textHint: "\u0414\u043b\u044f \u0442\u0435\u043a\u0441\u0442\u043e\u0432\u043e\u0433\u043e \u0443\u0440\u043e\u043a\u0430 \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u043f\u043e\u043b\u0435 \u00ab\u0422\u0435\u043a\u0441\u0442\u00bb.",
+  videoHint: "\u0414\u043b\u044f \u0432\u0438\u0434\u0435\u043e\u0443\u0440\u043e\u043a\u0430 \u0443\u043a\u0430\u0436\u0438\u0442\u0435 URL \u043d\u0430 \u0432\u0438\u0434\u0435\u043e \u0438\u043b\u0438 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443 \u0441 \u0432\u0438\u0434\u0435\u043e.",
+  fileHint: "\u0414\u043b\u044f \u0444\u0430\u0439\u043b\u0430 \u0443\u043a\u0430\u0436\u0438\u0442\u0435 URL \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430. \u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0444\u0430\u0439\u043b\u043e\u0432 \u0431\u0443\u0434\u0435\u0442 \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u044b\u043c \u044d\u0442\u0430\u043f\u043e\u043c.",
+  linkHint: "\u0414\u043b\u044f \u0441\u0441\u044b\u043b\u043a\u0438 \u0443\u043a\u0430\u0436\u0438\u0442\u0435 URL \u043d\u0430 \u0432\u043d\u0435\u0448\u043d\u0438\u0439 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b.",
+  assignmentHint: "\u0414\u043b\u044f \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0438\u043b\u0438 \u0442\u0435\u043a\u0441\u0442 \u0438\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u0438.",
+};
+
+function getLessonEditorUxHint(contentType) {
+  const normalized = `${contentType || ""}`.toLowerCase();
+
+  const hints = {
+    text: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.textHint,
+    video: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.videoHint,
+    file: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.fileHint,
+    link: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.linkHint,
+    assignment: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.assignmentHint,
+  };
+
+  return hints[normalized] || COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.textHint;
+}
+
+function getLessonEditorUxFacts(values) {
+  const contentType = `${values.content_type || "text"}`.toLowerCase();
+  const hasTitle = Boolean(`${values.title || ""}`.trim());
+  const hasPosition = Boolean(`${values.position || ""}`.trim());
+  const hasDescription = Boolean(`${values.description || ""}`.trim());
+  const hasUrl = Boolean(`${values.content_url || ""}`.trim());
+  const hasText = Boolean(`${values.content_text || ""}`.trim());
+
+  const requiredFields = [
+    COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.titleField,
+    COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.positionField,
+  ];
+
+  const missingFields = [];
+
+  if (!hasTitle) {
+    missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.titleField);
+  }
+
+  if (!hasPosition) {
+    missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.positionField);
+  }
+
+  if (contentType === "text") {
+    requiredFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.textField);
+
+    if (!hasText) {
+      missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.textField);
+    }
+  }
+
+  if (["video", "file", "link"].includes(contentType)) {
+    requiredFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.urlField);
+
+    if (!hasUrl) {
+      missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.urlField);
+    }
+  }
+
+  if (contentType === "assignment") {
+    requiredFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.descriptionField);
+
+    if (!hasDescription && !hasText) {
+      missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.descriptionField);
+    }
+  }
+
+  return {
+    contentType,
+    label: getLessonContentTypeLabel(contentType),
+    hint: getLessonEditorUxHint(contentType),
+    requiredFields,
+    missingFields,
+    ready: missingFields.length === 0,
+    modeLabel: values.is_required ? RU.lessonRequired : RU.lessonOptional,
+    statusLabel: values.is_active ? RU.active : RU.inactive,
+  };
+}
+
+function CourseLessonEditorUxPanel({ values }) {
+  const facts = getLessonEditorUxFacts(values);
+
+  return (
+    <section
+      data-testid="lesson-editor-ux-panel"
+      className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 md:col-span-3"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.stage}
+          </div>
+          <h4 className="mt-1 text-sm font-bold text-slate-900">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.title}
+          </h4>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={facts.ready ? "green" : "red"}>
+          {facts.ready
+            ? COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.ready
+            : COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.needsWork}
+        </StatusBadge>
+      </div>
+
+      <div
+        data-testid="lesson-editor-ux-content-type"
+        className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+      >
+        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.contentType}
+        </div>
+        <div className="mt-2 text-sm font-semibold text-slate-900">
+          {facts.label}
+        </div>
+        <p className="mt-2 text-xs leading-5 text-slate-600">
+          {facts.hint}
+        </p>
+      </div>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div
+          data-testid="lesson-editor-ux-required-fields"
+          className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.requiredFields}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {facts.requiredFields.map((field) => (
+              <StatusBadge key={field} tone="blue">
+                {field}
+              </StatusBadge>
+            ))}
+          </div>
+        </div>
+
+        <div
+          data-testid="lesson-editor-ux-missing-fields"
+          className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.missingFields}
+          </div>
+          {facts.missingFields.length ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {facts.missingFields.map((field) => (
+                <StatusBadge key={field} tone="red">
+                  {field}
+                </StatusBadge>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs leading-5 text-slate-600">
+              {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.noMissingFields}
+            </p>
+          )}
+        </div>
+
+        <div
+          data-testid="lesson-editor-ux-publication-mode"
+          className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.publicationMode}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <StatusBadge tone={values.is_required ? "green" : "gray"}>
+              {facts.modeLabel}
+            </StatusBadge>
+            <StatusBadge tone={values.is_active ? "green" : "gray"}>
+              {facts.statusLabel}
+            </StatusBadge>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CourseLessonFormFields({ values, onChange, prefix = "" }) {
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_180px_140px]">
+      <CourseLessonEditorUxPanel values={values} />
       <label className="block md:col-span-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           {RU.lessonTitle}
