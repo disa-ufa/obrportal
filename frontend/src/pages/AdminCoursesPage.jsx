@@ -1859,6 +1859,212 @@ function CourseBuilderModuleLessonUxPanel({ module, lessons }) {
   );
 }
 
+
+const COURSE_PUBLICATION_UX_LABELS = {
+  stage: "Stage 77.6 \u00b7 Course Publication UX",
+  title: "\u0424\u0438\u043d\u0430\u043b\u044c\u043d\u0430\u044f \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044f \u043a\u0443\u0440\u0441\u0430",
+  subtitle:
+    "\u0424\u0438\u043d\u0430\u043b\u044c\u043d\u044b\u0439 \u0431\u043b\u043e\u043a \u0441\u043e\u0431\u0438\u0440\u0430\u0435\u0442 \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c, \u0431\u043b\u043e\u043a\u0435\u0440\u044b \u0438 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0435 \u0448\u0430\u0433\u0438 \u043f\u0435\u0440\u0435\u0434 \u0432\u044b\u0432\u043e\u0434\u043e\u043c \u043a\u0443\u0440\u0441\u0430 \u0432 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0442\u0430\u043b\u043e\u0433.",
+  published: "\u041a\u0443\u0440\u0441 \u043e\u0442\u043a\u0440\u044b\u0442 \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435",
+  readyToEnable: "\u0413\u043e\u0442\u043e\u0432 \u043a \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044e",
+  blocked: "\u041d\u0435\u043b\u044c\u0437\u044f \u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c",
+  decision: "\u0420\u0435\u0448\u0435\u043d\u0438\u0435 \u043f\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438",
+  readiness: "\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c",
+  visibility: "\u0412\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c",
+  publicCard: "\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0430",
+  blockers: "\u0427\u0442\u043e \u0431\u043b\u043e\u043a\u0438\u0440\u0443\u0435\u0442 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044e",
+  noBlockers: "\u0411\u043b\u043e\u043a\u0435\u0440\u043e\u0432 \u043d\u0435\u0442.",
+  nextSteps: "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0435 \u0448\u0430\u0433\u0438",
+  activateCourse: "\u0412\u043a\u043b\u044e\u0447\u0438\u0442\u0435 \u043a\u0443\u0440\u0441, \u0447\u0442\u043e\u0431\u044b \u043e\u043d \u0441\u0442\u0430\u043b \u0432\u0438\u0434\u0435\u043d \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435.",
+  fixBlockers: "\u0423\u0441\u0442\u0440\u0430\u043d\u0438\u0442\u0435 \u0431\u043b\u043e\u043a\u0435\u0440\u044b \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.",
+  reviewCatalog: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435, \u043a\u0430\u043a \u043a\u0443\u0440\u0441 \u0432\u044b\u0433\u043b\u044f\u0434\u0438\u0442 \u0432 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435.",
+  assignLearners: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043a \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u043c \u0438 \u0434\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u0435\u0439.",
+  checkAudit: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0430\u0443\u0434\u0438\u0442 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0439 \u043a\u0443\u0440\u0441\u0430.",
+  openPublicCard: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u0443\u044e \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0443",
+  openEnrollments: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f",
+  openAudit: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0430\u0443\u0434\u0438\u0442",
+  visible: "\u0412\u0438\u0434\u0435\u043d \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435",
+  hidden: "\u0421\u043a\u0440\u044b\u0442 \u0438\u0437 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0430",
+  cardReady: "\u0415\u0441\u0442\u044c slug",
+  cardMissing: "Slug \u043d\u0435 \u0437\u0430\u0434\u0430\u043d",
+};
+
+function getCoursePublicationUxFacts(course, modules = [], lessonsByModuleId = {}) {
+  const readiness = getCourseBuilderReadiness(course, modules, lessonsByModuleId);
+  const hasPublicCard = Boolean(`${course.slug || ""}`.trim());
+  const active = Boolean(course.is_active);
+  const publicPath = hasPublicCard ? `/courses/${encodeURIComponent(course.slug)}` : "";
+  const enrollmentsPath = buildEnrollmentsPath({ course_id: course.id });
+  const auditPath = buildAuditPath({ entity_type: "course" });
+
+  const status = readiness.publishable
+    ? active
+      ? "published"
+      : "ready_to_enable"
+    : "blocked";
+
+  const decisionLabel =
+    status === "published"
+      ? COURSE_PUBLICATION_UX_LABELS.published
+      : status === "ready_to_enable"
+        ? COURSE_PUBLICATION_UX_LABELS.readyToEnable
+        : COURSE_PUBLICATION_UX_LABELS.blocked;
+
+  const decisionTone =
+    status === "published" ? "green" : status === "ready_to_enable" ? "blue" : "red";
+
+  const nextSteps = [];
+
+  if (!readiness.publishable) {
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.fixBlockers);
+  } else if (!active) {
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.activateCourse);
+  } else {
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.reviewCatalog);
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.assignLearners);
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.checkAudit);
+  }
+
+  return {
+    readiness,
+    status,
+    decisionLabel,
+    decisionTone,
+    publicPath,
+    enrollmentsPath,
+    auditPath,
+    active,
+    hasPublicCard,
+    nextSteps,
+  };
+}
+
+function CoursePublicationUxPanel({ course, modules, lessonsByModuleId }) {
+  const facts = getCoursePublicationUxFacts(course, modules, lessonsByModuleId);
+
+  return (
+    <section
+      data-testid="course-publication-ux-panel"
+      className="mt-5 rounded-3xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_PUBLICATION_UX_LABELS.stage}
+          </div>
+          <h3 className="mt-1 text-base font-bold text-slate-900">
+            {COURSE_PUBLICATION_UX_LABELS.title}
+          </h3>
+          <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_PUBLICATION_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={facts.decisionTone}>
+          {facts.decisionLabel}
+        </StatusBadge>
+      </div>
+
+      <div
+        data-testid="course-publication-ux-decision"
+        className="mt-4 grid gap-3 md:grid-cols-3"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_PUBLICATION_UX_LABELS.readiness}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.readiness.readinessPercent}%
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {facts.readiness.passedChecks.length}/{facts.readiness.checks.length}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_PUBLICATION_UX_LABELS.visibility}
+          </div>
+          <div className="mt-2">
+            <StatusBadge tone={facts.active ? "green" : "gray"}>
+              {facts.active ? COURSE_PUBLICATION_UX_LABELS.visible : COURSE_PUBLICATION_UX_LABELS.hidden}
+            </StatusBadge>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_PUBLICATION_UX_LABELS.publicCard}
+          </div>
+          <div className="mt-2">
+            <StatusBadge tone={facts.hasPublicCard ? "green" : "red"}>
+              {facts.hasPublicCard ? COURSE_PUBLICATION_UX_LABELS.cardReady : COURSE_PUBLICATION_UX_LABELS.cardMissing}
+            </StatusBadge>
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="course-publication-ux-blockers"
+        className={`mt-4 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          facts.readiness.blockers.length
+            ? "bg-amber-50 text-amber-900 ring-amber-200"
+            : "bg-green-50 text-green-800 ring-green-200"
+        }`}
+      >
+        <div className="font-semibold text-slate-900">
+          {COURSE_PUBLICATION_UX_LABELS.blockers}
+        </div>
+
+        {facts.readiness.blockers.length ? (
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {facts.readiness.blockers.map((blocker) => (
+              <li key={blocker.key}>{blocker.label}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2">
+            {COURSE_PUBLICATION_UX_LABELS.noBlockers}
+          </p>
+        )}
+      </div>
+
+      <div
+        data-testid="course-publication-ux-next-steps"
+        className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+      >
+        <div className="text-sm font-semibold text-slate-900">
+          {COURSE_PUBLICATION_UX_LABELS.nextSteps}
+        </div>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-600">
+          {facts.nextSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div
+        data-testid="course-publication-ux-actions"
+        className="mt-4 flex flex-wrap gap-3"
+      >
+        {facts.publicPath ? (
+          <Link to={facts.publicPath} className={adminLinkClass}>
+            {COURSE_PUBLICATION_UX_LABELS.openPublicCard}
+          </Link>
+        ) : null}
+
+        <Link to={facts.enrollmentsPath} className={adminLinkClass}>
+          {COURSE_PUBLICATION_UX_LABELS.openEnrollments}
+        </Link>
+
+        <Link to={facts.auditPath} className={adminLinkClass}>
+          {COURSE_PUBLICATION_UX_LABELS.openAudit}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function AdminCourseCatalogDiagnostics({
   catalogStats,
   diagnostics,
@@ -2111,6 +2317,12 @@ function CourseCard({
       />
 
       <CourseBuilderCardUxPanel
+        course={course}
+        modules={courseModules}
+        lessonsByModuleId={lessonsByModuleId}
+      />
+
+      <CoursePublicationUxPanel
         course={course}
         modules={courseModules}
         lessonsByModuleId={lessonsByModuleId}
