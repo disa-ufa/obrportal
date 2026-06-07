@@ -1,4 +1,4 @@
-import { userHasRole } from "../../utils/adminState";
+﻿import { userHasRole } from "../../utils/adminState";
 const PUBLIC_NAV_ITEMS = [
   { key: "home", label: "Главная" },
   { key: "catalog", label: "Каталог" },
@@ -243,7 +243,7 @@ export function PublicShell({
               Единая образовательная платформа
             </div>
             <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Публичный контур для выбора программ, знакомства с образовательной
+              Образовательный портал для выбора программ, знакомства с образовательной
               организацией, правовой информацией и проверки подлинности документов.
             </p>
           </div>
