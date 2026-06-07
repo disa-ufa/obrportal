@@ -175,7 +175,6 @@
       "docs/stage-16-release-readiness-regression.md",
       "docs/stage-17-production-deployment-readiness.md",
       "docs/stage-18-production-runbook-operator-handoff.md",
-      "docs/stage-19-production-security-secrets-hardening.md",
       "docs/stage-20-final-release-candidate-launch-checklist.md",
       "docs/stage-21-production-launch-dry-run-deployment-preparation.md",
       "docs/stage-22-production-launch-go-no-go-controlled-execution.md",
@@ -215,7 +214,6 @@
       "scripts/check_stage16_release_readiness_regression.py",
       "scripts/check_stage17_production_deployment_readiness.py",
       "scripts/check_stage18_production_runbook_operator_handoff.py",
-      "scripts/check_stage19_production_security_secrets_hardening.py",
       "scripts/check_stage20_final_release_candidate_launch_checklist.py",
       "scripts/check_stage21_production_launch_dry_run_deployment_preparation.py",
       "scripts/check_stage22_production_launch_go_no_go_controlled_execution.py",
@@ -297,7 +295,6 @@
       "docs/stage-16-release-readiness-regression.md",
       "docs/stage-17-production-deployment-readiness.md",
       "docs/stage-18-production-runbook-operator-handoff.md",
-      "docs/stage-19-production-security-secrets-hardening.md",
       "docs/stage-20-final-release-candidate-launch-checklist.md",
       "docs/stage-21-production-launch-dry-run-deployment-preparation.md",
       "docs/stage-22-production-launch-go-no-go-controlled-execution.md",
@@ -350,7 +347,6 @@
       "docs/stage-12-7-import-export-reporting.md",
       "docs/stage-14-documents-certificates-verification.md",
       "docs/stage-15-admin-ux-operator-workflow.md",
-      "docs/stage-19-production-security-secrets-hardening.md",
       "docs/stage42-frontend-bundle-optimization-acceptance.md",
       "docs/stage43-frontend-route-smoke-hardening-acceptance.md",
       "docs/stage46-post-ci-stabilization-roadmap-acceptance.md",
@@ -472,7 +468,6 @@
       "docs/stage-16-release-readiness-regression.md",
       "docs/stage-17-production-deployment-readiness.md",
       "docs/stage-18-production-runbook-operator-handoff.md",
-      "docs/stage-19-production-security-secrets-hardening.md",
       "docs/stage-20-final-release-candidate-launch-checklist.md",
       "docs/stage-21-production-launch-dry-run-deployment-preparation.md",
       "docs/stage-23-controlled-production-launch-execution-preparation.md"
@@ -2023,27 +2018,6 @@
         "document",
         "documents",
         "enrollment",
-        "verification",
-        "verify"
-      ]
-    },
-    {
-      "path": "docs/stage-19-production-security-secrets-hardening.md",
-      "kind": "documentation",
-      "keyword_groups": [
-        "account",
-        "certificate",
-        "document",
-        "pdf",
-        "verification"
-      ],
-      "matched_keywords": [
-        "Verification",
-        "account",
-        "certificate",
-        "document",
-        "documents",
-        "template",
         "verification",
         "verify"
       ]
@@ -3697,42 +3671,6 @@
       ]
     },
     {
-      "path": "docs/stage72-production-backup-before-deploy-execution-authorization-acceptance.md",
-      "kind": "documentation",
-      "keyword_groups": [
-        "document",
-        "verification"
-      ],
-      "matched_keywords": [
-        "document",
-        "documents",
-        "verification",
-        "verify"
-      ]
-    },
-    {
-      "path": "docs/stage72-production-backup-before-deploy-execution-authorization-audit.md",
-      "kind": "documentation",
-      "keyword_groups": [
-        "verification"
-      ],
-      "matched_keywords": [
-        "verification",
-        "verify"
-      ]
-    },
-    {
-      "path": "docs/stage72-production-backup-before-deploy-execution-authorization.md",
-      "kind": "documentation",
-      "keyword_groups": [
-        "verification"
-      ],
-      "matched_keywords": [
-        "verification",
-        "verify"
-      ]
-    },
-    {
       "path": "docs/stage72-production-backup-before-deploy-execution-preparation-acceptance.md",
       "kind": "documentation",
       "keyword_groups": [
@@ -3989,39 +3927,6 @@
         "documents",
         "verification",
         "verify"
-      ]
-    },
-    {
-      "path": "docs/stage72-production-preflight-fact-collection-execution-authorization-acceptance.md",
-      "kind": "documentation",
-      "keyword_groups": [
-        "document"
-      ],
-      "matched_keywords": [
-        "document",
-        "documents"
-      ]
-    },
-    {
-      "path": "docs/stage72-production-preflight-fact-collection-execution-authorization-audit.md",
-      "kind": "documentation",
-      "keyword_groups": [
-        "document"
-      ],
-      "matched_keywords": [
-        "document",
-        "documents"
-      ]
-    },
-    {
-      "path": "docs/stage72-production-preflight-fact-collection-execution-authorization.md",
-      "kind": "documentation",
-      "keyword_groups": [
-        "document"
-      ],
-      "matched_keywords": [
-        "document",
-        "documents"
       ]
     },
     {
