@@ -1630,7 +1630,7 @@
         "scripts/check_stage77_course_builder_final_qa.py"
       ],
       "acceptance_markers": [
-        "Stage 79.3 ? Learner Documents UX Foundation",
+        "Stage 79.3 - Learner Documents UX Foundation",
         "LearnerDocumentsUXFoundationPanel",
         "learner-documents-ux-foundation-panel",
         "learner-documents-ux-summary",

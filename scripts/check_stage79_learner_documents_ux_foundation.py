@@ -9,7 +9,7 @@ STAGE_DOC = ROOT / "docs" / "stage79-learner-documents-ux-foundation.md"
 
 REQUIRED_DOCUMENTS_PAGE_MARKERS = [
     "LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS",
-    "Stage 79.3 ? Learner Documents UX Foundation",
+    "Stage 79.3 - Learner Documents UX Foundation",
     "function getLearnerDocumentsUXStats",
     "function LearnerDocumentsUXFoundationPanel",
     'data-testid="learner-documents-ux-foundation-panel"',

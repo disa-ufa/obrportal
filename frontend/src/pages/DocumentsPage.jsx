@@ -769,26 +769,30 @@ function AdminDocumentRegistryDiagnostics({
 
 
 const LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS = {
-  stage: "Stage 79.3 ? Learner Documents UX Foundation",
-  title: "--? --?",
-  subtitle:
-    "-- -??? -- --??: ??? ??? --, -? -? --?, ??? -??? -- ? ??? --? ??? --???.",
-  availableDocuments: "--? --?",
-  completedCourses: "--??? -?",
-  pendingDocuments: "-??? --?",
-  verificationReady: "-?? ? --",
-  emptyTitle: "--? - ?? -???",
-  emptyText:
-    "-? --?? -? -- -- -- -? ??? -? -? -? -?? ?? --- --??.",
-  completedHandoffTitle: "-?? --- -? ? --?",
-  completedHandoffReady:
-    "??? -? --??? -?? ??? - ---?? --?. ?? -? -??? ??? --? ?? -??/-.",
-  completedHandoffWaiting:
-    "- --??? -? ??? ---??? --?. --? -?? ?? --??? --??? ??? --? --??.",
-  actionDocuments: "-- --? --?",
-  actionCompleted: "--??? --??",
-  actionVerify: "--? --",
-  actionAll: "??? --?",
+  stage: "Stage 79.3 - Learner Documents UX Foundation",
+  title: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f",
+  subtitle: "\u041f\u043e\u043d\u044f\u0442\u043d\u0430\u044f \u0432\u0438\u0442\u0440\u0438\u043d\u0430 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0445 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432: \u0447\u0442\u043e \u0443\u0436\u0435 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e, \u043a\u0430\u043a\u0438\u0435 \u043a\u0443\u0440\u0441\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b, \u0433\u0434\u0435 \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0438 \u043a\u0430\u043a \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0435\u0433\u043e \u043f\u043e\u0434\u043b\u0438\u043d\u043d\u043e\u0441\u0442\u044c.",
+  availableDocuments: "\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
+  completedCourses: "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u044b",
+  pendingDocuments: "\u041e\u0436\u0438\u0434\u0430\u044e\u0442 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+  verificationReady: "\u0413\u043e\u0442\u043e\u0432\u044b \u043a \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0435",
+  emptyTitle: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u043f\u043e\u043a\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b",
+  emptyText: "\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0437\u0434\u0435\u0441\u044c \u0438\u043b\u0438 \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u0435\u043d \u0447\u0435\u0440\u0435\u0437 \u0444\u0438\u043b\u044c\u0442\u0440 \u043f\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u043c\u0443 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044e.",
+  completedHandoffTitle: "\u0421\u0432\u044f\u0437\u043a\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u0433\u043e \u043a\u0443\u0440\u0441\u0430 \u0438 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+  completedHandoffReady: "\u0414\u043b\u044f \u0447\u0430\u0441\u0442\u0438 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0445 \u043a\u0443\u0440\u0441\u043e\u0432 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b. \u0418\u0445 \u043c\u043e\u0436\u043d\u043e \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0438\u043b\u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043f\u043e \u043d\u043e\u043c\u0435\u0440\u0443/\u043a\u043e\u0434\u0443.",
+  completedHandoffWaiting: "\u0415\u0441\u0442\u044c \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u044b \u0431\u0435\u0437 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u043e\u0433\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0444\u0438\u043b\u044c\u0442\u0440 \u043f\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u043c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u043c \u0438\u043b\u0438 \u0434\u043e\u0436\u0434\u0438\u0442\u0435\u0441\u044c \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.",
+  actionDocuments: "\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
+  actionCompleted: "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f",
+  actionVerify: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+  actionAll: "\u0412\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
+  unknownCourse: "\u041a\u0443\u0440\u0441 \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d",
+  loadingText: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b, \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u0438 \u0441\u0442\u0430\u0442\u0443\u0441\u044b \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.",
+  errorText: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0435 \u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0443.",
+  primaryDocumentTitle: "\u0411\u043b\u0438\u0436\u0430\u0439\u0448\u0438\u0439 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+  genericDocument: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+  documentNumber: "\u041d\u043e\u043c\u0435\u0440",
+  verificationCode: "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
+  createdAt: "\u0421\u043e\u0437\u0434\u0430\u043d",
 };
 
 function getLearnerDocumentCourseTitle(documentItem, courses, enrollments) {
@@ -800,7 +804,7 @@ function getLearnerDocumentCourseTitle(documentItem, courses, enrollments) {
   const courseId = documentItem.course_id || enrollment?.course_id || "";
   const course = courses.find((item) => item.id === courseId) || null;
 
-  return course?.title || "- ?? -??";
+  return course?.title || LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.unknownCourse;
 }
 
 function getLearnerDocumentsUXStats({ documents, enrollments }) {
@@ -905,7 +909,7 @@ function LearnerDocumentsUXFoundationPanel({
             data-testid="learner-documents-ux-loading-state"
             className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100"
           >
-            --? --?, --??? --?? ? -??? --??.
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.loadingText}
           </div>
         ) : null}
 
@@ -914,7 +918,7 @@ function LearnerDocumentsUXFoundationPanel({
             data-testid="learner-documents-ux-error-state"
             className="rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700 ring-1 ring-red-200"
           >
-            ?? -??? -- -?? --??. --? --?? ? --? --.
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.errorText}
           </div>
         ) : null}
 
@@ -954,10 +958,10 @@ function LearnerDocumentsUXFoundationPanel({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  --? --? --
+                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.primaryDocumentTitle}
                 </div>
                 <div className="mt-2 text-lg font-bold text-slate-900">
-                  {primaryDocument.title || primaryDocument.document_type || "--"}
+                  {primaryDocument.title || primaryDocument.document_type || LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.genericDocument}
                 </div>
                 <div className="mt-1 text-sm text-slate-600">
                   {getLearnerDocumentCourseTitle(primaryDocument, courses, enrollments)}
@@ -972,25 +976,25 @@ function LearnerDocumentsUXFoundationPanel({
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl bg-slate-50 p-3">
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  -?
+                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.documentNumber}
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {primaryDocument.document_number || "?"}
+                  {primaryDocument.document_number || "-"}
                 </div>
               </div>
 
               <div className="rounded-2xl bg-slate-50 p-3">
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  ??? --
+                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.verificationCode}
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {primaryDocument.verification_code || "?"}
+                  {primaryDocument.verification_code || "-"}
                 </div>
               </div>
 
               <div className="rounded-2xl bg-slate-50 p-3">
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  -??
+                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.createdAt}
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900">
                   {formatDateTime(primaryDocument.created_at)}
