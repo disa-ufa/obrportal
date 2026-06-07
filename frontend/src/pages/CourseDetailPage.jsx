@@ -1511,6 +1511,179 @@ function CourseLearnerCourseCompletionPanel({
   );
 }
 
+
+const LEARNER_DOCUMENT_HANDOFF_UX_LABELS = {
+  stage: "Stage 78.8 \u00b7 Learner Document Handoff UX",
+  title: "\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+  subtitle:
+    "\u0411\u043b\u043e\u043a \u043e\u0431\u044a\u044f\u0441\u043d\u044f\u0435\u0442 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044e, \u0447\u0442\u043e \u0434\u0435\u043b\u0430\u0442\u044c \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430: \u0433\u0434\u0435 \u0438\u0441\u043a\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442, \u043a\u0430\u043a \u0435\u0433\u043e \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0438 \u043a\u0443\u0434\u0430 \u043f\u0435\u0440\u0435\u0439\u0442\u0438 \u0434\u0430\u043b\u044c\u0448\u0435.",
+  ready: "\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d",
+  waiting: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f",
+  noEnrollment: "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043d\u0443\u0436\u043d\u0430 \u0437\u0430\u043f\u0438\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441",
+  loginRequired: "\u0412\u043e\u0439\u0434\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u0443\u0432\u0438\u0434\u0435\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
+  documentType: "\u0422\u0438\u043f \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+  documentStatus: "\u0421\u0442\u0430\u0442\u0443\u0441",
+  nextStep: "\u0427\u0442\u043e \u0434\u0430\u043b\u044c\u0448\u0435",
+  completedAt: "\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f",
+  openDocuments: "\u041f\u0435\u0440\u0435\u0439\u0442\u0438 \u043a \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c",
+  openAccount: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442",
+  verifyDocument: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+  continueCourse: "\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u043a \u043a\u0443\u0440\u0441\u0443",
+  readyNextStep:
+    "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u0432 \u0440\u0430\u0437\u0434\u0435\u043b \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432. \u0415\u0441\u043b\u0438 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0443\u0436\u0435 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d, \u0435\u0433\u043e \u043c\u043e\u0436\u043d\u043e \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0438\u043b\u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043f\u043e \u043a\u043e\u0434\u0443.",
+  waitingNextStep:
+    "\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435. \u041f\u043e\u0441\u043b\u0435 \u044d\u0442\u043e\u0433\u043e \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435.",
+};
+
+function getLearnerDocumentHandoffFacts(course, existingEnrollment, user) {
+  const hasUser = Boolean(user);
+  const hasEnrollment = Boolean(existingEnrollment);
+  const completed = existingEnrollment?.status === "completed";
+  const documentTitle = formatCourseDocument(course);
+  const completedAt = existingEnrollment?.completed_at || "";
+
+  const statusLabel = !hasUser
+    ? LEARNER_DOCUMENT_HANDOFF_UX_LABELS.loginRequired
+    : !hasEnrollment
+      ? LEARNER_DOCUMENT_HANDOFF_UX_LABELS.noEnrollment
+      : completed
+        ? LEARNER_DOCUMENT_HANDOFF_UX_LABELS.ready
+        : LEARNER_DOCUMENT_HANDOFF_UX_LABELS.waiting;
+
+  const nextStep = completed
+    ? LEARNER_DOCUMENT_HANDOFF_UX_LABELS.readyNextStep
+    : LEARNER_DOCUMENT_HANDOFF_UX_LABELS.waitingNextStep;
+
+  return {
+    completed,
+    hasUser,
+    hasEnrollment,
+    documentTitle,
+    completedAt,
+    statusLabel,
+    nextStep,
+  };
+}
+
+function CourseLearnerDocumentHandoffPanel({
+  course,
+  existingEnrollment,
+  user,
+  onPageChange,
+}) {
+  const facts = getLearnerDocumentHandoffFacts(course, existingEnrollment, user);
+
+  return (
+    <section
+      data-testid="learner-document-handoff-panel"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.stage}
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.title}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <span
+          data-testid="learner-document-handoff-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
+            facts.completed
+              ? "bg-green-50 text-green-700 ring-green-200"
+              : "bg-amber-50 text-amber-800 ring-amber-200"
+          }`}
+        >
+          {facts.statusLabel}
+        </span>
+      </div>
+
+      <div
+        data-testid="learner-document-handoff-summary"
+        className="mt-5 grid gap-3 md:grid-cols-3"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.documentType}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {facts.documentTitle}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.documentStatus}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {facts.statusLabel}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.completedAt}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {formatDateTime(facts.completedAt)}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="learner-document-handoff-next-step"
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          facts.completed
+            ? "bg-green-50 text-green-800 ring-green-200"
+            : "bg-blue-50 text-blue-900 ring-blue-200"
+        }`}
+      >
+        <div className="font-semibold text-slate-900">
+          {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.nextStep}
+        </div>
+        <p className="mt-2">{facts.nextStep}</p>
+      </div>
+
+      <div
+        data-testid="learner-document-handoff-actions"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        <button
+          type="button"
+          data-testid="learner-document-handoff-documents-action"
+          onClick={() => onPageChange("documents")}
+          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.openDocuments}
+        </button>
+
+        <button
+          type="button"
+          data-testid="learner-document-handoff-account-action"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.openAccount}
+        </button>
+
+        <button
+          type="button"
+          data-testid="learner-document-handoff-verify-action"
+          onClick={() => onPageChange("verify-document")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.verifyDocument}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function getCourseDetailDiagnostics({
   course,
   existingEnrollment,
@@ -2417,6 +2590,13 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         courseCompletionLoading={courseCompletionLoading}
         courseCompletionError={courseCompletionError}
         courseCompletionSuccess={courseCompletionSuccess}
+        onPageChange={onPageChange}
+      />
+
+      <CourseLearnerDocumentHandoffPanel
+        course={learnerCourse}
+        existingEnrollment={existingEnrollment}
+        user={user}
         onPageChange={onPageChange}
       />
 
