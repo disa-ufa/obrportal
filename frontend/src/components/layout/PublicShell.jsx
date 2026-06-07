@@ -10,7 +10,7 @@ const PUBLIC_NAV_ITEMS = [
 
 const FOOTER_LINKS = [
   { key: "privacy", label: "Политика ПДн" },
-  { key: "offer", label: "Оферта" },
+  { key: "offer", label: "Условия использования" },
   { key: "organization-info", label: "Сведения об организации" },
   { key: "contacts", label: "Контакты" },
   { key: "faq", label: "FAQ" },
@@ -170,10 +170,10 @@ export function PublicShell({
               className="text-left"
             >
               <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-                ObrPortal · Stage 7
+                ГБОУ РЦДО
               </div>
               <div className="mt-1 text-2xl font-bold text-slate-900">
-                Публичный контур
+                Образовательный портал
               </div>
             </button>
           </div>
@@ -232,11 +232,6 @@ export function PublicShell({
         </div>
       </header>
 
-      <PublicShellNavigationDiagnostics
-        stats={publicShellNavigationStats}
-        diagnostics={publicShellNavigationDiagnostics}
-      />
-
       <section className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
         {children}
       </section>
@@ -248,7 +243,7 @@ export function PublicShell({
               Единая образовательная платформа
             </div>
             <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Публичный контур для выбора программ, знакомства с образовательной
+              Образовательный портал для выбора программ, знакомства с образовательной
               организацией, правовой информацией и проверки подлинности документов.
             </p>
           </div>

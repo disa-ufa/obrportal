@@ -209,7 +209,7 @@ export function AppShell({
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-                ObrPortal · Stage 6
+                Административный контур
               </p>
               <h1 className="mt-2 text-3xl font-bold">
                 Административная панель
