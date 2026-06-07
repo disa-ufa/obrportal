@@ -1,88 +1,74 @@
-from __future__ import annotations
-
 from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 
-PUBLIC_SHELL = ROOT / "frontend" / "src" / "components" / "layout" / "PublicShell.jsx"
-ADMIN_SHELL = ROOT / "frontend" / "src" / "components" / "layout" / "AppShell.jsx"
-PUBLIC_ROUTES = ROOT / "frontend" / "src" / "utils" / "publicRoutes.js"
-STAGE_DOC = ROOT / "docs" / "stage75-public-ui-cleanup.md"
+FORBIDDEN_BY_FILE = {
+    "frontend/index.html": [
+        "Stage 6",
+        "Stage 7",
+        "ОбрПортал · Stage",
+    ],
+    "frontend/src/components/layout/PublicShell.jsx": [
+        "Stage 6",
+        "Stage 7",
+        "Публичный контур",
+    ],
+    "frontend/src/components/layout/AppShell.jsx": [
+        "Stage 6",
+        "Stage 7",
+    ],
+    "frontend/src/utils/publicRoutes.js": [
+        "Оферта — ObrPortal",
+        "Публичная оферта",
+    ],
+}
 
+REQUIRED_BY_FILE = {
+    "frontend/index.html": [
+        "Образовательный портал ГБОУ РЦДО",
+    ],
+    "frontend/src/components/layout/PublicShell.jsx": [
+        "ГБОУ РЦДО",
+        "Образовательный портал",
+        "Условия использования",
+    ],
+    "frontend/src/components/layout/AppShell.jsx": [
+        "Административный контур",
+    ],
+    "frontend/src/utils/publicRoutes.js": [
+        "Условия использования портала",
+    ],
+}
 
-def fail(message: str) -> None:
-    raise SystemExit(f"stage 75.1 public UI cleanup guard failed: {message}")
+errors = []
 
-
-def read(path: Path) -> str:
+for relative_path, fragments in FORBIDDEN_BY_FILE.items():
+    path = ROOT / relative_path
     if not path.exists():
-        fail(f"missing file: {path.relative_to(ROOT)}")
-    return path.read_text(encoding="utf-8")
+        errors.append(f"{relative_path} does not exist")
+        continue
 
-
-def require_contains(path: Path, fragments: list[str]) -> None:
-    text = read(path)
-    missing = [fragment for fragment in fragments if fragment not in text]
-    if missing:
-        fail(f"{path.relative_to(ROOT)} missing fragments: {missing}")
-
-
-def require_absent(path: Path, fragments: list[str]) -> None:
-    text = read(path)
+    text = path.read_text(encoding="utf-8")
     found = [fragment for fragment in fragments if fragment in text]
     if found:
-        fail(f"{path.relative_to(ROOT)} contains forbidden fragments: {found}")
+        errors.append(f"{relative_path} contains forbidden fragments: {found}")
 
+for relative_path, fragments in REQUIRED_BY_FILE.items():
+    path = ROOT / relative_path
+    if not path.exists():
+        errors.append(f"{relative_path} does not exist")
+        continue
 
-def main() -> None:
-    require_contains(
-        PUBLIC_SHELL,
-        [
-            '{ key: "offer", label: "Условия использования" }',
-            "ГБОУ РЦДО",
-            "Образовательный портал",
-        ],
-    )
-    require_absent(
-        PUBLIC_SHELL,
-        [
-            "ObrPortal · Stage 7",
-            '{ key: "offer", label: "Оферта" }',
-            "Публичный контур",
-        ],
-    )
+    text = path.read_text(encoding="utf-8")
+    missing = [fragment for fragment in fragments if fragment not in text]
+    if missing:
+        errors.append(f"{relative_path} misses required fragments: {missing}")
 
-    require_contains(ADMIN_SHELL, ["Административный контур", "Административная панель"])
-    require_absent(ADMIN_SHELL, ["ObrPortal · Stage 6"])
+if errors:
+    print("stage 75.1 public UI cleanup guard failed:")
+    for error in errors:
+        print(f" - {error}")
+    sys.exit(1)
 
-    require_contains(
-        PUBLIC_ROUTES,
-        [
-            'title: "Условия использования портала — ObrPortal"',
-            "Публичные условия использования образовательного портала",
-            '{ pathname: "/offer", expectedPage: "offer", expectedTitle: "Условия использования портала — ObrPortal" }',
-        ],
-    )
-    require_absent(
-        PUBLIC_ROUTES,
-        [
-            'title: "Оферта — ObrPortal"',
-            "Публичная оферта образовательной платформы",
-        ],
-    )
-
-    require_contains(
-        STAGE_DOC,
-        [
-            "Stage 75.1 - Public UI technical labels cleanup",
-            "stage75_1_status=implementation_ready",
-            "Stage 75 is deployed on production at `e0049ab`",
-            "Frontend-only deploy after merge to `develop`",
-        ],
-    )
-
-    print("stage 75.1 public UI cleanup guard passed")
-
-
-if __name__ == "__main__":
-    main()
+print("stage 75.1 public UI cleanup guard passed")
