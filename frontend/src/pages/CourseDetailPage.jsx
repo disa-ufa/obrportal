@@ -1,7 +1,7 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { useMemo } from "react";
-import { completeAccountCourseLesson, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
+import { completeAccountCourse, completeAccountCourseLesson, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 
 function formatCourseDocument(course) {
@@ -1259,6 +1259,258 @@ function CourseLearnerCompletionActionPanel({
   );
 }
 
+
+const LEARNER_COURSE_COMPLETION_API_LABELS = {
+  stage: "Stage 78.7 \u00b7 Learner Course Completion API Integration",
+  title: "\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0435 \u043a\u0443\u0440\u0441\u0430",
+  subtitle:
+    "\u0411\u043b\u043e\u043a \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u0443\u0440\u043e\u043a\u043e\u0432 \u0438 \u0437\u0430\u043f\u0443\u0441\u043a\u0430\u0435\u0442 \u0440\u0435\u0430\u043b\u044c\u043d\u043e\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0435 \u043a\u0443\u0440\u0441\u0430 \u0447\u0435\u0440\u0435\u0437 API.",
+  ready: "\u041a\u0443\u0440\u0441 \u0433\u043e\u0442\u043e\u0432 \u043a \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044e",
+  locked: "\u0415\u0449\u0451 \u043d\u0443\u0436\u043d\u043e \u043f\u0440\u043e\u0439\u0442\u0438 \u0443\u0440\u043e\u043a\u0438",
+  completed: "\u041a\u0443\u0440\u0441 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d",
+  noEnrollment: "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043d\u0443\u0436\u043d\u0430 \u0437\u0430\u043f\u0438\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441",
+  requiredProgress: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0443\u0440\u043e\u043a\u0438",
+  allProgress: "\u041e\u0431\u0449\u0438\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441",
+  nextStep: "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433",
+  completeCourse: "\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043a\u0443\u0440\u0441",
+  completingCourse: "\u0417\u0430\u0432\u0435\u0440\u0448\u0430\u0435\u043c \u043a\u0443\u0440\u0441...",
+  completionSaved: "\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435.",
+  openAccount: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442",
+  openDocuments: "\u041a \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c",
+};
+
+function getLearnerCourseCompletionFacts(course, existingEnrollment, user) {
+  const enrollmentId = getEnrollmentId(existingEnrollment);
+  const status = existingEnrollment?.status || "";
+  const completed = status === "completed";
+
+  const lessons = getLearnerCourseProgressLessons(course);
+  const requiredLessons = lessons.filter((lesson) => lesson.is_required);
+
+  const requiredTotalRaw =
+    existingEnrollment?.required_lessons_total ??
+    course?.learner_progress?.required_lessons_total ??
+    requiredLessons.length;
+
+  const requiredCompletedRaw =
+    existingEnrollment?.required_lessons_completed ??
+    course?.learner_progress?.required_lessons_completed ??
+    requiredLessons.filter(getLessonCompleted).length;
+
+  const lessonsTotalRaw =
+    existingEnrollment?.lessons_total ??
+    course?.learner_progress?.lessons_total ??
+    lessons.length;
+
+  const lessonsCompletedRaw =
+    existingEnrollment?.lessons_completed ??
+    course?.learner_progress?.lessons_completed ??
+    lessons.filter(getLessonCompleted).length;
+
+  const requiredTotal = Number.isFinite(Number(requiredTotalRaw)) ? Number(requiredTotalRaw) : 0;
+  const requiredCompleted = Number.isFinite(Number(requiredCompletedRaw)) ? Number(requiredCompletedRaw) : 0;
+  const lessonsTotal = Number.isFinite(Number(lessonsTotalRaw)) ? Number(lessonsTotalRaw) : 0;
+  const lessonsCompleted = Number.isFinite(Number(lessonsCompletedRaw)) ? Number(lessonsCompletedRaw) : 0;
+
+  const requiredProgressPercent = normalizeProgressPercent(
+    existingEnrollment?.required_progress_percent ??
+      course?.learner_progress?.required_progress_percent ??
+      (requiredTotal > 0 ? (requiredCompleted / requiredTotal) * 100 : lessons.length ? 100 : 0)
+  );
+
+  const progressPercent = normalizeProgressPercent(
+    existingEnrollment?.progress_percent ??
+      course?.learner_progress?.progress_percent ??
+      (lessonsTotal > 0 ? (lessonsCompleted / lessonsTotal) * 100 : 0)
+  );
+
+  const requiredDone = requiredTotal > 0
+    ? requiredCompleted >= requiredTotal
+    : lessons.length > 0;
+
+  const hasEnrollment = Boolean(user && enrollmentId);
+  const activeEnrollment = ["assigned", "active"].includes(status);
+  const canCompleteCourse = Boolean(hasEnrollment && activeEnrollment && requiredDone && !completed);
+
+  const statusLabel = completed
+    ? LEARNER_COURSE_COMPLETION_API_LABELS.completed
+    : !hasEnrollment
+      ? LEARNER_COURSE_COMPLETION_API_LABELS.noEnrollment
+      : canCompleteCourse
+        ? LEARNER_COURSE_COMPLETION_API_LABELS.ready
+        : LEARNER_COURSE_COMPLETION_API_LABELS.locked;
+
+  const nextStep = completed
+    ? LEARNER_COURSE_COMPLETION_API_LABELS.openDocuments
+    : !hasEnrollment
+      ? LEARNER_COURSE_COMPLETION_API_LABELS.noEnrollment
+      : canCompleteCourse
+        ? LEARNER_COURSE_COMPLETION_API_LABELS.completeCourse
+        : LEARNER_COURSE_COMPLETION_API_LABELS.locked;
+
+  return {
+    enrollmentId,
+    completed,
+    hasEnrollment,
+    canCompleteCourse,
+    requiredTotal,
+    requiredCompleted,
+    lessonsTotal,
+    lessonsCompleted,
+    requiredProgressPercent,
+    progressPercent,
+    statusLabel,
+    nextStep,
+  };
+}
+
+function CourseLearnerCourseCompletionPanel({
+  course,
+  existingEnrollment,
+  user,
+  onCompleteCourse,
+  courseCompletionLoading = false,
+  courseCompletionError = "",
+  courseCompletionSuccess = "",
+  onPageChange,
+}) {
+  const facts = getLearnerCourseCompletionFacts(course, existingEnrollment, user);
+
+  return (
+    <section
+      data-testid="learner-course-completion-panel"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {LEARNER_COURSE_COMPLETION_API_LABELS.stage}
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {LEARNER_COURSE_COMPLETION_API_LABELS.title}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {LEARNER_COURSE_COMPLETION_API_LABELS.subtitle}
+          </p>
+        </div>
+
+        <span
+          data-testid="learner-course-completion-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
+            facts.completed
+              ? "bg-slate-100 text-slate-700 ring-slate-200"
+              : facts.canCompleteCourse
+                ? "bg-green-50 text-green-700 ring-green-200"
+                : "bg-amber-50 text-amber-800 ring-amber-200"
+          }`}
+        >
+          {facts.statusLabel}
+        </span>
+      </div>
+
+      <div
+        data-testid="learner-course-completion-summary"
+        className="mt-5 grid gap-3 md:grid-cols-3"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COURSE_COMPLETION_API_LABELS.requiredProgress}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.requiredCompleted} / {facts.requiredTotal}
+          </div>
+          <div className="mt-1 text-xs font-semibold text-slate-500">
+            {facts.requiredProgressPercent}%
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COURSE_COMPLETION_API_LABELS.allProgress}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.lessonsCompleted} / {facts.lessonsTotal}
+          </div>
+          <div className="mt-1 text-xs font-semibold text-slate-500">
+            {facts.progressPercent}%
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COURSE_COMPLETION_API_LABELS.nextStep}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {facts.nextStep}
+          </div>
+        </div>
+      </div>
+
+      {courseCompletionSuccess ? (
+        <div
+          data-testid="learner-course-completion-success"
+          className="mt-5 rounded-2xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200"
+        >
+          {courseCompletionSuccess}
+        </div>
+      ) : null}
+
+      {courseCompletionError ? (
+        <div
+          data-testid="learner-course-completion-error"
+          className="mt-5 rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700 ring-1 ring-red-200"
+        >
+          {courseCompletionError}
+        </div>
+      ) : null}
+
+      <div
+        data-testid="learner-course-completion-actions"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        {facts.canCompleteCourse ? (
+          <button
+            type="button"
+            data-testid="learner-course-completion-complete-button"
+            onClick={onCompleteCourse}
+            disabled={courseCompletionLoading}
+            className="rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {courseCompletionLoading
+              ? LEARNER_COURSE_COMPLETION_API_LABELS.completingCourse
+              : LEARNER_COURSE_COMPLETION_API_LABELS.completeCourse}
+          </button>
+        ) : null}
+
+        {facts.completed ? (
+          <span
+            data-testid="learner-course-completion-completed-badge"
+            className="inline-flex items-center rounded-full bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 ring-1 ring-green-200"
+          >
+            {LEARNER_COURSE_COMPLETION_API_LABELS.completed}
+          </span>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_COURSE_COMPLETION_API_LABELS.openAccount}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("documents")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_COURSE_COMPLETION_API_LABELS.openDocuments}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function getCourseDetailDiagnostics({
   course,
   existingEnrollment,
@@ -1723,6 +1975,9 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [lessonCompletionLoading, setLessonCompletionLoading] = useState(false);
   const [lessonCompletionError, setLessonCompletionError] = useState("");
   const [lessonCompletionSuccess, setLessonCompletionSuccess] = useState("");
+  const [courseCompletionLoading, setCourseCompletionLoading] = useState(false);
+  const [courseCompletionError, setCourseCompletionError] = useState("");
+  const [courseCompletionSuccess, setCourseCompletionSuccess] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -1848,6 +2103,52 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setLessonCompletionError(formatApiError(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043f\u043e \u0443\u0440\u043e\u043a\u0443."));
     } finally {
       setLessonCompletionLoading(false);
+    }
+  }
+
+  async function handleCompleteCourse() {
+    const enrollmentId = getEnrollmentId(existingEnrollment);
+
+    if (!enrollmentId) {
+      setCourseCompletionError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0437\u0430\u043f\u0438\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441.");
+      setCourseCompletionSuccess("");
+      return;
+    }
+
+    try {
+      setCourseCompletionLoading(true);
+      setCourseCompletionError("");
+      setCourseCompletionSuccess("");
+
+      const completedCourse = await completeAccountCourse(enrollmentId);
+      let updatedCourseDetail = completedCourse;
+
+      if (!updatedCourseDetail?.modules) {
+        try {
+          updatedCourseDetail = await getAccountCourseDetail(enrollmentId);
+        } catch {
+          updatedCourseDetail = completedCourse;
+        }
+      }
+
+      if (updatedCourseDetail) {
+        setAccountCourseDetail(updatedCourseDetail);
+        setExistingEnrollment(updatedCourseDetail);
+      } else {
+        setExistingEnrollment({
+          ...existingEnrollment,
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        });
+      }
+
+      setCourseCompletionSuccess(LEARNER_COURSE_COMPLETION_API_LABELS.completionSaved);
+      setLessonCompletionError("");
+      setLessonCompletionSuccess("");
+    } catch (err) {
+      setCourseCompletionError(formatApiError(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043a\u0443\u0440\u0441."));
+    } finally {
+      setCourseCompletionLoading(false);
     }
   }
 
@@ -2106,6 +2407,17 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         lessonCompletionLoading={lessonCompletionLoading}
         lessonCompletionError={lessonCompletionError}
         lessonCompletionSuccess={lessonCompletionSuccess}
+      />
+
+      <CourseLearnerCourseCompletionPanel
+        course={learnerCourse}
+        existingEnrollment={existingEnrollment}
+        user={user}
+        onCompleteCourse={handleCompleteCourse}
+        courseCompletionLoading={courseCompletionLoading}
+        courseCompletionError={courseCompletionError}
+        courseCompletionSuccess={courseCompletionSuccess}
+        onPageChange={onPageChange}
       />
 
       <CourseSelfEnrollmentDiagnostics
