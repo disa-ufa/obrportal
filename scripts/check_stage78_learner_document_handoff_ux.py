@@ -56,11 +56,12 @@ def require_manifest_stage() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") not in {"78.8", "78.9", "79.1"}:
+    if manifest.get("current_stage") not in {"78.8", "78.9", "79.1", "79.2"}:
         fail("current_stage must be 78.8 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
     allowed_checkpoints = {
+        ("79.1", "378d054"),
         ("78.9", "689ada5"),
         ("78.7", "44910ab"),
         ("78.8", "2f56902"),

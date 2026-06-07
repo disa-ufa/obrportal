@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "79.1",
+  "current_stage": "79.2",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "78.9",
-    "last_confirmed_head": "689ada5",
+    "last_confirmed_stage": "79.1",
+    "last_confirmed_head": "378d054",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -1400,8 +1400,8 @@
     {
       "id": "79.1",
       "name": "Learner documents API inventory",
-      "status": "implementation_ready",
-      "branch": "stage79-learner-documents-api-inventory",
+      "status": "production_confirmed",
+      "branch": "develop",
       "base": "develop",
       "deployment_type": "docs-and-qa-only",
       "runtime_scope": [
@@ -1472,6 +1472,91 @@
         "no_database_migrations",
         "no_auth_or_rbac_changes",
         "production_checkpoint_is_78_9"
+      ],
+      "head": "378d054",
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "79.2",
+      "name": "Learner documents UX/API connection plan",
+      "status": "implementation_ready",
+      "branch": "stage79-learner-documents-ux-api-plan",
+      "base": "develop",
+      "deployment_type": "docs-and-qa-only",
+      "runtime_scope": [
+        "learner_documents_connection_plan",
+        "documents_page_ux_plan",
+        "verify_document_page_handoff_plan",
+        "account_course_completion_to_document_mapping",
+        "backend_gap_analysis_plan"
+      ],
+      "frontend_runtime_changed_expected": false,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage79-learner-documents-ux-api-plan.md",
+        "docs/learner-documents-ux-api-plan.md",
+        "docs/learner-documents-api-inventory.json"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage79_learner_documents_ux_api_plan.py",
+        "python .\\scripts\\check_stage79_learner_documents_api_inventory.py",
+        "python .\\scripts\\check_stage78_learner_progress_final_qa.py",
+        "python .\\scripts\\check_stage78_learner_document_handoff_ux.py",
+        "python .\\scripts\\check_stage78_learner_course_completion_api_integration.py",
+        "python .\\scripts\\check_stage78_learner_lesson_completion_api_integration.py",
+        "python .\\scripts\\check_stage78_learner_progress_api_inventory.py",
+        "python .\\scripts\\check_stage78_learner_completion_action_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_content_preview_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_access_ux.py",
+        "python .\\scripts\\check_stage78_learner_course_progress_foundation.py",
+        "python .\\scripts\\check_stage77_course_builder_final_qa.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_public_pages.py",
+        "python .\\scripts\\smoke_frontend_hooks_layout.py",
+        "docker compose exec frontend npm run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage79-learner-documents-ux-api-plan.md",
+        "docs/learner-documents-ux-api-plan.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage79_learner_documents_ux_api_plan.py",
+        "scripts/check_stage79_learner_documents_api_inventory.py",
+        "scripts/check_stage78_learner_progress_final_qa.py",
+        "scripts/check_stage78_learner_document_handoff_ux.py",
+        "scripts/check_stage78_learner_course_completion_api_integration.py",
+        "scripts/check_stage78_learner_lesson_completion_api_integration.py",
+        "scripts/check_stage78_learner_progress_api_inventory.py",
+        "scripts/check_stage78_learner_completion_action_ux.py",
+        "scripts/check_stage78_learner_lesson_content_preview_ux.py",
+        "scripts/check_stage78_learner_lesson_access_ux.py",
+        "scripts/check_stage78_learner_course_progress_foundation.py",
+        "scripts/check_stage77_course_builder_final_qa.py"
+      ],
+      "acceptance_markers": [
+        "Stage 79.2 - Learner documents UX/API connection plan",
+        "learner_documents_ux_api_plan_status=implementation_ready",
+        "stage79_2_docs_only=yes",
+        "stage79_2_runtime_changes=no",
+        "stage79_2_database_changes=no",
+        "stage79_2_next_stage=79.3"
+      ],
+      "safety_notes": [
+        "docs_and_qa_only",
+        "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes",
+        "production_checkpoint_is_79_1"
       ]
     }
   ]
