@@ -1,0 +1,4785 @@
+{
+  "stage": "80.1",
+  "name": "Learner Documents Backend/API Inventory",
+  "status": "implementation_ready",
+  "generated_from": "local_repository_static_scan",
+  "scope": "docs-and-qa-only",
+  "production_checkpoint": {
+    "last_confirmed_stage": "79.6",
+    "last_confirmed_head": "4c5efe7",
+    "frontend_runtime_changed": false,
+    "backend_runtime_changed": false,
+    "database_migration_run": false
+  },
+  "backend": {
+    "keyword_files": [
+      "backend/app/api/v1/account.py",
+      "backend/app/api/v1/admin.py",
+      "backend/app/api/v1/auth.py",
+      "backend/app/api/v1/org.py",
+      "backend/app/api/v1/public.py",
+      "backend/app/core/config.py",
+      "backend/app/core/security.py",
+      "backend/app/db/base.py",
+      "backend/app/db/seed.py",
+      "backend/app/db/seed_demo_learning.py",
+      "backend/app/models/__init__.py",
+      "backend/app/models/course.py",
+      "backend/app/models/course_lesson.py",
+      "backend/app/models/course_module.py",
+      "backend/app/models/document_generation_event.py",
+      "backend/app/models/document_record.py",
+      "backend/app/models/enrollment.py",
+      "backend/app/models/lesson_progress.py",
+      "backend/app/models/organization.py",
+      "backend/app/schemas/account.py",
+      "backend/app/schemas/admin.py",
+      "backend/app/schemas/org.py",
+      "backend/app/schemas/public.py",
+      "backend/app/services/completion_documents.py",
+      "backend/app/services/document_pdf.py",
+      "backend/app/services/document_storage.py",
+      "backend/app/services/document_templates.py",
+      "backend/app/tests/test_account_course_detail_api.py",
+      "backend/app/tests/test_account_lesson_progress_api.py",
+      "backend/app/tests/test_admin_action_required_filters_api.py",
+      "backend/app/tests/test_admin_dashboard_summary_api.py",
+      "backend/app/tests/test_admin_worklist_summary_api.py",
+      "backend/app/tests/test_auth_rbac_admin_api.py",
+      "backend/app/tests/test_config_document_metadata.py",
+      "backend/app/tests/test_course_lessons_admin_api.py",
+      "backend/app/tests/test_course_modules_admin_api.py",
+      "backend/app/tests/test_document_pdf.py",
+      "backend/app/tests/test_document_storage.py",
+      "backend/app/tests/test_document_templates.py",
+      "backend/app/tests/test_public_course_outline.py",
+      "backend/app/tests/test_security.py"
+    ],
+    "document_routes": [
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 136,
+        "method": "GET",
+        "path": "/documents",
+        "excerpt": "@router.get(\"/documents\", response_model=AccountDocumentsResponse)"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 188,
+        "method": "GET",
+        "path": "/documents/{document_id}/download",
+        "excerpt": "@router.get(\"/documents/{document_id}/download\")"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2143,
+        "method": "GET",
+        "path": "/documents",
+        "excerpt": "@router.get(\"/documents\", response_model=list[AdminDocumentItem])"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2251,
+        "method": "POST",
+        "path": "/documents",
+        "excerpt": "@router.post(\"/documents\", response_model=AdminDocumentItem, status_code=status.HTTP_201_CREATED)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2465,
+        "method": "GET",
+        "path": "/documents/{document_id}/generation-events",
+        "excerpt": "@router.get(\"/documents/{document_id}/generation-events\", response_model=list[AdminDocumentGenerationEventItem])"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2501,
+        "method": "GET",
+        "path": "/documents/{document_id}/generation-events/{event_id}/download",
+        "excerpt": "@router.get(\"/documents/{document_id}/generation-events/{event_id}/download\")"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2545,
+        "method": "PATCH",
+        "path": "/documents/{document_id}",
+        "excerpt": "@router.patch(\"/documents/{document_id}\", response_model=AdminDocumentItem)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2764,
+        "method": "DELETE",
+        "path": "/documents/{document_id}",
+        "excerpt": "@router.delete(\"/documents/{document_id}\", response_model=AdminDeleteResult)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2822,
+        "method": "GET",
+        "path": "/documents/{document_id}/download",
+        "excerpt": "@router.get(\"/documents/{document_id}/download\")"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2864,
+        "method": "POST",
+        "path": "/documents/{document_id}/regenerate",
+        "excerpt": "@router.post(\"/documents/{document_id}/regenerate\", response_model=AdminDocumentItem)"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 195,
+        "method": "GET",
+        "path": "/documents/verify",
+        "excerpt": "@router.get(\"/documents/verify\", response_model=PublicDocumentVerifyResponse)"
+      }
+    ],
+    "course_or_enrollment_routes": [
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 79,
+        "method": "GET",
+        "path": "/courses",
+        "excerpt": "@router.get(\"/courses\", response_model=AccountCoursesResponse)"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 496,
+        "method": "GET",
+        "path": "/courses/{enrollment_id}",
+        "excerpt": "@router.get(\"/courses/{enrollment_id}\", response_model=AccountCourseDetailResponse)"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 601,
+        "method": "POST",
+        "path": "/courses/{course_id}/enroll",
+        "excerpt": "@router.post(\"/courses/{course_id}/enroll\", response_model=AccountCourseItemResponse, status_code=status.HTTP_201_CREATED)"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 668,
+        "method": "POST",
+        "path": "/courses/{enrollment_id}/start",
+        "excerpt": "@router.post(\"/courses/{enrollment_id}/start\", response_model=AccountCourseItemResponse)"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 700,
+        "method": "POST",
+        "path": "/courses/{enrollment_id}/complete",
+        "excerpt": "@router.post(\"/courses/{enrollment_id}/complete\", response_model=AccountCourseItemResponse)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3081,
+        "method": "GET",
+        "path": "/courses",
+        "excerpt": "@router.get(\"/courses\", response_model=list[AdminCourseItem])"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3115,
+        "method": "POST",
+        "path": "/courses",
+        "excerpt": "@router.post(\"/courses\", response_model=AdminCourseDetail, status_code=status.HTTP_201_CREATED)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3154,
+        "method": "GET",
+        "path": "/courses/{course_id}",
+        "excerpt": "@router.get(\"/courses/{course_id}\", response_model=AdminCourseDetail)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3165,
+        "method": "PATCH",
+        "path": "/courses/{course_id}",
+        "excerpt": "@router.patch(\"/courses/{course_id}\", response_model=AdminCourseDetail)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3216,
+        "method": "POST",
+        "path": "/courses/{course_id}/activate",
+        "excerpt": "@router.post(\"/courses/{course_id}/activate\", response_model=AdminCourseDetail)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3250,
+        "method": "POST",
+        "path": "/courses/{course_id}/deactivate",
+        "excerpt": "@router.post(\"/courses/{course_id}/deactivate\", response_model=AdminCourseDetail)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3284,
+        "method": "DELETE",
+        "path": "/courses/{course_id}",
+        "excerpt": "@router.delete(\"/courses/{course_id}\", response_model=AdminDeleteResult)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3402,
+        "method": "GET",
+        "path": "/courses/{course_id}/modules",
+        "excerpt": "@router.get(\"/courses/{course_id}/modules\", response_model=list[AdminCourseModuleItem])"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3478,
+        "method": "GET",
+        "path": "/course-modules/{module_id}",
+        "excerpt": "@router.get(\"/course-modules/{module_id}\", response_model=AdminCourseModuleDetail)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3489,
+        "method": "PATCH",
+        "path": "/course-modules/{module_id}",
+        "excerpt": "@router.patch(\"/course-modules/{module_id}\", response_model=AdminCourseModuleDetail)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3540,
+        "method": "DELETE",
+        "path": "/course-modules/{module_id}",
+        "excerpt": "@router.delete(\"/course-modules/{module_id}\", response_model=AdminDeleteResult)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3735,
+        "method": "GET",
+        "path": "/course-modules/{module_id}/lessons",
+        "excerpt": "@router.get(\"/course-modules/{module_id}/lessons\", response_model=list[AdminCourseLessonItem])"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3816,
+        "method": "GET",
+        "path": "/course-lessons/{lesson_id}",
+        "excerpt": "@router.get(\"/course-lessons/{lesson_id}\", response_model=AdminCourseLessonDetail)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3827,
+        "method": "PATCH",
+        "path": "/course-lessons/{lesson_id}",
+        "excerpt": "@router.patch(\"/course-lessons/{lesson_id}\", response_model=AdminCourseLessonDetail)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3876,
+        "method": "DELETE",
+        "path": "/course-lessons/{lesson_id}",
+        "excerpt": "@router.delete(\"/course-lessons/{lesson_id}\", response_model=AdminDeleteResult)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4275,
+        "method": "GET",
+        "path": "/enrollments",
+        "excerpt": "@router.get(\"/enrollments\", response_model=list[AdminEnrollmentItem])"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4362,
+        "method": "POST",
+        "path": "/enrollments",
+        "excerpt": "@router.post(\"/enrollments\", response_model=AdminEnrollmentItem, status_code=status.HTTP_201_CREATED)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4580,
+        "method": "GET",
+        "path": "/enrollments/{enrollment_id}",
+        "excerpt": "@router.get(\"/enrollments/{enrollment_id}\", response_model=AdminEnrollmentItem)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4591,
+        "method": "PATCH",
+        "path": "/enrollments/{enrollment_id}",
+        "excerpt": "@router.patch(\"/enrollments/{enrollment_id}\", response_model=AdminEnrollmentItem)"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4670,
+        "method": "DELETE",
+        "path": "/enrollments/{enrollment_id}",
+        "excerpt": "@router.delete(\"/enrollments/{enrollment_id}\", response_model=AdminDeleteResult)"
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "line": 759,
+        "method": "GET",
+        "path": "/groups/{group_id}/enrollments",
+        "excerpt": "@router.get(\"/groups/{group_id}/enrollments\", response_model=list[OrgEnrollmentItem])"
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "line": 905,
+        "method": "DELETE",
+        "path": "/groups/{group_id}/enrollments/{enrollment_id}",
+        "excerpt": "@router.delete(\"/groups/{group_id}/enrollments/{enrollment_id}\", status_code=status.HTTP_204_NO_CONTENT)"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 136,
+        "method": "GET",
+        "path": "/courses",
+        "excerpt": "@router.get(\"/courses\", response_model=list[PublicCourseItemResponse])"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 170,
+        "method": "GET",
+        "path": "/courses/{slug}",
+        "excerpt": "@router.get(\"/courses/{slug}\", response_model=PublicCourseDetailResponse)"
+      }
+    ],
+    "document_related_defs": [
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 80,
+        "kind": "async def",
+        "name": "get_account_courses"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 137,
+        "kind": "async def",
+        "name": "get_account_documents"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 189,
+        "kind": "async def",
+        "name": "get_account_document_download"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 245,
+        "kind": "def",
+        "name": "build_account_course_item_from_row"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 263,
+        "kind": "def",
+        "name": "build_account_course_lesson"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 285,
+        "kind": "def",
+        "name": "build_account_course_module"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 306,
+        "kind": "async def",
+        "name": "load_account_course_modules"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 384,
+        "kind": "def",
+        "name": "calculate_account_course_progress"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 424,
+        "kind": "def",
+        "name": "build_account_course_detail_from_row"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 454,
+        "kind": "async def",
+        "name": "get_account_course_row_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 497,
+        "kind": "async def",
+        "name": "get_account_course_detail"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 520,
+        "kind": "async def",
+        "name": "complete_account_course_lesson"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 602,
+        "kind": "async def",
+        "name": "create_account_course_enrollment"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 644,
+        "kind": "async def",
+        "name": "get_account_enrollment_entity_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 669,
+        "kind": "async def",
+        "name": "start_account_course_learning"
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "line": 701,
+        "kind": "async def",
+        "name": "complete_account_course_learning"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 1901,
+        "kind": "def",
+        "name": "build_admin_document_item"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 1937,
+        "kind": "def",
+        "name": "build_admin_document_generation_event_item"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 1952,
+        "kind": "def",
+        "name": "normalize_document_number"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 1967,
+        "kind": "def",
+        "name": "normalize_document_status"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 1995,
+        "kind": "def",
+        "name": "apply_document_status_metadata"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2035,
+        "kind": "async def",
+        "name": "save_admin_document_file"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2056,
+        "kind": "async def",
+        "name": "ensure_document_enrollment_is_unique"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2080,
+        "kind": "async def",
+        "name": "get_admin_document_row_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2144,
+        "kind": "async def",
+        "name": "list_admin_documents"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2252,
+        "kind": "async def",
+        "name": "create_admin_document"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2395,
+        "kind": "def",
+        "name": "document_record_snapshot"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2418,
+        "kind": "def",
+        "name": "get_document_update_audit_action"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2441,
+        "kind": "def",
+        "name": "delete_admin_document_file"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2445,
+        "kind": "async def",
+        "name": "get_admin_document_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2466,
+        "kind": "async def",
+        "name": "list_admin_document_generation_events"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2502,
+        "kind": "async def",
+        "name": "download_admin_document_generation_event"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2546,
+        "kind": "async def",
+        "name": "update_admin_document"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2765,
+        "kind": "async def",
+        "name": "delete_admin_document"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2797,
+        "kind": "def",
+        "name": "resolve_admin_document_storage_path"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2801,
+        "kind": "def",
+        "name": "build_admin_document_download_filename"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2823,
+        "kind": "async def",
+        "name": "download_admin_document"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2855,
+        "kind": "def",
+        "name": "is_generated_completion_document"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2865,
+        "kind": "async def",
+        "name": "regenerate_admin_completion_document"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2936,
+        "kind": "def",
+        "name": "normalize_course_slug"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2948,
+        "kind": "def",
+        "name": "normalize_course_create_data"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2965,
+        "kind": "def",
+        "name": "normalize_course_update_data"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 2991,
+        "kind": "def",
+        "name": "build_admin_course_item"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3004,
+        "kind": "def",
+        "name": "build_admin_course_detail"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3019,
+        "kind": "def",
+        "name": "course_snapshot"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3032,
+        "kind": "async def",
+        "name": "get_admin_course_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3050,
+        "kind": "async def",
+        "name": "ensure_course_can_be_deleted"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3082,
+        "kind": "async def",
+        "name": "list_admin_courses"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3116,
+        "kind": "async def",
+        "name": "create_admin_course"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3155,
+        "kind": "async def",
+        "name": "get_admin_course_detail"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3166,
+        "kind": "async def",
+        "name": "update_admin_course"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3217,
+        "kind": "async def",
+        "name": "activate_admin_course"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3251,
+        "kind": "async def",
+        "name": "deactivate_admin_course"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3285,
+        "kind": "async def",
+        "name": "delete_admin_course"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3315,
+        "kind": "def",
+        "name": "normalize_course_module_create_data"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3330,
+        "kind": "def",
+        "name": "normalize_course_module_update_data"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3347,
+        "kind": "def",
+        "name": "build_admin_course_module_item"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3358,
+        "kind": "def",
+        "name": "build_admin_course_module_detail"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3371,
+        "kind": "def",
+        "name": "course_module_snapshot"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3382,
+        "kind": "async def",
+        "name": "get_admin_course_module_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3403,
+        "kind": "async def",
+        "name": "list_admin_course_modules"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3434,
+        "kind": "async def",
+        "name": "create_admin_course_module"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3479,
+        "kind": "async def",
+        "name": "get_admin_course_module_detail"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3490,
+        "kind": "async def",
+        "name": "update_admin_course_module"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3541,
+        "kind": "async def",
+        "name": "delete_admin_course_module"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3578,
+        "kind": "def",
+        "name": "normalize_course_lesson_content_type"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3590,
+        "kind": "def",
+        "name": "normalize_course_lesson_create_data"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3609,
+        "kind": "def",
+        "name": "normalize_course_lesson_update_data"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3668,
+        "kind": "def",
+        "name": "build_admin_course_lesson_item"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3683,
+        "kind": "def",
+        "name": "build_admin_course_lesson_detail"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3700,
+        "kind": "def",
+        "name": "course_lesson_snapshot"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3715,
+        "kind": "async def",
+        "name": "get_admin_course_lesson_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3736,
+        "kind": "async def",
+        "name": "list_admin_course_lessons"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3773,
+        "kind": "async def",
+        "name": "create_admin_course_lesson"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3817,
+        "kind": "async def",
+        "name": "get_admin_course_lesson_detail"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3828,
+        "kind": "async def",
+        "name": "update_admin_course_lesson"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 3877,
+        "kind": "async def",
+        "name": "delete_admin_course_lesson"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4079,
+        "kind": "def",
+        "name": "normalize_enrollment_status"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4100,
+        "kind": "def",
+        "name": "build_admin_enrollment_item"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4121,
+        "kind": "def",
+        "name": "enrollment_snapshot"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4134,
+        "kind": "async def",
+        "name": "get_admin_enrollment_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4152,
+        "kind": "async def",
+        "name": "get_admin_enrollment_row_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4234,
+        "kind": "async def",
+        "name": "ensure_enrollment_references_exist"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4256,
+        "kind": "async def",
+        "name": "ensure_enrollment_can_be_deleted"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4276,
+        "kind": "async def",
+        "name": "list_admin_enrollments"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4363,
+        "kind": "async def",
+        "name": "create_admin_enrollment"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4428,
+        "kind": "async def",
+        "name": "create_admin_group_enrollments"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4581,
+        "kind": "async def",
+        "name": "get_admin_enrollment_detail"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4592,
+        "kind": "async def",
+        "name": "update_admin_enrollment"
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "line": 4671,
+        "kind": "async def",
+        "name": "delete_admin_enrollment"
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "line": 99,
+        "kind": "def",
+        "name": "build_org_enrollment_item"
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "line": 401,
+        "kind": "async def",
+        "name": "get_active_course_or_404"
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "line": 422,
+        "kind": "async def",
+        "name": "enrollment_for_user_course_exists"
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "line": 441,
+        "kind": "async def",
+        "name": "get_org_enrollment_rows_by_ids"
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "line": 760,
+        "kind": "async def",
+        "name": "list_org_group_enrollments"
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "line": 811,
+        "kind": "async def",
+        "name": "create_org_group_enrollments"
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "line": 906,
+        "kind": "async def",
+        "name": "delete_org_group_enrollment"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 26,
+        "kind": "def",
+        "name": "build_public_course_item"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 40,
+        "kind": "def",
+        "name": "build_public_course_lesson"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 54,
+        "kind": "def",
+        "name": "build_public_course_module"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 68,
+        "kind": "def",
+        "name": "build_public_course_detail"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 84,
+        "kind": "async def",
+        "name": "load_public_course_modules"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 137,
+        "kind": "async def",
+        "name": "list_public_courses"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 171,
+        "kind": "async def",
+        "name": "get_public_course_detail"
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "line": 196,
+        "kind": "async def",
+        "name": "verify_document"
+      },
+      {
+        "file": "backend/app/core/security.py",
+        "line": 15,
+        "kind": "def",
+        "name": "verify_credential"
+      },
+      {
+        "file": "backend/app/db/seed_demo_learning.py",
+        "line": 56,
+        "kind": "async def",
+        "name": "get_or_create_demo_course"
+      },
+      {
+        "file": "backend/app/models/course.py",
+        "line": 5,
+        "kind": "class",
+        "name": "Course"
+      },
+      {
+        "file": "backend/app/models/course_lesson.py",
+        "line": 5,
+        "kind": "class",
+        "name": "CourseLesson"
+      },
+      {
+        "file": "backend/app/models/course_module.py",
+        "line": 5,
+        "kind": "class",
+        "name": "CourseModule"
+      },
+      {
+        "file": "backend/app/models/document_generation_event.py",
+        "line": 7,
+        "kind": "class",
+        "name": "DocumentGenerationEvent"
+      },
+      {
+        "file": "backend/app/models/document_record.py",
+        "line": 8,
+        "kind": "def",
+        "name": "generate_document_verification_code"
+      },
+      {
+        "file": "backend/app/models/document_record.py",
+        "line": 12,
+        "kind": "class",
+        "name": "DocumentRecord"
+      },
+      {
+        "file": "backend/app/models/enrollment.py",
+        "line": 5,
+        "kind": "class",
+        "name": "Enrollment"
+      },
+      {
+        "file": "backend/app/schemas/account.py",
+        "line": 15,
+        "kind": "class",
+        "name": "AccountCourseItemResponse"
+      },
+      {
+        "file": "backend/app/schemas/account.py",
+        "line": 33,
+        "kind": "class",
+        "name": "AccountCourseLessonResponse"
+      },
+      {
+        "file": "backend/app/schemas/account.py",
+        "line": 46,
+        "kind": "class",
+        "name": "AccountCourseModuleResponse"
+      },
+      {
+        "file": "backend/app/schemas/account.py",
+        "line": 55,
+        "kind": "class",
+        "name": "AccountCourseDetailResponse"
+      },
+      {
+        "file": "backend/app/schemas/account.py",
+        "line": 65,
+        "kind": "class",
+        "name": "AccountCoursesResponse"
+      },
+      {
+        "file": "backend/app/schemas/account.py",
+        "line": 70,
+        "kind": "class",
+        "name": "AccountDocumentItemResponse"
+      },
+      {
+        "file": "backend/app/schemas/account.py",
+        "line": 87,
+        "kind": "class",
+        "name": "AccountDocumentsResponse"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 196,
+        "kind": "class",
+        "name": "AdminWorklistDocumentsSummary"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 204,
+        "kind": "class",
+        "name": "AdminWorklistEnrollmentsSummary"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 218,
+        "kind": "class",
+        "name": "AdminDocumentItem"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 252,
+        "kind": "class",
+        "name": "AdminDocumentGenerationEventItem"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 265,
+        "kind": "class",
+        "name": "AdminCourseItem"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 276,
+        "kind": "class",
+        "name": "AdminCourseDetail"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 281,
+        "kind": "class",
+        "name": "AdminCourseModuleItem"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 290,
+        "kind": "class",
+        "name": "AdminCourseModuleDetail"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 295,
+        "kind": "class",
+        "name": "AdminCourseModuleCreate"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 302,
+        "kind": "class",
+        "name": "AdminCourseModuleUpdate"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 309,
+        "kind": "class",
+        "name": "AdminCourseLessonItem"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 321,
+        "kind": "class",
+        "name": "AdminCourseLessonDetail"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 326,
+        "kind": "class",
+        "name": "AdminCourseLessonCreate"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 337,
+        "kind": "class",
+        "name": "AdminCourseLessonUpdate"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 348,
+        "kind": "class",
+        "name": "AdminCourseCreate"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 358,
+        "kind": "class",
+        "name": "AdminCourseUpdate"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 368,
+        "kind": "class",
+        "name": "AdminEnrollmentItem"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 387,
+        "kind": "class",
+        "name": "AdminEnrollmentCreate"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 397,
+        "kind": "class",
+        "name": "AdminEnrollmentGroupCreate"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 405,
+        "kind": "class",
+        "name": "AdminEnrollmentBulkSkippedItem"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 413,
+        "kind": "class",
+        "name": "AdminEnrollmentBulkCreateResult"
+      },
+      {
+        "file": "backend/app/schemas/admin.py",
+        "line": 424,
+        "kind": "class",
+        "name": "AdminEnrollmentUpdate"
+      },
+      {
+        "file": "backend/app/schemas/org.py",
+        "line": 75,
+        "kind": "class",
+        "name": "OrgEnrollmentItem"
+      },
+      {
+        "file": "backend/app/schemas/org.py",
+        "line": 96,
+        "kind": "class",
+        "name": "OrgEnrollmentGroupCreate"
+      },
+      {
+        "file": "backend/app/schemas/org.py",
+        "line": 104,
+        "kind": "class",
+        "name": "OrgEnrollmentBulkSkippedItem"
+      },
+      {
+        "file": "backend/app/schemas/org.py",
+        "line": 112,
+        "kind": "class",
+        "name": "OrgEnrollmentBulkCreateResult"
+      },
+      {
+        "file": "backend/app/schemas/public.py",
+        "line": 6,
+        "kind": "class",
+        "name": "PublicDocumentVerifyResponse"
+      },
+      {
+        "file": "backend/app/schemas/public.py",
+        "line": 30,
+        "kind": "class",
+        "name": "PublicCourseItemResponse"
+      },
+      {
+        "file": "backend/app/schemas/public.py",
+        "line": 40,
+        "kind": "class",
+        "name": "PublicCourseLessonResponse"
+      },
+      {
+        "file": "backend/app/schemas/public.py",
+        "line": 52,
+        "kind": "class",
+        "name": "PublicCourseModuleResponse"
+      },
+      {
+        "file": "backend/app/schemas/public.py",
+        "line": 61,
+        "kind": "class",
+        "name": "PublicCourseDetailResponse"
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "line": 27,
+        "kind": "def",
+        "name": "mark_completion_document_generation_metadata"
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "line": 39,
+        "kind": "def",
+        "name": "build_completion_document_storage_path"
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "line": 54,
+        "kind": "def",
+        "name": "add_completion_document_generation_event"
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "line": 74,
+        "kind": "def",
+        "name": "pick_organization_document_value"
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "line": 86,
+        "kind": "def",
+        "name": "get_completion_document_public_base_url"
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "line": 96,
+        "kind": "async def",
+        "name": "load_completion_document_context"
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "line": 121,
+        "kind": "def",
+        "name": "write_completion_document_pdf_to_storage"
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "line": 214,
+        "kind": "async def",
+        "name": "ensure_completion_document_for_enrollment"
+      },
+      {
+        "file": "backend/app/services/document_pdf.py",
+        "line": 58,
+        "kind": "def",
+        "name": "find_pdf_regular_font_path"
+      },
+      {
+        "file": "backend/app/services/document_pdf.py",
+        "line": 69,
+        "kind": "def",
+        "name": "find_pdf_bold_font_path"
+      },
+      {
+        "file": "backend/app/services/document_pdf.py",
+        "line": 80,
+        "kind": "def",
+        "name": "register_pdf_fonts"
+      },
+      {
+        "file": "backend/app/services/document_pdf.py",
+        "line": 98,
+        "kind": "def",
+        "name": "get_pdf_bold_font_name"
+      },
+      {
+        "file": "backend/app/services/document_pdf.py",
+        "line": 129,
+        "kind": "def",
+        "name": "build_verification_qr_drawing"
+      },
+      {
+        "file": "backend/app/services/document_pdf.py",
+        "line": 164,
+        "kind": "def",
+        "name": "draw_verification_qr"
+      },
+      {
+        "file": "backend/app/services/document_pdf.py",
+        "line": 181,
+        "kind": "def",
+        "name": "render_completion_document_pdf"
+      },
+      {
+        "file": "backend/app/services/document_storage.py",
+        "line": 78,
+        "kind": "def",
+        "name": "build_document_download_filename"
+      },
+      {
+        "file": "backend/app/services/document_storage.py",
+        "line": 100,
+        "kind": "def",
+        "name": "detect_document_download_metadata"
+      },
+      {
+        "file": "backend/app/services/document_templates.py",
+        "line": 10,
+        "kind": "class",
+        "name": "CompletionDocumentTemplateContext"
+      },
+      {
+        "file": "backend/app/services/document_templates.py",
+        "line": 30,
+        "kind": "def",
+        "name": "normalize_document_text"
+      },
+      {
+        "file": "backend/app/services/document_templates.py",
+        "line": 38,
+        "kind": "def",
+        "name": "format_document_date"
+      },
+      {
+        "file": "backend/app/services/document_templates.py",
+        "line": 45,
+        "kind": "def",
+        "name": "build_document_verification_url"
+      },
+      {
+        "file": "backend/app/services/document_templates.py",
+        "line": 63,
+        "kind": "def",
+        "name": "build_completion_document_title"
+      },
+      {
+        "file": "backend/app/services/document_templates.py",
+        "line": 73,
+        "kind": "def",
+        "name": "render_completion_document_html"
+      },
+      {
+        "file": "backend/app/tests/test_account_course_detail_api.py",
+        "line": 49,
+        "kind": "def",
+        "name": "enroll_learner_to_course"
+      },
+      {
+        "file": "backend/app/tests/test_account_course_detail_api.py",
+        "line": 63,
+        "kind": "def",
+        "name": "delete_admin_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_account_course_detail_api.py",
+        "line": 76,
+        "kind": "def",
+        "name": "test_account_course_detail_returns_own_active_outline_only_sorted"
+      },
+      {
+        "file": "backend/app/tests/test_account_course_detail_api.py",
+        "line": 202,
+        "kind": "def",
+        "name": "test_account_course_detail_rejects_foreign_enrollment_and_missing_credential"
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "line": 17,
+        "kind": "def",
+        "name": "create_course_with_module_and_lesson"
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "line": 54,
+        "kind": "def",
+        "name": "delete_admin_documents_for_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "line": 198,
+        "kind": "def",
+        "name": "test_lesson_complete_rejects_foreign_enrollment_foreign_lesson_and_guest"
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "line": 245,
+        "kind": "def",
+        "name": "test_course_completion_requires_required_lessons"
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "line": 284,
+        "kind": "def",
+        "name": "test_lesson_complete_rejects_completed_course"
+      },
+      {
+        "file": "backend/app/tests/test_admin_action_required_filters_api.py",
+        "line": 141,
+        "kind": "def",
+        "name": "create_document"
+      },
+      {
+        "file": "backend/app/tests/test_admin_action_required_filters_api.py",
+        "line": 176,
+        "kind": "def",
+        "name": "create_course"
+      },
+      {
+        "file": "backend/app/tests/test_admin_action_required_filters_api.py",
+        "line": 200,
+        "kind": "def",
+        "name": "create_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_admin_action_required_filters_api.py",
+        "line": 229,
+        "kind": "def",
+        "name": "test_admin_documents_action_required_filter"
+      },
+      {
+        "file": "backend/app/tests/test_admin_action_required_filters_api.py",
+        "line": 316,
+        "kind": "def",
+        "name": "test_admin_enrollments_action_required_filter"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2615,
+        "kind": "def",
+        "name": "unique_course_slug"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2619,
+        "kind": "def",
+        "name": "create_test_course_in_db"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2669,
+        "kind": "def",
+        "name": "create_test_course_with_enrollment_in_db"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2745,
+        "kind": "def",
+        "name": "test_admin_can_filter_enrollments_by_organization"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2807,
+        "kind": "def",
+        "name": "test_admin_can_get_account_courses"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2852,
+        "kind": "def",
+        "name": "test_learner_can_get_account_courses"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2891,
+        "kind": "def",
+        "name": "test_account_courses_without_credential_returns_401"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2901,
+        "kind": "def",
+        "name": "unique_document_number"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2907,
+        "kind": "def",
+        "name": "create_test_document_record_in_db"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 2981,
+        "kind": "def",
+        "name": "test_admin_can_get_account_documents"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3029,
+        "kind": "def",
+        "name": "test_account_documents_without_credential_returns_401"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3039,
+        "kind": "def",
+        "name": "test_public_can_verify_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3101,
+        "kind": "def",
+        "name": "test_public_verify_document_not_found_returns_404"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3110,
+        "kind": "def",
+        "name": "test_admin_can_get_account_document_download"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3151,
+        "kind": "def",
+        "name": "test_foreign_user_cannot_get_account_document_download"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3186,
+        "kind": "def",
+        "name": "test_account_document_download_without_credential_returns_401"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3196,
+        "kind": "def",
+        "name": "post_multipart_admin_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3221,
+        "kind": "def",
+        "name": "test_admin_can_filter_documents_by_organization"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3300,
+        "kind": "def",
+        "name": "test_admin_can_list_admin_documents"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3313,
+        "kind": "def",
+        "name": "test_admin_can_create_document_with_file"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3357,
+        "kind": "def",
+        "name": "test_admin_create_document_duplicate_number_returns_409"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3392,
+        "kind": "def",
+        "name": "test_learner_cannot_create_admin_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3414,
+        "kind": "def",
+        "name": "patch_multipart_admin_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3440,
+        "kind": "def",
+        "name": "test_admin_can_update_document_status_and_replace_file"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3517,
+        "kind": "def",
+        "name": "test_admin_update_document_duplicate_number_returns_409"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3545,
+        "kind": "def",
+        "name": "test_learner_cannot_update_admin_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3570,
+        "kind": "def",
+        "name": "delete_admin_document_request"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3584,
+        "kind": "def",
+        "name": "test_admin_can_delete_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3629,
+        "kind": "def",
+        "name": "test_admin_delete_document_not_found_returns_404"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3640,
+        "kind": "def",
+        "name": "test_learner_cannot_delete_admin_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3662,
+        "kind": "def",
+        "name": "get_admin_document_download_response"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3676,
+        "kind": "def",
+        "name": "get_admin_document_generation_event_download_response"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3692,
+        "kind": "def",
+        "name": "get_account_document_download_response"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3706,
+        "kind": "def",
+        "name": "test_admin_can_download_admin_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3731,
+        "kind": "def",
+        "name": "test_admin_can_regenerate_generated_completion_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3889,
+        "kind": "def",
+        "name": "test_admin_download_document_without_file_returns_409"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3910,
+        "kind": "def",
+        "name": "test_learner_cannot_download_admin_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3934,
+        "kind": "def",
+        "name": "test_admin_can_filter_admin_documents"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3979,
+        "kind": "def",
+        "name": "test_admin_documents_invalid_status_filter_returns_422"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 3992,
+        "kind": "def",
+        "name": "test_admin_can_list_admin_courses"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4005,
+        "kind": "def",
+        "name": "test_admin_can_create_update_activate_deactivate_and_delete_course"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4102,
+        "kind": "def",
+        "name": "test_admin_course_duplicate_slug_returns_409"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4133,
+        "kind": "def",
+        "name": "test_admin_can_filter_admin_courses"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4173,
+        "kind": "def",
+        "name": "test_admin_cannot_delete_course_with_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4196,
+        "kind": "def",
+        "name": "test_admin_cannot_delete_course_with_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4239,
+        "kind": "def",
+        "name": "test_admin_course_missing_returns_404"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4252,
+        "kind": "def",
+        "name": "test_learner_cannot_manage_admin_courses"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4278,
+        "kind": "def",
+        "name": "test_admin_can_list_admin_enrollments"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4291,
+        "kind": "def",
+        "name": "test_admin_can_bulk_create_group_enrollments_and_skip_duplicates"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4393,
+        "kind": "def",
+        "name": "test_admin_bulk_group_enrollments_rejects_empty_group"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4417,
+        "kind": "def",
+        "name": "test_admin_rejects_enrollment_group_when_user_is_not_member"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4475,
+        "kind": "def",
+        "name": "test_admin_rejects_enrollment_group_from_another_organization"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4518,
+        "kind": "def",
+        "name": "test_admin_can_filter_admin_enrollments_by_learning_group"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4613,
+        "kind": "def",
+        "name": "test_admin_can_create_update_and_delete_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4698,
+        "kind": "def",
+        "name": "test_admin_duplicate_enrollment_returns_409"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4739,
+        "kind": "def",
+        "name": "test_admin_enrollment_invalid_status_returns_422"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4752,
+        "kind": "def",
+        "name": "test_admin_enrollment_missing_returns_404"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4765,
+        "kind": "def",
+        "name": "test_learner_cannot_manage_admin_enrollments"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4792,
+        "kind": "def",
+        "name": "test_public_can_list_active_courses"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4844,
+        "kind": "def",
+        "name": "test_public_can_get_active_course_detail_by_slug"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4879,
+        "kind": "def",
+        "name": "test_public_inactive_course_detail_returns_404"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4906,
+        "kind": "def",
+        "name": "test_public_missing_course_detail_returns_404"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4916,
+        "kind": "def",
+        "name": "test_learner_can_self_enroll_active_course"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 4962,
+        "kind": "def",
+        "name": "test_self_enroll_duplicate_course_returns_409"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5000,
+        "kind": "def",
+        "name": "test_self_enroll_inactive_course_returns_404"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5029,
+        "kind": "def",
+        "name": "test_guest_cannot_self_enroll_course"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5039,
+        "kind": "def",
+        "name": "test_learner_can_start_and_complete_self_enrolled_course"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5104,
+        "kind": "def",
+        "name": "test_guest_cannot_start_or_complete_course"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5122,
+        "kind": "def",
+        "name": "test_account_course_progress_dates_are_returned"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5202,
+        "kind": "def",
+        "name": "test_complete_course_creates_draft_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5298,
+        "kind": "def",
+        "name": "test_draft_completion_document_cannot_be_downloaded_by_learner"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5371,
+        "kind": "def",
+        "name": "test_admin_can_publish_completion_document_for_learner_download"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5487,
+        "kind": "def",
+        "name": "test_admin_documents_include_enrollment_details"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5541,
+        "kind": "def",
+        "name": "test_admin_can_create_document_linked_to_enrollment_via_api"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5605,
+        "kind": "def",
+        "name": "test_admin_rejects_document_course_mismatched_with_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5644,
+        "kind": "def",
+        "name": "test_admin_rejects_document_enrollment_for_another_user"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5701,
+        "kind": "def",
+        "name": "test_admin_rejects_document_course_update_mismatched_with_existing_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5746,
+        "kind": "def",
+        "name": "test_public_verify_draft_document_returns_404"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5771,
+        "kind": "def",
+        "name": "test_public_verify_available_document_without_file_returns_404"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5794,
+        "kind": "def",
+        "name": "test_public_verify_revoked_document_returns_revoked_status"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5822,
+        "kind": "def",
+        "name": "test_admin_documents_filter_by_verification_code"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5857,
+        "kind": "def",
+        "name": "test_learner_course_completion_generates_draft_pdf_file"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5937,
+        "kind": "def",
+        "name": "test_admin_cannot_create_second_document_for_same_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 5976,
+        "kind": "def",
+        "name": "test_admin_cannot_update_second_document_to_existing_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6020,
+        "kind": "def",
+        "name": "test_completion_document_keeps_enrollment_course_and_user_integrity"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6113,
+        "kind": "def",
+        "name": "test_admin_can_publish_generated_completion_pdf_without_reupload"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6227,
+        "kind": "def",
+        "name": "test_public_can_verify_published_generated_completion_pdf"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6351,
+        "kind": "def",
+        "name": "test_admin_document_download_detects_pdf_content_when_storage_suffix_is_bin"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6379,
+        "kind": "def",
+        "name": "test_account_document_download_detects_pdf_content_when_storage_suffix_is_bin"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6407,
+        "kind": "def",
+        "name": "test_admin_revoke_document_sets_revocation_metadata"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6442,
+        "kind": "def",
+        "name": "test_admin_unrevoke_document_clears_revocation_metadata"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6492,
+        "kind": "def",
+        "name": "test_admin_rejects_revocation_reason_for_available_document"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6520,
+        "kind": "def",
+        "name": "test_admin_document_revocation_writes_specific_audit_events"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 6608,
+        "kind": "def",
+        "name": "test_learner_account_documents_include_revocation_metadata"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 7342,
+        "kind": "def",
+        "name": "test_org_rep_can_create_group_enrollments_for_assigned_organization"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 7522,
+        "kind": "def",
+        "name": "test_org_rep_can_list_group_enrollments_in_assigned_organization"
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "line": 7650,
+        "kind": "def",
+        "name": "test_org_rep_can_delete_assigned_group_enrollment"
+      },
+      {
+        "file": "backend/app/tests/test_config_document_metadata.py",
+        "line": 26,
+        "kind": "def",
+        "name": "clear_document_metadata_env"
+      },
+      {
+        "file": "backend/app/tests/test_config_document_metadata.py",
+        "line": 31,
+        "kind": "def",
+        "name": "test_document_metadata_defaults_are_clean_russian"
+      },
+      {
+        "file": "backend/app/tests/test_config_document_metadata.py",
+        "line": 61,
+        "kind": "def",
+        "name": "test_document_metadata_supports_document_env_aliases"
+      },
+      {
+        "file": "backend/app/tests/test_config_document_metadata.py",
+        "line": 87,
+        "kind": "def",
+        "name": "test_document_metadata_supports_legacy_obrportal_env_aliases"
+      },
+      {
+        "file": "backend/app/tests/test_config_document_metadata.py",
+        "line": 113,
+        "kind": "def",
+        "name": "test_document_metadata_document_alias_has_priority_over_legacy_alias"
+      },
+      {
+        "file": "backend/app/tests/test_course_lessons_admin_api.py",
+        "line": 15,
+        "kind": "def",
+        "name": "unique_course_slug"
+      },
+      {
+        "file": "backend/app/tests/test_course_lessons_admin_api.py",
+        "line": 73,
+        "kind": "def",
+        "name": "create_admin_course"
+      },
+      {
+        "file": "backend/app/tests/test_course_lessons_admin_api.py",
+        "line": 99,
+        "kind": "def",
+        "name": "delete_admin_course"
+      },
+      {
+        "file": "backend/app/tests/test_course_lessons_admin_api.py",
+        "line": 112,
+        "kind": "def",
+        "name": "create_admin_course_module"
+      },
+      {
+        "file": "backend/app/tests/test_course_lessons_admin_api.py",
+        "line": 134,
+        "kind": "def",
+        "name": "test_admin_can_create_list_filter_update_and_delete_course_lessons"
+      },
+      {
+        "file": "backend/app/tests/test_course_lessons_admin_api.py",
+        "line": 355,
+        "kind": "def",
+        "name": "test_course_lesson_admin_api_returns_404_for_missing_records"
+      },
+      {
+        "file": "backend/app/tests/test_course_lessons_admin_api.py",
+        "line": 410,
+        "kind": "def",
+        "name": "test_learner_cannot_manage_course_lessons_admin_api"
+      },
+      {
+        "file": "backend/app/tests/test_course_modules_admin_api.py",
+        "line": 15,
+        "kind": "def",
+        "name": "unique_course_slug"
+      },
+      {
+        "file": "backend/app/tests/test_course_modules_admin_api.py",
+        "line": 73,
+        "kind": "def",
+        "name": "create_admin_course"
+      },
+      {
+        "file": "backend/app/tests/test_course_modules_admin_api.py",
+        "line": 99,
+        "kind": "def",
+        "name": "delete_admin_course"
+      },
+      {
+        "file": "backend/app/tests/test_course_modules_admin_api.py",
+        "line": 112,
+        "kind": "def",
+        "name": "test_admin_can_create_list_filter_update_and_delete_course_modules"
+      },
+      {
+        "file": "backend/app/tests/test_course_modules_admin_api.py",
+        "line": 291,
+        "kind": "def",
+        "name": "test_course_module_admin_api_returns_404_for_missing_records"
+      },
+      {
+        "file": "backend/app/tests/test_course_modules_admin_api.py",
+        "line": 344,
+        "kind": "def",
+        "name": "test_learner_cannot_manage_course_modules_admin_api"
+      },
+      {
+        "file": "backend/app/tests/test_document_pdf.py",
+        "line": 15,
+        "kind": "def",
+        "name": "test_register_pdf_fonts_returns_usable_font_name"
+      },
+      {
+        "file": "backend/app/tests/test_document_pdf.py",
+        "line": 25,
+        "kind": "def",
+        "name": "test_render_completion_document_pdf_returns_pdf_bytes"
+      },
+      {
+        "file": "backend/app/tests/test_document_pdf.py",
+        "line": 44,
+        "kind": "def",
+        "name": "test_render_completion_document_pdf_handles_missing_optional_fields"
+      },
+      {
+        "file": "backend/app/tests/test_document_pdf.py",
+        "line": 63,
+        "kind": "def",
+        "name": "test_render_completion_document_pdf_handles_long_values"
+      },
+      {
+        "file": "backend/app/tests/test_document_pdf.py",
+        "line": 88,
+        "kind": "def",
+        "name": "test_build_verification_qr_drawing_returns_reportlab_drawing"
+      },
+      {
+        "file": "backend/app/tests/test_document_pdf.py",
+        "line": 100,
+        "kind": "def",
+        "name": "test_build_verification_qr_drawing_skips_empty_values"
+      },
+      {
+        "file": "backend/app/tests/test_document_pdf.py",
+        "line": 107,
+        "kind": "def",
+        "name": "test_render_completion_document_pdf_uses_clean_russian_text_constants"
+      },
+      {
+        "file": "backend/app/tests/test_document_pdf.py",
+        "line": 165,
+        "kind": "def",
+        "name": "test_render_completion_document_pdf_accepts_organization_and_signer_metadata"
+      },
+      {
+        "file": "backend/app/tests/test_document_pdf.py",
+        "line": 187,
+        "kind": "def",
+        "name": "test_render_completion_document_pdf_draws_expected_visible_metadata"
+      },
+      {
+        "file": "backend/app/tests/test_document_storage.py",
+        "line": 96,
+        "kind": "def",
+        "name": "test_build_document_download_filename"
+      },
+      {
+        "file": "backend/app/tests/test_document_templates.py",
+        "line": 13,
+        "kind": "def",
+        "name": "test_normalize_document_text_strips_extra_spaces"
+      },
+      {
+        "file": "backend/app/tests/test_document_templates.py",
+        "line": 19,
+        "kind": "def",
+        "name": "test_format_document_date_returns_russian_date"
+      },
+      {
+        "file": "backend/app/tests/test_document_templates.py",
+        "line": 26,
+        "kind": "def",
+        "name": "test_build_document_verification_url_uses_public_base_url"
+      },
+      {
+        "file": "backend/app/tests/test_document_templates.py",
+        "line": 35,
+        "kind": "def",
+        "name": "test_build_document_verification_url_falls_back_to_relative_url"
+      },
+      {
+        "file": "backend/app/tests/test_document_templates.py",
+        "line": 44,
+        "kind": "def",
+        "name": "test_build_completion_document_title_uses_safe_fallbacks"
+      },
+      {
+        "file": "backend/app/tests/test_document_templates.py",
+        "line": 62,
+        "kind": "def",
+        "name": "test_render_completion_document_html_contains_required_fields"
+      },
+      {
+        "file": "backend/app/tests/test_document_templates.py",
+        "line": 88,
+        "kind": "def",
+        "name": "test_render_completion_document_html_escapes_unsafe_values"
+      },
+      {
+        "file": "backend/app/tests/test_public_course_outline.py",
+        "line": 11,
+        "kind": "def",
+        "name": "create_course_module"
+      },
+      {
+        "file": "backend/app/tests/test_public_course_outline.py",
+        "line": 40,
+        "kind": "def",
+        "name": "create_course_lesson"
+      },
+      {
+        "file": "backend/app/tests/test_public_course_outline.py",
+        "line": 77,
+        "kind": "def",
+        "name": "test_public_course_detail_returns_active_outline_only_sorted_by_position"
+      }
+    ]
+  },
+  "frontend": {
+    "keyword_files": [
+      "frontend/src/api/client.js",
+      "frontend/src/App.jsx",
+      "frontend/src/components/admin/OrganizationDetailPanel.jsx",
+      "frontend/src/components/admin/OrganizationForm.jsx",
+      "frontend/src/components/admin/UserDetailPanel.jsx",
+      "frontend/src/components/documents/DocumentVerificationQrBlock.jsx",
+      "frontend/src/components/layout/AppShell.jsx",
+      "frontend/src/components/layout/PublicShell.jsx",
+      "frontend/src/components/ObrPortalStage5DesignVariants.jsx",
+      "frontend/src/components/organization/OrganizationCabinetForms.jsx",
+      "frontend/src/components/organization/OrganizationGroupCourseOption.jsx",
+      "frontend/src/data/publicCourses.js",
+      "frontend/src/hooks/useAdminDataLoader.js",
+      "frontend/src/hooks/usePageMeta.js",
+      "frontend/src/main.jsx",
+      "frontend/src/pages/AccountPage.jsx",
+      "frontend/src/pages/AdminCoursesPage.jsx",
+      "frontend/src/pages/AdminEnrollmentsPage.jsx",
+      "frontend/src/pages/AuditPage.jsx",
+      "frontend/src/pages/AuthPage.jsx",
+      "frontend/src/pages/CatalogPage.jsx",
+      "frontend/src/pages/ContactsPage.jsx",
+      "frontend/src/pages/CourseDetailPage.jsx",
+      "frontend/src/pages/DashboardPage.jsx",
+      "frontend/src/pages/DocumentsPage.jsx",
+      "frontend/src/pages/FaqPage.jsx",
+      "frontend/src/pages/GroupsPage.jsx",
+      "frontend/src/pages/HomePage.jsx",
+      "frontend/src/pages/OrganizationInfoPage.jsx",
+      "frontend/src/pages/RegisterPage.jsx",
+      "frontend/src/pages/UsersPage.jsx",
+      "frontend/src/pages/VerifyDocumentPage.jsx",
+      "frontend/src/routes/AdminPageRenderer.jsx",
+      "frontend/src/routes/PublicRouteComponents.jsx",
+      "frontend/src/routes/PublicRoutes.jsx",
+      "frontend/src/utils/adminLinks.js",
+      "frontend/src/utils/adminRoutes.js",
+      "frontend/src/utils/adminState.js",
+      "frontend/src/utils/documentVerification.js",
+      "frontend/src/utils/exportCsv.js",
+      "frontend/src/utils/publicRoutes.js"
+    ],
+    "document_api_usage": [
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 117,
+        "names": [
+          "getAccountDocuments"
+        ],
+        "excerpt": "export async function getAccountDocuments() {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 152,
+        "names": [
+          "downloadAccountDocument"
+        ],
+        "excerpt": "export async function downloadAccountDocument(documentId) {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 201,
+        "names": [
+          "verifyPublicDocument"
+        ],
+        "excerpt": "export async function verifyPublicDocument(number) {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 509,
+        "names": [
+          "getAdminDocuments"
+        ],
+        "excerpt": "export async function getAdminDocuments(filters = {}) {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 525,
+        "names": [
+          "createAdminDocument"
+        ],
+        "excerpt": "export async function createAdminDocument(payload) {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 533,
+        "names": [
+          "updateAdminDocument"
+        ],
+        "excerpt": "export async function updateAdminDocument(documentId, payload) {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 541,
+        "names": [
+          "regenerateAdminDocument"
+        ],
+        "excerpt": "export async function regenerateAdminDocument(documentId) {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 548,
+        "names": [
+          "getAdminDocumentGenerationEvents"
+        ],
+        "excerpt": "export async function getAdminDocumentGenerationEvents(documentId, filters = {}) {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 565,
+        "names": [
+          "deleteAdminDocument"
+        ],
+        "excerpt": "export async function deleteAdminDocument(documentId) {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 572,
+        "names": [
+          "downloadAdminDocumentGenerationEvent"
+        ],
+        "excerpt": "export async function downloadAdminDocumentGenerationEvent(documentId, eventId) {"
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "line": 620,
+        "names": [
+          "downloadAdminDocument"
+        ],
+        "excerpt": "export async function downloadAdminDocument(documentId) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 5,
+        "names": [
+          "createAdminDocument"
+        ],
+        "excerpt": "createAdminDocument,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 6,
+        "names": [
+          "deleteAdminDocument"
+        ],
+        "excerpt": "deleteAdminDocument,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 7,
+        "names": [
+          "downloadAdminDocument"
+        ],
+        "excerpt": "downloadAdminDocument,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 8,
+        "names": [
+          "downloadAdminDocumentGenerationEvent"
+        ],
+        "excerpt": "downloadAdminDocumentGenerationEvent,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 11,
+        "names": [
+          "getAdminDocuments"
+        ],
+        "excerpt": "getAdminDocuments,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 12,
+        "names": [
+          "getAdminDocumentGenerationEvents"
+        ],
+        "excerpt": "getAdminDocumentGenerationEvents,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 16,
+        "names": [
+          "regenerateAdminDocument"
+        ],
+        "excerpt": "regenerateAdminDocument,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 17,
+        "names": [
+          "updateAdminDocument"
+        ],
+        "excerpt": "updateAdminDocument,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 21,
+        "names": [
+          "DocumentVerificationQrBlock"
+        ],
+        "excerpt": "import { DocumentVerificationQrBlock } from \"../components/documents/DocumentVerificationQrBlock\";"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 26,
+        "names": [
+          "buildDocumentVerificationPath",
+          "documentVerification"
+        ],
+        "excerpt": "import { buildDocumentVerificationPath } from \"../utils/documentVerification\";"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 30,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "buildDocumentsPath,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 103,
+        "names": [
+          "getDocumentStatusLabel"
+        ],
+        "excerpt": "function getDocumentStatusLabel(status) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 106,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "function formatDocumentApiError(err, fallback) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 149,
+        "names": [
+          "getDocumentStatusTone"
+        ],
+        "excerpt": "function getDocumentStatusTone(status) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 162,
+        "names": [
+          "isDocumentActionRequired"
+        ],
+        "excerpt": "function isDocumentActionRequired(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 178,
+        "names": [
+          "getDocumentActionRequiredHint"
+        ],
+        "excerpt": "function getDocumentActionRequiredHint(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 179,
+        "names": [
+          "isDocumentActionRequired"
+        ],
+        "excerpt": "if (!isDocumentActionRequired(documentItem)) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 209,
+        "names": [
+          "getDocumentAttentionItems"
+        ],
+        "excerpt": "function getDocumentAttentionItems(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 264,
+        "names": [
+          "getDocumentAttentionTone"
+        ],
+        "excerpt": "function getDocumentAttentionTone(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 308,
+        "names": [
+          "isGeneratedCompletionDocument"
+        ],
+        "excerpt": "function isGeneratedCompletionDocument(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 318,
+        "names": [
+          "canPublishGeneratedCompletionDocument"
+        ],
+        "excerpt": "function canPublishGeneratedCompletionDocument(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 319,
+        "names": [
+          "isGeneratedCompletionDocument"
+        ],
+        "excerpt": "return documentItem.status === \"draft\" && isGeneratedCompletionDocument(documentItem);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 322,
+        "names": [
+          "getAdminDocumentDownloadLabel"
+        ],
+        "excerpt": "function getAdminDocumentDownloadLabel(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 323,
+        "names": [
+          "isGeneratedCompletionDocument"
+        ],
+        "excerpt": "if (isGeneratedCompletionDocument(documentItem)) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 331,
+        "names": [
+          "canPublishGeneratedCompletionDocument"
+        ],
+        "excerpt": "if (canPublishGeneratedCompletionDocument(documentItem)) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 371,
+        "names": [
+          "getDocumentFiltersFromSearch"
+        ],
+        "excerpt": "function getDocumentFiltersFromSearch(search) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 406,
+        "names": [
+          "getDocumentGenerationSourceLabel"
+        ],
+        "excerpt": "function getDocumentGenerationSourceLabel(source) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 416,
+        "names": [
+          "getDocumentGenerationActorLabel"
+        ],
+        "excerpt": "function getDocumentGenerationActorLabel(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 427,
+        "names": [
+          "getDocumentGenerationEventActorLabel"
+        ],
+        "excerpt": "function getDocumentGenerationEventActorLabel(event) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 461,
+        "names": [
+          "countDocumentsWhere"
+        ],
+        "excerpt": "function countDocumentsWhere(items, predicate) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 465,
+        "names": [
+          "getAdminDocumentRegistryStats"
+        ],
+        "excerpt": "function getAdminDocumentRegistryStats({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 480,
+        "names": [
+          "countDocumentsWhere"
+        ],
+        "excerpt": "withFiles: countDocumentsWhere(documents, (documentItem) => documentItem.file_available),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 481,
+        "names": [
+          "countDocumentsWhere"
+        ],
+        "excerpt": "withoutFiles: countDocumentsWhere(documents, (documentItem) => !documentItem.file_available),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 482,
+        "names": [
+          "countDocumentsWhere",
+          "isGeneratedCompletionDocument"
+        ],
+        "excerpt": "generatedPdf: countDocumentsWhere(documents, isGeneratedCompletionDocument),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 483,
+        "names": [
+          "canPublishGeneratedCompletionDocument",
+          "countDocumentsWhere"
+        ],
+        "excerpt": "publishableGeneratedPdf: countDocumentsWhere(documents, canPublishGeneratedCompletionDocument),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 484,
+        "names": [
+          "countDocumentsWhere"
+        ],
+        "excerpt": "completionLinked: countDocumentsWhere(documents, (documentItem) => documentItem.enrollment_id),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 485,
+        "names": [
+          "countDocumentsWhere"
+        ],
+        "excerpt": "verificationReady: countDocumentsWhere("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 494,
+        "names": [
+          "getAdminDocumentRegistryDiagnostics"
+        ],
+        "excerpt": "function getAdminDocumentRegistryDiagnostics({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 508,
+        "names": [
+          "revokingDocumentId"
+        ],
+        "excerpt": "revokingDocumentId,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 580,
+        "names": [
+          "revokingDocumentId"
+        ],
+        "excerpt": "if (revokingDocumentId) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 599,
+        "names": [
+          "AdminDocumentRegistryDiagnostics"
+        ],
+        "excerpt": "function AdminDocumentRegistryDiagnostics({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 602,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "getDocumentFilterPath,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 731,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({ status: \"draft\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 738,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({ status: \"available\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 745,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({ status: \"revoked\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 752,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({ action_required: \"true\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 775,
+        "names": [
+          "availableDocuments"
+        ],
+        "excerpt": "availableDocuments: \"\\u0414\\u043e\\u0441\\u0442\\u0443\\u043f\\u043d\\u044b\\u0435 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b\","
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 777,
+        "names": [
+          "pendingDocuments"
+        ],
+        "excerpt": "pendingDocuments: \"\\u041e\\u0436\\u0438\\u0434\\u0430\\u044e\\u0442 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u0430\","
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 784,
+        "names": [
+          "actionDocuments"
+        ],
+        "excerpt": "actionDocuments: \"\\u041f\\u043e\\u043a\\u0430\\u0437\\u0430\\u0442\\u044c \\u0434\\u043e\\u0441\\u0442\\u0443\\u043f\\u043d\\u044b\\u0435 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b\","
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 786,
+        "names": [
+          "actionVerify"
+        ],
+        "excerpt": "actionVerify: \"\\u041f\\u0440\\u043e\\u0432\\u0435\\u0440\\u0438\\u0442\\u044c \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\","
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 791,
+        "names": [
+          "primaryDocumentTitle"
+        ],
+        "excerpt": "primaryDocumentTitle: \"\\u0411\\u043b\\u0438\\u0436\\u0430\\u0439\\u0448\\u0438\\u0439 \\u0434\\u043e\\u0441\\u0442\\u0443\\u043f\\u043d\\u044b\\u0439 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\","
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 792,
+        "names": [
+          "genericDocument"
+        ],
+        "excerpt": "genericDocument: \"\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\","
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 798,
+        "names": [
+          "getLearnerDocumentCourseTitle"
+        ],
+        "excerpt": "function getLearnerDocumentCourseTitle(documentItem, courses, enrollments) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 810,
+        "names": [
+          "getLearnerDocumentsUXStats"
+        ],
+        "excerpt": "function getLearnerDocumentsUXStats({ documents, enrollments }) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 811,
+        "names": [
+          "availableDocuments"
+        ],
+        "excerpt": "const availableDocuments = documents.filter("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 823,
+        "names": [
+          "availableDocuments",
+          "verificationReadyDocuments"
+        ],
+        "excerpt": "const verificationReadyDocuments = availableDocuments.filter("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 828,
+        "names": [
+          "availableDocuments"
+        ],
+        "excerpt": "availableDocuments,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 831,
+        "names": [
+          "verificationReadyDocuments"
+        ],
+        "excerpt": "verificationReadyDocuments,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 835,
+        "names": [
+          "LearnerDocumentsUXFoundationPanel"
+        ],
+        "excerpt": "function LearnerDocumentsUXFoundationPanel({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 841,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "getDocumentFilterPath,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 844,
+        "names": [
+          "getLearnerDocumentsUXStats"
+        ],
+        "excerpt": "const stats = getLearnerDocumentsUXStats({ documents, enrollments });"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 845,
+        "names": [
+          "availableDocuments",
+          "primaryDocument"
+        ],
+        "excerpt": "const primaryDocument = stats.availableDocuments[0] || null;"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 847,
+        "names": [
+          "availableDocuments"
+        ],
+        "excerpt": "stats.availableDocuments.length > 0 ||"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 872,
+        "names": [
+          "availableDocuments"
+        ],
+        "excerpt": "{LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.availableDocuments}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 875,
+        "names": [
+          "availableDocuments"
+        ],
+        "excerpt": "{stats.availableDocuments.length}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 890,
+        "names": [
+          "pendingDocuments"
+        ],
+        "excerpt": "{LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.pendingDocuments}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 902,
+        "names": [
+          "verificationReadyDocuments"
+        ],
+        "excerpt": "{stats.verificationReadyDocuments.length}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 953,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "{primaryDocument ? ("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 961,
+        "names": [
+          "primaryDocumentTitle"
+        ],
+        "excerpt": "{LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.primaryDocumentTitle}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 964,
+        "names": [
+          "genericDocument",
+          "primaryDocument"
+        ],
+        "excerpt": "{primaryDocument.title || primaryDocument.document_type || LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.genericDocument}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 967,
+        "names": [
+          "getLearnerDocumentCourseTitle",
+          "primaryDocument"
+        ],
+        "excerpt": "{getLearnerDocumentCourseTitle(primaryDocument, courses, enrollments)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 971,
+        "names": [
+          "getDocumentStatusTone",
+          "primaryDocument"
+        ],
+        "excerpt": "<span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getDocumentStatusTone(primaryDocument.status)}`}>"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 972,
+        "names": [
+          "getDocumentStatusLabel",
+          "primaryDocument"
+        ],
+        "excerpt": "{getDocumentStatusLabel(primaryDocument.status)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 982,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "{primaryDocument.document_number || \"-\"}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 991,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "{primaryDocument.verification_code || \"-\"}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1000,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "{formatDateTime(primaryDocument.created_at)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1013,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({ status: \"available\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1016,
+        "names": [
+          "actionDocuments"
+        ],
+        "excerpt": "{LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionDocuments}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1030,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "primaryDocument?.verification_code || primaryDocument?.document_number"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1031,
+        "names": [
+          "buildDocumentVerificationPath"
+        ],
+        "excerpt": "? buildDocumentVerificationPath("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1032,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "primaryDocument.verification_code || primaryDocument.document_number"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1038,
+        "names": [
+          "actionVerify"
+        ],
+        "excerpt": "{LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionVerify}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1043,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({ status: \"\", action_required: \"\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1078,
+        "names": [
+          "genericDocument"
+        ],
+        "excerpt": "genericDocument: \"-\","
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1082,
+        "names": [
+          "getLearnerDocumentDownloadUrl"
+        ],
+        "excerpt": "function getLearnerDocumentDownloadUrl(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1092,
+        "names": [
+          "isLearnerDocumentDownloadReady"
+        ],
+        "excerpt": "function isLearnerDocumentDownloadReady(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1096,
+        "names": [
+          "getLearnerDocumentDownloadStats"
+        ],
+        "excerpt": "function getLearnerDocumentDownloadStats({ documents, enrollments }) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1097,
+        "names": [
+          "availableDocuments"
+        ],
+        "excerpt": "const availableDocuments = documents.filter("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1100,
+        "names": [
+          "availableDocuments",
+          "downloadableDocuments",
+          "isLearnerDocumentDownloadReady"
+        ],
+        "excerpt": "const downloadableDocuments = availableDocuments.filter(isLearnerDocumentDownloadReady);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1112,
+        "names": [
+          "availableDocuments",
+          "verificationReadyDocuments"
+        ],
+        "excerpt": "const verificationReadyDocuments = availableDocuments.filter("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1117,
+        "names": [
+          "availableDocuments"
+        ],
+        "excerpt": "availableDocuments,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1118,
+        "names": [
+          "downloadableDocuments"
+        ],
+        "excerpt": "downloadableDocuments,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1121,
+        "names": [
+          "verificationReadyDocuments"
+        ],
+        "excerpt": "verificationReadyDocuments,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1125,
+        "names": [
+          "LearnerDocumentDownloadUXPanel"
+        ],
+        "excerpt": "function LearnerDocumentDownloadUXPanel({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1129,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "getDocumentFilterPath,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1132,
+        "names": [
+          "getLearnerDocumentDownloadStats"
+        ],
+        "excerpt": "const stats = getLearnerDocumentDownloadStats({ documents, enrollments });"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1133,
+        "names": [
+          "availableDocuments",
+          "downloadableDocuments",
+          "primaryDocument"
+        ],
+        "excerpt": "const primaryDocument = stats.downloadableDocuments[0] || stats.availableDocuments[0] || null;"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1134,
+        "names": [
+          "getLearnerDocumentDownloadUrl",
+          "primaryDocument"
+        ],
+        "excerpt": "const primaryDownloadUrl = primaryDocument ? getLearnerDocumentDownloadUrl(primaryDocument) : \"\";"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1135,
+        "names": [
+          "primaryVerificationValue"
+        ],
+        "excerpt": "const primaryVerificationValue ="
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1136,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "primaryDocument?.verification_code || primaryDocument?.document_number || \"\";"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1137,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "const primaryTone = primaryDocument"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1138,
+        "names": [
+          "getDocumentStatusTone",
+          "primaryDocument"
+        ],
+        "excerpt": "? getDocumentStatusTone(primaryDocument.status)"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1163,
+        "names": [
+          "downloadableDocuments"
+        ],
+        "excerpt": "{stats.downloadableDocuments.length}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1172,
+        "names": [
+          "availableDocuments"
+        ],
+        "excerpt": "{stats.availableDocuments.length}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1193,
+        "names": [
+          "verificationReadyDocuments"
+        ],
+        "excerpt": "{stats.verificationReadyDocuments.length}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1198,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "{primaryDocument ? ("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1209,
+        "names": [
+          "genericDocument",
+          "primaryDocument"
+        ],
+        "excerpt": "{primaryDocument.title || primaryDocument.document_type || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.genericDocument}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1212,
+        "names": [
+          "getLearnerDocumentCourseTitle",
+          "primaryDocument"
+        ],
+        "excerpt": "{getLearnerDocumentCourseTitle(primaryDocument, courses, enrollments)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1217,
+        "names": [
+          "getDocumentStatusLabel",
+          "primaryDocument"
+        ],
+        "excerpt": "{getDocumentStatusLabel(primaryDocument.status)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1227,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "{primaryDocument.file_available"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1238,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "{primaryDocument.document_number || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.emptyValue}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1247,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "{primaryDocument.verification_code || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.emptyValue}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1256,
+        "names": [
+          "primaryDocument"
+        ],
+        "excerpt": "{formatDateTime(primaryDocument.created_at)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1278,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({ status: \"available\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1288,
+        "names": [
+          "primaryVerificationValue"
+        ],
+        "excerpt": "primaryVerificationValue"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1289,
+        "names": [
+          "buildDocumentVerificationPath",
+          "primaryVerificationValue"
+        ],
+        "excerpt": "? buildDocumentVerificationPath(primaryVerificationValue)"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1299,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({ status: \"available\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1329,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({ status: \"\", action_required: \"\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1354,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "to={buildDocumentsPath()}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1360,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "to={buildDocumentsPath({ status: \"available\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1366,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "to={buildDocumentsPath({ status: \"draft\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1392,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "to={buildDocumentsPath({ status: \"draft\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1397,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "to={buildDocumentsPath({ status: \"available\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1402,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "to={buildDocumentsPath({ status: \"revoked\" })}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1423,
+        "names": [
+          "onRefreshDocuments"
+        ],
+        "excerpt": "const { onRefreshDocuments } = arguments[0] || {};"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1426,
+        "names": [
+          "getDocumentFiltersFromSearch"
+        ],
+        "excerpt": "const initialFilters = getDocumentFiltersFromSearch(location.search);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1427,
+        "names": [
+          "setDocuments"
+        ],
+        "excerpt": "const [documents, setDocuments] = useState([]);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1428,
+        "names": [
+          "setDocumentStatusCounts"
+        ],
+        "excerpt": "const [documentStatusCounts, setDocumentStatusCounts] = useState({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1434,
+        "names": [
+          "setDocumentActionRequiredCount"
+        ],
+        "excerpt": "const [documentActionRequiredCount, setDocumentActionRequiredCount] = useState(0);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1444,
+        "names": [
+          "filterDocumentType",
+          "setFilterDocumentType"
+        ],
+        "excerpt": "const [filterDocumentType, setFilterDocumentType] = useState(initialFilters.document_type);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1454,
+        "names": [
+          "generationEventsByDocumentId",
+          "setGenerationEventsByDocumentId"
+        ],
+        "excerpt": "const [generationEventsByDocumentId, setGenerationEventsByDocumentId] = useState({});"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1458,
+        "names": [
+          "revokingDocumentId",
+          "setRevokingDocumentId"
+        ],
+        "excerpt": "const [revokingDocumentId, setRevokingDocumentId] = useState(\"\");"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1476,
+        "names": [
+          "editingDocumentId",
+          "setEditingDocumentId"
+        ],
+        "excerpt": "const [editingDocumentId, setEditingDocumentId] = useState(\"\");"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1520,
+        "names": [
+          "displayedDocuments"
+        ],
+        "excerpt": "const displayedDocuments = documents;"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1522,
+        "names": [
+          "adminDocumentRegistryFilters"
+        ],
+        "excerpt": "const adminDocumentRegistryFilters = useMemo("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1528,
+        "names": [
+          "filterDocumentType"
+        ],
+        "excerpt": "document_type: filterDocumentType,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1537,
+        "names": [
+          "filterDocumentType"
+        ],
+        "excerpt": "filterDocumentType,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1543,
+        "names": [
+          "adminDocumentRegistryStats"
+        ],
+        "excerpt": "const adminDocumentRegistryStats = useMemo("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1545,
+        "names": [
+          "getAdminDocumentRegistryStats"
+        ],
+        "excerpt": "getAdminDocumentRegistryStats({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1549,
+        "names": [
+          "adminDocumentRegistryFilters"
+        ],
+        "excerpt": "filters: adminDocumentRegistryFilters,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1551,
+        "names": [
+          "adminDocumentRegistryFilters"
+        ],
+        "excerpt": "[documents, documentStatusCounts, documentActionRequiredCount, adminDocumentRegistryFilters]"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1554,
+        "names": [
+          "adminDocumentRegistryDiagnostics"
+        ],
+        "excerpt": "const adminDocumentRegistryDiagnostics = useMemo("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1556,
+        "names": [
+          "getAdminDocumentRegistryDiagnostics"
+        ],
+        "excerpt": "getAdminDocumentRegistryDiagnostics({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1558,
+        "names": [
+          "adminDocumentRegistryStats"
+        ],
+        "excerpt": "registryStats: adminDocumentRegistryStats,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1570,
+        "names": [
+          "revokingDocumentId"
+        ],
+        "excerpt": "revokingDocumentId,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1574,
+        "names": [
+          "adminDocumentRegistryStats"
+        ],
+        "excerpt": "adminDocumentRegistryStats,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1586,
+        "names": [
+          "revokingDocumentId"
+        ],
+        "excerpt": "revokingDocumentId,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1596,
+        "names": [
+          "hasManualDocumentData"
+        ],
+        "excerpt": "const hasManualDocumentData ="
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1601,
+        "names": [
+          "hasManualDocumentData"
+        ],
+        "excerpt": "if (hasManualDocumentData && current.enrollment_id !== filterEnrollmentId) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1614,
+        "names": [
+          "activeDocumentFilterItems"
+        ],
+        "excerpt": "const activeDocumentFilterItems = useMemo(() => {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1654,
+        "names": [
+          "getDocumentStatusLabel"
+        ],
+        "excerpt": "value: getDocumentStatusLabel(filterStatus),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1658,
+        "names": [
+          "filterDocumentType"
+        ],
+        "excerpt": "if (filterDocumentType) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1662,
+        "names": [
+          "filterDocumentType"
+        ],
+        "excerpt": "value: filterDocumentType,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1681,
+        "names": [
+          "filterDocumentType"
+        ],
+        "excerpt": "filterDocumentType,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1688,
+        "names": [
+          "buildDocumentFilters"
+        ],
+        "excerpt": "function buildDocumentFilters(overrides = {}) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1694,
+        "names": [
+          "filterDocumentType"
+        ],
+        "excerpt": "document_type: overrides.document_type ?? filterDocumentType,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1700,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "function getDocumentFilterPath(overrides = {}) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1701,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "return buildDocumentsPath({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1702,
+        "names": [
+          "buildDocumentFilters"
+        ],
+        "excerpt": "...buildDocumentFilters(),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1711,
+        "names": [
+          "navigateToDocumentFilters"
+        ],
+        "excerpt": "async function navigateToDocumentFilters(filters, options = {}) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1712,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "const nextPath = buildDocumentsPath(filters);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1716,
+        "names": [
+          "refreshDocumentsFastPath"
+        ],
+        "excerpt": "await refreshDocumentsFastPath(filters);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1728,
+        "names": [
+          "buildDocumentFilters"
+        ],
+        "excerpt": "const filters = nextFilters ?? buildDocumentFilters();"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1739,
+        "names": [
+          "getAdminDocuments"
+        ],
+        "excerpt": "getAdminDocuments(activeFilters),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1755,
+        "names": [
+          "setDocuments"
+        ],
+        "excerpt": "setDocuments(Array.isArray(documentsResponse) ? documentsResponse : []);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1756,
+        "names": [
+          "setDocumentStatusCounts"
+        ],
+        "excerpt": "setDocumentStatusCounts({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1762,
+        "names": [
+          "setDocumentActionRequiredCount"
+        ],
+        "excerpt": "setDocumentActionRequiredCount(documentsSummary.action_required || 0);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1763,
+        "names": [
+          "setGenerationEventsByDocumentId"
+        ],
+        "excerpt": "setGenerationEventsByDocumentId({});"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1769,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.loadFailed));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1775,
+        "names": [
+          "buildDocumentFilters",
+          "refreshDocumentsFastPath"
+        ],
+        "excerpt": "async function refreshDocumentsFastPath(filters = buildDocumentFilters()) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1776,
+        "names": [
+          "buildDocumentFilters"
+        ],
+        "excerpt": "const nextFilters = filters ?? buildDocumentFilters();"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1779,
+        "names": [
+          "onRefreshDocuments"
+        ],
+        "excerpt": "if (!onRefreshDocuments) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1786,
+        "names": [
+          "onRefreshDocuments"
+        ],
+        "excerpt": "onRefreshDocuments(nextFilters),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1791,
+        "names": [
+          "getDocumentFiltersFromSearch"
+        ],
+        "excerpt": "const nextFilters = getDocumentFiltersFromSearch(location.search);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1797,
+        "names": [
+          "setFilterDocumentType"
+        ],
+        "excerpt": "setFilterDocumentType(nextFilters.document_type);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1876,
+        "names": [
+          "setEditingDocumentId"
+        ],
+        "excerpt": "setEditingDocumentId(\"\");"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1948,
+        "names": [
+          "createAdminDocument"
+        ],
+        "excerpt": "const created = await createAdminDocument(payload);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1952,
+        "names": [
+          "buildDocumentFilters",
+          "refreshDocumentsFastPath"
+        ],
+        "excerpt": "await refreshDocumentsFastPath(buildDocumentFilters());"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1954,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.createFailed));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 1963,
+        "names": [
+          "setEditingDocumentId"
+        ],
+        "excerpt": "setEditingDocumentId(documentItem.id);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2012,
+        "names": [
+          "updateAdminDocument"
+        ],
+        "excerpt": "const updated = await updateAdminDocument(documentId, payload);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2016,
+        "names": [
+          "buildDocumentFilters",
+          "refreshDocumentsFastPath"
+        ],
+        "excerpt": "await refreshDocumentsFastPath(buildDocumentFilters());"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2018,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.updateFailed));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2027,
+        "names": [
+          "setRevokingDocumentId"
+        ],
+        "excerpt": "setRevokingDocumentId(documentItem.id);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2032,
+        "names": [
+          "setRevokingDocumentId"
+        ],
+        "excerpt": "setRevokingDocumentId(\"\");"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2075,
+        "names": [
+          "updateAdminDocument"
+        ],
+        "excerpt": "const updated = await updateAdminDocument(documentItem.id, payload);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2078,
+        "names": [
+          "getDocumentStatusLabel"
+        ],
+        "excerpt": "`Статус документа ${updated.document_number} изменён: ${getDocumentStatusLabel(updated.status)}`"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2080,
+        "names": [
+          "buildDocumentFilters",
+          "refreshDocumentsFastPath"
+        ],
+        "excerpt": "await refreshDocumentsFastPath(buildDocumentFilters());"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2082,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.statusChangeFailed));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2099,
+        "names": [
+          "downloadAdminDocument"
+        ],
+        "excerpt": "await downloadAdminDocument(documentItem.id);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2101,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.downloadFailed));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2107,
+        "names": [
+          "handleRegenerateCompletionDocument"
+        ],
+        "excerpt": "async function handleRegenerateCompletionDocument(documentItem) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2108,
+        "names": [
+          "isGeneratedCompletionDocument"
+        ],
+        "excerpt": "if (!isGeneratedCompletionDocument(documentItem)) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2118,
+        "names": [
+          "regenerateAdminDocument"
+        ],
+        "excerpt": "const regenerated = await regenerateAdminDocument(documentItem.id);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2121,
+        "names": [
+          "buildDocumentFilters",
+          "refreshDocumentsFastPath"
+        ],
+        "excerpt": "await refreshDocumentsFastPath(buildDocumentFilters());"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2123,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "setError(formatDocumentApiError(err, \"Не удалось пересобрать итоговый PDF.\"));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2130,
+        "names": [
+          "isGeneratedCompletionDocument"
+        ],
+        "excerpt": "if (!isGeneratedCompletionDocument(documentItem)) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2139,
+        "names": [
+          "getAdminDocumentGenerationEvents"
+        ],
+        "excerpt": "const events = await getAdminDocumentGenerationEvents(documentItem.id, { limit: 20 });"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2141,
+        "names": [
+          "setGenerationEventsByDocumentId"
+        ],
+        "excerpt": "setGenerationEventsByDocumentId((current) => ({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2146,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "setError(formatDocumentApiError(err, \"Не удалось загрузить историю PDF-артефактов.\"));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2157,
+        "names": [
+          "downloadAdminDocumentGenerationEvent"
+        ],
+        "excerpt": "await downloadAdminDocumentGenerationEvent(documentItem.id, event.id);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2159,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "setError(formatDocumentApiError(err, \"Не удалось скачать выбранную версию PDF.\"));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2179,
+        "names": [
+          "deleteAdminDocument"
+        ],
+        "excerpt": "await deleteAdminDocument(documentItem.id);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2181,
+        "names": [
+          "editingDocumentId"
+        ],
+        "excerpt": "if (editingDocumentId === documentItem.id) {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2186,
+        "names": [
+          "buildDocumentFilters",
+          "refreshDocumentsFastPath"
+        ],
+        "excerpt": "await refreshDocumentsFastPath(buildDocumentFilters());"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2188,
+        "names": [
+          "formatDocumentApiError"
+        ],
+        "excerpt": "setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.deleteFailed));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2196,
+        "names": [
+          "buildDocumentFilters",
+          "navigateToDocumentFilters"
+        ],
+        "excerpt": "await navigateToDocumentFilters(buildDocumentFilters());"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2201,
+        "names": [
+          "buildDocumentFilters",
+          "navigateToDocumentFilters"
+        ],
+        "excerpt": "await navigateToDocumentFilters(buildDocumentFilters({ status: nextStatus }));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2206,
+        "names": [
+          "buildDocumentFilters",
+          "navigateToDocumentFilters"
+        ],
+        "excerpt": "await navigateToDocumentFilters(buildDocumentFilters({ enrollment_id: \"\" }), { replace: true });"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2211,
+        "names": [
+          "buildDocumentFilters",
+          "navigateToDocumentFilters"
+        ],
+        "excerpt": "await navigateToDocumentFilters(buildDocumentFilters({ action_required: \"\" }), { replace: true });"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2217,
+        "names": [
+          "buildDocumentFilters",
+          "navigateToDocumentFilters"
+        ],
+        "excerpt": "await navigateToDocumentFilters(buildDocumentFilters({ action_required: nextActionRequired }));"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2225,
+        "names": [
+          "setFilterDocumentType"
+        ],
+        "excerpt": "setFilterDocumentType(\"\");"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2228,
+        "names": [
+          "navigateToDocumentFilters"
+        ],
+        "excerpt": "await navigateToDocumentFilters({}, { replace: true });"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2231,
+        "names": [
+          "handleExportDocumentsCsv"
+        ],
+        "excerpt": "function handleExportDocumentsCsv() {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2232,
+        "names": [
+          "displayedDocuments"
+        ],
+        "excerpt": "const rows = displayedDocuments.map((documentItem) => {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2246,
+        "names": [
+          "buildDocumentVerificationPath"
+        ],
+        "excerpt": "? buildDocumentVerificationPath(verificationTarget)"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2249,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "? buildDocumentsPath({ enrollment_id: documentItem.enrollment_id })"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2251,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "? buildDocumentsPath({ user_id: documentItem.user_id })"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2263,
+        "names": [
+          "getDocumentStatusLabel"
+        ],
+        "excerpt": "getDocumentStatusLabel(documentItem.status),"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2265,
+        "names": [
+          "isGeneratedCompletionDocument"
+        ],
+        "excerpt": "generated_pdf: isGeneratedCompletionDocument(documentItem) ? \"yes\" : \"no\","
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2282,
+        "names": [
+          "isDocumentActionRequired"
+        ],
+        "excerpt": "action_required: isDocumentActionRequired(documentItem) ? \"yes\" : \"no\","
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2343,
+        "names": [
+          "LearnerDocumentsUXFoundationPanel"
+        ],
+        "excerpt": "<LearnerDocumentsUXFoundationPanel"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2349,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "getDocumentFilterPath={getDocumentFilterPath}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2353,
+        "names": [
+          "LearnerDocumentDownloadUXPanel"
+        ],
+        "excerpt": "<LearnerDocumentDownloadUXPanel"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2357,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "getDocumentFilterPath={getDocumentFilterPath}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2361,
+        "names": [
+          "AdminDocumentRegistryDiagnostics"
+        ],
+        "excerpt": "<AdminDocumentRegistryDiagnostics"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2362,
+        "names": [
+          "adminDocumentRegistryStats"
+        ],
+        "excerpt": "registryStats={adminDocumentRegistryStats}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2363,
+        "names": [
+          "adminDocumentRegistryDiagnostics"
+        ],
+        "excerpt": "diagnostics={adminDocumentRegistryDiagnostics}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2364,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "getDocumentFilterPath={getDocumentFilterPath}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2627,
+        "names": [
+          "activeDocumentFilterItems"
+        ],
+        "excerpt": "items={activeDocumentFilterItems}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2732,
+        "names": [
+          "filterDocumentType"
+        ],
+        "excerpt": "value={filterDocumentType}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2733,
+        "names": [
+          "setFilterDocumentType"
+        ],
+        "excerpt": "onChange={(event) => setFilterDocumentType(event.target.value)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2755,
+        "names": [
+          "displayedDocuments"
+        ],
+        "excerpt": "<span>Показано документов: {displayedDocuments.length}</span>"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2769,
+        "names": [
+          "displayedDocuments"
+        ],
+        "excerpt": "{\" \"}{displayedDocuments.length} из {documentStatusCounts.all || displayedDocuments.length}."
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2776,
+        "names": [
+          "handleExportDocumentsCsv"
+        ],
+        "excerpt": "onClick={handleExportDocumentsCsv}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2777,
+        "names": [
+          "displayedDocuments"
+        ],
+        "excerpt": "disabled={loading || displayedDocuments.length === 0}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2788,
+        "names": [
+          "displayedDocuments"
+        ],
+        "excerpt": ") : displayedDocuments.length === 0 ? ("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2809,
+        "names": [
+          "displayedDocuments"
+        ],
+        "excerpt": "{displayedDocuments.map((documentItem) => {"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2810,
+        "names": [
+          "editingDocumentId"
+        ],
+        "excerpt": "const isEditing = editingDocumentId === documentItem.id;"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2815,
+        "names": [
+          "generationEventsByDocumentId"
+        ],
+        "excerpt": "const generationEvents = generationEventsByDocumentId[documentItem.id] || [];"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2817,
+        "names": [
+          "generationEventsByDocumentId"
+        ],
+        "excerpt": "generationEventsByDocumentId,"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2824,
+        "names": [
+          "revokingDocumentId"
+        ],
+        "excerpt": "const isRevokingFormOpen = revokingDocumentId === documentItem.id;"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2827,
+        "names": [
+          "isGeneratedCompletionDocument"
+        ],
+        "excerpt": "const isGeneratedCompletion = isGeneratedCompletionDocument(documentItem);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2828,
+        "names": [
+          "canPublishGeneratedCompletionDocument"
+        ],
+        "excerpt": "const canPublishGeneratedCompletion = canPublishGeneratedCompletionDocument(documentItem);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2835,
+        "names": [
+          "buildDocumentVerificationPath"
+        ],
+        "excerpt": "? buildDocumentVerificationPath(verificationTarget)"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2839,
+        "names": [
+          "getDocumentActionRequiredHint"
+        ],
+        "excerpt": "const documentActionHint = getDocumentActionRequiredHint(documentItem);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2840,
+        "names": [
+          "getDocumentAttentionItems"
+        ],
+        "excerpt": "const documentAttentionItems = getDocumentAttentionItems(documentItem);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2841,
+        "names": [
+          "getDocumentAttentionTone"
+        ],
+        "excerpt": "const documentAttentionTone = getDocumentAttentionTone(documentItem);"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2850,
+        "names": [
+          "getDocumentStatusTone"
+        ],
+        "excerpt": "className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getDocumentStatusTone("
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2854,
+        "names": [
+          "getDocumentStatusLabel"
+        ],
+        "excerpt": "{getDocumentStatusLabel(documentItem.status)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2897,
+        "names": [
+          "getDocumentStatusLabel"
+        ],
+        "excerpt": "{getDocumentStatusLabel(documentItem.status)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2960,
+        "names": [
+          "getDocumentGenerationSourceLabel"
+        ],
+        "excerpt": "{getDocumentGenerationSourceLabel(documentItem.generation_source)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 2978,
+        "names": [
+          "getDocumentGenerationActorLabel"
+        ],
+        "excerpt": "{getDocumentGenerationActorLabel(documentItem)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 3045,
+        "names": [
+          "getDocumentGenerationSourceLabel"
+        ],
+        "excerpt": "{getDocumentGenerationSourceLabel(event.source)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 3051,
+        "names": [
+          "getDocumentGenerationEventActorLabel"
+        ],
+        "excerpt": "{getDocumentGenerationEventActorLabel(event)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 3128,
+        "names": [
+          "buildDocumentsPath"
+        ],
+        "excerpt": "to={buildDocumentsPath({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 3306,
+        "names": [
+          "DocumentVerificationQrBlock"
+        ],
+        "excerpt": "<DocumentVerificationQrBlock"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 3379,
+        "names": [
+          "getAdminDocumentDownloadLabel"
+        ],
+        "excerpt": "{isDownloadSaving ? \"Скачиваем...\" : getAdminDocumentDownloadLabel(documentItem)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 3386,
+        "names": [
+          "handleRegenerateCompletionDocument"
+        ],
+        "excerpt": "onClick={() => handleRegenerateCompletionDocument(documentItem)}"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 3396,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({"
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "line": 3411,
+        "names": [
+          "getDocumentFilterPath"
+        ],
+        "excerpt": "to={getDocumentFilterPath({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 3,
+        "names": [
+          "verifyPublicDocument"
+        ],
+        "excerpt": "import { verifyPublicDocument } from \"../api/client\";"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 4,
+        "names": [
+          "DocumentVerificationQrBlock"
+        ],
+        "excerpt": "import { DocumentVerificationQrBlock } from \"../components/documents/DocumentVerificationQrBlock\";"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 26,
+        "names": [
+          "verifyDocument"
+        ],
+        "excerpt": "verifyDocument: \"\\u041f\\u0440\\u043e\\u0432\\u0435\\u0440\\u043a\\u0430 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u0430\","
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 33,
+        "names": [
+          "enterDocumentQuery"
+        ],
+        "excerpt": "enterDocumentQuery: \"\\u0412\\u0432\\u0435\\u0434\\u0438\\u0442\\u0435 \\u043d\\u043e\\u043c\\u0435\\u0440 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u0430 \\u0438\\u043b\\u0438 \\u043a\\u043e\\u0434 \\u043f\\u0440\\u043e\\u0432\\u0435\\u"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 89,
+        "names": [
+          "getVerificationTone"
+        ],
+        "excerpt": "function getVerificationTone(result) {"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 122,
+        "names": [
+          "getPublicVerificationDiagnostics"
+        ],
+        "excerpt": "function getPublicVerificationDiagnostics({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 179,
+        "names": [
+          "getPublicVerificationSourceStats"
+        ],
+        "excerpt": "function getPublicVerificationSourceStats({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 211,
+        "names": [
+          "hasVerificationCode"
+        ],
+        "excerpt": "hasVerificationCode: Boolean(result?.verification_code),"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 212,
+        "names": [
+          "hasDocumentNumber"
+        ],
+        "excerpt": "hasDocumentNumber: Boolean(result?.document_number),"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 244,
+        "names": [
+          "openDocuments"
+        ],
+        "excerpt": "openDocuments: \"\\u041a \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u0430\\u043c\","
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 252,
+        "names": [
+          "getLearnerDocumentVerificationUXState"
+        ],
+        "excerpt": "function getLearnerDocumentVerificationUXState({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 305,
+        "names": [
+          "LearnerDocumentVerificationUXPanel"
+        ],
+        "excerpt": "function LearnerDocumentVerificationUXPanel({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 315,
+        "names": [
+          "getLearnerDocumentVerificationUXState"
+        ],
+        "excerpt": "const state = getLearnerDocumentVerificationUXState({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 418,
+        "names": [
+          "openDocuments"
+        ],
+        "excerpt": "{LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.openDocuments}"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 444,
+        "names": [
+          "PublicVerificationJourneyHint"
+        ],
+        "excerpt": "function PublicVerificationJourneyHint({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 563,
+        "names": [
+          "PublicVerificationQrOperationsPanel"
+        ],
+        "excerpt": "function PublicVerificationQrOperationsPanel({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 632,
+        "names": [
+          "hasDocumentNumber",
+          "hasVerificationCode"
+        ],
+        "excerpt": "{sourceStats.hasVerificationCode ? \"Код есть\" : sourceStats.hasDocumentNumber ? \"Номер есть\" : \"Нет данных\"}"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 691,
+        "names": [
+          "PublicVerificationDiagnostics"
+        ],
+        "excerpt": "function PublicVerificationDiagnostics({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 820,
+        "names": [
+          "getVerificationTone"
+        ],
+        "excerpt": "const tone = getVerificationTone(result);"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 885,
+        "names": [
+          "DocumentVerificationQrBlock"
+        ],
+        "excerpt": "<DocumentVerificationQrBlock"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 930,
+        "names": [
+          "VerifyDocumentPage"
+        ],
+        "excerpt": "export function VerifyDocumentPage({ onPageChange, initialCode = \"\" }) {"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 942,
+        "names": [
+          "getPublicVerificationDiagnostics"
+        ],
+        "excerpt": "getPublicVerificationDiagnostics({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 955,
+        "names": [
+          "getPublicVerificationSourceStats"
+        ],
+        "excerpt": "getPublicVerificationSourceStats({"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 966,
+        "names": [
+          "runVerification"
+        ],
+        "excerpt": "async function runVerification(rawValue, options = {}) {"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 970,
+        "names": [
+          "enterDocumentQuery"
+        ],
+        "excerpt": "setError(RU.enterDocumentQuery);"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 989,
+        "names": [
+          "verifyPublicDocument"
+        ],
+        "excerpt": "const response = await verifyPublicDocument(value);"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 1015,
+        "names": [
+          "runVerification"
+        ],
+        "excerpt": "runVerification(value, { updateUrl: false });"
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "line": 1021,
+        "names": [
+          "runVerification"
+        ],
+        "excerpt": "await runVerification(normalizedQuery);"
+      }
+    ]
+  },
+  "safety_notes": {
+    "sensitive_values_redacted": true,
+    "inventory_must_not_include_credentials": true,
+    "auth_rbac_runtime_not_changed": true,
+    "database_runtime_not_changed": true,
+    "access_control_runtime_not_changed": true
+  },
+  "recommendation": {
+    "next_stage": "80.2",
+    "runtime_change_allowed_now": false,
+    "database_migration_allowed_now": false,
+    "recommended_focus": "map existing backend document endpoints to learner UX requirements before adding runtime changes"
+  }
+}

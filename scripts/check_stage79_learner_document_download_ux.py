@@ -64,11 +64,12 @@ def require_manifest() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") not in {"79.5", "79.6"}:
+    if manifest.get("current_stage") not in {"79.5", "79.6", "80.1"}:
         fail("current_stage must be 79.5 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
     allowed_checkpoints = {
+        ("79.6", "4c5efe7"),
         ("79.4", "f1eacbe"),
         ("79.5", "89a9acf"),
     }
@@ -82,7 +83,7 @@ def require_manifest() -> None:
             fail(f"stage {stage_id} record is missing")
 
     stage79_5 = stages["79.5"]
-    if stage79_5.get("status") not in {"implementation_ready", "production_deployed"}:
+    if stage79_5.get("status") not in {"implementation_ready", "production_deployed", "80.1"}:
         fail("stage 79.5 status must be implementation_ready or production_deployed")
     if stage79_5.get("deployment_type") != "frontend-only":
         fail("stage 79.5 deployment_type must be frontend-only")
