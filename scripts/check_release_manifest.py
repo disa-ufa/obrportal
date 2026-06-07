@@ -28,8 +28,9 @@ REQUIRED_SAFETY_BOUNDARIES = {
     "preserve_server_only_untracked_paths",
 }
 
-REQUIRED_STAGE78_2_CHECKS = {
+REQUIRED_STAGE78_3_CHECKS = {
     "python .\\scripts\\check_release_manifest.py",
+    "python .\\scripts\\check_stage78_learner_lesson_content_preview_ux.py",
     "python .\\scripts\\check_stage78_learner_lesson_access_ux.py",
     "python .\\scripts\\check_stage78_learner_course_progress_foundation.py",
     "python .\\scripts\\check_stage77_course_builder_final_qa.py",
@@ -41,13 +42,13 @@ REQUIRED_STAGE78_2_CHECKS = {
     "docker compose exec frontend npm run build",
 }
 
-REQUIRED_STAGE78_2_CHANGED_FILES = {
+REQUIRED_STAGE78_3_CHANGED_FILES = {
     "frontend/src/pages/CourseDetailPage.jsx",
     "docs/release-manifest.json",
-    "docs/stage78-learner-lesson-access-ux.md",
+    "docs/stage78-learner-lesson-content-preview-ux.md",
     "scripts/check_release_manifest.py",
+    "scripts/check_stage78_learner_lesson_content_preview_ux.py",
     "scripts/check_stage78_learner_lesson_access_ux.py",
-    "scripts/check_stage78_learner_course_progress_foundation.py",
 }
 
 
@@ -82,8 +83,8 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest["process"] != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest["current_stage"] != "78.2":
-        fail("current_stage must be 78.2")
+    if manifest["current_stage"] != "78.3":
+        fail("current_stage must be 78.3")
 
     branch_policy = manifest["current_branch_policy"]
     if branch_policy.get("development_base") != "develop":
@@ -94,10 +95,10 @@ def main() -> None:
         fail("main_release_requires_separate_decision must be true")
 
     checkpoint = manifest["production_checkpoint"]
-    if checkpoint.get("last_confirmed_stage") != "78.1":
-        fail("last_confirmed_stage must be 78.1")
-    if checkpoint.get("last_confirmed_head") != "2903611":
-        fail("last_confirmed_head must be 2903611")
+    if checkpoint.get("last_confirmed_stage") != "78.2":
+        fail("last_confirmed_stage must be 78.2")
+    if checkpoint.get("last_confirmed_head") != "ad9167e":
+        fail("last_confirmed_head must be ad9167e")
     if checkpoint.get("last_confirmed_host") != "portal.rcdo02.ru":
         fail("last_confirmed_host must be portal.rcdo02.ru")
     if checkpoint.get("frontend_health") != "healthy":
@@ -116,43 +117,44 @@ def main() -> None:
         fail(f"missing safety boundaries: {sorted(missing_boundaries)}")
 
     stages = {stage.get("id"): stage for stage in manifest["stages"]}
-    for stage_id in ["77.6", "77.7", "78.1", "78.2"]:
+    for stage_id in ["77.6", "77.7", "78.1", "78.2", "78.3"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage78_1 = stages["78.1"]
-    if stage78_1.get("status") != "production_deployed":
-        fail("stage 78.1 status must be production_deployed")
-    if stage78_1.get("head") != "2903611":
-        fail("stage 78.1 head must be 2903611")
-    if stage78_1.get("deployment_type") != "frontend-only":
-        fail("stage 78.1 deployment_type must be frontend-only")
-
     stage78_2 = stages["78.2"]
-    if stage78_2.get("status") != "implementation_ready":
-        fail("stage 78.2 status must be implementation_ready")
-    if stage78_2.get("branch") != "stage78-learner-lesson-access-ux":
-        fail("stage 78.2 branch must be stage78-learner-lesson-access-ux")
-    if stage78_2.get("base") != "develop":
-        fail("stage 78.2 base must be develop")
+    if stage78_2.get("status") != "production_deployed":
+        fail("stage 78.2 status must be production_deployed")
+    if stage78_2.get("head") != "ad9167e":
+        fail("stage 78.2 head must be ad9167e")
     if stage78_2.get("deployment_type") != "frontend-only":
         fail("stage 78.2 deployment_type must be frontend-only")
-    if stage78_2.get("backend_runtime_changed_expected") is not False:
-        fail("stage 78.2 backend_runtime_changed_expected must be false")
-    if stage78_2.get("database_migration_expected") is not False:
-        fail("stage 78.2 database_migration_expected must be false")
 
-    missing_stage78_checks = REQUIRED_STAGE78_2_CHECKS - set(stage78_2.get("required_checks", []))
+    stage78_3 = stages["78.3"]
+    if stage78_3.get("status") != "implementation_ready":
+        fail("stage 78.3 status must be implementation_ready")
+    if stage78_3.get("branch") != "stage78-learner-lesson-content-preview-ux":
+        fail("stage 78.3 branch must be stage78-learner-lesson-content-preview-ux")
+    if stage78_3.get("base") != "develop":
+        fail("stage 78.3 base must be develop")
+    if stage78_3.get("deployment_type") != "frontend-only":
+        fail("stage 78.3 deployment_type must be frontend-only")
+    if stage78_3.get("backend_runtime_changed_expected") is not False:
+        fail("stage 78.3 backend_runtime_changed_expected must be false")
+    if stage78_3.get("database_migration_expected") is not False:
+        fail("stage 78.3 database_migration_expected must be false")
+
+    missing_stage78_checks = REQUIRED_STAGE78_3_CHECKS - set(stage78_3.get("required_checks", []))
     if missing_stage78_checks:
-        fail(f"stage 78.2 missing required checks: {sorted(missing_stage78_checks)}")
+        fail(f"stage 78.3 missing required checks: {sorted(missing_stage78_checks)}")
 
-    missing_changed_files = REQUIRED_STAGE78_2_CHANGED_FILES - set(stage78_2.get("changed_files", []))
+    missing_changed_files = REQUIRED_STAGE78_3_CHANGED_FILES - set(stage78_3.get("changed_files", []))
     if missing_changed_files:
-        fail(f"stage 78.2 missing changed files: {sorted(missing_changed_files)}")
+        fail(f"stage 78.3 missing changed files: {sorted(missing_changed_files)}")
 
-    for doc in stage78_2.get("required_documents", []):
+    for doc in stage78_3.get("required_documents", []):
         require_file_exists(doc)
 
+    require_file_exists("scripts/check_stage78_learner_lesson_content_preview_ux.py")
     require_file_exists("scripts/check_stage78_learner_lesson_access_ux.py")
     require_file_exists("scripts/check_stage78_learner_course_progress_foundation.py")
     require_file_exists("scripts/check_stage77_course_builder_final_qa.py")

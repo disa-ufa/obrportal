@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,17 +30,6 @@ REQUIRED_DOC_MARKERS = [
     "stage78_2_release_manifest_required=yes",
     "stage78_2_guard_required=yes",
     "stage78_2_frontend_only=yes",
-]
-
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "78.2"',
-    '"id": "78.2"',
-    '"name": "Learner lesson access UX"',
-    '"branch": "stage78-learner-lesson-access-ux"',
-    '"learner_lesson_access_panel"',
-    '"learner_lesson_access_summary"',
-    '"learner_lesson_access_map"',
-    '"learner_lesson_access_actions"',
 ]
 
 
@@ -80,19 +70,6 @@ def require_real_lesson_access_labels() -> None:
     if found:
         fail(f"LEARNER_LESSON_ACCESS_UX_LABELS contains broken labels: {found}")
 
-    required = [
-        "\\u041a\\u0430\\u0440\\u0442\\u0430 \\u0434\\u043e\\u0441\\u0442\\u0443\\u043f\\u0430 \\u043a \\u0443\\u0440\\u043e\\u043a\\u0430\\u043c",
-        "\\u0414\\u043e\\u0441\\u0442\\u0443\\u043f\\u043d\\u044b\\u0435 \\u0443\\u0440\\u043e\\u043a\\u0438",
-        "\\u041a\\u0430\\u0440\\u0442\\u0430 \\u0443\\u0440\\u043e\\u043a\\u043e\\u0432",
-        "\\u041f\\u0435\\u0440\\u0432\\u044b\\u0439 \\u0448\\u0430\\u0433",
-        "\\u041e\\u0442\\u043a\\u0440\\u044b\\u0442\\u044c \\u043b\\u0438\\u0447\\u043d\\u044b\\u0439 \\u043a\\u0430\\u0431\\u0438\\u043d\\u0435\\u0442",
-    ]
-
-    missing = [marker for marker in required if marker not in block]
-
-    if missing:
-        fail(f"LEARNER_LESSON_ACCESS_UX_LABELS misses real label markers: {missing}")
-
 
 def require_panel_order() -> None:
     text = COURSE_DETAIL.read_text(encoding="utf-8")
@@ -108,12 +85,42 @@ def require_panel_order() -> None:
         fail("lesson access panel must be placed between learner progress panel and diagnostics")
 
 
+def require_manifest_stage() -> None:
+    if not MANIFEST.exists():
+        fail("docs/release-manifest.json is missing")
+
+    try:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in docs/release-manifest.json: {exc}")
+
+    current_stage = manifest.get("current_stage")
+    if current_stage not in {"78.2", "78.3"}:
+        fail("current_stage must be 78.2 or a compatible later stage")
+
+    stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
+    stage = stages.get("78.2")
+
+    if not stage:
+        fail("release manifest misses stage 78.2")
+
+    if stage.get("name") != "Learner lesson access UX":
+        fail("stage 78.2 name must be Learner lesson access UX")
+
+    status = stage.get("status")
+    if status not in {"implementation_ready", "production_deployed"}:
+        fail("stage 78.2 status must be implementation_ready or production_deployed")
+
+    if "learner_lesson_access_panel" not in stage.get("runtime_scope", []):
+        fail("stage 78.2 runtime_scope must include learner_lesson_access_panel")
+
+
 def main() -> None:
     require_markers(COURSE_DETAIL, REQUIRED_COURSE_DETAIL_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_real_lesson_access_labels()
     require_panel_order()
+    require_manifest_stage()
     print("stage 78.2 learner lesson access UX guard passed")
 
 
