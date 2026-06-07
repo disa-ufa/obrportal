@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "77.6",
+  "current_stage": "77.7",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "77.5",
-    "last_confirmed_head": "ee6983b",
+    "last_confirmed_stage": "77.6",
+    "last_confirmed_head": "0bd101a",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -617,8 +617,8 @@
     {
       "id": "77.6",
       "name": "Course publication UX",
-      "status": "implementation_ready",
-      "branch": "stage77-course-publication-ux",
+      "status": "production_deployed",
+      "branch": "develop",
       "base": "develop",
       "deployment_type": "frontend-only",
       "runtime_scope": [
@@ -670,6 +670,79 @@
       ],
       "safety_notes": [
         "frontend_only",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes"
+      ],
+      "head": "0bd101a",
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "production_evidence": {
+        "frontend_health": "healthy",
+        "backend_health": "ok",
+        "ready_status": "ok",
+        "stage77_6_admin_bundle_found": true
+      }
+    },
+    {
+      "id": "77.7",
+      "name": "Course builder final QA",
+      "status": "implementation_ready",
+      "branch": "stage77-course-builder-final-qa",
+      "base": "develop",
+      "deployment_type": "repository-qa",
+      "runtime_scope": [
+        "course_builder_documentation",
+        "course_builder_stage_guards",
+        "course_builder_block_order_qa",
+        "course_builder_final_customer_summary"
+      ],
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "frontend_runtime_changed_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage77-course-builder-final-qa.md",
+        "docs/course-builder-final-qa-summary.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage77_course_builder_final_qa.py",
+        "python .\\scripts\\check_stage77_course_publication_ux.py",
+        "python .\\scripts\\check_stage77_lesson_content_preview_ux.py",
+        "python .\\scripts\\check_stage77_lesson_editor_ux.py",
+        "python .\\scripts\\check_stage77_course_builder_module_lesson_ux.py",
+        "python .\\scripts\\check_stage77_course_builder_card_ux.py",
+        "python .\\scripts\\check_stage77_course_builder_readiness.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_frontend_admin_pages.py",
+        "python .\\scripts\\smoke_frontend_hooks_layout.py",
+        "docker compose exec frontend npm run build"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage77-course-builder-final-qa.md",
+        "docs/course-builder-final-qa-summary.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage77_course_builder_final_qa.py",
+        "scripts/check_stage77_course_publication_ux.py"
+      ],
+      "acceptance_markers": [
+        "course_builder_stage_77_1_ready",
+        "course_builder_stage_77_2_ready",
+        "course_builder_stage_77_3_ready",
+        "course_builder_stage_77_4_ready",
+        "course_builder_stage_77_5_ready",
+        "course_builder_stage_77_6_ready",
+        "course_builder_customer_summary_ready",
+        "course_builder_order_guard_ready"
+      ],
+      "safety_notes": [
+        "repository_qa_only",
+        "no_frontend_runtime_changes",
         "no_backend_runtime_changes",
         "no_database_migrations",
         "no_auth_or_rbac_changes"
