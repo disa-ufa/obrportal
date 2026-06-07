@@ -32,17 +32,6 @@ REQUIRED_DOC_MARKERS = [
     "stage78_8_migrations_added=no",
 ]
 
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "78.8"',
-    '"id": "78.8"',
-    '"name": "Learner document handoff UX"',
-    '"branch": "stage78-learner-document-handoff-ux"',
-    '"deployment_type": "frontend-only"',
-    '"frontend_runtime_changed_expected": true',
-    '"backend_runtime_changed_expected": false',
-    '"database_migration_expected": false',
-]
-
 
 def fail(message: str) -> None:
     raise SystemExit(f"stage 78.8 learner document handoff UX guard failed: {message}")
@@ -67,14 +56,16 @@ def require_manifest_stage() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "78.8":
-        fail("current_stage must be 78.8")
+    if manifest.get("current_stage") not in {"78.8", "78.9"}:
+        fail("current_stage must be 78.8 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "78.7":
-        fail("last confirmed runtime production stage must be 78.7")
-    if checkpoint.get("last_confirmed_head") != "44910ab":
-        fail("last confirmed runtime production head must be 44910ab")
+    allowed_checkpoints = {
+        ("78.7", "44910ab"),
+        ("78.8", "2f56902"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 78.7/44910ab or compatible later stage 78.8/2f56902")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
     stage = stages.get("78.8")
@@ -93,7 +84,6 @@ def require_manifest_stage() -> None:
 def main() -> None:
     require_markers(COURSE_DETAIL, REQUIRED_COURSE_DETAIL_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_manifest_stage()
     print("stage 78.8 learner document handoff UX guard passed")
 

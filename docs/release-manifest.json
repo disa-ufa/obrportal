@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "78.8",
+  "current_stage": "78.9",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "78.7",
-    "last_confirmed_head": "44910ab",
+    "last_confirmed_stage": "78.8",
+    "last_confirmed_head": "2f56902",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -1244,8 +1244,8 @@
     {
       "id": "78.8",
       "name": "Learner document handoff UX",
-      "status": "implementation_ready",
-      "branch": "stage78-learner-document-handoff-ux",
+      "status": "production_deployed",
+      "branch": "develop",
       "base": "develop",
       "deployment_type": "frontend-only",
       "runtime_scope": [
@@ -1312,6 +1312,85 @@
         "no_backend_runtime_changes",
         "no_database_migrations",
         "no_auth_or_rbac_changes"
+      ],
+      "head": "2f56902",
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "78.9",
+      "name": "Learner progress final QA",
+      "status": "implementation_ready",
+      "branch": "stage78-learner-progress-final-qa",
+      "base": "develop",
+      "deployment_type": "docs-and-qa-only",
+      "runtime_scope": [
+        "learner_progress_stage_78_final_qa",
+        "release_manifest_validation",
+        "stage_guard_compatibility",
+        "production_checkpoint_confirmation",
+        "learner_flow_documentation"
+      ],
+      "frontend_runtime_changed_expected": false,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage78-learner-progress-final-qa.md",
+        "docs/learner-progress-final-qa-summary.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage78_learner_progress_final_qa.py",
+        "python .\\scripts\\check_stage78_learner_document_handoff_ux.py",
+        "python .\\scripts\\check_stage78_learner_course_completion_api_integration.py",
+        "python .\\scripts\\check_stage78_learner_lesson_completion_api_integration.py",
+        "python .\\scripts\\check_stage78_learner_progress_api_inventory.py",
+        "python .\\scripts\\check_stage78_learner_completion_action_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_content_preview_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_access_ux.py",
+        "python .\\scripts\\check_stage78_learner_course_progress_foundation.py",
+        "python .\\scripts\\check_stage77_course_builder_final_qa.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_public_pages.py",
+        "python .\\scripts\\smoke_frontend_hooks_layout.py",
+        "docker compose exec frontend npm run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage78-learner-progress-final-qa.md",
+        "docs/learner-progress-final-qa-summary.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage78_learner_progress_final_qa.py",
+        "scripts/check_stage78_learner_document_handoff_ux.py",
+        "scripts/check_stage78_learner_course_completion_api_integration.py",
+        "scripts/check_stage78_learner_lesson_completion_api_integration.py",
+        "scripts/check_stage78_learner_progress_api_inventory.py",
+        "scripts/check_stage78_learner_completion_action_ux.py",
+        "scripts/check_stage78_learner_lesson_content_preview_ux.py",
+        "scripts/check_stage78_learner_lesson_access_ux.py",
+        "scripts/check_stage78_learner_course_progress_foundation.py",
+        "scripts/check_stage77_course_builder_final_qa.py"
+      ],
+      "acceptance_markers": [
+        "Stage 78.9 - Learner progress final QA",
+        "learner_progress_final_qa_status=implementation_ready",
+        "stage78_final_flow_closed=yes",
+        "stage78_runtime_changes=no",
+        "stage78_database_changes=no"
+      ],
+      "safety_notes": [
+        "docs_and_qa_only",
+        "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes",
+        "production_checkpoint_is_78_8"
       ]
     }
   ]
