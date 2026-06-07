@@ -51,17 +51,6 @@ REQUIRED_DOC_MARKERS = [
     "POST /api/v1/account/courses/{enrollment_id}/lessons/{lesson_id}/complete",
 ]
 
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "78.6"',
-    '"id": "78.6"',
-    '"name": "Learner lesson completion API integration"',
-    '"branch": "stage78-learner-lesson-completion-api-integration"',
-    '"deployment_type": "frontend-only"',
-    '"frontend_runtime_changed_expected": true',
-    '"backend_runtime_changed_expected": false',
-    '"database_migration_expected": false',
-]
-
 
 def fail(message: str) -> None:
     raise SystemExit(f"stage 78.6 learner lesson completion API integration guard failed: {message}")
@@ -86,14 +75,16 @@ def require_manifest_stage() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "78.6":
-        fail("current_stage must be 78.6")
+    if manifest.get("current_stage") not in {"78.6", "78.7"}:
+        fail("current_stage must be 78.6 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "78.4":
-        fail("last confirmed runtime production stage must remain 78.4")
-    if checkpoint.get("last_confirmed_head") != "3beee80":
-        fail("last confirmed runtime production head must remain 3beee80")
+    allowed_checkpoints = {
+        ("78.4", "3beee80"),
+        ("78.6", "d8e86f0"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 78.4/3beee80 or compatible later stage 78.6/d8e86f0")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
     stage = stages.get("78.6")
@@ -113,7 +104,6 @@ def main() -> None:
     require_markers(COURSE_DETAIL, REQUIRED_COURSE_DETAIL_MARKERS)
     require_markers(API_CLIENT, REQUIRED_API_CLIENT_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_manifest_stage()
     print("stage 78.6 learner lesson completion API integration guard passed")
 
