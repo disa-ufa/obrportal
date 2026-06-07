@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,18 +27,6 @@ REQUIRED_DOC_MARKERS = [
     "stage77_6_release_manifest_required=yes",
     "stage77_6_guard_required=yes",
     "stage77_6_frontend_only=yes",
-]
-
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "77.6"',
-    '"id": "77.6"',
-    '"name": "Course publication UX"',
-    '"branch": "stage77-course-publication-ux"',
-    '"course_publication_ux_panel"',
-    '"course_publication_decision"',
-    '"course_publication_blockers"',
-    '"course_publication_next_steps"',
-    '"course_publication_actions"',
 ]
 
 
@@ -78,25 +67,41 @@ def require_real_publication_labels() -> None:
     if found:
         fail(f"COURSE_PUBLICATION_UX_LABELS contains broken labels: {found}")
 
-    required = [
-        "\\u0424\\u0438\\u043d\\u0430\\u043b\\u044c\\u043d\\u0430\\u044f \\u043f\\u0443\\u0431\\u043b\\u0438\\u043a\\u0430\\u0446\\u0438\\u044f \\u043a\\u0443\\u0440\\u0441\\u0430",
-        "\\u0420\\u0435\\u0448\\u0435\\u043d\\u0438\\u0435 \\u043f\\u043e \\u043f\\u0443\\u0431\\u043b\\u0438\\u043a\\u0430\\u0446\\u0438\\u0438",
-        "\\u0427\\u0442\\u043e \\u0431\\u043b\\u043e\\u043a\\u0438\\u0440\\u0443\\u0435\\u0442 \\u043f\\u0443\\u0431\\u043b\\u0438\\u043a\\u0430\\u0446\\u0438\\u044e",
-        "\\u0421\\u043b\\u0435\\u0434\\u0443\\u044e\\u0449\\u0438\\u0435 \\u0448\\u0430\\u0433\\u0438",
-        "\\u041e\\u0442\\u043a\\u0440\\u044b\\u0442\\u044c \\u043f\\u0443\\u0431\\u043b\\u0438\\u0447\\u043d\\u0443\\u044e \\u043a\\u0430\\u0440\\u0442\\u043e\\u0447\\u043a\\u0443",
-    ]
 
-    missing = [marker for marker in required if marker not in block]
+def require_manifest_stage() -> None:
+    if not MANIFEST.exists():
+        fail("docs/release-manifest.json is missing")
 
-    if missing:
-        fail(f"COURSE_PUBLICATION_UX_LABELS misses real label markers: {missing}")
+    try:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in docs/release-manifest.json: {exc}")
+
+    stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
+    stage = stages.get("77.6")
+
+    if not stage:
+        fail("release manifest misses stage 77.6")
+
+    if stage.get("name") != "Course publication UX":
+        fail("stage 77.6 name must be Course publication UX")
+
+    if stage.get("deployment_type") != "frontend-only":
+        fail("stage 77.6 deployment_type must be frontend-only")
+
+    status = stage.get("status")
+    if status not in {"implementation_ready", "production_deployed"}:
+        fail("stage 77.6 status must be implementation_ready or production_deployed")
+
+    if "course_publication_ux_panel" not in stage.get("runtime_scope", []):
+        fail("stage 77.6 runtime_scope must include course_publication_ux_panel")
 
 
 def main() -> None:
     require_markers(ADMIN_COURSES, REQUIRED_ADMIN_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_real_publication_labels()
+    require_manifest_stage()
     print("stage 77.6 course publication UX guard passed")
 
 

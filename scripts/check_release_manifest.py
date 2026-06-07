@@ -28,8 +28,9 @@ REQUIRED_SAFETY_BOUNDARIES = {
     "preserve_server_only_untracked_paths",
 }
 
-REQUIRED_STAGE77_6_CHECKS = {
+REQUIRED_STAGE77_7_CHECKS = {
     "python .\\scripts\\check_release_manifest.py",
+    "python .\\scripts\\check_stage77_course_builder_final_qa.py",
     "python .\\scripts\\check_stage77_course_publication_ux.py",
     "python .\\scripts\\check_stage77_lesson_content_preview_ux.py",
     "python .\\scripts\\check_stage77_lesson_editor_ux.py",
@@ -44,13 +45,13 @@ REQUIRED_STAGE77_6_CHECKS = {
     "docker compose exec frontend npm run build",
 }
 
-REQUIRED_STAGE77_6_CHANGED_FILES = {
-    "frontend/src/pages/AdminCoursesPage.jsx",
+REQUIRED_STAGE77_7_CHANGED_FILES = {
     "docs/release-manifest.json",
-    "docs/stage77-course-publication-ux.md",
+    "docs/stage77-course-builder-final-qa.md",
+    "docs/course-builder-final-qa-summary.md",
     "scripts/check_release_manifest.py",
+    "scripts/check_stage77_course_builder_final_qa.py",
     "scripts/check_stage77_course_publication_ux.py",
-    "scripts/check_stage77_lesson_content_preview_ux.py",
 }
 
 
@@ -85,8 +86,8 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest["process"] != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest["current_stage"] != "77.6":
-        fail("current_stage must be 77.6")
+    if manifest["current_stage"] != "77.7":
+        fail("current_stage must be 77.7")
 
     branch_policy = manifest["current_branch_policy"]
     if branch_policy.get("development_base") != "develop":
@@ -97,10 +98,10 @@ def main() -> None:
         fail("main_release_requires_separate_decision must be true")
 
     checkpoint = manifest["production_checkpoint"]
-    if checkpoint.get("last_confirmed_stage") != "77.5":
-        fail("last_confirmed_stage must be 77.5")
-    if checkpoint.get("last_confirmed_head") != "ee6983b":
-        fail("last_confirmed_head must be ee6983b")
+    if checkpoint.get("last_confirmed_stage") != "77.6":
+        fail("last_confirmed_stage must be 77.6")
+    if checkpoint.get("last_confirmed_head") != "0bd101a":
+        fail("last_confirmed_head must be 0bd101a")
     if checkpoint.get("last_confirmed_host") != "portal.rcdo02.ru":
         fail("last_confirmed_host must be portal.rcdo02.ru")
     if checkpoint.get("frontend_health") != "healthy":
@@ -119,47 +120,50 @@ def main() -> None:
         fail(f"missing safety boundaries: {sorted(missing_boundaries)}")
 
     stages = {stage.get("id"): stage for stage in manifest["stages"]}
-    for stage_id in ["74", "75", "75.1", "75.2", "76", "77.1", "77.2", "77.3", "77.4", "77.5", "77.6"]:
+    for stage_id in ["74", "75", "75.1", "75.2", "76", "77.1", "77.2", "77.3", "77.4", "77.5", "77.6", "77.7"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage77_5 = stages["77.5"]
-    if stage77_5.get("status") != "production_deployed":
-        fail("stage 77.5 status must be production_deployed")
-    if stage77_5.get("head") != "ee6983b":
-        fail("stage 77.5 head must be ee6983b")
-    if stage77_5.get("deployment_type") != "frontend-only":
-        fail("stage 77.5 deployment_type must be frontend-only")
-    if stage77_5.get("backend_runtime_changed") is not False:
-        fail("stage 77.5 backend_runtime_changed must be false")
-    if stage77_5.get("database_migration_run") is not False:
-        fail("stage 77.5 database_migration_run must be false")
-
     stage77_6 = stages["77.6"]
-    if stage77_6.get("status") != "implementation_ready":
-        fail("stage 77.6 status must be implementation_ready")
-    if stage77_6.get("branch") != "stage77-course-publication-ux":
-        fail("stage 77.6 branch must be stage77-course-publication-ux")
-    if stage77_6.get("base") != "develop":
-        fail("stage 77.6 base must be develop")
+    if stage77_6.get("status") != "production_deployed":
+        fail("stage 77.6 status must be production_deployed")
+    if stage77_6.get("head") != "0bd101a":
+        fail("stage 77.6 head must be 0bd101a")
     if stage77_6.get("deployment_type") != "frontend-only":
         fail("stage 77.6 deployment_type must be frontend-only")
-    if stage77_6.get("backend_runtime_changed_expected") is not False:
-        fail("stage 77.6 backend_runtime_changed_expected must be false")
-    if stage77_6.get("database_migration_expected") is not False:
-        fail("stage 77.6 database_migration_expected must be false")
+    if stage77_6.get("backend_runtime_changed") is not False:
+        fail("stage 77.6 backend_runtime_changed must be false")
+    if stage77_6.get("database_migration_run") is not False:
+        fail("stage 77.6 database_migration_run must be false")
 
-    missing_stage77_checks = REQUIRED_STAGE77_6_CHECKS - set(stage77_6.get("required_checks", []))
+    stage77_7 = stages["77.7"]
+    if stage77_7.get("status") != "implementation_ready":
+        fail("stage 77.7 status must be implementation_ready")
+    if stage77_7.get("branch") != "stage77-course-builder-final-qa":
+        fail("stage 77.7 branch must be stage77-course-builder-final-qa")
+    if stage77_7.get("base") != "develop":
+        fail("stage 77.7 base must be develop")
+    if stage77_7.get("deployment_type") != "repository-qa":
+        fail("stage 77.7 deployment_type must be repository-qa")
+    if stage77_7.get("frontend_runtime_changed_expected") is not False:
+        fail("stage 77.7 frontend_runtime_changed_expected must be false")
+    if stage77_7.get("backend_runtime_changed_expected") is not False:
+        fail("stage 77.7 backend_runtime_changed_expected must be false")
+    if stage77_7.get("database_migration_expected") is not False:
+        fail("stage 77.7 database_migration_expected must be false")
+
+    missing_stage77_checks = REQUIRED_STAGE77_7_CHECKS - set(stage77_7.get("required_checks", []))
     if missing_stage77_checks:
-        fail(f"stage 77.6 missing required checks: {sorted(missing_stage77_checks)}")
+        fail(f"stage 77.7 missing required checks: {sorted(missing_stage77_checks)}")
 
-    missing_changed_files = REQUIRED_STAGE77_6_CHANGED_FILES - set(stage77_6.get("changed_files", []))
+    missing_changed_files = REQUIRED_STAGE77_7_CHANGED_FILES - set(stage77_7.get("changed_files", []))
     if missing_changed_files:
-        fail(f"stage 77.6 missing changed files: {sorted(missing_changed_files)}")
+        fail(f"stage 77.7 missing changed files: {sorted(missing_changed_files)}")
 
-    for doc in stage77_6.get("required_documents", []):
+    for doc in stage77_7.get("required_documents", []):
         require_file_exists(doc)
 
+    require_file_exists("scripts/check_stage77_course_builder_final_qa.py")
     require_file_exists("scripts/check_stage77_course_publication_ux.py")
     require_file_exists("scripts/check_stage77_lesson_content_preview_ux.py")
     require_file_exists("scripts/check_stage77_lesson_editor_ux.py")
