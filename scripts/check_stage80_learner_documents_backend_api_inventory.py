@@ -38,10 +38,10 @@ REQUIRED_STAGE_DOC_MARKERS = [
 ]
 
 REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "80.1"',
     '"id": "80.1"',
     '"name": "Learner documents backend/API inventory"',
-    '"branch": "stage80-learner-documents-backend-api-inventory"',
+    '"status": "production_confirmed"',
+    '"head": "a6eeef7"',
     '"deployment_type": "docs-and-qa-only"',
     '"frontend_runtime_changed_expected": false',
     '"backend_runtime_changed_expected": false',
