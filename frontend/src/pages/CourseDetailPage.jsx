@@ -815,6 +815,279 @@ function CourseLearnerLessonAccessPanel({
   );
 }
 
+
+const LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS = {
+  stage: "Stage 78.3 \u00b7 Learner Lesson Content Preview UX",
+  title: "\u041f\u0440\u0435\u0432\u044c\u044e \u0441\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0433\u043e \u0443\u0440\u043e\u043a\u043e\u0432",
+  subtitle:
+    "\u0411\u043b\u043e\u043a \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044e, \u043a\u0430\u043a\u043e\u0439 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u0435\u0433\u043e \u0436\u0434\u0451\u0442 \u0432 \u0443\u0440\u043e\u043a\u0430\u0445: \u0442\u0435\u043a\u0441\u0442, \u0441\u0441\u044b\u043b\u043a\u0430, \u0432\u0438\u0434\u0435\u043e, \u0444\u0430\u0439\u043b \u0438\u043b\u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u0435.",
+  availablePreview: "\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e\u0435 \u043f\u0440\u0435\u0432\u044c\u044e",
+  previewLocked: "\u041f\u0440\u0435\u0432\u044c\u044e \u0437\u0430\u043a\u0440\u044b\u0442\u043e",
+  previewEmpty: "\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043f\u0440\u0435\u0432\u044c\u044e",
+  firstAvailable: "\u041f\u0435\u0440\u0432\u044b\u0439 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0439 \u0443\u0440\u043e\u043a",
+  previewType: "\u0422\u0438\u043f \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430",
+  learnerAction: "\u0427\u0442\u043e \u0441\u0434\u0435\u043b\u0430\u0442\u044c",
+  contentPreview: "\u041f\u0440\u0435\u0432\u044c\u044e \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430",
+  required: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439",
+  optional: "\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0439",
+  textMaterial: "\u0422\u0435\u043a\u0441\u0442\u043e\u0432\u044b\u0439 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+  urlMaterial: "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u043f\u043e URL",
+  assignmentMaterial: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435",
+  openMaterial: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+  openAccount: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442",
+  enroll: "\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f",
+  openCatalog: "\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433",
+  loginRequired: "\u0412\u043e\u0439\u0434\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u0432\u0438\u0434\u0435\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b \u0443\u0440\u043e\u043a\u043e\u0432.",
+  enrollRequired: "\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441, \u0447\u0442\u043e\u0431\u044b \u0432\u0438\u0434\u0435\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b \u0443\u0440\u043e\u043a\u043e\u0432.",
+  studyText: "\u0418\u0437\u0443\u0447\u0438\u0442\u0435 \u0442\u0435\u043a\u0441\u0442 \u0438 \u043f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043a \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0435\u043c\u0443 \u0443\u0440\u043e\u043a\u0443.",
+  openUrl: "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u043f\u043e \u0441\u0441\u044b\u043b\u043a\u0435 \u0438 \u0432\u0435\u0440\u043d\u0438\u0442\u0435\u0441\u044c \u043a \u043a\u0443\u0440\u0441\u0443.",
+  completeAssignment: "\u0418\u0437\u0443\u0447\u0438\u0442\u0435 \u0443\u0441\u043b\u043e\u0432\u0438\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u044c\u0442\u0435 \u043e\u0442\u0432\u0435\u0442.",
+  noContent: "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u0443\u0440\u043e\u043a\u0430 \u0435\u0449\u0451 \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d.",
+  noLessons: "\u0412 \u043a\u0443\u0440\u0441\u0435 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0443\u0440\u043e\u043a\u043e\u0432.",
+};
+
+function getLearnerLessonContentPreviewSummary(value, maxLength = 260) {
+  const text = `${value || ""}`.trim();
+
+  if (!text) {
+    return "";
+  }
+
+  return text.length > maxLength ? `${text.slice(0, maxLength).trim()}...` : text;
+}
+
+function getLearnerLessonContentPreviewUrlHost(url) {
+  const value = `${url || ""}`.trim();
+
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const normalized = value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
+    return new URL(normalized).host;
+  } catch {
+    return value;
+  }
+}
+
+function getLearnerLessonContentPreviewType(contentType) {
+  const normalized = `${contentType || "text"}`.toLowerCase();
+
+  if (["video", "file", "link"].includes(normalized)) {
+    return LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.urlMaterial;
+  }
+
+  if (normalized === "assignment") {
+    return LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.assignmentMaterial;
+  }
+
+  return LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.textMaterial;
+}
+
+function getLearnerLessonContentPreviewAction(contentType) {
+  const normalized = `${contentType || "text"}`.toLowerCase();
+
+  if (["video", "file", "link"].includes(normalized)) {
+    return LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.openUrl;
+  }
+
+  if (normalized === "assignment") {
+    return LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.completeAssignment;
+  }
+
+  return LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.studyText;
+}
+
+function getLearnerLessonContentPreviewFacts(course, existingEnrollment, user) {
+  const accessFacts = getLearnerLessonAccessFacts(course, existingEnrollment, user);
+  const lesson =
+    accessFacts.firstAvailableLesson ||
+    accessFacts.lessons.find((item) => item.active) ||
+    accessFacts.lessons[0] ||
+    null;
+
+  if (!lesson) {
+    return {
+      mode: accessFacts.mode,
+      lesson: null,
+      locked: !accessFacts.mode.canOpenLessons,
+      ready: false,
+      previewType: "",
+      previewText: LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.noLessons,
+      url: "",
+      urlHost: "",
+      action: accessFacts.mode.label,
+    };
+  }
+
+  const contentType = `${lesson.content_type || "text"}`.toLowerCase();
+  const locked = !accessFacts.mode.canOpenLessons || !lesson.active;
+  const url = `${lesson.content_url || ""}`.trim();
+  const text = `${lesson.content_text || ""}`.trim();
+  const description = `${lesson.description || ""}`.trim();
+
+  const previewText =
+    contentType === "assignment"
+      ? getLearnerLessonContentPreviewSummary(description || text)
+      : ["video", "file", "link"].includes(contentType)
+        ? getLearnerLessonContentPreviewUrlHost(url) || getLearnerLessonContentPreviewSummary(description)
+        : getLearnerLessonContentPreviewSummary(text || description);
+
+  return {
+    mode: accessFacts.mode,
+    lesson,
+    locked,
+    ready: Boolean(previewText),
+    previewType: getLearnerLessonContentPreviewType(contentType),
+    previewText: previewText || LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.noContent,
+    url,
+    urlHost: getLearnerLessonContentPreviewUrlHost(url),
+    action: locked ? accessFacts.mode.label : getLearnerLessonContentPreviewAction(contentType),
+  };
+}
+
+function CourseLearnerLessonContentPreviewPanel({
+  course,
+  existingEnrollment,
+  user,
+  onPrimaryAction,
+  onPageChange,
+}) {
+  const facts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user);
+  const lesson = facts.lesson;
+
+  return (
+    <section
+      data-testid="learner-lesson-content-preview-panel"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.stage}
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.title}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <span
+          data-testid="learner-lesson-content-preview-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
+            !lesson
+              ? "bg-slate-100 text-slate-600 ring-slate-200"
+              : facts.locked
+                ? "bg-amber-50 text-amber-800 ring-amber-200"
+                : facts.ready
+                  ? "bg-green-50 text-green-700 ring-green-200"
+                  : "bg-red-50 text-red-700 ring-red-200"
+          }`}
+        >
+          {!lesson
+            ? LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.previewEmpty
+            : facts.locked
+              ? LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.previewLocked
+              : facts.ready
+                ? LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.availablePreview
+                : LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.previewEmpty}
+        </span>
+      </div>
+
+      <div
+        data-testid="learner-lesson-content-preview-summary"
+        className="mt-5 grid gap-3 md:grid-cols-3"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.firstAvailable}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {lesson?.title || LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.noLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.previewType}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {facts.previewType || "-"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.learnerAction}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {facts.action}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="learner-lesson-content-preview-body"
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          facts.locked
+            ? "bg-amber-50 text-amber-900 ring-amber-200"
+            : "bg-slate-50 text-slate-700 ring-slate-200"
+        }`}
+      >
+        <div className="font-semibold text-slate-900">
+          {LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.contentPreview}
+        </div>
+
+        <p className="mt-2">
+          {facts.locked
+            ? user
+              ? LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.enrollRequired
+              : LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.loginRequired
+            : facts.previewText}
+        </p>
+
+        {!facts.locked && facts.url ? (
+          <a
+            data-testid="learner-lesson-content-preview-open-link"
+            href={facts.url.startsWith("http://") || facts.url.startsWith("https://") ? facts.url : `https://${facts.url}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.openMaterial}
+          </a>
+        ) : null}
+      </div>
+
+      <div
+        data-testid="learner-lesson-content-preview-actions"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        <button
+          type="button"
+          onClick={onPrimaryAction}
+          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          {facts.locked
+            ? LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.enroll
+            : LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.openAccount}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("catalog")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.openCatalog}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function getCourseDetailDiagnostics({
   course,
   existingEnrollment,
@@ -1577,6 +1850,14 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       />
 
       <CourseLearnerLessonAccessPanel
+        course={course}
+        existingEnrollment={existingEnrollment}
+        user={user}
+        onPrimaryAction={handleEnroll}
+        onPageChange={onPageChange}
+      />
+
+      <CourseLearnerLessonContentPreviewPanel
         course={course}
         existingEnrollment={existingEnrollment}
         user={user}
