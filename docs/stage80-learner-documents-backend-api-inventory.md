@@ -35,7 +35,7 @@ The next implementation stage should use this inventory to decide:
 
 1. Which backend endpoint is the source of truth for learner-visible documents.
 2. Which fields represent file availability, download URL, document number, verification code, course link, and enrollment link.
-3. Whether learner access is protected by object-level authorization.
+3. Whether learner access is protected by object-level access control.
 4. Whether public verification leaks only safe document information.
 5. Whether additional backend changes require migrations or can be implemented using the existing schema.
 

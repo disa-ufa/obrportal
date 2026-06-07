@@ -57,7 +57,7 @@ REQUIRED_INVENTORY_KEYS = [
     "production_checkpoint",
     "backend",
     "frontend",
-    "security_notes",
+    "safety_notes",
     "recommendation",
 ]
 

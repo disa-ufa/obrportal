@@ -974,7 +974,7 @@
         "file": "backend/app/core/security.py",
         "line": 15,
         "kind": "def",
-        "name": "verify_password"
+        "name": "verify_credential"
       },
       {
         "file": "backend/app/db/seed_demo_learning.py",
@@ -1412,7 +1412,7 @@
         "file": "backend/app/tests/test_account_course_detail_api.py",
         "line": 202,
         "kind": "def",
-        "name": "test_account_course_detail_rejects_foreign_enrollment_and_missing_token"
+        "name": "test_account_course_detail_rejects_foreign_enrollment_and_missing_credential"
       },
       {
         "file": "backend/app/tests/test_account_lesson_progress_api.py",
@@ -1514,7 +1514,7 @@
         "file": "backend/app/tests/test_auth_rbac_admin_api.py",
         "line": 2891,
         "kind": "def",
-        "name": "test_account_courses_without_token_returns_401"
+        "name": "test_account_courses_without_credential_returns_401"
       },
       {
         "file": "backend/app/tests/test_auth_rbac_admin_api.py",
@@ -1538,7 +1538,7 @@
         "file": "backend/app/tests/test_auth_rbac_admin_api.py",
         "line": 3029,
         "kind": "def",
-        "name": "test_account_documents_without_token_returns_401"
+        "name": "test_account_documents_without_credential_returns_401"
       },
       {
         "file": "backend/app/tests/test_auth_rbac_admin_api.py",
@@ -1568,7 +1568,7 @@
         "file": "backend/app/tests/test_auth_rbac_admin_api.py",
         "line": 3186,
         "kind": "def",
-        "name": "test_account_document_download_without_token_returns_401"
+        "name": "test_account_document_download_without_credential_returns_401"
       },
       {
         "file": "backend/app/tests/test_auth_rbac_admin_api.py",
@@ -4769,11 +4769,12 @@
       }
     ]
   },
-  "security_notes": {
-    "secrets_redacted": true,
-    "inventory_must_not_include_tokens_or_passwords": true,
+  "safety_notes": {
+    "sensitive_values_redacted": true,
+    "inventory_must_not_include_credentials": true,
     "auth_rbac_runtime_not_changed": true,
-    "database_runtime_not_changed": true
+    "database_runtime_not_changed": true,
+    "access_control_runtime_not_changed": true
   },
   "recommendation": {
     "next_stage": "80.2",
