@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -46,6 +46,17 @@ def _resolve_storage_path(storage_path: str) -> Path | None:
 
 def _build_download_filename(document_number: str, storage_path: str) -> str:
     return build_document_download_filename(document_number, storage_path)
+
+
+def _build_account_document_download_url(
+    document_id: str,
+    *,
+    download_available: bool,
+) -> str | None:
+    if not download_available:
+        return None
+
+    return f"/api/v1/account/documents/{document_id}/download"
 
 
 @router.get("/summary", response_model=AccountSummaryResponse)
@@ -135,10 +146,13 @@ async def get_account_courses(
 
 @router.get("/documents", response_model=AccountDocumentsResponse)
 async def get_account_documents(
+    status_filter: str | None = Query(default=None, alias="status", max_length=32),
+    course_id: str | None = Query(default=None, max_length=64),
+    enrollment_id: str | None = Query(default=None, max_length=64),
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> AccountDocumentsResponse:
-    result = await session.execute(
+    query = (
         select(
             DocumentRecord.id.label("id"),
             DocumentRecord.document_number.label("document_number"),
@@ -150,6 +164,8 @@ async def get_account_documents(
             DocumentRecord.revocation_reason.label("revocation_reason"),
             DocumentRecord.storage_path.label("storage_path"),
             DocumentRecord.enrollment_id.label("enrollment_id"),
+            DocumentRecord.created_at.label("created_at"),
+            DocumentRecord.generated_at.label("generated_at"),
             Course.id.label("course_id"),
             Course.slug.label("course_slug"),
             Course.title.label("course_title"),
@@ -159,25 +175,48 @@ async def get_account_documents(
         .order_by(DocumentRecord.created_at.desc(), DocumentRecord.title.asc())
     )
 
-    items = [
-        AccountDocumentItemResponse(
-            id=row.id,
-            document_number=row.document_number,
-            verification_code=row.verification_code,
-            document_type=row.document_type,
-            title=row.title,
-            status=row.status,
-            revoked_at=row.revoked_at,
-            revocation_reason=row.revocation_reason,
-            course_id=row.course_id,
-            course_slug=row.course_slug,
-            course_title=row.course_title,
-            enrollment_id=row.enrollment_id,
-            file_available=bool(row.storage_path),
-            download_available=row.status == "available" and bool(row.storage_path),
+    if status_filter and status_filter.strip():
+        query = query.where(DocumentRecord.status == status_filter.strip())
+
+    if course_id and course_id.strip():
+        query = query.where(DocumentRecord.course_id == course_id.strip())
+
+    if enrollment_id and enrollment_id.strip():
+        query = query.where(DocumentRecord.enrollment_id == enrollment_id.strip())
+
+    result = await session.execute(query)
+
+    items: list[AccountDocumentItemResponse] = []
+
+    for row in result.all():
+        download_available = row.status == "available" and bool(row.storage_path)
+        document_id = str(row.id)
+        issued_at = row.generated_at or row.created_at
+
+        items.append(
+            AccountDocumentItemResponse(
+                id=document_id,
+                document_number=row.document_number,
+                verification_code=row.verification_code,
+                document_type=row.document_type,
+                title=row.title,
+                status=row.status,
+                revoked_at=row.revoked_at,
+                revocation_reason=row.revocation_reason,
+                course_id=row.course_id,
+                course_slug=row.course_slug,
+                course_title=row.course_title,
+                enrollment_id=row.enrollment_id,
+                file_available=bool(row.storage_path),
+                download_available=download_available,
+                download_url=_build_account_document_download_url(
+                    document_id,
+                    download_available=download_available,
+                ),
+                created_at=row.created_at,
+                issued_at=issued_at,
+            )
         )
-        for row in result.all()
-    ]
 
     return AccountDocumentsResponse(
         total=len(items),

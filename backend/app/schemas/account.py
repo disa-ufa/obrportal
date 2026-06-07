@@ -84,6 +84,9 @@ class AccountDocumentItemResponse(BaseModel):
     enrollment_id: str | None = None
     file_available: bool = False
     download_available: bool = False
+    download_url: str | None = None
+    created_at: datetime | None = None
+    issued_at: datetime | None = None
 
 
 class AccountDocumentsResponse(BaseModel):

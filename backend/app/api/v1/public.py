@@ -194,10 +194,17 @@ async def get_public_course_detail(
 
 @router.get("/documents/verify", response_model=PublicDocumentVerifyResponse)
 async def verify_document(
-    number: str = Query(min_length=3, max_length=128),
+    number: str | None = Query(default=None, min_length=3, max_length=128),
+    value: str | None = Query(default=None, min_length=3, max_length=128),
     session: AsyncSession = Depends(get_db),
 ) -> PublicDocumentVerifyResponse:
-    normalized_number = number.strip()
+    normalized_number = (value or number or "").strip()
+
+    if not normalized_number:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Verification value is required",
+        )
 
     result = await session.execute(
         select(
@@ -274,6 +281,9 @@ async def verify_document(
         issuer_ogrn=settings.document_org_ogrn,
         registry_status=row.registry_status,
         verification_status=verification_status,
+        status=row.registry_status,
+        organization_name=settings.document_org_name,
+        message=verification_status,
         revoked_at=row.revoked_at,
         revocation_reason=row.revocation_reason,
     )
