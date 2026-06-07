@@ -97,7 +97,7 @@ def require_manifest_stage() -> None:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
     current_stage = manifest.get("current_stage")
-    if current_stage not in {"78.3", "78.4", "78.5", "78.6", "78.7", "78.8", "78.9", "79.1", "79.2", "79.3", "79.4", "79.5"}:
+    if current_stage not in {"78.3", "78.4", "78.5", "78.6", "78.7", "78.8", "78.9", "79.1", "79.2", "79.3", "79.4", "79.5", "79.6"}:
         fail("current_stage must be 78.3 or a compatible later stage")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
@@ -110,7 +110,7 @@ def require_manifest_stage() -> None:
         fail("stage 78.3 name must be Learner lesson content preview UX")
 
     status = stage.get("status")
-    if status not in {"implementation_ready", "production_deployed", "79.1", "79.2", "79.3", "79.4", "79.5"}:
+    if status not in {"implementation_ready", "production_deployed", "79.1", "79.2", "79.3", "79.4", "79.5", "79.6"}:
         fail("stage 78.3 status must be implementation_ready or production_deployed")
 
     if "learner_lesson_content_preview_panel" not in stage.get("runtime_scope", []):
