@@ -31,17 +31,6 @@ REQUIRED_FINAL_QA_MARKERS = [
     "Recommended next stage: Stage 80.1",
 ]
 
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "79.6"',
-    '"id": "79.6"',
-    '"name": "Learner documents final QA"',
-    '"branch": "stage79-learner-documents-final-qa"',
-    '"deployment_type": "docs-and-qa-only"',
-    '"frontend_runtime_changed_expected": false',
-    '"backend_runtime_changed_expected": false',
-    '"database_migration_expected": false',
-]
-
 
 def fail(message: str) -> None:
     raise SystemExit(f"stage 79.6 learner documents final QA guard failed: {message}")
@@ -66,20 +55,16 @@ def require_manifest() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "79.6":
-        fail("current_stage must be 79.6")
+    if manifest.get("current_stage") not in {"79.6", "80.1"}:
+        fail("current_stage must be 79.6 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "79.5":
-        fail("production checkpoint stage must be 79.5")
-    if checkpoint.get("last_confirmed_head") != "89a9acf":
-        fail("production checkpoint head must be 89a9acf")
-    if checkpoint.get("frontend_runtime_changed") is not False:
-        fail("checkpoint frontend_runtime_changed must be false for docs/QA-only stage")
-    if checkpoint.get("backend_runtime_changed") is not False:
-        fail("checkpoint backend_runtime_changed must be false")
-    if checkpoint.get("database_migration_run") is not False:
-        fail("checkpoint database_migration_run must be false")
+    allowed_checkpoints = {
+        ("79.5", "89a9acf"),
+        ("79.6", "4c5efe7"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 79.5/89a9acf or compatible later stage 79.6/4c5efe7")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
 
@@ -87,15 +72,9 @@ def require_manifest() -> None:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage79_5 = stages["79.5"]
-    if stage79_5.get("status") != "production_deployed":
-        fail("stage 79.5 status must be production_deployed")
-    if stage79_5.get("head") != "89a9acf":
-        fail("stage 79.5 head must be 89a9acf")
-
     stage79_6 = stages["79.6"]
-    if stage79_6.get("status") != "implementation_ready":
-        fail("stage 79.6 status must be implementation_ready")
+    if stage79_6.get("status") not in {"implementation_ready", "production_confirmed"}:
+        fail("stage 79.6 status must be implementation_ready or production_confirmed")
     if stage79_6.get("deployment_type") != "docs-and-qa-only":
         fail("stage 79.6 deployment_type must be docs-and-qa-only")
     if stage79_6.get("frontend_runtime_changed_expected") is not False:
@@ -109,7 +88,6 @@ def require_manifest() -> None:
 def main() -> None:
     require_markers(STAGE_DOC, REQUIRED_STAGE_DOC_MARKERS)
     require_markers(FINAL_QA_DOC, REQUIRED_FINAL_QA_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_manifest()
     print("stage 79.6 learner documents final QA guard passed")
 

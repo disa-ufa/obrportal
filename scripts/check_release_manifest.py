@@ -6,8 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs" / "release-manifest.json"
 
-REQUIRED_STAGE79_6_CHECKS = {
+REQUIRED_STAGE80_1_CHECKS = {
     "python .\\scripts\\check_release_manifest.py",
+    "python .\\scripts\\check_stage80_learner_documents_backend_api_inventory.py",
     "python .\\scripts\\check_stage79_learner_documents_final_qa.py",
     "python .\\scripts\\check_stage79_learner_document_download_ux.py",
     "python .\\scripts\\check_stage79_learner_document_verification_ux.py",
@@ -34,11 +35,12 @@ REQUIRED_STAGE79_6_CHECKS = {
     "git diff --check",
 }
 
-REQUIRED_STAGE79_6_CHANGED_FILES = {
+REQUIRED_STAGE80_1_CHANGED_FILES = {
     "docs/release-manifest.json",
-    "docs/stage79-learner-documents-final-qa.md",
-    "docs/learner-documents-final-qa.md",
+    "docs/stage80-learner-documents-backend-api-inventory.md",
+    "docs/learner-documents-backend-api-inventory.json",
     "scripts/check_release_manifest.py",
+    "scripts/check_stage80_learner_documents_backend_api_inventory.py",
     "scripts/check_stage79_learner_documents_final_qa.py",
     "scripts/check_stage79_learner_document_download_ux.py",
     "scripts/check_stage79_learner_document_verification_ux.py",
@@ -77,58 +79,58 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "79.6":
-        fail("current_stage must be 79.6")
+    if manifest.get("current_stage") != "80.1":
+        fail("current_stage must be 80.1")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "79.5":
-        fail("last_confirmed_stage must be 79.5")
-    if checkpoint.get("last_confirmed_head") != "89a9acf":
-        fail("last_confirmed_head must be 89a9acf")
+    if checkpoint.get("last_confirmed_stage") != "79.6":
+        fail("last_confirmed_stage must be 79.6")
+    if checkpoint.get("last_confirmed_head") != "4c5efe7":
+        fail("last_confirmed_head must be 4c5efe7")
     if checkpoint.get("frontend_runtime_changed") is not False:
-        fail("frontend_runtime_changed must be false for docs/QA-only stage")
+        fail("frontend_runtime_changed must be false")
     if checkpoint.get("backend_runtime_changed") is not False:
         fail("backend_runtime_changed must be false")
     if checkpoint.get("database_migration_run") is not False:
         fail("database_migration_run must be false")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["77.7", "78.9", "79.1", "79.2", "79.3", "79.4", "79.5", "79.6"]:
+    for stage_id in ["77.7", "78.9", "79.6", "80.1"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage79_5 = stages["79.5"]
-    if stage79_5.get("status") != "production_deployed":
-        fail("stage 79.5 status must be production_deployed")
-    if stage79_5.get("head") != "89a9acf":
-        fail("stage 79.5 head must be 89a9acf")
-
     stage79_6 = stages["79.6"]
-    if stage79_6.get("status") != "implementation_ready":
-        fail("stage 79.6 status must be implementation_ready")
-    if stage79_6.get("branch") != "stage79-learner-documents-final-qa":
-        fail("stage 79.6 branch must be stage79-learner-documents-final-qa")
-    if stage79_6.get("deployment_type") != "docs-and-qa-only":
-        fail("stage 79.6 deployment_type must be docs-and-qa-only")
-    if stage79_6.get("frontend_runtime_changed_expected") is not False:
-        fail("stage 79.6 frontend_runtime_changed_expected must be false")
-    if stage79_6.get("backend_runtime_changed_expected") is not False:
-        fail("stage 79.6 backend_runtime_changed_expected must be false")
-    if stage79_6.get("database_migration_expected") is not False:
-        fail("stage 79.6 database_migration_expected must be false")
+    if stage79_6.get("status") != "production_confirmed":
+        fail("stage 79.6 status must be production_confirmed")
+    if stage79_6.get("head") != "4c5efe7":
+        fail("stage 79.6 head must be 4c5efe7")
 
-    missing_checks = REQUIRED_STAGE79_6_CHECKS - set(stage79_6.get("required_checks", []))
+    stage80_1 = stages["80.1"]
+    if stage80_1.get("status") != "implementation_ready":
+        fail("stage 80.1 status must be implementation_ready")
+    if stage80_1.get("branch") != "stage80-learner-documents-backend-api-inventory":
+        fail("stage 80.1 branch must be stage80-learner-documents-backend-api-inventory")
+    if stage80_1.get("deployment_type") != "docs-and-qa-only":
+        fail("stage 80.1 deployment_type must be docs-and-qa-only")
+    if stage80_1.get("frontend_runtime_changed_expected") is not False:
+        fail("stage 80.1 frontend_runtime_changed_expected must be false")
+    if stage80_1.get("backend_runtime_changed_expected") is not False:
+        fail("stage 80.1 backend_runtime_changed_expected must be false")
+    if stage80_1.get("database_migration_expected") is not False:
+        fail("stage 80.1 database_migration_expected must be false")
+
+    missing_checks = REQUIRED_STAGE80_1_CHECKS - set(stage80_1.get("required_checks", []))
     if missing_checks:
-        fail(f"stage 79.6 missing required checks: {sorted(missing_checks)}")
+        fail(f"stage 80.1 missing required checks: {sorted(missing_checks)}")
 
-    missing_files = REQUIRED_STAGE79_6_CHANGED_FILES - set(stage79_6.get("changed_files", []))
+    missing_files = REQUIRED_STAGE80_1_CHANGED_FILES - set(stage80_1.get("changed_files", []))
     if missing_files:
-        fail(f"stage 79.6 missing changed files: {sorted(missing_files)}")
+        fail(f"stage 80.1 missing changed files: {sorted(missing_files)}")
 
     for path in [
-        "docs/stage79-learner-documents-final-qa.md",
-        "docs/learner-documents-final-qa.md",
-        "scripts/check_stage79_learner_documents_final_qa.py",
+        "docs/stage80-learner-documents-backend-api-inventory.md",
+        "docs/learner-documents-backend-api-inventory.json",
+        "scripts/check_stage80_learner_documents_backend_api_inventory.py",
     ]:
         if not (ROOT / path).exists():
             fail(f"required file missing: {path}")
