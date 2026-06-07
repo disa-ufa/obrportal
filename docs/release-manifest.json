@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "79.3",
+  "current_stage": "79.4",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "79.2",
-    "last_confirmed_head": "9efd5d2",
+    "last_confirmed_stage": "79.3",
+    "last_confirmed_head": "0b679f9",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -1566,8 +1566,8 @@
     {
       "id": "79.3",
       "name": "Learner documents UX foundation",
-      "status": "implementation_ready",
-      "branch": "stage79-learner-documents-ux-foundation",
+      "status": "production_deployed",
+      "branch": "develop",
       "base": "develop",
       "deployment_type": "frontend-only",
       "runtime_scope": [
@@ -1646,6 +1646,98 @@
         "no_database_migrations",
         "no_auth_or_rbac_changes",
         "production_checkpoint_is_79_2"
+      ],
+      "head": "0b679f9",
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "79.4",
+      "name": "Learner document verification UX integration",
+      "status": "implementation_ready",
+      "branch": "stage79-learner-document-verification-ux",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "verify_document_page_learner_bridge",
+        "document_verification_summary",
+        "document_verification_next_step",
+        "documents_to_verification_navigation",
+        "verification_to_documents_navigation"
+      ],
+      "frontend_runtime_changed_expected": true,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage79-learner-document-verification-ux.md",
+        "docs/learner-documents-ux-api-plan.md",
+        "docs/learner-documents-api-inventory.json"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage79_learner_document_verification_ux.py",
+        "python .\\scripts\\check_stage79_learner_documents_ux_foundation.py",
+        "python .\\scripts\\check_stage79_learner_documents_ux_api_plan.py",
+        "python .\\scripts\\check_stage79_learner_documents_api_inventory.py",
+        "python .\\scripts\\check_stage78_learner_progress_final_qa.py",
+        "python .\\scripts\\check_stage78_learner_document_handoff_ux.py",
+        "python .\\scripts\\check_stage78_learner_course_completion_api_integration.py",
+        "python .\\scripts\\check_stage78_learner_lesson_completion_api_integration.py",
+        "python .\\scripts\\check_stage78_learner_progress_api_inventory.py",
+        "python .\\scripts\\check_stage78_learner_completion_action_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_content_preview_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_access_ux.py",
+        "python .\\scripts\\check_stage78_learner_course_progress_foundation.py",
+        "python .\\scripts\\check_stage77_course_builder_final_qa.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_public_pages.py",
+        "python .\\scripts\\smoke_frontend_hooks_layout.py",
+        "docker compose exec frontend npm run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "frontend/src/pages/VerifyDocumentPage.jsx",
+        "docs/release-manifest.json",
+        "docs/stage79-learner-document-verification-ux.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage79_learner_document_verification_ux.py",
+        "scripts/check_stage79_learner_documents_ux_foundation.py",
+        "scripts/check_stage79_learner_documents_ux_api_plan.py",
+        "scripts/check_stage79_learner_documents_api_inventory.py",
+        "scripts/check_stage78_learner_progress_final_qa.py",
+        "scripts/check_stage78_learner_document_handoff_ux.py",
+        "scripts/check_stage78_learner_course_completion_api_integration.py",
+        "scripts/check_stage78_learner_lesson_completion_api_integration.py",
+        "scripts/check_stage78_learner_progress_api_inventory.py",
+        "scripts/check_stage78_learner_completion_action_ux.py",
+        "scripts/check_stage78_learner_lesson_content_preview_ux.py",
+        "scripts/check_stage78_learner_lesson_access_ux.py",
+        "scripts/check_stage78_learner_course_progress_foundation.py",
+        "scripts/check_stage77_course_builder_final_qa.py"
+      ],
+      "acceptance_markers": [
+        "Stage 79.4 - Learner Document Verification UX Integration",
+        "LearnerDocumentVerificationUXPanel",
+        "learner-document-verification-ux-panel",
+        "learner-document-verification-ux-status",
+        "learner-document-verification-ux-summary",
+        "learner-document-verification-ux-next-step",
+        "learner-document-verification-ux-actions",
+        "learner-document-verification-documents-action",
+        "learner-document-verification-contacts-action",
+        "learner-document-verification-catalog-action"
+      ],
+      "safety_notes": [
+        "frontend_only",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes",
+        "production_checkpoint_is_79_3"
       ]
     }
   ]
