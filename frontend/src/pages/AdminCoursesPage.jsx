@@ -1320,6 +1320,12 @@ function CourseCard({
         )}
       </div>
 
+      <CourseBuilderReadinessPanel
+        course={course}
+        modules={courseModules}
+        lessonsByModuleId={lessonsByModuleId}
+      />
+
       {!isEditing ? (
         <>
           <div className="mt-4">
