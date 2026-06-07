@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "75.1",
+  "current_stage": "76",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "75",
-    "last_confirmed_head": "e0049ab",
+    "last_confirmed_stage": "75.2",
+    "last_confirmed_head": "04d2b7d",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -27,6 +27,7 @@
       "/offer": 200,
       "/organization-info": 200
     },
+    "static_index_title": "Образовательный портал ГБОУ РЦДО",
     "backend_runtime_changed": false,
     "database_migration_run": false
   },
@@ -121,8 +122,8 @@
     {
       "id": "75.1",
       "name": "Public UI technical labels cleanup",
-      "status": "implementation_ready",
-      "branch": "stage75-public-ui-cleanup",
+      "status": "production_deployed",
+      "branch": "develop",
       "base": "develop",
       "deployment_type": "frontend-only",
       "runtime_scope": [
@@ -168,6 +169,115 @@
         "ObrPortal · Stage 7",
         "Оферта — ObrPortal",
         "Публичная оферта образовательной платформы"
+      ],
+      "head": "53ddc40",
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "production_evidence": {
+        "frontend_health": "healthy",
+        "backend_health": "ok",
+        "ready_status": "ok",
+        "public_routes_http": {
+          "/": 200,
+          "/contacts": 200,
+          "/faq": 200,
+          "/privacy": 200,
+          "/offer": 200,
+          "/organization-info": 200
+        }
+      }
+    },
+    {
+      "id": "75.2",
+      "name": "Static index title cleanup",
+      "status": "production_deployed",
+      "branch": "develop",
+      "base": "develop",
+      "head": "04d2b7d",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "frontend_static_index",
+        "frontend_public_shell"
+      ],
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "public_routes_smoked": [
+        "/",
+        "/contacts",
+        "/faq",
+        "/privacy",
+        "/offer",
+        "/organization-info"
+      ],
+      "production_evidence": {
+        "frontend_health": "healthy",
+        "backend_health": "ok",
+        "ready_status": "ok",
+        "public_routes_http": {
+          "/": 200,
+          "/contacts": 200,
+          "/faq": 200,
+          "/privacy": 200,
+          "/offer": 200,
+          "/organization-info": 200
+        },
+        "static_index_title": "Образовательный портал ГБОУ РЦДО",
+        "old_technical_strings_absent": true
+      },
+      "changed_files": [
+        "frontend/index.html",
+        "frontend/src/components/layout/PublicShell.jsx",
+        "scripts/check_stage75_public_ui_cleanup.py"
+      ]
+    },
+    {
+      "id": "76",
+      "name": "Public organization documents section",
+      "status": "implementation_ready",
+      "branch": "stage76-public-organization-documents",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "frontend_public_organization_info",
+        "frontend_public_documents_structure"
+      ],
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage76-public-organization-documents.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage76_public_organization_documents.py",
+        "python .\\scripts\\check_stage75_public_ui_cleanup.py",
+        "python .\\scripts\\check_stage75_public_content_polish.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_public_pages.py",
+        "docker compose exec frontend npm run build"
+      ],
+      "changed_files": [
+        "frontend/src/pages/OrganizationInfoPage.jsx",
+        "docs/release-manifest.json",
+        "docs/stage76-public-organization-documents.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage76_public_organization_documents.py"
+      ],
+      "acceptance_markers": [
+        "Документы организации",
+        "Официальные документы для публикации",
+        "Учредительные документы",
+        "Лицензия и образовательная деятельность",
+        "Локальные нормативные акты",
+        "Отчеты и обязательная публичная информация"
+      ],
+      "forbidden_public_content": [
+        "unverified_license_numbers",
+        "unverified_document_urls",
+        "unapproved_pdf_links"
       ]
     }
   ]

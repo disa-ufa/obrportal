@@ -55,7 +55,7 @@ const OFFICIAL_SECTIONS = [
   },
   {
     title: "Документы",
-    text: "Устав, лицензия, локальные нормативные акты и иные обязательные документы должны быть опубликованы отдельными PDF-ссылками после загрузки утвержденных файлов.",
+    text: "Отдельный блок ниже показывает структуру официальных документов, которые подлежат публикации после загрузки и проверки утвержденных файлов.",
   },
   {
     title: "Образовательные программы",
@@ -64,6 +64,49 @@ const OFFICIAL_SECTIONS = [
   {
     title: "Обращения пользователей",
     text: "Пользователи и представители организаций могут обращаться по телефону и e-mail, указанным в публичном разделе контактов.",
+  },
+];
+
+const DOCUMENT_GROUPS = [
+  {
+    title: "Учредительные документы",
+    status: "Готовится к публикации",
+    items: [
+      "Устав ГБОУ РЦДО",
+      "Сведения о создании, реорганизации и изменениях",
+      "Сведения о постановке на учет и регистрационные данные",
+    ],
+    note: "Публикуются только после проверки утвержденных файлов и соответствия реквизитов официальным документам.",
+  },
+  {
+    title: "Лицензия и образовательная деятельность",
+    status: "Требуется подтвержденный файл",
+    items: [
+      "Лицензия на образовательную деятельность",
+      "Приложения к лицензии",
+      "Перечень реализуемых образовательных программ",
+    ],
+    note: "Номера, даты и приложения лицензии не указываются до загрузки утвержденных файлов.",
+  },
+  {
+    title: "Локальные нормативные акты",
+    status: "Готовится к публикации",
+    items: [
+      "Правила приема и обучения",
+      "Положение об обработке персональных данных",
+      "Порядок оформления и выдачи итоговых документов",
+    ],
+    note: "Раздел предназначен для утвержденных локальных актов, которые можно безопасно размещать в открытом доступе.",
+  },
+  {
+    title: "Отчеты и обязательная публичная информация",
+    status: "Готовится к публикации",
+    items: [
+      "Отчет о самообследовании",
+      "Предписания органов контроля и отчеты об исполнении",
+      "Иные обязательные сведения для публичного размещения",
+    ],
+    note: "Публикация выполняется после проверки актуальности и отсутствия служебных или персональных данных.",
   },
 ];
 
@@ -86,6 +129,32 @@ function SectionCard({ title, text }) {
       <h2 className="text-xl font-bold text-slate-900">{title}</h2>
       <p className="mt-3 text-sm leading-6 text-slate-600">{text}</p>
     </div>
+  );
+}
+
+function DocumentGroupCard({ title, status, items, note }) {
+  return (
+    <article className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h3 className="text-xl font-bold text-slate-900">{title}</h3>
+        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+          {status}
+        </span>
+      </div>
+
+      <ul className="mt-4 space-y-3">
+        {items.map((item) => (
+          <li
+            key={item}
+            className="rounded-2xl bg-slate-50 p-4 text-sm font-medium leading-6 text-slate-700 ring-1 ring-slate-200"
+          >
+            {item}
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-4 text-sm leading-6 text-slate-600">{note}</p>
+    </article>
   );
 }
 
@@ -178,13 +247,39 @@ export function OrganizationInfoPage({ onPageChange }) {
       </section>
 
       <section
-        className="rounded-[2rem] bg-amber-50 p-6 text-sm leading-6 text-amber-900 ring-1 ring-amber-200"
-        data-testid="organization-info-documents-next-step"
+        className="rounded-[2rem] bg-blue-50 p-6 shadow-sm ring-1 ring-blue-200 md:p-8"
+        data-testid="organization-info-documents-section"
       >
-        <div className="font-bold text-amber-950">Документы организации</div>
-        <p className="mt-2">
-          Устав, лицензия, локальные акты и другие обязательные документы размещаются отдельными ссылками после проверки утвержденных PDF-файлов. Непроверенные реквизиты и номера документов на этой странице не публикуются.
+        <div className="text-sm font-semibold uppercase tracking-wide text-blue-700">
+          Документы организации
+        </div>
+        <h2 className="mt-2 text-2xl font-bold text-blue-950">
+          Официальные документы для публикации
+        </h2>
+        <p className="mt-3 max-w-4xl text-sm leading-6 text-blue-900">
+          Ниже подготовлена структура раздела для утвержденных файлов. На этой
+          странице не публикуются непроверенные номера, даты, реквизиты лицензий
+          или ссылки на документы, пока соответствующие файлы не будут загружены
+          и проверены.
         </p>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          {DOCUMENT_GROUPS.map((group) => (
+            <DocumentGroupCard
+              key={group.title}
+              title={group.title}
+              status={group.status}
+              items={group.items}
+              note={group.note}
+            />
+          ))}
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white/70 p-4 text-sm leading-6 text-blue-950 ring-1 ring-blue-200">
+          После загрузки и проверки утвержденного PDF-файла карточка документа
+          может быть дополнена ссылкой, датой актуальности и кратким пояснением
+          для пользователей портала.
+        </div>
       </section>
     </div>
   );
