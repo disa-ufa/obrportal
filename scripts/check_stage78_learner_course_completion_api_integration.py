@@ -49,17 +49,6 @@ REQUIRED_DOC_MARKERS = [
     "POST /api/v1/account/courses/{enrollment_id}/complete",
 ]
 
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "78.7"',
-    '"id": "78.7"',
-    '"name": "Learner course completion API integration"',
-    '"branch": "stage78-learner-course-completion-api-integration"',
-    '"deployment_type": "frontend-only"',
-    '"frontend_runtime_changed_expected": true',
-    '"backend_runtime_changed_expected": false',
-    '"database_migration_expected": false',
-]
-
 
 def fail(message: str) -> None:
     raise SystemExit(f"stage 78.7 learner course completion API integration guard failed: {message}")
@@ -84,14 +73,16 @@ def require_manifest_stage() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "78.7":
-        fail("current_stage must be 78.7")
+    if manifest.get("current_stage") not in {"78.7", "78.8"}:
+        fail("current_stage must be 78.7 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "78.6":
-        fail("last confirmed runtime production stage must be 78.6")
-    if checkpoint.get("last_confirmed_head") != "d8e86f0":
-        fail("last confirmed runtime production head must be d8e86f0")
+    allowed_checkpoints = {
+        ("78.6", "d8e86f0"),
+        ("78.7", "44910ab"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 78.6/d8e86f0 or compatible later stage 78.7/44910ab")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
     stage = stages.get("78.7")
@@ -111,7 +102,6 @@ def main() -> None:
     require_markers(COURSE_DETAIL, REQUIRED_COURSE_DETAIL_MARKERS)
     require_markers(API_CLIENT, REQUIRED_API_CLIENT_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_manifest_stage()
     print("stage 78.7 learner course completion API integration guard passed")
 
