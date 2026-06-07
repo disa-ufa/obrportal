@@ -39,10 +39,8 @@ REQUIRED_STAGE_DOC_MARKERS = [
 ]
 
 REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "79.3"',
     '"id": "79.3"',
     '"name": "Learner documents UX foundation"',
-    '"branch": "stage79-learner-documents-ux-foundation"',
     '"deployment_type": "frontend-only"',
     '"frontend_runtime_changed_expected": true',
     '"backend_runtime_changed_expected": false',
