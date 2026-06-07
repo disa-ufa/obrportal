@@ -39,10 +39,10 @@ REQUIRED_CONTRACT_MD_MARKERS = [
 ]
 
 REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "80.3"',
     '"id": "80.3"',
     '"name": "Learner documents backend/API contract"',
-    '"branch": "stage80-learner-documents-backend-api-contract"',
+    '"status": "production_confirmed"',
+    '"head": "383e6df"',
     '"deployment_type": "docs-and-contract-only"',
     '"frontend_runtime_changed_expected": false',
     '"backend_runtime_changed_expected": false',
@@ -138,14 +138,16 @@ def require_manifest() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "80.3":
-        fail("current_stage must be 80.3")
+    if manifest.get("current_stage") not in {"80.3", "80.4"}:
+        fail("current_stage must be 80.3 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "80.2":
-        fail("production checkpoint stage must be 80.2")
-    if checkpoint.get("last_confirmed_head") != "10a3168":
-        fail("production checkpoint head must be 10a3168")
+    allowed_checkpoints = {
+        ("80.2", "10a3168"),
+        ("80.3", "383e6df"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 80.2/10a3168 or compatible later stage 80.3/383e6df")
     if checkpoint.get("frontend_runtime_changed") is not False:
         fail("checkpoint frontend_runtime_changed must be false")
     if checkpoint.get("backend_runtime_changed") is not False:
@@ -166,8 +168,8 @@ def require_manifest() -> None:
         fail("stage 80.2 head must be 10a3168")
 
     stage80_3 = stages["80.3"]
-    if stage80_3.get("status") != "implementation_ready":
-        fail("stage 80.3 status must be implementation_ready")
+    if stage80_3.get("status") not in {"implementation_ready", "production_confirmed"}:
+        fail("stage 80.3 status must be implementation_ready or production_confirmed")
     if stage80_3.get("deployment_type") != "docs-and-contract-only":
         fail("stage 80.3 deployment_type must be docs-and-contract-only")
     if stage80_3.get("frontend_runtime_changed_expected") is not False:

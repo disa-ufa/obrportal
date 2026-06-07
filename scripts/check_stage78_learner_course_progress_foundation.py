@@ -106,7 +106,7 @@ def require_manifest_stage() -> None:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
     current_stage = manifest.get("current_stage")
-    if current_stage not in {"78.1", "78.2", "78.3", "78.4", "78.5", "78.6", "78.7", "78.8", "78.9", "79.1", "79.2", "79.3", "79.4", "79.5", "79.6", "80.1", "80.2", "80.3"}:
+    if current_stage not in {"78.1", "78.2", "78.3", "78.4", "78.5", "78.6", "78.7", "78.8", "78.9", "79.1", "79.2", "79.3", "79.4", "79.5", "79.6", "80.1", "80.2", "80.3", "80.4"}:
         fail("current_stage must be 78.1 or a compatible later stage")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
@@ -119,7 +119,7 @@ def require_manifest_stage() -> None:
         fail("stage 78.1 name must be Learner course progress foundation")
 
     status = stage.get("status")
-    if status not in {"implementation_ready", "production_deployed", "79.1", "79.2", "79.3", "79.4", "79.5", "79.6", "80.1", "80.2", "80.3"}:
+    if status not in {"implementation_ready", "production_deployed", "79.1", "79.2", "79.3", "79.4", "79.5", "79.6", "80.1", "80.2", "80.3", "80.4"}:
         fail("stage 78.1 status must be implementation_ready or production_deployed")
 
     if "learner_course_progress_foundation_panel" not in stage.get("runtime_scope", []):

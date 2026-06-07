@@ -89,7 +89,7 @@ def main() -> None:
 
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     current_stage = manifest.get("current_stage")
-    if current_stage not in {"78.5", "78.6", "78.7", "78.8", "78.9", "79.1", "79.2", "79.3", "79.4", "79.5", "79.6", "80.1", "80.2", "80.3"}:
+    if current_stage not in {"78.5", "78.6", "78.7", "78.8", "78.9", "79.1", "79.2", "79.3", "79.4", "79.5", "79.6", "80.1", "80.2", "80.3", "80.4"}:
         fail("current_stage must be 78.5 or a compatible later stage")
 
     if not INVENTORY_JSON.exists():
