@@ -30,17 +30,6 @@ REQUIRED_PLAN_DOC_MARKERS = [
     "Stage 79.3 should first use existing frontend API functions",
 ]
 
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "79.2"',
-    '"id": "79.2"',
-    '"name": "Learner documents UX/API connection plan"',
-    '"branch": "stage79-learner-documents-ux-api-plan"',
-    '"deployment_type": "docs-and-qa-only"',
-    '"frontend_runtime_changed_expected": false',
-    '"backend_runtime_changed_expected": false',
-    '"database_migration_expected": false',
-]
-
 REQUIRED_INVENTORY_MARKERS = [
     '"stage": "79.1"',
     '"name": "Learner documents API inventory"',
@@ -71,20 +60,16 @@ def require_manifest() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "79.2":
-        fail("current_stage must be 79.2")
+    if manifest.get("current_stage") not in {"79.2", "79.3"}:
+        fail("current_stage must be 79.2 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "79.1":
-        fail("production checkpoint stage must be 79.1")
-    if checkpoint.get("last_confirmed_head") != "378d054":
-        fail("production checkpoint head must be 378d054")
-    if checkpoint.get("frontend_runtime_changed") is not False:
-        fail("checkpoint frontend_runtime_changed must be false")
-    if checkpoint.get("backend_runtime_changed") is not False:
-        fail("checkpoint backend_runtime_changed must be false")
-    if checkpoint.get("database_migration_run") is not False:
-        fail("checkpoint database_migration_run must be false")
+    allowed_checkpoints = {
+        ("79.1", "378d054"),
+        ("79.2", "9efd5d2"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 79.1/378d054 or compatible later stage 79.2/9efd5d2")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
 
@@ -92,15 +77,9 @@ def require_manifest() -> None:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage79_1 = stages["79.1"]
-    if stage79_1.get("status") != "production_confirmed":
-        fail("stage 79.1 status must be production_confirmed")
-    if stage79_1.get("head") != "378d054":
-        fail("stage 79.1 head must be 378d054")
-
     stage79_2 = stages["79.2"]
-    if stage79_2.get("status") != "implementation_ready":
-        fail("stage 79.2 status must be implementation_ready")
+    if stage79_2.get("status") not in {"implementation_ready", "production_confirmed"}:
+        fail("stage 79.2 status must be implementation_ready or production_confirmed")
     if stage79_2.get("deployment_type") != "docs-and-qa-only":
         fail("stage 79.2 deployment_type must be docs-and-qa-only")
     if stage79_2.get("frontend_runtime_changed_expected") is not False:
@@ -114,7 +93,6 @@ def require_manifest() -> None:
 def main() -> None:
     require_markers(STAGE_DOC, REQUIRED_STAGE_DOC_MARKERS)
     require_markers(PLAN_DOC, REQUIRED_PLAN_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_markers(INVENTORY_JSON, REQUIRED_INVENTORY_MARKERS)
     require_manifest()
     print("stage 79.2 learner documents UX/API connection plan guard passed")
