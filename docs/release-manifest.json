@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "project": "ObrPortal",
+  "process": "development-process-v2",
+  "current_stage": "75",
+  "current_branch_policy": {
+    "development_base": "develop",
+    "production_branch": "develop",
+    "main_release_requires_separate_decision": true
+  },
+  "production_checkpoint": {
+    "last_confirmed_stage": "74",
+    "last_confirmed_head": "865aaa8",
+    "last_confirmed_host": "portal.rcdo02.ru",
+    "last_confirmed_ip": "89.127.203.70",
+    "frontend_health": "healthy",
+    "backend_health": "ok",
+    "ready_status": "ok",
+    "database": "ok",
+    "redis": "ok",
+    "storage": "ok",
+    "organization_info_http": 200,
+    "backend_runtime_changed": false,
+    "database_migration_run": false
+  },
+  "global_safety_boundaries": [
+    "no_secrets_in_git",
+    "no_production_env_output",
+    "no_docker_compose_down_v_in_normal_deploy",
+    "no_database_migration_without_explicit_approval",
+    "no_auth_or_rbac_weakening",
+    "no_unverified_legal_document_numbers_on_public_pages",
+    "preserve_server_only_untracked_paths"
+  ],
+  "common_local_checks": [
+    "python .\\scripts\\check_release_manifest.py",
+    "python .\\scripts\\check_source_bom.py",
+    "python .\\scripts\\check_text_encoding.py",
+    "python .\\scripts\\check_no_todo_markers.py",
+    "python .\\scripts\\smoke_public_pages.py",
+    "docker compose exec frontend npm run build"
+  ],
+  "stages": [
+    {
+      "id": "74",
+      "name": "Public organization info page",
+      "status": "production_deployed",
+      "branch": "develop",
+      "head": "865aaa8",
+      "deployment_type": "frontend-only",
+      "production_evidence": {
+        "frontend_health": "healthy",
+        "organization_info_http": 200,
+        "backend_runtime_changed": false,
+        "database_migration_run": false
+      }
+    },
+    {
+      "id": "75",
+      "name": "Public portal official content polish",
+      "status": "planned",
+      "branch": "stage75-public-portal-content-polish",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "frontend_public_pages"
+      ],
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/stage75-public-portal-content-polish.md",
+        "docs/release-manifest.json"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_public_pages.py",
+        "docker compose exec frontend npm run build"
+      ],
+      "public_routes_to_smoke": [
+        "/",
+        "/catalog",
+        "/contacts",
+        "/organization-info",
+        "/faq",
+        "/privacy",
+        "/offer",
+        "/verify-document"
+      ]
+    }
+  ]
+}
