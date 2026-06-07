@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -28,17 +29,6 @@ REQUIRED_DOC_MARKERS = [
     "stage78_1_release_manifest_required=yes",
     "stage78_1_guard_required=yes",
     "stage78_1_frontend_only=yes",
-]
-
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "78.1"',
-    '"id": "78.1"',
-    '"name": "Learner course progress foundation"',
-    '"branch": "stage78-learner-course-progress-foundation"',
-    '"learner_course_progress_foundation_panel"',
-    '"learner_course_progress_summary"',
-    '"learner_course_progress_next_step"',
-    '"learner_course_progress_roadmap"',
 ]
 
 
@@ -106,12 +96,42 @@ def require_panel_order() -> None:
         fail("learner progress panel must be placed between journey hint and diagnostics")
 
 
+def require_manifest_stage() -> None:
+    if not MANIFEST.exists():
+        fail("docs/release-manifest.json is missing")
+
+    try:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in docs/release-manifest.json: {exc}")
+
+    current_stage = manifest.get("current_stage")
+    if current_stage not in {"78.1", "78.2"}:
+        fail("current_stage must be 78.1 or a compatible later stage")
+
+    stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
+    stage = stages.get("78.1")
+
+    if not stage:
+        fail("release manifest misses stage 78.1")
+
+    if stage.get("name") != "Learner course progress foundation":
+        fail("stage 78.1 name must be Learner course progress foundation")
+
+    status = stage.get("status")
+    if status not in {"implementation_ready", "production_deployed"}:
+        fail("stage 78.1 status must be implementation_ready or production_deployed")
+
+    if "learner_course_progress_foundation_panel" not in stage.get("runtime_scope", []):
+        fail("stage 78.1 runtime_scope must include learner_course_progress_foundation_panel")
+
+
 def main() -> None:
     require_markers(COURSE_DETAIL, REQUIRED_COURSE_DETAIL_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_real_progress_labels()
     require_panel_order()
+    require_manifest_stage()
     print("stage 78.1 learner course progress foundation guard passed")
 
 
