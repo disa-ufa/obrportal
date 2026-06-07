@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "77.7",
+  "current_stage": "78.1",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
@@ -687,8 +687,8 @@
     {
       "id": "77.7",
       "name": "Course builder final QA",
-      "status": "implementation_ready",
-      "branch": "stage77-course-builder-final-qa",
+      "status": "merged_to_develop",
+      "branch": "develop",
       "base": "develop",
       "deployment_type": "repository-qa",
       "runtime_scope": [
@@ -743,6 +743,73 @@
       "safety_notes": [
         "repository_qa_only",
         "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes"
+      ],
+      "head": "8dfe560",
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "78.1",
+      "name": "Learner course progress foundation",
+      "status": "implementation_ready",
+      "branch": "stage78-learner-course-progress-foundation",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "frontend_course_detail_page",
+        "learner_course_progress_foundation_panel",
+        "learner_course_progress_summary",
+        "learner_course_progress_next_step",
+        "learner_course_progress_roadmap"
+      ],
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage78-learner-course-progress-foundation.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage78_learner_course_progress_foundation.py",
+        "python .\\scripts\\check_stage77_course_builder_final_qa.py",
+        "python .\\scripts\\check_stage77_course_publication_ux.py",
+        "python .\\scripts\\check_stage77_lesson_content_preview_ux.py",
+        "python .\\scripts\\check_stage77_lesson_editor_ux.py",
+        "python .\\scripts\\check_stage77_course_builder_module_lesson_ux.py",
+        "python .\\scripts\\check_stage77_course_builder_card_ux.py",
+        "python .\\scripts\\check_stage77_course_builder_readiness.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\smoke_public_pages.py",
+        "python .\\scripts\\smoke_frontend_hooks_layout.py",
+        "docker compose exec frontend npm run build"
+      ],
+      "changed_files": [
+        "frontend/src/pages/CourseDetailPage.jsx",
+        "docs/release-manifest.json",
+        "docs/stage78-learner-course-progress-foundation.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage78_learner_course_progress_foundation.py",
+        "scripts/check_stage77_course_builder_final_qa.py"
+      ],
+      "acceptance_markers": [
+        "learner-course-progress-foundation-panel",
+        "learner-course-progress-summary",
+        "learner-course-progress-status",
+        "learner-course-progress-next-step",
+        "learner-course-progress-roadmap",
+        "learner-course-progress-actions",
+        "getLearnerCourseProgressFoundationFacts",
+        "CourseLearnerProgressFoundationPanel"
+      ],
+      "safety_notes": [
+        "frontend_only",
         "no_backend_runtime_changes",
         "no_database_migrations",
         "no_auth_or_rbac_changes"

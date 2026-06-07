@@ -230,6 +230,285 @@ function getCourseStructureStats(course) {
   };
 }
 
+
+
+const LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS = {
+  stage: "Stage 78.1 ? Learner Course Progress Foundation",
+  title: "\u0421\u0442\u0430\u0440\u0442\u043e\u0432\u0430\u044f \u043f\u0430\u043d\u0435\u043b\u044c \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430",
+  subtitle:
+    "\u041f\u0430\u043d\u0435\u043b\u044c \u0441\u043e\u0431\u0438\u0440\u0430\u0435\u0442 \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043a\u0443\u0440\u0441\u0430, \u0441\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u043f\u0438\u0441\u0438 \u0438 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f. \u042d\u0442\u043e \u043e\u0441\u043d\u043e\u0432\u0430 \u0431\u0443\u0434\u0443\u0449\u0435\u0433\u043e \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0443\u0440\u043e\u043a\u043e\u0432 \u0438 \u0444\u0438\u043a\u0441\u0430\u0446\u0438\u0438 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430.",
+  progress: "\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f",
+  modules: "\u041c\u043e\u0434\u0443\u043b\u0438",
+  lessons: "\u0423\u0440\u043e\u043a\u0438",
+  requiredLessons: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0443\u0440\u043e\u043a\u0438",
+  enrollmentStatus: "\u0421\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u043f\u0438\u0441\u0438",
+  nextStep: "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433",
+  roadmap: "\u0427\u0442\u043e \u0431\u0443\u0434\u0435\u0442 \u0434\u0430\u043b\u044c\u0448\u0435",
+  loginRequired: "\u0422\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u0432\u0445\u043e\u0434",
+  canEnroll: "\u041c\u043e\u0436\u043d\u043e \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f",
+  assigned: "\u041e\u0436\u0438\u0434\u0430\u0435\u0442 \u043d\u0430\u0447\u0430\u043b\u0430",
+  active: "\u0412 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0435",
+  completed: "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d",
+  cancelled: "\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430",
+  openAccount: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442",
+  openCatalog: "\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433",
+  registerAndEnroll: "\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u0438 \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f",
+  enroll: "\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f",
+  stepContent: "\u0418\u0437\u0443\u0447\u0430\u0439\u0442\u0435 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b",
+  stepCompletion: "\u041e\u0442\u043c\u0435\u0447\u0430\u0439\u0442\u0435 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435",
+  stepDocument: "\u041f\u043e\u043b\u0443\u0447\u0438\u0442\u0435 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+};
+
+function getLearnerCourseProgressLessons(course) {
+  const modules = Array.isArray(course?.modules) ? course.modules : [];
+
+  return modules.flatMap((module) =>
+    Array.isArray(module.lessons)
+      ? module.lessons.map((lesson) => ({
+          ...lesson,
+          module_id: module.id,
+          module_title: module.title,
+          module_position: module.position,
+        }))
+      : []
+  );
+}
+
+function getLearnerCourseProgressStatus(existingEnrollment, user) {
+  if (!user) {
+    return {
+      key: "login_required",
+      label: LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.loginRequired,
+      tone: "bg-amber-50 text-amber-800 ring-amber-200",
+      percent: 0,
+    };
+  }
+
+  if (!existingEnrollment) {
+    return {
+      key: "can_enroll",
+      label: LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.canEnroll,
+      tone: "bg-green-50 text-green-700 ring-green-200",
+      percent: 0,
+    };
+  }
+
+  if (existingEnrollment.status === "completed") {
+    return {
+      key: "completed",
+      label: LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.completed,
+      tone: "bg-slate-100 text-slate-700 ring-slate-200",
+      percent: 100,
+    };
+  }
+
+  if (existingEnrollment.status === "active") {
+    return {
+      key: "active",
+      label: LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.active,
+      tone: "bg-green-50 text-green-700 ring-green-200",
+      percent: 25,
+    };
+  }
+
+  if (existingEnrollment.status === "cancelled") {
+    return {
+      key: "cancelled",
+      label: LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.cancelled,
+      tone: "bg-red-50 text-red-700 ring-red-200",
+      percent: 0,
+    };
+  }
+
+  return {
+    key: "assigned",
+    label: LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.assigned,
+    tone: "bg-blue-50 text-blue-700 ring-blue-200",
+    percent: 10,
+  };
+}
+
+function getLearnerCourseProgressFoundationFacts(course, existingEnrollment, user) {
+  const modules = Array.isArray(course?.modules) ? course.modules : [];
+  const lessons = getLearnerCourseProgressLessons(course);
+  const requiredLessons = lessons.filter((lesson) => lesson.is_required);
+  const status = getLearnerCourseProgressStatus(existingEnrollment, user);
+
+  const nextStep =
+    status.key === "login_required"
+      ? "\u0412\u043e\u0439\u0434\u0438\u0442\u0435 \u0438\u043b\u0438 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u0443\u0439\u0442\u0435\u0441\u044c, \u0447\u0442\u043e\u0431\u044b \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043a\u0443\u0440\u0441 \u0438 \u043d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435."
+      : status.key === "can_enroll"
+        ? "\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441, \u0447\u0442\u043e\u0431\u044b \u043e\u043d \u043f\u043e\u044f\u0432\u0438\u043b\u0441\u044f \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435."
+        : status.key === "completed"
+          ? "\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435."
+          : status.key === "cancelled"
+            ? "\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430. \u041e\u0431\u0440\u0430\u0442\u0438\u0442\u0435\u0441\u044c \u0432 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044e \u0438\u043b\u0438 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0443 \u043a\u0443\u0440\u0441\u0430."
+            : "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0438 \u043e\u0442\u0441\u043b\u0435\u0436\u0438\u0432\u0430\u0442\u044c \u0441\u0442\u0430\u0442\u0443\u0441.";
+
+  const primaryAction =
+    status.key === "login_required"
+      ? LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.registerAndEnroll
+      : status.key === "can_enroll"
+        ? LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.enroll
+        : LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.openAccount;
+
+  return {
+    modulesCount: modules.length,
+    lessonsCount: lessons.length,
+    requiredLessonsCount: requiredLessons.length,
+    status,
+    percent: status.percent,
+    nextStep,
+    primaryAction,
+  };
+}
+
+function CourseLearnerProgressFoundationPanel({
+  course,
+  existingEnrollment,
+  user,
+  onPrimaryAction,
+  onPageChange,
+}) {
+  const facts = getLearnerCourseProgressFoundationFacts(course, existingEnrollment, user);
+
+  return (
+    <section
+      data-testid="learner-course-progress-foundation-panel"
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.stage}
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.title}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.subtitle}
+          </p>
+        </div>
+
+        <span
+          data-testid="learner-course-progress-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${facts.status.tone}`}
+        >
+          {facts.status.label}
+        </span>
+      </div>
+
+      <div
+        data-testid="learner-course-progress-summary"
+        className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.progress}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.percent}%
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="h-full rounded-full bg-blue-600"
+              style={{ width: `${facts.percent}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.modules}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.modulesCount}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.lessons}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.lessonsCount}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.requiredLessons}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.requiredLessonsCount}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="learner-course-progress-next-step"
+        className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200"
+      >
+        <div className="font-semibold text-slate-900">
+          {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.nextStep}
+        </div>
+        <p className="mt-2">{facts.nextStep}</p>
+      </div>
+
+      <div
+        data-testid="learner-course-progress-roadmap"
+        className="mt-5 grid gap-3 md:grid-cols-3"
+      >
+        {[
+          ["1", LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.stepContent, "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b \u043a\u0443\u0440\u0441\u0430 \u0438 \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u0442\u0435 \u0443\u0440\u043e\u043a\u0438 \u043f\u043e \u043f\u043e\u0440\u044f\u0434\u043a\u0443."],
+          ["2", LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.stepCompletion, "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0435 \u044d\u0442\u0430\u043f\u044b \u0434\u043e\u0431\u0430\u0432\u044f\u0442 \u0444\u0438\u043a\u0441\u0430\u0446\u0438\u044e \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u0443\u0440\u043e\u043a\u043e\u0432 \u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u0439."],
+          ["3", LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.stepDocument, `\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430 \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442: ${formatCourseDocument(course)}.`],
+        ].map(([number, title, description]) => (
+          <div
+            key={number}
+            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-slate-900 ring-1 ring-slate-200">
+              {number}
+            </div>
+            <div className="mt-3 font-semibold text-slate-900">{title}</div>
+            <div className="mt-2 text-sm leading-6 text-slate-600">{description}</div>
+          </div>
+        ))}
+      </div>
+
+      <div
+        data-testid="learner-course-progress-actions"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        <button
+          type="button"
+          onClick={onPrimaryAction}
+          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          {facts.primaryAction}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("catalog")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.openCatalog}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("account")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_COURSE_PROGRESS_FOUNDATION_LABELS.openAccount}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function getCourseDetailDiagnostics({
   course,
   existingEnrollment,
@@ -979,6 +1258,14 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         existingEnrollment={existingEnrollment}
         user={user}
         enrollLoading={enrollLoading}
+        onPrimaryAction={handleEnroll}
+        onPageChange={onPageChange}
+      />
+
+      <CourseLearnerProgressFoundationPanel
+        course={course}
+        existingEnrollment={existingEnrollment}
+        user={user}
         onPrimaryAction={handleEnroll}
         onPageChange={onPageChange}
       />
