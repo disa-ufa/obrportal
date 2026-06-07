@@ -1075,6 +1075,165 @@ function CourseBuilderReadinessPanel({ course, modules, lessonsByModuleId }) {
   );
 }
 
+
+const COURSE_BUILDER_CARD_UX_LABELS = {
+  title: "????? ???????? ?????",
+  subtitle:
+    "??????? ????? ???????????????? ????????: ???????? ????????, ?????????, ????????? ????????, ?????????? ? ?????.",
+  basic: "???????? ????????",
+  structure: "????????? ?????",
+  publicCard: "????????? ????????",
+  enrollments: "??????????",
+  audit: "?????",
+  modules: "???????",
+  lessons: "??????",
+  activeModules: "???????? ???????",
+  activeLessons: "???????? ??????",
+  requiredLessons: "???????????? ??????",
+  openPublicCard: "??????? ????????? ????????",
+  noPublicCard: "????????? ???????? ?????????? ??? slug.",
+  openEnrollments: "??????? ??????????",
+  openAudit: "??????? ????? ?????",
+};
+
+function getCourseBuilderCardUxFacts(course, modules = [], lessonsByModuleId = {}) {
+  const courseModules = Array.isArray(modules) ? modules : [];
+  const allLessons = courseModules.flatMap((module) =>
+    Array.isArray(lessonsByModuleId?.[module.id]) ? lessonsByModuleId[module.id] : []
+  );
+
+  return {
+    modulesTotal: courseModules.length,
+    lessonsTotal: allLessons.length,
+    activeModules: courseModules.filter((module) => module.is_active).length,
+    activeLessons: allLessons.filter((lesson) => lesson.is_active).length,
+    requiredLessons: allLessons.filter((lesson) => lesson.is_required).length,
+    publicPath: course.slug ? `/courses/${encodeURIComponent(course.slug)}` : "",
+    enrollmentsPath: buildEnrollmentsPath({ course_id: course.id }),
+    auditPath: buildAuditPath({ entity_type: "course" }),
+  };
+}
+
+function CourseBuilderCardUxPanel({ course, modules, lessonsByModuleId }) {
+  const facts = getCourseBuilderCardUxFacts(course, modules, lessonsByModuleId);
+
+  return (
+    <section
+      data-testid="course-builder-card-ux-panel"
+      className="mt-5 rounded-3xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Stage 77.2 ? Course Builder UX
+          </div>
+          <h3 className="mt-1 text-base font-bold text-slate-900">
+            {COURSE_BUILDER_CARD_UX_LABELS.title}
+          </h3>
+          <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={course.is_active ? "green" : "gray"}>
+          {course.is_active ? RU.active : RU.inactive}
+        </StatusBadge>
+      </div>
+
+      <div
+        data-testid="course-builder-card-ux-sections"
+        className="mt-4 grid gap-3 lg:grid-cols-5"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.basic}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {course.title || "-"}
+          </div>
+          <div className="mt-1 break-all text-xs text-slate-500">
+            {course.slug ? `/courses/${course.slug}` : "slug ?? ?????"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.structure}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {facts.modulesTotal} / {facts.lessonsTotal}
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.modules} / {COURSE_BUILDER_CARD_UX_LABELS.lessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.activeModules}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {facts.activeModules}
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.activeLessons}: {facts.activeLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.requiredLessons}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {facts.requiredLessons}
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {RU.documentType}: {course.document_type || "-"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.publicCard}
+          </div>
+          {facts.publicPath ? (
+            <Link
+              data-testid="course-builder-card-ux-public-link"
+              to={facts.publicPath}
+              className="mt-2 inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+            >
+              {COURSE_BUILDER_CARD_UX_LABELS.openPublicCard}
+            </Link>
+          ) : (
+            <div className="mt-2 text-xs text-slate-500">
+              {COURSE_BUILDER_CARD_UX_LABELS.noPublicCard}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        data-testid="course-builder-card-ux-quick-actions"
+        className="mt-4 flex flex-wrap gap-3"
+      >
+        {facts.publicPath ? (
+          <Link to={facts.publicPath} className={adminLinkClass}>
+            {COURSE_BUILDER_CARD_UX_LABELS.openPublicCard}
+          </Link>
+        ) : null}
+
+        <Link to={facts.enrollmentsPath} className={adminLinkClass}>
+          {COURSE_BUILDER_CARD_UX_LABELS.openEnrollments}
+        </Link>
+
+        <Link to={facts.auditPath} className={adminLinkClass}>
+          {COURSE_BUILDER_CARD_UX_LABELS.openAudit}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function AdminCourseCatalogDiagnostics({
   catalogStats,
   diagnostics,
@@ -1321,6 +1480,12 @@ function CourseCard({
       </div>
 
       <CourseBuilderReadinessPanel
+        course={course}
+        modules={courseModules}
+        lessonsByModuleId={lessonsByModuleId}
+      />
+
+      <CourseBuilderCardUxPanel
         course={course}
         modules={courseModules}
         lessonsByModuleId={lessonsByModuleId}
