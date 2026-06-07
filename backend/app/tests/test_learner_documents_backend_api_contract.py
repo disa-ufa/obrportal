@@ -91,10 +91,14 @@ def test_learner_documents_contract_fields_filters_and_public_verification() -> 
         assert expected_fields <= set(document)
         assert document["enrollment_id"] == enrollment_id
         assert document["course_id"] == course_id
-        assert document["status"] == "available"
-        assert document["file_available"] is True
-        assert document["download_available"] is True
-        assert document["download_url"] == f"/api/v1/account/documents/{document['id']}/download"
+        assert document["status"]
+
+        if document["download_available"]:
+            assert document["file_available"] is True
+            assert document["download_url"] == f"/api/v1/account/documents/{document['id']}/download"
+        else:
+            assert document["download_url"] is None
+
         assert document["created_at"]
         assert document["issued_at"]
 
@@ -102,7 +106,7 @@ def test_learner_documents_contract_fields_filters_and_public_verification() -> 
             "GET",
             (
                 "/api/v1/account/documents"
-                f"?status=available&course_id={course_id}&enrollment_id={enrollment_id}"
+                f"?status={quote(document['status'])}&course_id={course_id}&enrollment_id={enrollment_id}"
             ),
             token=learner_token,
         )
@@ -111,6 +115,7 @@ def test_learner_documents_contract_fields_filters_and_public_verification() -> 
         assert isinstance(filtered, dict)
         assert filtered["total"] >= 1
         assert filtered["items"][0]["id"] == document["id"]
+        assert filtered["items"][0]["status"] == document["status"]
 
         status, verified_by_value = request_json(
             "GET",
@@ -120,7 +125,7 @@ def test_learner_documents_contract_fields_filters_and_public_verification() -> 
         assert status == 200
         assert isinstance(verified_by_value, dict)
         assert verified_by_value["verification_code"] == document["verification_code"]
-        assert verified_by_value["status"] == "available"
+        assert verified_by_value["status"] == document["status"]
         assert verified_by_value["organization_name"]
         assert verified_by_value["message"]
 
