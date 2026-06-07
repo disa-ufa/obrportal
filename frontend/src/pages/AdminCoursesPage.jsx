@@ -806,10 +806,207 @@ function CourseLessonEditorUxPanel({ values }) {
   );
 }
 
+
+const COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS = {
+  stage: "Stage 77.5 \u00b7 Lesson Content Preview UX",
+  title: "\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0443\u0440\u043e\u043a\u0430",
+  subtitle:
+    "\u0411\u044b\u0441\u0442\u0440\u044b\u0439 \u043f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u043f\u043e\u043c\u043e\u0433\u0430\u0435\u0442 \u0430\u0434\u043c\u0438\u043d\u0443 \u043f\u043e\u043d\u044f\u0442\u044c, \u0447\u0442\u043e \u0443\u0432\u0438\u0434\u0438\u0442 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c \u0432 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0435 \u0443\u0440\u043e\u043a\u0430.",
+  ready: "\u041f\u0440\u0435\u0432\u044c\u044e \u0433\u043e\u0442\u043e\u0432\u043e",
+  empty: "\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043f\u0440\u0435\u0432\u044c\u044e",
+  previewType: "\u0422\u0438\u043f \u043f\u0440\u0435\u0432\u044c\u044e",
+  learnerView: "\u0412\u0438\u0434 \u0434\u043b\u044f \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f",
+  titleMissing: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d\u043e",
+  description: "\u041a\u0440\u0430\u0442\u043a\u043e\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435",
+  textPreview: "\u0422\u0435\u043a\u0441\u0442\u043e\u0432\u044b\u0439 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+  urlPreview: "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u043f\u043e URL",
+  assignmentPreview: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435",
+  openMaterial: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+  noText: "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0442\u0435\u043a\u0441\u0442 \u0443\u0440\u043e\u043a\u0430, \u0447\u0442\u043e\u0431\u044b \u0441\u043e\u0431\u0440\u0430\u0442\u044c \u043f\u0440\u0435\u0432\u044c\u044e.",
+  noUrl: "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 URL \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430, \u0447\u0442\u043e\u0431\u044b \u0441\u043e\u0431\u0440\u0430\u0442\u044c \u043f\u0440\u0435\u0432\u044c\u044e.",
+  noAssignment: "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0438\u043b\u0438 \u0442\u0435\u043a\u0441\u0442 \u0437\u0430\u0434\u0430\u043d\u0438\u044f.",
+  activeVisible: "\u0414\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044e",
+  inactiveHidden: "\u0421\u043a\u0440\u044b\u0442 \u043e\u0442 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f",
+};
+
+function getLessonContentPreviewSummary(value, maxLength = 280) {
+  const text = `${value || ""}`.trim();
+
+  if (!text) {
+    return "";
+  }
+
+  return text.length > maxLength ? `${text.slice(0, maxLength).trim()}...` : text;
+}
+
+function getLessonContentPreviewUrlHost(url) {
+  const value = `${url || ""}`.trim();
+
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const normalized = value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
+    return new URL(normalized).host;
+  } catch {
+    return value;
+  }
+}
+
+function getLessonContentPreviewFacts(values) {
+  const contentType = `${values.content_type || "text"}`.toLowerCase();
+  const title = `${values.title || ""}`.trim();
+  const description = `${values.description || ""}`.trim();
+  const contentText = `${values.content_text || ""}`.trim();
+  const contentUrl = `${values.content_url || ""}`.trim();
+
+  const facts = {
+    contentType,
+    label: getLessonContentTypeLabel(contentType),
+    title: title || COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.titleMissing,
+    description: getLessonContentPreviewSummary(description, 160),
+    body: "",
+    url: contentUrl,
+    urlHost: getLessonContentPreviewUrlHost(contentUrl),
+    previewType: COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.textPreview,
+    emptyReason: "",
+    ready: false,
+    statusLabel: values.is_active
+      ? COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.activeVisible
+      : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.inactiveHidden,
+  };
+
+  if (contentType === "text") {
+    facts.previewType = COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.textPreview;
+    facts.body = getLessonContentPreviewSummary(contentText);
+    facts.emptyReason = facts.body ? "" : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.noText;
+    facts.ready = Boolean(facts.body);
+    return facts;
+  }
+
+  if (["video", "file", "link"].includes(contentType)) {
+    facts.previewType = COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.urlPreview;
+    facts.body = facts.urlHost || contentUrl;
+    facts.emptyReason = contentUrl ? "" : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.noUrl;
+    facts.ready = Boolean(contentUrl);
+    return facts;
+  }
+
+  if (contentType === "assignment") {
+    facts.previewType = COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.assignmentPreview;
+    facts.body = getLessonContentPreviewSummary(description || contentText);
+    facts.emptyReason = facts.body ? "" : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.noAssignment;
+    facts.ready = Boolean(facts.body);
+    return facts;
+  }
+
+  facts.body = getLessonContentPreviewSummary(contentText || description || contentUrl);
+  facts.emptyReason = facts.body ? "" : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.empty;
+  facts.ready = Boolean(facts.body);
+  return facts;
+}
+
+function CourseLessonContentPreviewPanel({ values }) {
+  const facts = getLessonContentPreviewFacts(values);
+
+  return (
+    <section
+      data-testid="lesson-content-preview-panel"
+      className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 md:col-span-3"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.stage}
+          </div>
+          <h4 className="mt-1 text-sm font-bold text-slate-900">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.title}
+          </h4>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={facts.ready ? "green" : "red"}>
+          {facts.ready
+            ? COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.ready
+            : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.empty}
+        </StatusBadge>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr]">
+        <div
+          data-testid="lesson-content-preview-kind"
+          className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.previewType}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {facts.previewType}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <StatusBadge tone="blue">{facts.label}</StatusBadge>
+            <StatusBadge tone={values.is_active ? "green" : "gray"}>
+              {facts.statusLabel}
+            </StatusBadge>
+          </div>
+        </div>
+
+        <div
+          data-testid="lesson-content-preview-body"
+          className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.learnerView}
+          </div>
+
+          <div className="mt-2 text-base font-bold text-slate-900">
+            {facts.title}
+          </div>
+
+          {facts.description ? (
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              <span className="font-semibold">
+                {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.description}:
+              </span>{" "}
+              {facts.description}
+            </p>
+          ) : null}
+
+          {facts.ready ? (
+            <div className="mt-3 rounded-2xl bg-white p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
+              {facts.body}
+            </div>
+          ) : (
+            <div className="mt-3 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
+              {facts.emptyReason}
+            </div>
+          )}
+
+          {facts.url ? (
+            <a
+              data-testid="lesson-content-preview-open-link"
+              href={facts.url.startsWith("http://") || facts.url.startsWith("https://") ? facts.url : `https://${facts.url}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+            >
+              {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.openMaterial}
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CourseLessonFormFields({ values, onChange, prefix = "" }) {
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_180px_140px]">
       <CourseLessonEditorUxPanel values={values} />
+      <CourseLessonContentPreviewPanel values={values} />
       <label className="block md:col-span-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           {RU.lessonTitle}
