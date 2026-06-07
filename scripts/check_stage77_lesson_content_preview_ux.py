@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,17 +27,6 @@ REQUIRED_DOC_MARKERS = [
     "stage77_5_release_manifest_required=yes",
     "stage77_5_guard_required=yes",
     "stage77_5_frontend_only=yes",
-]
-
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "77.5"',
-    '"id": "77.5"',
-    '"name": "Lesson content preview UX"',
-    '"branch": "stage77-lesson-content-preview-ux"',
-    '"lesson_content_preview_panel"',
-    '"lesson_content_preview_kind"',
-    '"lesson_content_preview_body"',
-    '"lesson_content_preview_open_link"',
 ]
 
 
@@ -77,25 +67,41 @@ def require_real_preview_labels() -> None:
     if found:
         fail(f"COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS contains broken labels: {found}")
 
-    required = [
-        "\\u041f\\u0440\\u0435\\u0434\\u043f\\u0440\\u043e\\u0441\\u043c\\u043e\\u0442\\u0440 \\u0443\\u0440\\u043e\\u043a\\u0430",
-        "\\u0422\\u0438\\u043f \\u043f\\u0440\\u0435\\u0432\\u044c\\u044e",
-        "\\u0412\\u0438\\u0434 \\u0434\\u043b\\u044f \\u0441\\u043b\\u0443\\u0448\\u0430\\u0442\\u0435\\u043b\\u044f",
-        "\\u0422\\u0435\\u043a\\u0441\\u0442\\u043e\\u0432\\u044b\\u0439 \\u043c\\u0430\\u0442\\u0435\\u0440\\u0438\\u0430\\u043b",
-        "\\u041e\\u0442\\u043a\\u0440\\u044b\\u0442\\u044c \\u043c\\u0430\\u0442\\u0435\\u0440\\u0438\\u0430\\u043b",
-    ]
 
-    missing = [marker for marker in required if marker not in block]
+def require_manifest_stage() -> None:
+    if not MANIFEST.exists():
+        fail("docs/release-manifest.json is missing")
 
-    if missing:
-        fail(f"COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS misses real label markers: {missing}")
+    try:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in docs/release-manifest.json: {exc}")
+
+    stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
+    stage = stages.get("77.5")
+
+    if not stage:
+        fail("release manifest misses stage 77.5")
+
+    if stage.get("name") != "Lesson content preview UX":
+        fail("stage 77.5 name must be Lesson content preview UX")
+
+    if stage.get("deployment_type") != "frontend-only":
+        fail("stage 77.5 deployment_type must be frontend-only")
+
+    status = stage.get("status")
+    if status not in {"implementation_ready", "production_deployed"}:
+        fail("stage 77.5 status must be implementation_ready or production_deployed")
+
+    if "lesson_content_preview_panel" not in stage.get("runtime_scope", []):
+        fail("stage 77.5 runtime_scope must include lesson_content_preview_panel")
 
 
 def main() -> None:
     require_markers(ADMIN_COURSES, REQUIRED_ADMIN_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_real_preview_labels()
+    require_manifest_stage()
     print("stage 77.5 lesson content preview UX guard passed")
 
 
