@@ -106,7 +106,7 @@ def require_manifest_stage() -> None:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
     current_stage = manifest.get("current_stage")
-    if current_stage not in {"78.1", "78.2", "78.3", "78.4"}:
+    if current_stage not in {"78.1", "78.2", "78.3", "78.4", "78.5"}:
         fail("current_stage must be 78.1 or a compatible later stage")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}

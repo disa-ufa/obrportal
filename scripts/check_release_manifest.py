@@ -28,8 +28,9 @@ REQUIRED_SAFETY_BOUNDARIES = {
     "preserve_server_only_untracked_paths",
 }
 
-REQUIRED_STAGE78_4_CHECKS = {
+REQUIRED_STAGE78_5_CHECKS = {
     "python .\\scripts\\check_release_manifest.py",
+    "python .\\scripts\\check_stage78_learner_progress_api_inventory.py",
     "python .\\scripts\\check_stage78_learner_completion_action_ux.py",
     "python .\\scripts\\check_stage78_learner_lesson_content_preview_ux.py",
     "python .\\scripts\\check_stage78_learner_lesson_access_ux.py",
@@ -38,18 +39,20 @@ REQUIRED_STAGE78_4_CHECKS = {
     "python .\\scripts\\check_source_bom.py",
     "python .\\scripts\\check_text_encoding.py",
     "python .\\scripts\\check_no_todo_markers.py",
-    "python .\\scripts\\smoke_public_pages.py",
-    "python .\\scripts\\smoke_frontend_hooks_layout.py",
-    "docker compose exec frontend npm run build",
+    "git diff --check",
 }
 
-REQUIRED_STAGE78_4_CHANGED_FILES = {
-    "frontend/src/pages/CourseDetailPage.jsx",
+REQUIRED_STAGE78_5_CHANGED_FILES = {
     "docs/release-manifest.json",
-    "docs/stage78-learner-completion-action-ux.md",
+    "docs/stage78-learner-progress-api-inventory.md",
+    "docs/learner-progress-api-inventory.json",
     "scripts/check_release_manifest.py",
+    "scripts/check_stage78_learner_progress_api_inventory.py",
     "scripts/check_stage78_learner_completion_action_ux.py",
     "scripts/check_stage78_learner_lesson_content_preview_ux.py",
+    "scripts/check_stage78_learner_lesson_access_ux.py",
+    "scripts/check_stage78_learner_course_progress_foundation.py",
+    "scripts/check_stage77_course_builder_final_qa.py",
 }
 
 
@@ -84,8 +87,8 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest["process"] != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest["current_stage"] != "78.4":
-        fail("current_stage must be 78.4")
+    if manifest["current_stage"] != "78.5":
+        fail("current_stage must be 78.5")
 
     branch_policy = manifest["current_branch_policy"]
     if branch_policy.get("development_base") != "develop":
@@ -96,10 +99,10 @@ def main() -> None:
         fail("main_release_requires_separate_decision must be true")
 
     checkpoint = manifest["production_checkpoint"]
-    if checkpoint.get("last_confirmed_stage") != "78.3":
-        fail("last_confirmed_stage must be 78.3")
-    if checkpoint.get("last_confirmed_head") != "0c06af3":
-        fail("last_confirmed_head must be 0c06af3")
+    if checkpoint.get("last_confirmed_stage") != "78.4":
+        fail("last_confirmed_stage must be 78.4")
+    if checkpoint.get("last_confirmed_head") != "3beee80":
+        fail("last_confirmed_head must be 3beee80")
     if checkpoint.get("last_confirmed_host") != "portal.rcdo02.ru":
         fail("last_confirmed_host must be portal.rcdo02.ru")
     if checkpoint.get("frontend_health") != "healthy":
@@ -118,48 +121,47 @@ def main() -> None:
         fail(f"missing safety boundaries: {sorted(missing_boundaries)}")
 
     stages = {stage.get("id"): stage for stage in manifest["stages"]}
-    for stage_id in ["77.6", "77.7", "78.1", "78.2", "78.3", "78.4"]:
+    for stage_id in ["77.6", "77.7", "78.1", "78.2", "78.3", "78.4", "78.5"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage78_3 = stages["78.3"]
-    if stage78_3.get("status") != "production_deployed":
-        fail("stage 78.3 status must be production_deployed")
-    if stage78_3.get("head") != "0c06af3":
-        fail("stage 78.3 head must be 0c06af3")
-    if stage78_3.get("deployment_type") != "frontend-only":
-        fail("stage 78.3 deployment_type must be frontend-only")
-
     stage78_4 = stages["78.4"]
-    if stage78_4.get("status") != "implementation_ready":
-        fail("stage 78.4 status must be implementation_ready")
-    if stage78_4.get("branch") != "stage78-learner-completion-action-ux":
-        fail("stage 78.4 branch must be stage78-learner-completion-action-ux")
-    if stage78_4.get("base") != "develop":
-        fail("stage 78.4 base must be develop")
+    if stage78_4.get("status") != "production_deployed":
+        fail("stage 78.4 status must be production_deployed")
+    if stage78_4.get("head") != "3beee80":
+        fail("stage 78.4 head must be 3beee80")
     if stage78_4.get("deployment_type") != "frontend-only":
         fail("stage 78.4 deployment_type must be frontend-only")
-    if stage78_4.get("backend_runtime_changed_expected") is not False:
-        fail("stage 78.4 backend_runtime_changed_expected must be false")
-    if stage78_4.get("database_migration_expected") is not False:
-        fail("stage 78.4 database_migration_expected must be false")
 
-    missing_stage78_checks = REQUIRED_STAGE78_4_CHECKS - set(stage78_4.get("required_checks", []))
+    stage78_5 = stages["78.5"]
+    if stage78_5.get("status") != "implementation_ready":
+        fail("stage 78.5 status must be implementation_ready")
+    if stage78_5.get("branch") != "stage78-learner-progress-api-inventory":
+        fail("stage 78.5 branch must be stage78-learner-progress-api-inventory")
+    if stage78_5.get("base") != "develop":
+        fail("stage 78.5 base must be develop")
+    if stage78_5.get("deployment_type") != "repository-inventory":
+        fail("stage 78.5 deployment_type must be repository-inventory")
+    if stage78_5.get("frontend_runtime_changed_expected") is not False:
+        fail("stage 78.5 frontend_runtime_changed_expected must be false")
+    if stage78_5.get("backend_runtime_changed_expected") is not False:
+        fail("stage 78.5 backend_runtime_changed_expected must be false")
+    if stage78_5.get("database_migration_expected") is not False:
+        fail("stage 78.5 database_migration_expected must be false")
+
+    missing_stage78_checks = REQUIRED_STAGE78_5_CHECKS - set(stage78_5.get("required_checks", []))
     if missing_stage78_checks:
-        fail(f"stage 78.4 missing required checks: {sorted(missing_stage78_checks)}")
+        fail(f"stage 78.5 missing required checks: {sorted(missing_stage78_checks)}")
 
-    missing_changed_files = REQUIRED_STAGE78_4_CHANGED_FILES - set(stage78_4.get("changed_files", []))
+    missing_changed_files = REQUIRED_STAGE78_5_CHANGED_FILES - set(stage78_5.get("changed_files", []))
     if missing_changed_files:
-        fail(f"stage 78.4 missing changed files: {sorted(missing_changed_files)}")
+        fail(f"stage 78.5 missing changed files: {sorted(missing_changed_files)}")
 
-    for doc in stage78_4.get("required_documents", []):
+    for doc in stage78_5.get("required_documents", []):
         require_file_exists(doc)
 
-    require_file_exists("scripts/check_stage78_learner_completion_action_ux.py")
-    require_file_exists("scripts/check_stage78_learner_lesson_content_preview_ux.py")
-    require_file_exists("scripts/check_stage78_learner_lesson_access_ux.py")
-    require_file_exists("scripts/check_stage78_learner_course_progress_foundation.py")
-    require_file_exists("scripts/check_stage77_course_builder_final_qa.py")
+    require_file_exists("scripts/check_stage78_learner_progress_api_inventory.py")
+    require_file_exists("docs/learner-progress-api-inventory.json")
 
     print("release manifest guard passed")
 

@@ -1,0 +1,2147 @@
+{
+  "stage": "78.5",
+  "name": "Learner Progress API Inventory",
+  "generated_at_utc": "2026-06-07T15:50:51.527303+00:00",
+  "scanned_files_count": 658,
+  "keyword_groups": {
+    "course": [
+      {
+        "file": "scripts/smoke_auth_rbac.py",
+        "score": 783
+      },
+      {
+        "file": "frontend/src/pages/AdminCoursesPage.jsx",
+        "score": 719
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "score": 701
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "score": 561
+      },
+      {
+        "file": "frontend/src/pages/AccountPage.jsx",
+        "score": 408
+      },
+      {
+        "file": "frontend/src/pages/CourseDetailPage.jsx",
+        "score": 278
+      },
+      {
+        "file": "frontend/src/pages/CatalogPage.jsx",
+        "score": 232
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "score": 208
+      },
+      {
+        "file": "frontend/src/pages/AdminEnrollmentsPage.jsx",
+        "score": 207
+      },
+      {
+        "file": "docs/stage-12-3-course-detail-learner-workflow.md",
+        "score": 171
+      },
+      {
+        "file": "docs/release-manifest.json",
+        "score": 159
+      },
+      {
+        "file": "README.md",
+        "score": 152
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "score": 150
+      },
+      {
+        "file": "scripts/check_stage12_3_course_detail_learner_workflow.py",
+        "score": 137
+      },
+      {
+        "file": "scripts/smoke_public_pages.py",
+        "score": 137
+      },
+      {
+        "file": "scripts/smoke_frontend_admin_pages.py",
+        "score": 123
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "score": 116
+      },
+      {
+        "file": "docs/stage-13-learning-flow.md",
+        "score": 110
+      },
+      {
+        "file": "backend/app/tests/test_course_modules_admin_api.py",
+        "score": 93
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "score": 88
+      }
+    ],
+    "module": [
+      {
+        "file": "frontend/src/pages/AdminCoursesPage.jsx",
+        "score": 674
+      },
+      {
+        "file": "frontend/package-lock.json",
+        "score": 276
+      },
+      {
+        "file": "scripts/smoke_auth_rbac.py",
+        "score": 199
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "score": 173
+      },
+      {
+        "file": "backend/app/tests/test_course_modules_admin_api.py",
+        "score": 154
+      },
+      {
+        "file": "frontend/src/pages/CourseDetailPage.jsx",
+        "score": 121
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "score": 92
+      },
+      {
+        "file": "backend/app/tests/test_public_course_outline.py",
+        "score": 73
+      },
+      {
+        "file": "backend/app/tests/test_course_lessons_admin_api.py",
+        "score": 67
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "score": 66
+      },
+      {
+        "file": "backend/app/tests/test_account_course_detail_api.py",
+        "score": 56
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "score": 52
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "score": 30
+      },
+      {
+        "file": "scripts/check_stage77_course_builder_module_lesson_ux.py",
+        "score": 25
+      },
+      {
+        "file": "docs/release-manifest.json",
+        "score": 20
+      },
+      {
+        "file": "docs/stage-13-learning-flow.md",
+        "score": 20
+      },
+      {
+        "file": "frontend/src/pages/AccountPage.jsx",
+        "score": 20
+      },
+      {
+        "file": "backend/alembic/versions/0010_course_modules.py",
+        "score": 19
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "score": 18
+      },
+      {
+        "file": "docs/stage-12-3-course-detail-learner-workflow.md",
+        "score": 14
+      }
+    ],
+    "lesson": [
+      {
+        "file": "frontend/src/pages/AdminCoursesPage.jsx",
+        "score": 855
+      },
+      {
+        "file": "frontend/src/pages/CourseDetailPage.jsx",
+        "score": 342
+      },
+      {
+        "file": "scripts/smoke_auth_rbac.py",
+        "score": 265
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "score": 183
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "score": 167
+      },
+      {
+        "file": "backend/app/tests/test_course_lessons_admin_api.py",
+        "score": 166
+      },
+      {
+        "file": "frontend/src/pages/AccountPage.jsx",
+        "score": 144
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "score": 132
+      },
+      {
+        "file": "docs/release-manifest.json",
+        "score": 101
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "score": 94
+      },
+      {
+        "file": "docs/stage-13-learning-flow.md",
+        "score": 73
+      },
+      {
+        "file": "backend/app/tests/test_public_course_outline.py",
+        "score": 58
+      },
+      {
+        "file": "backend/app/api/v1/public.py",
+        "score": 51
+      },
+      {
+        "file": "backend/app/tests/test_account_course_detail_api.py",
+        "score": 48
+      },
+      {
+        "file": "scripts/check_stage78_learner_lesson_access_ux.py",
+        "score": 34
+      },
+      {
+        "file": "scripts/check_stage77_course_builder_module_lesson_ux.py",
+        "score": 30
+      },
+      {
+        "file": "scripts/check_stage78_learner_lesson_content_preview_ux.py",
+        "score": 30
+      },
+      {
+        "file": "backend/alembic/versions/0012_lesson_progress.py",
+        "score": 27
+      },
+      {
+        "file": "frontend/src/api/client.js",
+        "score": 27
+      },
+      {
+        "file": "scripts/check_stage77_lesson_editor_ux.py",
+        "score": 24
+      }
+    ],
+    "enrollment": [
+      {
+        "file": "scripts/smoke_auth_rbac.py",
+        "score": 945
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "score": 894
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "score": 817
+      },
+      {
+        "file": "frontend/src/pages/AdminEnrollmentsPage.jsx",
+        "score": 738
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "score": 402
+      },
+      {
+        "file": "frontend/src/pages/CourseDetailPage.jsx",
+        "score": 278
+      },
+      {
+        "file": "frontend/src/pages/OrganizationCabinetPage.jsx",
+        "score": 256
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "score": 246
+      },
+      {
+        "file": "scripts/smoke_shared_components.py",
+        "score": 246
+      },
+      {
+        "file": "scripts/smoke_frontend_admin_pages.py",
+        "score": 242
+      },
+      {
+        "file": "README.md",
+        "score": 222
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "score": 191
+      },
+      {
+        "file": "frontend/src/pages/DashboardPage.jsx",
+        "score": 180
+      },
+      {
+        "file": "scripts/smoke_org_cabinet_route.py",
+        "score": 176
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "score": 136
+      },
+      {
+        "file": "docs/stage-12-5-admin-moderation-audit-workflow.md",
+        "score": 136
+      },
+      {
+        "file": "frontend/src/components/organization/OrganizationGroupEnrollmentsSection.jsx",
+        "score": 116
+      },
+      {
+        "file": "frontend/src/pages/AccountPage.jsx",
+        "score": 112
+      },
+      {
+        "file": "scripts/check_stage12_5_admin_moderation_audit_workflow.py",
+        "score": 110
+      },
+      {
+        "file": "docs/stage-15-admin-ux-operator-workflow.md",
+        "score": 90
+      }
+    ],
+    "progress": [
+      {
+        "file": "scripts/smoke_auth_rbac.py",
+        "score": 329
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "score": 244
+      },
+      {
+        "file": "frontend/src/pages/AccountPage.jsx",
+        "score": 235
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "score": 174
+      },
+      {
+        "file": "frontend/src/pages/AdminEnrollmentsPage.jsx",
+        "score": 127
+      },
+      {
+        "file": "frontend/src/pages/CourseDetailPage.jsx",
+        "score": 117
+      },
+      {
+        "file": "docs/stage-13-learning-flow.md",
+        "score": 101
+      },
+      {
+        "file": "backend/app/tests/test_account_lesson_progress_api.py",
+        "score": 91
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "score": 75
+      },
+      {
+        "file": "docs/stage-30-final-pre-launch-freeze-release-archive-closure.md",
+        "score": 64
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "score": 61
+      },
+      {
+        "file": "docs/stage-29-final-operator-delivery-bundle-archive.md",
+        "score": 59
+      },
+      {
+        "file": "docs/stage-28-final-release-ledger-tag-registry-archive.md",
+        "score": 56
+      },
+      {
+        "file": "docs/stage-25-final-project-closure-handoff-package.md",
+        "score": 44
+      },
+      {
+        "file": "docs/stage-24-production-launch-final-evidence-package.md",
+        "score": 40
+      },
+      {
+        "file": "docs/stage-27-final-production-launch-command-pack-dry-archive.md",
+        "score": 40
+      },
+      {
+        "file": "docs/release-manifest.json",
+        "score": 39
+      },
+      {
+        "file": "frontend/src/pages/DashboardPage.jsx",
+        "score": 38
+      },
+      {
+        "file": "README.md",
+        "score": 37
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "score": 37
+      }
+    ],
+    "document": [
+      {
+        "file": "scripts/smoke_auth_rbac.py",
+        "score": 988
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "score": 956
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "score": 869
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "score": 672
+      },
+      {
+        "file": "README.md",
+        "score": 561
+      },
+      {
+        "file": "frontend/src/pages/AccountPage.jsx",
+        "score": 522
+      },
+      {
+        "file": "frontend/src/pages/DashboardPage.jsx",
+        "score": 300
+      },
+      {
+        "file": "docs/stage-14-documents-certificates-verification.md",
+        "score": 287
+      },
+      {
+        "file": "docs/stage-12-4-document-verification-workflow.md",
+        "score": 285
+      },
+      {
+        "file": "scripts/smoke_frontend_admin_pages.py",
+        "score": 245
+      },
+      {
+        "file": "scripts/smoke_documents_page.py",
+        "score": 233
+      },
+      {
+        "file": "scripts/check_stage12_4_document_verification_workflow.py",
+        "score": 211
+      },
+      {
+        "file": "docs/stage-15-admin-ux-operator-workflow.md",
+        "score": 158
+      },
+      {
+        "file": "backend/app/services/completion_documents.py",
+        "score": 149
+      },
+      {
+        "file": "frontend/src/pages/VerifyDocumentPage.jsx",
+        "score": 98
+      },
+      {
+        "file": "scripts/check_stage14_documents_certificates_verification.py",
+        "score": 97
+      },
+      {
+        "file": "scripts/smoke_account_page.py",
+        "score": 94
+      },
+      {
+        "file": "scripts/smoke_frontend_document_account_flows.py",
+        "score": 94
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "score": 92
+      },
+      {
+        "file": "docs/stage-12-7-import-export-reporting.md",
+        "score": 87
+      }
+    ],
+    "account": [
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "score": 158
+      },
+      {
+        "file": "docs/stage-12-1-learner-account-workflow.md",
+        "score": 120
+      },
+      {
+        "file": "frontend/src/pages/AccountPage.jsx",
+        "score": 115
+      },
+      {
+        "file": "scripts/smoke_auth_rbac.py",
+        "score": 99
+      },
+      {
+        "file": "docs/stage-13-learning-flow.md",
+        "score": 84
+      },
+      {
+        "file": "backend/app/api/v1/account.py",
+        "score": 83
+      },
+      {
+        "file": "scripts/check_stage12_1_account_contract.py",
+        "score": 83
+      },
+      {
+        "file": "scripts/smoke_stage12_1_account_workflow.py",
+        "score": 75
+      },
+      {
+        "file": "README.md",
+        "score": 57
+      },
+      {
+        "file": "scripts/check_stage12_1_learner_account_workflow.py",
+        "score": 57
+      },
+      {
+        "file": "docs/stage-12-4-document-verification-workflow.md",
+        "score": 53
+      },
+      {
+        "file": "scripts/smoke_account_page.py",
+        "score": 51
+      },
+      {
+        "file": "scripts/smoke_frontend_admin_pages.py",
+        "score": 50
+      },
+      {
+        "file": "docs/stage-12-2-catalog-learner-workflow.md",
+        "score": 49
+      },
+      {
+        "file": "docs/stage-12-3-course-detail-learner-workflow.md",
+        "score": 43
+      },
+      {
+        "file": "scripts/check_stage12_4_document_verification_workflow.py",
+        "score": 36
+      },
+      {
+        "file": "frontend/src/pages/CatalogPage.jsx",
+        "score": 35
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "score": 33
+      },
+      {
+        "file": "docs/stage-14-documents-certificates-verification.md",
+        "score": 29
+      },
+      {
+        "file": "scripts/smoke_org_cabinet_route.py",
+        "score": 27
+      }
+    ],
+    "rbac": [
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "score": 909
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "score": 749
+      },
+      {
+        "file": "scripts/smoke_auth_rbac.py",
+        "score": 706
+      },
+      {
+        "file": "frontend/src/pages/RolesPage.jsx",
+        "score": 268
+      },
+      {
+        "file": "frontend/src/components/admin/RoleDetailPanel.jsx",
+        "score": 253
+      },
+      {
+        "file": "README.md",
+        "score": 219
+      },
+      {
+        "file": "frontend/src/pages/PermissionsPage.jsx",
+        "score": 201
+      },
+      {
+        "file": "scripts/smoke_admin_components.py",
+        "score": 190
+      },
+      {
+        "file": "frontend/src/pages/DashboardPage.jsx",
+        "score": 146
+      },
+      {
+        "file": "backend/app/api/v1/org.py",
+        "score": 139
+      },
+      {
+        "file": "scripts/smoke_admin_hooks.py",
+        "score": 127
+      },
+      {
+        "file": "scripts/smoke_frontend_admin_pages.py",
+        "score": 119
+      },
+      {
+        "file": "backend/app/db/seed.py",
+        "score": 117
+      },
+      {
+        "file": "frontend/src/routes/AdminPageRenderer.jsx",
+        "score": 115
+      },
+      {
+        "file": "scripts/smoke_frontend_hooks_layout.py",
+        "score": 115
+      },
+      {
+        "file": "scripts/smoke_admin_renderer.py",
+        "score": 104
+      },
+      {
+        "file": "frontend/src/App.jsx",
+        "score": 102
+      },
+      {
+        "file": "scripts/smoke_frontend_admin_detail_components.py",
+        "score": 95
+      },
+      {
+        "file": "docs/stage-15-admin-ux-operator-workflow.md",
+        "score": 93
+      },
+      {
+        "file": "frontend/src/components/admin/UserDetailPanel.jsx",
+        "score": 93
+      }
+    ],
+    "audit": [
+      {
+        "file": "scripts/smoke_auth_rbac.py",
+        "score": 501
+      },
+      {
+        "file": "frontend/src/pages/AuditPage.jsx",
+        "score": 407
+      },
+      {
+        "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+        "score": 304
+      },
+      {
+        "file": "README.md",
+        "score": 229
+      },
+      {
+        "file": "backend/app/api/v1/admin.py",
+        "score": 199
+      },
+      {
+        "file": "frontend/src/pages/DashboardPage.jsx",
+        "score": 163
+      },
+      {
+        "file": "frontend/src/pages/DocumentsPage.jsx",
+        "score": 136
+      },
+      {
+        "file": "frontend/src/components/admin/AuditEventDetailPanel.jsx",
+        "score": 118
+      },
+      {
+        "file": "docs/stage-12-5-admin-moderation-audit-workflow.md",
+        "score": 103
+      },
+      {
+        "file": "frontend/src/pages/AdminCoursesPage.jsx",
+        "score": 89
+      },
+      {
+        "file": "scripts/smoke_frontend_admin_pages.py",
+        "score": 89
+      },
+      {
+        "file": "scripts/check_stage12_5_admin_moderation_audit_workflow.py",
+        "score": 75
+      },
+      {
+        "file": "frontend/src/pages/AdminEnrollmentsPage.jsx",
+        "score": 62
+      },
+      {
+        "file": "scripts/smoke_admin_components.py",
+        "score": 62
+      },
+      {
+        "file": "scripts/smoke_frontend_hooks_layout.py",
+        "score": 60
+      },
+      {
+        "file": "scripts/smoke_admin_hooks.py",
+        "score": 52
+      },
+      {
+        "file": "frontend/src/routes/AdminPageRenderer.jsx",
+        "score": 48
+      },
+      {
+        "file": "frontend/src/App.jsx",
+        "score": 47
+      },
+      {
+        "file": "docs/stage-12-7-import-export-reporting.md",
+        "score": 37
+      },
+      {
+        "file": "frontend/src/hooks/useAdminSelections.js",
+        "score": 36
+      }
+    ]
+  },
+  "backend_route_candidates": [
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 51,
+      "method": "GET",
+      "route": "/summary"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 79,
+      "method": "GET",
+      "route": "/courses"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 136,
+      "method": "GET",
+      "route": "/documents"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 188,
+      "method": "GET",
+      "route": "/documents/{document_id}/download"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 496,
+      "method": "GET",
+      "route": "/courses/{enrollment_id}"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 516,
+      "method": "POST",
+      "route": "/courses/{enrollment_id}/lessons/{lesson_id}/complete"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 601,
+      "method": "POST",
+      "route": "/courses/{course_id}/enroll"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 668,
+      "method": "POST",
+      "route": "/courses/{enrollment_id}/start"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 700,
+      "method": "POST",
+      "route": "/courses/{enrollment_id}/complete"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 862,
+      "method": "GET",
+      "route": "/dashboard-summary"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 954,
+      "method": "GET",
+      "route": "/users"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2143,
+      "method": "GET",
+      "route": "/documents"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2251,
+      "method": "POST",
+      "route": "/documents"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2465,
+      "method": "GET",
+      "route": "/documents/{document_id}/generation-events"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2501,
+      "method": "GET",
+      "route": "/documents/{document_id}/generation-events/{event_id}/download"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2545,
+      "method": "PATCH",
+      "route": "/documents/{document_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2764,
+      "method": "DELETE",
+      "route": "/documents/{document_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2822,
+      "method": "GET",
+      "route": "/documents/{document_id}/download"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2864,
+      "method": "POST",
+      "route": "/documents/{document_id}/regenerate"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3081,
+      "method": "GET",
+      "route": "/courses"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3115,
+      "method": "POST",
+      "route": "/courses"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3154,
+      "method": "GET",
+      "route": "/courses/{course_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3165,
+      "method": "PATCH",
+      "route": "/courses/{course_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3216,
+      "method": "POST",
+      "route": "/courses/{course_id}/activate"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3250,
+      "method": "POST",
+      "route": "/courses/{course_id}/deactivate"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3284,
+      "method": "DELETE",
+      "route": "/courses/{course_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3402,
+      "method": "GET",
+      "route": "/courses/{course_id}/modules"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3429,
+      "method": "POST",
+      "route": "/courses/{course_id}/modules"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3478,
+      "method": "GET",
+      "route": "/course-modules/{module_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3489,
+      "method": "PATCH",
+      "route": "/course-modules/{module_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3540,
+      "method": "DELETE",
+      "route": "/course-modules/{module_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3735,
+      "method": "GET",
+      "route": "/course-modules/{module_id}/lessons"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3768,
+      "method": "POST",
+      "route": "/course-modules/{module_id}/lessons"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3816,
+      "method": "GET",
+      "route": "/course-lessons/{lesson_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3827,
+      "method": "PATCH",
+      "route": "/course-lessons/{lesson_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3876,
+      "method": "DELETE",
+      "route": "/course-lessons/{lesson_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3921,
+      "method": "GET",
+      "route": "/worklist-summary"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4275,
+      "method": "GET",
+      "route": "/enrollments"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4362,
+      "method": "POST",
+      "route": "/enrollments"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4423,
+      "method": "POST",
+      "route": "/enrollments/group"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4580,
+      "method": "GET",
+      "route": "/enrollments/{enrollment_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4591,
+      "method": "PATCH",
+      "route": "/enrollments/{enrollment_id}"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4670,
+      "method": "DELETE",
+      "route": "/enrollments/{enrollment_id}"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 759,
+      "method": "GET",
+      "route": "/groups/{group_id}/enrollments"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 806,
+      "method": "POST",
+      "route": "/enrollments/group"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 905,
+      "method": "DELETE",
+      "route": "/groups/{group_id}/enrollments/{enrollment_id}"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 949,
+      "method": "GET",
+      "route": "/profile"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 136,
+      "method": "GET",
+      "route": "/courses"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 170,
+      "method": "GET",
+      "route": "/courses/{slug}"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 195,
+      "method": "GET",
+      "route": "/documents/verify"
+    },
+    {
+      "file": "scripts/check_stage12_1_account_contract.py",
+      "line": 23,
+      "method": "GET",
+      "route": "/summary"
+    },
+    {
+      "file": "scripts/check_stage12_1_account_contract.py",
+      "line": 24,
+      "method": "GET",
+      "route": "/courses"
+    },
+    {
+      "file": "scripts/check_stage12_1_account_contract.py",
+      "line": 25,
+      "method": "GET",
+      "route": "/documents"
+    },
+    {
+      "file": "scripts/check_stage12_1_account_contract.py",
+      "line": 26,
+      "method": "GET",
+      "route": "/documents/{document_id}/download"
+    },
+    {
+      "file": "scripts/check_stage12_1_account_contract.py",
+      "line": 27,
+      "method": "GET",
+      "route": "/courses/{enrollment_id}"
+    },
+    {
+      "file": "scripts/smoke_account_page.py",
+      "line": 142,
+      "method": "GET",
+      "route": "/summary"
+    },
+    {
+      "file": "scripts/smoke_account_page.py",
+      "line": 144,
+      "method": "GET",
+      "route": "/courses"
+    },
+    {
+      "file": "scripts/smoke_account_page.py",
+      "line": 146,
+      "method": "GET",
+      "route": "/documents"
+    },
+    {
+      "file": "scripts/smoke_account_page.py",
+      "line": 148,
+      "method": "GET",
+      "route": "/documents/{document_id}/download"
+    },
+    {
+      "file": "scripts/smoke_account_page.py",
+      "line": 150,
+      "method": "POST",
+      "route": "/courses/{course_id}/enroll"
+    },
+    {
+      "file": "scripts/smoke_account_page.py",
+      "line": 152,
+      "method": "POST",
+      "route": "/courses/{enrollment_id}/start"
+    },
+    {
+      "file": "scripts/smoke_account_page.py",
+      "line": 154,
+      "method": "POST",
+      "route": "/courses/{enrollment_id}/complete"
+    },
+    {
+      "file": "scripts/smoke_org_cabinet_route.py",
+      "line": 88,
+      "method": "GET",
+      "route": "/profile"
+    },
+    {
+      "file": "scripts/smoke_public_pages.py",
+      "line": 194,
+      "method": "GET",
+      "route": "/courses"
+    },
+    {
+      "file": "scripts/smoke_public_pages.py",
+      "line": 196,
+      "method": "GET",
+      "route": "/courses/{slug}"
+    },
+    {
+      "file": "scripts/smoke_public_pages.py",
+      "line": 198,
+      "method": "GET",
+      "route": "/documents/verify"
+    }
+  ],
+  "model_class_candidates": [
+    {
+      "file": "backend/app/models/course.py",
+      "line": 7,
+      "class": "Course"
+    },
+    {
+      "file": "backend/app/models/course_lesson.py",
+      "line": 7,
+      "class": "CourseLesson"
+    },
+    {
+      "file": "backend/app/models/course_module.py",
+      "line": 7,
+      "class": "CourseModule"
+    },
+    {
+      "file": "backend/app/models/document_generation_event.py",
+      "line": 9,
+      "class": "DocumentGenerationEvent"
+    },
+    {
+      "file": "backend/app/models/document_record.py",
+      "line": 14,
+      "class": "DocumentRecord"
+    },
+    {
+      "file": "backend/app/models/enrollment.py",
+      "line": 7,
+      "class": "Enrollment"
+    },
+    {
+      "file": "backend/app/models/lesson_progress.py",
+      "line": 7,
+      "class": "LessonProgress"
+    },
+    {
+      "file": "backend/app/schemas/account.py",
+      "line": 17,
+      "class": "AccountCourseItemResponse"
+    },
+    {
+      "file": "backend/app/schemas/account.py",
+      "line": 34,
+      "class": "AccountCourseLessonResponse"
+    },
+    {
+      "file": "backend/app/schemas/account.py",
+      "line": 48,
+      "class": "AccountCourseModuleResponse"
+    },
+    {
+      "file": "backend/app/schemas/account.py",
+      "line": 57,
+      "class": "AccountCourseDetailResponse"
+    },
+    {
+      "file": "backend/app/schemas/account.py",
+      "line": 67,
+      "class": "AccountCoursesResponse"
+    },
+    {
+      "file": "backend/app/schemas/account.py",
+      "line": 72,
+      "class": "AccountDocumentItemResponse"
+    },
+    {
+      "file": "backend/app/schemas/account.py",
+      "line": 89,
+      "class": "AccountDocumentsResponse"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 198,
+      "class": "AdminWorklistDocumentsSummary"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 206,
+      "class": "AdminWorklistEnrollmentsSummary"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 220,
+      "class": "AdminDocumentItem"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 254,
+      "class": "AdminDocumentGenerationEventItem"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 267,
+      "class": "AdminCourseItem"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 278,
+      "class": "AdminCourseDetail"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 283,
+      "class": "AdminCourseModuleItem"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 292,
+      "class": "AdminCourseModuleDetail"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 297,
+      "class": "AdminCourseModuleCreate"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 304,
+      "class": "AdminCourseModuleUpdate"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 310,
+      "class": "AdminCourseLessonItem"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 323,
+      "class": "AdminCourseLessonDetail"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 328,
+      "class": "AdminCourseLessonCreate"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 339,
+      "class": "AdminCourseLessonUpdate"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 350,
+      "class": "AdminCourseCreate"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 360,
+      "class": "AdminCourseUpdate"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 370,
+      "class": "AdminEnrollmentItem"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 389,
+      "class": "AdminEnrollmentCreate"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 399,
+      "class": "AdminEnrollmentGroupCreate"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 407,
+      "class": "AdminEnrollmentBulkSkippedItem"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 415,
+      "class": "AdminEnrollmentBulkCreateResult"
+    },
+    {
+      "file": "backend/app/schemas/admin.py",
+      "line": 426,
+      "class": "AdminEnrollmentUpdate"
+    },
+    {
+      "file": "backend/app/schemas/org.py",
+      "line": 79,
+      "class": "OrgEnrollmentItem"
+    },
+    {
+      "file": "backend/app/schemas/org.py",
+      "line": 98,
+      "class": "OrgEnrollmentGroupCreate"
+    },
+    {
+      "file": "backend/app/schemas/org.py",
+      "line": 106,
+      "class": "OrgEnrollmentBulkSkippedItem"
+    },
+    {
+      "file": "backend/app/schemas/org.py",
+      "line": 114,
+      "class": "OrgEnrollmentBulkCreateResult"
+    },
+    {
+      "file": "backend/app/schemas/public.py",
+      "line": 8,
+      "class": "PublicDocumentVerifyResponse"
+    },
+    {
+      "file": "backend/app/schemas/public.py",
+      "line": 32,
+      "class": "PublicCourseItemResponse"
+    },
+    {
+      "file": "backend/app/schemas/public.py",
+      "line": 42,
+      "class": "PublicCourseLessonResponse"
+    },
+    {
+      "file": "backend/app/schemas/public.py",
+      "line": 54,
+      "class": "PublicCourseModuleResponse"
+    },
+    {
+      "file": "backend/app/schemas/public.py",
+      "line": 63,
+      "class": "PublicCourseDetailResponse"
+    },
+    {
+      "file": "backend/app/services/document_templates.py",
+      "line": 10,
+      "class": "CompletionDocumentTemplateContext"
+    }
+  ],
+  "function_candidates": [
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 80,
+      "function": "get_account_courses"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 137,
+      "function": "get_account_documents"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 189,
+      "function": "get_account_document_download"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 247,
+      "function": "build_account_course_item_from_row"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 265,
+      "function": "build_account_course_lesson"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 287,
+      "function": "build_account_course_module"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 308,
+      "function": "load_account_course_modules"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 379,
+      "function": "calculate_progress_percent"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 386,
+      "function": "calculate_account_course_progress"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 426,
+      "function": "build_account_course_detail_from_row"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 456,
+      "function": "get_account_course_row_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 497,
+      "function": "get_account_course_detail"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 520,
+      "function": "complete_account_course_lesson"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 602,
+      "function": "create_account_course_enrollment"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 646,
+      "function": "get_account_enrollment_entity_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 669,
+      "function": "start_account_course_learning"
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "line": 701,
+      "function": "complete_account_course_learning"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 1903,
+      "function": "build_admin_document_item"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 1939,
+      "function": "build_admin_document_generation_event_item"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 1954,
+      "function": "normalize_document_number"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 1969,
+      "function": "normalize_document_status"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 1997,
+      "function": "apply_document_status_metadata"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2037,
+      "function": "save_admin_document_file"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2059,
+      "function": "ensure_document_enrollment_is_unique"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2082,
+      "function": "get_admin_document_row_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2144,
+      "function": "list_admin_documents"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2252,
+      "function": "create_admin_document"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2397,
+      "function": "document_record_snapshot"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2420,
+      "function": "get_document_update_audit_action"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2443,
+      "function": "delete_admin_document_file"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2447,
+      "function": "get_admin_document_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2466,
+      "function": "list_admin_document_generation_events"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2502,
+      "function": "download_admin_document_generation_event"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2546,
+      "function": "update_admin_document"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2765,
+      "function": "delete_admin_document"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2799,
+      "function": "resolve_admin_document_storage_path"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2803,
+      "function": "build_admin_document_download_filename"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2823,
+      "function": "download_admin_document"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2857,
+      "function": "is_generated_completion_document"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2865,
+      "function": "regenerate_admin_completion_document"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2938,
+      "function": "normalize_course_slug"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2950,
+      "function": "normalize_course_create_data"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2967,
+      "function": "normalize_course_update_data"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 2993,
+      "function": "build_admin_course_item"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3006,
+      "function": "build_admin_course_detail"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3021,
+      "function": "course_snapshot"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3034,
+      "function": "get_admin_course_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3052,
+      "function": "ensure_course_can_be_deleted"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3082,
+      "function": "list_admin_courses"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3116,
+      "function": "create_admin_course"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3155,
+      "function": "get_admin_course_detail"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3166,
+      "function": "update_admin_course"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3217,
+      "function": "activate_admin_course"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3251,
+      "function": "deactivate_admin_course"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3285,
+      "function": "delete_admin_course"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3318,
+      "function": "normalize_course_module_create_data"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3332,
+      "function": "normalize_course_module_update_data"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3349,
+      "function": "build_admin_course_module_item"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3360,
+      "function": "build_admin_course_module_detail"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3373,
+      "function": "course_module_snapshot"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3384,
+      "function": "get_admin_course_module_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3403,
+      "function": "list_admin_course_modules"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3434,
+      "function": "create_admin_course_module"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3479,
+      "function": "get_admin_course_module_detail"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3490,
+      "function": "update_admin_course_module"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3541,
+      "function": "delete_admin_course_module"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3580,
+      "function": "normalize_course_lesson_content_type"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3592,
+      "function": "normalize_course_lesson_create_data"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3611,
+      "function": "normalize_course_lesson_update_data"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3670,
+      "function": "build_admin_course_lesson_item"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3685,
+      "function": "build_admin_course_lesson_detail"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3702,
+      "function": "course_lesson_snapshot"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3717,
+      "function": "get_admin_course_lesson_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3736,
+      "function": "list_admin_course_lessons"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3773,
+      "function": "create_admin_course_lesson"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3817,
+      "function": "get_admin_course_lesson_detail"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3828,
+      "function": "update_admin_course_lesson"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 3877,
+      "function": "delete_admin_course_lesson"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4081,
+      "function": "normalize_enrollment_status"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4102,
+      "function": "build_admin_enrollment_item"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4123,
+      "function": "enrollment_snapshot"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4136,
+      "function": "get_admin_enrollment_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4154,
+      "function": "get_admin_enrollment_row_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4236,
+      "function": "ensure_enrollment_references_exist"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4258,
+      "function": "ensure_enrollment_can_be_deleted"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4276,
+      "function": "list_admin_enrollments"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4363,
+      "function": "create_admin_enrollment"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4428,
+      "function": "create_admin_group_enrollments"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4581,
+      "function": "get_admin_enrollment_detail"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4592,
+      "function": "update_admin_enrollment"
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "line": 4671,
+      "function": "delete_admin_enrollment"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 101,
+      "function": "build_org_enrollment_item"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 403,
+      "function": "get_active_course_or_404"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 424,
+      "function": "enrollment_for_user_course_exists"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 443,
+      "function": "get_org_enrollment_rows_by_ids"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 760,
+      "function": "list_org_group_enrollments"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 811,
+      "function": "create_org_group_enrollments"
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "line": 906,
+      "function": "delete_org_group_enrollment"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 30,
+      "function": "build_public_course_item"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 42,
+      "function": "build_public_course_lesson"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 56,
+      "function": "build_public_course_module"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 70,
+      "function": "build_public_course_detail"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 86,
+      "function": "load_public_course_modules"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 137,
+      "function": "list_public_courses"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 171,
+      "function": "get_public_course_detail"
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "line": 196,
+      "function": "verify_document"
+    },
+    {
+      "file": "backend/app/db/seed_demo_learning.py",
+      "line": 58,
+      "function": "get_or_create_demo_course"
+    },
+    {
+      "file": "backend/app/models/document_record.py",
+      "line": 10,
+      "function": "generate_document_verification_code"
+    },
+    {
+      "file": "backend/app/services/completion_documents.py",
+      "line": 29,
+      "function": "mark_completion_document_generation_metadata"
+    },
+    {
+      "file": "backend/app/services/completion_documents.py",
+      "line": 41,
+      "function": "build_completion_document_storage_path"
+    },
+    {
+      "file": "backend/app/services/completion_documents.py",
+      "line": 56,
+      "function": "add_completion_document_generation_event"
+    },
+    {
+      "file": "backend/app/services/completion_documents.py",
+      "line": 76,
+      "function": "pick_organization_document_value"
+    },
+    {
+      "file": "backend/app/services/completion_documents.py",
+      "line": 88,
+      "function": "get_completion_document_public_base_url"
+    },
+    {
+      "file": "backend/app/services/completion_documents.py",
+      "line": 98,
+      "function": "load_completion_document_context"
+    },
+    {
+      "file": "backend/app/services/completion_documents.py",
+      "line": 123,
+      "function": "write_completion_document_pdf_to_storage"
+    },
+    {
+      "file": "backend/app/services/completion_documents.py",
+      "line": 216,
+      "function": "ensure_completion_document_for_enrollment"
+    },
+    {
+      "file": "backend/app/services/document_pdf.py",
+      "line": 183,
+      "function": "render_completion_document_pdf"
+    },
+    {
+      "file": "backend/app/services/document_storage.py",
+      "line": 80,
+      "function": "build_document_download_filename"
+    },
+    {
+      "file": "backend/app/services/document_storage.py",
+      "line": 102,
+      "function": "detect_document_download_metadata"
+    },
+    {
+      "file": "backend/app/services/document_templates.py",
+      "line": 32,
+      "function": "normalize_document_text"
+    }
+  ],
+  "high_value_files": [
+    {
+      "file": "scripts/smoke_auth_rbac.py",
+      "score": 4815
+    },
+    {
+      "file": "backend/app/tests/test_auth_rbac_admin_api.py",
+      "score": 4075
+    },
+    {
+      "file": "backend/app/api/v1/admin.py",
+      "score": 3650
+    },
+    {
+      "file": "frontend/src/pages/AdminCoursesPage.jsx",
+      "score": 2418
+    },
+    {
+      "file": "frontend/src/pages/DocumentsPage.jsx",
+      "score": 1618
+    },
+    {
+      "file": "frontend/src/pages/AccountPage.jsx",
+      "score": 1556
+    },
+    {
+      "file": "README.md",
+      "score": 1477
+    },
+    {
+      "file": "frontend/src/pages/AdminEnrollmentsPage.jsx",
+      "score": 1226
+    },
+    {
+      "file": "frontend/src/pages/CourseDetailPage.jsx",
+      "score": 1179
+    },
+    {
+      "file": "backend/app/api/v1/account.py",
+      "score": 1079
+    },
+    {
+      "file": "frontend/src/pages/DashboardPage.jsx",
+      "score": 927
+    },
+    {
+      "file": "scripts/smoke_frontend_admin_pages.py",
+      "score": 904
+    },
+    {
+      "file": "docs/stage-13-learning-flow.md",
+      "score": 497
+    },
+    {
+      "file": "backend/app/tests/test_account_lesson_progress_api.py",
+      "score": 495
+    },
+    {
+      "file": "frontend/src/pages/AuditPage.jsx",
+      "score": 484
+    },
+    {
+      "file": "docs/stage-15-admin-ux-operator-workflow.md",
+      "score": 462
+    },
+    {
+      "file": "backend/app/api/v1/org.py",
+      "score": 431
+    },
+    {
+      "file": "scripts/smoke_shared_components.py",
+      "score": 399
+    },
+    {
+      "file": "frontend/src/api/client.js",
+      "score": 388
+    },
+    {
+      "file": "docs/release-manifest.json",
+      "score": 384
+    },
+    {
+      "file": "docs/stage-12-4-document-verification-workflow.md",
+      "score": 381
+    },
+    {
+      "file": "frontend/src/pages/CatalogPage.jsx",
+      "score": 378
+    },
+    {
+      "file": "frontend/src/pages/OrganizationCabinetPage.jsx",
+      "score": 376
+    },
+    {
+      "file": "docs/stage-12-5-admin-moderation-audit-workflow.md",
+      "score": 374
+    },
+    {
+      "file": "docs/stage-12-3-course-detail-learner-workflow.md",
+      "score": 361
+    },
+    {
+      "file": "docs/stage-14-documents-certificates-verification.md",
+      "score": 342
+    },
+    {
+      "file": "backend/app/tests/test_course_lessons_admin_api.py",
+      "score": 311
+    },
+    {
+      "file": "backend/app/api/v1/public.py",
+      "score": 310
+    },
+    {
+      "file": "scripts/smoke_documents_page.py",
+      "score": 308
+    },
+    {
+      "file": "scripts/check_stage12_5_admin_moderation_audit_workflow.py",
+      "score": 297
+    },
+    {
+      "file": "scripts/smoke_org_cabinet_route.py",
+      "score": 295
+    },
+    {
+      "file": "scripts/check_stage12_1_account_contract.py",
+      "score": 294
+    },
+    {
+      "file": "scripts/smoke_admin_components.py",
+      "score": 294
+    },
+    {
+      "file": "scripts/smoke_frontend_utils_routes.py",
+      "score": 293
+    },
+    {
+      "file": "docs/stage-12-7-import-export-reporting.md",
+      "score": 291
+    },
+    {
+      "file": "backend/app/services/completion_documents.py",
+      "score": 288
+    },
+    {
+      "file": "frontend/package-lock.json",
+      "score": 281
+    },
+    {
+      "file": "frontend/src/pages/RolesPage.jsx",
+      "score": 272
+    },
+    {
+      "file": "scripts/check_stage12_4_document_verification_workflow.py",
+      "score": 267
+    },
+    {
+      "file": "frontend/src/components/admin/RoleDetailPanel.jsx",
+      "score": 263
+    }
+  ],
+  "recommendation": {
+    "next_stage": "78.6",
+    "next_stage_name": "Learner lesson completion API integration",
+    "runtime_change_allowed_now": false,
+    "database_migration_allowed_now": false,
+    "decision": "Use backend as the source of truth. Do not add a new progress table until existing enrollment, lesson, completion, and document flows are verified."
+  }
+}

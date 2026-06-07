@@ -30,10 +30,11 @@ REQUIRED_DOC_MARKERS = [
 ]
 
 REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "78.4"',
     '"id": "78.4"',
     '"name": "Learner completion action UX"',
-    '"branch": "stage78-learner-completion-action-ux"',
+    '"status": "production_deployed"',
+    '"head": "3beee80"',
+    '"deployment_type": "frontend-only"',
     '"learner_completion_action_panel"',
     '"learner_completion_action_summary"',
     '"learner_completion_action_checklist"',

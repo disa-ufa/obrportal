@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "78.4",
+  "current_stage": "78.5",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "78.3",
-    "last_confirmed_head": "0c06af3",
+    "last_confirmed_stage": "78.4",
+    "last_confirmed_head": "3beee80",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -29,7 +29,8 @@
     },
     "static_index_title": "Образовательный портал ГБОУ РЦДО",
     "backend_runtime_changed": false,
-    "database_migration_run": false
+    "database_migration_run": false,
+    "frontend_runtime_changed": false
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -963,8 +964,8 @@
     {
       "id": "78.4",
       "name": "Learner completion action UX",
-      "status": "implementation_ready",
-      "branch": "stage78-learner-completion-action-ux",
+      "status": "production_deployed",
+      "branch": "develop",
       "base": "develop",
       "deployment_type": "frontend-only",
       "runtime_scope": [
@@ -1015,6 +1016,72 @@
       ],
       "safety_notes": [
         "frontend_only",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes"
+      ],
+      "head": "3beee80",
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "78.5",
+      "name": "Learner Progress API Inventory",
+      "status": "implementation_ready",
+      "branch": "stage78-learner-progress-api-inventory",
+      "base": "develop",
+      "deployment_type": "repository-inventory",
+      "runtime_scope": [
+        "repository_inventory",
+        "learner_progress_api_inventory",
+        "course_enrollment_lesson_completion_document_flow_map"
+      ],
+      "frontend_runtime_changed_expected": false,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage78-learner-progress-api-inventory.md",
+        "docs/learner-progress-api-inventory.json"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage78_learner_progress_api_inventory.py",
+        "python .\\scripts\\check_stage78_learner_completion_action_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_content_preview_ux.py",
+        "python .\\scripts\\check_stage78_learner_lesson_access_ux.py",
+        "python .\\scripts\\check_stage78_learner_course_progress_foundation.py",
+        "python .\\scripts\\check_stage77_course_builder_final_qa.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage78-learner-progress-api-inventory.md",
+        "docs/learner-progress-api-inventory.json",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage78_learner_progress_api_inventory.py",
+        "scripts/check_stage78_learner_completion_action_ux.py",
+        "scripts/check_stage78_learner_lesson_content_preview_ux.py",
+        "scripts/check_stage78_learner_lesson_access_ux.py",
+        "scripts/check_stage78_learner_course_progress_foundation.py",
+        "scripts/check_stage77_course_builder_final_qa.py"
+      ],
+      "acceptance_markers": [
+        "stage78_5_repository_inventory_only=yes",
+        "stage78_5_runtime_changed=no",
+        "stage78_5_database_changed=no",
+        "stage78_5_credential_like_values=no",
+        "Learner Progress API Inventory",
+        "Learner lesson completion API integration"
+      ],
+      "safety_notes": [
+        "repository_inventory_only",
+        "no_frontend_runtime_changes",
         "no_backend_runtime_changes",
         "no_database_migrations",
         "no_auth_or_rbac_changes"
