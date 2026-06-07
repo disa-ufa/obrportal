@@ -854,6 +854,227 @@ function getAdminCourseCatalogDiagnostics({
   return [...new Set(items)];
 }
 
+
+const COURSE_BUILDER_READINESS_LABELS = {
+  stage: "\u041a\u043e\u043d\u0441\u0442\u0440\u0443\u043a\u0442\u043e\u0440 \u043a\u0443\u0440\u0441\u043e\u0432 \u00b7 \u041a\u0443\u0440\u0441 \u2192 \u041c\u043e\u0434\u0443\u043b\u0438 \u2192 \u0423\u0440\u043e\u043a\u0438",
+  title: "\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c \u043a\u0443\u0440\u0441\u0430 \u043a \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438",
+  subtitle: "\u041f\u0430\u043d\u0435\u043b\u044c \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442, \u043c\u043e\u0436\u043d\u043e \u043b\u0438 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c \u043a\u0443\u0440\u0441 \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u0438 \u043d\u0430\u0437\u043d\u0430\u0447\u0430\u0442\u044c \u0435\u0433\u043e \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f\u043c.",
+  publishable: "\u041c\u043e\u0436\u043d\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c",
+  blocked: "\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0438",
+  checksPassed: "\u041f\u0440\u043e\u0432\u0435\u0440\u043e\u043a \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043e",
+  blockers: "\u0411\u043b\u043e\u043a\u0435\u0440\u044b \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438",
+  noBlockers: "\u041a\u0440\u0438\u0442\u0438\u0447\u043d\u044b\u0445 \u0431\u043b\u043e\u043a\u0435\u0440\u043e\u0432 \u043d\u0435\u0442.",
+  structure: "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430",
+  modules: "\u041c\u043e\u0434\u0443\u043b\u0438",
+  lessons: "\u0423\u0440\u043e\u043a\u0438",
+  requiredLessons: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435",
+  activeLessons: "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435",
+  checklist: "\u0427\u0435\u043a-\u043b\u0438\u0441\u0442",
+};
+
+function getCourseBuilderReadiness(course, modules = [], lessonsByModuleId = {}) {
+  const courseModules = Array.isArray(modules) ? modules : [];
+  const allLessons = courseModules.flatMap((module) =>
+    Array.isArray(lessonsByModuleId?.[module.id]) ? lessonsByModuleId[module.id] : []
+  );
+  const activeModules = courseModules.filter((module) => module.is_active);
+  const activeLessons = allLessons.filter((lesson) => lesson.is_active);
+  const requiredLessons = allLessons.filter((lesson) => lesson.is_required);
+  const activeRequiredLessons = allLessons.filter((lesson) => lesson.is_active && lesson.is_required);
+
+  const checks = [
+    {
+      key: "slug",
+      label: "Slug \u0434\u043b\u044f \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u0439 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438",
+      passed: Boolean(`${course.slug || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "title",
+      label: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b",
+      passed: Boolean(`${course.title || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "description",
+      label: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0434\u043b\u044f \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0430",
+      passed: Boolean(`${course.description || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "format",
+      label: "\u0424\u043e\u0440\u043c\u0430\u0442 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f",
+      passed: Boolean(`${course.format || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "document_type",
+      label: "\u0422\u0438\u043f \u0438\u0442\u043e\u0433\u043e\u0432\u043e\u0433\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+      passed: Boolean(`${course.document_type || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "modules",
+      label: "\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u0438\u043d \u043c\u043e\u0434\u0443\u043b\u044c",
+      passed: courseModules.length > 0,
+      blocker: true,
+    },
+    {
+      key: "active_modules",
+      label: "\u0415\u0441\u0442\u044c \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u043c\u043e\u0434\u0443\u043b\u044c",
+      passed: activeModules.length > 0,
+      blocker: true,
+    },
+    {
+      key: "lessons",
+      label: "\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u0438\u043d \u0443\u0440\u043e\u043a",
+      passed: allLessons.length > 0,
+      blocker: true,
+    },
+    {
+      key: "active_lessons",
+      label: "\u0415\u0441\u0442\u044c \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u0443\u0440\u043e\u043a",
+      passed: activeLessons.length > 0,
+      blocker: true,
+    },
+    {
+      key: "required_lessons",
+      label: "\u0415\u0441\u0442\u044c \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0443\u0440\u043e\u043a",
+      passed: requiredLessons.length > 0,
+      blocker: true,
+    },
+    {
+      key: "active_required_lessons",
+      label: "\u0415\u0441\u0442\u044c \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0443\u0440\u043e\u043a",
+      passed: activeRequiredLessons.length > 0,
+      blocker: true,
+    },
+  ];
+
+  const passedChecks = checks.filter((check) => check.passed);
+  const blockers = checks.filter((check) => check.blocker && !check.passed);
+  const readinessPercent = Math.round((passedChecks.length / checks.length) * 100);
+
+  return {
+    checks,
+    passedChecks,
+    blockers,
+    readinessPercent,
+    publishable: blockers.length === 0,
+    modulesTotal: courseModules.length,
+    lessonsTotal: allLessons.length,
+    activeModules: activeModules.length,
+    activeLessons: activeLessons.length,
+    requiredLessons: requiredLessons.length,
+  };
+}
+
+function CourseBuilderReadinessPanel({ course, modules, lessonsByModuleId }) {
+  const readiness = getCourseBuilderReadiness(course, modules, lessonsByModuleId);
+
+  return (
+    <section
+      data-testid="course-builder-readiness-panel"
+      className="mt-5 rounded-3xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_BUILDER_READINESS_LABELS.stage}
+          </div>
+          <h3 className="mt-1 text-base font-bold text-slate-900">
+            {COURSE_BUILDER_READINESS_LABELS.title}
+          </h3>
+          <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={readiness.publishable ? "green" : "red"}>
+          {readiness.publishable
+            ? COURSE_BUILDER_READINESS_LABELS.publishable
+            : COURSE_BUILDER_READINESS_LABELS.blocked}
+        </StatusBadge>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.checksPassed}
+          </div>
+          <div
+            data-testid="course-builder-readiness-score"
+            className="mt-2 text-2xl font-bold text-slate-900"
+          >
+            {readiness.passedChecks.length}/{readiness.checks.length}
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {readiness.readinessPercent}%
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.modules}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {readiness.activeModules}/{readiness.modulesTotal}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.lessons}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {readiness.activeLessons}/{readiness.lessonsTotal}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.requiredLessons}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {readiness.requiredLessons}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="course-builder-readiness-blockers"
+        className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 ring-1 ring-slate-200"
+      >
+        <div className="font-semibold text-slate-900">
+          {COURSE_BUILDER_READINESS_LABELS.blockers}
+        </div>
+        {readiness.blockers.length === 0 ? (
+          <p className="mt-2 text-slate-600">
+            {COURSE_BUILDER_READINESS_LABELS.noBlockers}
+          </p>
+        ) : (
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
+            {readiness.blockers.map((blocker) => (
+              <li key={blocker.key}>{blocker.label}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div
+        data-testid="course-builder-readiness-checklist"
+        className="mt-4 flex flex-wrap gap-2"
+      >
+        {readiness.checks.map((check) => (
+          <StatusBadge key={check.key} tone={check.passed ? "green" : "gray"}>
+            {check.passed ? "\u2713" : "\u2022"} {check.label}
+          </StatusBadge>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function AdminCourseCatalogDiagnostics({
   catalogStats,
   diagnostics,
