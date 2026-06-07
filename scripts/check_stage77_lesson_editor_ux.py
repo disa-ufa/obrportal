@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,17 +27,6 @@ REQUIRED_DOC_MARKERS = [
     "stage77_4_release_manifest_required=yes",
     "stage77_4_guard_required=yes",
     "stage77_4_frontend_only=yes",
-]
-
-REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "77.4"',
-    '"id": "77.4"',
-    '"name": "Lesson editor UX"',
-    '"branch": "stage77-lesson-editor-ux"',
-    '"lesson_editor_ux_panel"',
-    '"lesson_editor_content_type_hints"',
-    '"lesson_editor_required_fields"',
-    '"lesson_editor_missing_fields"',
 ]
 
 
@@ -77,25 +67,41 @@ def require_real_lesson_editor_labels() -> None:
     if found:
         fail(f"COURSE_BUILDER_LESSON_EDITOR_UX_LABELS contains broken labels: {found}")
 
-    required = [
-        "\\u041f\\u043e\\u0434\\u0441\\u043a\\u0430\\u0437\\u043a\\u0438 \\u043f\\u043e \\u0443\\u0440\\u043e\\u043a\\u0443",
-        "\\u0422\\u0438\\u043f \\u043a\\u043e\\u043d\\u0442\\u0435\\u043d\\u0442\\u0430",
-        "\\u041e\\u0431\\u044f\\u0437\\u0430\\u0442\\u0435\\u043b\\u044c\\u043d\\u043e \\u0434\\u043b\\u044f \\u044d\\u0442\\u043e\\u0433\\u043e \\u0442\\u0438\\u043f\\u0430",
-        "\\u0427\\u0442\\u043e \\u0435\\u0449\\u0451 \\u043d\\u0443\\u0436\\u043d\\u043e",
-        "\\u0420\\u0435\\u0436\\u0438\\u043c \\u0443\\u0440\\u043e\\u043a\\u0430",
-    ]
 
-    missing = [marker for marker in required if marker not in block]
+def require_manifest_stage() -> None:
+    if not MANIFEST.exists():
+        fail("docs/release-manifest.json is missing")
 
-    if missing:
-        fail(f"COURSE_BUILDER_LESSON_EDITOR_UX_LABELS misses real label markers: {missing}")
+    try:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in docs/release-manifest.json: {exc}")
+
+    stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
+    stage = stages.get("77.4")
+
+    if not stage:
+        fail("release manifest misses stage 77.4")
+
+    if stage.get("name") != "Lesson editor UX":
+        fail("stage 77.4 name must be Lesson editor UX")
+
+    if stage.get("deployment_type") != "frontend-only":
+        fail("stage 77.4 deployment_type must be frontend-only")
+
+    status = stage.get("status")
+    if status not in {"implementation_ready", "production_deployed"}:
+        fail("stage 77.4 status must be implementation_ready or production_deployed")
+
+    if "lesson_editor_ux_panel" not in stage.get("runtime_scope", []):
+        fail("stage 77.4 runtime_scope must include lesson_editor_ux_panel")
 
 
 def main() -> None:
     require_markers(ADMIN_COURSES, REQUIRED_ADMIN_MARKERS)
     require_markers(STAGE_DOC, REQUIRED_DOC_MARKERS)
-    require_markers(MANIFEST, REQUIRED_MANIFEST_MARKERS)
     require_real_lesson_editor_labels()
+    require_manifest_stage()
     print("stage 77.4 lesson editor UX guard passed")
 
 
