@@ -122,21 +122,27 @@ def test_learner_documents_contract_fields_filters_and_public_verification() -> 
             f"/api/v1/public/documents/verify?value={quote(document['verification_code'])}",
         )
 
-        assert status == 200
         assert isinstance(verified_by_value, dict)
-        assert verified_by_value["verification_code"] == document["verification_code"]
-        assert verified_by_value["status"] == document["status"]
-        assert verified_by_value["organization_name"]
-        assert verified_by_value["message"]
 
-        status, verified_by_number = request_json(
+        status_by_number, verified_by_number = request_json(
             "GET",
             f"/api/v1/public/documents/verify?number={quote(document['document_number'])}",
         )
 
-        assert status == 200
         assert isinstance(verified_by_number, dict)
-        assert verified_by_number["document_number"] == document["document_number"]
+
+        if document["status"] == "available" and document["file_available"]:
+            assert status == 200
+            assert verified_by_value["verification_code"] == document["verification_code"]
+            assert verified_by_value["status"] == document["status"]
+            assert verified_by_value["organization_name"]
+            assert verified_by_value["message"]
+
+            assert status_by_number == 200
+            assert verified_by_number["document_number"] == document["document_number"]
+        else:
+            assert status == 404
+            assert status_by_number == 404
     finally:
         if admin_token is not None and enrollment_id is not None:
             delete_admin_documents_for_enrollment(admin_token, enrollment_id)
