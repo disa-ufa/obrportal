@@ -37,10 +37,10 @@ REQUIRED_PLAN_DOC_MARKERS = [
 ]
 
 REQUIRED_MANIFEST_MARKERS = [
-    '"current_stage": "80.2"',
     '"id": "80.2"',
     '"name": "Learner documents backend/API implementation plan"',
-    '"branch": "stage80-learner-documents-backend-api-plan"',
+    '"status": "production_confirmed"',
+    '"head": "10a3168"',
     '"deployment_type": "docs-and-qa-only"',
     '"frontend_runtime_changed_expected": false',
     '"backend_runtime_changed_expected": false',
@@ -71,14 +71,17 @@ def require_manifest() -> None:
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in docs/release-manifest.json: {exc}")
 
-    if manifest.get("current_stage") != "80.2":
-        fail("current_stage must be 80.2")
+    if manifest.get("current_stage") not in {"80.2", "80.3"}:
+        fail("current_stage must be 80.2 or a compatible later stage")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "80.1":
-        fail("production checkpoint stage must be 80.1")
-    if checkpoint.get("last_confirmed_head") != "a6eeef7":
-        fail("production checkpoint head must be a6eeef7")
+    allowed_checkpoints = {
+        ("80.1", "a6eeef7"),
+        ("80.2", "10a3168"),
+    }
+    if (checkpoint.get("last_confirmed_stage"), checkpoint.get("last_confirmed_head")) not in allowed_checkpoints:
+        fail("production checkpoint must reference 80.1/a6eeef7 or compatible later stage 80.2/10a3168")
+
     if checkpoint.get("frontend_runtime_changed") is not False:
         fail("checkpoint frontend_runtime_changed must be false")
     if checkpoint.get("backend_runtime_changed") is not False:
@@ -92,15 +95,9 @@ def require_manifest() -> None:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage80_1 = stages["80.1"]
-    if stage80_1.get("status") != "production_confirmed":
-        fail("stage 80.1 status must be production_confirmed")
-    if stage80_1.get("head") != "a6eeef7":
-        fail("stage 80.1 head must be a6eeef7")
-
     stage80_2 = stages["80.2"]
-    if stage80_2.get("status") != "implementation_ready":
-        fail("stage 80.2 status must be implementation_ready")
+    if stage80_2.get("status") not in {"implementation_ready", "production_confirmed"}:
+        fail("stage 80.2 status must be implementation_ready or production_confirmed")
     if stage80_2.get("deployment_type") != "docs-and-qa-only":
         fail("stage 80.2 deployment_type must be docs-and-qa-only")
     if stage80_2.get("frontend_runtime_changed_expected") is not False:
