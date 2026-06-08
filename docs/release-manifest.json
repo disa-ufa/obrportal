@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.6",
+  "current_stage": "81.7",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "81.6",
-    "last_confirmed_head": "9544704",
+    "last_confirmed_stage": "81.7",
+    "last_confirmed_head": "3999e6b",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -21,11 +21,10 @@
     "storage": "ok",
     "public_routes_http": {
       "/": 200,
+      "/login": 200,
+      "/account": 200,
       "/catalog": 200,
-      "/courses/testov-programma": 200,
-      "/admin/courses": 200,
-      "/admin/enrollments": 200,
-      "/account": 200
+      "/courses/testov-programma": 200
     },
     "static_index_title": "Образовательный портал ГБОУ РЦДО",
     "backend_runtime_changed": false,
@@ -34,10 +33,10 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "manual_production_content_fill_completed",
+    "status": "learner_course_access_progress_completed",
     "production_data_changed": true,
-    "report_path": "/opt/obrportal/tmp/stage81_6_manual_production_content_fill_preflight_20260608T141659Z.txt",
-    "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-6-manual-content-fill-20260608T141659Z.sql"
+    "report_path": "/opt/obrportal/tmp/stage81_7_learner_course_access_progress_preflight_20260608T180441Z.txt",
+    "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-7-learner-flow-20260608T180441Z.sql"
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -2957,6 +2956,147 @@
         "sidebar_enrollments_badge_followup": true
       },
       "next_stage": "81.7"
+    },
+    {
+      "id": "81.7",
+      "name": "Learner course access and progress flow completed",
+      "status": "production_completed",
+      "branch": "stage81-7-finalize-learner-course-access-progress-flow",
+      "base": "develop",
+      "deployment_type": "learner-course-access-progress-with-frontend-hotfix",
+      "runtime_scope": [
+        "frontend_hotfix_account_page",
+        "learner_password_reset_via_admin_ui",
+        "learner_login_verified",
+        "account_ui_verified",
+        "course_start_verified",
+        "course_outline_verified",
+        "lesson_completion_verified",
+        "progress_100_verified",
+        "course_completion_deferred"
+      ],
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "production_data_changed": true,
+      "course_completion_deferred": true,
+      "document_generation_deferred": true,
+      "frontend_hotfix": {
+        "head": "3999e6b",
+        "message": "fix: define account count helper",
+        "file": "frontend/src/pages/AccountPage.jsx",
+        "root_cause": "countWhere referenced but not defined",
+        "deploy_scope": "frontend_only"
+      },
+      "target_learner": {
+        "email": "stage12-smoke-learner@obrportal.local",
+        "role": "learner_fl",
+        "is_active": true,
+        "password_reset_via_admin_ui": true,
+        "password_printed": false,
+        "password_stored_in_report": false
+      },
+      "target_course": {
+        "slug": "testov-programma",
+        "title": "тестовая программа",
+        "module_title": "Основной модуль",
+        "lesson_title": "Знакомство с порталом"
+      },
+      "target_enrollment": {
+        "id": "4aaa9c32-8b7c-476d-acb1-a33863e08986",
+        "user_email": "stage12-smoke-learner@obrportal.local",
+        "course_slug": "testov-programma",
+        "status": "active",
+        "started_at": "2026-06-08T18:31:20.951852+00:00",
+        "completed_at": null
+      },
+      "target_lesson_progress": {
+        "id": "722a300b-3923-4d22-b7dc-1dec3a80c69a",
+        "enrollment_id": "4aaa9c32-8b7c-476d-acb1-a33863e08986",
+        "lesson_id": "97ba3967-5aee-4e0f-86ad-c9b867e8ee6d",
+        "lesson_title": "Знакомство с порталом",
+        "status": "completed",
+        "completed_at": "2026-06-08T18:31:40.328173+00:00"
+      },
+      "final_counts": {
+        "courses": 2,
+        "course_modules": 1,
+        "course_lessons": 1,
+        "organizations": 1,
+        "learning_groups": 0,
+        "enrollments": 1,
+        "lesson_progress": 1,
+        "document_records": 0
+      },
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-learner-course-access-progress-flow.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_learner_course_access_progress_flow.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-learner-course-access-progress-flow.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_learner_course_access_progress_flow.py"
+      ],
+      "acceptance_markers": [
+        "Stage 81.7 - Learner course access and progress flow completed",
+        "stage81_7_status=production_completed",
+        "stage81_7_learner_login_verified=yes",
+        "stage81_7_account_ui_verified=yes",
+        "stage81_7_course_start_verified=yes",
+        "stage81_7_course_outline_verified=yes",
+        "stage81_7_lesson_completion_verified=yes",
+        "stage81_7_progress_100_verified=yes",
+        "stage81_7_document_records_created=no",
+        "stage81_7_course_completion_deferred=yes",
+        "stage81_7_next_stage=81.8"
+      ],
+      "safety_notes": [
+        "frontend_hotfix_was_frontend_only",
+        "learner_password_reset_via_admin_ui",
+        "password_not_printed",
+        "password_not_stored_in_report",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_direct_sql_progress_inserts",
+        "no_course_completion",
+        "no_document_generation",
+        "completion_document_flow_deferred_to_stage_81_8"
+      ],
+      "production_evidence": {
+        "host": "portal.rcdo02.ru",
+        "ip": "89.127.203.70",
+        "head": "3999e6b",
+        "report_path": "/opt/obrportal/tmp/stage81_7_learner_course_access_progress_preflight_20260608T180441Z.txt",
+        "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-7-learner-flow-20260608T180441Z.sql",
+        "ready": {
+          "status": "ok",
+          "database": "ok",
+          "redis": "ok",
+          "storage": "ok"
+        },
+        "routes": {
+          "/": 200,
+          "/login": 200,
+          "/account": 200,
+          "/catalog": 200,
+          "/courses/testov-programma": 200
+        },
+        "visual_account_verified": true,
+        "progress_100_verified": true,
+        "course_completion_deferred": true
+      },
+      "next_stage": "81.8"
     }
   ]
 }
