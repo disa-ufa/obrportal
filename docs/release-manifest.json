@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.2",
+  "current_stage": "81.3",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
@@ -2564,6 +2564,116 @@
         "additive_only_data_initialization",
         "production_checkpoint_remains_80_4_runtime"
       ],
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "81.3",
+      "name": "Production data preflight snapshot",
+      "status": "implementation_ready",
+      "branch": "stage81-3-production-data-preflight-snapshot",
+      "base": "develop",
+      "deployment_type": "docs-and-guard-only",
+      "runtime_scope": [
+        "production_data_preflight_snapshot",
+        "production_table_counts_record",
+        "postgres_backup_verification",
+        "next_additive_data_stage_preparation"
+      ],
+      "frontend_runtime_changed_expected": false,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "production_deploy_required": false,
+      "production_data_changed": false,
+      "backup_created": true,
+      "snapshot_report_path": "/opt/obrportal/tmp/stage81_3_production_data_preflight_snapshot_20260608T123756Z.txt",
+      "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-3-data-preflight-20260608T123756Z.sql",
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-production-data-preflight-snapshot.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_production_data_preflight_snapshot.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-production-data-preflight-snapshot.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_production_data_preflight_snapshot.py"
+      ],
+      "acceptance_markers": [
+        "Stage 81.3 - Production data preflight snapshot",
+        "stage81_3_production_data_preflight_snapshot_status=implementation_ready",
+        "stage81_3_runtime_changes=no",
+        "stage81_3_database_changes=no",
+        "stage81_3_production_deploy_required=no",
+        "stage81_3_production_data_changed=no",
+        "stage81_3_backup_created=yes",
+        "stage81_3_snapshot_report_recorded=yes",
+        "stage81_3_next_stage=81.4"
+      ],
+      "safety_notes": [
+        "docs_and_guard_only",
+        "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes",
+        "production_deploy_not_required",
+        "production_data_changed_no",
+        "postgres_backup_created",
+        "production_checkpoint_remains_80_4_runtime"
+      ],
+      "production_evidence": {
+        "host": "portal.rcdo02.ru",
+        "ip": "89.127.203.70",
+        "head": "c427665",
+        "tag_at_head": "v0.1.0-stage81-2-production-data-init-plan",
+        "ready": "ok",
+        "database": "ok",
+        "redis": "ok",
+        "storage": "ok",
+        "public_routes_http": {
+          "/": 200,
+          "/catalog": 200,
+          "/login": 200,
+          "/admin": 200,
+          "/documents/verify": 200
+        },
+        "report_path": "/opt/obrportal/tmp/stage81_3_production_data_preflight_snapshot_20260608T123756Z.txt",
+        "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-3-data-preflight-20260608T123756Z.sql",
+        "postgres_backup_verified": true,
+        "data_changed": false,
+        "migrations_run": false,
+        "containers_restarted": false,
+        "table_counts": {
+          "users": 3,
+          "roles": 9,
+          "permissions": 43,
+          "role_permissions": 110,
+          "user_roles": 2,
+          "audit_events": 63,
+          "organizations": 0,
+          "learning_groups": 0,
+          "learning_group_members": 0,
+          "courses": 0,
+          "course_modules": 0,
+          "course_lessons": 0,
+          "enrollments": 0,
+          "lesson_progress": 0,
+          "document_records": 0,
+          "document_generation_events": 0
+        },
+        "alembic_version": "6421_org_doc_profile",
+        "secrets_printed": false
+      },
       "frontend_runtime_changed": false,
       "backend_runtime_changed": false,
       "database_migration_run": false
