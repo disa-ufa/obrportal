@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.4",
+  "current_stage": "81.5",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
@@ -2751,6 +2751,84 @@
         "unexpected_inactive_user_record_present": true,
         "cleanup_decision": "defer_to_separate_backup_backed_cleanup_stage",
         "content_strategy": "additive_only_manual_admin_ui_or_future_additive_seed"
+      },
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "81.5",
+      "name": "Manual admin UI content fill runbook",
+      "status": "implementation_ready",
+      "branch": "stage81-5-manual-admin-content-fill-runbook",
+      "base": "develop",
+      "deployment_type": "docs-and-guard-only",
+      "runtime_scope": [
+        "manual_admin_ui_content_fill_path",
+        "production_content_preflight",
+        "production_content_checklist",
+        "next_manual_fill_stage_preparation"
+      ],
+      "frontend_runtime_changed_expected": false,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "production_deploy_required": false,
+      "production_data_changed": false,
+      "manual_admin_ui_content_fill": true,
+      "sql_content_fill_allowed": false,
+      "seed_content_fill_allowed": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-manual-admin-content-fill-runbook.md",
+        "docs/production-manual-admin-content-fill-runbook.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_manual_admin_content_fill_runbook.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-manual-admin-content-fill-runbook.md",
+        "docs/production-manual-admin-content-fill-runbook.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_manual_admin_content_fill_runbook.py"
+      ],
+      "acceptance_markers": [
+        "Stage 81.5 - Manual admin UI content fill runbook",
+        "stage81_5_manual_admin_content_fill_runbook_status=implementation_ready",
+        "stage81_5_runtime_changes=no",
+        "stage81_5_database_changes=no",
+        "stage81_5_production_deploy_required=no",
+        "stage81_5_production_data_changed=no",
+        "stage81_5_manual_admin_ui_content_fill=yes",
+        "stage81_5_sql_content_fill_allowed=no",
+        "stage81_5_seed_content_fill_allowed=no",
+        "stage81_5_next_stage=81.6"
+      ],
+      "safety_notes": [
+        "docs_and_guard_only",
+        "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "production_deploy_not_required",
+        "production_data_changed_no",
+        "manual_admin_ui_content_fill_selected",
+        "sql_content_fill_forbidden",
+        "seed_content_fill_forbidden",
+        "production_checkpoint_remains_80_4_runtime"
+      ],
+      "production_context": {
+        "source_stage": "81.4",
+        "content_strategy": "manual_admin_ui_content_fill",
+        "actual_data_changes_stage": "81.6",
+        "sql_content_fill_allowed": false,
+        "seed_content_fill_allowed": false
       },
       "frontend_runtime_changed": false,
       "backend_runtime_changed": false,
