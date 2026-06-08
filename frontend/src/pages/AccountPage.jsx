@@ -83,6 +83,10 @@ function calculateStatusCounts(items, getStatus) {
   return counts;
 }
 
+function countWhere(items, predicate) {
+  return Array.isArray(items) ? items.filter(predicate).length : 0;
+}
+
 function getDocumentStatusLabel(status) {
   switch (status) {
     case "available":
