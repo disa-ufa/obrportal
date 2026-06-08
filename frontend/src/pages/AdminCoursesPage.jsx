@@ -309,6 +309,9 @@ function getCourseStatusTone(course) {
   return course.is_active ? "green" : "gray";
 }
 
+const adminLinkClass =
+  "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50";
+
 function getCourseStatusLabel(course) {
   return course.is_active ? RU.active : RU.inactive;
 }
