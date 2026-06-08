@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "80.4",
+  "current_stage": "80.5",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "80.3",
-    "last_confirmed_head": "383e6df",
+    "last_confirmed_stage": "80.4",
+    "last_confirmed_head": "be38083",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -21,16 +21,18 @@
     "storage": "ok",
     "public_routes_http": {
       "/": 200,
-      "/contacts": 200,
-      "/faq": 200,
-      "/privacy": 200,
-      "/offer": 200,
-      "/organization-info": 200
+      "/catalog": 200,
+      "/login": 200,
+      "/admin": 200,
+      "/documents/verify": 200
     },
     "static_index_title": "Образовательный портал ГБОУ РЦДО",
-    "backend_runtime_changed": false,
+    "backend_runtime_changed": true,
     "database_migration_run": false,
-    "frontend_runtime_changed": false
+    "frontend_runtime_changed": false,
+    "recovery_status": "production_recovered_and_deployed",
+    "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
+    "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata"
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -2245,7 +2247,7 @@
     {
       "id": "80.4",
       "name": "Learner documents backend/API runtime contract implementation",
-      "status": "implementation_ready",
+      "status": "production_recovered_and_deployed",
       "branch": "stage80-learner-documents-backend-api-runtime-contract",
       "base": "develop",
       "deployment_type": "backend-runtime-no-migration",
@@ -2344,7 +2346,92 @@
         "learner_ownership_checked_before_download",
         "public_verification_remains_public_safe",
         "production_checkpoint_is_80_3"
-      ]
+      ],
+      "head": "be38083",
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": true,
+      "database_migration_run": false,
+      "production_evidence": {
+        "host": "portal.rcdo02.ru",
+        "ip": "89.127.203.70",
+        "frontend_health": "healthy",
+        "backend_health": "ok",
+        "ready_status": "ok",
+        "database": "ok",
+        "redis": "ok",
+        "storage": "ok",
+        "public_routes_http": {
+          "/": 200,
+          "/catalog": 200,
+          "/login": 200,
+          "/admin": 200,
+          "/documents/verify": 200
+        },
+        "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
+        "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
+        "secrets_printed": false,
+        "report_path": "/opt/obrportal/tmp/stage80_4_recovery_and_deploy_20260608T111810Z.txt"
+      }
+    },
+    {
+      "id": "80.5",
+      "name": "Post deploy hardening after Stage 80.4 recovery",
+      "status": "implementation_ready",
+      "branch": "stage80-post-deploy-hardening",
+      "base": "develop",
+      "deployment_type": "docs-and-guard-only",
+      "runtime_scope": [
+        "production_recovery_evidence_record",
+        "safe_backend_only_deploy_runbook",
+        "destructive_volume_command_guard",
+        "post_recovery_release_manifest_checkpoint"
+      ],
+      "frontend_runtime_changed_expected": false,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage80-post-deploy-hardening.md",
+        "docs/production-safe-backend-deploy-runbook.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage80_post_deploy_hardening.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage80-post-deploy-hardening.md",
+        "docs/production-safe-backend-deploy-runbook.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage80_post_deploy_hardening.py"
+      ],
+      "acceptance_markers": [
+        "Stage 80.5 - Post deploy hardening after Stage 80.4 recovery",
+        "stage80_5_post_deploy_hardening_status=implementation_ready",
+        "stage80_5_runtime_changes=no",
+        "stage80_5_database_changes=no",
+        "stage80_5_safe_backend_deploy_runbook=yes",
+        "stage80_5_destructive_volume_command_guard=yes",
+        "stage80_5_next_stage=81.1"
+      ],
+      "safety_notes": [
+        "docs_and_guard_only",
+        "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes",
+        "production_checkpoint_is_80_4",
+        "destructive_volume_commands_are_blocked_for_normal_deploy"
+      ],
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
     }
   ]
 }
