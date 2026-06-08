@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "80.5",
+  "current_stage": "81.1",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
@@ -2429,6 +2429,76 @@
         "production_checkpoint_is_80_4",
         "destructive_volume_commands_are_blocked_for_normal_deploy"
       ],
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "81.1",
+      "name": "Demo learning e2e recovery verification",
+      "status": "implementation_ready",
+      "branch": "stage81-next-functional-block",
+      "base": "develop",
+      "deployment_type": "docs-and-guard-only",
+      "runtime_scope": [
+        "local_demo_learning_bootstrap_verification",
+        "learner_e2e_document_flow_verification",
+        "post_recovery_demo_data_readiness_record",
+        "next_functional_stage_preparation"
+      ],
+      "frontend_runtime_changed_expected": false,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "production_deploy_required": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-demo-learning-e2e-verification.md",
+        "docs/local-demo.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_demo_learning_e2e_verification.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-demo-learning-e2e-verification.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_demo_learning_e2e_verification.py"
+      ],
+      "acceptance_markers": [
+        "Stage 81.1 - Demo learning e2e recovery verification",
+        "stage81_1_demo_learning_e2e_verification_status=implementation_ready",
+        "stage81_1_runtime_changes=no",
+        "stage81_1_database_changes=no",
+        "stage81_1_production_deploy_required=no",
+        "stage81_1_local_bootstrap_with_demo_learning=yes",
+        "stage81_1_next_stage=81.2"
+      ],
+      "safety_notes": [
+        "docs_and_guard_only",
+        "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes",
+        "production_deploy_not_required",
+        "reset_volumes_allowed_only_for_local_demo_verification",
+        "production_checkpoint_remains_80_4_runtime"
+      ],
+      "local_evidence": {
+        "command": ".\\scripts\\local_bootstrap.ps1 -ResetVolumes -WithDemoLearning",
+        "status": "passed",
+        "demo_learning_data": "Demo Course / Demo Group",
+        "health": "ok",
+        "ready": "ok",
+        "smoke": "passed",
+        "document_flow": "generated_published_downloaded_verified_revoked_restored"
+      },
       "frontend_runtime_changed": false,
       "backend_runtime_changed": false,
       "database_migration_run": false

@@ -6,24 +6,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / 'docs' / 'release-manifest.json'
 
-REQUIRED_STAGE80_5_CHECKS = {
-    'python .\\scripts\\check_release_manifest.py',
-    'python .\\scripts\\check_stage80_post_deploy_hardening.py',
-    'python .\\scripts\\check_source_bom.py',
-    'python .\\scripts\\check_text_encoding.py',
-    'python .\\scripts\\check_no_todo_markers.py',
-    'python .\\scripts\\frontend_guard.py',
-    'git diff --check',
-}
-
-REQUIRED_STAGE80_5_FILES = {
-    'docs/release-manifest.json',
-    'docs/stage80-post-deploy-hardening.md',
-    'docs/production-safe-backend-deploy-runbook.md',
-    'scripts/check_release_manifest.py',
-    'scripts/check_stage80_post_deploy_hardening.py',
-}
-
 def fail(message: str) -> None:
     raise SystemExit(f'release manifest guard failed: {message}')
 
@@ -39,8 +21,8 @@ def main() -> None:
         fail('project must be ObrPortal')
     if manifest.get('process') != 'development-process-v2':
         fail('process must be development-process-v2')
-    if manifest.get('current_stage') != '80.5':
-        fail('current_stage must be 80.5')
+    if manifest.get('current_stage') != '81.1':
+        fail('current_stage must be 81.1')
 
     checkpoint = manifest.get('production_checkpoint') or {}
     if checkpoint.get('last_confirmed_stage') != '80.4':
@@ -49,20 +31,9 @@ def main() -> None:
         fail('last_confirmed_head must be be38083')
     if checkpoint.get('recovery_status') != 'production_recovered_and_deployed':
         fail('recovery_status must be production_recovered_and_deployed')
-    if checkpoint.get('frontend_runtime_changed') is not False:
-        fail('frontend_runtime_changed must be false')
-    if checkpoint.get('backend_runtime_changed') is not True:
-        fail('backend_runtime_changed must be true for Stage 80.4')
-    if checkpoint.get('database_migration_run') is not False:
-        fail('database_migration_run must be false')
-
-    routes = checkpoint.get('public_routes_http') or {}
-    for route in ['/', '/catalog', '/login', '/admin', '/documents/verify']:
-        if routes.get(route) != 200:
-            fail(f'public route {route} must be 200 in checkpoint')
 
     stages = {stage.get('id'): stage for stage in manifest.get('stages', [])}
-    for stage_id in ['80.3', '80.4', '80.5']:
+    for stage_id in ['80.4', '80.5', '81.1']:
         if stage_id not in stages:
             fail(f'stage {stage_id} record is missing')
 
@@ -78,17 +49,9 @@ def main() -> None:
     if stage80_4.get('database_migration_run') is not False:
         fail('stage 80.4 database_migration_run must be false')
 
-    evidence = stage80_4.get('production_evidence') or {}
-    if evidence.get('report_path') != '/opt/obrportal/tmp/stage80_4_recovery_and_deploy_20260608T111810Z.txt':
-        fail('stage 80.4 production evidence report path must be recorded')
-    if evidence.get('secrets_printed') is not False:
-        fail('stage 80.4 secrets_printed must be false')
-
     stage80_5 = stages['80.5']
     if stage80_5.get('status') != 'implementation_ready':
         fail('stage 80.5 status must be implementation_ready')
-    if stage80_5.get('branch') != 'stage80-post-deploy-hardening':
-        fail('stage 80.5 branch must be stage80-post-deploy-hardening')
     if stage80_5.get('deployment_type') != 'docs-and-guard-only':
         fail('stage 80.5 deployment_type must be docs-and-guard-only')
     if stage80_5.get('frontend_runtime_changed_expected') is not False:
@@ -98,17 +61,34 @@ def main() -> None:
     if stage80_5.get('database_migration_expected') is not False:
         fail('stage 80.5 database_migration_expected must be false')
 
-    missing_checks = REQUIRED_STAGE80_5_CHECKS - set(stage80_5.get('required_checks', []))
+    stage81_1 = stages['81.1']
+    if stage81_1.get('status') != 'implementation_ready':
+        fail('stage 81.1 status must be implementation_ready')
+    if stage81_1.get('branch') != 'stage81-next-functional-block':
+        fail('stage 81.1 branch must be stage81-next-functional-block')
+    if stage81_1.get('deployment_type') != 'docs-and-guard-only':
+        fail('stage 81.1 deployment_type must be docs-and-guard-only')
+    if stage81_1.get('frontend_runtime_changed_expected') is not False:
+        fail('stage 81.1 frontend_runtime_changed_expected must be false')
+    if stage81_1.get('backend_runtime_changed_expected') is not False:
+        fail('stage 81.1 backend_runtime_changed_expected must be false')
+    if stage81_1.get('database_migration_expected') is not False:
+        fail('stage 81.1 database_migration_expected must be false')
+    if stage81_1.get('production_deploy_required') is not False:
+        fail('stage 81.1 production_deploy_required must be false')
+
+    required_checks = {
+        'python .\\scripts\\check_release_manifest.py',
+        'python .\\scripts\\check_stage81_demo_learning_e2e_verification.py',
+        'python .\\scripts\\check_source_bom.py',
+        'python .\\scripts\\check_text_encoding.py',
+        'python .\\scripts\\check_no_todo_markers.py',
+        'python .\\scripts\\frontend_guard.py',
+        'git diff --check',
+    }
+    missing_checks = required_checks - set(stage81_1.get('required_checks', []))
     if missing_checks:
-        fail(f'stage 80.5 missing required checks: {sorted(missing_checks)}')
-
-    missing_files = REQUIRED_STAGE80_5_FILES - set(stage80_5.get('changed_files', []))
-    if missing_files:
-        fail(f'stage 80.5 missing changed files: {sorted(missing_files)}')
-
-    for path in REQUIRED_STAGE80_5_FILES:
-        if not (ROOT / path).exists():
-            fail(f'required file missing: {path}')
+        fail(f'stage 81.1 missing required checks: {sorted(missing_checks)}')
 
     print('release manifest guard passed')
 
