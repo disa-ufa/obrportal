@@ -21,8 +21,8 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "81.3":
-        fail("current_stage must be 81.3")
+    if manifest.get("current_stage") != "81.4":
+        fail("current_stage must be 81.4")
 
     checkpoint = manifest.get("production_checkpoint") or {}
     if checkpoint.get("last_confirmed_stage") != "80.4":
@@ -33,42 +33,42 @@ def main() -> None:
         fail("recovery_status must be production_recovered_and_deployed")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3"]:
+    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage813 = stages["81.3"]
-    if stage813.get("status") != "implementation_ready":
-        fail("stage 81.3 status must be implementation_ready")
-    if stage813.get("branch") != "stage81-3-production-data-preflight-snapshot":
-        fail("stage 81.3 branch must be stage81-3-production-data-preflight-snapshot")
-    if stage813.get("deployment_type") != "docs-and-guard-only":
-        fail("stage 81.3 deployment_type must be docs-and-guard-only")
-    if stage813.get("frontend_runtime_changed_expected") is not False:
-        fail("stage 81.3 frontend_runtime_changed_expected must be false")
-    if stage813.get("backend_runtime_changed_expected") is not False:
-        fail("stage 81.3 backend_runtime_changed_expected must be false")
-    if stage813.get("database_migration_expected") is not False:
-        fail("stage 81.3 database_migration_expected must be false")
-    if stage813.get("production_deploy_required") is not False:
-        fail("stage 81.3 production_deploy_required must be false")
-    if stage813.get("production_data_changed") is not False:
-        fail("stage 81.3 production_data_changed must be false")
-    if stage813.get("backup_created") is not True:
-        fail("stage 81.3 backup_created must be true")
+    stage814 = stages["81.4"]
+    if stage814.get("status") != "implementation_ready":
+        fail("stage 81.4 status must be implementation_ready")
+    if stage814.get("branch") != "stage81-4-production-data-cleanup-content-strategy":
+        fail("stage 81.4 branch must be stage81-4-production-data-cleanup-content-strategy")
+    if stage814.get("deployment_type") != "docs-and-guard-only":
+        fail("stage 81.4 deployment_type must be docs-and-guard-only")
+    if stage814.get("frontend_runtime_changed_expected") is not False:
+        fail("stage 81.4 frontend_runtime_changed_expected must be false")
+    if stage814.get("backend_runtime_changed_expected") is not False:
+        fail("stage 81.4 backend_runtime_changed_expected must be false")
+    if stage814.get("database_migration_expected") is not False:
+        fail("stage 81.4 database_migration_expected must be false")
+    if stage814.get("production_deploy_required") is not False:
+        fail("stage 81.4 production_deploy_required must be false")
+    if stage814.get("production_data_changed") is not False:
+        fail("stage 81.4 production_data_changed must be false")
+    if stage814.get("manual_cleanup_allowed") is not False:
+        fail("stage 81.4 manual_cleanup_allowed must be false")
 
     required_checks = {
         "python .\\scripts\\check_release_manifest.py",
-        "python .\\scripts\\check_stage81_production_data_preflight_snapshot.py",
+        "python .\\scripts\\check_stage81_production_data_cleanup_content_strategy.py",
         "python .\\scripts\\check_source_bom.py",
         "python .\\scripts\\check_text_encoding.py",
         "python .\\scripts\\check_no_todo_markers.py",
         "python .\\scripts\\frontend_guard.py",
         "git diff --check",
     }
-    missing_checks = required_checks - set(stage813.get("required_checks", []))
+    missing_checks = required_checks - set(stage814.get("required_checks", []))
     if missing_checks:
-        fail(f"stage 81.3 missing required checks: {sorted(missing_checks)}")
+        fail(f"stage 81.4 missing required checks: {sorted(missing_checks)}")
 
     print("release manifest guard passed")
 

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.3",
+  "current_stage": "81.4",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
@@ -2673,6 +2673,84 @@
         },
         "alembic_version": "6421_org_doc_profile",
         "secrets_printed": false
+      },
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false
+    },
+    {
+      "id": "81.4",
+      "name": "Production data cleanup decision and content strategy",
+      "status": "implementation_ready",
+      "branch": "stage81-4-production-data-cleanup-content-strategy",
+      "base": "develop",
+      "deployment_type": "docs-and-guard-only",
+      "runtime_scope": [
+        "production_data_cleanup_decision",
+        "unexpected_inactive_user_cleanup_deferred",
+        "additive_content_strategy",
+        "next_content_initialization_stage_preparation"
+      ],
+      "frontend_runtime_changed_expected": false,
+      "backend_runtime_changed_expected": false,
+      "database_migration_expected": false,
+      "production_deploy_required": false,
+      "production_data_changed": false,
+      "manual_cleanup_allowed": false,
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-production-data-cleanup-content-strategy.md",
+        "docs/production-cleanup-content-strategy-runbook.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_production_data_cleanup_content_strategy.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-production-data-cleanup-content-strategy.md",
+        "docs/production-cleanup-content-strategy-runbook.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_production_data_cleanup_content_strategy.py"
+      ],
+      "acceptance_markers": [
+        "Stage 81.4 - Production data cleanup decision and content strategy",
+        "stage81_4_production_data_cleanup_content_strategy_status=implementation_ready",
+        "stage81_4_runtime_changes=no",
+        "stage81_4_database_changes=no",
+        "stage81_4_production_deploy_required=no",
+        "stage81_4_production_data_changed=no",
+        "stage81_4_manual_cleanup_allowed=no",
+        "stage81_4_additive_content_strategy_required=yes",
+        "stage81_4_next_stage=81.5"
+      ],
+      "safety_notes": [
+        "docs_and_guard_only",
+        "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migrations",
+        "no_auth_or_rbac_changes",
+        "production_deploy_not_required",
+        "production_data_changed_no",
+        "manual_cleanup_forbidden",
+        "cleanup_deferred_to_dedicated_stage",
+        "additive_content_strategy_only",
+        "production_checkpoint_remains_80_4_runtime"
+      ],
+      "production_context": {
+        "source_stage": "81.3",
+        "source_snapshot_report": "/opt/obrportal/tmp/stage81_3_production_data_preflight_snapshot_20260608T123756Z.txt",
+        "source_postgres_backup": "/opt/obrportal-backups/postgres/postgres-before-stage81-3-data-preflight-20260608T123756Z.sql",
+        "business_tables_empty": true,
+        "unexpected_inactive_user_record_present": true,
+        "cleanup_decision": "defer_to_separate_backup_backed_cleanup_stage",
+        "content_strategy": "additive_only_manual_admin_ui_or_future_additive_seed"
       },
       "frontend_runtime_changed": false,
       "backend_runtime_changed": false,
