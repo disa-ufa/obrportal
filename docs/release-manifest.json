@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.8",
+  "current_stage": "81.9",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "81.8",
-    "last_confirmed_head": "3cc71bc",
+    "last_confirmed_stage": "81.9",
+    "last_confirmed_head": "8146de2",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -20,23 +20,27 @@
     "redis": "ok",
     "storage": "ok",
     "public_routes_http": {
-      "/": 200,
-      "/login": 200,
       "/account": 200,
-      "/catalog": 200,
-      "/courses/testov-programma": 200
+      "/admin/documents": 200,
+      "/verify/DOCV-36F38F4FABBB45A38EE0E918": 200,
+      "/verify/AUTO-4AAA9C328B7C476D": 200
     },
     "static_index_title": "Образовательный портал ГБОУ РЦДО",
-    "backend_runtime_changed": false,
+    "backend_runtime_changed": true,
     "database_migration_run": false,
     "frontend_runtime_changed": false,
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "learner_course_completion_document_draft_completed",
+    "status": "document_publication_verification_completed",
     "production_data_changed": true,
-    "report_path": "/opt/obrportal/tmp/stage81_8_learner_course_completion_document_draft_preflight_20260608T190450Z.txt",
-    "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-8-course-completion-document-draft-20260608T190450Z.sql"
+    "report_path": "/opt/obrportal/tmp/stage81_9_document_publication_verification_preflight_20260609T050301Z.txt",
+    "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-9-document-publication-verification-20260609T050301Z.sql",
+    "public_base_url": "https://portal.rcdo02.ru",
+    "public_verify_api_http": {
+      "by_code": 200,
+      "by_number": 200
+    }
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -3232,6 +3236,139 @@
         "document_publication_deferred": true
       },
       "next_stage": "81.9"
+    },
+    {
+      "id": "81.9",
+      "name": "Document publication and verification flow completed",
+      "status": "production_completed",
+      "branch": "stage81-9-document-publication-verification-flow",
+      "finalization_branch": "stage81-9-finalize-document-publication-verification-flow",
+      "base": "develop",
+      "runtime_head": "8146de2",
+      "deployment_type": "document-publication-verification-hotfix",
+      "runtime_scope": [
+        "admin_document_publication",
+        "learner_document_download",
+        "public_verification_by_code",
+        "public_verification_by_number",
+        "pdf_public_base_url_hotfix",
+        "admin_pdf_regeneration"
+      ],
+      "backend_runtime_changed": true,
+      "frontend_runtime_changed": false,
+      "database_migration_run": false,
+      "production_data_changed": true,
+      "pdf_qr_public_base_url_hotfix_verified": true,
+      "public_base_url": "https://portal.rcdo02.ru",
+      "target_learner": {
+        "email": "stage12-smoke-learner@obrportal.local",
+        "role": "learner_fl"
+      },
+      "target_course": {
+        "slug": "testov-programma",
+        "title": "тестовая программа"
+      },
+      "target_enrollment": {
+        "id": "4aaa9c32-8b7c-476d-acb1-a33863e08986",
+        "status": "completed",
+        "completed_at": "2026-06-08T19:16:52.893906+00:00"
+      },
+      "target_document": {
+        "id": "85025ef8-2f44-40a9-8e9c-fb96899d6c72",
+        "document_number": "AUTO-4AAA9C328B7C476D",
+        "document_type": "Сертификат",
+        "title": "Сертификат: тестовая программа",
+        "status": "available",
+        "verification_code": "DOCV-36F38F4FABBB45A38EE0E918",
+        "storage_path": "generated/completion/AUTO-4AAA9C328B7C476D/20260609T061121978528Z-5c28c979.pdf",
+        "generated_at": "2026-06-09T06:11:21.979578+00:00",
+        "generated_by_user_id": "d9e09af5-da90-4f9f-aef6-01b990293383",
+        "generation_source": "admin_regenerate",
+        "generation_template_version": "completion_pdf_v1",
+        "verification_url": "https://portal.rcdo02.ru/verify/DOCV-36F38F4FABBB45A38EE0E918"
+      },
+      "document_generation_events": [
+        {
+          "id": "a2105fde-e1f9-40e5-adcd-51acbfd04dc3",
+          "source": "admin_regenerate",
+          "storage_path": "generated/completion/AUTO-4AAA9C328B7C476D/20260609T061121978528Z-5c28c979.pdf"
+        },
+        {
+          "id": "387543fa-81f0-4110-9047-f314b10a8204",
+          "source": "auto_completion",
+          "storage_path": "generated/completion/AUTO-4AAA9C328B7C476D/20260608T191653319916Z-fe57afe4.pdf"
+        }
+      ],
+      "final_counts": {
+        "document_records": 1,
+        "document_generation_events": 2,
+        "enrollments": 1,
+        "lesson_progress": 1
+      },
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-document-publication-verification-flow.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_document_publication_verification_flow.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        ".\\.venv\\Scripts\\python.exe -m pytest backend\\app\\tests\\test_document_templates.py backend\\app\\tests\\test_document_pdf.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        ".env.example",
+        "backend/app/core/config.py",
+        "docs/release-manifest.json",
+        "docs/stage81-document-publication-verification-flow.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_document_publication_verification_flow.py"
+      ],
+      "acceptance_markers": [
+        "stage81_9_completed=yes",
+        "stage81_9_document_publication_verified=yes",
+        "stage81_9_document_download_verified=yes",
+        "stage81_9_public_verification_verified=yes",
+        "stage81_9_pdf_qr_public_base_url_hotfix_verified=yes",
+        "stage81_9_next_stage=81.10"
+      ],
+      "safety_notes": [
+        "no_volume_reset",
+        "no_database_migrations",
+        "no_frontend_rebuild",
+        "backend_rebuild_required_for_public_base_url",
+        "pdf_regenerated_via_admin_ui"
+      ],
+      "production_evidence": {
+        "host": "portal.rcdo02.ru",
+        "ip": "89.127.203.70",
+        "runtime_head": "8146de2",
+        "report_path": "/opt/obrportal/tmp/stage81_9_document_publication_verification_preflight_20260609T050301Z.txt",
+        "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-9-document-publication-verification-20260609T050301Z.sql",
+        "ready": {
+          "status": "ok",
+          "database": "ok",
+          "redis": "ok",
+          "storage": "ok"
+        },
+        "routes": {
+          "/account": 200,
+          "/admin/documents": 200,
+          "/verify/DOCV-36F38F4FABBB45A38EE0E918": 200,
+          "/verify/AUTO-4AAA9C328B7C476D": 200
+        },
+        "public_verify_api": {
+          "by_code": 200,
+          "by_number": 200
+        },
+        "pdf_url_after_hotfix": "https://portal.rcdo02.ru/verify/DOCV-36F38F4FABBB45A38EE0E918",
+        "localhost_link_present_after_hotfix": false
+      },
+      "next_stage": "81.10"
     }
   ]
 }
