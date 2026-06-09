@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.13",
+  "current_stage": "81.14",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "81.13",
-    "last_confirmed_head": "e17668a",
+    "last_confirmed_stage": "81.14",
+    "last_confirmed_head": "6f82e93",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -32,7 +32,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "real_batch_001_filled_sanitized_completed",
+    "status": "real_batch_001_preflight_runbook_completed",
     "production_data_changed": false,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-10-production-inventory-next-block-20260609T063543Z.sql",
@@ -42,7 +42,7 @@
       "by_number": 200
     },
     "cleanup_performed": false,
-    "decision": "commit_sanitized_batch_card_only",
+    "decision": "prepare_preflight_backup_duplicate_check_runbook",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false
@@ -3664,6 +3664,55 @@
         "stage81_13_next_stage=81.14"
       ],
       "next_stage": "81.14"
+    },
+    {
+      "id": "81.14",
+      "name": "real-batch-001 production preflight runbook",
+      "status": "real_batch_001_preflight_runbook_completed",
+      "branch": "stage81-14-real-batch-001-preflight-runbook",
+      "base": "develop",
+      "runtime_head": "6f82e93",
+      "deployment_type": "docs-preflight-runbook-only",
+      "server_touched": false,
+      "decision": "prepare_preflight_backup_duplicate_check_runbook",
+      "first_batch_id": "real-batch-001",
+      "cleanup_performed": false,
+      "backend_runtime_changed": false,
+      "frontend_runtime_changed": false,
+      "database_migration_run": false,
+      "production_data_changed": false,
+      "sensitive_values_policy": "runtime_variables_only_no_raw_contacts",
+      "runbook_contains": [
+        "production_health_check",
+        "database_backup_command",
+        "duplicate_check_variables",
+        "duplicate_check_sql_scope",
+        "ui_entry_order",
+        "rollback_decision_points",
+        "stage81_13_guard_privacy_correction"
+      ],
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-real-batch-001-preflight-runbook.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_real_batch_001_preflight_runbook.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-real-batch-001-preflight-runbook.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_real_batch_001_filled.py",
+        "scripts/check_stage81_real_batch_001_preflight_runbook.py"
+      ],
+      "next_stage": "81.15"
     }
   ]
 }
