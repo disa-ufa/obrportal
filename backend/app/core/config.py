@@ -27,6 +27,17 @@ class Settings(BaseSettings):
 
     document_storage_dir: str = "/app/storage/private"
 
+    public_base_url: str = Field(
+        default="http://localhost:5173",
+        validation_alias=AliasChoices(
+            "PUBLIC_BASE_URL",
+            "FRONTEND_PUBLIC_URL",
+            "FRONTEND_URL",
+            "APP_PUBLIC_URL",
+            "OBRPORTAL_PUBLIC_BASE_URL",
+        ),
+    )
+
     document_org_name: str = Field(
         default="\u0413\u0411\u041e\u0423 \u0420\u0426\u0414\u041e",
         validation_alias=AliasChoices("DOCUMENT_ORG_NAME", "OBRPORTAL_ORG_NAME"),
