@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.12",
+  "current_stage": "81.13",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "81.12",
-    "last_confirmed_head": "5a5cf0b",
+    "last_confirmed_stage": "81.13",
+    "last_confirmed_head": "e17668a",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -32,7 +32,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "first_real_content_batch_template_completed",
+    "status": "real_batch_001_filled_sanitized_completed",
     "production_data_changed": false,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-10-production-inventory-next-block-20260609T063543Z.sql",
@@ -42,8 +42,10 @@
       "by_number": 200
     },
     "cleanup_performed": false,
-    "decision": "prepare_fillable_template_before_production_data_entry",
-    "first_batch_id": "real-batch-001"
+    "decision": "commit_sanitized_batch_card_only",
+    "first_batch_id": "real-batch-001",
+    "raw_contacts_committed": false,
+    "password_committed": false
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -3596,6 +3598,72 @@
         "stage81_12_next_stage=81.13"
       ],
       "next_stage": "81.13"
+    },
+    {
+      "id": "81.13",
+      "name": "Fill first real content batch card",
+      "status": "real_batch_001_filled_sanitized_completed",
+      "branch": "stage81-13-fill-first-real-content-batch",
+      "base": "develop",
+      "runtime_head": "e17668a",
+      "deployment_type": "docs-sanitized-batch-card-only",
+      "server_touched": false,
+      "decision": "commit_sanitized_batch_card_only",
+      "first_batch_id": "real-batch-001",
+      "cleanup_performed": false,
+      "backend_runtime_changed": false,
+      "frontend_runtime_changed": false,
+      "database_migration_run": false,
+      "production_data_changed": false,
+      "raw_contacts_committed": false,
+      "password_committed": false,
+      "sanitized_contact_policy": {
+        "raw_contacts_committed": false,
+        "password_committed": false,
+        "curator_email_masked": "de***@mail.ru",
+        "learner_email_masked": "de***@gmail.com",
+        "phone_masked": "8987***0776"
+      },
+      "batch_summary": {
+        "organization_short_name": "ГБОУ РЦДО",
+        "course_slug": "znakomstvo-s-obrazovatelnym-portalom",
+        "course_title": "Знакомство с образовательным порталом",
+        "module_title": "Основной модуль",
+        "lesson_title": "Введение в работу с образовательным порталом",
+        "group_code": "REAL-BATCH-001",
+        "document_type": "Сертификат",
+        "signer_position": "директор",
+        "signer_full_name": "Нуриев Фаниль Жамилевич"
+      },
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-real-batch-001-filled.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_real_batch_001_filled.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-real-batch-001-filled.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_real_batch_001_filled.py"
+      ],
+      "acceptance_markers": [
+        "stage81_13_status=real_batch_001_filled_sanitized_completed",
+        "stage81_13_server_touched=no",
+        "stage81_13_data_changed=no",
+        "stage81_13_decision=commit_sanitized_batch_card_only",
+        "stage81_13_batch_id=real-batch-001",
+        "stage81_13_next_stage=81.14"
+      ],
+      "next_stage": "81.14"
     }
   ]
 }
