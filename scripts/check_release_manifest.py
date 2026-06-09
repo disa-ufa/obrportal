@@ -21,15 +21,15 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "81.10":
-        fail("current_stage must be 81.10")
+    if manifest.get("current_stage") != "81.11":
+        fail("current_stage must be 81.11")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "81.10":
-        fail("last_confirmed_stage must be 81.10")
-    if checkpoint.get("last_confirmed_head") != "956c680":
-        fail("last_confirmed_head must be 956c680")
-    if checkpoint.get("status") != "production_inventory_completed":
+    if checkpoint.get("last_confirmed_stage") != "81.11":
+        fail("last_confirmed_stage must be 81.11")
+    if checkpoint.get("last_confirmed_head") != "276e3e5":
+        fail("last_confirmed_head must be 276e3e5")
+    if checkpoint.get("status") != "production_content_preparation_plan_completed":
         fail("checkpoint status mismatch")
     if checkpoint.get("backend_runtime_changed") is not False:
         fail("checkpoint backend_runtime_changed must be false")
@@ -41,46 +41,46 @@ def main() -> None:
         fail("checkpoint production_data_changed must be false")
     if checkpoint.get("cleanup_performed") is not False:
         fail("checkpoint cleanup_performed must be false")
-    if checkpoint.get("decision") != "keep_demo_smoke_dataset":
-        fail("checkpoint decision must be keep_demo_smoke_dataset")
+    if checkpoint.get("decision") != "prepare_real_content_without_touching_smoke_dataset":
+        fail("checkpoint decision mismatch")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10"]:
+    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
-    stage8110 = stages["81.10"]
-    if stage8110.get("status") != "production_inventory_completed":
-        fail("stage 81.10 status must be production_inventory_completed")
-    if stage8110.get("branch") != "stage81-10-production-inventory-next-block-plan":
-        fail("stage 81.10 branch mismatch")
-    if stage8110.get("deployment_type") != "docs-inventory-only":
-        fail("stage 81.10 deployment_type mismatch")
-    if stage8110.get("decision") != "keep_demo_smoke_dataset":
-        fail("stage 81.10 decision mismatch")
-    if stage8110.get("cleanup_performed") is not False:
-        fail("stage 81.10 cleanup_performed must be false")
-    if stage8110.get("backend_runtime_changed") is not False:
-        fail("stage 81.10 backend_runtime_changed must be false")
-    if stage8110.get("frontend_runtime_changed") is not False:
-        fail("stage 81.10 frontend_runtime_changed must be false")
-    if stage8110.get("database_migration_run") is not False:
-        fail("stage 81.10 database_migration_run must be false")
-    if stage8110.get("production_data_changed") is not False:
-        fail("stage 81.10 production_data_changed must be false")
+    stage8111 = stages["81.11"]
+    if stage8111.get("status") != "production_content_preparation_plan_completed":
+        fail("stage 81.11 status mismatch")
+    if stage8111.get("branch") != "stage81-11-production-content-preparation-plan":
+        fail("stage 81.11 branch mismatch")
+    if stage8111.get("deployment_type") != "docs-content-plan-only":
+        fail("stage 81.11 deployment_type mismatch")
+    if stage8111.get("decision") != "prepare_real_content_without_touching_smoke_dataset":
+        fail("stage 81.11 decision mismatch")
+    if stage8111.get("server_touched") is not False:
+        fail("stage 81.11 server_touched must be false")
+    if stage8111.get("backend_runtime_changed") is not False:
+        fail("stage 81.11 backend_runtime_changed must be false")
+    if stage8111.get("frontend_runtime_changed") is not False:
+        fail("stage 81.11 frontend_runtime_changed must be false")
+    if stage8111.get("database_migration_run") is not False:
+        fail("stage 81.11 database_migration_run must be false")
+    if stage8111.get("production_data_changed") is not False:
+        fail("stage 81.11 production_data_changed must be false")
 
     required_checks = {
         r"python .\scripts\check_release_manifest.py",
-        r"python .\scripts\check_stage81_production_inventory_next_block_plan.py",
+        r"python .\scripts\check_stage81_production_content_preparation_plan.py",
         r"python .\scripts\check_source_bom.py",
         r"python .\scripts\check_text_encoding.py",
         r"python .\scripts\check_no_todo_markers.py",
         r"python .\scripts\frontend_guard.py",
         "git diff --check",
     }
-    missing_checks = required_checks - set(stage8110.get("required_checks", []))
+    missing_checks = required_checks - set(stage8111.get("required_checks", []))
     if missing_checks:
-        fail(f"stage 81.10 missing required checks: {sorted(missing_checks)}")
+        fail(f"stage 81.11 missing required checks: {sorted(missing_checks)}")
 
     print("release manifest guard passed")
 

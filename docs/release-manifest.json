@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.10",
+  "current_stage": "81.11",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "81.10",
-    "last_confirmed_head": "956c680",
+    "last_confirmed_stage": "81.11",
+    "last_confirmed_head": "276e3e5",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -32,9 +32,9 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "production_inventory_completed",
+    "status": "production_content_preparation_plan_completed",
     "production_data_changed": false,
-    "report_path": "/opt/obrportal/tmp/stage81_10_production_inventory_next_block_preflight_20260609T063543Z.txt",
+    "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-10-production-inventory-next-block-20260609T063543Z.sql",
     "public_base_url": "https://portal.rcdo02.ru",
     "public_verify_api_http": {
@@ -42,7 +42,7 @@
       "by_number": 200
     },
     "cleanup_performed": false,
-    "decision": "keep_demo_smoke_dataset"
+    "decision": "prepare_real_content_without_touching_smoke_dataset"
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -3464,6 +3464,78 @@
         "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-10-production-inventory-next-block-20260609T063543Z.sql"
       },
       "next_stage": "81.11"
+    },
+    {
+      "id": "81.11",
+      "name": "Production content preparation plan",
+      "status": "production_content_preparation_plan_completed",
+      "branch": "stage81-11-production-content-preparation-plan",
+      "base": "develop",
+      "runtime_head": "276e3e5",
+      "deployment_type": "docs-content-plan-only",
+      "server_touched": false,
+      "decision": "prepare_real_content_without_touching_smoke_dataset",
+      "cleanup_performed": false,
+      "backend_runtime_changed": false,
+      "frontend_runtime_changed": false,
+      "database_migration_run": false,
+      "production_data_changed": false,
+      "local_inventory_files": [
+        "tmp_stage81_11_admin_forms_inventory.txt",
+        "tmp_stage81_11_deep_content_inventory.txt"
+      ],
+      "content_object_groups": [
+        "organizations",
+        "users",
+        "courses",
+        "modules",
+        "lessons",
+        "groups",
+        "enrollments",
+        "documents"
+      ],
+      "first_real_content_batch": {
+        "organizations": 1,
+        "admin_or_curator_users": 1,
+        "courses": 1,
+        "modules": "1+",
+        "lessons": "1-3",
+        "learners": 1,
+        "enrollments": 1,
+        "documents": 1
+      },
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-production-content-preparation-plan.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_production_content_preparation_plan.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-production-content-preparation-plan.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_production_content_preparation_plan.py"
+      ],
+      "acceptance_markers": [
+        "stage81_11_status=production_content_preparation_plan_completed",
+        "stage81_11_server_touched=no",
+        "stage81_11_data_changed=no",
+        "stage81_11_decision=prepare_real_content_without_touching_smoke_dataset",
+        "stage81_11_next_stage=81.12"
+      ],
+      "deferred_cleanup_candidates": [
+        "inactive blocked seed artifact user",
+        "extra active test course without modules"
+      ],
+      "next_stage": "81.12"
     }
   ]
 }
