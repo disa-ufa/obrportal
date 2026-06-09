@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.9",
+  "current_stage": "81.10",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "81.9",
-    "last_confirmed_head": "8146de2",
+    "last_confirmed_stage": "81.10",
+    "last_confirmed_head": "956c680",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -26,21 +26,23 @@
       "/verify/AUTO-4AAA9C328B7C476D": 200
     },
     "static_index_title": "Образовательный портал ГБОУ РЦДО",
-    "backend_runtime_changed": true,
+    "backend_runtime_changed": false,
     "database_migration_run": false,
     "frontend_runtime_changed": false,
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "document_publication_verification_completed",
-    "production_data_changed": true,
-    "report_path": "/opt/obrportal/tmp/stage81_9_document_publication_verification_preflight_20260609T050301Z.txt",
-    "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-9-document-publication-verification-20260609T050301Z.sql",
+    "status": "production_inventory_completed",
+    "production_data_changed": false,
+    "report_path": "/opt/obrportal/tmp/stage81_10_production_inventory_next_block_preflight_20260609T063543Z.txt",
+    "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-10-production-inventory-next-block-20260609T063543Z.sql",
     "public_base_url": "https://portal.rcdo02.ru",
     "public_verify_api_http": {
       "by_code": 200,
       "by_number": 200
-    }
+    },
+    "cleanup_performed": false,
+    "decision": "keep_demo_smoke_dataset"
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -3369,6 +3371,99 @@
         "localhost_link_present_after_hotfix": false
       },
       "next_stage": "81.10"
+    },
+    {
+      "id": "81.10",
+      "name": "Production inventory and next block plan",
+      "status": "production_inventory_completed",
+      "branch": "stage81-10-production-inventory-next-block-plan",
+      "base": "develop",
+      "runtime_head": "956c680",
+      "deployment_type": "docs-inventory-only",
+      "decision": "keep_demo_smoke_dataset",
+      "cleanup_performed": false,
+      "backend_runtime_changed": false,
+      "frontend_runtime_changed": false,
+      "database_migration_run": false,
+      "production_data_changed": false,
+      "inventory_counts": {
+        "users": 3,
+        "roles": 9,
+        "permissions": 43,
+        "user_roles": 2,
+        "organizations": 1,
+        "courses": 2,
+        "course_modules": 1,
+        "course_lessons": 1,
+        "learning_groups": 0,
+        "enrollments": 1,
+        "lesson_progress": 1,
+        "document_records": 1,
+        "document_generation_events": 2,
+        "audit_events": 93
+      },
+      "smoke_dataset": {
+        "learner_email": "stage12-smoke-learner@obrportal.local",
+        "organization_id": "5030179d-6b15-4d4f-8d59-105ea5579cd2",
+        "course_slug": "testov-programma",
+        "module_id": "60109eba-20b9-445f-8ec1-d2d51c5b1b9d",
+        "lesson_id": "97ba3967-5aee-4e0f-86ad-c9b867e8ee6d",
+        "enrollment_id": "4aaa9c32-8b7c-476d-acb1-a33863e08986",
+        "lesson_progress_id": "722a300b-3923-4d22-b7dc-1dec3a80c69a",
+        "document_id": "85025ef8-2f44-40a9-8e9c-fb96899d6c72",
+        "document_number": "AUTO-4AAA9C328B7C476D",
+        "verification_code": "DOCV-36F38F4FABBB45A38EE0E918"
+      },
+      "deferred_cleanup_candidates": [
+        {
+          "type": "inactive_user",
+          "id": "3e030fbc-c763-4fdc-81bc-3ce7ebae8717",
+          "reason": "blocked invalid admin seed attempt"
+        },
+        {
+          "type": "extra_course",
+          "id": "aa2f8886-d597-4392-8189-ec4395f16a29",
+          "slug": "test-prog",
+          "reason": "extra active test course without modules"
+        }
+      ],
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-production-inventory-next-block-plan.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_production_inventory_next_block_plan.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-production-inventory-next-block-plan.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_production_inventory_next_block_plan.py"
+      ],
+      "acceptance_markers": [
+        "stage81_10_status=production_inventory_completed",
+        "stage81_10_backup_created=yes",
+        "stage81_10_data_changed=no",
+        "stage81_10_cleanup_performed=no",
+        "stage81_10_decision=keep_demo_smoke_dataset",
+        "stage81_10_next_stage=81.11"
+      ],
+      "production_evidence": {
+        "host": "portal.rcdo02.ru",
+        "ip": "89.127.203.70",
+        "head": "956c680",
+        "tag": "v0.1.0-stage81-9-document-publication-verification",
+        "report_path": "/opt/obrportal/tmp/stage81_10_production_inventory_next_block_preflight_20260609T063543Z.txt",
+        "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-10-production-inventory-next-block-20260609T063543Z.sql"
+      },
+      "next_stage": "81.11"
     }
   ]
 }
