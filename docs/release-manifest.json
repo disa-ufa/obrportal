@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.15",
+  "current_stage": "82.1",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
@@ -10,7 +10,7 @@
   },
   "production_checkpoint": {
     "last_confirmed_stage": "81.15",
-    "last_confirmed_head": "ae00b75",
+    "last_confirmed_head": "299d428",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -61,7 +61,9 @@
     },
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
-    ]
+    ],
+    "next_planned_stage": "82.1",
+    "next_planned_focus": "lesson_editor_foundation"
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -3851,6 +3853,101 @@
         "raw_contacts_not_committed",
         "password_not_committed",
         "known_pdf_layout_issue_recorded"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.1",
+      "name": "Lesson editor foundation",
+      "status": "implementation_ready",
+      "branch": "stage82-1-lesson-editor-foundation",
+      "base": "develop",
+      "deployment_type": "docs-and-guard-only",
+      "runtime_scope": [
+        "lesson_editor_architecture",
+        "block_based_lesson_model_plan",
+        "legacy_lesson_compatibility_plan",
+        "editor_ux_contract",
+        "stage82_rollout_plan"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "runtime_rebuild": false,
+      "runtime_restart": false,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "decision": "prepare_block_based_lesson_editor_architecture",
+      "next_stage": "82.2",
+      "mvp_block_types": [
+        "rich_text",
+        "video",
+        "file_link",
+        "quiz",
+        "assignment",
+        "callout"
+      ],
+      "planned_model": {
+        "keep_course_module_lesson_hierarchy": true,
+        "lesson_becomes_container": true,
+        "new_table_lesson_blocks": true,
+        "legacy_fields_preserved": true,
+        "legacy_adapter_required": true
+      },
+      "planned_editor_layout": [
+        "course_outline_sidebar",
+        "lesson_canvas",
+        "block_properties_panel",
+        "top_toolbar",
+        "preview_mode"
+      ],
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-editor-foundation.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage82_lesson_editor_foundation.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-editor-foundation.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_lesson_editor_foundation.py"
+      ],
+      "acceptance_markers": [
+        "Stage 82.1 - lesson editor foundation",
+        "stage82_1_status=lesson_editor_foundation_ready",
+        "stage82_1_server_touched=no",
+        "stage82_1_data_changed=no",
+        "stage82_1_runtime_rebuild=no",
+        "stage82_1_runtime_restart=no",
+        "stage82_1_database_migration_run=no",
+        "stage82_1_cleanup_performed=no",
+        "stage82_1_decision=prepare_block_based_lesson_editor_architecture",
+        "stage82_1_next_stage=82.2",
+        "stage82_1_mvp_block_types=rich_text,video,file_link,quiz,assignment,callout",
+        "stage82_1_backward_compatibility=legacy_dual_read_synthetic_blocks",
+        "stage82_1_editor_layout=outline_canvas_properties",
+        "stage82_1_publication_model=draft_publish_version_snapshot",
+        "stage82_1_rollout_strategy=additive_feature_flag_friendly"
+      ],
+      "safety_notes": [
+        "docs_and_guard_only",
+        "no_frontend_runtime_changes",
+        "no_backend_runtime_changes",
+        "no_database_migration",
+        "no_production_data_change",
+        "legacy_fields_preserved",
+        "additive_rollout_required"
       ],
       "raw_contacts_committed": false,
       "password_committed": false
