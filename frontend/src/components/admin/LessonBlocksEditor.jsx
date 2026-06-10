@@ -12,7 +12,7 @@ import { Alert } from "../ui/Alert";
 import { LoadingBlock } from "../ui/LoadingBlock";
 import { StatusBadge } from "../ui/StatusBadge";
 
-const STAGE82_LESSON_EDITOR_ACTIONS = "stage82_5_lesson_block_editor_actions";
+const STAGE82_LESSON_EDITOR_UX = "stage82_6_lesson_block_editor_ux";
 
 const BLOCK_TYPE_LABELS = {
   rich_text: "Текст",
@@ -23,10 +23,23 @@ const BLOCK_TYPE_LABELS = {
   callout: "Врезка",
 };
 
+const CALLOUT_TONE_LABELS = {
+  info: "Информация",
+  success: "Успех",
+  warning: "Внимание",
+  danger: "Важно",
+};
+
 const EMPTY_BLOCK_FORM = {
   block_type: "rich_text",
   title: "",
   content_text: "",
+  content_url: "",
+  quiz_question: "",
+  quiz_options: "",
+  quiz_answer: "",
+  assignment_due: "",
+  callout_tone: "info",
   is_required: false,
   is_active: true,
 };
@@ -39,13 +52,31 @@ function isLegacyBlock(block) {
   return `${block?.id || ""}`.startsWith("legacy:");
 }
 
+function normalizeText(value) {
+  return `${value || ""}`.replace(/\s+/g, " ").trim();
+}
+
+function getOptionsArray(value) {
+  return `${value || ""}`
+    .split("\n")
+    .map((item) => normalizeText(item))
+    .filter(Boolean);
+}
+
 function buildBlockForm(block) {
   const content = block?.content_json || {};
+  const fallbackText = content.text || content.body || content.description || content.title || "";
 
   return {
     block_type: block?.block_type || "rich_text",
     title: block?.title || "",
-    content_text: content.text || content.body || content.description || content.url || "",
+    content_text: fallbackText,
+    content_url: content.url || content.file_url || content.video_url || "",
+    quiz_question: content.question || fallbackText,
+    quiz_options: Array.isArray(content.options) ? content.options.join("\n") : "",
+    quiz_answer: content.answer || "",
+    assignment_due: content.due || content.deadline || "",
+    callout_tone: content.tone || "info",
     is_required: Boolean(block?.is_required),
     is_active: Boolean(block?.is_active),
   };
@@ -59,6 +90,8 @@ function getBlockSummary(block) {
     content.description,
     content.url,
     content.file_url,
+    content.video_url,
+    content.question,
     content.title,
   ];
 
@@ -68,21 +101,118 @@ function getBlockSummary(block) {
     return "Контент блока пока не заполнен или хранится в расширенном JSON.";
   }
 
-  const text = `${value}`.replace(/\s+/g, " ").trim();
+  const text = normalizeText(value);
 
   return text.length > 180 ? `${text.slice(0, 180)}...` : text;
 }
 
-function buildBlockPayload(values, position) {
+function buildContentJson(values) {
+  const blockType = values.block_type || "rich_text";
   const text = `${values.content_text || ""}`.trim();
+  const url = `${values.content_url || ""}`.trim();
 
+  if (blockType === "video") {
+    return {
+      ...(url ? { url } : {}),
+      ...(text ? { description: text } : {}),
+    };
+  }
+
+  if (blockType === "file_link") {
+    return {
+      ...(url ? { url } : {}),
+      ...(text ? { description: text } : {}),
+    };
+  }
+
+  if (blockType === "quiz") {
+    return {
+      question: `${values.quiz_question || ""}`.trim(),
+      options: getOptionsArray(values.quiz_options),
+      answer: `${values.quiz_answer || ""}`.trim(),
+    };
+  }
+
+  if (blockType === "assignment") {
+    return {
+      ...(text ? { description: text } : {}),
+      ...(`${values.assignment_due || ""}`.trim() ? { due: `${values.assignment_due || ""}`.trim() } : {}),
+    };
+  }
+
+  if (blockType === "callout") {
+    return {
+      ...(text ? { text } : {}),
+      tone: values.callout_tone || "info",
+    };
+  }
+
+  return text ? { text } : {};
+}
+
+function buildBlockPayload(values, position) {
   return {
     block_type: values.block_type || "rich_text",
     title: `${values.title || ""}`.trim() || null,
-    content_json: text ? { text } : {},
+    content_json: buildContentJson(values),
     position,
     is_required: Boolean(values.is_required),
     is_active: Boolean(values.is_active),
+  };
+}
+
+function getBlockFormFacts(values) {
+  const blockType = values.block_type || "rich_text";
+  const missing = [];
+  const options = getOptionsArray(values.quiz_options);
+  const hasTitle = Boolean(normalizeText(values.title));
+  const hasText = Boolean(`${values.content_text || ""}`.trim());
+  const hasUrl = Boolean(normalizeText(values.content_url));
+  const hasQuestion = Boolean(normalizeText(values.quiz_question));
+  const hasAnswer = Boolean(normalizeText(values.quiz_answer));
+
+  if (!hasTitle) {
+    missing.push("заголовок");
+  }
+
+  if (blockType === "rich_text" && !hasText) {
+    missing.push("текст");
+  }
+
+  if (blockType === "video" && !hasUrl) {
+    missing.push("ссылка на видео");
+  }
+
+  if (blockType === "file_link" && !hasUrl) {
+    missing.push("ссылка на файл или материал");
+  }
+
+  if (blockType === "quiz") {
+    if (!hasQuestion) {
+      missing.push("вопрос");
+    }
+    if (options.length < 2) {
+      missing.push("минимум 2 варианта ответа");
+    }
+    if (!hasAnswer) {
+      missing.push("правильный ответ");
+    }
+  }
+
+  if (blockType === "assignment" && !hasText) {
+    missing.push("описание задания");
+  }
+
+  if (blockType === "callout" && !hasText) {
+    missing.push("текст врезки");
+  }
+
+  return {
+    blockType,
+    label: getBlockTypeLabel(blockType),
+    missing,
+    options,
+    ready: missing.length === 0,
   };
 }
 
@@ -97,9 +227,288 @@ function getNextBlockPosition(blocks) {
   return blocks.reduce((maxPosition, block) => Math.max(maxPosition, Number(block.position) || 0), 0) + 1;
 }
 
+function TypeSpecificFields({ values, onChange, prefix }) {
+  if (values.block_type === "video") {
+    return (
+      <>
+        <label className="block md:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Ссылка на видео
+          </span>
+          <input
+            id={`${prefix}-video-url`}
+            type="text"
+            value={values.content_url}
+            onChange={(event) => onChange("content_url", event.target.value)}
+            placeholder="https://..."
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+        <label className="block md:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Описание видео
+          </span>
+          <textarea
+            id={`${prefix}-video-description`}
+            value={values.content_text}
+            onChange={(event) => onChange("content_text", event.target.value)}
+            rows={3}
+            placeholder="Что увидит обучающийся"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+      </>
+    );
+  }
+
+  if (values.block_type === "file_link") {
+    return (
+      <>
+        <label className="block md:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Ссылка на файл или материал
+          </span>
+          <input
+            id={`${prefix}-file-url`}
+            type="text"
+            value={values.content_url}
+            onChange={(event) => onChange("content_url", event.target.value)}
+            placeholder="https://..."
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+        <label className="block md:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Описание материала
+          </span>
+          <textarea
+            id={`${prefix}-file-description`}
+            value={values.content_text}
+            onChange={(event) => onChange("content_text", event.target.value)}
+            rows={3}
+            placeholder="Кратко опишите файл или внешний материал"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+      </>
+    );
+  }
+
+  if (values.block_type === "quiz") {
+    return (
+      <>
+        <label className="block md:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Вопрос
+          </span>
+          <input
+            id={`${prefix}-quiz-question`}
+            type="text"
+            value={values.quiz_question}
+            onChange={(event) => onChange("quiz_question", event.target.value)}
+            placeholder="Введите вопрос"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Варианты ответа
+          </span>
+          <textarea
+            id={`${prefix}-quiz-options`}
+            value={values.quiz_options}
+            onChange={(event) => onChange("quiz_options", event.target.value)}
+            rows={4}
+            placeholder={"Один вариант на строку"}
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Правильный ответ
+          </span>
+          <input
+            id={`${prefix}-quiz-answer`}
+            type="text"
+            value={values.quiz_answer}
+            onChange={(event) => onChange("quiz_answer", event.target.value)}
+            placeholder="Напишите правильный ответ"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+      </>
+    );
+  }
+
+  if (values.block_type === "assignment") {
+    return (
+      <>
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Описание задания
+          </span>
+          <textarea
+            id={`${prefix}-assignment-description`}
+            value={values.content_text}
+            onChange={(event) => onChange("content_text", event.target.value)}
+            rows={4}
+            placeholder="Что нужно выполнить"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Срок или ориентир
+          </span>
+          <input
+            id={`${prefix}-assignment-due`}
+            type="text"
+            value={values.assignment_due}
+            onChange={(event) => onChange("assignment_due", event.target.value)}
+            placeholder="Например: до конца недели"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+      </>
+    );
+  }
+
+  if (values.block_type === "callout") {
+    return (
+      <>
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Тон врезки
+          </span>
+          <select
+            id={`${prefix}-callout-tone`}
+            value={values.callout_tone}
+            onChange={(event) => onChange("callout_tone", event.target.value)}
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          >
+            {Object.entries(CALLOUT_TONE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Текст врезки
+          </span>
+          <textarea
+            id={`${prefix}-callout-text`}
+            value={values.content_text}
+            onChange={(event) => onChange("content_text", event.target.value)}
+            rows={4}
+            placeholder="Важная заметка, предупреждение или подсказка"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
+      </>
+    );
+  }
+
+  return (
+    <label className="block md:col-span-2">
+      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Текст блока
+      </span>
+      <textarea
+        id={`${prefix}-rich-text`}
+        value={values.content_text}
+        onChange={(event) => onChange("content_text", event.target.value)}
+        rows={5}
+        placeholder="Основной текст урока"
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+      />
+    </label>
+  );
+}
+
+function LessonBlockPreview({ values }) {
+  const facts = getBlockFormFacts(values);
+
+  return (
+    <section
+      data-testid="stage82-lesson-block-preview"
+      className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 md:col-span-2"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Предпросмотр блока
+          </div>
+          <h5 className="mt-1 text-sm font-bold text-slate-900">
+            {values.title || "Без названия"}
+          </h5>
+        </div>
+        <StatusBadge tone={facts.ready ? "green" : "red"}>
+          {facts.ready ? "Готов к сохранению" : "Нужно заполнить"}
+        </StatusBadge>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <StatusBadge tone="blue">{facts.label}</StatusBadge>
+        <StatusBadge tone={values.is_active ? "green" : "gray"}>
+          {values.is_active ? "Активен" : "Отключён"}
+        </StatusBadge>
+        <StatusBadge tone={values.is_required ? "blue" : "gray"}>
+          {values.is_required ? "Обязательный" : "Необязательный"}
+        </StatusBadge>
+      </div>
+
+      {facts.missing.length ? (
+        <div className="mt-3 rounded-2xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 ring-1 ring-amber-200">
+          Не заполнено: {facts.missing.join(", ")}.
+        </div>
+      ) : null}
+
+      {values.block_type === "quiz" ? (
+        <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
+          <div className="font-semibold text-slate-900">
+            {values.quiz_question || "Вопрос не заполнен"}
+          </div>
+          {facts.options.length ? (
+            <ul className="mt-2 list-disc pl-5">
+              {facts.options.map((option) => <li key={option}>{option}</li>)}
+            </ul>
+          ) : null}
+          {values.quiz_answer ? (
+            <div className="mt-2 text-xs text-slate-500">
+              Правильный ответ: {values.quiz_answer}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
+          {values.content_text || values.content_url || "Контент пока не заполнен."}
+        </div>
+      )}
+
+      {values.content_url ? (
+        <div className="mt-2 break-all text-xs text-slate-500">
+          URL: {values.content_url}
+        </div>
+      ) : null}
+
+      {values.block_type === "callout" ? (
+        <div className="mt-2 text-xs text-slate-500">
+          Тон: {CALLOUT_TONE_LABELS[values.callout_tone] || values.callout_tone}
+        </div>
+      ) : null}
+
+      {values.block_type === "assignment" && values.assignment_due ? (
+        <div className="mt-2 text-xs text-slate-500">
+          Срок: {values.assignment_due}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function LessonBlockForm({ values, onChange, prefix }) {
   return (
-    <div className="grid gap-4 md:grid-cols-[180px_1fr]">
+    <div className="grid gap-4 md:grid-cols-2">
       <label className="block">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Тип блока
@@ -130,19 +539,8 @@ function LessonBlockForm({ values, onChange, prefix }) {
         />
       </label>
 
-      <label className="block md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Контент
-        </span>
-        <textarea
-          id={`${prefix}-block-content`}
-          value={values.content_text}
-          onChange={(event) => onChange("content_text", event.target.value)}
-          rows={4}
-          placeholder="Текст, ссылка или краткое содержание блока"
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+      <TypeSpecificFields values={values} onChange={onChange} prefix={prefix} />
+      <LessonBlockPreview values={values} />
 
       <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
         <input
@@ -217,6 +615,9 @@ export function LessonBlocksEditor({ lessonId }) {
     };
   }, [blocks]);
 
+  const createFacts = getBlockFormFacts(createForm);
+  const editFacts = getBlockFormFacts(editForm);
+
   const handleCreateFieldChange = (field, value) => {
     setCreateForm((current) => ({ ...current, [field]: value }));
   };
@@ -227,6 +628,11 @@ export function LessonBlocksEditor({ lessonId }) {
 
   const handleCreateSubmit = async (event) => {
     event.preventDefault();
+
+    if (!createFacts.ready) {
+      setActionError(`Не заполнено: ${createFacts.missing.join(", ")}.`);
+      return;
+    }
 
     const position = getNextBlockPosition(stats.realBlocks);
 
@@ -261,6 +667,11 @@ export function LessonBlocksEditor({ lessonId }) {
 
   const handleEditSubmit = async (event, block) => {
     event.preventDefault();
+
+    if (!editFacts.ready) {
+      setActionError(`Не заполнено: ${editFacts.missing.join(", ")}.`);
+      return;
+    }
 
     setActionKey(`update:${block.id}`);
     setActionError("");
@@ -342,20 +753,20 @@ export function LessonBlocksEditor({ lessonId }) {
 
   return (
     <section
-      data-testid="stage82-lesson-blocks-editor-actions"
-      data-stage={STAGE82_LESSON_EDITOR_ACTIONS}
+      data-testid="stage82-lesson-blocks-editor-ux"
+      data-stage={STAGE82_LESSON_EDITOR_UX}
       className="rounded-2xl bg-white p-4 ring-1 ring-blue-100 md:col-span-3"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-            Stage 82.5 · Block editor actions
+            Stage 82.6 · Block editor UX
           </div>
           <h4 className="mt-1 text-sm font-bold text-slate-900">
             Новый редактор блоков урока
           </h4>
           <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
-            Добавление, редактирование, удаление и изменение порядка блоков через новый Admin API. Старый редактор урока остаётся ниже.
+            Типовые поля под каждый тип блока и предпросмотр перед сохранением. Старый редактор урока остаётся ниже.
           </p>
         </div>
 
@@ -409,7 +820,7 @@ export function LessonBlocksEditor({ lessonId }) {
         <div>
           <h5 className="text-sm font-bold text-slate-900">Добавить блок</h5>
           <p className="mt-1 text-xs text-slate-500">
-            POST /api/v1/admin/course-lessons/{lessonId}/blocks
+            Выберите тип блока, заполните типовые поля и проверьте предпросмотр.
           </p>
         </div>
 
@@ -420,7 +831,7 @@ export function LessonBlocksEditor({ lessonId }) {
         />
 
         <div className="flex flex-wrap gap-3">
-          <ActionButton type="submit" tone="blue" disabled={loading || Boolean(actionKey) || stats.legacy}>
+          <ActionButton type="submit" tone="blue" disabled={loading || Boolean(actionKey) || !createFacts.ready}>
             {actionKey === "create" ? "Сохраняем..." : "Добавить блок"}
           </ActionButton>
           <ActionButton
@@ -435,7 +846,7 @@ export function LessonBlocksEditor({ lessonId }) {
 
         {stats.legacy ? (
           <div className="rounded-2xl bg-blue-50 p-3 text-xs leading-5 text-blue-900 ring-1 ring-blue-200">
-            Урок сейчас отображается через legacy adapter. Чтобы перейти на реальные блоки, сначала сохраните урок и добавьте первый блок после обновления данных.
+            Урок сейчас отображается через legacy adapter. Создание первого реального блока переведёт урок на блочный режим.
           </div>
         ) : null}
       </form>
@@ -540,7 +951,7 @@ export function LessonBlocksEditor({ lessonId }) {
                     />
 
                     <div className="flex flex-wrap gap-3">
-                      <ActionButton type="submit" tone="blue" disabled={actionKey === `update:${block.id}`}>
+                      <ActionButton type="submit" tone="blue" disabled={actionKey === `update:${block.id}` || !editFacts.ready}>
                         {actionKey === `update:${block.id}` ? "Сохраняем..." : "Сохранить блок"}
                       </ActionButton>
                       <ActionButton type="button" tone="light" onClick={handleEditCancel} disabled={Boolean(actionKey)}>

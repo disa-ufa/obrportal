@@ -2,18 +2,18 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.5",
+  "current_stage": "82.6",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "82.4",
-    "last_confirmed_head": "16107a7",
+    "last_confirmed_stage": "82.5",
+    "last_confirmed_head": "6094501",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
-    "frontend_health": "healthy_or_http_200",
+    "frontend_health": "healthy",
     "backend_health": "ok",
     "ready_status": "ok",
     "database": "ok",
@@ -31,7 +31,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "lesson_editor_shell_deployed",
+    "status": "lesson_block_editor_actions_deployed",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +40,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "continue_with_lesson_block_editor_actions",
+    "decision": "continue_with_lesson_block_editor_ux",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -62,9 +62,9 @@
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
     ],
-    "next_planned_stage": "82.5",
-    "next_planned_focus": "lesson_block_editor_actions",
-    "last_confirmed_tag": "v0.1.0-stage82-4-lesson-editor-shell",
+    "next_planned_stage": "82.6",
+    "next_planned_focus": "lesson_block_editor_ux",
+    "last_confirmed_tag": "v0.1.0-stage82-5-lesson-block-editor-actions",
     "last_migration": "6422_lesson_blocks_schema"
   },
   "global_safety_boundaries": [
@@ -4255,6 +4255,77 @@
         "stage82_5_actions=create_update_delete_reorder",
         "stage82_5_legacy_blocks_read_only=yes",
         "stage82_5_legacy_editor_preserved=yes"
+      ],
+      "safety_notes": [
+        "no_database_migration",
+        "backend_not_changed",
+        "legacy_blocks_read_only",
+        "legacy_editor_preserved",
+        "frontend_only_deploy"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.6",
+      "name": "Lesson block editor UX",
+      "status": "implementation_ready",
+      "branch": "stage82-6-lesson-block-editor-ux",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "lesson_block_type_specific_fields",
+        "lesson_block_preview_panel",
+        "lesson_block_validation_hints",
+        "structured_content_json_payloads",
+        "legacy_blocks_read_only",
+        "legacy_editor_preserved"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "database_migration_required": false,
+      "runtime_rebuild_required": true,
+      "runtime_restart_required": true,
+      "frontend_restart_required": true,
+      "backend_restart_required": false,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "legacy_editor_preserved": true,
+      "legacy_blocks_read_only": true,
+      "preview_panel": true,
+      "type_specific_fields": true,
+      "structured_content_json": true,
+      "decision": "add_type_specific_block_fields_and_preview",
+      "next_stage": "82.7",
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-block-editor-ux.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage82_lesson_block_editor_ux.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "npm --prefix frontend run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "frontend/src/components/admin/LessonBlocksEditor.jsx",
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-block-editor-ux.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_lesson_block_editor_ux.py"
+      ],
+      "acceptance_markers": [
+        "stage82_6_status=lesson_block_editor_ux_implemented",
+        "stage82_6_type_specific_fields=yes",
+        "stage82_6_preview_panel=yes",
+        "stage82_6_structured_content_json=yes"
       ],
       "safety_notes": [
         "no_database_migration",
