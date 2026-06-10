@@ -800,6 +800,39 @@ export async function deleteAdminCourseLesson(lessonId) {
 }
 
 
+export async function getAdminLessonBlocks(lessonId) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}/blocks`);
+}
+
+export async function createAdminLessonBlock(lessonId, payload) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}/blocks`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminLessonBlock(blockId, payload) {
+  return request(`/api/v1/admin/lesson-blocks/${blockId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminLessonBlock(blockId) {
+  return request(`/api/v1/admin/lesson-blocks/${blockId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function reorderAdminLessonBlocks(lessonId, blocks) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}/blocks/reorder`, {
+    method: "POST",
+    body: JSON.stringify({ blocks }),
+  });
+}
+
+
+
 export async function getAdminEnrollments(filters = {}) {
   const params = new URLSearchParams();
 

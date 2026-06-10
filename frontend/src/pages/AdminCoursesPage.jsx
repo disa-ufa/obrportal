@@ -21,6 +21,7 @@ import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import { AdminMetricCard } from "../components/admin/AdminWorkCenter";
+import { LessonBlocksEditor } from "../components/admin/LessonBlocksEditor";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
@@ -1005,11 +1006,12 @@ function CourseLessonContentPreviewPanel({ values }) {
   );
 }
 
-function CourseLessonFormFields({ values, onChange, prefix = "" }) {
+function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }) {
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_180px_140px]">
       <CourseLessonEditorUxPanel values={values} />
       <CourseLessonContentPreviewPanel values={values} />
+      <LessonBlocksEditor lessonId={lessonId} />
       <label className="block md:col-span-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           {RU.lessonTitle}
@@ -2561,6 +2563,7 @@ function CourseCard({
                                               onLessonEditFieldChange(lesson.id, field, value)
                                             }
                                             prefix={`lesson-${lesson.id}-edit-`}
+                                            lessonId={lesson.id}
                                           />
 
                                           <div className="flex flex-wrap gap-3">

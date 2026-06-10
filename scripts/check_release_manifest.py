@@ -23,27 +23,27 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "82.3":
-        fail("current_stage must be 82.3")
+    if manifest.get("current_stage") != "82.4":
+        fail("current_stage must be 82.4")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "82.2":
-        fail("last_confirmed_stage must be 82.2")
-    if checkpoint.get("last_confirmed_head") != "e7ace74":
-        fail("last_confirmed_head must be e7ace74")
-    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-2-lesson-blocks-schema-foundation":
+    if checkpoint.get("last_confirmed_stage") != "82.3":
+        fail("last_confirmed_stage must be 82.3")
+    if checkpoint.get("last_confirmed_head") != "0627d8d":
+        fail("last_confirmed_head must be 0627d8d")
+    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-3-lesson-blocks-api-hotfix1":
         fail("last_confirmed_tag mismatch")
     if checkpoint.get("last_migration") != "6422_lesson_blocks_schema":
         fail("checkpoint last_migration mismatch")
-    if checkpoint.get("status") != "lesson_blocks_schema_foundation_deployed":
+    if checkpoint.get("status") != "lesson_blocks_admin_api_deployed":
         fail("checkpoint status mismatch")
-    if checkpoint.get("decision") != "continue_with_lesson_blocks_backend_api":
+    if checkpoint.get("decision") != "continue_with_lesson_editor_shell":
         fail("checkpoint decision mismatch")
     if checkpoint.get("cleanup_performed") is not False:
         fail("checkpoint cleanup_performed must be false")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3"]:
+    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
@@ -96,6 +96,39 @@ def main() -> None:
     ]
     if stage.get("endpoints") != expected_endpoints:
         fail("stage 82.3 endpoints mismatch")
+
+
+    stage = stages["82.4"]
+    if stage.get("status") != "implementation_ready":
+        fail("stage 82.4 status mismatch")
+    if stage.get("branch") != "stage82-4-lesson-editor-shell":
+        fail("stage 82.4 branch mismatch")
+    if stage.get("deployment_type") != "frontend-only":
+        fail("stage 82.4 deployment_type mismatch")
+    if stage.get("decision") != "add_safe_frontend_shell_for_lesson_blocks":
+        fail("stage 82.4 decision mismatch")
+    if stage.get("next_stage") != "82.5":
+        fail("stage 82.4 next_stage mismatch")
+
+    expected_booleans = {
+        "server_touched": False,
+        "frontend_runtime_changed": True,
+        "backend_runtime_changed": False,
+        "database_migration_run": False,
+        "database_migration_required": False,
+        "runtime_rebuild_required": True,
+        "runtime_restart_required": True,
+        "frontend_restart_required": True,
+        "backend_restart_required": False,
+        "production_data_changed": False,
+        "cleanup_performed": False,
+        "legacy_editor_preserved": True,
+        "raw_contacts_committed": False,
+        "password_committed": False,
+    }
+    for key, expected in expected_booleans.items():
+        if stage.get(key) is not expected:
+            fail(f"stage 82.4 {key} must be {expected}")
 
     print("release manifest guard passed")
 
