@@ -1133,6 +1133,371 @@ function CourseLearnerLessonContentPreviewPanel({
 }
 
 
+
+const STAGE82_LEARNER_LESSON_BLOCK_VIEWER = "stage82_7_learner_lesson_block_viewer";
+
+const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
+  stage: "Stage 82.7 · Lesson Block Viewer",
+  title: "Материалы текущего урока",
+  subtitle:
+    "Блок показывает слушателю содержимое урока в новом блочном формате. Если урок ещё хранится в старом формате, используется безопасный legacy adapter.",
+  currentLesson: "Текущий урок",
+  blocks: "Блоков",
+  requiredBlocks: "Обязательных",
+  locked: "Материалы закрыты",
+  available: "Материалы доступны",
+  empty: "Материалы пока не заполнены",
+  legacyAdapter: "legacy adapter",
+  richText: "Текст",
+  video: "Видео",
+  fileLink: "Файл/ссылка",
+  quiz: "Тест",
+  assignment: "Задание",
+  callout: "Врезка",
+  openMaterial: "Открыть материал",
+  loginRequired: "Войдите, чтобы открыть материалы урока.",
+  enrollRequired: "Запишитесь на курс, чтобы открыть материалы урока.",
+  noLessons: "В курсе пока нет уроков.",
+  noBlocks: "В выбранном уроке пока нет материалов.",
+  answerHidden: "Ответ будет проверяться в следующих этапах.",
+};
+
+const LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS = {
+  rich_text: LEARNER_LESSON_BLOCK_VIEWER_LABELS.richText,
+  text: LEARNER_LESSON_BLOCK_VIEWER_LABELS.richText,
+  video: LEARNER_LESSON_BLOCK_VIEWER_LABELS.video,
+  file_link: LEARNER_LESSON_BLOCK_VIEWER_LABELS.fileLink,
+  file: LEARNER_LESSON_BLOCK_VIEWER_LABELS.fileLink,
+  link: LEARNER_LESSON_BLOCK_VIEWER_LABELS.fileLink,
+  quiz: LEARNER_LESSON_BLOCK_VIEWER_LABELS.quiz,
+  assignment: LEARNER_LESSON_BLOCK_VIEWER_LABELS.assignment,
+  callout: LEARNER_LESSON_BLOCK_VIEWER_LABELS.callout,
+};
+
+function normalizeLearnerLessonBlockType(blockType) {
+  const normalized = `${blockType || "rich_text"}`.toLowerCase();
+
+  if (normalized === "text") {
+    return "rich_text";
+  }
+
+  if (normalized === "file" || normalized === "link") {
+    return "file_link";
+  }
+
+  return LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS[normalized] ? normalized : "rich_text";
+}
+
+function getLearnerLessonBlockViewerContent(block) {
+  return block?.content_json || block?.content || {};
+}
+
+function getLearnerLessonBlockViewerTitle(block, index) {
+  return block?.title || `${LEARNER_LESSON_BLOCK_VIEWER_LABELS.blocks} ${index + 1}`;
+}
+
+function getLearnerLessonBlockViewerText(block) {
+  const content = getLearnerLessonBlockViewerContent(block);
+  return `${content.text || content.body || content.description || block?.content_text || block?.description || ""}`.trim();
+}
+
+function getLearnerLessonBlockViewerUrl(block) {
+  const content = getLearnerLessonBlockViewerContent(block);
+  return `${content.url || content.file_url || content.video_url || block?.content_url || ""}`.trim();
+}
+
+function getLearnerLessonBlockViewerUrlHref(url) {
+  const value = `${url || ""}`.trim();
+
+  if (!value) {
+    return "";
+  }
+
+  return value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
+}
+
+function getLearnerLessonBlockViewerOptions(block) {
+  const content = getLearnerLessonBlockViewerContent(block);
+  return Array.isArray(content.options)
+    ? content.options.map((item) => `${item || ""}`.trim()).filter(Boolean)
+    : [];
+}
+
+function getLearnerLessonBlockViewerBlocks(lesson) {
+  const source = [lesson?.blocks, lesson?.lesson_blocks, lesson?.content_blocks].find(Array.isArray);
+
+  if (source) {
+    return source
+      .filter((block) => block?.is_active !== false)
+      .slice()
+      .sort((left, right) => (Number(left.position) || 0) - (Number(right.position) || 0))
+      .map((block, index) => ({
+        ...block,
+        position: Number(block.position) || index + 1,
+        block_type: normalizeLearnerLessonBlockType(block.block_type || block.content_type),
+        legacy: false,
+      }));
+  }
+
+  if (!lesson) {
+    return [];
+  }
+
+  const text = `${lesson.content_text || lesson.description || lesson.content || ""}`.trim();
+  const url = `${lesson.content_url || ""}`.trim();
+
+  if (!text && !url) {
+    return [];
+  }
+
+  const blockType = normalizeLearnerLessonBlockType(lesson.content_type || (url ? "link" : "rich_text"));
+
+  return [
+    {
+      id: `legacy-content-adapter-${lesson.id || "lesson"}`,
+      position: 1,
+      block_type: blockType,
+      title: lesson.title || LEARNER_LESSON_BLOCK_VIEWER_LABELS.currentLesson,
+      content_json: {
+        ...(text ? { text, description: text } : {}),
+        ...(url ? { url } : {}),
+      },
+      is_required: Boolean(lesson.is_required),
+      is_active: lesson.is_active !== false,
+      legacy: true,
+    },
+  ];
+}
+
+function getLearnerLessonBlockViewerFacts(course, existingEnrollment, user) {
+  const previewFacts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user);
+  const lesson = previewFacts.lesson;
+  const locked = previewFacts.locked;
+  const blocks = locked ? [] : getLearnerLessonBlockViewerBlocks(lesson);
+  const requiredBlocks = blocks.filter((block) => block.is_required).length;
+
+  return {
+    mode: previewFacts.mode,
+    lesson,
+    locked,
+    blocks,
+    requiredBlocks,
+    hasLegacyBlock: blocks.some((block) => block.legacy),
+    ready: Boolean(lesson && blocks.length > 0 && !locked),
+    statusLabel: !lesson
+      ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.empty
+      : locked
+        ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.locked
+        : blocks.length
+          ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.available
+          : LEARNER_LESSON_BLOCK_VIEWER_LABELS.empty,
+  };
+}
+
+function LearnerLessonBlockViewerBlock({ block, index }) {
+  const blockType = normalizeLearnerLessonBlockType(block.block_type);
+  const typeLabel = LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS[blockType] || LEARNER_LESSON_BLOCK_VIEWER_LABELS.richText;
+  const text = getLearnerLessonBlockViewerText(block);
+  const url = getLearnerLessonBlockViewerUrl(block);
+  const href = getLearnerLessonBlockViewerUrlHref(url);
+  const options = getLearnerLessonBlockViewerOptions(block);
+
+  return (
+    <article
+      data-testid="learner-lesson-block-viewer-block"
+      className="rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            #{block.position || index + 1} · {typeLabel}
+          </div>
+          <h3 className="mt-1 text-base font-bold text-slate-900">
+            {getLearnerLessonBlockViewerTitle(block, index)}
+          </h3>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {block.legacy ? (
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+              {LEARNER_LESSON_BLOCK_VIEWER_LABELS.legacyAdapter}
+            </span>
+          ) : null}
+          {block.is_required ? (
+            <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+              Обязательный
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      {blockType === "quiz" ? (
+        <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
+          <div className="font-semibold text-slate-900">
+            {getLearnerLessonBlockViewerContent(block).question || text || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+          </div>
+          {options.length ? (
+            <ul className="mt-3 list-disc pl-5">
+              {options.map((option) => <li key={option}>{option}</li>)}
+            </ul>
+          ) : null}
+          <div className="mt-3 text-xs font-semibold text-slate-500">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.answerHidden}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
+          {text || url || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+        </div>
+      )}
+
+      {href ? (
+        <a
+          data-testid="learner-lesson-block-viewer-open-link"
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
+        >
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.openMaterial}
+        </a>
+      ) : null}
+    </article>
+  );
+}
+
+function CourseLearnerLessonBlockViewerPanel({
+  course,
+  existingEnrollment,
+  user,
+  onPrimaryAction,
+  onPageChange,
+}) {
+  const facts = getLearnerLessonBlockViewerFacts(course, existingEnrollment, user);
+
+  return (
+    <section
+      data-testid="learner-lesson-block-viewer-panel"
+      data-stage={STAGE82_LEARNER_LESSON_BLOCK_VIEWER}
+      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.stage}
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.title}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.subtitle}
+          </p>
+        </div>
+
+        <span
+          data-testid="learner-lesson-block-viewer-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
+            facts.ready
+              ? "bg-green-50 text-green-700 ring-green-200"
+              : facts.locked
+                ? "bg-amber-50 text-amber-800 ring-amber-200"
+                : "bg-slate-100 text-slate-600 ring-slate-200"
+          }`}
+        >
+          {facts.statusLabel}
+        </span>
+      </div>
+
+      <div
+        data-testid="learner-lesson-block-viewer-summary"
+        className="mt-5 grid gap-3 md:grid-cols-3"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.currentLesson}
+          </div>
+          <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+            {facts.lesson?.title || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.blocks}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.blocks.length}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.requiredBlocks}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.requiredBlocks}
+          </div>
+        </div>
+      </div>
+
+      {facts.locked ? (
+        <div
+          data-testid="learner-lesson-block-viewer-locked"
+          className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200"
+        >
+          {user
+            ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.enrollRequired
+            : LEARNER_LESSON_BLOCK_VIEWER_LABELS.loginRequired}
+        </div>
+      ) : facts.blocks.length ? (
+        <div
+          data-testid="learner-lesson-block-viewer-list"
+          className="mt-5 space-y-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+        >
+          {facts.hasLegacyBlock ? (
+            <div className="rounded-2xl bg-blue-50 p-3 text-xs leading-5 text-blue-900 ring-1 ring-blue-200">
+              Урок показан через legacy adapter. После перевода урока на реальные блоки пользователь увидит блочную структуру без старого адаптера.
+            </div>
+          ) : null}
+
+          {facts.blocks.map((block, index) => (
+            <LearnerLessonBlockViewerBlock key={block.id || index} block={block} index={index} />
+          ))}
+        </div>
+      ) : (
+        <div
+          data-testid="learner-lesson-block-viewer-empty"
+          className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200"
+        >
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+        </div>
+      )}
+
+      <div
+        data-testid="learner-lesson-block-viewer-actions"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        <button
+          type="button"
+          onClick={onPrimaryAction}
+          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          {facts.locked ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.loginRequired : LEARNER_LESSON_BLOCK_VIEWER_LABELS.available}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange("catalog")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          Вернуться в каталог
+        </button>
+      </div>
+    </section>
+  );
+}
+
+
 const LEARNER_COMPLETION_ACTION_UX_LABELS = {
   stage: "Stage 78.4 \u00b7 Learner Completion Action UX",
   title: "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043f\u043e \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044e \u0443\u0440\u043e\u043a\u0430",
@@ -2563,6 +2928,14 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       />
 
       <CourseLearnerLessonContentPreviewPanel
+        course={learnerCourse}
+        existingEnrollment={existingEnrollment}
+        user={user}
+        onPrimaryAction={handleEnroll}
+        onPageChange={onPageChange}
+      />
+
+      <CourseLearnerLessonBlockViewerPanel
         course={learnerCourse}
         existingEnrollment={existingEnrollment}
         user={user}
