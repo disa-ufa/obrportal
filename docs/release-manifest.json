@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "81.14",
+  "current_stage": "81.15",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "81.14",
-    "last_confirmed_head": "6f82e93",
+    "last_confirmed_stage": "81.15",
+    "last_confirmed_head": "ae00b75",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -22,8 +22,7 @@
     "public_routes_http": {
       "/account": 200,
       "/admin/documents": 200,
-      "/verify/DOCV-36F38F4FABBB45A38EE0E918": 200,
-      "/verify/AUTO-4AAA9C328B7C476D": 200
+      "/verify/DOCV-6DC5C651C5ED4B28957B1ECE": 200
     },
     "static_index_title": "Образовательный портал ГБОУ РЦДО",
     "backend_runtime_changed": false,
@@ -32,20 +31,37 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "real_batch_001_preflight_runbook_completed",
-    "production_data_changed": false,
+    "status": "real_batch_001_production_result_completed",
+    "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
-    "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-10-production-inventory-next-block-20260609T063543Z.sql",
+    "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
     "public_base_url": "https://portal.rcdo02.ru",
     "public_verify_api_http": {
-      "by_code": 200,
-      "by_number": 200
+      "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "prepare_preflight_backup_duplicate_check_runbook",
+    "decision": "real_batch_001_e2e_completed_publish_document_verified",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
-    "password_committed": false
+    "password_committed": false,
+    "document_result": {
+      "document_number": "AUTO-F161AA1FB1C2400B",
+      "verification_code": "DOCV-6DC5C651C5ED4B28957B1ECE",
+      "status": "available",
+      "document_type": "Сертификат",
+      "has_pdf": true,
+      "generation_source": "auto_completion",
+      "generation_template_version": "completion_pdf_v1"
+    },
+    "enrollment_result": {
+      "course_slug": "znakomstvo-s-obrazovatelnym-portalom",
+      "status": "completed",
+      "progress_rows": 1,
+      "completed_lessons": 1
+    },
+    "known_issues": [
+      "pdf_layout_verification_code_overlaps_place_field"
+    ]
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -3713,6 +3729,131 @@
         "scripts/check_stage81_real_batch_001_preflight_runbook.py"
       ],
       "next_stage": "81.15"
+    },
+    {
+      "id": "81.15",
+      "name": "real-batch-001 production result",
+      "status": "production_completed",
+      "branch": "stage81-15-real-batch-001-production-result",
+      "base": "develop",
+      "deployment_type": "manual-production-content-fill-e2e-result-docs",
+      "runtime_scope": [
+        "production_admin_ui_data_entry",
+        "learner_course_access",
+        "lesson_completion",
+        "course_completion",
+        "document_auto_generation",
+        "admin_document_publication",
+        "learner_document_download",
+        "public_document_verification"
+      ],
+      "server_touched": true,
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "runtime_rebuild": false,
+      "runtime_restart": false,
+      "production_data_changed": true,
+      "cleanup_performed": false,
+      "data_entry_method": "admin_ui_first",
+      "direct_sql_mutation_used": false,
+      "backup_created": true,
+      "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
+      "duplicate_conflict_found": false,
+      "batch_id": "real-batch-001",
+      "target_course": {
+        "slug": "znakomstvo-s-obrazovatelnym-portalom",
+        "title": "Знакомство с образовательным порталом",
+        "hours": 2,
+        "format": "дистанционно",
+        "document_type": "Сертификат"
+      },
+      "target_group": {
+        "code": "REAL-BATCH-001",
+        "name": "Тестовая группа real-batch-001"
+      },
+      "target_organization": {
+        "short_name": "ГБОУ РЦДО",
+        "inn": "0274931354",
+        "kpp": "027401001",
+        "ogrn": "1170280067924"
+      },
+      "target_learner": {
+        "name": "Денис",
+        "email_masked": "de***@gmail.com",
+        "id": "393e5639-7637-43b5-84b5-d5505e696903"
+      },
+      "enrollment_result": {
+        "id": "f161aa1f-b1c2-400b-802b-454687fe431d",
+        "status": "completed",
+        "progress_rows": 1,
+        "completed_lessons": 1
+      },
+      "document_result": {
+        "document_number": "AUTO-F161AA1FB1C2400B",
+        "verification_code": "DOCV-6DC5C651C5ED4B28957B1ECE",
+        "status": "available",
+        "document_type": "Сертификат",
+        "has_pdf": true,
+        "generation_source": "auto_completion",
+        "generation_template_version": "completion_pdf_v1",
+        "public_verify_http": 200,
+        "public_verify_result": "document_confirmed"
+      },
+      "known_issues": [
+        {
+          "id": "pdf_layout_verification_code_overlap",
+          "severity": "non_blocking",
+          "description": "The long verification code visually overlaps with the place field in the generated PDF layout.",
+          "fix_plan": "separate_pdf_template_hotfix",
+          "blocks_stage_acceptance": false
+        }
+      ],
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage81-real-batch-001-production-result.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage81_real_batch_001_production_result.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "docs/release-manifest.json",
+        "docs/stage81-real-batch-001-production-result.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage81_real_batch_001_production_result.py"
+      ],
+      "acceptance_markers": [
+        "Stage 81.15 - real-batch-001 production result",
+        "stage81_15_status=real_batch_001_production_result_completed",
+        "stage81_15_server_touched=yes",
+        "stage81_15_data_changed=yes",
+        "stage81_15_runtime_rebuild=no",
+        "stage81_15_runtime_restart=no",
+        "stage81_15_database_migration_run=no",
+        "stage81_15_cleanup_performed=no",
+        "stage81_15_batch_id=real-batch-001",
+        "stage81_15_decision=real_batch_001_e2e_completed_publish_document_verified",
+        "stage81_15_next_stage=81.16"
+      ],
+      "safety_notes": [
+        "manual_admin_ui_data_entry",
+        "no_direct_sql_mutation",
+        "no_runtime_rebuild",
+        "no_runtime_restart",
+        "no_database_migration",
+        "raw_contacts_not_committed",
+        "password_not_committed",
+        "known_pdf_layout_issue_recorded"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
     }
   ]
 }
