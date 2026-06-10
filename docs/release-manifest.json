@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.2",
+  "current_stage": "82.3",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "82.1",
-    "last_confirmed_head": "316e565",
+    "last_confirmed_stage": "82.2",
+    "last_confirmed_head": "e7ace74",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -26,12 +26,12 @@
     },
     "static_index_title": "Образовательный портал ГБОУ РЦДО",
     "backend_runtime_changed": false,
-    "database_migration_run": false,
+    "database_migration_run": true,
     "frontend_runtime_changed": false,
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "lesson_editor_foundation_ready",
+    "status": "lesson_blocks_schema_foundation_deployed",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +40,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "prepare_block_based_lesson_editor_architecture",
+    "decision": "continue_with_lesson_blocks_backend_api",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -62,8 +62,10 @@
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
     ],
-    "next_planned_stage": "82.2",
-    "next_planned_focus": "lesson_blocks_schema_foundation"
+    "next_planned_stage": "82.3",
+    "next_planned_focus": "lesson_blocks_backend_api",
+    "last_confirmed_tag": "v0.1.0-stage82-2-lesson-blocks-schema-foundation",
+    "last_migration": "6422_lesson_blocks_schema"
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -4048,6 +4050,82 @@
         "no_destructive_migration",
         "backend_restart_required_only_on_deploy",
         "database_backup_required_before_production_migration"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.3",
+      "name": "Lesson blocks backend API",
+      "status": "implementation_ready",
+      "branch": "stage82-3-lesson-blocks-api",
+      "base": "develop",
+      "deployment_type": "backend-api",
+      "runtime_scope": [
+        "lesson_blocks_list_api",
+        "lesson_blocks_create_api",
+        "lesson_blocks_update_api",
+        "lesson_blocks_delete_api",
+        "lesson_blocks_reorder_api",
+        "legacy_synthetic_block_list_adapter",
+        "lesson_block_audit_events"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": true,
+      "database_migration_run": false,
+      "database_migration_required": false,
+      "runtime_rebuild_required": true,
+      "runtime_restart_required": true,
+      "frontend_restart_required": false,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "decision": "implement_admin_lesson_blocks_api",
+      "next_stage": "82.4",
+      "endpoints": [
+        "GET /admin/course-lessons/{lesson_id}/blocks",
+        "POST /admin/course-lessons/{lesson_id}/blocks",
+        "PATCH /admin/lesson-blocks/{block_id}",
+        "DELETE /admin/lesson-blocks/{block_id}",
+        "POST /admin/course-lessons/{lesson_id}/blocks/reorder"
+      ],
+      "legacy_adapter": "synthetic_legacy_block_on_list",
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-blocks-api.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage82_lesson_blocks_api.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "python -m py_compile backend\\app\\api\\v1\\admin.py backend\\app\\schemas\\admin.py backend\\app\\services\\lesson_blocks.py backend\\app\\models\\lesson_block.py",
+        "python -m pytest backend\\app\\tests\\test_lesson_blocks_api_contract.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "backend/app/api/v1/admin.py",
+        "backend/app/tests/test_lesson_blocks_api_contract.py",
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-blocks-api.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_lesson_blocks_api.py"
+      ],
+      "acceptance_markers": [
+        "stage82_3_status=lesson_blocks_backend_api_implemented",
+        "stage82_3_endpoints=get_list_create_update_delete_reorder",
+        "stage82_3_legacy_adapter=synthetic_legacy_block_on_list",
+        "stage82_3_database_migration_required=no"
+      ],
+      "safety_notes": [
+        "no_database_migration",
+        "legacy_fields_preserved",
+        "no_frontend_runtime_change",
+        "no_destructive_migration",
+        "backend_restart_required_only_on_deploy"
       ],
       "raw_contacts_committed": false,
       "password_committed": false
