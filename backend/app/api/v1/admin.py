@@ -3576,6 +3576,17 @@ ADMIN_COURSE_LESSON_CONTENT_TYPES = {
     "assignment",
 }
 
+ADMIN_COURSE_LESSON_EDITOR_MODES = {
+    "legacy",
+    "block",
+}
+
+ADMIN_COURSE_LESSON_STATUSES = {
+    "draft",
+    "published",
+    "archived",
+}
+
 
 def normalize_course_lesson_content_type(value: str) -> str:
     normalized = value.strip().lower()
@@ -3584,6 +3595,30 @@ def normalize_course_lesson_content_type(value: str) -> str:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Unsupported course lesson content type",
+        )
+
+    return normalized
+
+
+def normalize_course_lesson_editor_mode(value: str) -> str:
+    normalized = value.strip().lower()
+
+    if normalized not in ADMIN_COURSE_LESSON_EDITOR_MODES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported course lesson editor mode",
+        )
+
+    return normalized
+
+
+def normalize_course_lesson_status(value: str) -> str:
+    normalized = value.strip().lower()
+
+    if normalized not in ADMIN_COURSE_LESSON_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported course lesson status",
         )
 
     return normalized
@@ -3598,6 +3633,15 @@ def normalize_course_lesson_create_data(data: dict) -> dict:
     )
     normalized["content_url"] = normalize_optional_text(normalized.get("content_url"))
     normalized["content_text"] = normalize_optional_text(normalized.get("content_text"))
+    normalized["editor_mode"] = normalize_course_lesson_editor_mode(
+        normalized.get("editor_mode") or "legacy"
+    )
+    normalized["status"] = normalize_course_lesson_status(
+        normalized.get("status") or "published"
+    )
+    normalized["published_version_id"] = normalize_optional_text(
+        normalized.get("published_version_id")
+    )
 
     if not normalized["title"]:
         raise HTTPException(
@@ -3646,6 +3690,27 @@ def normalize_course_lesson_update_data(data: dict) -> dict:
     if "content_text" in normalized:
         normalized["content_text"] = normalize_optional_text(normalized["content_text"])
 
+    if "editor_mode" in normalized:
+        if normalized["editor_mode"] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Course lesson editor mode is required",
+            )
+        normalized["editor_mode"] = normalize_course_lesson_editor_mode(normalized["editor_mode"])
+
+    if "status" in normalized:
+        if normalized["status"] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Course lesson status is required",
+            )
+        normalized["status"] = normalize_course_lesson_status(normalized["status"])
+
+    if "published_version_id" in normalized:
+        normalized["published_version_id"] = normalize_optional_text(
+            normalized["published_version_id"]
+        )
+
     if "position" in normalized and normalized["position"] is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -3676,6 +3741,9 @@ def build_admin_course_lesson_item(lesson: CourseLesson) -> AdminCourseLessonIte
         content_type=lesson.content_type,
         content_url=lesson.content_url,
         content_text=lesson.content_text,
+        editor_mode=lesson.editor_mode,
+        status=lesson.status,
+        published_version_id=lesson.published_version_id,
         position=lesson.position,
         is_required=lesson.is_required,
         is_active=lesson.is_active,
@@ -3691,6 +3759,9 @@ def build_admin_course_lesson_detail(lesson: CourseLesson) -> AdminCourseLessonD
         content_type=lesson.content_type,
         content_url=lesson.content_url,
         content_text=lesson.content_text,
+        editor_mode=lesson.editor_mode,
+        status=lesson.status,
+        published_version_id=lesson.published_version_id,
         position=lesson.position,
         is_required=lesson.is_required,
         is_active=lesson.is_active,
@@ -3708,6 +3779,9 @@ def course_lesson_snapshot(lesson: CourseLesson) -> dict:
         "content_type": lesson.content_type,
         "content_url": lesson.content_url,
         "content_text": lesson.content_text,
+        "editor_mode": lesson.editor_mode,
+        "status": lesson.status,
+        "published_version_id": lesson.published_version_id,
         "position": lesson.position,
         "is_required": lesson.is_required,
         "is_active": lesson.is_active,

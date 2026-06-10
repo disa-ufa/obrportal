@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.1",
+  "current_stage": "82.2",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "81.15",
-    "last_confirmed_head": "299d428",
+    "last_confirmed_stage": "82.1",
+    "last_confirmed_head": "316e565",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -31,7 +31,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "real_batch_001_production_result_completed",
+    "status": "lesson_editor_foundation_ready",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +40,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "real_batch_001_e2e_completed_publish_document_verified",
+    "decision": "prepare_block_based_lesson_editor_architecture",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -62,8 +62,8 @@
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
     ],
-    "next_planned_stage": "82.1",
-    "next_planned_focus": "lesson_editor_foundation"
+    "next_planned_stage": "82.2",
+    "next_planned_focus": "lesson_blocks_schema_foundation"
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -3948,6 +3948,106 @@
         "no_production_data_change",
         "legacy_fields_preserved",
         "additive_rollout_required"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.2",
+      "name": "Lesson blocks schema foundation",
+      "status": "implementation_ready",
+      "branch": "stage82-2-lesson-blocks-schema-foundation",
+      "base": "develop",
+      "deployment_type": "backend-schema-foundation",
+      "runtime_scope": [
+        "course_lesson_editor_metadata",
+        "lesson_blocks_table",
+        "lesson_block_model",
+        "lesson_block_schemas",
+        "lesson_block_validation_service",
+        "legacy_synthetic_block_adapter"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": true,
+      "database_migration_run": false,
+      "database_migration_required": true,
+      "runtime_rebuild_required": true,
+      "runtime_restart_required": true,
+      "frontend_restart_required": false,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "decision": "implement_backend_safe_lesson_blocks_schema_foundation",
+      "next_stage": "82.3",
+      "migration": "6422_lesson_blocks_schema",
+      "new_tables": [
+        "lesson_blocks"
+      ],
+      "course_lessons_new_columns": [
+        "editor_mode",
+        "status",
+        "published_version_id"
+      ],
+      "mvp_block_types": [
+        "rich_text",
+        "video",
+        "file_link",
+        "quiz",
+        "assignment",
+        "callout"
+      ],
+      "legacy_fields_preserved": [
+        "content_type",
+        "content_url",
+        "content_text"
+      ],
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-blocks-schema-foundation.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage82_lesson_blocks_schema_foundation.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python .\\scripts\\frontend_guard.py",
+        "python -m py_compile backend\\app\\models\\course_lesson.py backend\\app\\models\\lesson_block.py backend\\app\\services\\lesson_blocks.py backend\\app\\schemas\\admin.py backend\\app\\api\\v1\\admin.py",
+        "python -m pytest backend\\app\\tests\\test_lesson_blocks_schema_foundation.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "backend/alembic/versions/6422_lesson_blocks_schema_foundation.py",
+        "backend/app/api/v1/admin.py",
+        "backend/app/db/base.py",
+        "backend/app/models/__init__.py",
+        "backend/app/models/course_lesson.py",
+        "backend/app/models/lesson_block.py",
+        "backend/app/schemas/admin.py",
+        "backend/app/services/lesson_blocks.py",
+        "backend/app/tests/test_lesson_blocks_schema_foundation.py",
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-blocks-schema-foundation.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_lesson_blocks_schema_foundation.py"
+      ],
+      "acceptance_markers": [
+        "Stage 82.2 - lesson blocks schema foundation",
+        "stage82_2_status=lesson_blocks_schema_foundation_implemented",
+        "stage82_2_new_table=lesson_blocks",
+        "stage82_2_migration=6422_lesson_blocks_schema",
+        "stage82_2_legacy_fields_preserved=yes",
+        "stage82_2_mvp_block_types=rich_text,video,file_link,quiz,assignment,callout",
+        "stage82_2_backward_compatibility=legacy_dual_read_synthetic_blocks"
+      ],
+      "safety_notes": [
+        "additive_schema_migration",
+        "legacy_fields_preserved",
+        "no_frontend_runtime_change",
+        "no_destructive_migration",
+        "backend_restart_required_only_on_deploy",
+        "database_backup_required_before_production_migration"
       ],
       "raw_contacts_committed": false,
       "password_committed": false

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -315,6 +316,9 @@ class AdminCourseLessonItem(BaseModel):
     content_type: str
     content_url: str | None = None
     content_text: str | None = None
+    editor_mode: str = "legacy"
+    status: str = "published"
+    published_version_id: str | None = None
     position: int
     is_required: bool
     is_active: bool
@@ -331,6 +335,9 @@ class AdminCourseLessonCreate(BaseModel):
     content_type: str = Field(default="text", min_length=1, max_length=32)
     content_url: str | None = Field(default=None, max_length=2048)
     content_text: str | None = None
+    editor_mode: str = Field(default="legacy", min_length=1, max_length=32)
+    status: str = Field(default="published", min_length=1, max_length=32)
+    published_version_id: str | None = Field(default=None, max_length=36)
     position: int = Field(ge=1, le=10000)
     is_required: bool = True
     is_active: bool = True
@@ -342,9 +349,58 @@ class AdminCourseLessonUpdate(BaseModel):
     content_type: str | None = Field(default=None, min_length=1, max_length=32)
     content_url: str | None = Field(default=None, max_length=2048)
     content_text: str | None = None
+    editor_mode: str | None = Field(default=None, min_length=1, max_length=32)
+    status: str | None = Field(default=None, min_length=1, max_length=32)
+    published_version_id: str | None = Field(default=None, max_length=36)
     position: int | None = Field(default=None, ge=1, le=10000)
     is_required: bool | None = None
     is_active: bool | None = None
+
+
+class AdminLessonBlockItem(BaseModel):
+    id: str
+    lesson_id: str
+    block_type: str
+    position: int
+    title: str | None = None
+    content_json: dict[str, Any]
+    settings_json: dict[str, Any]
+    is_required: bool
+    is_active: bool
+
+
+class AdminLessonBlockDetail(AdminLessonBlockItem):
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminLessonBlockCreate(BaseModel):
+    block_type: str = Field(min_length=1, max_length=32)
+    position: int = Field(ge=1, le=10000)
+    title: str | None = Field(default=None, max_length=255)
+    content_json: dict[str, Any] = Field(default_factory=dict)
+    settings_json: dict[str, Any] = Field(default_factory=dict)
+    is_required: bool = False
+    is_active: bool = True
+
+
+class AdminLessonBlockUpdate(BaseModel):
+    block_type: str | None = Field(default=None, min_length=1, max_length=32)
+    position: int | None = Field(default=None, ge=1, le=10000)
+    title: str | None = Field(default=None, max_length=255)
+    content_json: dict[str, Any] | None = None
+    settings_json: dict[str, Any] | None = None
+    is_required: bool | None = None
+    is_active: bool | None = None
+
+
+class AdminLessonBlockReorderItem(BaseModel):
+    id: str
+    position: int = Field(ge=1, le=10000)
+
+
+class AdminLessonBlockReorder(BaseModel):
+    blocks: list[AdminLessonBlockReorderItem] = Field(min_length=1)
 
 
 class AdminCourseCreate(BaseModel):
