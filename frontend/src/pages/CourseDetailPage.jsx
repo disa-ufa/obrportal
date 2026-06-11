@@ -1131,6 +1131,7 @@ function CourseLearnerLessonContentPreviewPanel({
 
 const STAGE82_LEARNER_LESSON_BLOCK_VIEWER = "stage82_7_learner_lesson_block_viewer";
 const STAGE82_LEARNER_LESSON_BLOCK_NAVIGATION = "stage82_10_learner_lesson_blocks_navigation";
+const STAGE82_LEARNER_BLOCK_TYPE_RENDERING = "stage82_11_learner_block_type_rendering";
 
 const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   stage: "Stage 82.7 · Lesson Block Viewer",
@@ -1162,6 +1163,17 @@ const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   selected: "Выбран",
   completed: "Изучен",
   notCompleted: "Не изучен",
+  typeRenderingStage: "Stage 82.11 · Block Type Rendering",
+  contentLabel: "Содержимое блока",
+  question: "Вопрос",
+  answerOptions: "Варианты ответа",
+  openVideo: "Открыть видео",
+  openFile: "Открыть файл",
+  openLink: "Открыть ссылку",
+  assignmentInstruction: "Инструкция к заданию",
+  calloutNote: "Важное примечание",
+  richTextBody: "Текстовый материал",
+  noOptions: "Варианты ответа пока не заполнены.",
 };
 
 const LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS = {
@@ -1223,6 +1235,182 @@ function getLearnerLessonBlockViewerOptions(block) {
   return Array.isArray(content.options)
     ? content.options.map((item) => `${item || ""}`.trim()).filter(Boolean)
     : [];
+}
+
+function getLearnerLessonBlockViewerQuestion(block) {
+  const content = getLearnerLessonBlockViewerContent(block);
+  return `${content.question || content.prompt || getLearnerLessonBlockViewerText(block) || ""}`.trim();
+}
+
+function getLearnerLessonBlockViewerFileName(block) {
+  const content = getLearnerLessonBlockViewerContent(block);
+  return `${content.file_name || content.filename || content.name || block?.file_name || ""}`.trim();
+}
+
+function getLearnerLessonBlockViewerActionLabel(blockType) {
+  if (blockType === "video") {
+    return LEARNER_LESSON_BLOCK_VIEWER_LABELS.openVideo;
+  }
+
+  if (blockType === "file_link") {
+    return LEARNER_LESSON_BLOCK_VIEWER_LABELS.openFile;
+  }
+
+  return LEARNER_LESSON_BLOCK_VIEWER_LABELS.openLink;
+}
+
+function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, options }) {
+  const content = getLearnerLessonBlockViewerContent(block);
+  const question = getLearnerLessonBlockViewerQuestion(block);
+  const fileName = getLearnerLessonBlockViewerFileName(block);
+
+  if (blockType === "video") {
+    return (
+      <div
+        data-testid="learner-lesson-block-viewer-video"
+        data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
+        className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200"
+      >
+        <div className="font-semibold text-blue-950">
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.video}
+        </div>
+        <div className="mt-2">
+          {text || content.caption || content.description || url || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+        </div>
+        {href ? (
+          <a
+            data-testid="learner-lesson-block-viewer-video-link"
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
+          >
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.openVideo}
+          </a>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (blockType === "file_link") {
+    return (
+      <div
+        data-testid="learner-lesson-block-viewer-file-link"
+        data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
+        className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
+      >
+        <div className="font-semibold text-slate-900">
+          {fileName || LEARNER_LESSON_BLOCK_VIEWER_LABELS.fileLink}
+        </div>
+        <div className="mt-2">
+          {text || content.description || url || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+        </div>
+        {href ? (
+          <a
+            data-testid="learner-lesson-block-viewer-file-link-open"
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
+          >
+            {getLearnerLessonBlockViewerActionLabel(blockType)}
+          </a>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (blockType === "quiz") {
+    return (
+      <div
+        data-testid="learner-lesson-block-viewer-quiz"
+        data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
+        className="mt-4 rounded-2xl bg-violet-50 p-4 text-sm leading-6 text-violet-900 ring-1 ring-violet-200"
+      >
+        <div className="text-xs font-semibold uppercase tracking-wide text-violet-700">
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.question}
+        </div>
+        <div className="mt-2 font-semibold text-violet-950">
+          {question || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+        </div>
+        <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-violet-700">
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.answerOptions}
+        </div>
+        {options.length ? (
+          <ul className="mt-2 list-disc pl-5">
+            {options.map((option) => <li key={option}>{option}</li>)}
+          </ul>
+        ) : (
+          <div className="mt-2 text-violet-800">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.noOptions}
+          </div>
+        )}
+        <div className="mt-3 text-xs font-semibold text-violet-700">
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.answerHidden}
+        </div>
+      </div>
+    );
+  }
+
+  if (blockType === "assignment") {
+    return (
+      <div
+        data-testid="learner-lesson-block-viewer-assignment"
+        data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
+        className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200"
+      >
+        <div className="font-semibold text-amber-950">
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.assignmentInstruction}
+        </div>
+        <div className="mt-2">
+          {text || content.instruction || content.task || content.description || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+        </div>
+        {href ? (
+          <a
+            data-testid="learner-lesson-block-viewer-assignment-link"
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
+          >
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.openMaterial}
+          </a>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (blockType === "callout") {
+    return (
+      <div
+        data-testid="learner-lesson-block-viewer-callout"
+        data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
+        className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-900 ring-1 ring-emerald-200"
+      >
+        <div className="font-semibold text-emerald-950">
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.calloutNote}
+        </div>
+        <div className="mt-2">
+          {text || content.note || content.message || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-testid="learner-lesson-block-viewer-rich-text"
+      data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
+      className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
+    >
+      <div className="font-semibold text-slate-900">
+        {LEARNER_LESSON_BLOCK_VIEWER_LABELS.richTextBody}
+      </div>
+      <div className="mt-2 whitespace-pre-line">
+        {text || url || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+      </div>
+    </div>
+  );
 }
 
 function getLearnerLessonBlockViewerBlocks(lesson) {
@@ -1424,37 +1612,14 @@ function LearnerLessonBlockViewerBlock({ block, index }) {
         </div>
       </div>
 
-      {blockType === "quiz" ? (
-        <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
-          <div className="font-semibold text-slate-900">
-            {getLearnerLessonBlockViewerContent(block).question || text || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
-          </div>
-          {options.length ? (
-            <ul className="mt-3 list-disc pl-5">
-              {options.map((option) => <li key={option}>{option}</li>)}
-            </ul>
-          ) : null}
-          <div className="mt-3 text-xs font-semibold text-slate-500">
-            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.answerHidden}
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
-          {text || url || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
-        </div>
-      )}
-
-      {href ? (
-        <a
-          data-testid="learner-lesson-block-viewer-open-link"
-          href={href}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-flex rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
-        >
-          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.openMaterial}
-        </a>
-      ) : null}
+      <LearnerLessonBlockViewerBody
+        block={block}
+        blockType={blockType}
+        text={text}
+        url={url}
+        href={href}
+        options={options}
+      />
     </article>
   );
 }
