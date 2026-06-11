@@ -23,27 +23,27 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "82.12":
-        fail("current_stage must be 82.12")
+    if manifest.get("current_stage") != "82.13":
+        fail("current_stage must be 82.13")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "82.11":
-        fail("last_confirmed_stage must be 82.11")
-    if checkpoint.get("last_confirmed_head") != "f32b9df":
-        fail("last_confirmed_head must be f32b9df")
-    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-11-learner-block-type-rendering":
+    if checkpoint.get("last_confirmed_stage") != "82.12":
+        fail("last_confirmed_stage must be 82.12")
+    if checkpoint.get("last_confirmed_head") != "52803e3":
+        fail("last_confirmed_head must be 52803e3")
+    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-12-learner-lesson-progress-states":
         fail("last_confirmed_tag mismatch")
     if checkpoint.get("last_migration") != "6422_lesson_blocks_schema":
         fail("checkpoint last_migration mismatch")
-    if checkpoint.get("status") != "learner_block_type_rendering_deployed":
+    if checkpoint.get("status") != "learner_lesson_progress_states_deployed":
         fail("checkpoint status mismatch")
-    if checkpoint.get("decision") != "continue_with_learner_lesson_progress_states":
+    if checkpoint.get("decision") != "continue_with_learner_next_lesson_after_completion":
         fail("checkpoint decision mismatch")
     if checkpoint.get("cleanup_performed") is not False:
         fail("checkpoint cleanup_performed must be false")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7", "82.8", "82.9", "82.10", "82.11", "82.12"]:
+    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7", "82.8", "82.9", "82.10", "82.11", "82.12", "82.13"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
@@ -369,6 +369,39 @@ def main() -> None:
     for key, expected in expected_booleans.items():
         if stage.get(key) is not expected:
             fail(f"stage 82.12 {key} must be {expected}")
+
+
+    stage = stages["82.13"]
+    if stage.get("status") != "implementation_ready":
+        fail("stage 82.13 status mismatch")
+    if stage.get("branch") != "stage82-13-learner-next-lesson-after-completion":
+        fail("stage 82.13 branch mismatch")
+    if stage.get("deployment_type") != "frontend-only":
+        fail("stage 82.13 deployment_type mismatch")
+    if stage.get("decision") != "select_next_available_lesson_after_completion":
+        fail("stage 82.13 decision mismatch")
+    if stage.get("next_stage") != "82.14":
+        fail("stage 82.13 next_stage mismatch")
+
+    expected_booleans = {
+        "server_touched": False,
+        "frontend_runtime_changed": True,
+        "backend_runtime_changed": False,
+        "database_migration_run": False,
+        "database_migration_required": False,
+        "runtime_rebuild_required": True,
+        "runtime_restart_required": True,
+        "frontend_restart_required": True,
+        "backend_restart_required": False,
+        "production_data_changed": False,
+        "cleanup_performed": False,
+        "next_lesson_after_completion_guard": True,
+        "raw_contacts_committed": False,
+        "password_committed": False,
+    }
+    for key, expected in expected_booleans.items():
+        if stage.get(key) is not expected:
+            fail(f"stage 82.13 {key} must be {expected}")
 
     print("release manifest guard passed")
 

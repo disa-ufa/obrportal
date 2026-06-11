@@ -1133,6 +1133,7 @@ const STAGE82_LEARNER_LESSON_BLOCK_VIEWER = "stage82_7_learner_lesson_block_view
 const STAGE82_LEARNER_LESSON_BLOCK_NAVIGATION = "stage82_10_learner_lesson_blocks_navigation";
 const STAGE82_LEARNER_BLOCK_TYPE_RENDERING = "stage82_11_learner_block_type_rendering";
 const STAGE82_LEARNER_LESSON_PROGRESS_STATES = "stage82_12_learner_lesson_progress_states";
+const STAGE82_LEARNER_NEXT_LESSON_AFTER_COMPLETION = "stage82_13_learner_next_lesson_after_completion";
 
 const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   stage: "Stage 82.7 · Lesson Block Viewer",
@@ -1188,6 +1189,13 @@ const LEARNER_LESSON_PROGRESS_STATE_LABELS = {
   completedAt: "Дата изучения",
   completionReady: "Можно отметить изучение",
   completionLocked: "Завершение недоступно",
+};
+
+const LEARNER_NEXT_LESSON_AFTER_COMPLETION_LABELS = {
+  stage: "Stage 82.13 · Next Lesson After Completion",
+  nextLessonSelected: "Урок изучен. Открыт следующий урок:",
+  allLessonsCompleted: "Урок изучен. Все доступные уроки уже пройдены.",
+  stayOnCompletedLesson: "Урок изучен. Следующий доступный урок не найден.",
 };
 
 const LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS = {
@@ -1888,6 +1896,36 @@ const LEARNER_COMPLETION_ACTION_UX_LABELS = {
   openCatalog: "\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433",
 };
 
+function getLearnerNextLessonAfterCompletion(course, existingEnrollment, user, completedLesson) {
+  const completedLessonId = getLearnerLessonBlockViewerLessonId(completedLesson);
+  const accessFacts = getLearnerLessonAccessFacts(course, existingEnrollment, user);
+  const lessons = Array.isArray(accessFacts.lessons) ? accessFacts.lessons : [];
+
+  if (!completedLessonId || !lessons.length) {
+    return null;
+  }
+
+  const completedIndex = lessons.findIndex(
+    (lesson) => getLearnerLessonBlockViewerLessonId(lesson) === completedLessonId
+  );
+
+  const afterCompletedLesson = completedIndex >= 0 ? lessons.slice(completedIndex + 1) : [];
+
+  return (
+    afterCompletedLesson.find((lesson) => lesson.active && lesson.available && !getLessonCompleted(lesson)) ||
+    lessons.find((lesson) => lesson.active && lesson.available && !getLessonCompleted(lesson)) ||
+    null
+  );
+}
+
+function getLearnerNextLessonAfterCompletionMessage(nextLesson) {
+  if (nextLesson) {
+    return `${LEARNER_NEXT_LESSON_AFTER_COMPLETION_LABELS.nextLessonSelected} ${nextLesson.title}`;
+  }
+
+  return LEARNER_NEXT_LESSON_AFTER_COMPLETION_LABELS.allLessonsCompleted;
+}
+
 function getLearnerCompletionActionFacts(course, existingEnrollment, user, selectedLessonId = "") {
   const previewFacts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user, selectedLessonId);
   const lesson = previewFacts.lesson;
@@ -1974,7 +2012,7 @@ function CourseLearnerCompletionActionPanel({
 
       <div data-testid="learner-completion-action-note" className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">{facts.completed ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted : facts.canCompleteLesson ? LEARNER_LESSON_PROGRESS_STATE_LABELS.completionReady : LEARNER_LESSON_PROGRESS_STATE_LABELS.completionLocked}</div>
 
-      {lessonCompletionSuccess ? <div data-testid="learner-completion-action-success" className="mt-5 rounded-2xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200">{lessonCompletionSuccess}</div> : null}
+      {lessonCompletionSuccess ? <div data-testid="learner-completion-action-success" data-stage={STAGE82_LEARNER_NEXT_LESSON_AFTER_COMPLETION} className="mt-5 rounded-2xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200">{lessonCompletionSuccess}</div> : null}
       {lessonCompletionError ? <div data-testid="learner-completion-action-error" className="mt-5 rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700 ring-1 ring-red-200">{lessonCompletionError}</div> : null}
 
       <div data-testid="learner-completion-action-actions" className="mt-5 flex flex-wrap gap-3">
@@ -3012,10 +3050,24 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setLessonCompletionSuccess("");
 
       const updatedCourseDetail = await completeAccountCourseLesson(enrollmentId, lesson.id);
+      const nextLesson = getLearnerNextLessonAfterCompletion(
+        updatedCourseDetail,
+        updatedCourseDetail,
+        user,
+        lesson
+      );
+      const nextLessonId = getLearnerLessonBlockViewerLessonId(nextLesson);
 
       setAccountCourseDetail(updatedCourseDetail);
       setExistingEnrollment(updatedCourseDetail);
-      setLessonCompletionSuccess(LEARNER_COMPLETION_ACTION_UX_LABELS.completionSaved);
+
+      if (nextLessonId) {
+        setSelectedLessonId(nextLessonId);
+      } else {
+        setSelectedLessonId(getLearnerLessonBlockViewerLessonId(lesson));
+      }
+
+      setLessonCompletionSuccess(getLearnerNextLessonAfterCompletionMessage(nextLesson));
     } catch (err) {
       setLessonCompletionError(formatApiError(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043f\u043e \u0443\u0440\u043e\u043a\u0443."));
     } finally {
