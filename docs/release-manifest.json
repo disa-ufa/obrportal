@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.18",
+  "current_stage": "82.19",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "82.17",
-    "last_confirmed_head": "808b0a0",
+    "last_confirmed_stage": "82.18",
+    "last_confirmed_head": "6343219",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -31,7 +31,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "learner_document_publication_lifecycle_deployed",
+    "status": "admin_generated_document_publication_workflow_deployed",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +40,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "continue_with_admin_generated_document_publication_workflow",
+    "decision": "continue_with_organization_document_worklist",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -62,9 +62,9 @@
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
     ],
-    "next_planned_stage": "82.18",
-    "next_planned_focus": "admin_generated_document_publication_workflow",
-    "last_confirmed_tag": "v0.1.0-stage82-17-learner-document-publication-lifecycle",
+    "next_planned_stage": "82.19",
+    "next_planned_focus": "organization_document_worklist",
+    "last_confirmed_tag": "v0.1.0-stage82-18-admin-generated-document-publication-workflow",
     "last_migration": "6422_lesson_blocks_schema"
   },
   "global_safety_boundaries": [
@@ -5129,6 +5129,85 @@
         "no_backend_change",
         "no_database_migration",
         "no_data_change"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.19",
+      "name": "Organization document worklist",
+      "status": "implementation_ready",
+      "branch": "stage82-19-organization-document-worklist",
+      "base": "develop",
+      "deployment_type": "backend-and-frontend-no-migration",
+      "runtime_scope": [
+        "organization_group_enrollments_api_document_metadata",
+        "organization_document_worklist_panel",
+        "organization_document_state_summary",
+        "organization_enrollment_document_mini_status",
+        "organization_public_document_verification_link"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": true,
+      "database_migration_run": false,
+      "database_migration_required": false,
+      "runtime_rebuild_required": true,
+      "runtime_restart_required": true,
+      "frontend_restart_required": true,
+      "backend_restart_required": true,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "organization_document_worklist_guard": true,
+      "api_payload_dependency": "82.8",
+      "viewer_contract_dependency": "82.9",
+      "viewer_navigation_dependency": "82.10",
+      "viewer_type_rendering_dependency": "82.11",
+      "lesson_progress_states_dependency": "82.12",
+      "next_lesson_after_completion_dependency": "82.13",
+      "course_completion_readiness_dependency": "82.14",
+      "document_availability_handoff_dependency": "82.15",
+      "completion_document_focus_dependency": "82.16",
+      "document_publication_lifecycle_dependency": "82.17",
+      "admin_generated_document_publication_workflow_dependency": "82.18",
+      "decision": "show_organization_document_worklist",
+      "next_stage": "82.20",
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-organization-document-worklist.md"
+      ],
+      "required_checks": [
+        "python .\\\\scripts\\\\check_release_manifest.py",
+        "python .\\\\scripts\\\\check_stage82_19_organization_document_worklist.py",
+        "python .\\\\scripts\\\\check_source_bom.py",
+        "python .\\\\scripts\\\\check_text_encoding.py",
+        "python .\\\\scripts\\\\check_no_todo_markers.py",
+        "python -m py_compile backend\\\\app\\\\api\\\\v1\\\\org.py backend\\\\app\\\\schemas\\\\org.py",
+        "npm --prefix frontend run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "backend/app/api/v1/org.py",
+        "backend/app/schemas/org.py",
+        "frontend/src/components/organization/OrganizationGroupEnrollmentCard.jsx",
+        "frontend/src/components/organization/OrganizationGroupEnrollmentsSection.jsx",
+        "docs/release-manifest.json",
+        "docs/stage82-organization-document-worklist.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_19_organization_document_worklist.py"
+      ],
+      "acceptance_markers": [
+        "stage82_19_status=organization_document_worklist_implemented",
+        "stage82_19_frontend_changed=yes",
+        "stage82_19_backend_changed=yes",
+        "stage82_19_database_migration_required=no"
+      ],
+      "safety_notes": [
+        "backend_and_frontend_runtime_change",
+        "no_database_migration",
+        "no_production_data_change",
+        "no_cleanup"
       ],
       "raw_contacts_committed": false,
       "password_committed": false

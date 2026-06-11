@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.rbac import require_permission
 from app.db.session import get_db
 from app.models.course import Course
+from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
@@ -16,6 +17,7 @@ from app.models.user import User
 from app.schemas.org import (
     OrgEnrollmentBulkCreateResult,
     OrgEnrollmentBulkSkippedItem,
+    OrgEnrollmentDocumentItem,
     OrgEnrollmentGroupCreate,
     OrgEnrollmentItem,
     OrgLearningGroupCreate,
@@ -97,6 +99,35 @@ def normalize_learning_group_update_data(payload: OrgLearningGroupUpdate) -> dic
 
     return data
 
+def build_org_enrollment_document_item(row) -> OrgEnrollmentDocumentItem | None:
+    document_id = getattr(row, "document_id", None)
+
+    if document_id is None:
+        return None
+
+    document_status = getattr(row, "document_status", None) or "draft"
+    verification_code = getattr(row, "document_verification_code", None) or ""
+    public_verify_path = (
+        f"/verify/{verification_code}"
+        if document_status == "available" and verification_code
+        else None
+    )
+
+    return OrgEnrollmentDocumentItem(
+        id=str(document_id),
+        document_number=getattr(row, "document_number", None) or "",
+        verification_code=verification_code,
+        document_type=getattr(row, "document_type", None),
+        title=getattr(row, "document_title", None) or "Итоговый документ",
+        status=document_status,
+        file_available=bool(getattr(row, "document_storage_path", None)),
+        public_verify_path=public_verify_path,
+        generated_at=getattr(row, "document_generated_at", None),
+        created_at=getattr(row, "document_created_at", None),
+        revoked_at=getattr(row, "document_revoked_at", None),
+        revocation_reason=getattr(row, "document_revocation_reason", None),
+    )
+
 
 def build_org_enrollment_item(row) -> OrgEnrollmentItem:
     return OrgEnrollmentItem(
@@ -116,6 +147,7 @@ def build_org_enrollment_item(row) -> OrgEnrollmentItem:
         completed_at=row.completed_at,
         created_at=row.created_at,
         updated_at=row.updated_at,
+        document=build_org_enrollment_document_item(row),
     )
 
 
@@ -465,11 +497,23 @@ async def get_org_enrollment_rows_by_ids(
             Course.title.label("course_title"),
             Organization.name.label("organization_name"),
             LearningGroup.name.label("learning_group_name"),
+            DocumentRecord.id.label("document_id"),
+            DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.verification_code.label("document_verification_code"),
+            DocumentRecord.document_type.label("document_type"),
+            DocumentRecord.title.label("document_title"),
+            DocumentRecord.status.label("document_status"),
+            DocumentRecord.storage_path.label("document_storage_path"),
+            DocumentRecord.created_at.label("document_created_at"),
+            DocumentRecord.generated_at.label("document_generated_at"),
+            DocumentRecord.revoked_at.label("document_revoked_at"),
+            DocumentRecord.revocation_reason.label("document_revocation_reason"),
         )
         .join(User, User.id == Enrollment.user_id)
         .join(Course, Course.id == Enrollment.course_id)
         .outerjoin(Organization, Organization.id == Enrollment.organization_id)
         .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+        .outerjoin(DocumentRecord, DocumentRecord.enrollment_id == Enrollment.id)
         .where(Enrollment.id.in_(enrollment_ids))
         .order_by(User.email.asc())
     )
@@ -791,11 +835,23 @@ async def list_org_group_enrollments(
             Course.title.label("course_title"),
             Organization.name.label("organization_name"),
             LearningGroup.name.label("learning_group_name"),
+            DocumentRecord.id.label("document_id"),
+            DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.verification_code.label("document_verification_code"),
+            DocumentRecord.document_type.label("document_type"),
+            DocumentRecord.title.label("document_title"),
+            DocumentRecord.status.label("document_status"),
+            DocumentRecord.storage_path.label("document_storage_path"),
+            DocumentRecord.created_at.label("document_created_at"),
+            DocumentRecord.generated_at.label("document_generated_at"),
+            DocumentRecord.revoked_at.label("document_revoked_at"),
+            DocumentRecord.revocation_reason.label("document_revocation_reason"),
         )
         .join(User, User.id == Enrollment.user_id)
         .join(Course, Course.id == Enrollment.course_id)
         .outerjoin(Organization, Organization.id == Enrollment.organization_id)
         .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+        .outerjoin(DocumentRecord, DocumentRecord.enrollment_id == Enrollment.id)
         .where(Enrollment.learning_group_id == group.id)
         .order_by(Course.title.asc(), User.email.asc())
     )
