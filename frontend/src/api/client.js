@@ -127,7 +127,11 @@ export async function getAccountDocuments(filters = {}) {
 
   const query = params.toString();
 
-  return request(`/api/v1/account/documents${query ? `?${query}` : ""}`);
+  if (!query) {
+    return request("/api/v1/account/documents");
+  }
+
+  return request(`/api/v1/account/documents?${query}`);
 }
 
 function extractDownloadFilename(response, fallback = "document.bin") {
