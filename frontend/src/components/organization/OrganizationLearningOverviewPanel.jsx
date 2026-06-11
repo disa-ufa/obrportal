@@ -1,5 +1,7 @@
 import React from "react";
 
+import { buildDatedCsvFilename, downloadCsvFile } from "../../utils/exportCsv";
+
 const STAGE82_ORGANIZATION_LEARNING_OVERVIEW =
   "stage82_20_organization_learning_overview";
 
@@ -24,6 +26,14 @@ const ORGANIZATION_LEARNING_ATTENTION_LABELS = {
   empty: "По выбранному списку пока нет назначений.",
   openGroup: "Открыть группу",
   verify: "Проверить документ",
+};
+
+const STAGE82_ORGANIZATION_ATTENTION_CSV_EXPORT =
+  "stage82_22_organization_attention_csv_export";
+
+const ORGANIZATION_ATTENTION_CSV_EXPORT_LABELS = {
+  exportButton: "Скачать CSV",
+  exportEmpty: "Нет данных для выгрузки",
 };
 
 const ORGANIZATION_LEARNING_ATTENTION_FILTERS = [
@@ -65,6 +75,21 @@ const ORGANIZATION_LEARNING_ATTENTION_FILTERS = [
       enrollment.status === "in_progress" ||
       enrollment.status === "assigned",
   },
+];
+
+const ORGANIZATION_LEARNING_ATTENTION_EXPORT_COLUMNS = [
+  { key: "filter", label: "Список" },
+  { key: "learner", label: "Слушатель" },
+  { key: "learner_email", label: "Email слушателя" },
+  { key: "organization", label: "Организация" },
+  { key: "group", label: "Учебная группа" },
+  { key: "course", label: "Курс" },
+  { key: "enrollment_status", label: "Статус обучения" },
+  { key: "document_status", label: "Статус документа" },
+  { key: "document_number", label: "Номер документа" },
+  { key: "verification_code", label: "Код проверки" },
+  { key: "public_verify_path", label: "Публичная ссылка" },
+  { key: "completed_at", label: "Дата завершения" },
 ];
 
 function countWhere(items, predicate) {
@@ -153,6 +178,36 @@ function getEnrollmentGroupLabel(enrollment) {
   return enrollment.learning_group_name || "Без учебной группы";
 }
 
+function getEnrollmentStatusLabel(status) {
+  if (status === "assigned") {
+    return "Назначено";
+  }
+
+  if (status === "active" || status === "in_progress") {
+    return "В процессе";
+  }
+
+  if (status === "completed") {
+    return "Завершено";
+  }
+
+  return status || "";
+}
+
+function formatEnrollmentDateTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString("ru-RU");
+}
+
 function getEnrollmentDocumentLabel(enrollment) {
   if (!enrollment.document) {
     return "Документ не сформирован";
@@ -204,6 +259,23 @@ function buildOrganizationLearningAttentionItems(enrollments = [], filterId) {
     });
 }
 
+function buildOrganizationLearningAttentionExportRows(enrollments = [], filter) {
+  return enrollments.map((enrollment) => ({
+    filter: filter?.label || "",
+    learner: getEnrollmentLearnerLabel(enrollment),
+    learner_email: enrollment.user_email || "",
+    organization: enrollment.organization_name || "",
+    group: getEnrollmentGroupLabel(enrollment),
+    course: getEnrollmentCourseLabel(enrollment),
+    enrollment_status: getEnrollmentStatusLabel(enrollment.status),
+    document_status: getEnrollmentDocumentLabel(enrollment),
+    document_number: enrollment.document?.document_number || "",
+    verification_code: enrollment.document?.verification_code || "",
+    public_verify_path: enrollment.document?.public_verify_path || "",
+    completed_at: formatEnrollmentDateTime(enrollment.completed_at),
+  }));
+}
+
 function buildOrganizationLearningOverviewGroups(enrollments = []) {
   const groupMap = new Map();
 
@@ -240,10 +312,20 @@ function OrganizationLearningAttentionFiltersPanel({
   const selectedFilter =
     ORGANIZATION_LEARNING_ATTENTION_FILTERS.find((filter) => filter.id === selectedFilterId) ||
     ORGANIZATION_LEARNING_ATTENTION_FILTERS[0];
-  const items = buildOrganizationLearningAttentionItems(enrollments, selectedFilter.id).slice(
-    0,
-    8
-  );
+  const selectedItems = buildOrganizationLearningAttentionItems(enrollments, selectedFilter.id);
+  const visibleItems = selectedItems.slice(0, 8);
+
+  function handleExportSelectedFilter() {
+    if (selectedItems.length === 0) {
+      return;
+    }
+
+    downloadCsvFile(
+      buildDatedCsvFilename(`organization-attention-${selectedFilter.id}`),
+      ORGANIZATION_LEARNING_ATTENTION_EXPORT_COLUMNS,
+      buildOrganizationLearningAttentionExportRows(selectedItems, selectedFilter)
+    );
+  }
 
   return (
     <div
@@ -251,6 +333,8 @@ function OrganizationLearningAttentionFiltersPanel({
       data-stage={STAGE82_ORGANIZATION_LEARNING_ATTENTION_FILTERS}
       data-selected-filter={selectedFilter.id}
       data-selected-filter-count={counts[selectedFilter.id] || 0}
+      data-stage-export={STAGE82_ORGANIZATION_ATTENTION_CSV_EXPORT}
+      data-export-count={selectedItems.length}
       className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
     >
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -290,12 +374,25 @@ function OrganizationLearningAttentionFiltersPanel({
               {selectedFilter.description}
             </div>
           </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getAttentionFilterToneClass(selectedFilter.tone)}`}>
-            {counts[selectedFilter.id] || 0}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getAttentionFilterToneClass(selectedFilter.tone)}`}>
+              {counts[selectedFilter.id] || 0}
+            </span>
+            <button
+              type="button"
+              onClick={handleExportSelectedFilter}
+              disabled={selectedItems.length === 0}
+              data-testid="organization-learning-attention-export-button"
+              className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:bg-slate-300"
+            >
+              {selectedItems.length === 0
+                ? ORGANIZATION_ATTENTION_CSV_EXPORT_LABELS.exportEmpty
+                : ORGANIZATION_ATTENTION_CSV_EXPORT_LABELS.exportButton}
+            </button>
+          </div>
         </div>
 
-        {items.length === 0 ? (
+        {visibleItems.length === 0 ? (
           <div
             data-testid="organization-learning-attention-empty"
             className="mt-4 rounded-2xl bg-slate-50 p-3 text-xs text-slate-500 ring-1 ring-slate-100"
@@ -304,7 +401,7 @@ function OrganizationLearningAttentionFiltersPanel({
           </div>
         ) : (
           <div data-testid="organization-learning-attention-items" className="mt-4 grid gap-2">
-            {items.map((enrollment) => {
+            {visibleItems.map((enrollment) => {
               const canOpenGroup = Boolean(enrollment.learning_group_id && onSelectGroup);
               const groupSelected =
                 enrollment.learning_group_id && enrollment.learning_group_id === selectedGroupId;

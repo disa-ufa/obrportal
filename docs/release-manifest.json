@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.21",
+  "current_stage": "82.22",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "82.20",
-    "last_confirmed_head": "9c65baa",
+    "last_confirmed_stage": "82.21",
+    "last_confirmed_head": "ffedb5d",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -31,7 +31,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "organization_learning_overview_deployed",
+    "status": "organization_learning_attention_filters_deployed",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +40,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "continue_with_organization_learning_attention_filters",
+    "decision": "continue_with_organization_attention_csv_export",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -62,9 +62,9 @@
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
     ],
-    "next_planned_stage": "82.21",
-    "next_planned_focus": "organization_learning_attention_filters",
-    "last_confirmed_tag": "v0.1.0-stage82-20-organization-learning-overview",
+    "next_planned_stage": "82.22",
+    "next_planned_focus": "organization_attention_csv_export",
+    "last_confirmed_tag": "v0.1.0-stage82-21-organization-learning-attention-filters",
     "last_migration": "6422_lesson_blocks_schema"
   },
   "global_safety_boundaries": [
@@ -5351,6 +5351,76 @@
         "stage82_21_frontend_changed=yes",
         "stage82_21_backend_changed=no",
         "stage82_21_database_migration_required=no"
+      ],
+      "safety_notes": [
+        "frontend_only",
+        "no_backend_change",
+        "no_database_migration",
+        "no_production_data_change",
+        "no_cleanup"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.22",
+      "name": "Organization attention CSV export",
+      "status": "implementation_ready",
+      "branch": "stage82-22-organization-attention-csv-export",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "organization_learning_overview_panel",
+        "organization_learning_attention_filters",
+        "organization_attention_csv_export",
+        "completed_without_document_csv",
+        "draft_document_csv",
+        "published_document_csv",
+        "revoked_document_csv",
+        "active_learning_csv"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "database_migration_required": false,
+      "runtime_rebuild_required": true,
+      "runtime_restart_required": true,
+      "frontend_restart_required": true,
+      "backend_restart_required": false,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "organization_attention_csv_export_guard": true,
+      "organization_learning_attention_filters_dependency": "82.21",
+      "organization_learning_overview_dependency": "82.20",
+      "decision": "export_organization_attention_lists_to_csv",
+      "next_stage": "82.23",
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-organization-attention-csv-export.md"
+      ],
+      "required_checks": [
+        "python .\\\\scripts\\\\check_release_manifest.py",
+        "python .\\\\scripts\\\\check_stage82_22_organization_attention_csv_export.py",
+        "python .\\\\scripts\\\\check_source_bom.py",
+        "python .\\\\scripts\\\\check_text_encoding.py",
+        "python .\\\\scripts\\\\check_no_todo_markers.py",
+        "npm --prefix frontend run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "frontend/src/components/organization/OrganizationLearningOverviewPanel.jsx",
+        "docs/release-manifest.json",
+        "docs/stage82-organization-attention-csv-export.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_22_organization_attention_csv_export.py"
+      ],
+      "acceptance_markers": [
+        "stage82_22_status=organization_attention_csv_export_implemented",
+        "stage82_22_frontend_changed=yes",
+        "stage82_22_backend_changed=no",
+        "stage82_22_database_migration_required=no"
       ],
       "safety_notes": [
         "frontend_only",
