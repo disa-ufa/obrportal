@@ -23,27 +23,27 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "82.15":
-        fail("current_stage must be 82.15")
+    if manifest.get("current_stage") != "82.16":
+        fail("current_stage must be 82.16")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "82.14":
-        fail("last_confirmed_stage must be 82.14")
-    if checkpoint.get("last_confirmed_head") != "202f3f0":
-        fail("last_confirmed_head must be 202f3f0")
-    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-14-learner-course-completion-readiness":
+    if checkpoint.get("last_confirmed_stage") != "82.15":
+        fail("last_confirmed_stage must be 82.15")
+    if checkpoint.get("last_confirmed_head") != "9554541":
+        fail("last_confirmed_head must be 9554541")
+    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-15-learner-document-availability-handoff":
         fail("last_confirmed_tag mismatch")
     if checkpoint.get("last_migration") != "6422_lesson_blocks_schema":
         fail("checkpoint last_migration mismatch")
-    if checkpoint.get("status") != "learner_course_completion_readiness_deployed":
+    if checkpoint.get("status") != "learner_document_availability_handoff_deployed":
         fail("checkpoint status mismatch")
-    if checkpoint.get("decision") != "continue_with_learner_document_availability_handoff":
+    if checkpoint.get("decision") != "continue_with_learner_completion_document_focus":
         fail("checkpoint decision mismatch")
     if checkpoint.get("cleanup_performed") is not False:
         fail("checkpoint cleanup_performed must be false")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7", "82.8", "82.9", "82.10", "82.11", "82.12", "82.13", "82.14", "82.15"]:
+    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7", "82.8", "82.9", "82.10", "82.11", "82.12", "82.13", "82.14", "82.15", "82.16"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
@@ -468,6 +468,39 @@ def main() -> None:
     for key, expected in expected_booleans.items():
         if stage.get(key) is not expected:
             fail(f"stage 82.15 {key} must be {expected}")
+
+
+    stage = stages["82.16"]
+    if stage.get("status") != "implementation_ready":
+        fail("stage 82.16 status mismatch")
+    if stage.get("branch") != "stage82-16-learner-completion-document-focus":
+        fail("stage 82.16 branch mismatch")
+    if stage.get("deployment_type") != "frontend-only":
+        fail("stage 82.16 deployment_type mismatch")
+    if stage.get("decision") != "focus_document_handoff_after_course_completion":
+        fail("stage 82.16 decision mismatch")
+    if stage.get("next_stage") != "82.17":
+        fail("stage 82.16 next_stage mismatch")
+
+    expected_booleans = {
+        "server_touched": False,
+        "frontend_runtime_changed": True,
+        "backend_runtime_changed": False,
+        "database_migration_run": False,
+        "database_migration_required": False,
+        "runtime_rebuild_required": True,
+        "runtime_restart_required": True,
+        "frontend_restart_required": True,
+        "backend_restart_required": False,
+        "production_data_changed": False,
+        "cleanup_performed": False,
+        "completion_document_focus_guard": True,
+        "raw_contacts_committed": False,
+        "password_committed": False,
+    }
+    for key, expected in expected_booleans.items():
+        if stage.get(key) is not expected:
+            fail(f"stage 82.16 {key} must be {expected}")
 
     print("release manifest guard passed")
 

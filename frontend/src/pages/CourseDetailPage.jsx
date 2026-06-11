@@ -1,5 +1,5 @@
 import { formatApiError } from "../utils/apiErrors";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
 import { completeAccountCourse, completeAccountCourseLesson, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
@@ -1137,6 +1137,7 @@ const STAGE82_LEARNER_LESSON_PROGRESS_STATES = "stage82_12_learner_lesson_progre
 const STAGE82_LEARNER_NEXT_LESSON_AFTER_COMPLETION = "stage82_13_learner_next_lesson_after_completion";
 const STAGE82_LEARNER_COURSE_COMPLETION_READINESS = "stage82_14_learner_course_completion_readiness";
 const STAGE82_LEARNER_DOCUMENT_AVAILABILITY_HANDOFF = "stage82_15_learner_document_availability_handoff";
+const STAGE82_LEARNER_COMPLETION_DOCUMENT_FOCUS = "stage82_16_learner_completion_document_focus";
 
 const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   stage: "Stage 82.7 · Lesson Block Viewer",
@@ -2423,6 +2424,66 @@ const LEARNER_DOCUMENT_HANDOFF_UX_LABELS = {
 };
 
 
+
+const LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS = {
+  stage: "Stage 82.16 · Completion Document Focus",
+  title: "Курс завершён — проверьте итоговый документ",
+  courseCompleted: "Курс завершён. Мы открыли блок итогового документа ниже.",
+  available: "Документ найден и доступен для скачивания. Можно скачать файл или открыть публичную проверку.",
+  draft: "Документ сформирован, но пока находится в черновике. Дождитесь публикации или уточните статус у организации.",
+  revoked: "Документ найден, но он отозван. Проверьте статус у организации.",
+  pending: "Курс завершён, но документ пока не найден. Обычно он появляется после формирования или публикации.",
+  loading: "Курс завершён. Обновляем сведения об итоговом документе.",
+  error: "Курс завершён, но сведения о документе пока не обновились.",
+  close: "Понятно",
+};
+
+function getLearnerCompletionDocumentFocusKey(documentItem, documentsError = "") {
+  if (documentsError) {
+    return "error";
+  }
+
+  if (!documentItem) {
+    return "pending";
+  }
+
+  if (documentItem.status === "available" && documentItem.download_available) {
+    return "available";
+  }
+
+  if (documentItem.status === "revoked") {
+    return "revoked";
+  }
+
+  return "draft";
+}
+
+function getLearnerCompletionDocumentFocusMessage(documentItem, documentsError = "") {
+  if (documentsError) {
+    return documentsError || LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS.error;
+  }
+
+  const key = getLearnerCompletionDocumentFocusKey(documentItem);
+
+  return LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS[key] || LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS.pending;
+}
+
+function getLearnerCompletionDocumentFocusTone(focusKey = "") {
+  if (focusKey === "available") {
+    return "bg-green-50 text-green-900 ring-green-200";
+  }
+
+  if (focusKey === "error" || focusKey === "revoked") {
+    return "bg-red-50 text-red-800 ring-red-200";
+  }
+
+  if (focusKey === "draft" || focusKey === "pending") {
+    return "bg-amber-50 text-amber-900 ring-amber-200";
+  }
+
+  return "bg-blue-50 text-blue-900 ring-blue-200";
+}
+
 const LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS = {
   stage: "Stage 82.15 · Document Availability Handoff",
   availability: "Готовность документа",
@@ -2619,6 +2680,9 @@ function CourseLearnerDocumentHandoffPanel({
   documentsError = "",
   documentDownloadLoadingId = "",
   onDownloadDocument,
+  completionDocumentFocus = null,
+  onClearCompletionDocumentFocus,
+  documentHandoffRef,
 }) {
   const facts = getLearnerDocumentHandoffFacts(
     course,
@@ -2633,8 +2697,14 @@ function CourseLearnerDocumentHandoffPanel({
 
   return (
     <section
+      ref={documentHandoffRef}
+      tabIndex={-1}
       data-testid="learner-document-handoff-panel"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+      data-stage={completionDocumentFocus ? STAGE82_LEARNER_COMPLETION_DOCUMENT_FOCUS : STAGE82_LEARNER_DOCUMENT_AVAILABILITY_HANDOFF}
+      data-completion-document-focus={completionDocumentFocus ? "true" : "false"}
+      className={`rounded-[2rem] bg-white p-6 shadow-sm outline-none transition md:p-8 ${
+        completionDocumentFocus ? "ring-2 ring-green-300" : "ring-1 ring-slate-200"
+      }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -2658,6 +2728,38 @@ function CourseLearnerDocumentHandoffPanel({
           {facts.availability.label}
         </span>
       </div>
+
+      {completionDocumentFocus ? (
+        <div
+          data-testid="learner-completion-document-focus-banner"
+          data-stage={STAGE82_LEARNER_COMPLETION_DOCUMENT_FOCUS}
+          data-completion-document-focus-state={completionDocumentFocus.key}
+          className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${getLearnerCompletionDocumentFocusTone(
+            completionDocumentFocus.key
+          )}`}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide">
+                {LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS.stage}
+              </div>
+              <div className="mt-1 font-semibold text-slate-900">
+                {LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS.title}
+              </div>
+              <p className="mt-2">{completionDocumentFocus.message}</p>
+            </div>
+
+            <button
+              type="button"
+              data-testid="learner-completion-document-focus-dismiss"
+              onClick={onClearCompletionDocumentFocus}
+              className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+            >
+              {LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS.close}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div
         data-testid="learner-document-handoff-summary"
@@ -3307,6 +3409,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [accountDocumentsError, setAccountDocumentsError] = useState("");
   const [accountDocumentDownloadError, setAccountDocumentDownloadError] = useState("");
   const [accountDocumentDownloadLoadingId, setAccountDocumentDownloadLoadingId] = useState("");
+  const [completionDocumentFocus, setCompletionDocumentFocus] = useState(null);
+  const documentHandoffPanelRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -3322,6 +3426,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         setAccountDocumentsError("");
         setAccountDocumentDownloadError("");
         setAccountDocumentDownloadLoadingId("");
+        setCompletionDocumentFocus(null);
         setLoading(false);
         setError("Курс не выбран.");
         return;
@@ -3333,6 +3438,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         setAccountDocumentsLoading(Boolean(user));
         setAccountDocumentsError("");
         setAccountDocumentDownloadError("");
+        setCompletionDocumentFocus(null);
 
         const [courseResponse, coursesResponse, accountCoursesResponse] = await Promise.all([
           getPublicCourseDetail(courseSlug),
@@ -3434,6 +3540,22 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setSelectedLessonId(nextLessonId);
     }
   }, [learnerLessonAccessFacts, selectedLessonId]);
+
+  useEffect(() => {
+    if (!completionDocumentFocus) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      documentHandoffPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      documentHandoffPanelRef.current?.focus?.({ preventScroll: true });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [completionDocumentFocus]);
 
   const courseDiagnostics = useMemo(
     () =>
@@ -3544,21 +3666,48 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
 
       try {
         setAccountDocumentsLoading(true);
+        setCompletionDocumentFocus({
+          key: "loading",
+          message: LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS.loading,
+        });
+
         const accountDocumentsResponse = await getAccountDocuments({
           enrollment_id: enrollmentId,
           course_id: updatedCourseDetail?.course_id || existingEnrollment?.course_id || course?.id,
         });
-        setAccountDocuments(
-          Array.isArray(accountDocumentsResponse?.items) ? accountDocumentsResponse.items : []
+        const nextAccountDocuments = Array.isArray(accountDocumentsResponse?.items)
+          ? accountDocumentsResponse.items
+          : [];
+        const completedEnrollmentForDocument = updatedCourseDetail || {
+          ...existingEnrollment,
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        };
+        const completedDocumentItem = getLearnerDocumentAvailabilityHandoffDocument(
+          course,
+          completedEnrollmentForDocument,
+          nextAccountDocuments
         );
+
+        setAccountDocuments(nextAccountDocuments);
         setAccountDocumentsError("");
+        setCompletionDocumentFocus({
+          key: getLearnerCompletionDocumentFocusKey(completedDocumentItem),
+          message: getLearnerCompletionDocumentFocusMessage(completedDocumentItem),
+          documentId: completedDocumentItem?.id || "",
+        });
       } catch (documentErr) {
-        setAccountDocumentsError(formatApiError(documentErr, "Курс завершён, но сведения о документе пока не обновились."));
+        const documentMessage = formatApiError(documentErr, "Курс завершён, но сведения о документе пока не обновились.");
+        setAccountDocumentsError(documentMessage);
+        setCompletionDocumentFocus({
+          key: "error",
+          message: getLearnerCompletionDocumentFocusMessage(null, documentMessage),
+        });
       } finally {
         setAccountDocumentsLoading(false);
       }
 
-      setCourseCompletionSuccess(LEARNER_COURSE_COMPLETION_API_LABELS.completionSaved);
+      setCourseCompletionSuccess(LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS.courseCompleted);
       setLessonCompletionError("");
       setLessonCompletionSuccess("");
     } catch (err) {
@@ -3858,6 +4007,9 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         documentsError={accountDocumentsError || accountDocumentDownloadError}
         documentDownloadLoadingId={accountDocumentDownloadLoadingId}
         onDownloadDocument={handleDownloadAccountDocument}
+        completionDocumentFocus={completionDocumentFocus}
+        onClearCompletionDocumentFocus={() => setCompletionDocumentFocus(null)}
+        documentHandoffRef={documentHandoffPanelRef}
       />
 
       <CourseSelfEnrollmentDiagnostics
