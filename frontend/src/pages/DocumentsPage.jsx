@@ -1338,6 +1338,315 @@ function LearnerDocumentDownloadUXPanel({
 }
 
 
+
+const STAGE82_ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW =
+  "stage82_18_admin_generated_document_publication_workflow";
+
+const ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS = {
+  stage: "Stage 82.18 · Generated Document Publication Workflow",
+  title: "Очередь публикации автоматически сформированных документов",
+  subtitle:
+    "Быстрый рабочий блок для итоговых PDF, которые уже сформированы после завершения курса и ждут публикации.",
+  readyTitle: "Готовы к публикации",
+  readyHint: "Черновики с уже сформированным PDF. Их можно опубликовать без загрузки файла.",
+  waitingTitle: "Ждут проверки",
+  waitingHint: "Документ есть, но пока не готов к публикации. Проверьте файл, статус или пересоберите PDF.",
+  publishedTitle: "Опубликованы",
+  publishedHint: "Документы уже доступны слушателям для скачивания и публичной проверки.",
+  revokedTitle: "Отозваны",
+  revokedHint: "Документы нельзя использовать как действующие.",
+  emptyTitle: "Нет автоматически сформированных документов в текущей выборке",
+  emptyText:
+    "Когда слушатель завершит курс, итоговый PDF появится здесь как черновик и попадёт в очередь публикации.",
+  publishAction: "Опубликовать PDF",
+  publishingAction: "Публикуем...",
+  showReadyAction: "Показать готовые черновики",
+  showAllGeneratedAction: "Показать авто PDF",
+  showPublishedAction: "Показать опубликованные",
+  documentAuditAction: "Аудит документа",
+  enrollmentAction: "Назначение",
+  userDocumentsAction: "Документы слушателя",
+};
+
+function getGeneratedDocumentPublicationWorkflowStats(documents = []) {
+  const generatedDocuments = documents.filter(isGeneratedCompletionDocument);
+  const readyDrafts = generatedDocuments.filter(canPublishGeneratedCompletionDocument);
+  const waitingDrafts = generatedDocuments.filter(
+    (documentItem) =>
+      documentItem.status === "draft" && !canPublishGeneratedCompletionDocument(documentItem)
+  );
+  const publishedDocuments = generatedDocuments.filter(
+    (documentItem) => documentItem.status === "available"
+  );
+  const revokedDocuments = generatedDocuments.filter(
+    (documentItem) => documentItem.status === "revoked"
+  );
+
+  return {
+    generatedDocuments,
+    readyDrafts,
+    waitingDrafts,
+    publishedDocuments,
+    revokedDocuments,
+    total: generatedDocuments.length,
+    readyCount: readyDrafts.length,
+    waitingCount: waitingDrafts.length,
+    publishedCount: publishedDocuments.length,
+    revokedCount: revokedDocuments.length,
+  };
+}
+
+function getGeneratedDocumentPublicationWorkflowTone(stats) {
+  if (stats.readyCount > 0) {
+    return "bg-amber-50 text-amber-900 ring-amber-200";
+  }
+
+  if (stats.waitingCount > 0 || stats.revokedCount > 0) {
+    return "bg-slate-50 text-slate-700 ring-slate-200";
+  }
+
+  if (stats.publishedCount > 0) {
+    return "bg-green-50 text-green-800 ring-green-200";
+  }
+
+  return "bg-slate-50 text-slate-600 ring-slate-200";
+}
+
+function getGeneratedDocumentPublicationWorkflowFocusText(stats) {
+  if (stats.readyCount > 0) {
+    return `${stats.readyCount} автоматически сформированных PDF готовы к публикации.`;
+  }
+
+  if (stats.waitingCount > 0) {
+    return `${stats.waitingCount} автоматически сформированных PDF требуют проверки перед публикацией.`;
+  }
+
+  if (stats.publishedCount > 0) {
+    return `${stats.publishedCount} автоматически сформированных PDF уже опубликованы.`;
+  }
+
+  return ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.emptyText;
+}
+
+function GeneratedDocumentPublicationWorkflowPanel({
+  documents,
+  loading,
+  getDocumentFilterPath,
+  getEnrollmentFilterPath,
+  onPublishDocument,
+  statusSavingKey,
+  deleteSavingId,
+}) {
+  const stats = getGeneratedDocumentPublicationWorkflowStats(documents);
+  const readyPreviewItems = stats.readyDrafts.slice(0, 3);
+  const panelTone = getGeneratedDocumentPublicationWorkflowTone(stats);
+
+  return (
+    <SectionCard
+      title={ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.title}
+      subtitle={ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.subtitle}
+    >
+      <div
+        data-testid="admin-generated-document-publication-workflow"
+        data-stage={STAGE82_ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW}
+        data-generated-publication-total={stats.total}
+        data-generated-publication-ready={stats.readyCount}
+        data-generated-publication-waiting={stats.waitingCount}
+        data-generated-publication-published={stats.publishedCount}
+        className="space-y-5"
+      >
+        <div
+          data-testid="admin-generated-document-publication-workflow-focus"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${panelTone}`}
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide">
+            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.stage}
+          </div>
+          <div className="mt-1 font-semibold text-slate-900">
+            {loading
+              ? "Обновляем очередь публикации..."
+              : getGeneratedDocumentPublicationWorkflowFocusText(stats)}
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-generated-document-publication-workflow-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-amber-50 p-4 text-amber-900 ring-1 ring-amber-200">
+            <div className="text-xs font-semibold uppercase tracking-wide">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.readyTitle}
+            </div>
+            <div className="mt-2 text-2xl font-bold">{stats.readyCount}</div>
+            <p className="mt-1 text-sm leading-6">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.readyHint}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 text-slate-700 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.waitingTitle}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">{stats.waitingCount}</div>
+            <p className="mt-1 text-sm leading-6">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.waitingHint}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-green-50 p-4 text-green-800 ring-1 ring-green-200">
+            <div className="text-xs font-semibold uppercase tracking-wide">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishedTitle}
+            </div>
+            <div className="mt-2 text-2xl font-bold">{stats.publishedCount}</div>
+            <p className="mt-1 text-sm leading-6">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishedHint}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-red-50 p-4 text-red-800 ring-1 ring-red-200">
+            <div className="text-xs font-semibold uppercase tracking-wide">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.revokedTitle}
+            </div>
+            <div className="mt-2 text-2xl font-bold">{stats.revokedCount}</div>
+            <p className="mt-1 text-sm leading-6">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.revokedHint}
+            </p>
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-generated-document-publication-workflow-actions"
+          className="flex flex-wrap gap-3"
+        >
+          <Link
+            to={getDocumentFilterPath({ status: "draft", action_required: "true", q: "AUTO-" })}
+            className="rounded-full bg-amber-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700"
+          >
+            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.showReadyAction}
+          </Link>
+
+          <Link
+            to={getDocumentFilterPath({ status: "", action_required: "", q: "AUTO-" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.showAllGeneratedAction}
+          </Link>
+
+          <Link
+            to={getDocumentFilterPath({ status: "available", action_required: "", q: "AUTO-" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.showPublishedAction}
+          </Link>
+        </div>
+
+        {readyPreviewItems.length > 0 ? (
+          <div
+            data-testid="admin-generated-document-publication-ready-list"
+            className="space-y-3"
+          >
+            {readyPreviewItems.map((documentItem) => {
+              const isPublishing = statusSavingKey === `${documentItem.id}:available`;
+              const isDeleteSaving = deleteSavingId === documentItem.id;
+
+              return (
+                <div
+                  key={documentItem.id}
+                  data-testid="admin-generated-document-publication-ready-item"
+                  className="rounded-2xl bg-white p-4 ring-1 ring-amber-200"
+                >
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getDocumentStatusTone(documentItem.status)}`}>
+                          {getDocumentStatusLabel(documentItem.status)}
+                        </span>
+                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700 ring-1 ring-indigo-200">
+                          PDF сформирован
+                        </span>
+                      </div>
+
+                      <div className="mt-3 text-lg font-bold text-slate-900">
+                        {documentItem.title}
+                      </div>
+                      <div className="mt-1 text-sm text-slate-500">
+                        {documentItem.document_number}
+                      </div>
+                      <div className="mt-1 text-sm text-slate-600">
+                        {documentItem.course_title || "Курс не указан"}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        Сформирован: {formatDateTime(documentItem.generated_at)}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        data-testid="admin-generated-document-publication-publish-action"
+                        onClick={() => onPublishDocument(documentItem)}
+                        disabled={isPublishing || isDeleteSaving}
+                        className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isPublishing
+                          ? ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishingAction
+                          : ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishAction}
+                      </button>
+
+                      {documentItem.enrollment_id && (
+                        <Link
+                          to={getEnrollmentFilterPath({
+                            status: "completed",
+                            user_id: documentItem.user_id || "",
+                          })}
+                          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                        >
+                          {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.enrollmentAction}
+                        </Link>
+                      )}
+
+                      {documentItem.user_id && (
+                        <Link
+                          to={getDocumentFilterPath({
+                            user_id: documentItem.user_id,
+                            status: "",
+                            action_required: "",
+                            q: "",
+                          })}
+                          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                        >
+                          {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.userDocumentsAction}
+                        </Link>
+                      )}
+
+                      <Link
+                        to={buildAuditPath({ entity_type: "document", entity_id: documentItem.id })}
+                        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                      >
+                        {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.documentAuditAction}
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div
+            data-testid="admin-generated-document-publication-empty"
+            className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200"
+          >
+            <div className="font-semibold text-slate-900">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.emptyTitle}
+            </div>
+            <p className="mt-1">{ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.emptyText}</p>
+          </div>
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
 function DocumentsSummaryCards({ documentStatusCounts, documents, courses, enrollments }) {
   const filesCount = documents.filter((documentItem) => documentItem.file_available).length;
   const completedEnrollmentsCount = enrollments.filter(
@@ -2338,6 +2647,16 @@ export function DocumentsPage() {
         documentStatusCounts={documentStatusCounts}
         courses={courses}
         enrollments={enrollments}
+      />
+
+      <GeneratedDocumentPublicationWorkflowPanel
+        documents={documents}
+        loading={loading}
+        getDocumentFilterPath={getDocumentFilterPath}
+        getEnrollmentFilterPath={getEnrollmentFilterPath}
+        onPublishDocument={(documentItem) => handleQuickStatusUpdate(documentItem, "available")}
+        statusSavingKey={statusSavingKey}
+        deleteSavingId={deleteSavingId}
       />
 
       <LearnerDocumentsUXFoundationPanel
