@@ -941,15 +941,9 @@ function getLearnerLessonContentPreviewAction(contentType) {
   return LEARNER_LESSON_CONTENT_PREVIEW_UX_LABELS.studyText;
 }
 
-function getLearnerLessonContentPreviewFacts(course, existingEnrollment, user) {
+function getLearnerLessonContentPreviewFacts(course, existingEnrollment, user, selectedLessonId = "") {
   const accessFacts = getLearnerLessonAccessFacts(course, existingEnrollment, user);
-  const lesson =
-    accessFacts.availableLessons.find((item) => !getLessonCompleted(item)) ||
-    accessFacts.firstAvailableLesson ||
-    accessFacts.lessons.find((item) => item.active && !getLessonCompleted(item)) ||
-    accessFacts.lessons.find((item) => item.active) ||
-    accessFacts.lessons[0] ||
-    null;
+  const lesson = getLearnerLessonBlockViewerSelectedLesson(accessFacts, selectedLessonId);
 
   if (!lesson) {
     return {
@@ -997,8 +991,9 @@ function CourseLearnerLessonContentPreviewPanel({
   user,
   onPrimaryAction,
   onPageChange,
+  selectedLessonId = "",
 }) {
-  const facts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user);
+  const facts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user, selectedLessonId);
   const lesson = facts.lesson;
 
   return (
@@ -1135,6 +1130,7 @@ function CourseLearnerLessonContentPreviewPanel({
 
 
 const STAGE82_LEARNER_LESSON_BLOCK_VIEWER = "stage82_7_learner_lesson_block_viewer";
+const STAGE82_LEARNER_LESSON_BLOCK_NAVIGATION = "stage82_10_learner_lesson_blocks_navigation";
 
 const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   stage: "Stage 82.7 · Lesson Block Viewer",
@@ -1160,6 +1156,12 @@ const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   noLessons: "В курсе пока нет уроков.",
   noBlocks: "В выбранном уроке пока нет материалов.",
   answerHidden: "Ответ будет проверяться в следующих этапах.",
+  navigationStage: "Stage 82.10 · Lesson Blocks Navigation",
+  chooseLesson: "Выберите урок",
+  selectedLesson: "Выбранный урок",
+  selected: "Выбран",
+  completed: "Изучен",
+  notCompleted: "Не изучен",
 };
 
 const LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS = {
@@ -1269,8 +1271,34 @@ function getLearnerLessonBlockViewerBlocks(lesson) {
   ];
 }
 
-function getLearnerLessonBlockViewerFacts(course, existingEnrollment, user) {
-  const previewFacts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user);
+function getLearnerLessonBlockViewerLessonId(lesson) {
+  return `${lesson?.id || lesson?.lesson_id || ""}`;
+}
+
+function getLearnerLessonBlockViewerSelectedLesson(accessFacts, selectedLessonId = "") {
+  const lessons = Array.isArray(accessFacts?.lessons) ? accessFacts.lessons : [];
+  const selectedId = `${selectedLessonId || ""}`.trim();
+
+  if (selectedId) {
+    const selectedLesson = lessons.find((lesson) => getLearnerLessonBlockViewerLessonId(lesson) === selectedId);
+    if (selectedLesson) {
+      return selectedLesson;
+    }
+  }
+
+  return (
+    accessFacts?.availableLessons?.find((item) => !getLessonCompleted(item)) ||
+    accessFacts?.firstAvailableLesson ||
+    lessons.find((item) => item.active && !getLessonCompleted(item)) ||
+    lessons.find((item) => item.active) ||
+    lessons[0] ||
+    null
+  );
+}
+
+function getLearnerLessonBlockViewerFacts(course, existingEnrollment, user, selectedLessonId = "") {
+  const accessFacts = getLearnerLessonAccessFacts(course, existingEnrollment, user);
+  const previewFacts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user, selectedLessonId);
   const lesson = previewFacts.lesson;
   const locked = previewFacts.locked;
   const blocks = locked ? [] : getLearnerLessonBlockViewerBlocks(lesson);
@@ -1279,6 +1307,8 @@ function getLearnerLessonBlockViewerFacts(course, existingEnrollment, user) {
   return {
     mode: previewFacts.mode,
     lesson,
+    lessons: accessFacts.lessons,
+    selectedLessonId: getLearnerLessonBlockViewerLessonId(lesson),
     locked,
     blocks,
     requiredBlocks,
@@ -1292,6 +1322,69 @@ function getLearnerLessonBlockViewerFacts(course, existingEnrollment, user) {
           ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.available
           : LEARNER_LESSON_BLOCK_VIEWER_LABELS.empty,
   };
+}
+
+function LearnerLessonBlockNavigation({ lessons, selectedLessonId, onSelectLesson }) {
+  const courseLessons = Array.isArray(lessons) ? lessons : [];
+
+  if (!courseLessons.length) {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid="learner-lesson-block-navigation"
+      data-stage={STAGE82_LEARNER_LESSON_BLOCK_NAVIGATION}
+      className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.navigationStage}
+          </div>
+          <div className="mt-1 text-sm font-bold text-slate-900">
+            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.chooseLesson}
+          </div>
+        </div>
+        <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+          {courseLessons.length}
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
+        {courseLessons.map((lesson) => {
+          const lessonId = getLearnerLessonBlockViewerLessonId(lesson);
+          const selected = lessonId && lessonId === selectedLessonId;
+          const disabled = !lessonId || lesson.active === false;
+          const completed = getLessonCompleted(lesson);
+
+          return (
+            <button
+              key={lessonId || lesson.title}
+              type="button"
+              data-testid="learner-lesson-block-navigation-item"
+              data-selected={selected ? "true" : "false"}
+              disabled={disabled}
+              onClick={() => onSelectLesson?.(lessonId)}
+              className={`rounded-2xl p-3 text-left text-sm ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                selected
+                  ? "bg-blue-600 text-white ring-blue-600"
+                  : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-100"
+              }`}
+            >
+              <div className="font-semibold">
+                {lesson.position ? `${lesson.position}. ` : ""}
+                {lesson.title}
+              </div>
+              <div className={`mt-1 text-xs font-semibold ${selected ? "text-blue-100" : "text-slate-500"}`}>
+                {selected ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.selected : completed ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.completed : LEARNER_LESSON_BLOCK_VIEWER_LABELS.notCompleted}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function LearnerLessonBlockViewerBlock({ block, index }) {
@@ -1372,8 +1465,10 @@ function CourseLearnerLessonBlockViewerPanel({
   user,
   onPrimaryAction,
   onPageChange,
+  selectedLessonId = "",
+  onSelectLesson,
 }) {
-  const facts = getLearnerLessonBlockViewerFacts(course, existingEnrollment, user);
+  const facts = getLearnerLessonBlockViewerFacts(course, existingEnrollment, user, selectedLessonId);
 
   return (
     <section
@@ -1439,6 +1534,12 @@ function CourseLearnerLessonBlockViewerPanel({
           </div>
         </div>
       </div>
+
+      <LearnerLessonBlockNavigation
+        lessons={facts.lessons}
+        selectedLessonId={facts.selectedLessonId}
+        onSelectLesson={onSelectLesson}
+      />
 
       {facts.locked ? (
         <div
@@ -1526,8 +1627,8 @@ const LEARNER_COMPLETION_ACTION_UX_LABELS = {
   openCatalog: "\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433",
 };
 
-function getLearnerCompletionActionFacts(course, existingEnrollment, user) {
-  const previewFacts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user);
+function getLearnerCompletionActionFacts(course, existingEnrollment, user, selectedLessonId = "") {
+  const previewFacts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user, selectedLessonId);
   const lesson = previewFacts.lesson;
   const locked = previewFacts.locked;
   const hasUrl = Boolean(previewFacts.url);
@@ -1574,8 +1675,9 @@ function CourseLearnerCompletionActionPanel({
   lessonCompletionLoading = false,
   lessonCompletionError = "",
   lessonCompletionSuccess = "",
+  selectedLessonId = "",
 }) {
-  const facts = getLearnerCompletionActionFacts(course, existingEnrollment, user);
+  const facts = getLearnerCompletionActionFacts(course, existingEnrollment, user, selectedLessonId);
   const lesson = facts.lesson;
 
   return (
@@ -2516,6 +2618,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [courseCompletionLoading, setCourseCompletionLoading] = useState(false);
   const [courseCompletionError, setCourseCompletionError] = useState("");
   const [courseCompletionSuccess, setCourseCompletionSuccess] = useState("");
+  const [selectedLessonId, setSelectedLessonId] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -2603,6 +2706,20 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     () => mergeCourseWithAccountCourseDetail(course, accountCourseDetail),
     [course, accountCourseDetail]
   );
+
+  const learnerLessonAccessFacts = useMemo(
+    () => getLearnerLessonAccessFacts(learnerCourse, existingEnrollment, user),
+    [learnerCourse, existingEnrollment, user]
+  );
+
+  useEffect(() => {
+    const selectedLesson = getLearnerLessonBlockViewerSelectedLesson(learnerLessonAccessFacts, selectedLessonId);
+    const nextLessonId = getLearnerLessonBlockViewerLessonId(selectedLesson);
+
+    if (nextLessonId !== selectedLessonId) {
+      setSelectedLessonId(nextLessonId);
+    }
+  }, [learnerLessonAccessFacts, selectedLessonId]);
 
   const courseDiagnostics = useMemo(
     () =>
@@ -2933,6 +3050,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         user={user}
         onPrimaryAction={handleEnroll}
         onPageChange={onPageChange}
+        selectedLessonId={selectedLessonId}
       />
 
       <CourseLearnerLessonBlockViewerPanel
@@ -2941,6 +3059,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         user={user}
         onPrimaryAction={handleEnroll}
         onPageChange={onPageChange}
+        selectedLessonId={selectedLessonId}
+        onSelectLesson={setSelectedLessonId}
       />
 
       <CourseLearnerCompletionActionPanel
@@ -2950,6 +3070,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         onPrimaryAction={handleEnroll}
         onPageChange={onPageChange}
         onCompleteLesson={handleCompleteLesson}
+        selectedLessonId={selectedLessonId}
         lessonCompletionLoading={lessonCompletionLoading}
         lessonCompletionError={lessonCompletionError}
         lessonCompletionSuccess={lessonCompletionSuccess}
