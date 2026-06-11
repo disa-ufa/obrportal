@@ -17,6 +17,7 @@ from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup
 from app.models.lesson_progress import LessonProgress
+from app.models.lesson_block import LessonBlock
 from app.models.organization import Organization
 from app.models.user import User
 from app.services.completion_documents import ensure_completion_document_for_enrollment
@@ -30,6 +31,7 @@ from app.schemas.account import (
     AccountCourseItemResponse,
     AccountCourseLessonResponse,
     AccountCourseModuleResponse,
+    AccountLessonBlockResponse,
     AccountCoursesResponse,
     AccountDocumentItemResponse,
     AccountDocumentsResponse,
@@ -301,12 +303,29 @@ def build_account_course_item_from_row(row) -> AccountCourseItemResponse:
     )
 
 
+def build_account_lesson_block(block: LessonBlock) -> AccountLessonBlockResponse:
+    return AccountLessonBlockResponse(
+        id=str(block.id),
+        lesson_id=str(block.lesson_id),
+        block_type=block.block_type,
+        position=block.position,
+        title=block.title,
+        content_json=block.content_json or {},
+        settings_json=block.settings_json or {},
+        is_required=block.is_required,
+        is_active=block.is_active,
+    )
+
+
 def build_account_course_lesson(
     lesson: CourseLesson,
     completed_at_by_lesson_id: dict[str, datetime] | None = None,
+    blocks_by_lesson_id: dict[str, list[LessonBlock]] | None = None,
 ) -> AccountCourseLessonResponse:
     completed_at_by_lesson_id = completed_at_by_lesson_id or {}
+    blocks_by_lesson_id = blocks_by_lesson_id or {}
     completed_at = completed_at_by_lesson_id.get(str(lesson.id))
+    lesson_blocks = blocks_by_lesson_id.get(str(lesson.id), [])
 
     return AccountCourseLessonResponse(
         id=str(lesson.id),
@@ -320,6 +339,7 @@ def build_account_course_lesson(
         is_required=lesson.is_required,
         is_completed=completed_at is not None,
         completed_at=completed_at,
+        blocks=[build_account_lesson_block(block) for block in lesson_blocks],
     )
 
 
@@ -327,6 +347,7 @@ def build_account_course_module(
     module: CourseModule,
     lessons: list[CourseLesson],
     completed_at_by_lesson_id: dict[str, datetime] | None = None,
+    blocks_by_lesson_id: dict[str, list[LessonBlock]] | None = None,
 ) -> AccountCourseModuleResponse:
     return AccountCourseModuleResponse(
         id=str(module.id),
@@ -338,6 +359,7 @@ def build_account_course_module(
             build_account_course_lesson(
                 lesson,
                 completed_at_by_lesson_id=completed_at_by_lesson_id,
+                blocks_by_lesson_id=blocks_by_lesson_id,
             )
             for lesson in lessons
         ],
@@ -378,6 +400,27 @@ async def load_account_course_modules(
     )
     lessons = list(lessons_result.scalars().all())
 
+    blocks_by_lesson_id: dict[str, list[LessonBlock]] = {}
+
+    if lessons:
+        lesson_ids = [lesson.id for lesson in lessons]
+
+        blocks_result = await session.execute(
+            select(LessonBlock)
+            .where(
+                LessonBlock.lesson_id.in_(lesson_ids),
+                LessonBlock.is_active.is_(True),
+            )
+            .order_by(
+                LessonBlock.lesson_id.asc(),
+                LessonBlock.position.asc(),
+                LessonBlock.title.asc(),
+            )
+        )
+
+        for block in blocks_result.scalars().all():
+            blocks_by_lesson_id.setdefault(str(block.lesson_id), []).append(block)
+
     completed_at_by_lesson_id: dict[str, datetime] = {}
 
     if enrollment_id is not None and lessons:
@@ -410,6 +453,7 @@ async def load_account_course_modules(
             module,
             lessons_by_module_id.get(str(module.id), []),
             completed_at_by_lesson_id=completed_at_by_lesson_id,
+            blocks_by_lesson_id=blocks_by_lesson_id,
         )
         for module in modules
     ]

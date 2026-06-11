@@ -23,27 +23,27 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "82.7":
-        fail("current_stage must be 82.7")
+    if manifest.get("current_stage") != "82.8":
+        fail("current_stage must be 82.8")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "82.6":
-        fail("last_confirmed_stage must be 82.6")
-    if checkpoint.get("last_confirmed_head") != "eed8ae9":
-        fail("last_confirmed_head must be eed8ae9")
-    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-6-lesson-block-editor-ux":
+    if checkpoint.get("last_confirmed_stage") != "82.7":
+        fail("last_confirmed_stage must be 82.7")
+    if checkpoint.get("last_confirmed_head") != "5387354":
+        fail("last_confirmed_head must be 5387354")
+    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-7-lesson-block-viewer":
         fail("last_confirmed_tag mismatch")
     if checkpoint.get("last_migration") != "6422_lesson_blocks_schema":
         fail("checkpoint last_migration mismatch")
-    if checkpoint.get("status") != "lesson_block_editor_ux_deployed":
+    if checkpoint.get("status") != "lesson_block_viewer_deployed":
         fail("checkpoint status mismatch")
-    if checkpoint.get("decision") != "continue_with_lesson_block_viewer":
+    if checkpoint.get("decision") != "continue_with_lesson_blocks_api_payload":
         fail("checkpoint decision mismatch")
     if checkpoint.get("cleanup_performed") is not False:
         fail("checkpoint cleanup_performed must be false")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7"]:
+    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7", "82.8"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
@@ -235,6 +235,41 @@ def main() -> None:
     for key, expected in expected_booleans.items():
         if stage.get(key) is not expected:
             fail(f"stage 82.7 {key} must be {expected}")
+
+
+    stage = stages["82.8"]
+    if stage.get("status") != "implementation_ready":
+        fail("stage 82.8 status mismatch")
+    if stage.get("branch") != "stage82-8-lesson-blocks-api-payload":
+        fail("stage 82.8 branch mismatch")
+    if stage.get("deployment_type") != "backend-only":
+        fail("stage 82.8 deployment_type mismatch")
+    if stage.get("decision") != "include_lesson_blocks_in_public_and_account_payloads":
+        fail("stage 82.8 decision mismatch")
+    if stage.get("next_stage") != "82.9":
+        fail("stage 82.8 next_stage mismatch")
+
+    expected_booleans = {
+        "server_touched": False,
+        "frontend_runtime_changed": False,
+        "backend_runtime_changed": True,
+        "database_migration_run": False,
+        "database_migration_required": False,
+        "runtime_rebuild_required": True,
+        "runtime_restart_required": True,
+        "frontend_restart_required": False,
+        "backend_restart_required": True,
+        "production_data_changed": False,
+        "cleanup_performed": False,
+        "public_payload_blocks": True,
+        "account_payload_blocks": True,
+        "inactive_blocks_hidden": True,
+        "raw_contacts_committed": False,
+        "password_committed": False,
+    }
+    for key, expected in expected_booleans.items():
+        if stage.get(key) is not expected:
+            fail(f"stage 82.8 {key} must be {expected}")
 
     print("release manifest guard passed")
 

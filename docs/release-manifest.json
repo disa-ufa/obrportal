@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.7",
+  "current_stage": "82.8",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "82.6",
-    "last_confirmed_head": "eed8ae9",
+    "last_confirmed_stage": "82.7",
+    "last_confirmed_head": "5387354",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -31,7 +31,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "lesson_block_editor_ux_deployed",
+    "status": "lesson_block_viewer_deployed",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +40,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "continue_with_lesson_block_viewer",
+    "decision": "continue_with_lesson_blocks_api_payload",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -62,9 +62,9 @@
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
     ],
-    "next_planned_stage": "82.7",
-    "next_planned_focus": "lesson_block_viewer",
-    "last_confirmed_tag": "v0.1.0-stage82-6-lesson-block-editor-ux",
+    "next_planned_stage": "82.8",
+    "next_planned_focus": "lesson_blocks_api_payload",
+    "last_confirmed_tag": "v0.1.0-stage82-7-lesson-block-viewer",
     "last_migration": "6422_lesson_blocks_schema"
   },
   "global_safety_boundaries": [
@@ -4398,6 +4398,74 @@
         "backend_not_changed",
         "frontend_only_deploy",
         "locked_lessons_do_not_expose_blocks"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.8",
+      "name": "Lesson blocks in public/account API payloads",
+      "status": "implementation_ready",
+      "branch": "stage82-8-lesson-blocks-api-payload",
+      "base": "develop",
+      "deployment_type": "backend-only",
+      "runtime_scope": [
+        "public_course_detail_payload",
+        "account_course_detail_payload",
+        "lesson_blocks_serializer"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": true,
+      "database_migration_run": false,
+      "database_migration_required": false,
+      "runtime_rebuild_required": true,
+      "runtime_restart_required": true,
+      "frontend_restart_required": false,
+      "backend_restart_required": true,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "public_payload_blocks": true,
+      "account_payload_blocks": true,
+      "inactive_blocks_hidden": true,
+      "decision": "include_lesson_blocks_in_public_and_account_payloads",
+      "next_stage": "82.9",
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-blocks-api-payload.md"
+      ],
+      "required_checks": [
+        "python .\\scripts\\check_release_manifest.py",
+        "python .\\scripts\\check_stage82_lesson_blocks_api_payload.py",
+        "python .\\scripts\\check_source_bom.py",
+        "python .\\scripts\\check_text_encoding.py",
+        "python .\\scripts\\check_no_todo_markers.py",
+        "python -m pytest backend\\app\\tests\\test_lesson_block_payload_api.py",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "backend/app/api/v1/public.py",
+        "backend/app/api/v1/account.py",
+        "backend/app/schemas/public.py",
+        "backend/app/schemas/account.py",
+        "backend/app/tests/test_lesson_block_payload_api.py",
+        "docs/release-manifest.json",
+        "docs/stage82-lesson-blocks-api-payload.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_lesson_blocks_api_payload.py"
+      ],
+      "acceptance_markers": [
+        "stage82_8_status=lesson_blocks_api_payload_implemented",
+        "stage82_8_public_payload_blocks=yes",
+        "stage82_8_account_payload_blocks=yes"
+      ],
+      "safety_notes": [
+        "no_database_migration",
+        "frontend_not_changed",
+        "backend_only_deploy",
+        "inactive_blocks_hidden",
+        "legacy_lesson_fields_preserved"
       ],
       "raw_contacts_committed": false,
       "password_committed": false

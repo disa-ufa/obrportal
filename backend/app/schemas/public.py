@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -42,6 +44,18 @@ class PublicCourseItemResponse(BaseModel):
     document_type: str | None = None
 
 
+class PublicLessonBlockResponse(BaseModel):
+    id: str
+    lesson_id: str
+    block_type: str
+    position: int
+    title: str | None = None
+    content_json: dict[str, Any] = Field(default_factory=dict)
+    settings_json: dict[str, Any] = Field(default_factory=dict)
+    is_required: bool = False
+    is_active: bool = True
+
+
 class PublicCourseLessonResponse(BaseModel):
     id: str
     module_id: str
@@ -52,6 +66,7 @@ class PublicCourseLessonResponse(BaseModel):
     content_text: str | None = None
     position: int
     is_required: bool
+    blocks: list[PublicLessonBlockResponse] = Field(default_factory=list)
 
 
 class PublicCourseModuleResponse(BaseModel):
