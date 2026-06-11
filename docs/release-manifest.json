@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.11",
+  "current_stage": "82.12",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "82.10",
-    "last_confirmed_head": "2bc89e6",
+    "last_confirmed_stage": "82.11",
+    "last_confirmed_head": "f32b9df",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -31,7 +31,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "learner_lesson_blocks_navigation_deployed",
+    "status": "learner_block_type_rendering_deployed",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +40,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "continue_with_learner_block_type_rendering",
+    "decision": "continue_with_learner_lesson_progress_states",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -62,9 +62,9 @@
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
     ],
-    "next_planned_stage": "82.11",
-    "next_planned_focus": "learner_block_type_rendering",
-    "last_confirmed_tag": "v0.1.0-stage82-10-learner-lesson-blocks-navigation",
+    "next_planned_stage": "82.12",
+    "next_planned_focus": "learner_lesson_progress_states",
+    "last_confirmed_tag": "v0.1.0-stage82-11-learner-block-type-rendering",
     "last_migration": "6422_lesson_blocks_schema"
   },
   "global_safety_boundaries": [
@@ -4644,6 +4644,71 @@
       "acceptance_markers": [
         "stage82_11_status=learner_block_type_rendering_implemented",
         "stage82_11_frontend_changed=yes"
+      ],
+      "safety_notes": [
+        "frontend_only",
+        "no_backend_change",
+        "no_database_migration",
+        "no_data_change"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.12",
+      "name": "Learner lesson progress states",
+      "status": "implementation_ready",
+      "branch": "stage82-12-learner-lesson-progress-states",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "course_detail_page",
+        "learner_lesson_block_viewer",
+        "learner_lesson_navigation",
+        "learner_completion_action"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "database_migration_required": false,
+      "runtime_rebuild_required": true,
+      "runtime_restart_required": true,
+      "frontend_restart_required": true,
+      "backend_restart_required": false,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "lesson_progress_states_guard": true,
+      "api_payload_dependency": "82.8",
+      "viewer_contract_dependency": "82.9",
+      "viewer_navigation_dependency": "82.10",
+      "viewer_type_rendering_dependency": "82.11",
+      "decision": "show_lesson_progress_states",
+      "next_stage": "82.13",
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-learner-lesson-progress-states.md"
+      ],
+      "required_checks": [
+        "python .\\\\scripts\\\\check_release_manifest.py",
+        "python .\\\\scripts\\\\check_stage82_12_learner_lesson_progress_states.py",
+        "python .\\\\scripts\\\\check_source_bom.py",
+        "python .\\\\scripts\\\\check_text_encoding.py",
+        "python .\\\\scripts\\\\check_no_todo_markers.py",
+        "npm --prefix frontend run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "frontend/src/pages/CourseDetailPage.jsx",
+        "docs/release-manifest.json",
+        "docs/stage82-learner-lesson-progress-states.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_12_learner_lesson_progress_states.py"
+      ],
+      "acceptance_markers": [
+        "stage82_12_status=learner_lesson_progress_states_implemented",
+        "stage82_12_frontend_changed=yes"
       ],
       "safety_notes": [
         "frontend_only",

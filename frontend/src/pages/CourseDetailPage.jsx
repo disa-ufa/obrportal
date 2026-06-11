@@ -1132,6 +1132,7 @@ function CourseLearnerLessonContentPreviewPanel({
 const STAGE82_LEARNER_LESSON_BLOCK_VIEWER = "stage82_7_learner_lesson_block_viewer";
 const STAGE82_LEARNER_LESSON_BLOCK_NAVIGATION = "stage82_10_learner_lesson_blocks_navigation";
 const STAGE82_LEARNER_BLOCK_TYPE_RENDERING = "stage82_11_learner_block_type_rendering";
+const STAGE82_LEARNER_LESSON_PROGRESS_STATES = "stage82_12_learner_lesson_progress_states";
 
 const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   stage: "Stage 82.7 · Lesson Block Viewer",
@@ -1174,6 +1175,19 @@ const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   calloutNote: "Важное примечание",
   richTextBody: "Текстовый материал",
   noOptions: "Варианты ответа пока не заполнены.",
+};
+
+const LEARNER_LESSON_PROGRESS_STATE_LABELS = {
+  stage: "Stage 82.12 · Lesson Progress States",
+  status: "Статус урока",
+  notStarted: "Не начат",
+  inProgress: "В процессе",
+  completed: "Изучен",
+  unavailable: "Недоступен",
+  selected: "Выбранный урок",
+  completedAt: "Дата изучения",
+  completionReady: "Можно отметить изучение",
+  completionLocked: "Завершение недоступно",
 };
 
 const LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS = {
@@ -1484,6 +1498,69 @@ function getLearnerLessonBlockViewerSelectedLesson(accessFacts, selectedLessonId
   );
 }
 
+function getLearnerLessonProgressState(lesson, selectedLessonId = "") {
+  if (!lesson) {
+    return {
+      key: "unavailable",
+      label: LEARNER_LESSON_PROGRESS_STATE_LABELS.unavailable,
+      tone: "bg-slate-100 text-slate-600 ring-slate-200",
+    };
+  }
+
+  if (lesson.active === false || lesson.available === false) {
+    return {
+      key: "unavailable",
+      label: LEARNER_LESSON_PROGRESS_STATE_LABELS.unavailable,
+      tone: "bg-slate-100 text-slate-600 ring-slate-200",
+    };
+  }
+
+  if (getLessonCompleted(lesson)) {
+    return {
+      key: "completed",
+      label: LEARNER_LESSON_PROGRESS_STATE_LABELS.completed,
+      tone: "bg-green-50 text-green-700 ring-green-200",
+    };
+  }
+
+  const lessonId = getLearnerLessonBlockViewerLessonId(lesson);
+  const selected = Boolean(lessonId && lessonId === `${selectedLessonId || ""}`);
+
+  if (selected) {
+    return {
+      key: "in_progress",
+      label: LEARNER_LESSON_PROGRESS_STATE_LABELS.inProgress,
+      tone: "bg-blue-50 text-blue-700 ring-blue-200",
+    };
+  }
+
+  return {
+    key: "not_started",
+    label: LEARNER_LESSON_PROGRESS_STATE_LABELS.notStarted,
+    tone: "bg-white text-slate-600 ring-slate-200",
+  };
+}
+
+function getLearnerLessonProgressButtonClass(progressState, selected) {
+  if (selected) {
+    return "bg-blue-600 text-white ring-blue-600";
+  }
+
+  if (progressState.key === "completed") {
+    return "bg-green-50 text-green-800 ring-green-200 hover:bg-green-100";
+  }
+
+  if (progressState.key === "in_progress") {
+    return "bg-blue-50 text-blue-800 ring-blue-200 hover:bg-blue-100";
+  }
+
+  if (progressState.key === "unavailable") {
+    return "bg-slate-100 text-slate-500 ring-slate-200";
+  }
+
+  return "bg-white text-slate-700 ring-slate-200 hover:bg-slate-100";
+}
+
 function getLearnerLessonBlockViewerFacts(course, existingEnrollment, user, selectedLessonId = "") {
   const accessFacts = getLearnerLessonAccessFacts(course, existingEnrollment, user);
   const previewFacts = getLearnerLessonContentPreviewFacts(course, existingEnrollment, user, selectedLessonId);
@@ -1491,10 +1568,15 @@ function getLearnerLessonBlockViewerFacts(course, existingEnrollment, user, sele
   const locked = previewFacts.locked;
   const blocks = locked ? [] : getLearnerLessonBlockViewerBlocks(lesson);
   const requiredBlocks = blocks.filter((block) => block.is_required).length;
+  const progressState = getLearnerLessonProgressState(
+    lesson,
+    getLearnerLessonBlockViewerLessonId(lesson)
+  );
 
   return {
     mode: previewFacts.mode,
     lesson,
+    progressState,
     lessons: accessFacts.lessons,
     selectedLessonId: getLearnerLessonBlockViewerLessonId(lesson),
     locked,
@@ -1544,7 +1626,7 @@ function LearnerLessonBlockNavigation({ lessons, selectedLessonId, onSelectLesso
           const lessonId = getLearnerLessonBlockViewerLessonId(lesson);
           const selected = lessonId && lessonId === selectedLessonId;
           const disabled = !lessonId || lesson.active === false;
-          const completed = getLessonCompleted(lesson);
+          const progressState = getLearnerLessonProgressState(lesson, selectedLessonId);
 
           return (
             <button
@@ -1552,20 +1634,21 @@ function LearnerLessonBlockNavigation({ lessons, selectedLessonId, onSelectLesso
               type="button"
               data-testid="learner-lesson-block-navigation-item"
               data-selected={selected ? "true" : "false"}
+              data-progress-state={progressState.key}
               disabled={disabled}
               onClick={() => onSelectLesson?.(lessonId)}
-              className={`rounded-2xl p-3 text-left text-sm ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                selected
-                  ? "bg-blue-600 text-white ring-blue-600"
-                  : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-100"
-              }`}
+              className={`rounded-2xl p-3 text-left text-sm ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${getLearnerLessonProgressButtonClass(progressState, selected)}`}
             >
               <div className="font-semibold">
                 {lesson.position ? `${lesson.position}. ` : ""}
                 {lesson.title}
               </div>
-              <div className={`mt-1 text-xs font-semibold ${selected ? "text-blue-100" : "text-slate-500"}`}>
-                {selected ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.selected : completed ? LEARNER_LESSON_BLOCK_VIEWER_LABELS.completed : LEARNER_LESSON_BLOCK_VIEWER_LABELS.notCompleted}
+              <div
+                data-testid="learner-lesson-progress-state"
+                data-stage={STAGE82_LEARNER_LESSON_PROGRESS_STATES}
+                className={`mt-1 text-xs font-semibold ${selected ? "text-blue-100" : "text-slate-500"}`}
+              >
+                {selected ? `${LEARNER_LESSON_PROGRESS_STATE_LABELS.selected} · ${progressState.label}` : progressState.label}
               </div>
             </button>
           );
@@ -1670,7 +1753,7 @@ function CourseLearnerLessonBlockViewerPanel({
 
       <div
         data-testid="learner-lesson-block-viewer-summary"
-        className="mt-5 grid gap-3 md:grid-cols-3"
+        className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
       >
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1678,6 +1761,19 @@ function CourseLearnerLessonBlockViewerPanel({
           </div>
           <div className="mt-2 text-sm font-semibold leading-5 text-slate-900">
             {facts.lesson?.title || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_LESSON_PROGRESS_STATE_LABELS.status}
+          </div>
+          <div
+            data-testid="learner-lesson-block-viewer-progress-state"
+            data-stage={STAGE82_LEARNER_LESSON_PROGRESS_STATES}
+            className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${facts.progressState.tone}`}
+          >
+            {facts.progressState.label}
           </div>
         </div>
 
@@ -1799,6 +1895,7 @@ function getLearnerCompletionActionFacts(course, existingEnrollment, user, selec
   const hasUrl = Boolean(previewFacts.url);
   const hasLesson = Boolean(lesson);
   const completed = getLessonCompleted(lesson);
+  const progressState = getLearnerLessonProgressState(lesson, selectedLessonId);
   const canCompleteLesson = hasLesson && !locked && !completed;
 
   const actionStatus = !hasLesson
@@ -1827,7 +1924,7 @@ function getLearnerCompletionActionFacts(course, existingEnrollment, user, selec
     { key: "prepare", label: LEARNER_COMPLETION_ACTION_UX_LABELS.prepareCompletion, ready: hasLesson && !locked, completed: canCompleteLesson || completed },
   ];
 
-  return { lesson, locked, hasUrl, completed, canCompleteLesson, actionStatus, nextAction, checklist, previewFacts };
+  return { lesson, locked, hasUrl, completed, progressState, canCompleteLesson, actionStatus, nextAction, checklist, previewFacts };
 }
 
 function CourseLearnerCompletionActionPanel({
@@ -1859,7 +1956,7 @@ function CourseLearnerCompletionActionPanel({
       <div data-testid="learner-completion-action-summary" className="mt-5 grid gap-3 md:grid-cols-3">
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{LEARNER_COMPLETION_ACTION_UX_LABELS.currentLesson}</div><div className="mt-2 text-sm font-semibold leading-5 text-slate-900">{lesson?.title || LEARNER_COMPLETION_ACTION_UX_LABELS.noLessons}</div></div>
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{LEARNER_COMPLETION_ACTION_UX_LABELS.nextAction}</div><div className="mt-2 text-sm font-semibold leading-5 text-slate-900">{facts.nextAction}</div></div>
-        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{LEARNER_COMPLETION_ACTION_UX_LABELS.completionMode}</div><div className="mt-2 text-sm font-semibold leading-5 text-slate-900">{facts.completed ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted : LEARNER_COMPLETION_ACTION_UX_LABELS.completionWillBeSavedLater}</div></div>
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{LEARNER_LESSON_PROGRESS_STATE_LABELS.status}</div><div data-testid="learner-completion-action-progress-state" data-stage={STAGE82_LEARNER_LESSON_PROGRESS_STATES} className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${facts.progressState.tone}`}>{facts.progressState.label}</div></div>
       </div>
 
       <div data-testid="learner-completion-action-checklist" className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
@@ -1875,7 +1972,7 @@ function CourseLearnerCompletionActionPanel({
         </div>
       </div>
 
-      <div data-testid="learner-completion-action-note" className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">{facts.completed ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted : LEARNER_COMPLETION_ACTION_UX_LABELS.completionWillBeSavedLater}</div>
+      <div data-testid="learner-completion-action-note" className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">{facts.completed ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted : facts.canCompleteLesson ? LEARNER_LESSON_PROGRESS_STATE_LABELS.completionReady : LEARNER_LESSON_PROGRESS_STATE_LABELS.completionLocked}</div>
 
       {lessonCompletionSuccess ? <div data-testid="learner-completion-action-success" className="mt-5 rounded-2xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200">{lessonCompletionSuccess}</div> : null}
       {lessonCompletionError ? <div data-testid="learner-completion-action-error" className="mt-5 rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700 ring-1 ring-red-200">{lessonCompletionError}</div> : null}
