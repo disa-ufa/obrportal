@@ -1134,6 +1134,7 @@ const STAGE82_LEARNER_LESSON_BLOCK_NAVIGATION = "stage82_10_learner_lesson_block
 const STAGE82_LEARNER_BLOCK_TYPE_RENDERING = "stage82_11_learner_block_type_rendering";
 const STAGE82_LEARNER_LESSON_PROGRESS_STATES = "stage82_12_learner_lesson_progress_states";
 const STAGE82_LEARNER_NEXT_LESSON_AFTER_COMPLETION = "stage82_13_learner_next_lesson_after_completion";
+const STAGE82_LEARNER_COURSE_COMPLETION_READINESS = "stage82_14_learner_course_completion_readiness";
 
 const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   stage: "Stage 82.7 · Lesson Block Viewer",
@@ -2046,6 +2047,67 @@ const LEARNER_COURSE_COMPLETION_API_LABELS = {
   openDocuments: "\u041a \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c",
 };
 
+
+const LEARNER_COURSE_COMPLETION_READINESS_LABELS = {
+  stage: "Stage 82.14 · Course Completion Readiness",
+  title: "Готовность завершения курса",
+  readyTitle: "Курс готов к завершению",
+  lockedTitle: "Остались обязательные уроки",
+  completedTitle: "Курс завершён",
+  noEnrollmentTitle: "Сначала нужна запись на курс",
+  readyNote: "Все обязательные уроки пройдены. Можно завершить курс и перейти к итоговому документу.",
+  lockedNote: "Чтобы завершить курс, сначала пройдите оставшиеся обязательные уроки.",
+  completedNote: "Курс уже завершён. Проверьте итоговый документ в личном кабинете.",
+  noEnrollmentNote: "Запишитесь на курс, чтобы начать обучение и фиксировать прогресс.",
+  remainingRequiredLessons: "Осталось пройти обязательные уроки",
+  noRemainingRequiredLessons: "Оставшихся обязательных уроков нет.",
+  mainAction: "Главное действие",
+};
+
+function getLearnerCourseCompletionReadinessMeta({
+  completed,
+  hasEnrollment,
+  canCompleteCourse,
+}) {
+  if (completed) {
+    return {
+      key: "completed",
+      title: LEARNER_COURSE_COMPLETION_READINESS_LABELS.completedTitle,
+      note: LEARNER_COURSE_COMPLETION_READINESS_LABELS.completedNote,
+      tone: "bg-slate-100 text-slate-700 ring-slate-200",
+      panelTone: "bg-slate-50 text-slate-800 ring-slate-200",
+    };
+  }
+
+  if (!hasEnrollment) {
+    return {
+      key: "no_enrollment",
+      title: LEARNER_COURSE_COMPLETION_READINESS_LABELS.noEnrollmentTitle,
+      note: LEARNER_COURSE_COMPLETION_READINESS_LABELS.noEnrollmentNote,
+      tone: "bg-amber-50 text-amber-800 ring-amber-200",
+      panelTone: "bg-amber-50 text-amber-900 ring-amber-200",
+    };
+  }
+
+  if (canCompleteCourse) {
+    return {
+      key: "ready",
+      title: LEARNER_COURSE_COMPLETION_READINESS_LABELS.readyTitle,
+      note: LEARNER_COURSE_COMPLETION_READINESS_LABELS.readyNote,
+      tone: "bg-green-50 text-green-700 ring-green-200",
+      panelTone: "bg-green-50 text-green-900 ring-green-200",
+    };
+  }
+
+  return {
+    key: "locked",
+    title: LEARNER_COURSE_COMPLETION_READINESS_LABELS.lockedTitle,
+    note: LEARNER_COURSE_COMPLETION_READINESS_LABELS.lockedNote,
+    tone: "bg-amber-50 text-amber-800 ring-amber-200",
+    panelTone: "bg-amber-50 text-amber-900 ring-amber-200",
+  };
+}
+
 function getLearnerCourseCompletionFacts(course, existingEnrollment, user) {
   const enrollmentId = getEnrollmentId(existingEnrollment);
   const status = existingEnrollment?.status || "";
@@ -2053,6 +2115,7 @@ function getLearnerCourseCompletionFacts(course, existingEnrollment, user) {
 
   const lessons = getLearnerCourseProgressLessons(course);
   const requiredLessons = lessons.filter((lesson) => lesson.is_required);
+  const remainingRequiredLessons = requiredLessons.filter((lesson) => !getLessonCompleted(lesson));
 
   const requiredTotalRaw =
     existingEnrollment?.required_lessons_total ??
@@ -2098,6 +2161,11 @@ function getLearnerCourseCompletionFacts(course, existingEnrollment, user) {
   const hasEnrollment = Boolean(user && enrollmentId);
   const activeEnrollment = ["assigned", "active"].includes(status);
   const canCompleteCourse = Boolean(hasEnrollment && activeEnrollment && requiredDone && !completed);
+  const readiness = getLearnerCourseCompletionReadinessMeta({
+    completed,
+    hasEnrollment,
+    canCompleteCourse,
+  });
 
   const statusLabel = completed
     ? LEARNER_COURSE_COMPLETION_API_LABELS.completed
@@ -2124,6 +2192,8 @@ function getLearnerCourseCompletionFacts(course, existingEnrollment, user) {
     requiredCompleted,
     lessonsTotal,
     lessonsCompleted,
+    remainingRequiredLessons,
+    readiness,
     requiredProgressPercent,
     progressPercent,
     statusLabel,
@@ -2163,21 +2233,17 @@ function CourseLearnerCourseCompletionPanel({
 
         <span
           data-testid="learner-course-completion-status"
-          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
-            facts.completed
-              ? "bg-slate-100 text-slate-700 ring-slate-200"
-              : facts.canCompleteCourse
-                ? "bg-green-50 text-green-700 ring-green-200"
-                : "bg-amber-50 text-amber-800 ring-amber-200"
-          }`}
+          data-stage={STAGE82_LEARNER_COURSE_COMPLETION_READINESS}
+          data-readiness-state={facts.readiness.key}
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${facts.readiness.tone}`}
         >
-          {facts.statusLabel}
+          {facts.readiness.title}
         </span>
       </div>
 
       <div
         data-testid="learner-course-completion-summary"
-        className="mt-5 grid gap-3 md:grid-cols-3"
+        className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
       >
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -2211,6 +2277,57 @@ function CourseLearnerCourseCompletionPanel({
             {facts.nextStep}
           </div>
         </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_COURSE_COMPLETION_READINESS_LABELS.mainAction}
+          </div>
+          <div
+            data-testid="learner-course-completion-readiness-card"
+            data-stage={STAGE82_LEARNER_COURSE_COMPLETION_READINESS}
+            className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${facts.readiness.tone}`}
+          >
+            {facts.readiness.title}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="learner-course-completion-readiness-panel"
+        data-stage={STAGE82_LEARNER_COURSE_COMPLETION_READINESS}
+        data-readiness-state={facts.readiness.key}
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${facts.readiness.panelTone}`}
+      >
+        <div className="font-semibold text-slate-900">
+          {LEARNER_COURSE_COMPLETION_READINESS_LABELS.title}
+        </div>
+        <p className="mt-2">{facts.readiness.note}</p>
+
+        {facts.remainingRequiredLessons.length ? (
+          <div
+            data-testid="learner-course-completion-remaining-required-lessons"
+            className="mt-4 rounded-2xl bg-white/70 p-4 ring-1 ring-white"
+          >
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+              {LEARNER_COURSE_COMPLETION_READINESS_LABELS.remainingRequiredLessons}
+            </div>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {facts.remainingRequiredLessons.slice(0, 8).map((lesson) => (
+                <li key={getLearnerLessonBlockViewerLessonId(lesson) || lesson.title}>
+                  {lesson.module_title ? `${lesson.module_title}: ` : ""}
+                  {lesson.title}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div
+            data-testid="learner-course-completion-no-remaining-required-lessons"
+            className="mt-4 rounded-2xl bg-white/70 p-4 text-sm font-semibold text-slate-700 ring-1 ring-white"
+          >
+            {LEARNER_COURSE_COMPLETION_READINESS_LABELS.noRemainingRequiredLessons}
+          </div>
+        )}
       </div>
 
       {courseCompletionSuccess ? (
@@ -2239,9 +2356,10 @@ function CourseLearnerCourseCompletionPanel({
           <button
             type="button"
             data-testid="learner-course-completion-complete-button"
+            data-stage={STAGE82_LEARNER_COURSE_COMPLETION_READINESS}
             onClick={onCompleteCourse}
             disabled={courseCompletionLoading}
-            className="rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-full bg-green-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {courseCompletionLoading
               ? LEARNER_COURSE_COMPLETION_API_LABELS.completingCourse
