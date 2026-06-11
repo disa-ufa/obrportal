@@ -209,6 +209,22 @@ jobs:
       - name: Run migrations
         run: |
           docker compose exec -T backend alembic upgrade head
+          docker compose exec -T backend alembic current
+          docker compose exec -T backend python - <<'PY'
+          import asyncio
+          from sqlalchemy import text
+          from app.db.session import AsyncSessionLocal
+
+          async def main():
+              async with AsyncSessionLocal() as session:
+                  result = await session.execute(text("select to_regclass('public.users')"))
+                  users_table = result.scalar_one()
+                  print(f"ci_database_users_table={users_table}")
+                  if users_table != "users":
+                      raise SystemExit("CI database schema check failed: users table is missing")
+
+          asyncio.run(main())
+          PY
 
       - name: Seed roles and permissions
         run: |
