@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.19",
+  "current_stage": "82.20",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "82.18",
-    "last_confirmed_head": "6343219",
+    "last_confirmed_stage": "82.19",
+    "last_confirmed_head": "d887f7b",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -31,7 +31,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "admin_generated_document_publication_workflow_deployed",
+    "status": "organization_document_worklist_deployed",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +40,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "continue_with_organization_document_worklist",
+    "decision": "continue_with_organization_learning_overview",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -62,9 +62,9 @@
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
     ],
-    "next_planned_stage": "82.19",
-    "next_planned_focus": "organization_document_worklist",
-    "last_confirmed_tag": "v0.1.0-stage82-18-admin-generated-document-publication-workflow",
+    "next_planned_stage": "82.20",
+    "next_planned_focus": "organization_learning_overview",
+    "last_confirmed_tag": "v0.1.0-stage82-19-organization-document-worklist",
     "last_migration": "6422_lesson_blocks_schema"
   },
   "global_safety_boundaries": [
@@ -5202,6 +5202,86 @@
         "stage82_19_frontend_changed=yes",
         "stage82_19_backend_changed=yes",
         "stage82_19_database_migration_required=no"
+      ],
+      "safety_notes": [
+        "backend_and_frontend_runtime_change",
+        "no_database_migration",
+        "no_production_data_change",
+        "no_cleanup"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.20",
+      "name": "Organization learning overview",
+      "status": "implementation_ready",
+      "branch": "stage82-20-organization-learning-overview",
+      "base": "develop",
+      "deployment_type": "backend-and-frontend-no-migration",
+      "runtime_scope": [
+        "organization_enrollments_api",
+        "organization_learning_overview_panel",
+        "organization_learning_state_summary",
+        "organization_document_state_summary",
+        "organization_group_shortcut_navigation"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": true,
+      "database_migration_run": false,
+      "database_migration_required": false,
+      "runtime_rebuild_required": true,
+      "runtime_restart_required": true,
+      "frontend_restart_required": true,
+      "backend_restart_required": true,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "organization_learning_overview_guard": true,
+      "api_payload_dependency": "82.8",
+      "viewer_contract_dependency": "82.9",
+      "viewer_navigation_dependency": "82.10",
+      "viewer_type_rendering_dependency": "82.11",
+      "lesson_progress_states_dependency": "82.12",
+      "next_lesson_after_completion_dependency": "82.13",
+      "course_completion_readiness_dependency": "82.14",
+      "document_availability_handoff_dependency": "82.15",
+      "completion_document_focus_dependency": "82.16",
+      "document_publication_lifecycle_dependency": "82.17",
+      "admin_generated_document_publication_workflow_dependency": "82.18",
+      "organization_document_worklist_dependency": "82.19",
+      "decision": "show_organization_learning_overview",
+      "next_stage": "82.21",
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-organization-learning-overview.md"
+      ],
+      "required_checks": [
+        "python .\\\\scripts\\\\check_release_manifest.py",
+        "python .\\\\scripts\\\\check_stage82_20_organization_learning_overview.py",
+        "python .\\\\scripts\\\\check_source_bom.py",
+        "python .\\\\scripts\\\\check_text_encoding.py",
+        "python .\\\\scripts\\\\check_no_todo_markers.py",
+        "python -m py_compile backend\\\\app\\\\api\\\\v1\\\\org.py backend\\\\app\\\\schemas\\\\org.py",
+        "npm --prefix frontend run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "backend/app/api/v1/org.py",
+        "frontend/src/api/client.js",
+        "frontend/src/pages/OrganizationCabinetPage.jsx",
+        "frontend/src/components/organization/OrganizationLearningOverviewPanel.jsx",
+        "docs/release-manifest.json",
+        "docs/stage82-organization-learning-overview.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_20_organization_learning_overview.py"
+      ],
+      "acceptance_markers": [
+        "stage82_20_status=organization_learning_overview_implemented",
+        "stage82_20_frontend_changed=yes",
+        "stage82_20_backend_changed=yes",
+        "stage82_20_database_migration_required=no"
       ],
       "safety_notes": [
         "backend_and_frontend_runtime_change",

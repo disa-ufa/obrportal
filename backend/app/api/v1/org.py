@@ -800,6 +800,99 @@ async def search_org_users(
     return build_org_user_search_items(result.all(), limit)
 
 
+
+@router.get("/enrollments", response_model=list[OrgEnrollmentItem])
+async def list_org_enrollments(
+    organization_id: str | None = Query(default=None),
+    group_id: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    current_user: User = Depends(require_permission("org.groups.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[OrgEnrollmentItem]:
+    allowed_organization_ids = await get_organization_scope_for_permission(
+        current_user,
+        "org.groups.read",
+        session,
+    )
+
+    query = (
+        select(
+            Enrollment.id.label("id"),
+            Enrollment.user_id.label("user_id"),
+            Enrollment.course_id.label("course_id"),
+            Enrollment.organization_id.label("organization_id"),
+            Enrollment.learning_group_id.label("learning_group_id"),
+            Enrollment.status.label("status"),
+            Enrollment.started_at.label("started_at"),
+            Enrollment.completed_at.label("completed_at"),
+            Enrollment.created_at.label("created_at"),
+            Enrollment.updated_at.label("updated_at"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            Organization.name.label("organization_name"),
+            LearningGroup.name.label("learning_group_name"),
+            DocumentRecord.id.label("document_id"),
+            DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.verification_code.label("document_verification_code"),
+            DocumentRecord.document_type.label("document_type"),
+            DocumentRecord.title.label("document_title"),
+            DocumentRecord.status.label("document_status"),
+            DocumentRecord.storage_path.label("document_storage_path"),
+            DocumentRecord.created_at.label("document_created_at"),
+            DocumentRecord.generated_at.label("document_generated_at"),
+            DocumentRecord.revoked_at.label("document_revoked_at"),
+            DocumentRecord.revocation_reason.label("document_revocation_reason"),
+        )
+        .join(User, User.id == Enrollment.user_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .outerjoin(Organization, Organization.id == Enrollment.organization_id)
+        .outerjoin(LearningGroup, LearningGroup.id == Enrollment.learning_group_id)
+        .outerjoin(DocumentRecord, DocumentRecord.enrollment_id == Enrollment.id)
+    )
+
+    if organization_id:
+        normalized_organization_id = organization_id.strip()
+        ensure_organization_in_scope_or_404(
+            normalized_organization_id,
+            allowed_organization_ids,
+        )
+        await get_organization_or_404(normalized_organization_id, session)
+        query = query.where(Enrollment.organization_id == normalized_organization_id)
+    elif allowed_organization_ids is not None:
+        if not allowed_organization_ids:
+            return []
+
+        query = query.where(
+            Enrollment.organization_id.in_(list(allowed_organization_ids))
+        )
+
+    if group_id:
+        group = await get_learning_group_or_404(
+            group_id.strip(),
+            session,
+            allowed_organization_ids,
+        )
+        query = query.where(Enrollment.learning_group_id == group.id)
+
+    if status_filter:
+        normalized_status = status_filter.strip()
+        if normalized_status:
+            query = query.where(Enrollment.status == normalized_status)
+
+    result = await session.execute(
+        query.order_by(
+            Organization.name.asc(),
+            LearningGroup.name.asc(),
+            Course.title.asc(),
+            User.email.asc(),
+        )
+    )
+
+    return [build_org_enrollment_item(row) for row in result.all()]
+
+
 @router.get("/groups/{group_id}/enrollments", response_model=list[OrgEnrollmentItem])
 async def list_org_group_enrollments(
     group_id: str,

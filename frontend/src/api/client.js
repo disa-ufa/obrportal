@@ -378,6 +378,22 @@ export async function getOrgGroupEnrollments(groupId) {
   return request(`/api/v1/org/groups/${groupId}/enrollments`);
 }
 
+export async function getOrgEnrollments(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/org/enrollments${query ? `?${query}` : ""}`);
+}
+
 export async function deleteOrgGroupEnrollment(groupId, enrollmentId) {
   return request(`/api/v1/org/groups/${groupId}/enrollments/${enrollmentId}`, {
     method: "DELETE",
