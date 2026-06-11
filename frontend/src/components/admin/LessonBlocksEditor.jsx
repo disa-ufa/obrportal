@@ -227,6 +227,11 @@ function getNextBlockPosition(blocks) {
   return blocks.reduce((maxPosition, block) => Math.max(maxPosition, Number(block.position) || 0), 0) + 1;
 }
 
+function buildMissingFieldsMessage(missing) {
+  const safeMissing = Array.isArray(missing) ? missing : [];
+  return "Не заполнено: " + safeMissing.join(", ") + ".";
+}
+
 function TypeSpecificFields({ values, onChange, prefix }) {
   if (values.block_type === "video") {
     return (
@@ -630,7 +635,7 @@ export function LessonBlocksEditor({ lessonId }) {
     event.preventDefault();
 
     if (!createFacts.ready) {
-      setActionError(`Не заполнено: ${createFacts.missing.join(", ")}.`);
+      setActionError(buildMissingFieldsMessage(createFacts.missing));
       return;
     }
 
@@ -669,7 +674,7 @@ export function LessonBlocksEditor({ lessonId }) {
     event.preventDefault();
 
     if (!editFacts.ready) {
-      setActionError(`Не заполнено: ${editFacts.missing.join(", ")}.`);
+      setActionError(buildMissingFieldsMessage(editFacts.missing));
       return;
     }
 
