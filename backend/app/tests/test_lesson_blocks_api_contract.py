@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[3]
-ADMIN_API = ROOT / "backend" / "app" / "api" / "v1" / "admin.py"
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+ADMIN_API = BACKEND_ROOT / "app" / "api" / "v1" / "admin.py"
 
 
 def read_admin_api() -> str:
