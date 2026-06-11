@@ -23,27 +23,27 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "82.20":
-        fail("current_stage must be 82.20")
+    if manifest.get("current_stage") != "82.21":
+        fail("current_stage must be 82.21")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "82.19":
-        fail("last_confirmed_stage must be 82.19")
-    if checkpoint.get("last_confirmed_head") != "d887f7b":
-        fail("last_confirmed_head must be d887f7b")
-    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-19-organization-document-worklist":
+    if checkpoint.get("last_confirmed_stage") != "82.20":
+        fail("last_confirmed_stage must be 82.20")
+    if checkpoint.get("last_confirmed_head") != "9c65baa":
+        fail("last_confirmed_head must be 9c65baa")
+    if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-20-organization-learning-overview":
         fail("last_confirmed_tag mismatch")
     if checkpoint.get("last_migration") != "6422_lesson_blocks_schema":
         fail("checkpoint last_migration mismatch")
-    if checkpoint.get("status") != "organization_document_worklist_deployed":
+    if checkpoint.get("status") != "organization_learning_overview_deployed":
         fail("checkpoint status mismatch")
-    if checkpoint.get("decision") != "continue_with_organization_learning_overview":
+    if checkpoint.get("decision") != "continue_with_organization_learning_attention_filters":
         fail("checkpoint decision mismatch")
     if checkpoint.get("cleanup_performed") is not False:
         fail("checkpoint cleanup_performed must be false")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7", "82.8", "82.9", "82.10", "82.11", "82.12", "82.13", "82.14", "82.15", "82.16", "82.17", "82.18", "82.19", "82.20"]:
+    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7", "82.8", "82.9", "82.10", "82.11", "82.12", "82.13", "82.14", "82.15", "82.16", "82.17", "82.18", "82.19", "82.20", "82.21"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
@@ -633,6 +633,39 @@ def main() -> None:
     for key, expected in expected_booleans.items():
         if stage.get(key) is not expected:
             fail(f"stage 82.20 {key} must be {expected}")
+
+
+    stage = stages["82.21"]
+    if stage.get("status") != "implementation_ready":
+        fail("stage 82.21 status mismatch")
+    if stage.get("branch") != "stage82-21-organization-learning-attention-filters":
+        fail("stage 82.21 branch mismatch")
+    if stage.get("deployment_type") != "frontend-only":
+        fail("stage 82.21 deployment_type mismatch")
+    if stage.get("decision") != "show_organization_learning_attention_filters":
+        fail("stage 82.21 decision mismatch")
+    if stage.get("next_stage") != "82.22":
+        fail("stage 82.21 next_stage mismatch")
+
+    expected_booleans = {
+        "server_touched": False,
+        "frontend_runtime_changed": True,
+        "backend_runtime_changed": False,
+        "database_migration_run": False,
+        "database_migration_required": False,
+        "runtime_rebuild_required": True,
+        "runtime_restart_required": True,
+        "frontend_restart_required": True,
+        "backend_restart_required": False,
+        "production_data_changed": False,
+        "cleanup_performed": False,
+        "organization_learning_attention_filters_guard": True,
+        "raw_contacts_committed": False,
+        "password_committed": False,
+    }
+    for key, expected in expected_booleans.items():
+        if stage.get(key) is not expected:
+            fail(f"stage 82.21 {key} must be {expected}")
 
     print("release manifest guard passed")
 

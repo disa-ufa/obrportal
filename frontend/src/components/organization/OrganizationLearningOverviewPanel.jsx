@@ -1,3 +1,5 @@
+import React from "react";
+
 const STAGE82_ORGANIZATION_LEARNING_OVERVIEW =
   "stage82_20_organization_learning_overview";
 
@@ -10,6 +12,60 @@ const ORGANIZATION_LEARNING_OVERVIEW_LABELS = {
   empty: "Назначения по доступным организациям пока не найдены.",
   errorFallback: "Не удалось загрузить общую сводку обучения.",
 };
+
+const STAGE82_ORGANIZATION_LEARNING_ATTENTION_FILTERS =
+  "stage82_21_organization_learning_attention_filters";
+
+const ORGANIZATION_LEARNING_ATTENTION_LABELS = {
+  stage: "Stage 82.21 · Organization Learning Attention Filters",
+  title: "Быстрые списки по сводке",
+  subtitle:
+    "Списки помогают быстро перейти от цифр к конкретным слушателям и группам, где требуется внимание.",
+  empty: "По выбранному списку пока нет назначений.",
+  openGroup: "Открыть группу",
+  verify: "Проверить документ",
+};
+
+const ORGANIZATION_LEARNING_ATTENTION_FILTERS = [
+  {
+    id: "completed_without_document",
+    label: "Завершили без документа",
+    description: "Курс завершён, но итоговый документ ещё не сформирован.",
+    tone: "amber",
+    predicate: (enrollment) => enrollment.status === "completed" && !enrollment.document,
+  },
+  {
+    id: "draft_documents",
+    label: "PDF в черновике",
+    description: "Документ сформирован, но ещё ждёт публикации.",
+    tone: "amber",
+    predicate: (enrollment) => enrollment.document?.status === "draft",
+  },
+  {
+    id: "available_documents",
+    label: "Опубликовано",
+    description: "Документ доступен для публичной проверки.",
+    tone: "green",
+    predicate: (enrollment) => enrollment.document?.status === "available",
+  },
+  {
+    id: "revoked_documents",
+    label: "Отозвано",
+    description: "Документ был отозван и требует проверки причины.",
+    tone: "red",
+    predicate: (enrollment) => enrollment.document?.status === "revoked",
+  },
+  {
+    id: "active_learning",
+    label: "В процессе",
+    description: "Назначения, по которым обучение ещё не завершено.",
+    tone: "blue",
+    predicate: (enrollment) =>
+      enrollment.status === "active" ||
+      enrollment.status === "in_progress" ||
+      enrollment.status === "assigned",
+  },
+];
 
 function countWhere(items, predicate) {
   return items.filter(predicate).length;
@@ -55,6 +111,99 @@ function buildOrganizationLearningOverviewStats(enrollments = []) {
   };
 }
 
+function getAttentionFilterToneClass(tone, selected = false) {
+  if (tone === "green") {
+    return selected
+      ? "bg-green-600 text-white ring-green-600"
+      : "bg-green-50 text-green-800 ring-green-200";
+  }
+
+  if (tone === "amber") {
+    return selected
+      ? "bg-amber-500 text-white ring-amber-500"
+      : "bg-amber-50 text-amber-800 ring-amber-200";
+  }
+
+  if (tone === "red") {
+    return selected
+      ? "bg-red-600 text-white ring-red-600"
+      : "bg-red-50 text-red-800 ring-red-200";
+  }
+
+  if (tone === "blue") {
+    return selected
+      ? "bg-blue-600 text-white ring-blue-600"
+      : "bg-blue-50 text-blue-800 ring-blue-200";
+  }
+
+  return selected
+    ? "bg-slate-900 text-white ring-slate-900"
+    : "bg-slate-50 text-slate-700 ring-slate-200";
+}
+
+function getEnrollmentLearnerLabel(enrollment) {
+  return enrollment.user_full_name || enrollment.user_email || enrollment.user_id || "Слушатель";
+}
+
+function getEnrollmentCourseLabel(enrollment) {
+  return enrollment.course_title || enrollment.course_slug || enrollment.course_id || "Курс";
+}
+
+function getEnrollmentGroupLabel(enrollment) {
+  return enrollment.learning_group_name || "Без учебной группы";
+}
+
+function getEnrollmentDocumentLabel(enrollment) {
+  if (!enrollment.document) {
+    return "Документ не сформирован";
+  }
+
+  if (enrollment.document.status === "available") {
+    return "Документ опубликован";
+  }
+
+  if (enrollment.document.status === "draft") {
+    return "Документ в черновике";
+  }
+
+  if (enrollment.document.status === "revoked") {
+    return "Документ отозван";
+  }
+
+  return "Документ есть";
+}
+
+function buildOrganizationLearningAttentionFilterCounts(enrollments = []) {
+  return ORGANIZATION_LEARNING_ATTENTION_FILTERS.reduce((accumulator, filter) => {
+    accumulator[filter.id] = countWhere(enrollments, filter.predicate);
+    return accumulator;
+  }, {});
+}
+
+function buildOrganizationLearningAttentionItems(enrollments = [], filterId) {
+  const filter =
+    ORGANIZATION_LEARNING_ATTENTION_FILTERS.find((item) => item.id === filterId) ||
+    ORGANIZATION_LEARNING_ATTENTION_FILTERS[0];
+
+  return enrollments
+    .filter(filter.predicate)
+    .sort((left, right) => {
+      const groupCompare = getEnrollmentGroupLabel(left).localeCompare(
+        getEnrollmentGroupLabel(right),
+        "ru"
+      );
+
+      if (groupCompare !== 0) {
+        return groupCompare;
+      }
+
+      return getEnrollmentLearnerLabel(left).localeCompare(
+        getEnrollmentLearnerLabel(right),
+        "ru"
+      );
+    });
+}
+
 function buildOrganizationLearningOverviewGroups(enrollments = []) {
   const groupMap = new Map();
 
@@ -77,6 +226,139 @@ function buildOrganizationLearningOverviewGroups(enrollments = []) {
       stats: buildOrganizationLearningOverviewStats(group.enrollments),
     }))
     .sort((left, right) => right.stats.totalCount - left.stats.totalCount);
+}
+
+function OrganizationLearningAttentionFiltersPanel({
+  enrollments,
+  selectedGroupId,
+  onSelectGroup,
+}) {
+  const [selectedFilterId, setSelectedFilterId] = React.useState(
+    ORGANIZATION_LEARNING_ATTENTION_FILTERS[0].id
+  );
+  const counts = buildOrganizationLearningAttentionFilterCounts(enrollments);
+  const selectedFilter =
+    ORGANIZATION_LEARNING_ATTENTION_FILTERS.find((filter) => filter.id === selectedFilterId) ||
+    ORGANIZATION_LEARNING_ATTENTION_FILTERS[0];
+  const items = buildOrganizationLearningAttentionItems(enrollments, selectedFilter.id).slice(
+    0,
+    8
+  );
+
+  return (
+    <div
+      data-testid="organization-learning-attention-filters"
+      data-stage={STAGE82_ORGANIZATION_LEARNING_ATTENTION_FILTERS}
+      data-selected-filter={selectedFilter.id}
+      data-selected-filter-count={counts[selectedFilter.id] || 0}
+      className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+    >
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {ORGANIZATION_LEARNING_ATTENTION_LABELS.stage}
+      </div>
+      <div className="mt-1 text-sm font-bold text-slate-950">
+        {ORGANIZATION_LEARNING_ATTENTION_LABELS.title}
+      </div>
+      <p className="mt-1 text-xs leading-5 text-slate-600">
+        {ORGANIZATION_LEARNING_ATTENTION_LABELS.subtitle}
+      </p>
+
+      <div data-testid="organization-learning-attention-filter-buttons" className="mt-4 flex flex-wrap gap-2">
+        {ORGANIZATION_LEARNING_ATTENTION_FILTERS.map((filter) => {
+          const selected = filter.id === selectedFilter.id;
+
+          return (
+            <button
+              key={filter.id}
+              type="button"
+              onClick={() => setSelectedFilterId(filter.id)}
+              data-testid="organization-learning-attention-filter-button"
+              data-filter-id={filter.id}
+              className={`rounded-full px-4 py-2 text-xs font-semibold ring-1 transition ${getAttentionFilterToneClass(filter.tone, selected)}`}
+            >
+              {filter.label}: {counts[filter.id] || 0}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-bold text-slate-950">{selectedFilter.label}</div>
+            <div className="mt-1 text-xs leading-5 text-slate-500">
+              {selectedFilter.description}
+            </div>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getAttentionFilterToneClass(selectedFilter.tone)}`}>
+            {counts[selectedFilter.id] || 0}
+          </span>
+        </div>
+
+        {items.length === 0 ? (
+          <div
+            data-testid="organization-learning-attention-empty"
+            className="mt-4 rounded-2xl bg-slate-50 p-3 text-xs text-slate-500 ring-1 ring-slate-100"
+          >
+            {ORGANIZATION_LEARNING_ATTENTION_LABELS.empty}
+          </div>
+        ) : (
+          <div data-testid="organization-learning-attention-items" className="mt-4 grid gap-2">
+            {items.map((enrollment) => {
+              const canOpenGroup = Boolean(enrollment.learning_group_id && onSelectGroup);
+              const groupSelected =
+                enrollment.learning_group_id && enrollment.learning_group_id === selectedGroupId;
+
+              return (
+                <div
+                  key={enrollment.id}
+                  data-testid="organization-learning-attention-item"
+                  className="rounded-2xl bg-slate-50 p-3 text-xs ring-1 ring-slate-200"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="font-semibold text-slate-950">
+                        {getEnrollmentLearnerLabel(enrollment)}
+                      </div>
+                      <div className="mt-1 text-slate-500">
+                        {getEnrollmentCourseLabel(enrollment)}
+                      </div>
+                      <div className="mt-1 text-slate-500">
+                        {getEnrollmentGroupLabel(enrollment)}
+                      </div>
+                      <div className="mt-1 font-semibold text-slate-600">
+                        {getEnrollmentDocumentLabel(enrollment)}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {enrollment.document?.public_verify_path && (
+                        <a
+                          href={enrollment.document.public_verify_path}
+                          className="rounded-full bg-green-600 px-3 py-1.5 font-semibold text-white transition hover:bg-green-700"
+                        >
+                          {ORGANIZATION_LEARNING_ATTENTION_LABELS.verify}
+                        </a>
+                      )}
+                      {canOpenGroup && (
+                        <button
+                          type="button"
+                          onClick={() => onSelectGroup(enrollment.learning_group_id)}
+                          className="rounded-full bg-white px-3 py-1.5 font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                        >
+                          {groupSelected ? "Группа открыта" : ORGANIZATION_LEARNING_ATTENTION_LABELS.openGroup}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function OverviewStatCard({ label, value, hint, tone = "slate" }) {
@@ -178,6 +460,12 @@ export function OrganizationLearningOverviewPanel({
           tone={stats.documentDraftCount > 0 ? "amber" : "slate"}
         />
       </div>
+
+      <OrganizationLearningAttentionFiltersPanel
+        enrollments={safeEnrollments}
+        selectedGroupId={selectedGroupId}
+        onSelectGroup={onSelectGroup}
+      />
 
       {loading && safeEnrollments.length === 0 ? (
         <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-100">
