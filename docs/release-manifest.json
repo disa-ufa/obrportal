@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.14",
+  "current_stage": "82.15",
   "current_branch_policy": {
     "development_base": "develop",
     "production_branch": "develop",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "82.13",
-    "last_confirmed_head": "4d611d1",
+    "last_confirmed_stage": "82.14",
+    "last_confirmed_head": "202f3f0",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -31,7 +31,7 @@
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "learner_next_lesson_after_completion_deployed",
+    "status": "learner_course_completion_readiness_deployed",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +40,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "continue_with_learner_course_completion_readiness",
+    "decision": "continue_with_learner_document_availability_handoff",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -62,9 +62,9 @@
     "known_issues": [
       "pdf_layout_verification_code_overlaps_place_field"
     ],
-    "next_planned_stage": "82.14",
-    "next_planned_focus": "learner_course_completion_readiness",
-    "last_confirmed_tag": "v0.1.0-stage82-13-learner-next-lesson-after-completion",
+    "next_planned_stage": "82.15",
+    "next_planned_focus": "learner_document_availability_handoff",
+    "last_confirmed_tag": "v0.1.0-stage82-14-learner-course-completion-readiness",
     "last_migration": "6422_lesson_blocks_schema"
   },
   "global_safety_boundaries": [
@@ -4842,6 +4842,76 @@
       "acceptance_markers": [
         "stage82_14_status=learner_course_completion_readiness_implemented",
         "stage82_14_frontend_changed=yes"
+      ],
+      "safety_notes": [
+        "frontend_only",
+        "no_backend_change",
+        "no_database_migration",
+        "no_data_change"
+      ],
+      "raw_contacts_committed": false,
+      "password_committed": false
+    },
+    {
+      "id": "82.15",
+      "name": "Learner document availability handoff",
+      "status": "implementation_ready",
+      "branch": "stage82-15-learner-document-availability-handoff",
+      "base": "develop",
+      "deployment_type": "frontend-only",
+      "runtime_scope": [
+        "course_detail_page",
+        "learner_document_handoff_panel",
+        "account_documents_client_filters",
+        "document_download_action",
+        "document_public_verification_action"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": true,
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "database_migration_required": false,
+      "runtime_rebuild_required": true,
+      "runtime_restart_required": true,
+      "frontend_restart_required": true,
+      "backend_restart_required": false,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "document_availability_handoff_guard": true,
+      "api_payload_dependency": "82.8",
+      "viewer_contract_dependency": "82.9",
+      "viewer_navigation_dependency": "82.10",
+      "viewer_type_rendering_dependency": "82.11",
+      "lesson_progress_states_dependency": "82.12",
+      "next_lesson_after_completion_dependency": "82.13",
+      "course_completion_readiness_dependency": "82.14",
+      "decision": "show_document_availability_after_course_completion",
+      "next_stage": "82.16",
+      "required_documents": [
+        "docs/development-process-v2.md",
+        "docs/release-manifest.json",
+        "docs/stage82-learner-document-availability-handoff.md"
+      ],
+      "required_checks": [
+        "python .\\\\scripts\\\\check_release_manifest.py",
+        "python .\\\\scripts\\\\check_stage82_15_learner_document_availability_handoff.py",
+        "python .\\\\scripts\\\\check_source_bom.py",
+        "python .\\\\scripts\\\\check_text_encoding.py",
+        "python .\\\\scripts\\\\check_no_todo_markers.py",
+        "npm --prefix frontend run build",
+        "git diff --check"
+      ],
+      "changed_files": [
+        "frontend/src/api/client.js",
+        "frontend/src/pages/CourseDetailPage.jsx",
+        "docs/release-manifest.json",
+        "docs/stage82-learner-document-availability-handoff.md",
+        "scripts/check_release_manifest.py",
+        "scripts/check_stage82_15_learner_document_availability_handoff.py"
+      ],
+      "acceptance_markers": [
+        "stage82_15_status=learner_document_availability_handoff_implemented",
+        "stage82_15_frontend_changed=yes"
       ],
       "safety_notes": [
         "frontend_only",

@@ -1,7 +1,8 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { useMemo } from "react";
-import { completeAccountCourse, completeAccountCourseLesson, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getPublicCourseDetail, getPublicCourses } from "../api/client";
+import { completeAccountCourse, completeAccountCourseLesson, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses } from "../api/client";
+import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 
 function formatCourseDocument(course) {
@@ -1135,6 +1136,7 @@ const STAGE82_LEARNER_BLOCK_TYPE_RENDERING = "stage82_11_learner_block_type_rend
 const STAGE82_LEARNER_LESSON_PROGRESS_STATES = "stage82_12_learner_lesson_progress_states";
 const STAGE82_LEARNER_NEXT_LESSON_AFTER_COMPLETION = "stage82_13_learner_next_lesson_after_completion";
 const STAGE82_LEARNER_COURSE_COMPLETION_READINESS = "stage82_14_learner_course_completion_readiness";
+const STAGE82_LEARNER_DOCUMENT_AVAILABILITY_HANDOFF = "stage82_15_learner_document_availability_handoff";
 
 const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   stage: "Stage 82.7 · Lesson Block Viewer",
@@ -2420,12 +2422,167 @@ const LEARNER_DOCUMENT_HANDOFF_UX_LABELS = {
     "\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435. \u041f\u043e\u0441\u043b\u0435 \u044d\u0442\u043e\u0433\u043e \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435.",
 };
 
-function getLearnerDocumentHandoffFacts(course, existingEnrollment, user) {
+
+const LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS = {
+  stage: "Stage 82.15 · Document Availability Handoff",
+  availability: "Готовность документа",
+  available: "Документ доступен",
+  draft: "Документ сформирован, ожидает публикации",
+  revoked: "Документ отозван",
+  pending: "Документ ещё формируется",
+  waitingCompletion: "Доступен после завершения курса",
+  noEnrollment: "Сначала нужна запись на курс",
+  loading: "Ищем документ",
+  error: "Не удалось загрузить сведения о документе",
+  documentNumber: "Номер документа",
+  verificationCode: "Код проверки",
+  issuedAt: "Дата выдачи",
+  downloadStatus: "Скачивание",
+  downloadAvailable: "Можно скачать",
+  downloadUnavailable: "Скачивание пока недоступно",
+  downloadDocument: "Скачать документ",
+  downloadingDocument: "Скачиваем...",
+  verifyPublic: "Проверить публично",
+  openDocuments: "Перейти к документам",
+  foundNote: "Документ найден в личном кабинете. Проверьте статус, номер и доступность скачивания.",
+  draftNote: "Документ уже сформирован как черновик. Если скачивание недоступно, дождитесь публикации или обратитесь в организацию.",
+  pendingNote: "Курс завершён, но документ ещё не найден в личном кабинете. Обычно он появляется после формирования или публикации.",
+  waitingNote: "Завершите курс, чтобы итоговый документ появился в личном кабинете.",
+};
+
+function getLearnerDocumentAvailabilityHandoffDocument(course, existingEnrollment, accountDocuments = []) {
+  const documents = Array.isArray(accountDocuments) ? accountDocuments : [];
+  const enrollmentId = getEnrollmentId(existingEnrollment);
+  const courseId = `${course?.id || course?.course_id || existingEnrollment?.course_id || ""}`;
+  const courseSlug = `${course?.slug || course?.course_slug || existingEnrollment?.course_slug || ""}`;
+
+  return (
+    documents.find((documentItem) => `${documentItem.enrollment_id || ""}` === enrollmentId) ||
+    documents.find((documentItem) => courseId && `${documentItem.course_id || ""}` === courseId) ||
+    documents.find((documentItem) => courseSlug && `${documentItem.course_slug || ""}` === courseSlug) ||
+    null
+  );
+}
+
+function getLearnerDocumentAvailabilityHandoffMeta({
+  documentItem,
+  completed,
+  hasEnrollment,
+  hasUser,
+  documentsLoading,
+  documentsError,
+}) {
+  if (documentsLoading) {
+    return {
+      key: "loading",
+      label: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.loading,
+      note: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.pendingNote,
+      tone: "bg-blue-50 text-blue-700 ring-blue-200",
+      panelTone: "bg-blue-50 text-blue-900 ring-blue-200",
+    };
+  }
+
+  if (documentsError) {
+    return {
+      key: "error",
+      label: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.error,
+      note: documentsError,
+      tone: "bg-red-50 text-red-700 ring-red-200",
+      panelTone: "bg-red-50 text-red-800 ring-red-200",
+    };
+  }
+
+  if (!hasUser || !hasEnrollment) {
+    return {
+      key: "no_enrollment",
+      label: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.noEnrollment,
+      note: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.waitingNote,
+      tone: "bg-amber-50 text-amber-800 ring-amber-200",
+      panelTone: "bg-amber-50 text-amber-900 ring-amber-200",
+    };
+  }
+
+  if (!completed) {
+    return {
+      key: "waiting_completion",
+      label: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.waitingCompletion,
+      note: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.waitingNote,
+      tone: "bg-blue-50 text-blue-700 ring-blue-200",
+      panelTone: "bg-blue-50 text-blue-900 ring-blue-200",
+    };
+  }
+
+  if (!documentItem) {
+    return {
+      key: "pending",
+      label: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.pending,
+      note: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.pendingNote,
+      tone: "bg-amber-50 text-amber-800 ring-amber-200",
+      panelTone: "bg-amber-50 text-amber-900 ring-amber-200",
+    };
+  }
+
+  if (documentItem.status === "available" && documentItem.download_available) {
+    return {
+      key: "available",
+      label: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.available,
+      note: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.foundNote,
+      tone: "bg-green-50 text-green-700 ring-green-200",
+      panelTone: "bg-green-50 text-green-900 ring-green-200",
+    };
+  }
+
+  if (documentItem.status === "revoked") {
+    return {
+      key: "revoked",
+      label: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.revoked,
+      note: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.foundNote,
+      tone: "bg-red-50 text-red-700 ring-red-200",
+      panelTone: "bg-red-50 text-red-800 ring-red-200",
+    };
+  }
+
+  return {
+    key: "draft",
+    label: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.draft,
+    note: LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.draftNote,
+    tone: "bg-amber-50 text-amber-800 ring-amber-200",
+    panelTone: "bg-amber-50 text-amber-900 ring-amber-200",
+  };
+}
+
+function getLearnerDocumentVerificationValue(documentItem) {
+  return documentItem?.verification_code || documentItem?.document_number || "";
+}
+
+function getLearnerDocumentVerificationPath(documentItem) {
+  const value = getLearnerDocumentVerificationValue(documentItem);
+
+  return value ? `/verify-document?number=${encodeURIComponent(value)}` : "/verify-document";
+}
+
+function getLearnerDocumentHandoffFacts(
+  course,
+  existingEnrollment,
+  user,
+  accountDocuments = [],
+  documentsLoading = false,
+  documentsError = ""
+) {
   const hasUser = Boolean(user);
   const hasEnrollment = Boolean(existingEnrollment);
   const completed = existingEnrollment?.status === "completed";
   const documentTitle = formatCourseDocument(course);
   const completedAt = existingEnrollment?.completed_at || "";
+  const documentItem = getLearnerDocumentAvailabilityHandoffDocument(course, existingEnrollment, accountDocuments);
+  const availability = getLearnerDocumentAvailabilityHandoffMeta({
+    documentItem,
+    completed,
+    hasEnrollment,
+    hasUser,
+    documentsLoading,
+    documentsError,
+  });
 
   const statusLabel = !hasUser
     ? LEARNER_DOCUMENT_HANDOFF_UX_LABELS.loginRequired
@@ -2445,6 +2602,8 @@ function getLearnerDocumentHandoffFacts(course, existingEnrollment, user) {
     hasEnrollment,
     documentTitle,
     completedAt,
+    documentItem,
+    availability,
     statusLabel,
     nextStep,
   };
@@ -2455,8 +2614,22 @@ function CourseLearnerDocumentHandoffPanel({
   existingEnrollment,
   user,
   onPageChange,
+  accountDocuments = [],
+  documentsLoading = false,
+  documentsError = "",
+  documentDownloadLoadingId = "",
+  onDownloadDocument,
 }) {
-  const facts = getLearnerDocumentHandoffFacts(course, existingEnrollment, user);
+  const facts = getLearnerDocumentHandoffFacts(
+    course,
+    existingEnrollment,
+    user,
+    accountDocuments,
+    documentsLoading,
+    documentsError
+  );
+  const verificationValue = getLearnerDocumentVerificationValue(facts.documentItem);
+  const verificationPath = getLearnerDocumentVerificationPath(facts.documentItem);
 
   return (
     <section
@@ -2478,19 +2651,17 @@ function CourseLearnerDocumentHandoffPanel({
 
         <span
           data-testid="learner-document-handoff-status"
-          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
-            facts.completed
-              ? "bg-green-50 text-green-700 ring-green-200"
-              : "bg-amber-50 text-amber-800 ring-amber-200"
-          }`}
+          data-stage={STAGE82_LEARNER_DOCUMENT_AVAILABILITY_HANDOFF}
+          data-document-availability-state={facts.availability.key}
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${facts.availability.tone}`}
         >
-          {facts.statusLabel}
+          {facts.availability.label}
         </span>
       </div>
 
       <div
         data-testid="learner-document-handoff-summary"
-        className="mt-5 grid gap-3 md:grid-cols-3"
+        className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
       >
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -2518,15 +2689,83 @@ function CourseLearnerDocumentHandoffPanel({
             {formatDateTime(facts.completedAt)}
           </div>
         </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.downloadStatus}
+          </div>
+          <div
+            data-testid="learner-document-handoff-download-state"
+            className="mt-2 text-sm font-semibold leading-5 text-slate-900"
+          >
+            {facts.documentItem?.download_available
+              ? LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.downloadAvailable
+              : LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.downloadUnavailable}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="learner-document-handoff-availability-panel"
+        data-stage={STAGE82_LEARNER_DOCUMENT_AVAILABILITY_HANDOFF}
+        data-document-availability-state={facts.availability.key}
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${facts.availability.panelTone}`}
+      >
+        <div className="font-semibold text-slate-900">
+          {LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.availability}
+        </div>
+        <p className="mt-2">{facts.availability.note}</p>
+
+        {facts.documentItem ? (
+          <div
+            data-testid="learner-document-handoff-document-card"
+            className="mt-4 grid gap-3 rounded-2xl bg-white/70 p-4 ring-1 ring-white md:grid-cols-3"
+          >
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.documentNumber}
+              </div>
+              <div className="mt-1 break-all font-semibold text-slate-900">
+                {facts.documentItem.document_number || "—"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.verificationCode}
+              </div>
+              <div className="mt-1 break-all font-semibold text-slate-900">
+                {facts.documentItem.verification_code || "—"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.issuedAt}
+              </div>
+              <div className="mt-1 font-semibold text-slate-900">
+                {formatDateTime(facts.documentItem.issued_at || facts.documentItem.created_at)}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {verificationValue ? (
+          <DocumentVerificationQrBlock
+            code={facts.documentItem?.verification_code}
+            documentNumber={facts.documentItem?.document_number}
+            containerId={`learner-document-handoff-qr-${facts.documentItem?.id || verificationValue}`}
+            title={LEARNER_DOCUMENT_HANDOFF_UX_LABELS.verifyDocument}
+            description={LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.foundNote}
+            size={112}
+            showPublicLink
+            showCopyLink
+            className="mt-4"
+          />
+        ) : null}
       </div>
 
       <div
         data-testid="learner-document-handoff-next-step"
-        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${
-          facts.completed
-            ? "bg-green-50 text-green-800 ring-green-200"
-            : "bg-blue-50 text-blue-900 ring-blue-200"
-        }`}
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${facts.availability.tone}`}
       >
         <div className="font-semibold text-slate-900">
           {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.nextStep}
@@ -2538,11 +2777,37 @@ function CourseLearnerDocumentHandoffPanel({
         data-testid="learner-document-handoff-actions"
         className="mt-5 flex flex-wrap gap-3"
       >
+        {facts.documentItem?.download_available ? (
+          <button
+            type="button"
+            data-testid="learner-document-handoff-download-action"
+            data-stage={STAGE82_LEARNER_DOCUMENT_AVAILABILITY_HANDOFF}
+            onClick={() => onDownloadDocument?.(facts.documentItem)}
+            disabled={documentDownloadLoadingId === facts.documentItem.id}
+            className="rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {documentDownloadLoadingId === facts.documentItem.id
+              ? LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.downloadingDocument
+              : LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.downloadDocument}
+          </button>
+        ) : null}
+
+        {verificationValue ? (
+          <a
+            data-testid="learner-document-handoff-public-verify-action"
+            data-stage={STAGE82_LEARNER_DOCUMENT_AVAILABILITY_HANDOFF}
+            href={verificationPath}
+            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {LEARNER_DOCUMENT_AVAILABILITY_HANDOFF_LABELS.verifyPublic}
+          </a>
+        ) : null}
+
         <button
           type="button"
           data-testid="learner-document-handoff-documents-action"
           onClick={() => onPageChange("documents")}
-          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50"
         >
           {LEARNER_DOCUMENT_HANDOFF_UX_LABELS.openDocuments}
         </button>
@@ -3037,6 +3302,11 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [courseCompletionError, setCourseCompletionError] = useState("");
   const [courseCompletionSuccess, setCourseCompletionSuccess] = useState("");
   const [selectedLessonId, setSelectedLessonId] = useState("");
+  const [accountDocuments, setAccountDocuments] = useState([]);
+  const [accountDocumentsLoading, setAccountDocumentsLoading] = useState(false);
+  const [accountDocumentsError, setAccountDocumentsError] = useState("");
+  const [accountDocumentDownloadError, setAccountDocumentDownloadError] = useState("");
+  const [accountDocumentDownloadLoadingId, setAccountDocumentDownloadLoadingId] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -3047,6 +3317,11 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         setRelatedCourses([]);
         setExistingEnrollment(null);
         setAccountCourseDetail(null);
+        setAccountDocuments([]);
+        setAccountDocumentsLoading(false);
+        setAccountDocumentsError("");
+        setAccountDocumentDownloadError("");
+        setAccountDocumentDownloadLoadingId("");
         setLoading(false);
         setError("Курс не выбран.");
         return;
@@ -3055,6 +3330,9 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       try {
         setLoading(true);
         setError("");
+        setAccountDocumentsLoading(Boolean(user));
+        setAccountDocumentsError("");
+        setAccountDocumentDownloadError("");
 
         const [courseResponse, coursesResponse, accountCoursesResponse] = await Promise.all([
           getPublicCourseDetail(courseSlug),
@@ -3076,11 +3354,26 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         let accountCourseDetailResponse = null;
         const matchedEnrollmentId = getEnrollmentId(matchedEnrollment);
 
+        let accountDocumentItems = [];
+        let accountDocumentLoadError = "";
+
         if (matchedEnrollmentId) {
           try {
             accountCourseDetailResponse = await getAccountCourseDetail(matchedEnrollmentId);
           } catch {
             accountCourseDetailResponse = null;
+          }
+
+          try {
+            const accountDocumentsResponse = await getAccountDocuments({
+              enrollment_id: matchedEnrollmentId,
+              course_id: courseResponse.id,
+            });
+            accountDocumentItems = Array.isArray(accountDocumentsResponse?.items)
+              ? accountDocumentsResponse.items
+              : [];
+          } catch (err) {
+            accountDocumentLoadError = formatApiError(err, "Не удалось загрузить итоговые документы по курсу.");
           }
         }
 
@@ -3090,6 +3383,9 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
 
         setCourse(courseResponse);
         setAccountCourseDetail(accountCourseDetailResponse);
+        setAccountDocuments(accountDocumentItems);
+        setAccountDocumentsError(accountDocumentLoadError);
+        setAccountDocumentsLoading(false);
         setRelatedCourses(
           Array.isArray(coursesResponse)
             ? coursesResponse.filter((item) => item.slug !== courseResponse.slug).slice(0, 2)
@@ -3193,6 +3489,23 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     }
   }
 
+  async function handleDownloadAccountDocument(documentItem) {
+    if (!documentItem?.id) {
+      setAccountDocumentDownloadError("Не удалось определить документ для скачивания.");
+      return;
+    }
+
+    try {
+      setAccountDocumentDownloadLoadingId(documentItem.id);
+      setAccountDocumentDownloadError("");
+      await downloadAccountDocument(documentItem.id);
+    } catch (err) {
+      setAccountDocumentDownloadError(formatApiError(err, "Не удалось скачать итоговый документ."));
+    } finally {
+      setAccountDocumentDownloadLoadingId("");
+    }
+  }
+
   async function handleCompleteCourse() {
     const enrollmentId = getEnrollmentId(existingEnrollment);
 
@@ -3227,6 +3540,22 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           status: "completed",
           completed_at: new Date().toISOString(),
         });
+      }
+
+      try {
+        setAccountDocumentsLoading(true);
+        const accountDocumentsResponse = await getAccountDocuments({
+          enrollment_id: enrollmentId,
+          course_id: updatedCourseDetail?.course_id || existingEnrollment?.course_id || course?.id,
+        });
+        setAccountDocuments(
+          Array.isArray(accountDocumentsResponse?.items) ? accountDocumentsResponse.items : []
+        );
+        setAccountDocumentsError("");
+      } catch (documentErr) {
+        setAccountDocumentsError(formatApiError(documentErr, "Курс завершён, но сведения о документе пока не обновились."));
+      } finally {
+        setAccountDocumentsLoading(false);
       }
 
       setCourseCompletionSuccess(LEARNER_COURSE_COMPLETION_API_LABELS.completionSaved);
@@ -3524,6 +3853,11 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         existingEnrollment={existingEnrollment}
         user={user}
         onPageChange={onPageChange}
+        accountDocuments={accountDocuments}
+        documentsLoading={accountDocumentsLoading}
+        documentsError={accountDocumentsError || accountDocumentDownloadError}
+        documentDownloadLoadingId={accountDocumentDownloadLoadingId}
+        onDownloadDocument={handleDownloadAccountDocument}
       />
 
       <CourseSelfEnrollmentDiagnostics

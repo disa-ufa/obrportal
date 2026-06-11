@@ -114,8 +114,20 @@ export async function completeAccountCourse(enrollmentId) {
   });
 }
 
-export async function getAccountDocuments() {
-  return request("/api/v1/account/documents");
+export async function getAccountDocuments(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/account/documents${query ? `?${query}` : ""}`);
 }
 
 function extractDownloadFilename(response, fallback = "document.bin") {
