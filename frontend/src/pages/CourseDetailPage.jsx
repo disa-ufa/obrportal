@@ -1138,6 +1138,7 @@ const STAGE82_LEARNER_NEXT_LESSON_AFTER_COMPLETION = "stage82_13_learner_next_le
 const STAGE82_LEARNER_COURSE_COMPLETION_READINESS = "stage82_14_learner_course_completion_readiness";
 const STAGE82_LEARNER_DOCUMENT_AVAILABILITY_HANDOFF = "stage82_15_learner_document_availability_handoff";
 const STAGE82_LEARNER_COMPLETION_DOCUMENT_FOCUS = "stage82_16_learner_completion_document_focus";
+const STAGE82_LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE = "stage82_17_learner_document_publication_lifecycle";
 
 const LEARNER_LESSON_BLOCK_VIEWER_LABELS = {
   stage: "Stage 82.7 · Lesson Block Viewer",
@@ -2425,6 +2426,237 @@ const LEARNER_DOCUMENT_HANDOFF_UX_LABELS = {
 
 
 
+
+const LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS = {
+  stage: "Stage 82.17 · Document Publication Lifecycle",
+  title: "Жизненный цикл итогового документа",
+  subtitle: "Показываем, на каком этапе находится документ после завершения курса: формирование, публикация, скачивание и публичная проверка.",
+  courseCompletion: "Курс завершён",
+  courseCompletionText: "Все обязательные условия завершения курса выполнены.",
+  generation: "Документ сформирован",
+  generationText: "После завершения курса система создаёт итоговый документ и PDF.",
+  publication: "Ожидает публикации",
+  publicationText: "Документ виден как подготовленный, но скачивание и публичная проверка откроются после публикации.",
+  publicationAvailable: "Документ опубликован",
+  publicationAvailableText: "Документ опубликован и готов для использования.",
+  publicationRevoked: "Документ отозван",
+  publicationRevokedText: "Документ нельзя использовать как действующий.",
+  downloadAndVerify: "Скачивание и проверка",
+  downloadAndVerifyText: "После публикации можно скачать документ и проверить его публично по номеру или QR-коду.",
+  pendingGeneration: "Документ ещё формируется",
+  pendingGenerationText: "Курс завершён, но документ пока не найден в личном кабинете.",
+  notCompleted: "Сначала завершите курс",
+  notCompletedText: "Жизненный цикл документа начнётся после завершения курса.",
+  noEnrollment: "Сначала нужна запись на курс",
+  noEnrollmentText: "Запишитесь на курс, чтобы система могла связать обучение и итоговый документ.",
+  loading: "Обновляем сведения",
+  loadingText: "Проверяем, появился ли итоговый документ после завершения курса.",
+  error: "Сведения о документе не обновились",
+  done: "Готово",
+  current: "Текущий этап",
+  blocked: "Ожидает",
+  issue: "Требует внимания",
+};
+
+function getLearnerDocumentPublicationLifecycleState({
+  documentItem,
+  completed,
+  hasEnrollment,
+  hasUser,
+  documentsLoading,
+  documentsError,
+}) {
+  if (documentsLoading) {
+    return "loading";
+  }
+
+  if (documentsError) {
+    return "error";
+  }
+
+  if (!hasUser || !hasEnrollment) {
+    return "no_enrollment";
+  }
+
+  if (!completed) {
+    return "not_completed";
+  }
+
+  if (!documentItem) {
+    return "pending_generation";
+  }
+
+  if (documentItem.status === "available") {
+    return "available";
+  }
+
+  if (documentItem.status === "revoked") {
+    return "revoked";
+  }
+
+  return "draft";
+}
+
+function getLearnerDocumentPublicationLifecycleStepTone(stepState = "") {
+  if (stepState === "done") {
+    return "bg-green-50 text-green-800 ring-green-200";
+  }
+
+  if (stepState === "current") {
+    return "bg-blue-50 text-blue-900 ring-blue-200";
+  }
+
+  if (stepState === "issue") {
+    return "bg-red-50 text-red-800 ring-red-200";
+  }
+
+  return "bg-slate-50 text-slate-700 ring-slate-200";
+}
+
+function getLearnerDocumentPublicationLifecycleBadgeLabel(stepState = "") {
+  if (stepState === "done") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.done;
+  }
+
+  if (stepState === "current") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.current;
+  }
+
+  if (stepState === "issue") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.issue;
+  }
+
+  return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.blocked;
+}
+
+function getLearnerDocumentPublicationLifecycleSummary(state = "") {
+  if (state === "available") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.publicationAvailableText;
+  }
+
+  if (state === "draft") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.publicationText;
+  }
+
+  if (state === "revoked") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.publicationRevokedText;
+  }
+
+  if (state === "pending_generation") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.pendingGenerationText;
+  }
+
+  if (state === "loading") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.loadingText;
+  }
+
+  if (state === "error") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.error;
+  }
+
+  if (state === "no_enrollment") {
+    return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.noEnrollmentText;
+  }
+
+  return LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.notCompletedText;
+}
+
+function getLearnerDocumentPublicationLifecycleSteps({
+  documentItem,
+  completed,
+  hasEnrollment,
+  hasUser,
+  documentsLoading,
+  documentsError,
+}) {
+  const state = getLearnerDocumentPublicationLifecycleState({
+    documentItem,
+    completed,
+    hasEnrollment,
+    hasUser,
+    documentsLoading,
+    documentsError,
+  });
+
+  const hasDocument = Boolean(documentItem);
+  const isAvailable = documentItem?.status === "available";
+  const isRevoked = documentItem?.status === "revoked";
+  const canDownload = Boolean(documentItem?.download_available);
+
+  return [
+    {
+      key: "course_completion",
+      label: LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.courseCompletion,
+      description:
+        !hasUser || !hasEnrollment
+          ? LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.noEnrollmentText
+          : LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.courseCompletionText,
+      state:
+        !hasUser || !hasEnrollment
+          ? "blocked"
+          : completed
+            ? "done"
+            : "current",
+    },
+    {
+      key: "generation",
+      label: LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.generation,
+      description:
+        documentsLoading
+          ? LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.loadingText
+          : hasDocument
+            ? LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.generationText
+            : LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.pendingGenerationText,
+      state:
+        documentsError
+          ? "issue"
+          : hasDocument
+            ? "done"
+            : completed
+              ? "current"
+              : "blocked",
+    },
+    {
+      key: "publication",
+      label: isAvailable
+        ? LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.publicationAvailable
+        : isRevoked
+          ? LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.publicationRevoked
+          : LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.publication,
+      description:
+        isAvailable
+          ? LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.publicationAvailableText
+          : isRevoked
+            ? LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.publicationRevokedText
+            : LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.publicationText,
+      state:
+        documentsError || isRevoked
+          ? "issue"
+          : isAvailable
+            ? "done"
+            : hasDocument
+              ? "current"
+              : "blocked",
+    },
+    {
+      key: "download_verify",
+      label: LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.downloadAndVerify,
+      description: LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.downloadAndVerifyText,
+      state:
+        isRevoked || documentsError
+          ? "issue"
+          : isAvailable && canDownload
+            ? "done"
+            : "blocked",
+    },
+  ].map((step) => ({
+    ...step,
+    badge: getLearnerDocumentPublicationLifecycleBadgeLabel(step.state),
+    tone: getLearnerDocumentPublicationLifecycleStepTone(step.state),
+    lifecycleState: state,
+  }));
+}
+
 const LEARNER_COMPLETION_DOCUMENT_FOCUS_LABELS = {
   stage: "Stage 82.16 · Completion Document Focus",
   title: "Курс завершён — проверьте итоговый документ",
@@ -2694,6 +2926,22 @@ function CourseLearnerDocumentHandoffPanel({
   );
   const verificationValue = getLearnerDocumentVerificationValue(facts.documentItem);
   const verificationPath = getLearnerDocumentVerificationPath(facts.documentItem);
+  const publicationLifecycleState = getLearnerDocumentPublicationLifecycleState({
+    documentItem: facts.documentItem,
+    completed: facts.completed,
+    hasEnrollment: facts.hasEnrollment,
+    hasUser: facts.hasUser,
+    documentsLoading,
+    documentsError,
+  });
+  const publicationLifecycleSteps = getLearnerDocumentPublicationLifecycleSteps({
+    documentItem: facts.documentItem,
+    completed: facts.completed,
+    hasEnrollment: facts.hasEnrollment,
+    hasUser: facts.hasUser,
+    documentsLoading,
+    documentsError,
+  });
 
   return (
     <section
@@ -2863,6 +3111,52 @@ function CourseLearnerDocumentHandoffPanel({
             className="mt-4"
           />
         ) : null}
+      </div>
+
+      <div
+        data-testid="learner-document-publication-lifecycle-panel"
+        data-stage={STAGE82_LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE}
+        data-publication-lifecycle-state={publicationLifecycleState}
+        className="mt-5 rounded-2xl bg-white p-4 text-sm leading-6 ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+              {LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.stage}
+            </div>
+            <div className="mt-1 font-semibold text-slate-900">
+              {LEARNER_DOCUMENT_PUBLICATION_LIFECYCLE_LABELS.title}
+            </div>
+            <p className="mt-2 text-slate-600">
+              {getLearnerDocumentPublicationLifecycleSummary(publicationLifecycleState)}
+            </p>
+          </div>
+        </div>
+
+        <ol
+          data-testid="learner-document-publication-lifecycle-steps"
+          className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          {publicationLifecycleSteps.map((step, index) => (
+            <li
+              key={step.key}
+              data-testid={`learner-document-publication-lifecycle-step-${step.key}`}
+              data-publication-step-state={step.state}
+              className={`rounded-2xl p-4 ring-1 ${step.tone}`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                  {index + 1}
+                </span>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                  {step.badge}
+                </span>
+              </div>
+              <div className="mt-3 font-semibold text-slate-900">{step.label}</div>
+              <p className="mt-2 text-sm leading-6">{step.description}</p>
+            </li>
+          ))}
+        </ol>
       </div>
 
       <div
