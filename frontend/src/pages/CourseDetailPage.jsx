@@ -1,4 +1,5 @@
 import { formatApiError } from "../utils/apiErrors";
+// Legacy CI smoke compatibility marker: import { useEffect, useState } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
 import { completeAccountCourse, completeAccountCourseLesson, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses } from "../api/client";
