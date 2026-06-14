@@ -71,6 +71,18 @@ const ORGANIZATION_ATTENTION_DOCUMENT_ACTION_LABELS = {
   copied: "Скопировано",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES =
+  "stage82_28_organization_attention_reason_badges";
+
+const ORGANIZATION_ATTENTION_REASON_BADGE_LABELS = {
+  noDocument: "Нет документа",
+  notCompleted: "Обучение не завершено",
+  noEmail: "Нет email",
+  unpublishedDocument: "Документ не опубликован",
+  revokedDocument: "Документ отозван",
+  publishedDocument: "Документ опубликован",
+};
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -451,6 +463,82 @@ function getOrganizationAttentionVerificationCodeLabel(enrollment) {
   );
 }
 
+function getOrganizationAttentionReasonBadgeToneClass(tone) {
+  if (tone === "green") {
+    return "bg-green-50 text-green-800 ring-green-200";
+  }
+
+  if (tone === "amber") {
+    return "bg-amber-50 text-amber-800 ring-amber-200";
+  }
+
+  if (tone === "red") {
+    return "bg-red-50 text-red-800 ring-red-200";
+  }
+
+  if (tone === "blue") {
+    return "bg-blue-50 text-blue-800 ring-blue-200";
+  }
+
+  return "bg-slate-100 text-slate-700 ring-slate-200";
+}
+
+function buildOrganizationAttentionReasonBadges(enrollment) {
+  const badges = [];
+
+  if (!enrollment.user_email) {
+    badges.push({
+      id: "no_email",
+      label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.noEmail,
+      tone: "slate",
+    });
+  }
+
+  if (enrollment.status !== "completed") {
+    badges.push({
+      id: "not_completed",
+      label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.notCompleted,
+      tone: "blue",
+    });
+  }
+
+  if (!enrollment.document) {
+    badges.push({
+      id: "no_document",
+      label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.noDocument,
+      tone: "amber",
+    });
+
+    return badges;
+  }
+
+  if (enrollment.document.status === "draft") {
+    badges.push({
+      id: "unpublished_document",
+      label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.unpublishedDocument,
+      tone: "amber",
+    });
+  }
+
+  if (enrollment.document.status === "revoked") {
+    badges.push({
+      id: "revoked_document",
+      label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.revokedDocument,
+      tone: "red",
+    });
+  }
+
+  if (enrollment.document.status === "available") {
+    badges.push({
+      id: "published_document",
+      label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.publishedDocument,
+      tone: "green",
+    });
+  }
+
+  return badges;
+}
+
 function buildOrganizationLearningAttentionFilterCounts(enrollments = []) {
   return ORGANIZATION_LEARNING_ATTENTION_FILTERS.reduce((accumulator, filter) => {
     accumulator[filter.id] = countWhere(enrollments, filter.predicate);
@@ -598,6 +686,7 @@ function OrganizationLearningAttentionFiltersPanel({
       data-visible-count={visibleItems.length}
       data-hidden-count={hiddenItemsCount}
       data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
+      data-stage-reason-badges={STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES}
       className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
     >
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -672,6 +761,7 @@ function OrganizationLearningAttentionFiltersPanel({
               const hasVerificationCode = Boolean(enrollment.document?.verification_code);
               const documentNumberActionId = `document-number-${enrollment.id}`;
               const verificationCodeActionId = `verification-code-${enrollment.id}`;
+              const reasonBadges = buildOrganizationAttentionReasonBadges(enrollment);
 
               return (
                 <div
@@ -681,6 +771,8 @@ function OrganizationLearningAttentionFiltersPanel({
                   data-learning-status={enrollment.status || ""}
                   data-document-status={getEnrollmentDocumentStatus(enrollment)}
                   data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
+                  data-stage-reason-badges={STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES}
+                  data-reason-count={reasonBadges.length}
                   className="rounded-2xl bg-slate-50 p-3 text-xs ring-1 ring-slate-200"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -697,6 +789,27 @@ function OrganizationLearningAttentionFiltersPanel({
                       <div className="mt-1 font-semibold text-slate-600">
                         {getEnrollmentDocumentLabel(enrollment)}
                       </div>
+
+                      {reasonBadges.length > 0 && (
+                        <div
+                          data-testid="organization-learning-attention-reason-badges"
+                          data-stage={STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES}
+                          className="mt-3 flex flex-wrap gap-2"
+                        >
+                          {reasonBadges.map((badge) => (
+                            <span
+                              key={badge.id}
+                              data-testid="organization-learning-attention-reason-badge"
+                              data-reason-id={badge.id}
+                              className={`rounded-full px-3 py-1 text-[11px] font-semibold ring-1 ${getOrganizationAttentionReasonBadgeToneClass(
+                                badge.tone
+                              )}`}
+                            >
+                              {badge.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       <div
                         data-testid="organization-learning-attention-card-details"
