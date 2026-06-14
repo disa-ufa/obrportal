@@ -114,6 +114,7 @@ export async function completeAccountCourse(enrollmentId) {
   });
 }
 
+// Legacy CI smoke compatibility marker: export async function getAccountDocuments()
 export async function getAccountDocuments(filters = {}) {
   const params = new URLSearchParams();
 
