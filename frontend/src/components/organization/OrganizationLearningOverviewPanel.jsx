@@ -90,6 +90,27 @@ const ORGANIZATION_ATTENTION_EXPORT_REASON_LABELS = {
   reasonsColumn: "Причины",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_REASON_FILTERS =
+  "stage82_30_organization_attention_reason_filters";
+
+const ORGANIZATION_ATTENTION_REASON_FILTER_LABELS = {
+  title: "Фильтр по причинам",
+  allReasons: "Все причины",
+};
+
+const ORGANIZATION_ATTENTION_REASON_FILTERS = [
+  { id: "all", label: ORGANIZATION_ATTENTION_REASON_FILTER_LABELS.allReasons },
+  { id: "no_email", label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.noEmail },
+  { id: "not_completed", label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.notCompleted },
+  { id: "no_document", label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.noDocument },
+  {
+    id: "unpublished_document",
+    label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.unpublishedDocument,
+  },
+  { id: "revoked_document", label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.revokedDocument },
+  { id: "published_document", label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.publishedDocument },
+];
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -553,6 +574,32 @@ function formatOrganizationAttentionReasonBadgesForExport(enrollment) {
     .join("; ");
 }
 
+function enrollmentMatchesOrganizationAttentionReasonFilter(enrollment, reasonFilterId) {
+  if (!reasonFilterId || reasonFilterId === "all") {
+    return true;
+  }
+
+  return buildOrganizationAttentionReasonBadges(enrollment).some(
+    (badge) => badge.id === reasonFilterId
+  );
+}
+
+function buildOrganizationAttentionReasonFilterCounts(enrollments = []) {
+  const counters = { all: enrollments.length };
+
+  ORGANIZATION_ATTENTION_REASON_FILTERS.forEach((filter) => {
+    if (filter.id === "all") {
+      return;
+    }
+
+    counters[filter.id] = countWhere(enrollments, (enrollment) =>
+      enrollmentMatchesOrganizationAttentionReasonFilter(enrollment, filter.id)
+    );
+  });
+
+  return counters;
+}
+
 function buildOrganizationLearningAttentionFilterCounts(enrollments = []) {
   return ORGANIZATION_LEARNING_ATTENTION_FILTERS.reduce((accumulator, filter) => {
     accumulator[filter.id] = countWhere(enrollments, filter.predicate);
@@ -642,18 +689,31 @@ function OrganizationLearningAttentionFiltersPanel({
     ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT
   );
   const [copiedActionId, setCopiedActionId] = React.useState("");
+  const [selectedReasonFilterId, setSelectedReasonFilterId] = React.useState("all");
   const selectedItems = buildOrganizationLearningAttentionItems(enrollments, selectedFilter.id);
+  const reasonFilterCounts = buildOrganizationAttentionReasonFilterCounts(selectedItems);
+  const selectedReasonFilter =
+    ORGANIZATION_ATTENTION_REASON_FILTERS.find(
+      (filter) => filter.id === selectedReasonFilterId
+    ) || ORGANIZATION_ATTENTION_REASON_FILTERS[0];
+  const reasonFilteredItems = selectedItems.filter((enrollment) =>
+    enrollmentMatchesOrganizationAttentionReasonFilter(enrollment, selectedReasonFilter.id)
+  );
+
+  React.useEffect(() => {
+    setSelectedReasonFilterId("all");
+  }, [selectedFilterId]);
 
   React.useEffect(() => {
     setVisibleLimit(ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT);
-  }, [selectedFilterId, enrollments]);
+  }, [selectedFilterId, selectedReasonFilterId, enrollments]);
 
-  const visibleItems = selectedItems.slice(0, visibleLimit);
-  const hiddenItemsCount = Math.max(selectedItems.length - visibleItems.length, 0);
+  const visibleItems = reasonFilteredItems.slice(0, visibleLimit);
+  const hiddenItemsCount = Math.max(reasonFilteredItems.length - visibleItems.length, 0);
   const canShowMore = hiddenItemsCount > 0;
   const canCollapse =
     visibleLimit > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT &&
-    selectedItems.length > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT;
+    reasonFilteredItems.length > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT;
   const clipboardSupported =
     typeof navigator !== "undefined" && Boolean(navigator.clipboard?.writeText);
 
@@ -678,14 +738,14 @@ function OrganizationLearningAttentionFiltersPanel({
   }
 
   function handleExportSelectedFilter() {
-    if (selectedItems.length === 0) {
+    if (reasonFilteredItems.length === 0) {
       return;
     }
 
     downloadCsvFile(
       buildDatedCsvFilename(`organization-attention-${selectedFilter.id}`),
       ORGANIZATION_LEARNING_ATTENTION_EXPORT_COLUMNS,
-      buildOrganizationLearningAttentionExportRows(selectedItems, selectedFilter)
+      buildOrganizationLearningAttentionExportRows(reasonFilteredItems, selectedFilter)
     );
   }
 
@@ -696,13 +756,16 @@ function OrganizationLearningAttentionFiltersPanel({
       data-selected-filter={selectedFilter.id}
       data-selected-filter-count={counts[selectedFilter.id] || 0}
       data-stage-export={STAGE82_ORGANIZATION_ATTENTION_CSV_EXPORT}
-      data-export-count={selectedItems.length}
+      data-export-count={reasonFilteredItems.length}
       data-stage-show-more={STAGE82_ORGANIZATION_ATTENTION_SHOW_MORE}
       data-visible-count={visibleItems.length}
       data-hidden-count={hiddenItemsCount}
       data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
       data-stage-reason-badges={STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES}
       data-stage-export-reasons={STAGE82_ORGANIZATION_ATTENTION_EXPORT_REASONS}
+      data-stage-reason-filters={STAGE82_ORGANIZATION_ATTENTION_REASON_FILTERS}
+      data-selected-reason-filter={selectedReasonFilter.id}
+      data-selected-reason-filter-count={reasonFilterCounts[selectedReasonFilter.id] || 0}
       className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
     >
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -749,14 +812,49 @@ function OrganizationLearningAttentionFiltersPanel({
             <button
               type="button"
               onClick={handleExportSelectedFilter}
-              disabled={selectedItems.length === 0}
+              disabled={reasonFilteredItems.length === 0}
               data-testid="organization-learning-attention-export-button"
               className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:bg-slate-300"
             >
-              {selectedItems.length === 0
+              {reasonFilteredItems.length === 0
                 ? ORGANIZATION_ATTENTION_CSV_EXPORT_LABELS.exportEmpty
                 : ORGANIZATION_ATTENTION_CSV_EXPORT_LABELS.exportButton}
             </button>
+          </div>
+        </div>
+
+        <div
+          data-testid="organization-learning-attention-reason-filters"
+          data-stage={STAGE82_ORGANIZATION_ATTENTION_REASON_FILTERS}
+          className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100"
+        >
+          <div className="text-xs font-bold text-slate-700">
+            {ORGANIZATION_ATTENTION_REASON_FILTER_LABELS.title}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {ORGANIZATION_ATTENTION_REASON_FILTERS.map((filter) => {
+              const reasonSelected = filter.id === selectedReasonFilter.id;
+              const reasonCount = reasonFilterCounts[filter.id] || 0;
+              const disabled = filter.id !== "all" && reasonCount === 0;
+
+              return (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => setSelectedReasonFilterId(filter.id)}
+                  disabled={disabled}
+                  data-testid="organization-learning-attention-reason-filter-button"
+                  data-reason-filter-id={filter.id}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition ${
+                    reasonSelected
+                      ? "bg-slate-900 text-white ring-slate-900"
+                      : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-100"
+                  } disabled:bg-slate-100 disabled:text-slate-300 disabled:ring-slate-100`}
+                >
+                  {filter.label}: {reasonCount}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -923,7 +1021,7 @@ function OrganizationLearningAttentionFiltersPanel({
           </div>
         )}
 
-        {selectedItems.length > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT && (
+        {reasonFilteredItems.length > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT && (
           <div
             data-testid="organization-learning-attention-show-more"
             data-stage={STAGE82_ORGANIZATION_ATTENTION_SHOW_MORE}
