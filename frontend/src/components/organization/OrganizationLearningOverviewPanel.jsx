@@ -111,6 +111,12 @@ const ORGANIZATION_ATTENTION_REASON_FILTERS = [
   { id: "published_document", label: ORGANIZATION_ATTENTION_REASON_BADGE_LABELS.publishedDocument },
 ];
 
+const STAGE82_ORGANIZATION_ATTENTION_REASON_FILTER_PERSISTENCE =
+  "stage82_31_organization_attention_reason_filter_persistence";
+
+const ORGANIZATION_ATTENTION_REASON_FILTER_STORAGE_KEY =
+  "obrportal.organization.attention.reasonFilters.v1";
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -600,6 +606,60 @@ function buildOrganizationAttentionReasonFilterCounts(enrollments = []) {
   return counters;
 }
 
+function normalizeOrganizationAttentionReasonFilterId(reasonFilterId) {
+  const availableReasonFilterIds = new Set(
+    ORGANIZATION_ATTENTION_REASON_FILTERS.map((filter) => filter.id)
+  );
+
+  return availableReasonFilterIds.has(reasonFilterId) ? reasonFilterId : "all";
+}
+
+function readOrganizationAttentionStoredReasonFilters() {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(
+      ORGANIZATION_ATTENTION_REASON_FILTER_STORAGE_KEY
+    );
+
+    if (!storedValue) {
+      return {};
+    }
+
+    const parsedValue = JSON.parse(storedValue);
+
+    return parsedValue && typeof parsedValue === "object" ? parsedValue : {};
+  } catch {
+    return {};
+  }
+}
+
+function readOrganizationAttentionStoredReasonFilter(attentionFilterId) {
+  const storedFilters = readOrganizationAttentionStoredReasonFilters();
+
+  return normalizeOrganizationAttentionReasonFilterId(storedFilters[attentionFilterId]);
+}
+
+function saveOrganizationAttentionStoredReasonFilter(attentionFilterId, reasonFilterId) {
+  if (typeof window === "undefined" || !attentionFilterId) {
+    return;
+  }
+
+  try {
+    const storedFilters = readOrganizationAttentionStoredReasonFilters();
+
+    window.localStorage.setItem(
+      ORGANIZATION_ATTENTION_REASON_FILTER_STORAGE_KEY,
+      JSON.stringify({
+        ...storedFilters,
+        [attentionFilterId]: normalizeOrganizationAttentionReasonFilterId(reasonFilterId),
+      })
+    );
+  } catch {}
+}
+
 function buildOrganizationLearningAttentionFilterCounts(enrollments = []) {
   return ORGANIZATION_LEARNING_ATTENTION_FILTERS.reduce((accumulator, filter) => {
     accumulator[filter.id] = countWhere(enrollments, filter.predicate);
@@ -689,7 +749,9 @@ function OrganizationLearningAttentionFiltersPanel({
     ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT
   );
   const [copiedActionId, setCopiedActionId] = React.useState("");
-  const [selectedReasonFilterId, setSelectedReasonFilterId] = React.useState("all");
+  const [selectedReasonFilterId, setSelectedReasonFilterId] = React.useState(() =>
+    readOrganizationAttentionStoredReasonFilter(ORGANIZATION_LEARNING_ATTENTION_FILTERS[0].id)
+  );
   const selectedItems = buildOrganizationLearningAttentionItems(enrollments, selectedFilter.id);
   const reasonFilterCounts = buildOrganizationAttentionReasonFilterCounts(selectedItems);
   const selectedReasonFilter =
@@ -701,8 +763,8 @@ function OrganizationLearningAttentionFiltersPanel({
   );
 
   React.useEffect(() => {
-    setSelectedReasonFilterId("all");
-  }, [selectedFilterId]);
+    setSelectedReasonFilterId(readOrganizationAttentionStoredReasonFilter(selectedFilter.id));
+  }, [selectedFilter.id]);
 
   React.useEffect(() => {
     setVisibleLimit(ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT);
@@ -737,6 +799,13 @@ function OrganizationLearningAttentionFiltersPanel({
       .catch(() => {});
   }
 
+  function handleSelectOrganizationAttentionReasonFilter(reasonFilterId) {
+    const normalizedReasonFilterId = normalizeOrganizationAttentionReasonFilterId(reasonFilterId);
+
+    setSelectedReasonFilterId(normalizedReasonFilterId);
+    saveOrganizationAttentionStoredReasonFilter(selectedFilter.id, normalizedReasonFilterId);
+  }
+
   function handleExportSelectedFilter() {
     if (reasonFilteredItems.length === 0) {
       return;
@@ -764,6 +833,10 @@ function OrganizationLearningAttentionFiltersPanel({
       data-stage-reason-badges={STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES}
       data-stage-export-reasons={STAGE82_ORGANIZATION_ATTENTION_EXPORT_REASONS}
       data-stage-reason-filters={STAGE82_ORGANIZATION_ATTENTION_REASON_FILTERS}
+      data-stage-reason-filter-persistence={
+        STAGE82_ORGANIZATION_ATTENTION_REASON_FILTER_PERSISTENCE
+      }
+      data-reason-filter-storage-key={ORGANIZATION_ATTENTION_REASON_FILTER_STORAGE_KEY}
       data-selected-reason-filter={selectedReasonFilter.id}
       data-selected-reason-filter-count={reasonFilterCounts[selectedReasonFilter.id] || 0}
       className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
@@ -841,7 +914,7 @@ function OrganizationLearningAttentionFiltersPanel({
                 <button
                   key={filter.id}
                   type="button"
-                  onClick={() => setSelectedReasonFilterId(filter.id)}
+                  onClick={() => handleSelectOrganizationAttentionReasonFilter(filter.id)}
                   disabled={disabled}
                   data-testid="organization-learning-attention-reason-filter-button"
                   data-reason-filter-id={filter.id}
