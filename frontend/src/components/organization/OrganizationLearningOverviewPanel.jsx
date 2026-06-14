@@ -83,6 +83,13 @@ const ORGANIZATION_ATTENTION_REASON_BADGE_LABELS = {
   publishedDocument: "Документ опубликован",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_EXPORT_REASONS =
+  "stage82_29_organization_attention_export_reasons";
+
+const ORGANIZATION_ATTENTION_EXPORT_REASON_LABELS = {
+  reasonsColumn: "Причины",
+};
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -172,6 +179,7 @@ const ORGANIZATION_LEARNING_ATTENTION_EXPORT_COLUMNS = [
   { key: "document_number", label: "Номер документа" },
   { key: "verification_code", label: "Код проверки" },
   { key: "public_verify_path", label: "Публичная ссылка" },
+  { key: "reasons", label: ORGANIZATION_ATTENTION_EXPORT_REASON_LABELS.reasonsColumn },
   { key: "completed_at", label: "Дата завершения" },
 ];
 
@@ -539,6 +547,12 @@ function buildOrganizationAttentionReasonBadges(enrollment) {
   return badges;
 }
 
+function formatOrganizationAttentionReasonBadgesForExport(enrollment) {
+  return buildOrganizationAttentionReasonBadges(enrollment)
+    .map((badge) => badge.label)
+    .join("; ");
+}
+
 function buildOrganizationLearningAttentionFilterCounts(enrollments = []) {
   return ORGANIZATION_LEARNING_ATTENTION_FILTERS.reduce((accumulator, filter) => {
     accumulator[filter.id] = countWhere(enrollments, filter.predicate);
@@ -583,6 +597,7 @@ function buildOrganizationLearningAttentionExportRows(enrollments = [], filter) 
     document_number: enrollment.document?.document_number || "",
     verification_code: enrollment.document?.verification_code || "",
     public_verify_path: enrollment.document?.public_verify_path || "",
+    reasons: formatOrganizationAttentionReasonBadgesForExport(enrollment),
     completed_at: formatEnrollmentDateTime(enrollment.completed_at),
   }));
 }
@@ -687,6 +702,7 @@ function OrganizationLearningAttentionFiltersPanel({
       data-hidden-count={hiddenItemsCount}
       data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
       data-stage-reason-badges={STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES}
+      data-stage-export-reasons={STAGE82_ORGANIZATION_ATTENTION_EXPORT_REASONS}
       className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
     >
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
