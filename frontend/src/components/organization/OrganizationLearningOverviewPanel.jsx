@@ -79,7 +79,18 @@ const ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS = {
   allLearning: "Все статусы обучения",
   allDocuments: "Все статусы документов",
   reset: "Сбросить фильтры",
+  clearSearch: "Очистить поиск",
+  activeFilters: "Активные фильтры",
+  searchFilter: "Поиск",
+  learningFilter: "Обучение",
+  documentFilter: "Документы",
 };
+
+const STAGE82_ORGANIZATION_OVERVIEW_FILTER_PERSISTENCE =
+  "stage82_27_organization_overview_filter_persistence";
+
+const ORGANIZATION_OVERVIEW_FILTER_STORAGE_KEY =
+  "obrportal.organization.overview.filters.v1";
 
 const ORGANIZATION_OVERVIEW_LEARNING_STATUS_FILTERS = [
   { id: "all", label: ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.allLearning },
@@ -347,6 +358,65 @@ function filterOrganizationLearningOverviewEnrollments(enrollments = [], filters
       enrollmentMatchesOverviewLearningStatus(enrollment, filters.learningStatusFilter) &&
       enrollmentMatchesOverviewDocumentStatus(enrollment, filters.documentStatusFilter)
   );
+}
+
+function getOrganizationOverviewFilterOptionLabel(options, value) {
+  return options.find((option) => option.id === value)?.label || value;
+}
+
+function readOrganizationOverviewStoredFilters() {
+  const fallback = {
+    searchQuery: "",
+    learningStatusFilter: "all",
+    documentStatusFilter: "all",
+  };
+
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(
+      ORGANIZATION_OVERVIEW_FILTER_STORAGE_KEY
+    );
+
+    if (!storedValue) {
+      return fallback;
+    }
+
+    const parsedValue = JSON.parse(storedValue);
+    const learningFilterIds = new Set(
+      ORGANIZATION_OVERVIEW_LEARNING_STATUS_FILTERS.map((filter) => filter.id)
+    );
+    const documentFilterIds = new Set(
+      ORGANIZATION_OVERVIEW_DOCUMENT_STATUS_FILTERS.map((filter) => filter.id)
+    );
+
+    return {
+      searchQuery: String(parsedValue.searchQuery || ""),
+      learningStatusFilter: learningFilterIds.has(parsedValue.learningStatusFilter)
+        ? parsedValue.learningStatusFilter
+        : fallback.learningStatusFilter,
+      documentStatusFilter: documentFilterIds.has(parsedValue.documentStatusFilter)
+        ? parsedValue.documentStatusFilter
+        : fallback.documentStatusFilter,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function saveOrganizationOverviewStoredFilters(filters) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      ORGANIZATION_OVERVIEW_FILTER_STORAGE_KEY,
+      JSON.stringify(filters)
+    );
+  } catch {}
 }
 
 function formatOrganizationAttentionDate(value) {
@@ -819,9 +889,45 @@ export function OrganizationLearningOverviewPanel({
   onRefresh,
 }) {
   const safeEnrollments = Array.isArray(enrollments) ? enrollments : [];
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [learningStatusFilter, setLearningStatusFilter] = React.useState("all");
-  const [documentStatusFilter, setDocumentStatusFilter] = React.useState("all");
+  const [storedOverviewFilters] = React.useState(() =>
+    readOrganizationOverviewStoredFilters()
+  );
+  const [searchQuery, setSearchQuery] = React.useState(
+    storedOverviewFilters.searchQuery
+  );
+  const [learningStatusFilter, setLearningStatusFilter] = React.useState(
+    storedOverviewFilters.learningStatusFilter
+  );
+  const [documentStatusFilter, setDocumentStatusFilter] = React.useState(
+    storedOverviewFilters.documentStatusFilter
+  );
+
+  React.useEffect(() => {
+    saveOrganizationOverviewStoredFilters({
+      searchQuery,
+      learningStatusFilter,
+      documentStatusFilter,
+    });
+  }, [searchQuery, learningStatusFilter, documentStatusFilter]);
+
+  const activeOverviewFilterLabels = [
+    searchQuery.trim()
+      ? `${ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.searchFilter}: ${searchQuery.trim()}`
+      : "",
+    learningStatusFilter !== "all"
+      ? `${ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.learningFilter}: ${getOrganizationOverviewFilterOptionLabel(
+          ORGANIZATION_OVERVIEW_LEARNING_STATUS_FILTERS,
+          learningStatusFilter
+        )}`
+      : "",
+    documentStatusFilter !== "all"
+      ? `${ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.documentFilter}: ${getOrganizationOverviewFilterOptionLabel(
+          ORGANIZATION_OVERVIEW_DOCUMENT_STATUS_FILTERS,
+          documentStatusFilter
+        )}`
+      : "",
+  ].filter(Boolean);
+
   const filteredEnrollments = React.useMemo(
     () =>
       filterOrganizationLearningOverviewEnrollments(safeEnrollments, {
@@ -848,6 +954,8 @@ export function OrganizationLearningOverviewPanel({
       data-document-available={stats.documentAvailableCount}
       data-stage-search={STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS}
       data-filtered-enrollments={filteredEnrollments.length}
+      data-stage-filter-persistence={STAGE82_ORGANIZATION_OVERVIEW_FILTER_PERSISTENCE}
+      data-active-filter-count={activeOverviewFilterLabels.length}
       className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -885,14 +993,26 @@ export function OrganizationLearningOverviewPanel({
       >
         <label className="grid gap-1 text-xs font-semibold text-slate-600">
           Поиск
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.searchPlaceholder}
-            data-testid="organization-learning-overview-search-input"
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
+          <div className="relative">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.searchPlaceholder}
+              data-testid="organization-learning-overview-search-input"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 pr-32 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              disabled={!searchQuery.trim()}
+              data-testid="organization-learning-overview-clear-search"
+              data-stage={STAGE82_ORGANIZATION_OVERVIEW_FILTER_PERSISTENCE}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-200 disabled:text-slate-300"
+            >
+              {ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.clearSearch}
+            </button>
+          </div>
         </label>
 
         <label className="grid gap-1 text-xs font-semibold text-slate-600">
@@ -948,6 +1068,27 @@ export function OrganizationLearningOverviewPanel({
             Показано: {filteredEnrollments.length} из {safeEnrollments.length}
           </div>
         </div>
+
+        {activeOverviewFilterLabels.length > 0 && (
+          <div
+            data-testid="organization-learning-overview-active-filter-chips"
+            data-stage={STAGE82_ORGANIZATION_OVERVIEW_FILTER_PERSISTENCE}
+            className="lg:col-span-4 flex flex-wrap gap-2 border-t border-slate-200 pt-3"
+          >
+            <span className="text-xs font-semibold text-slate-500">
+              {ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.activeFilters}:
+            </span>
+            {activeOverviewFilterLabels.map((filterLabel) => (
+              <span
+                key={filterLabel}
+                data-testid="organization-learning-overview-active-filter-chip"
+                className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+              >
+                {filterLabel}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div
