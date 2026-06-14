@@ -36,6 +36,31 @@ const ORGANIZATION_ATTENTION_CSV_EXPORT_LABELS = {
   exportEmpty: "Нет данных для выгрузки",
 };
 
+const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
+  "stage82_23_organization_overview_search_filters";
+
+const ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS = {
+  searchPlaceholder: "Поиск по слушателю, email, курсу, группе или организации",
+  allLearning: "Все статусы обучения",
+  allDocuments: "Все статусы документов",
+  reset: "Сбросить фильтры",
+};
+
+const ORGANIZATION_OVERVIEW_LEARNING_STATUS_FILTERS = [
+  { id: "all", label: ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.allLearning },
+  { id: "assigned", label: "Назначено" },
+  { id: "active", label: "В процессе" },
+  { id: "completed", label: "Завершено" },
+];
+
+const ORGANIZATION_OVERVIEW_DOCUMENT_STATUS_FILTERS = [
+  { id: "all", label: ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.allDocuments },
+  { id: "missing", label: "Документ не сформирован" },
+  { id: "draft", label: "PDF в черновике" },
+  { id: "available", label: "Опубликовано" },
+  { id: "revoked", label: "Отозвано" },
+];
+
 const ORGANIZATION_LEARNING_ATTENTION_FILTERS = [
   {
     id: "completed_without_document",
@@ -226,6 +251,67 @@ function getEnrollmentDocumentLabel(enrollment) {
   }
 
   return "Документ есть";
+}
+
+function normalizeOverviewSearchText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function enrollmentMatchesOverviewSearch(enrollment, query) {
+  const normalizedQuery = normalizeOverviewSearchText(query);
+
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const haystack = [
+    getEnrollmentLearnerLabel(enrollment),
+    enrollment.user_email,
+    enrollment.organization_name,
+    getEnrollmentGroupLabel(enrollment),
+    getEnrollmentCourseLabel(enrollment),
+    getEnrollmentStatusLabel(enrollment.status),
+    getEnrollmentDocumentLabel(enrollment),
+    enrollment.document?.document_number,
+    enrollment.document?.verification_code,
+  ]
+    .map(normalizeOverviewSearchText)
+    .join(" ");
+
+  return haystack.includes(normalizedQuery);
+}
+
+function enrollmentMatchesOverviewLearningStatus(enrollment, statusFilter) {
+  if (!statusFilter || statusFilter === "all") {
+    return true;
+  }
+
+  if (statusFilter === "active") {
+    return (
+      enrollment.status === "active" ||
+      enrollment.status === "in_progress" ||
+      enrollment.status === "assigned"
+    );
+  }
+
+  return enrollment.status === statusFilter;
+}
+
+function enrollmentMatchesOverviewDocumentStatus(enrollment, documentFilter) {
+  if (!documentFilter || documentFilter === "all") {
+    return true;
+  }
+
+  return getEnrollmentDocumentStatus(enrollment) === documentFilter;
+}
+
+function filterOrganizationLearningOverviewEnrollments(enrollments = [], filters = {}) {
+  return enrollments.filter(
+    (enrollment) =>
+      enrollmentMatchesOverviewSearch(enrollment, filters.searchQuery) &&
+      enrollmentMatchesOverviewLearningStatus(enrollment, filters.learningStatusFilter) &&
+      enrollmentMatchesOverviewDocumentStatus(enrollment, filters.documentStatusFilter)
+  );
 }
 
 function buildOrganizationLearningAttentionFilterCounts(enrollments = []) {
@@ -488,8 +574,24 @@ export function OrganizationLearningOverviewPanel({
   onRefresh,
 }) {
   const safeEnrollments = Array.isArray(enrollments) ? enrollments : [];
-  const stats = buildOrganizationLearningOverviewStats(safeEnrollments);
-  const groups = buildOrganizationLearningOverviewGroups(safeEnrollments).slice(0, 6);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [learningStatusFilter, setLearningStatusFilter] = React.useState("all");
+  const [documentStatusFilter, setDocumentStatusFilter] = React.useState("all");
+  const filteredEnrollments = React.useMemo(
+    () =>
+      filterOrganizationLearningOverviewEnrollments(safeEnrollments, {
+        searchQuery,
+        learningStatusFilter,
+        documentStatusFilter,
+      }),
+    [safeEnrollments, searchQuery, learningStatusFilter, documentStatusFilter]
+  );
+  const hasOverviewFilters =
+    searchQuery.trim() ||
+    learningStatusFilter !== "all" ||
+    documentStatusFilter !== "all";
+  const stats = buildOrganizationLearningOverviewStats(filteredEnrollments);
+  const groups = buildOrganizationLearningOverviewGroups(filteredEnrollments).slice(0, 6);
 
   return (
     <section
@@ -499,6 +601,8 @@ export function OrganizationLearningOverviewPanel({
       data-completed-enrollments={stats.completedCount}
       data-document-drafts={stats.documentDraftCount}
       data-document-available={stats.documentAvailableCount}
+      data-stage-search={STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS}
+      data-filtered-enrollments={filteredEnrollments.length}
       className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -530,6 +634,78 @@ export function OrganizationLearningOverviewPanel({
       )}
 
       <div
+        data-testid="organization-learning-overview-search-filters"
+        data-stage={STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS}
+        className="mt-5 grid gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
+      >
+        <label className="grid gap-1 text-xs font-semibold text-slate-600">
+          Поиск
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.searchPlaceholder}
+            data-testid="organization-learning-overview-search-input"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+
+        <label className="grid gap-1 text-xs font-semibold text-slate-600">
+          Обучение
+          <select
+            value={learningStatusFilter}
+            onChange={(event) => setLearningStatusFilter(event.target.value)}
+            data-testid="organization-learning-overview-learning-filter"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          >
+            {ORGANIZATION_OVERVIEW_LEARNING_STATUS_FILTERS.map((filter) => (
+              <option key={filter.id} value={filter.id}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="grid gap-1 text-xs font-semibold text-slate-600">
+          Документы
+          <select
+            value={documentStatusFilter}
+            onChange={(event) => setDocumentStatusFilter(event.target.value)}
+            data-testid="organization-learning-overview-document-filter"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          >
+            {ORGANIZATION_OVERVIEW_DOCUMENT_STATUS_FILTERS.map((filter) => (
+              <option key={filter.id} value={filter.id}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex flex-col justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery("");
+              setLearningStatusFilter("all");
+              setDocumentStatusFilter("all");
+            }}
+            disabled={!hasOverviewFilters}
+            data-testid="organization-learning-overview-filter-reset"
+            className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:text-slate-300"
+          >
+            {ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.reset}
+          </button>
+          <div
+            data-testid="organization-learning-overview-filter-summary"
+            className="text-xs font-semibold text-slate-500"
+          >
+            Показано: {filteredEnrollments.length} из {safeEnrollments.length}
+          </div>
+        </div>
+      </div>
+
+      <div
         data-testid="organization-learning-overview-summary"
         className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
@@ -559,7 +735,7 @@ export function OrganizationLearningOverviewPanel({
       </div>
 
       <OrganizationLearningAttentionFiltersPanel
-        enrollments={safeEnrollments}
+        enrollments={filteredEnrollments}
         selectedGroupId={selectedGroupId}
         onSelectGroup={onSelectGroup}
       />
