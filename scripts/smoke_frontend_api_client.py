@@ -117,8 +117,12 @@ def main() -> None:
             "return request(`/api/v1/account/courses/${enrollmentId}/start`,",
             "export async function completeAccountCourse(enrollmentId)",
             "return request(`/api/v1/account/courses/${enrollmentId}/complete`,",
-            "export async function getAccountDocuments()",
+            "export async function getAccountDocuments(filters = {})",
+            "const params = new URLSearchParams();",
+            "params.set(key, value);",
+            "const query = params.toString();",
             'return request("/api/v1/account/documents");',
+            "return request(`/api/v1/account/documents?${query}`);",
         ],
     )
 
