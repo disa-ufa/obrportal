@@ -62,6 +62,15 @@ const ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS = {
   emptyValue: "—",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS =
+  "stage82_26_organization_attention_document_actions";
+
+const ORGANIZATION_ATTENTION_DOCUMENT_ACTION_LABELS = {
+  copyDocumentNumber: "Скопировать номер",
+  copyVerificationCode: "Скопировать код",
+  copied: "Скопировано",
+};
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -459,6 +468,7 @@ function OrganizationLearningAttentionFiltersPanel({
   const [visibleLimit, setVisibleLimit] = React.useState(
     ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT
   );
+  const [copiedActionId, setCopiedActionId] = React.useState("");
   const selectedItems = buildOrganizationLearningAttentionItems(enrollments, selectedFilter.id);
 
   React.useEffect(() => {
@@ -471,6 +481,28 @@ function OrganizationLearningAttentionFiltersPanel({
   const canCollapse =
     visibleLimit > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT &&
     selectedItems.length > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT;
+  const clipboardSupported =
+    typeof navigator !== "undefined" && Boolean(navigator.clipboard?.writeText);
+
+  function handleCopyOrganizationAttentionDocumentAction(actionId, value) {
+    const normalizedValue = String(value || "").trim();
+
+    if (!normalizedValue || !clipboardSupported) {
+      return;
+    }
+
+    navigator.clipboard
+      .writeText(normalizedValue)
+      .then(() => {
+        setCopiedActionId(actionId);
+        setTimeout(() => {
+          setCopiedActionId((currentActionId) =>
+            currentActionId === actionId ? "" : currentActionId
+          );
+        }, 1600);
+      })
+      .catch(() => {});
+  }
 
   function handleExportSelectedFilter() {
     if (selectedItems.length === 0) {
@@ -495,6 +527,7 @@ function OrganizationLearningAttentionFiltersPanel({
       data-stage-show-more={STAGE82_ORGANIZATION_ATTENTION_SHOW_MORE}
       data-visible-count={visibleItems.length}
       data-hidden-count={hiddenItemsCount}
+      data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
       className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
     >
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -565,6 +598,10 @@ function OrganizationLearningAttentionFiltersPanel({
               const canOpenGroup = Boolean(enrollment.learning_group_id && onSelectGroup);
               const groupSelected =
                 enrollment.learning_group_id && enrollment.learning_group_id === selectedGroupId;
+              const hasDocumentNumber = Boolean(enrollment.document?.document_number);
+              const hasVerificationCode = Boolean(enrollment.document?.verification_code);
+              const documentNumberActionId = `document-number-${enrollment.id}`;
+              const verificationCodeActionId = `verification-code-${enrollment.id}`;
 
               return (
                 <div
@@ -573,6 +610,7 @@ function OrganizationLearningAttentionFiltersPanel({
                   data-stage-card-details={STAGE82_ORGANIZATION_ATTENTION_CARD_DETAILS}
                   data-learning-status={enrollment.status || ""}
                   data-document-status={getEnrollmentDocumentStatus(enrollment)}
+                  data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
                   className="rounded-2xl bg-slate-50 p-3 text-xs ring-1 ring-slate-200"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -619,9 +657,51 @@ function OrganizationLearningAttentionFiltersPanel({
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {hasDocumentNumber && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleCopyOrganizationAttentionDocumentAction(
+                              documentNumberActionId,
+                              enrollment.document?.document_number
+                            )
+                          }
+                          disabled={!clipboardSupported}
+                          data-testid="organization-learning-attention-copy-document-number-button"
+                          data-stage={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
+                          className="rounded-full bg-white px-3 py-1.5 font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:text-slate-300"
+                        >
+                          {copiedActionId === documentNumberActionId
+                            ? ORGANIZATION_ATTENTION_DOCUMENT_ACTION_LABELS.copied
+                            : ORGANIZATION_ATTENTION_DOCUMENT_ACTION_LABELS.copyDocumentNumber}
+                        </button>
+                      )}
+
+                      {hasVerificationCode && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleCopyOrganizationAttentionDocumentAction(
+                              verificationCodeActionId,
+                              enrollment.document?.verification_code
+                            )
+                          }
+                          disabled={!clipboardSupported}
+                          data-testid="organization-learning-attention-copy-verification-code-button"
+                          data-stage={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
+                          className="rounded-full bg-white px-3 py-1.5 font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:text-slate-300"
+                        >
+                          {copiedActionId === verificationCodeActionId
+                            ? ORGANIZATION_ATTENTION_DOCUMENT_ACTION_LABELS.copied
+                            : ORGANIZATION_ATTENTION_DOCUMENT_ACTION_LABELS.copyVerificationCode}
+                        </button>
+                      )}
+
                       {enrollment.document?.public_verify_path && (
                         <a
                           href={enrollment.document.public_verify_path}
+                          data-testid="organization-learning-attention-verify-link"
+                          data-stage={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
                           className="rounded-full bg-green-600 px-3 py-1.5 font-semibold text-white transition hover:bg-green-700"
                         >
                           {ORGANIZATION_LEARNING_ATTENTION_LABELS.verify}
