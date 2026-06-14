@@ -48,6 +48,20 @@ const ORGANIZATION_ATTENTION_SHOW_MORE_LABELS = {
   summary: "Показано",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_CARD_DETAILS =
+  "stage82_25_organization_attention_card_details";
+
+const ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS = {
+  status: "Статус",
+  email: "Email",
+  completedAt: "Завершено",
+  documentNumber: "Документ",
+  verificationCode: "Код проверки",
+  noEmail: "email не указан",
+  noDate: "дата не указана",
+  emptyValue: "—",
+};
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -326,6 +340,38 @@ function filterOrganizationLearningOverviewEnrollments(enrollments = [], filters
   );
 }
 
+function formatOrganizationAttentionDate(value) {
+  if (!value) {
+    return ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.noDate;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.noDate;
+  }
+
+  return date.toLocaleDateString("ru-RU");
+}
+
+function getOrganizationAttentionEmailLabel(enrollment) {
+  return enrollment.user_email || ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.noEmail;
+}
+
+function getOrganizationAttentionDocumentNumberLabel(enrollment) {
+  return (
+    enrollment.document?.document_number ||
+    ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.emptyValue
+  );
+}
+
+function getOrganizationAttentionVerificationCodeLabel(enrollment) {
+  return (
+    enrollment.document?.verification_code ||
+    ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.emptyValue
+  );
+}
+
 function buildOrganizationLearningAttentionFilterCounts(enrollments = []) {
   return ORGANIZATION_LEARNING_ATTENTION_FILTERS.reduce((accumulator, filter) => {
     accumulator[filter.id] = countWhere(enrollments, filter.predicate);
@@ -524,6 +570,9 @@ function OrganizationLearningAttentionFiltersPanel({
                 <div
                   key={enrollment.id}
                   data-testid="organization-learning-attention-item"
+                  data-stage-card-details={STAGE82_ORGANIZATION_ATTENTION_CARD_DETAILS}
+                  data-learning-status={enrollment.status || ""}
+                  data-document-status={getEnrollmentDocumentStatus(enrollment)}
                   className="rounded-2xl bg-slate-50 p-3 text-xs ring-1 ring-slate-200"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -539,6 +588,33 @@ function OrganizationLearningAttentionFiltersPanel({
                       </div>
                       <div className="mt-1 font-semibold text-slate-600">
                         {getEnrollmentDocumentLabel(enrollment)}
+                      </div>
+
+                      <div
+                        data-testid="organization-learning-attention-card-details"
+                        data-stage={STAGE82_ORGANIZATION_ATTENTION_CARD_DETAILS}
+                        className="mt-3 grid gap-2 sm:grid-cols-2"
+                      >
+                        <span className="rounded-xl bg-white px-3 py-2 font-semibold text-slate-600 ring-1 ring-slate-200">
+                          {ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.status}:{" "}
+                          {getEnrollmentStatusLabel(enrollment.status)}
+                        </span>
+                        <span className="rounded-xl bg-white px-3 py-2 font-semibold text-slate-600 ring-1 ring-slate-200">
+                          {ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.email}:{" "}
+                          {getOrganizationAttentionEmailLabel(enrollment)}
+                        </span>
+                        <span className="rounded-xl bg-white px-3 py-2 font-semibold text-slate-600 ring-1 ring-slate-200">
+                          {ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.completedAt}:{" "}
+                          {formatOrganizationAttentionDate(enrollment.completed_at)}
+                        </span>
+                        <span className="rounded-xl bg-white px-3 py-2 font-semibold text-slate-600 ring-1 ring-slate-200">
+                          {ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.documentNumber}:{" "}
+                          {getOrganizationAttentionDocumentNumberLabel(enrollment)}
+                        </span>
+                        <span className="rounded-xl bg-white px-3 py-2 font-semibold text-slate-600 ring-1 ring-slate-200 sm:col-span-2">
+                          {ORGANIZATION_ATTENTION_CARD_DETAIL_LABELS.verificationCode}:{" "}
+                          {getOrganizationAttentionVerificationCodeLabel(enrollment)}
+                        </span>
                       </div>
                     </div>
 
