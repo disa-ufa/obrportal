@@ -36,6 +36,18 @@ const ORGANIZATION_ATTENTION_CSV_EXPORT_LABELS = {
   exportEmpty: "Нет данных для выгрузки",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_SHOW_MORE =
+  "stage82_24_organization_attention_show_more";
+
+const ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT = 8;
+
+const ORGANIZATION_ATTENTION_SHOW_MORE_LABELS = {
+  showMore: "Показать ещё",
+  showAll: "Показать все",
+  collapse: "Свернуть",
+  summary: "Показано",
+};
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -398,8 +410,21 @@ function OrganizationLearningAttentionFiltersPanel({
   const selectedFilter =
     ORGANIZATION_LEARNING_ATTENTION_FILTERS.find((filter) => filter.id === selectedFilterId) ||
     ORGANIZATION_LEARNING_ATTENTION_FILTERS[0];
+  const [visibleLimit, setVisibleLimit] = React.useState(
+    ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT
+  );
   const selectedItems = buildOrganizationLearningAttentionItems(enrollments, selectedFilter.id);
-  const visibleItems = selectedItems.slice(0, 8);
+
+  React.useEffect(() => {
+    setVisibleLimit(ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT);
+  }, [selectedFilterId, enrollments]);
+
+  const visibleItems = selectedItems.slice(0, visibleLimit);
+  const hiddenItemsCount = Math.max(selectedItems.length - visibleItems.length, 0);
+  const canShowMore = hiddenItemsCount > 0;
+  const canCollapse =
+    visibleLimit > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT &&
+    selectedItems.length > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT;
 
   function handleExportSelectedFilter() {
     if (selectedItems.length === 0) {
@@ -421,6 +446,9 @@ function OrganizationLearningAttentionFiltersPanel({
       data-selected-filter-count={counts[selectedFilter.id] || 0}
       data-stage-export={STAGE82_ORGANIZATION_ATTENTION_CSV_EXPORT}
       data-export-count={selectedItems.length}
+      data-stage-show-more={STAGE82_ORGANIZATION_ATTENTION_SHOW_MORE}
+      data-visible-count={visibleItems.length}
+      data-hidden-count={hiddenItemsCount}
       className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
     >
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -537,6 +565,67 @@ function OrganizationLearningAttentionFiltersPanel({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {selectedItems.length > ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT && (
+          <div
+            data-testid="organization-learning-attention-show-more"
+            data-stage={STAGE82_ORGANIZATION_ATTENTION_SHOW_MORE}
+            className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-3 text-xs ring-1 ring-slate-100"
+          >
+            <span
+              data-testid="organization-learning-attention-visible-summary"
+              className="font-semibold text-slate-500"
+            >
+              {ORGANIZATION_ATTENTION_SHOW_MORE_LABELS.summary}: {visibleItems.length} из{" "}
+              {selectedItems.length}
+            </span>
+
+            <div className="flex flex-wrap gap-2">
+              {canShowMore && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleLimit((currentLimit) =>
+                      Math.min(
+                        currentLimit + ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT,
+                        selectedItems.length
+                      )
+                    )
+                  }
+                  data-testid="organization-learning-attention-show-more-button"
+                  className="rounded-full bg-white px-3 py-1.5 font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                >
+                  {ORGANIZATION_ATTENTION_SHOW_MORE_LABELS.showMore}{" "}
+                  {Math.min(ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT, hiddenItemsCount)}
+                </button>
+              )}
+
+              {canShowMore && (
+                <button
+                  type="button"
+                  onClick={() => setVisibleLimit(selectedItems.length)}
+                  data-testid="organization-learning-attention-show-all-button"
+                  className="rounded-full bg-slate-900 px-3 py-1.5 font-semibold text-white transition hover:bg-slate-700"
+                >
+                  {ORGANIZATION_ATTENTION_SHOW_MORE_LABELS.showAll}
+                </button>
+              )}
+
+              {canCollapse && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleLimit(ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT)
+                  }
+                  data-testid="organization-learning-attention-collapse-button"
+                  className="rounded-full bg-white px-3 py-1.5 font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                >
+                  {ORGANIZATION_ATTENTION_SHOW_MORE_LABELS.collapse}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
