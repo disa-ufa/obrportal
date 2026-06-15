@@ -38,7 +38,10 @@ def main() -> None:
         "organization-learning-attention-reason-filters",
         "organization-learning-attention-reason-filter-button",
         "data-reason-filter-id",
-        "buildOrganizationLearningAttentionExportRows(reasonFilteredItems, selectedFilter)",
+        "buildOrganizationLearningAttentionExportRows(",
+        "reasonFilteredItems,",
+        "selectedFilter,",
+        "selectedReasonFilter",
     ]
     missing_panel = [marker for marker in panel_markers if marker not in panel]
     if missing_panel:

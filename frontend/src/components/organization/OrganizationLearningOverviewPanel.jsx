@@ -144,6 +144,14 @@ const ORGANIZATION_ATTENTION_REASON_COUNTER_LABELS = {
   noRecords: "Без записей",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_EXPORT_ACTIVE_FILTERS =
+  "stage82_35_organization_attention_export_active_filters";
+
+const ORGANIZATION_ATTENTION_EXPORT_ACTIVE_FILTER_LABELS = {
+  activeReason: "Активная причина",
+  activeReasonId: "ID активной причины",
+};
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -223,6 +231,14 @@ const ORGANIZATION_LEARNING_ATTENTION_FILTERS = [
 
 const ORGANIZATION_LEARNING_ATTENTION_EXPORT_COLUMNS = [
   { key: "filter", label: "Список" },
+  {
+    key: "active_reason_filter",
+    label: ORGANIZATION_ATTENTION_EXPORT_ACTIVE_FILTER_LABELS.activeReason,
+  },
+  {
+    key: "active_reason_filter_id",
+    label: ORGANIZATION_ATTENTION_EXPORT_ACTIVE_FILTER_LABELS.activeReasonId,
+  },
   { key: "learner", label: "Слушатель" },
   { key: "learner_email", label: "Email слушателя" },
   { key: "organization", label: "Организация" },
@@ -754,9 +770,18 @@ function getOrganizationAttentionReasonEmptyStateText(selectedFilter, selectedRe
   return `По причине «${selectedReasonFilter.label}» в списке «${selectedFilter.label}» записей нет.`;
 }
 
-function buildOrganizationLearningAttentionExportRows(enrollments = [], filter) {
+function buildOrganizationAttentionExportFilenamePrefix(filter, reasonFilter) {
+  const filterId = filter?.id || "attention";
+  const reasonFilterId = reasonFilter?.id || "all";
+
+  return `organization-attention-${filterId}-${reasonFilterId}`;
+}
+
+function buildOrganizationLearningAttentionExportRows(enrollments = [], filter, reasonFilter) {
   return enrollments.map((enrollment) => ({
     filter: filter?.label || "",
+    active_reason_filter: reasonFilter?.label || "",
+    active_reason_filter_id: reasonFilter?.id || "",
     learner: getEnrollmentLearnerLabel(enrollment),
     learner_email: enrollment.user_email || "",
     organization: enrollment.organization_name || "",
@@ -893,9 +918,15 @@ function OrganizationLearningAttentionFiltersPanel({
     }
 
     downloadCsvFile(
-      buildDatedCsvFilename(`organization-attention-${selectedFilter.id}`),
+      buildDatedCsvFilename(
+        buildOrganizationAttentionExportFilenamePrefix(selectedFilter, selectedReasonFilter)
+      ),
       ORGANIZATION_LEARNING_ATTENTION_EXPORT_COLUMNS,
-      buildOrganizationLearningAttentionExportRows(reasonFilteredItems, selectedFilter)
+      buildOrganizationLearningAttentionExportRows(
+        reasonFilteredItems,
+        selectedFilter,
+        selectedReasonFilter
+      )
     );
   }
 
@@ -913,6 +944,14 @@ function OrganizationLearningAttentionFiltersPanel({
       data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
       data-stage-reason-badges={STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES}
       data-stage-export-reasons={STAGE82_ORGANIZATION_ATTENTION_EXPORT_REASONS}
+      data-stage-export-active-filters={
+        STAGE82_ORGANIZATION_ATTENTION_EXPORT_ACTIVE_FILTERS
+      }
+      data-export-active-reason-filter={selectedReasonFilter.id}
+      data-export-filename-prefix={buildOrganizationAttentionExportFilenamePrefix(
+        selectedFilter,
+        selectedReasonFilter
+      )}
       data-stage-reason-filters={STAGE82_ORGANIZATION_ATTENTION_REASON_FILTERS}
       data-stage-reason-filter-persistence={
         STAGE82_ORGANIZATION_ATTENTION_REASON_FILTER_PERSISTENCE
