@@ -117,6 +117,18 @@ const STAGE82_ORGANIZATION_ATTENTION_REASON_FILTER_PERSISTENCE =
 const ORGANIZATION_ATTENTION_REASON_FILTER_STORAGE_KEY =
   "obrportal.organization.attention.reasonFilters.v1";
 
+const STAGE82_ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY =
+  "stage82_32_organization_attention_active_filter_summary";
+
+const ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY_LABELS = {
+  title: "Активные фильтры быстрого списка",
+  quickList: "Список",
+  reason: "Причина",
+  found: "Найдено",
+  resetReason: "Сбросить причину",
+  resetQuickList: "Сбросить быстрый список",
+};
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -806,6 +818,18 @@ function OrganizationLearningAttentionFiltersPanel({
     saveOrganizationAttentionStoredReasonFilter(selectedFilter.id, normalizedReasonFilterId);
   }
 
+  function handleResetOrganizationAttentionReasonFilter() {
+    handleSelectOrganizationAttentionReasonFilter("all");
+  }
+
+  function handleResetOrganizationAttentionQuickFilter() {
+    const defaultAttentionFilterId = ORGANIZATION_LEARNING_ATTENTION_FILTERS[0].id;
+
+    setSelectedFilterId(defaultAttentionFilterId);
+    setSelectedReasonFilterId(readOrganizationAttentionStoredReasonFilter(defaultAttentionFilterId));
+    setVisibleLimit(ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT);
+  }
+
   function handleExportSelectedFilter() {
     if (reasonFilteredItems.length === 0) {
       return;
@@ -837,6 +861,10 @@ function OrganizationLearningAttentionFiltersPanel({
         STAGE82_ORGANIZATION_ATTENTION_REASON_FILTER_PERSISTENCE
       }
       data-reason-filter-storage-key={ORGANIZATION_ATTENTION_REASON_FILTER_STORAGE_KEY}
+      data-stage-active-filter-summary={
+        STAGE82_ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY
+      }
+      data-active-summary-count={reasonFilteredItems.length}
       data-selected-reason-filter={selectedReasonFilter.id}
       data-selected-reason-filter-count={reasonFilterCounts[selectedReasonFilter.id] || 0}
       className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
@@ -868,6 +896,60 @@ function OrganizationLearningAttentionFiltersPanel({
             </button>
           );
         })}
+      </div>
+
+      <div
+        data-testid="organization-learning-attention-active-filter-summary"
+        data-stage={STAGE82_ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY}
+        data-active-quick-filter={selectedFilter.id}
+        data-active-reason-filter={selectedReasonFilter.id}
+        data-active-filtered-count={reasonFilteredItems.length}
+        className="mt-4 rounded-2xl bg-white p-3 ring-1 ring-slate-200"
+      >
+        <div className="text-xs font-bold text-slate-700">
+          {ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY_LABELS.title}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+          <span
+            data-testid="organization-learning-attention-active-quick-filter"
+            className="rounded-full bg-slate-50 px-3 py-1 font-semibold ring-1 ring-slate-200"
+          >
+            {ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY_LABELS.quickList}:{" "}
+            {selectedFilter.label}
+          </span>
+          <span
+            data-testid="organization-learning-attention-active-reason-filter"
+            className="rounded-full bg-slate-50 px-3 py-1 font-semibold ring-1 ring-slate-200"
+          >
+            {ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY_LABELS.reason}:{" "}
+            {selectedReasonFilter.label}
+          </span>
+          <span
+            data-testid="organization-learning-attention-active-filtered-count"
+            className="rounded-full bg-slate-900 px-3 py-1 font-semibold text-white"
+          >
+            {ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY_LABELS.found}:{" "}
+            {reasonFilteredItems.length}
+          </span>
+          <button
+            type="button"
+            onClick={handleResetOrganizationAttentionReasonFilter}
+            disabled={selectedReasonFilter.id === "all"}
+            data-testid="organization-learning-attention-reset-reason-filter"
+            className="rounded-full bg-white px-3 py-1 font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-300"
+          >
+            {ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY_LABELS.resetReason}
+          </button>
+          <button
+            type="button"
+            onClick={handleResetOrganizationAttentionQuickFilter}
+            disabled={selectedFilter.id === ORGANIZATION_LEARNING_ATTENTION_FILTERS[0].id}
+            data-testid="organization-learning-attention-reset-quick-filter"
+            className="rounded-full bg-white px-3 py-1 font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-300"
+          >
+            {ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY_LABELS.resetQuickList}
+          </button>
+        </div>
       </div>
 
       <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
