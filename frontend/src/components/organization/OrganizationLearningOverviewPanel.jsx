@@ -78,6 +78,9 @@ const ORGANIZATION_ATTENTION_COPY_EMAIL_LABELS = {
   copyEmail: "Скопировать email",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_FILTERED_SHOW_MORE_SUMMARY =
+  "stage82_37_organization_attention_filtered_show_more_summary";
+
 const STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES =
   "stage82_28_organization_attention_reason_badges";
 
@@ -946,7 +949,11 @@ function OrganizationLearningAttentionFiltersPanel({
       data-stage-export={STAGE82_ORGANIZATION_ATTENTION_CSV_EXPORT}
       data-export-count={reasonFilteredItems.length}
       data-stage-show-more={STAGE82_ORGANIZATION_ATTENTION_SHOW_MORE}
+      data-stage-filtered-show-more-summary={
+        STAGE82_ORGANIZATION_ATTENTION_FILTERED_SHOW_MORE_SUMMARY
+      }
       data-visible-count={visibleItems.length}
+      data-filtered-show-more-total={reasonFilteredItems.length}
       data-hidden-count={hiddenItemsCount}
       data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
       data-stage-copy-email={STAGE82_ORGANIZATION_ATTENTION_COPY_EMAIL}
@@ -1360,6 +1367,10 @@ function OrganizationLearningAttentionFiltersPanel({
           <div
             data-testid="organization-learning-attention-show-more"
             data-stage={STAGE82_ORGANIZATION_ATTENTION_SHOW_MORE}
+            data-stage-filtered-summary={
+              STAGE82_ORGANIZATION_ATTENTION_FILTERED_SHOW_MORE_SUMMARY
+            }
+            data-filtered-show-more-total={reasonFilteredItems.length}
             className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-3 text-xs ring-1 ring-slate-100"
           >
             <span
@@ -1367,7 +1378,7 @@ function OrganizationLearningAttentionFiltersPanel({
               className="font-semibold text-slate-500"
             >
               {ORGANIZATION_ATTENTION_SHOW_MORE_LABELS.summary}: {visibleItems.length} из{" "}
-              {selectedItems.length}
+              {reasonFilteredItems.length}
             </span>
 
             <div className="flex flex-wrap gap-2">
@@ -1378,7 +1389,7 @@ function OrganizationLearningAttentionFiltersPanel({
                     setVisibleLimit((currentLimit) =>
                       Math.min(
                         currentLimit + ORGANIZATION_ATTENTION_INITIAL_VISIBLE_COUNT,
-                        selectedItems.length
+                        reasonFilteredItems.length
                       )
                     )
                   }
@@ -1393,7 +1404,7 @@ function OrganizationLearningAttentionFiltersPanel({
               {canShowMore && (
                 <button
                   type="button"
-                  onClick={() => setVisibleLimit(selectedItems.length)}
+                  onClick={() => setVisibleLimit(reasonFilteredItems.length)}
                   data-testid="organization-learning-attention-show-all-button"
                   className="rounded-full bg-slate-900 px-3 py-1.5 font-semibold text-white transition hover:bg-slate-700"
                 >

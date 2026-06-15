@@ -37,7 +37,7 @@ def main() -> None:
         "organization-learning-attention-show-more-button",
         "organization-learning-attention-show-all-button",
         "organization-learning-attention-collapse-button",
-        "setVisibleLimit(selectedItems.length)",
+        "setVisibleLimit(reasonFilteredItems.length)",
     ]
     missing_panel = [marker for marker in panel_markers if marker not in panel]
     if missing_panel:
