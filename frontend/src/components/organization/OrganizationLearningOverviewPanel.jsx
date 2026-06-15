@@ -129,6 +129,13 @@ const ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY_LABELS = {
   resetQuickList: "Сбросить быстрый список",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_REASON_EMPTY_STATE =
+  "stage82_33_organization_attention_reason_empty_state";
+
+const ORGANIZATION_ATTENTION_REASON_EMPTY_STATE_LABELS = {
+  resetReason: "Сбросить причину",
+};
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -703,6 +710,14 @@ function buildOrganizationLearningAttentionItems(enrollments = [], filterId) {
     });
 }
 
+function getOrganizationAttentionReasonEmptyStateText(selectedFilter, selectedReasonFilter) {
+  if (!selectedReasonFilter || selectedReasonFilter.id === "all") {
+    return ORGANIZATION_LEARNING_ATTENTION_LABELS.empty;
+  }
+
+  return `По причине «${selectedReasonFilter.label}» в списке «${selectedFilter.label}» записей нет.`;
+}
+
 function buildOrganizationLearningAttentionExportRows(enrollments = [], filter) {
   return enrollments.map((enrollment) => ({
     filter: filter?.label || "",
@@ -864,6 +879,7 @@ function OrganizationLearningAttentionFiltersPanel({
       data-stage-active-filter-summary={
         STAGE82_ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY
       }
+      data-stage-reason-empty-state={STAGE82_ORGANIZATION_ATTENTION_REASON_EMPTY_STATE}
       data-active-summary-count={reasonFilteredItems.length}
       data-selected-reason-filter={selectedReasonFilter.id}
       data-selected-reason-filter-count={reasonFilterCounts[selectedReasonFilter.id] || 0}
@@ -1016,9 +1032,25 @@ function OrganizationLearningAttentionFiltersPanel({
         {visibleItems.length === 0 ? (
           <div
             data-testid="organization-learning-attention-empty"
+            data-stage={STAGE82_ORGANIZATION_ATTENTION_REASON_EMPTY_STATE}
+            data-empty-reason-filter={selectedReasonFilter.id}
+            data-empty-quick-filter={selectedFilter.id}
             className="mt-4 rounded-2xl bg-slate-50 p-3 text-xs text-slate-500 ring-1 ring-slate-100"
           >
-            {ORGANIZATION_LEARNING_ATTENTION_LABELS.empty}
+            <div data-testid="organization-learning-attention-empty-message">
+              {getOrganizationAttentionReasonEmptyStateText(selectedFilter, selectedReasonFilter)}
+            </div>
+
+            {selectedReasonFilter.id !== "all" && (
+              <button
+                type="button"
+                onClick={handleResetOrganizationAttentionReasonFilter}
+                data-testid="organization-learning-attention-empty-reset-reason"
+                className="mt-3 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+              >
+                {ORGANIZATION_ATTENTION_REASON_EMPTY_STATE_LABELS.resetReason}
+              </button>
+            )}
           </div>
         ) : (
           <div data-testid="organization-learning-attention-items" className="mt-4 grid gap-2">
