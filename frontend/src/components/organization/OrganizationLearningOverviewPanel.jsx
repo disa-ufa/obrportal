@@ -71,6 +71,13 @@ const ORGANIZATION_ATTENTION_DOCUMENT_ACTION_LABELS = {
   copied: "Скопировано",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_COPY_EMAIL =
+  "stage82_36_organization_attention_copy_email";
+
+const ORGANIZATION_ATTENTION_COPY_EMAIL_LABELS = {
+  copyEmail: "Скопировать email",
+};
+
 const STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES =
   "stage82_28_organization_attention_reason_badges";
 
@@ -942,6 +949,7 @@ function OrganizationLearningAttentionFiltersPanel({
       data-visible-count={visibleItems.length}
       data-hidden-count={hiddenItemsCount}
       data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
+      data-stage-copy-email={STAGE82_ORGANIZATION_ATTENTION_COPY_EMAIL}
       data-stage-reason-badges={STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES}
       data-stage-export-reasons={STAGE82_ORGANIZATION_ATTENTION_EXPORT_REASONS}
       data-stage-export-active-filters={
@@ -1174,8 +1182,10 @@ function OrganizationLearningAttentionFiltersPanel({
               const canOpenGroup = Boolean(enrollment.learning_group_id && onSelectGroup);
               const groupSelected =
                 enrollment.learning_group_id && enrollment.learning_group_id === selectedGroupId;
+              const hasEmail = Boolean(enrollment.user_email);
               const hasDocumentNumber = Boolean(enrollment.document?.document_number);
               const hasVerificationCode = Boolean(enrollment.document?.verification_code);
+              const emailActionId = `email-${enrollment.id}`;
               const documentNumberActionId = `document-number-${enrollment.id}`;
               const verificationCodeActionId = `verification-code-${enrollment.id}`;
               const reasonBadges = buildOrganizationAttentionReasonBadges(enrollment);
@@ -1188,6 +1198,8 @@ function OrganizationLearningAttentionFiltersPanel({
                   data-learning-status={enrollment.status || ""}
                   data-document-status={getEnrollmentDocumentStatus(enrollment)}
                   data-stage-document-actions={STAGE82_ORGANIZATION_ATTENTION_DOCUMENT_ACTIONS}
+                  data-stage-copy-email={STAGE82_ORGANIZATION_ATTENTION_COPY_EMAIL}
+                  data-has-email={hasEmail ? "true" : "false"}
                   data-stage-reason-badges={STAGE82_ORGANIZATION_ATTENTION_REASON_BADGES}
                   data-reason-count={reasonBadges.length}
                   className="rounded-2xl bg-slate-50 p-3 text-xs ring-1 ring-slate-200"
@@ -1257,6 +1269,26 @@ function OrganizationLearningAttentionFiltersPanel({
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {hasEmail && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleCopyOrganizationAttentionDocumentAction(
+                              emailActionId,
+                              enrollment.user_email
+                            )
+                          }
+                          disabled={!clipboardSupported}
+                          data-testid="organization-learning-attention-copy-email-button"
+                          data-stage={STAGE82_ORGANIZATION_ATTENTION_COPY_EMAIL}
+                          className="rounded-full bg-white px-3 py-1.5 font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:text-slate-300"
+                        >
+                          {copiedActionId === emailActionId
+                            ? ORGANIZATION_ATTENTION_DOCUMENT_ACTION_LABELS.copied
+                            : ORGANIZATION_ATTENTION_COPY_EMAIL_LABELS.copyEmail}
+                        </button>
+                      )}
+
                       {hasDocumentNumber && (
                         <button
                           type="button"
