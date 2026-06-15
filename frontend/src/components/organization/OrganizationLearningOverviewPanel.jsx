@@ -136,6 +136,14 @@ const ORGANIZATION_ATTENTION_REASON_EMPTY_STATE_LABELS = {
   resetReason: "Сбросить причину",
 };
 
+const STAGE82_ORGANIZATION_ATTENTION_REASON_COUNTERS =
+  "stage82_34_organization_attention_reason_counters";
+
+const ORGANIZATION_ATTENTION_REASON_COUNTER_LABELS = {
+  hasRecords: "Есть записи",
+  noRecords: "Без записей",
+};
+
 const STAGE82_ORGANIZATION_OVERVIEW_SEARCH_FILTERS =
   "stage82_23_organization_overview_search_filters";
 
@@ -537,6 +545,34 @@ function getOrganizationAttentionReasonBadgeToneClass(tone) {
   return "bg-slate-100 text-slate-700 ring-slate-200";
 }
 
+function getOrganizationAttentionReasonFilterButtonClass(selected, disabled, hasRecords) {
+  if (selected) {
+    return "bg-slate-900 text-white ring-slate-900";
+  }
+
+  if (disabled) {
+    return "bg-slate-100 text-slate-300 ring-slate-100";
+  }
+
+  if (hasRecords) {
+    return "bg-white text-slate-700 ring-slate-200 hover:bg-slate-100";
+  }
+
+  return "bg-slate-50 text-slate-400 ring-slate-100";
+}
+
+function getOrganizationAttentionReasonCounterBadgeClass(selected, hasRecords) {
+  if (selected) {
+    return "bg-white/20 text-white";
+  }
+
+  if (hasRecords) {
+    return "bg-slate-900 text-white";
+  }
+
+  return "bg-slate-200 text-slate-500";
+}
+
 function buildOrganizationAttentionReasonBadges(enrollment) {
   const badges = [];
 
@@ -788,6 +824,12 @@ function OrganizationLearningAttentionFiltersPanel({
   const reasonFilteredItems = selectedItems.filter((enrollment) =>
     enrollmentMatchesOrganizationAttentionReasonFilter(enrollment, selectedReasonFilter.id)
   );
+  const reasonFiltersWithRecordsCount = ORGANIZATION_ATTENTION_REASON_FILTERS.filter(
+    (filter) => filter.id !== "all" && (reasonFilterCounts[filter.id] || 0) > 0
+  ).length;
+  const reasonFiltersWithoutRecordsCount = ORGANIZATION_ATTENTION_REASON_FILTERS.filter(
+    (filter) => filter.id !== "all" && (reasonFilterCounts[filter.id] || 0) === 0
+  ).length;
 
   React.useEffect(() => {
     setSelectedReasonFilterId(readOrganizationAttentionStoredReasonFilter(selectedFilter.id));
@@ -880,6 +922,9 @@ function OrganizationLearningAttentionFiltersPanel({
         STAGE82_ORGANIZATION_ATTENTION_ACTIVE_FILTER_SUMMARY
       }
       data-stage-reason-empty-state={STAGE82_ORGANIZATION_ATTENTION_REASON_EMPTY_STATE}
+      data-stage-reason-counters={STAGE82_ORGANIZATION_ATTENTION_REASON_COUNTERS}
+      data-reason-filters-with-records={reasonFiltersWithRecordsCount}
+      data-reason-filters-without-records={reasonFiltersWithoutRecordsCount}
       data-active-summary-count={reasonFilteredItems.length}
       data-selected-reason-filter={selectedReasonFilter.id}
       data-selected-reason-filter-count={reasonFilterCounts[selectedReasonFilter.id] || 0}
@@ -997,16 +1042,36 @@ function OrganizationLearningAttentionFiltersPanel({
         <div
           data-testid="organization-learning-attention-reason-filters"
           data-stage={STAGE82_ORGANIZATION_ATTENTION_REASON_FILTERS}
+          data-stage-counters={STAGE82_ORGANIZATION_ATTENTION_REASON_COUNTERS}
+          data-reason-filters-with-records={reasonFiltersWithRecordsCount}
+          data-reason-filters-without-records={reasonFiltersWithoutRecordsCount}
           className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100"
         >
-          <div className="text-xs font-bold text-slate-700">
-            {ORGANIZATION_ATTENTION_REASON_FILTER_LABELS.title}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs font-bold text-slate-700">
+              {ORGANIZATION_ATTENTION_REASON_FILTER_LABELS.title}
+            </div>
+            <div
+              data-testid="organization-learning-attention-reason-counter-summary"
+              className="flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500"
+            >
+              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+                {ORGANIZATION_ATTENTION_REASON_COUNTER_LABELS.hasRecords}:{" "}
+                {reasonFiltersWithRecordsCount}
+              </span>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 ring-1 ring-slate-200">
+                {ORGANIZATION_ATTENTION_REASON_COUNTER_LABELS.noRecords}:{" "}
+                {reasonFiltersWithoutRecordsCount}
+              </span>
+            </div>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ORGANIZATION_ATTENTION_REASON_FILTERS.map((filter) => {
               const reasonSelected = filter.id === selectedReasonFilter.id;
               const reasonCount = reasonFilterCounts[filter.id] || 0;
               const disabled = filter.id !== "all" && reasonCount === 0;
+              const hasRecords = filter.id === "all" || reasonCount > 0;
 
               return (
                 <button
@@ -1016,13 +1081,25 @@ function OrganizationLearningAttentionFiltersPanel({
                   disabled={disabled}
                   data-testid="organization-learning-attention-reason-filter-button"
                   data-reason-filter-id={filter.id}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition ${
-                    reasonSelected
-                      ? "bg-slate-900 text-white ring-slate-900"
-                      : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-100"
-                  } disabled:bg-slate-100 disabled:text-slate-300 disabled:ring-slate-100`}
+                  data-reason-selected={reasonSelected ? "true" : "false"}
+                  data-reason-count={reasonCount}
+                  data-reason-has-records={hasRecords ? "true" : "false"}
+                  className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left text-xs font-semibold ring-1 transition ${getOrganizationAttentionReasonFilterButtonClass(
+                    reasonSelected,
+                    disabled,
+                    hasRecords
+                  )}`}
                 >
-                  {filter.label}: {reasonCount}
+                  <span>{filter.label}</span>
+                  <span
+                    data-testid="organization-learning-attention-reason-filter-count"
+                    className={`min-w-8 rounded-full px-2 py-0.5 text-center text-[11px] ${getOrganizationAttentionReasonCounterBadgeClass(
+                      reasonSelected,
+                      hasRecords
+                    )}`}
+                  >
+                    {reasonCount}
+                  </span>
                 </button>
               );
             })}
