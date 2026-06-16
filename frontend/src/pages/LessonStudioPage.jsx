@@ -1147,9 +1147,12 @@ function LessonStudioInspector({ lesson, selectedBlock, onSaveBlock, savingBlock
     setFormSuccess("");
   }, [selectedBlock?.id]);
 
-  const blockIssues = selectedBlock ? getBlockValidationIssues(selectedBlock) : [];
   const contentFieldMeta = getInspectorContentFieldMeta(selectedBlock);
   const saving = Boolean(selectedBlock?.id && savingBlockId === selectedBlock.id);
+  const draftPayload = selectedBlock ? buildInspectorBlockPayload(selectedBlock, form) : null;
+  const draftBlock = selectedBlock && draftPayload ? { ...selectedBlock, ...draftPayload } : null;
+  const blockIssues = draftBlock ? getBlockValidationIssues(draftBlock) : [];
+  const blockReady = Boolean(selectedBlock && blockIssues.length === 0);
 
   const lessonFacts = [
     ["ID урока", lesson?.id || "—"],
@@ -1193,7 +1196,7 @@ function LessonStudioInspector({ lesson, selectedBlock, onSaveBlock, savingBlock
   return (
     <aside
       data-testid="lesson-studio-inspector"
-      className="rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
     >
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         Инспектор
@@ -1208,79 +1211,168 @@ function LessonStudioInspector({ lesson, selectedBlock, onSaveBlock, savingBlock
 
       {selectedBlock ? (
         <>
-          <div className="mt-4 rounded-2xl bg-blue-50 p-3 ring-1 ring-blue-100">
-            <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-              Блок
+          <div
+            data-testid="lesson-studio-inspector-readiness"
+            className={`mt-4 rounded-2xl p-3 ring-1 ${
+              blockReady
+                ? "bg-green-50 text-green-900 ring-green-200"
+                : "bg-amber-50 text-amber-950 ring-amber-200"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide">
+                  {blockReady ? "Блок готов" : "Нужно заполнить"}
+                </div>
+                <div className="mt-1 text-sm font-black text-slate-900">
+                  {getBlockDisplayTitle(selectedBlock)}
+                </div>
+              </div>
+
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-black ring-1 ${
+                  blockReady
+                    ? "bg-white text-green-700 ring-green-200"
+                    : "bg-white text-amber-800 ring-amber-200"
+                }`}
+              >
+                {blockReady ? "✓" : "!"}
+              </span>
             </div>
-            <div className="mt-1 text-sm font-bold text-slate-900">
-              {getBlockDisplayTitle(selectedBlock)}
-            </div>
+
+            {blockIssues.length ? (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {blockIssues.map((issue) => (
+                  <span
+                    key={issue}
+                    data-testid="lesson-studio-inspector-issue-chip"
+                    className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+                  >
+                    {issue}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-2 text-xs leading-5 text-green-800">
+                Все обязательные поля блока заполнены.
+              </div>
+            )}
           </div>
 
           <form
             data-testid="lesson-studio-inspector-form"
             onSubmit={handleSubmit}
-            className="mt-4 space-y-3"
+            className="mt-4 space-y-4"
           >
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Заголовок
-              </span>
-              <input
-                value={form.title}
-                onChange={(event) => handleFieldChange("title", event.target.value)}
-                placeholder="Название блока"
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              />
-            </label>
+            <section
+              data-testid="lesson-studio-inspector-section-main"
+              className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+            >
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Основное
+              </div>
 
-            <label className="block" data-testid="lesson-studio-inspector-content-field">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {contentFieldMeta.label}
-              </span>
-
-              {contentFieldMeta.inputType === "url" ? (
+              <label className="mt-3 block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Заголовок
+                </span>
                 <input
-                  type="url"
-                  value={form.content_text}
-                  onChange={(event) => handleFieldChange("content_text", event.target.value)}
-                  placeholder={contentFieldMeta.placeholder}
+                  value={form.title}
+                  onChange={(event) => handleFieldChange("title", event.target.value)}
+                  placeholder="Название блока"
                   className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
-              ) : (
-                <textarea
-                  value={form.content_text}
-                  onChange={(event) => handleFieldChange("content_text", event.target.value)}
-                  rows={contentFieldMeta.rows}
-                  placeholder={contentFieldMeta.placeholder}
-                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                />
-              )}
+              </label>
+            </section>
 
-              <span className="mt-2 block text-xs leading-5 text-slate-500">
-                {contentFieldMeta.help}
-              </span>
-            </label>
+            <section
+              data-testid="lesson-studio-inspector-section-content"
+              className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+            >
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Контент
+              </div>
 
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={form.is_required}
-                onChange={(event) => handleFieldChange("is_required", event.target.checked)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              <span className="font-semibold">Обязательный блок</span>
-            </label>
+              <label className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {contentFieldMeta.label}
+                </span>
 
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={(event) => handleFieldChange("is_active", event.target.checked)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              <span className="font-semibold">Активен</span>
-            </label>
+                {contentFieldMeta.inputType === "url" ? (
+                  <input
+                    type="url"
+                    value={form.content_text}
+                    onChange={(event) => handleFieldChange("content_text", event.target.value)}
+                    placeholder={contentFieldMeta.placeholder}
+                    className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  />
+                ) : (
+                  <textarea
+                    value={form.content_text}
+                    onChange={(event) => handleFieldChange("content_text", event.target.value)}
+                    placeholder={contentFieldMeta.placeholder}
+                    rows={contentFieldMeta.rows}
+                    className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  />
+                )}
+
+                {contentFieldMeta.help ? (
+                  <span className="mt-2 block text-xs leading-5 text-slate-500">
+                    {contentFieldMeta.help}
+                  </span>
+                ) : null}
+              </label>
+            </section>
+
+            <section
+              data-testid="lesson-studio-inspector-section-publication"
+              className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+            >
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Публикация
+              </div>
+
+              <div className="mt-3 space-y-2">
+                <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={form.is_required}
+                    onChange={(event) => handleFieldChange("is_required", event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  Обязательный блок
+                </label>
+
+                <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={form.is_active}
+                    onChange={(event) => handleFieldChange("is_active", event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  Активен
+                </label>
+              </div>
+            </section>
+
+            {blockIssues.length ? (
+              <div
+                data-testid="lesson-studio-inspector-issues"
+                className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200"
+              >
+                <div className="font-bold">Перед сохранением проверьте поля:</div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {blockIssues.map((issue) => (
+                    <span
+                      key={issue}
+                      className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+                    >
+                      {issue}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             {formError ? (
               <div className="rounded-2xl bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
@@ -1294,14 +1386,44 @@ function LessonStudioInspector({ lesson, selectedBlock, onSaveBlock, savingBlock
               </div>
             ) : null}
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full rounded-2xl bg-blue-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+            <div
+              data-testid="lesson-studio-inspector-save-bar"
+              className="sticky bottom-0 -mx-1 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"
             >
-              {saving ? "Сохраняем..." : "Сохранить блок"}
-            </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full rounded-2xl bg-blue-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? "Сохраняем..." : "Сохранить блок"}
+              </button>
+            </div>
           </form>
+
+          <details
+            data-testid="lesson-studio-inspector-service-info"
+            className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+          >
+            <summary className="cursor-pointer text-xs font-bold uppercase tracking-wide text-slate-500">
+              Служебная информация
+            </summary>
+
+            <div className="mt-3 space-y-2">
+              {blockFacts.map(([label, value]) => (
+                <div
+                  key={label}
+                  className="rounded-2xl bg-white p-3 ring-1 ring-slate-200"
+                >
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {label}
+                  </div>
+                  <div className="mt-1 break-words text-sm font-semibold text-slate-900">
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </details>
         </>
       ) : (
         <div className="mt-4 space-y-2">
@@ -1320,30 +1442,6 @@ function LessonStudioInspector({ lesson, selectedBlock, onSaveBlock, savingBlock
           ))}
         </div>
       )}
-
-      {selectedBlock ? (
-        <div className="mt-4 space-y-2">
-          {blockFacts.map(([label, value]) => (
-            <div
-              key={label}
-              className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
-            >
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {label}
-              </div>
-              <div className="mt-1 break-words text-sm font-semibold text-slate-900">
-                {value}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {blockIssues.length ? (
-        <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
-          Нужно заполнить: {blockIssues.join(", ")}.
-        </div>
-      ) : null}
     </aside>
   );
 }
