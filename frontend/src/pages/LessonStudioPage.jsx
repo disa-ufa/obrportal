@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createAdminLessonBlock,
+  deleteAdminLessonBlock,
   getAdminCourseLessonDetail,
   getAdminLessonBlocks,
   reorderAdminLessonBlocks,
@@ -115,6 +116,20 @@ function buildStudioQuickBlockPayload(template, position) {
     is_active: template.values.is_active !== false,
   };
 }
+
+function buildDuplicateStudioBlockPayload(block, position) {
+  const title = `${block?.title || getLessonBlockTypeLabel(block?.block_type) || "Блок"}`.trim();
+
+  return {
+    block_type: block?.block_type || "rich_text",
+    title: `${title} — копия`,
+    content_json: safeParseJson(block?.content_json),
+    position,
+    is_required: Boolean(block?.is_required),
+    is_active: block?.is_active !== false,
+  };
+}
+
 
 
 function safeParseJson(value, fallback = {}) {
@@ -568,23 +583,48 @@ function LessonCanvasBlock({
   canMoveUp,
   canMoveDown,
   moving,
+  duplicating,
+  deleting,
   disabled,
   onSelect,
   onMove,
+  onDuplicate,
+  onDelete,
 }) {
   const issues = getBlockValidationIssues(block);
   const typeTone = getLessonBlockTone(block.block_type);
   const title = getBlockDisplayTitle(block, index);
   const preview = getBlockTextPreview(block);
+  const busy = disabled || moving || duplicating || deleting;
 
   const handleMoveClick = (event, direction) => {
     event.stopPropagation();
 
-    if (disabled || moving) {
+    if (busy) {
       return;
     }
 
     onMove(block, direction);
+  };
+
+  const handleDuplicateClick = (event) => {
+    event.stopPropagation();
+
+    if (busy) {
+      return;
+    }
+
+    onDuplicate(block);
+  };
+
+  const handleDeleteClick = (event) => {
+    event.stopPropagation();
+
+    if (busy) {
+      return;
+    }
+
+    onDelete(block);
   };
 
   return (
@@ -625,7 +665,7 @@ function LessonCanvasBlock({
           type="button"
           data-testid="lesson-studio-move-up-button"
           onClick={(event) => handleMoveClick(event, "up")}
-          disabled={!canMoveUp || disabled || moving}
+          disabled={!canMoveUp || busy}
           className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           ↑ Выше
@@ -635,15 +675,47 @@ function LessonCanvasBlock({
           type="button"
           data-testid="lesson-studio-move-down-button"
           onClick={(event) => handleMoveClick(event, "down")}
-          disabled={!canMoveDown || disabled || moving}
+          disabled={!canMoveDown || busy}
           className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           ↓ Ниже
         </button>
 
+        <button
+          type="button"
+          data-testid="lesson-studio-duplicate-button"
+          onClick={handleDuplicateClick}
+          disabled={busy}
+          className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Дублировать
+        </button>
+
+        <button
+          type="button"
+          data-testid="lesson-studio-delete-button"
+          onClick={handleDeleteClick}
+          disabled={busy}
+          className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Удалить
+        </button>
+
         {moving ? (
           <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
             Меняем порядок...
+          </span>
+        ) : null}
+
+        {duplicating ? (
+          <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
+            Дублируем...
+          </span>
+        ) : null}
+
+        {deleting ? (
+          <span className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-200">
+            Удаляем...
           </span>
         ) : null}
       </div>
@@ -730,8 +802,12 @@ function LessonStudioCanvas({
   onRefreshBlocks,
   onCreateBlock,
   onMoveBlock,
+  onDuplicateBlock,
+  onDeleteBlock,
   creatingTemplateKey,
   movingBlockId,
+  duplicatingBlockId,
+  deletingBlockId,
   blocksLoading,
 }) {
   return (
@@ -774,9 +850,18 @@ function LessonStudioCanvas({
               canMoveUp={index > 0}
               canMoveDown={index < blocks.length - 1}
               moving={movingBlockId === block.id}
-              disabled={blocksLoading || Boolean(movingBlockId)}
+              duplicating={duplicatingBlockId === block.id}
+              deleting={deletingBlockId === block.id}
+              disabled={
+                blocksLoading ||
+                Boolean(movingBlockId) ||
+                Boolean(duplicatingBlockId) ||
+                Boolean(deletingBlockId)
+              }
               onSelect={onSelectBlock}
               onMove={onMoveBlock}
+              onDuplicate={onDuplicateBlock}
+              onDelete={onDeleteBlock}
             />
           ))}
         </div>
@@ -1123,6 +1208,8 @@ export function LessonStudioPage({ lessonId }) {
   const [loading, setLoading] = useState(false);
   const [blocksLoading, setBlocksLoading] = useState(false);
   const [blockActionId, setBlockActionId] = useState("");
+  const [duplicatingBlockId, setDuplicatingBlockId] = useState("");
+  const [deletingBlockId, setDeletingBlockId] = useState("");
   const [creatingTemplateKey, setCreatingTemplateKey] = useState("");
   const [error, setError] = useState("");
 
@@ -1276,6 +1363,79 @@ export function LessonStudioPage({ lessonId }) {
     [blocks, lessonId, loadBlocks]
   );
 
+
+  const handleDuplicateBlock = useCallback(
+    async (block) => {
+      if (!lessonId || !block?.id) {
+        setError("Не удалось определить урок или блок для дублирования.");
+        return;
+      }
+
+      setDuplicatingBlockId(block.id);
+      setError("");
+
+      try {
+        const position = getNextStudioBlockPosition(blocks);
+        const createdBlock = await createAdminLessonBlock(
+          lessonId,
+          buildDuplicateStudioBlockPayload(block, position)
+        );
+
+        await loadBlocks();
+
+        if (createdBlock?.id) {
+          setSelectedBlockId(createdBlock.id);
+        }
+      } catch (err) {
+        setError(formatLessonStudioError(err, "Не удалось дублировать блок"));
+      } finally {
+        setDuplicatingBlockId("");
+      }
+    },
+    [blocks, lessonId, loadBlocks]
+  );
+
+  const handleDeleteBlock = useCallback(
+    async (block) => {
+      if (!block?.id) {
+        setError("Не выбран блок для удаления.");
+        return;
+      }
+
+      const title = block.title || getLessonBlockTypeLabel(block.block_type);
+      const confirmed = window.confirm(`Удалить блок "${title}"?`);
+
+      if (!confirmed) {
+        return;
+      }
+
+      const orderedBlocks = blocks
+        .slice()
+        .sort((left, right) => (Number(left.position) || 0) - (Number(right.position) || 0));
+
+      const currentIndex = orderedBlocks.findIndex((item) => item.id === block.id);
+      const remainingBlocks = orderedBlocks.filter((item) => item.id !== block.id);
+      const nextSelectedBlock =
+        remainingBlocks[Math.min(Math.max(currentIndex, 0), remainingBlocks.length - 1)] ||
+        remainingBlocks[remainingBlocks.length - 1] ||
+        null;
+
+      setDeletingBlockId(block.id);
+      setError("");
+
+      try {
+        await deleteAdminLessonBlock(block.id);
+        await loadBlocks();
+        setSelectedBlockId(nextSelectedBlock?.id || "");
+      } catch (err) {
+        setError(formatLessonStudioError(err, "Не удалось удалить блок"));
+      } finally {
+        setDeletingBlockId("");
+      }
+    },
+    [blocks, loadBlocks]
+  );
+
   const handleInspectorSaveBlock = useCallback(
     async (block, values) => {
       if (!block?.id) {
@@ -1328,8 +1488,12 @@ export function LessonStudioPage({ lessonId }) {
             onRefreshBlocks={loadBlocks}
             onCreateBlock={handleQuickCreateBlock}
             onMoveBlock={handleMoveBlock}
+            onDuplicateBlock={handleDuplicateBlock}
+            onDeleteBlock={handleDeleteBlock}
             creatingTemplateKey={creatingTemplateKey}
             movingBlockId={blockActionId}
+            duplicatingBlockId={duplicatingBlockId}
+            deletingBlockId={deletingBlockId}
             blocksLoading={blocksLoading}
           />
 
