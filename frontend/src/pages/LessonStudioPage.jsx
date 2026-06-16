@@ -436,7 +436,7 @@ function getBlockValidationIssues(block) {
   return issues;
 }
 
-function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, onReload }) {
+function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, mode = "editor", onModeChange, onReload }) {
   const requiredBlocks = blocks.filter((block) => block.is_required).length;
   const activeBlocks = blocks.filter((block) => block.is_active !== false).length;
   const inactiveBlocks = Math.max(blocks.length - activeBlocks, 0);
@@ -449,6 +449,7 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, onR
     "";
 
   const courseHref = courseId ? `/admin/courses#course-${courseId}` : "/admin/courses";
+  const previewMode = mode === "preview";
 
   return (
     <section
@@ -488,6 +489,37 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, onR
             data-testid="lesson-studio-quick-actions"
             className="flex flex-wrap justify-start gap-2 sm:justify-end"
           >
+            <div
+              data-testid="lesson-studio-mode-switcher"
+              className="flex rounded-full bg-slate-100 p-1 ring-1 ring-slate-200"
+            >
+              <button
+                type="button"
+                data-testid="lesson-studio-editor-mode-button"
+                onClick={() => onModeChange("editor")}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                  !previewMode
+                    ? "bg-white text-blue-700 shadow-sm"
+                    : "text-slate-600 hover:text-blue-700"
+                }`}
+              >
+                Редактор
+              </button>
+
+              <button
+                type="button"
+                data-testid="lesson-studio-preview-mode-button"
+                onClick={() => onModeChange("preview")}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                  previewMode
+                    ? "bg-white text-blue-700 shadow-sm"
+                    : "text-slate-600 hover:text-blue-700"
+                }`}
+              >
+                Предпросмотр
+              </button>
+            </div>
+
             <button
               type="button"
               data-testid="lesson-studio-reload-button"
@@ -511,6 +543,9 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, onR
             data-testid="lesson-studio-status-strip"
             className="flex flex-wrap justify-start gap-2 sm:justify-end"
           >
+            <LessonStudioBadge tone={previewMode ? "blue" : "slate"}>
+              {previewMode ? "Предпросмотр" : "Редактор"}
+            </LessonStudioBadge>
             <LessonStudioBadge tone={loading || blocksLoading ? "amber" : "slate"}>
               {statusLabel}
             </LessonStudioBadge>
@@ -726,6 +761,7 @@ function LessonStudioStructurePanel({ lesson, blocks, selectedBlockId, onSelectB
 function LessonCanvasBlock({
   block,
   index,
+  previewMode = false,
   selected,
   canMoveUp,
   canMoveDown,
@@ -779,9 +815,13 @@ function LessonCanvasBlock({
       id={`studio-block-${block.id}`}
       data-testid="lesson-studio-canvas-block"
       className={`rounded-[1.5rem] bg-white p-5 shadow-sm ring-1 transition ${
-        selected ? "ring-blue-300" : "ring-slate-200 hover:ring-blue-200"
+        !previewMode && selected ? "ring-blue-300" : "ring-slate-200 hover:ring-blue-200"
       }`}
-      onClick={() => onSelect(block.id)}
+      onClick={() => {
+        if (!previewMode) {
+          onSelect(block.id);
+        }
+      }}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -806,7 +846,7 @@ function LessonCanvasBlock({
 
       <div
         data-testid="lesson-studio-block-order-controls"
-        className="mt-4 flex flex-wrap items-center gap-2"
+        className={previewMode ? "hidden" : "mt-4 flex flex-wrap items-center gap-2"}
       >
         <button
           type="button"
@@ -867,7 +907,7 @@ function LessonCanvasBlock({
         ) : null}
       </div>
 
-      {issues.length ? (
+      {!previewMode && issues.length ? (
         <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
           Нужно заполнить: {issues.join(", ")}.
         </div>
@@ -944,6 +984,7 @@ function LessonStudioQuickAddPanel({ templates, onCreateBlock, creatingTemplateK
 
 function LessonStudioCanvas({
   blocks,
+  mode = "editor",
   selectedBlockId,
   onSelectBlock,
   onRefreshBlocks,
@@ -957,6 +998,11 @@ function LessonStudioCanvas({
   deletingBlockId,
   blocksLoading,
 }) {
+  const previewMode = mode === "preview";
+  const visibleBlocks = previewMode
+    ? blocks.filter((block) => block.is_active !== false)
+    : blocks;
+
   return (
     <section data-testid="lesson-studio-visual-canvas" className="space-y-3">
       <div className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100">
@@ -979,23 +1025,39 @@ function LessonStudioCanvas({
         </div>
       </div>
 
-      <LessonStudioQuickAddPanel
-        templates={STUDIO_QUICK_BLOCK_TEMPLATES}
-        onCreateBlock={onCreateBlock}
-        creatingTemplateKey={creatingTemplateKey}
-        disabled={blocksLoading}
-      />
+      {previewMode ? (
+        <section
+          data-testid="lesson-studio-preview-banner"
+          className="rounded-[1.5rem] bg-green-50 p-4 text-sm leading-6 text-green-900 ring-1 ring-green-200"
+        >
+          <div className="text-xs font-bold uppercase tracking-wide text-green-700">
+            Предпросмотр глазами обучающегося
+          </div>
+          <div className="mt-1">
+            Административные действия скрыты. На полотне показаны только активные
+            блоки урока.
+          </div>
+        </section>
+      ) : (
+        <LessonStudioQuickAddPanel
+          templates={STUDIO_QUICK_BLOCK_TEMPLATES}
+          onCreateBlock={onCreateBlock}
+          creatingTemplateKey={creatingTemplateKey}
+          disabled={blocksLoading}
+        />
+      )}
 
-      {blocks.length ? (
+      {visibleBlocks.length ? (
         <div className="space-y-3">
-          {blocks.map((block, index) => (
+          {visibleBlocks.map((block, index) => (
             <LessonCanvasBlock
               key={block.id}
               block={block}
               index={index}
+              previewMode={previewMode}
               selected={block.id === selectedBlockId}
               canMoveUp={index > 0}
-              canMoveDown={index < blocks.length - 1}
+              canMoveDown={index < visibleBlocks.length - 1}
               moving={movingBlockId === block.id}
               duplicating={duplicatingBlockId === block.id}
               deleting={deletingBlockId === block.id}
@@ -1014,7 +1076,7 @@ function LessonStudioCanvas({
         </div>
       ) : (
         <div className="rounded-[1.5rem] bg-white p-8 text-center text-sm text-slate-500 ring-1 ring-dashed ring-slate-300">
-          Урок пока пустой. Добавьте первый блок через панель выше.
+{previewMode ? "В предпросмотре нет активных блоков." : "Урок пока пустой. Добавьте первый блок через панель выше."}
         </div>
       )}
     </section>
@@ -1446,10 +1508,89 @@ function LessonStudioInspector({ lesson, selectedBlock, onSaveBlock, savingBlock
   );
 }
 
+
+function LessonStudioPreviewPanel({ lesson, blocks }) {
+  const activeBlocks = blocks.filter((block) => block.is_active !== false);
+  const requiredBlocks = activeBlocks.filter((block) => block.is_required);
+  const hiddenBlocks = Math.max(blocks.length - activeBlocks.length, 0);
+  const problemBlocks = activeBlocks.filter((block) => getBlockValidationIssues(block).length > 0);
+
+  const facts = [
+    ["Активных блоков", activeBlocks.length],
+    ["Обязательных", requiredBlocks.length],
+    ["Скрыто из предпросмотра", hiddenBlocks],
+    ["Требуют заполнения", problemBlocks.length],
+  ];
+
+  return (
+    <aside
+      data-testid="lesson-studio-preview-panel"
+      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+    >
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Предпросмотр
+      </div>
+      <h2 className="mt-1 text-sm font-bold text-slate-900">
+        Вид для обучающегося
+      </h2>
+      <p className="mt-2 text-xs leading-5 text-slate-500">
+        В этом режиме скрыты админские кнопки, неактивные блоки и технические
+        настройки. Так урок будет выглядеть для слушателя.
+      </p>
+
+      <div className="mt-4 rounded-2xl bg-green-50 p-3 text-green-900 ring-1 ring-green-200">
+        <div className="text-xs font-bold uppercase tracking-wide text-green-700">
+          Урок
+        </div>
+        <div className="mt-1 text-sm font-black text-slate-900">
+          {lesson?.title || "Без названия"}
+        </div>
+      </div>
+
+      <div
+        data-testid="lesson-studio-preview-summary"
+        className="mt-4 grid grid-cols-2 gap-2"
+      >
+        {facts.map(([label, value]) => (
+          <div
+            key={label}
+            className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+          >
+            <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              {label}
+            </div>
+            <div className="mt-1 text-lg font-black text-slate-950">{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {problemBlocks.length ? (
+        <div
+          data-testid="lesson-studio-preview-issues"
+          className="mt-4 rounded-2xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 ring-1 ring-amber-200"
+        >
+          <div className="font-bold">В активных блоках есть незаполненные поля.</div>
+          <div className="mt-2">
+            Проверьте их в режиме редактора перед публикацией урока.
+          </div>
+        </div>
+      ) : (
+        <div
+          data-testid="lesson-studio-preview-ready"
+          className="mt-4 rounded-2xl bg-green-50 p-3 text-xs leading-5 text-green-900 ring-1 ring-green-200"
+        >
+          Активные блоки готовы к просмотру.
+        </div>
+      )}
+    </aside>
+  );
+}
+
 export function LessonStudioPage({ lessonId }) {
   const [lesson, setLesson] = useState(null);
   const [blocks, setBlocks] = useState([]);
   const [selectedBlockId, setSelectedBlockId] = useState("");
+  const [viewMode, setViewMode] = useState("editor");
   const [loading, setLoading] = useState(false);
   const [blocksLoading, setBlocksLoading] = useState(false);
   const [blockActionId, setBlockActionId] = useState("");
@@ -1519,6 +1660,12 @@ export function LessonStudioPage({ lessonId }) {
     () => blocks.find((block) => block.id === selectedBlockId) || null,
     [blocks, selectedBlockId]
   );
+
+  const visiblePreviewBlocks = useMemo(
+    () => blocks.filter((block) => block.is_active !== false),
+    [blocks]
+  );
+  const studioStructureBlocks = viewMode === "preview" ? visiblePreviewBlocks : blocks;
 
   const handleEditorBlocksChanged = useCallback((nextBlocks) => {
     const normalizedBlocks = Array.isArray(nextBlocks) ? nextBlocks : [];
@@ -1728,13 +1875,15 @@ export function LessonStudioPage({ lessonId }) {
         loading={loading}
         blocksLoading={blocksLoading}
         error={error}
+        mode={viewMode}
+        onModeChange={setViewMode}
         onReload={reloadStudio}
       />
 
       <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
         <LessonStudioStructurePanel
           lesson={lesson}
-          blocks={blocks}
+          blocks={studioStructureBlocks}
           selectedBlockId={selectedBlockId}
           onSelectBlock={handleSelectBlock}
         />
@@ -1745,6 +1894,7 @@ export function LessonStudioPage({ lessonId }) {
         >
           <LessonStudioCanvas
             blocks={blocks}
+            mode={viewMode}
             selectedBlockId={selectedBlockId}
             onSelectBlock={handleSelectBlock}
             onRefreshBlocks={loadBlocks}
@@ -1759,6 +1909,7 @@ export function LessonStudioPage({ lessonId }) {
             blocksLoading={blocksLoading}
           />
 
+          {viewMode === "editor" ? (
           <details
             data-testid="lesson-studio-technical-editor"
             className="mt-5 rounded-[1.5rem] bg-slate-50 p-4 ring-1 ring-slate-200"
@@ -1786,14 +1937,19 @@ export function LessonStudioPage({ lessonId }) {
               />
             </div>
           </details>
+          ) : null}
         </section>
 
+        {viewMode === "preview" ? (
+          <LessonStudioPreviewPanel lesson={lesson} blocks={blocks} />
+        ) : (
         <LessonStudioInspector
           lesson={lesson}
           selectedBlock={selectedBlock}
           onSaveBlock={handleInspectorSaveBlock}
           savingBlockId={blockActionId}
         />
+        )}
       </div>
     </main>
   );

@@ -25,6 +25,29 @@ def require_contains(relative_path: str, fragments: list[str]) -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+def require_not_contains_between(
+    relative_path: str,
+    start_marker: str,
+    end_marker: str,
+    fragments: list[str],
+) -> None:
+    text = read_text(relative_path)
+
+    if start_marker not in text:
+        raise SystemExit(f"Start marker not found in {relative_path}: {start_marker}")
+
+    start = text.index(start_marker)
+    end = text.index(end_marker, start) if end_marker in text[start:] else len(text)
+    segment = text[start:end]
+
+    forbidden = [fragment for fragment in fragments if fragment in segment]
+
+    if forbidden:
+        print(f"{relative_path} has forbidden fragments in {start_marker}:")
+        for fragment in forbidden:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
 
 def main() -> None:
     require_contains(
@@ -90,6 +113,34 @@ def main() -> None:
             'data-testid="lesson-studio-structure-stats"',
             'const problemBlocks = blocks.filter((block) => getBlockValidationIssues(block).length > 0);',
             "function LessonStudioCanvas",
+            'Вид для обучающегося',
+            'В предпросмотре нет активных блоков.',
+            'blocks={studioStructureBlocks}',
+            'const studioStructureBlocks = viewMode === "preview" ? visiblePreviewBlocks : blocks;',
+            '<LessonStudioPreviewPanel lesson={lesson} blocks={blocks} />',
+            'viewMode === "preview" ? (',
+            '!previewMode && issues.length',
+            'className={previewMode ? "hidden" : "mt-4 flex flex-wrap items-center gap-2"}',
+            'previewMode={previewMode}',
+            'Административные действия скрыты',
+            'data-testid="lesson-studio-preview-banner"',
+            'blocks.filter((block) => block.is_active !== false)',
+            'const visibleBlocks = previewMode',
+            'const previewMode = mode === "preview";',
+            'mode = "editor"',
+            'function LessonStudioCanvas({',
+            'data-testid="lesson-studio-preview-issues"',
+            'data-testid="lesson-studio-preview-ready"',
+            'data-testid="lesson-studio-preview-summary"',
+            'data-testid="lesson-studio-preview-panel"',
+            'function LessonStudioPreviewPanel',
+            'previewMode ? "Предпросмотр" : "Редактор"',
+            'data-testid="lesson-studio-preview-mode-button"',
+            'data-testid="lesson-studio-editor-mode-button"',
+            'data-testid="lesson-studio-mode-switcher"',
+            'onModeChange={setViewMode}',
+            'mode={viewMode}',
+            'const [viewMode, setViewMode] = useState("editor");',
             "function LessonCanvasBlock",
             'Удалить',
             'Дублировать',
@@ -197,6 +248,13 @@ def main() -> None:
             'typeof onBlocksChanged === "function"',
             "onBlocksChanged(nextBlocks)",
         ],
+    )
+
+    require_not_contains_between(
+        "frontend/src/pages/LessonStudioPage.jsx",
+        "function LessonStudioStructurePanel(",
+        "\n\nfunction LessonCanvasBlock",
+        ["visibleBlocks"],
     )
 
     print("Lesson Studio page smoke passed")
