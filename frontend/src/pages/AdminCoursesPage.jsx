@@ -3875,8 +3875,8 @@ export function AdminCoursesPage() {
       />
 
       <SectionCard
-        title={RU.listTitle}
-        subtitle={RU.listSubtitle}
+        title="Подробный конструктор курса"
+        subtitle="Раскройте блок, чтобы редактировать карточку курса, модули, уроки и материалы. Основной быстрый контроль теперь вынесен в «Реестр программ» выше."
       >
         {loading ? (
           <LoadingBlock text={RU.loadingPrograms} />
@@ -3892,8 +3892,23 @@ export function AdminCoursesPage() {
             showReset={hasActiveFilters}
           />
         ) : (
-          <div className="space-y-4">
-            {courses.map((course) => (
+          <details
+            data-testid="admin-courses-detailed-builder"
+            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <summary className="cursor-pointer select-none text-sm font-semibold text-slate-900">
+              Открыть подробный конструктор курса: структура, модули, уроки и материалы
+              <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-slate-500 ring-1 ring-slate-200">
+                {courses.length}
+              </span>
+            </summary>
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Этот режим нужен для глубокого редактирования. Для быстрого контроля используйте таблицу «Реестр программ» выше.
+            </p>
+
+            <div className="mt-4 space-y-4">
+              {courses.map((course) => (
               <CourseCard
                 key={course.id}
                 course={course}
@@ -3939,7 +3954,8 @@ export function AdminCoursesPage() {
                 onLessonDelete={handleLessonDelete}
               />
             ))}
-          </div>
+            </div>
+          </details>
         )}
       </SectionCard>
     </div>
