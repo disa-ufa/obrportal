@@ -234,6 +234,159 @@ function getBlockTextPreview(block) {
   return value || "Контент блока пока не заполнен.";
 }
 
+function getBlockPreviewMeta(block) {
+  const type = `${block?.block_type || "rich_text"}`.toLowerCase();
+
+  const metaByType = {
+    rich_text: {
+      icon: "TXT",
+      kicker: "Учебный текст",
+      description: "Основной материал урока для чтения.",
+      surfaceClass: "bg-slate-50 text-slate-700 ring-slate-200",
+    },
+    text: {
+      icon: "TXT",
+      kicker: "Учебный текст",
+      description: "Основной материал урока для чтения.",
+      surfaceClass: "bg-slate-50 text-slate-700 ring-slate-200",
+    },
+    video: {
+      icon: "▶",
+      kicker: "Предпросмотр видео",
+      description: "Видео-блок должен содержать ссылку на ролик или запись урока.",
+      surfaceClass: "bg-green-50 text-green-900 ring-green-200",
+    },
+    file_link: {
+      icon: "↗",
+      kicker: "Материал для перехода",
+      description: "Ссылка на файл, презентацию, документ или внешний ресурс.",
+      surfaceClass: "bg-blue-50 text-blue-900 ring-blue-200",
+    },
+    file: {
+      icon: "↗",
+      kicker: "Материал для перехода",
+      description: "Ссылка на файл, презентацию, документ или внешний ресурс.",
+      surfaceClass: "bg-blue-50 text-blue-900 ring-blue-200",
+    },
+    link: {
+      icon: "↗",
+      kicker: "Материал для перехода",
+      description: "Ссылка на файл, презентацию, документ или внешний ресурс.",
+      surfaceClass: "bg-blue-50 text-blue-900 ring-blue-200",
+    },
+    quiz: {
+      icon: "?",
+      kicker: "Вопрос для самопроверки",
+      description: "Тестовый блок помогает проверить понимание материала.",
+      surfaceClass: "bg-amber-50 text-amber-900 ring-amber-200",
+    },
+    assignment: {
+      icon: "✓",
+      kicker: "Практическое задание",
+      description: "Задание фиксирует, что должен выполнить слушатель.",
+      surfaceClass: "bg-red-50 text-red-900 ring-red-200",
+    },
+    callout: {
+      icon: "!",
+      kicker: "Важное примечание",
+      description: "Врезка выделяет ключевую мысль, предупреждение или подсказку.",
+      surfaceClass: "bg-violet-50 text-violet-900 ring-violet-200",
+    },
+  };
+
+  return metaByType[type] || metaByType.rich_text;
+}
+
+function LessonCanvasTypePreview({ block, preview }) {
+  const type = `${block?.block_type || "rich_text"}`.toLowerCase();
+  const meta = getBlockPreviewMeta(block);
+  const isEmpty = preview === "Контент блока пока не заполнен.";
+
+  const previewValue = isEmpty ? "Заполните содержимое справа в инспекторе." : preview;
+
+  return (
+    <div
+      data-testid="lesson-studio-canvas-type-preview"
+      className={`mt-4 rounded-2xl p-4 text-sm leading-6 ring-1 ${meta.surfaceClass}`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-xs font-black shadow-sm ring-1 ring-black/5">
+          {meta.icon}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-bold uppercase tracking-wide opacity-75">
+            {meta.kicker}
+          </div>
+          <div className="mt-1 text-xs leading-5 opacity-80">
+            {meta.description}
+          </div>
+        </div>
+      </div>
+
+      {type === "video" ? (
+        <div
+          data-testid="lesson-studio-video-preview"
+          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-16 items-center justify-center rounded-xl bg-slate-900 text-white">
+              ▶
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-bold">Видео для просмотра</div>
+              <div className="mt-1 break-words text-xs opacity-80">{previewValue}</div>
+            </div>
+          </div>
+        </div>
+      ) : type === "file_link" || type === "file" || type === "link" ? (
+        <div
+          data-testid="lesson-studio-link-preview"
+          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+        >
+          <div className="text-sm font-bold">Открыть материал</div>
+          <div className="mt-1 break-words text-xs opacity-80">{previewValue}</div>
+        </div>
+      ) : type === "quiz" ? (
+        <div
+          data-testid="lesson-studio-quiz-preview"
+          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+        >
+          <div className="text-sm font-bold">Вопрос</div>
+          <div className="mt-1 text-sm">{previewValue}</div>
+          <div className="mt-3 rounded-xl bg-amber-100/70 px-3 py-2 text-xs font-semibold">
+            Варианты ответов добавим следующим этапом.
+          </div>
+        </div>
+      ) : type === "assignment" ? (
+        <div
+          data-testid="lesson-studio-assignment-preview"
+          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+        >
+          <div className="text-sm font-bold">Что нужно сделать</div>
+          <div className="mt-1 text-sm">{previewValue}</div>
+        </div>
+      ) : type === "callout" ? (
+        <div
+          data-testid="lesson-studio-callout-preview"
+          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+        >
+          <div className="text-sm font-bold">Важно</div>
+          <div className="mt-1 text-sm">{previewValue}</div>
+        </div>
+      ) : (
+        <div
+          data-testid="lesson-studio-text-preview"
+          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+        >
+          {previewValue}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function getBlockValidationIssues(block) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
   const content = safeParseJson(block?.content_json);
@@ -451,9 +604,7 @@ function LessonCanvasBlock({ block, index, selected, onSelect }) {
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
-          {preview}
-        </div>
+        <LessonCanvasTypePreview block={block} preview={preview} />
 
         {issues.length ? (
           <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
