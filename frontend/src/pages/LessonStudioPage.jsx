@@ -362,14 +362,27 @@ function LessonCanvasBlock({ block, index, selected, onSelect }) {
   );
 }
 
-function LessonStudioCanvas({ blocks, selectedBlockId, onSelectBlock }) {
+function LessonStudioCanvas({ blocks, selectedBlockId, onSelectBlock, onRefreshBlocks, blocksLoading }) {
   return (
     <section data-testid="lesson-studio-visual-canvas" className="space-y-3">
       <div className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100">
-        <div className="font-bold">Визуальное полотно урока</div>
-        <div className="mt-1">
-          Первый canvas-first слой: блоки отображаются как учебный материал.
-          Редактирование пока остаётся в техническом редакторе ниже.
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="font-bold">Визуальное полотно урока</div>
+            <div className="mt-1">
+              Первый canvas-first слой: блоки отображаются как учебный материал.
+              Редактирование пока остаётся в техническом редакторе ниже.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onRefreshBlocks}
+            disabled={blocksLoading}
+            className="rounded-full bg-blue-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {blocksLoading ? "Обновляем..." : "Обновить полотно"}
+          </button>
         </div>
       </div>
 
@@ -537,6 +550,19 @@ export function LessonStudioPage({ lessonId }) {
     [blocks, selectedBlockId]
   );
 
+  const handleEditorBlocksChanged = useCallback((nextBlocks) => {
+    const normalizedBlocks = Array.isArray(nextBlocks) ? nextBlocks : [];
+
+    setBlocks(normalizedBlocks);
+    setSelectedBlockId((current) => {
+      if (current && normalizedBlocks.some((block) => block.id === current)) {
+        return current;
+      }
+
+      return normalizedBlocks[0]?.id || "";
+    });
+  }, []);
+
   return (
     <main data-testid="lesson-studio-page" className="space-y-5">
       <LessonStudioTopbar
@@ -564,6 +590,8 @@ export function LessonStudioPage({ lessonId }) {
             blocks={blocks}
             selectedBlockId={selectedBlockId}
             onSelectBlock={setSelectedBlockId}
+            onRefreshBlocks={loadBlocks}
+            blocksLoading={blocksLoading}
           />
 
           <details
@@ -579,7 +607,10 @@ export function LessonStudioPage({ lessonId }) {
             </p>
 
             <div className="mt-4">
-              <LessonBlocksEditor lessonId={lessonId} />
+              <LessonBlocksEditor
+                lessonId={lessonId}
+                onBlocksChanged={handleEditorBlocksChanged}
+              />
             </div>
           </details>
         </section>

@@ -793,7 +793,7 @@ function LessonBlockForm({ values, onChange, prefix }) {
   );
 }
 
-export function LessonBlocksEditor({ lessonId }) {
+export function LessonBlocksEditor({ lessonId, onBlocksChanged }) {
   const [blocks, setBlocks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -806,6 +806,11 @@ export function LessonBlocksEditor({ lessonId }) {
   const loadBlocks = useCallback(async () => {
     if (!lessonId) {
       setBlocks([]);
+
+      if (typeof onBlocksChanged === "function") {
+        onBlocksChanged([]);
+      }
+
       return;
     }
 
@@ -814,13 +819,19 @@ export function LessonBlocksEditor({ lessonId }) {
 
     try {
       const data = await getAdminLessonBlocks(lessonId);
-      setBlocks(Array.isArray(data) ? data : []);
+      const nextBlocks = Array.isArray(data) ? data : [];
+
+      setBlocks(nextBlocks);
+
+      if (typeof onBlocksChanged === "function") {
+        onBlocksChanged(nextBlocks);
+      }
     } catch (err) {
       setActionError(formatLessonBlocksError(err, "Не удалось загрузить блоки урока"));
     } finally {
       setLoading(false);
     }
-  }, [lessonId]);
+  }, [lessonId, onBlocksChanged]);
 
   useEffect(() => {
     loadBlocks();
@@ -1070,13 +1081,13 @@ export function LessonBlocksEditor({ lessonId }) {
       </div>
 
       {actionError ? (
-        <Alert className="mt-4" variant="error">
+        <Alert className="mt-4" title="Ошибка" tone="red">
           {actionError}
         </Alert>
       ) : null}
 
       {successMessage ? (
-        <Alert className="mt-4" variant="success">
+        <Alert className="mt-4" title="Готово" tone="green">
           {successMessage}
         </Alert>
       ) : null}
