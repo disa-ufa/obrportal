@@ -157,7 +157,7 @@ def main() -> None:
             'buildDuplicateStudioBlockPayload',
             'deleteAdminLessonBlock',
             'Не удалось изменить порядок блоков',
-            'canMoveDown={index < blocks.length - 1}',
+            'canMoveDown={index < visibleBlocks.length - 1}',
             'canMoveUp={index > 0}',
             'data-testid="lesson-studio-move-down-button"',
             'data-testid="lesson-studio-move-up-button"',
