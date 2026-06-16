@@ -56,6 +56,12 @@ def main() -> None:
             'data-testid="lesson-studio-inspector"',
             'data-testid="lesson-studio-inspector-form"',
             'data-testid="lesson-studio-technical-editor"',
+            'data-testid="lesson-studio-advanced-technical-body"',
+            'data-testid="lesson-studio-advanced-technical-summary"',
+            'Основное наполнение урока теперь выполняется на визуальном полотне',
+            'Используйте только для ручной диагностики и резервного редактирования',
+            'Резервный редактор',
+            'Расширенные технические настройки',
             "function LessonStudioTopbar",
             "function LessonStudioStructurePanel",
             "function LessonStudioCanvas",
@@ -117,7 +123,7 @@ def main() -> None:
             "onRefreshBlocks={loadBlocks}",
             "onSaveBlock={handleInspectorSaveBlock}",
             "Обновить полотно",
-            "Технический редактор блоков",
+            
             "Сохранить блок",
         ],
     )

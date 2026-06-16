@@ -463,8 +463,8 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, onR
           </h1>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Отдельное рабочее место автора урока. Теперь студия показывает структуру
-            и визуальное полотно блоков, а технический редактор остаётся ниже для действий.
+            Отдельное рабочее место автора урока: структура слева, визуальное полотно
+            в центре, быстрые действия на карточках и редактирование выбранного блока справа.
           </p>
         </div>
 
@@ -1501,15 +1501,23 @@ export function LessonStudioPage({ lessonId }) {
             data-testid="lesson-studio-technical-editor"
             className="mt-5 rounded-[1.5rem] bg-slate-50 p-4 ring-1 ring-slate-200"
           >
-            <summary className="cursor-pointer text-sm font-bold text-slate-900">
-              Технический редактор блоков
+            <summary
+              data-testid="lesson-studio-advanced-technical-summary"
+              className="cursor-pointer rounded-2xl px-1 py-1 text-sm font-bold text-slate-900 transition hover:text-blue-700"
+            >
+              <span className="inline-flex flex-wrap items-center gap-2">
+                <span>Расширенные технические настройки</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  Резервный редактор
+                </span>
+              </span>
             </summary>
             <p className="mt-2 text-xs leading-5 text-slate-500">
-              Временный рабочий редактор для создания, изменения и сортировки блоков.
-              После стабилизации canvas-first режима этот блок будет заменён инспектором.
+              Используйте только для ручной диагностики и резервного редактирования.
+              Основное наполнение урока теперь выполняется на визуальном полотне и в инспекторе справа.
             </p>
 
-            <div className="mt-4">
+            <div data-testid="lesson-studio-advanced-technical-body" className="mt-4">
               <LessonBlocksEditor
                 lessonId={lessonId}
                 onBlocksChanged={handleEditorBlocksChanged}
