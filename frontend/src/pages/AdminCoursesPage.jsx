@@ -2076,10 +2076,21 @@ function AdminCourseCatalogDiagnostics({
 }) {
   return (
     <SectionCard
-      title="Диагностика административного каталога курсов"
-      subtitle="Контроль активности, структуры модулей и уроков, обязательных материалов, публичного каталога, назначений и итоговых документов"
+      title="Проверка качества каталога"
+      subtitle="Служебная диагностика структуры курсов. Раскрывайте при проверке данных, публикации или поиске проблем."
     >
-      <div data-testid="admin-course-catalog-diagnostics" className="space-y-5">
+      <details
+        data-testid="admin-course-catalog-diagnostics"
+        className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+      >
+        <summary className="flex cursor-pointer select-none flex-wrap items-center justify-between gap-3 text-sm font-semibold text-slate-900">
+          <span>Открыть диагностику каталога</span>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+            Пунктов диагностики: {diagnostics.length}
+          </span>
+        </summary>
+
+        <div className="mt-4 space-y-5">
         <div
           data-testid="admin-course-catalog-summary"
           className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
@@ -2248,7 +2259,8 @@ function AdminCourseCatalogDiagnostics({
             Аудит курсов
           </Link>
         </div>
-      </div>
+        </div>
+      </details>
     </SectionCard>
   );
 }
@@ -2366,7 +2378,7 @@ function CoursesRegistryTable({
                           href={`#course-${course.id}`}
                           className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
                         >
-                          Детали
+                          Конструктор
                         </a>
 
                         <button
