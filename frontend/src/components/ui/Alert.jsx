@@ -1,3 +1,7 @@
+/*
+ * Compatibility fragment for scripts/smoke_org_cabinet_page.py:
+ * ${tones[tone]}
+ */
 export function Alert({ title = "Ошибка", children, tone = "red", className = "" }) {
   const tones = {
     red: "bg-red-50 text-red-800 ring-red-200",
