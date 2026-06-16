@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  createAdminLessonBlock,
   getAdminCourseLessonDetail,
   getAdminLessonBlocks,
   updateAdminLessonBlock,
@@ -13,6 +14,107 @@ function formatLessonStudioError(err, fallback) {
 
   return [status, message || fallback].filter(Boolean).join(" ");
 }
+
+const STUDIO_QUICK_BLOCK_TEMPLATES = [
+  {
+    key: "rich_text",
+    label: "Текст",
+    hint: "Короткий учебный материал",
+    tone: "blue",
+    values: {
+      block_type: "rich_text",
+      title: "Текстовый блок",
+      content_json: { text: "Добавьте текст урока." },
+      is_required: true,
+      is_active: true,
+    },
+  },
+  {
+    key: "video",
+    label: "Видео",
+    hint: "Ссылка на видеоурок",
+    tone: "green",
+    values: {
+      block_type: "video",
+      title: "Видео",
+      content_json: { url: "" },
+      is_required: true,
+      is_active: true,
+    },
+  },
+  {
+    key: "file_link",
+    label: "Файл/ссылка",
+    hint: "Материал, PDF или презентация",
+    tone: "blue",
+    values: {
+      block_type: "file_link",
+      title: "Файл или ссылка",
+      content_json: { url: "" },
+      is_required: false,
+      is_active: true,
+    },
+  },
+  {
+    key: "quiz",
+    label: "Тест",
+    hint: "Вопрос с вариантами",
+    tone: "amber",
+    values: {
+      block_type: "quiz",
+      title: "Тест",
+      content_json: { question: "Введите вопрос." },
+      is_required: true,
+      is_active: true,
+    },
+  },
+  {
+    key: "assignment",
+    label: "Задание",
+    hint: "Практическая работа",
+    tone: "red",
+    values: {
+      block_type: "assignment",
+      title: "Задание",
+      content_json: { description: "Опишите задание для слушателя." },
+      is_required: true,
+      is_active: true,
+    },
+  },
+  {
+    key: "callout",
+    label: "Врезка",
+    hint: "Важное примечание",
+    tone: "violet",
+    values: {
+      block_type: "callout",
+      title: "Важно",
+      content_json: { text: "Добавьте важное примечание." },
+      is_required: false,
+      is_active: true,
+    },
+  },
+];
+
+function getNextStudioBlockPosition(blocks) {
+  const positions = blocks
+    .map((block) => Number(block.position))
+    .filter((position) => Number.isFinite(position));
+
+  return positions.length ? Math.max(...positions) + 1 : blocks.length + 1;
+}
+
+function buildStudioQuickBlockPayload(template, position) {
+  return {
+    block_type: template.values.block_type || "rich_text",
+    title: template.values.title || null,
+    content_json: template.values.content_json || {},
+    position,
+    is_required: Boolean(template.values.is_required),
+    is_active: template.values.is_active !== false,
+  };
+}
+
 
 function safeParseJson(value, fallback = {}) {
   if (!value) {
@@ -363,7 +465,79 @@ function LessonCanvasBlock({ block, index, selected, onSelect }) {
   );
 }
 
-function LessonStudioCanvas({ blocks, selectedBlockId, onSelectBlock, onRefreshBlocks, blocksLoading }) {
+function LessonStudioQuickAddPanel({ templates, onCreateBlock, creatingTemplateKey, disabled }) {
+  return (
+    <section
+      data-testid="lesson-studio-quick-add"
+      className="rounded-[1.5rem] bg-white p-4 ring-1 ring-blue-100"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Stage 83.2.5 · Quick add
+          </div>
+          <h3 className="mt-1 text-sm font-bold text-slate-900">
+            Добавить блок
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Создайте типовой блок прямо на полотне. После добавления он сразу
+            откроется в инспекторе справа.
+          </p>
+        </div>
+
+        <div className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-200">
+          Быстрое наполнение
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {templates.map((template) => {
+          const creating = creatingTemplateKey === template.key;
+
+          return (
+            <button
+              key={template.key}
+              type="button"
+              data-testid="lesson-studio-quick-add-button"
+              onClick={() => onCreateBlock(template)}
+              disabled={disabled || creating}
+              className="rounded-2xl bg-slate-50 p-4 text-left ring-1 ring-slate-200 transition hover:bg-white hover:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-bold text-slate-900">
+                  + {template.label}
+                </div>
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  {getLessonBlockTypeLabel(template.values.block_type)}
+                </span>
+              </div>
+
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                {template.hint}
+              </p>
+
+              {creating ? (
+                <div className="mt-3 text-xs font-semibold text-blue-600">
+                  Создаём блок...
+                </div>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function LessonStudioCanvas({
+  blocks,
+  selectedBlockId,
+  onSelectBlock,
+  onRefreshBlocks,
+  onCreateBlock,
+  creatingTemplateKey,
+  blocksLoading,
+}) {
   return (
     <section data-testid="lesson-studio-visual-canvas" className="space-y-3">
       <div className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100">
@@ -371,11 +545,10 @@ function LessonStudioCanvas({ blocks, selectedBlockId, onSelectBlock, onRefreshB
           <div>
             <div className="font-bold">Визуальное полотно урока</div>
             <div className="mt-1">
-              Первый canvas-first слой: блоки отображаются как учебный материал.
-              Редактирование пока остаётся в техническом редакторе ниже.
+              Блоки отображаются как учебный материал. Добавление и базовое
+              редактирование уже доступны прямо в студии.
             </div>
           </div>
-
           <button
             type="button"
             onClick={onRefreshBlocks}
@@ -386,6 +559,13 @@ function LessonStudioCanvas({ blocks, selectedBlockId, onSelectBlock, onRefreshB
           </button>
         </div>
       </div>
+
+      <LessonStudioQuickAddPanel
+        templates={STUDIO_QUICK_BLOCK_TEMPLATES}
+        onCreateBlock={onCreateBlock}
+        creatingTemplateKey={creatingTemplateKey}
+        disabled={blocksLoading}
+      />
 
       {blocks.length ? (
         <div className="space-y-3">
@@ -401,7 +581,7 @@ function LessonStudioCanvas({ blocks, selectedBlockId, onSelectBlock, onRefreshB
         </div>
       ) : (
         <div className="rounded-[1.5rem] bg-white p-8 text-center text-sm text-slate-500 ring-1 ring-dashed ring-slate-300">
-          Урок пока пустой. Используйте технический редактор ниже, чтобы добавить первый блок.
+          Урок пока пустой. Добавьте первый блок через панель выше.
         </div>
       )}
     </section>
@@ -657,6 +837,7 @@ export function LessonStudioPage({ lessonId }) {
   const [loading, setLoading] = useState(false);
   const [blocksLoading, setBlocksLoading] = useState(false);
   const [blockActionId, setBlockActionId] = useState("");
+  const [creatingTemplateKey, setCreatingTemplateKey] = useState("");
   const [error, setError] = useState("");
 
   const loadLesson = useCallback(async () => {
@@ -734,6 +915,37 @@ export function LessonStudioPage({ lessonId }) {
     });
   }, []);
 
+
+  const handleQuickCreateBlock = useCallback(
+    async (template) => {
+      if (!lessonId || !template?.values) {
+        setError("Не удалось определить урок или тип блока.");
+        return;
+      }
+
+      setCreatingTemplateKey(template.key);
+      setError("");
+
+      try {
+        const position = getNextStudioBlockPosition(blocks);
+        const createdBlock = await createAdminLessonBlock(
+          lessonId,
+          buildStudioQuickBlockPayload(template, position)
+        );
+
+        await loadBlocks();
+
+        if (createdBlock?.id) {
+          setSelectedBlockId(createdBlock.id);
+        }
+      } catch (err) {
+        setError(formatLessonStudioError(err, "Не удалось добавить блок"));
+      } finally {
+        setCreatingTemplateKey("");
+      }
+    },
+    [blocks, lessonId, loadBlocks]
+  );
   const handleInspectorSaveBlock = useCallback(
     async (block, values) => {
       if (!block?.id) {
@@ -784,6 +996,8 @@ export function LessonStudioPage({ lessonId }) {
             selectedBlockId={selectedBlockId}
             onSelectBlock={setSelectedBlockId}
             onRefreshBlocks={loadBlocks}
+            onCreateBlock={handleQuickCreateBlock}
+            creatingTemplateKey={creatingTemplateKey}
             blocksLoading={blocksLoading}
           />
 
