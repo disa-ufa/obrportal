@@ -562,18 +562,34 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, onR
 }
 
 function LessonStudioStructurePanel({ lesson, blocks, selectedBlockId, onSelectBlock }) {
+  const requiredBlocks = blocks.filter((block) => block.is_required).length;
+  const activeBlocks = blocks.filter((block) => block.is_active !== false).length;
+  const problemBlocks = blocks.filter((block) => getBlockValidationIssues(block).length > 0);
+  const readyBlocks = Math.max(blocks.length - problemBlocks.length, 0);
+
   return (
     <aside
       data-testid="lesson-studio-structure"
-      className="rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
     >
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        Структура
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Структура
+          </div>
+          <h2 className="mt-1 text-sm font-bold text-slate-900">
+            Навигация урока
+          </h2>
+        </div>
+
+        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+          {blocks.length}
+        </span>
       </div>
-      <h2 className="mt-1 text-sm font-bold text-slate-900">Навигация урока</h2>
+
       <p className="mt-2 text-xs leading-5 text-slate-500">
-        Реальная карта блоков урока. Нажмите на блок, чтобы выделить его на полотне
-        и увидеть краткие свойства в инспекторе.
+        Компактная карта урока. Нажмите на блок — студия выделит его,
+        плавно перейдёт к карточке на полотне и покажет свойства справа.
       </p>
 
       <div className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
@@ -583,40 +599,117 @@ function LessonStudioStructurePanel({ lesson, blocks, selectedBlockId, onSelectB
         </div>
       </div>
 
+      <div
+        data-testid="lesson-studio-structure-stats"
+        className="mt-4 grid grid-cols-2 gap-2"
+      >
+        <div className="rounded-2xl bg-blue-50 p-3 ring-1 ring-blue-100">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-blue-600">
+            Всего
+          </div>
+          <div className="mt-1 text-lg font-black text-blue-950">{blocks.length}</div>
+        </div>
+
+        <div className="rounded-2xl bg-green-50 p-3 ring-1 ring-green-100">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-green-700">
+            Готово
+          </div>
+          <div className="mt-1 text-lg font-black text-green-950">{readyBlocks}</div>
+        </div>
+
+        <div className="rounded-2xl bg-amber-50 p-3 ring-1 ring-amber-100">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700">
+            Обязательные
+          </div>
+          <div className="mt-1 text-lg font-black text-amber-950">{requiredBlocks}</div>
+        </div>
+
+        <div className="rounded-2xl bg-red-50 p-3 ring-1 ring-red-100">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-red-700">
+            Незаполненных
+          </div>
+          <div className="mt-1 text-lg font-black text-red-950">{problemBlocks.length}</div>
+        </div>
+      </div>
+
+      {activeBlocks !== blocks.length ? (
+        <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-xs leading-5 text-slate-600 ring-1 ring-slate-200">
+          Активных блоков: <span className="font-bold text-slate-900">{activeBlocks}</span>
+          {" "}из <span className="font-bold text-slate-900">{blocks.length}</span>.
+        </div>
+      ) : null}
+
       <div className="mt-4 space-y-2">
         {blocks.length ? (
           blocks.map((block, index) => {
             const selected = block.id === selectedBlockId;
             const issues = getBlockValidationIssues(block);
+            const hasIssues = issues.length > 0;
 
             return (
               <button
                 key={block.id}
                 type="button"
+                data-testid="lesson-studio-structure-block"
                 onClick={() => onSelectBlock(block.id)}
                 className={`w-full rounded-2xl p-3 text-left ring-1 transition ${
                   selected
-                    ? "bg-blue-50 ring-blue-200"
-                    : "bg-white ring-slate-200 hover:bg-slate-50"
+                    ? "bg-blue-50 ring-blue-300"
+                    : hasIssues
+                      ? "bg-amber-50/70 ring-amber-200 hover:bg-amber-50"
+                      : "bg-white ring-slate-200 hover:bg-slate-50"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     #{block.position || index + 1} · {getLessonBlockTypeLabel(block.block_type)}
                   </span>
-                  {issues.length ? (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-200">
+
+                  {hasIssues ? (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-800 ring-1 ring-amber-200">
                       !
                     </span>
                   ) : (
-                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700 ring-1 ring-green-200">
+                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-black text-green-700 ring-1 ring-green-200">
                       ✓
                     </span>
                   )}
                 </div>
-                <div className="mt-1 text-sm font-bold text-slate-900">
+
+                <div className="mt-1 truncate text-sm font-bold text-slate-900">
                   {getBlockDisplayTitle(block, index)}
                 </div>
+
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {block.is_required ? (
+                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700 ring-1 ring-green-100">
+                      обязательный
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                      доп.
+                    </span>
+                  )}
+
+                  {block.is_active === false ? (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                      скрыт
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">
+                      активен
+                    </span>
+                  )}
+                </div>
+
+                {hasIssues ? (
+                  <div
+                    data-testid="lesson-studio-structure-block-issues"
+                    className="mt-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs leading-5 text-amber-900 ring-1 ring-amber-100"
+                  >
+                    Нужно: {issues.join(", ")}
+                  </div>
+                ) : null}
               </button>
             );
           })
@@ -1343,6 +1436,23 @@ export function LessonStudioPage({ lessonId }) {
   }, []);
 
 
+
+  const handleSelectBlock = useCallback((blockId) => {
+    setSelectedBlockId(blockId);
+
+    if (typeof document === "undefined" || !blockId) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      const target = document.getElementById(`studio-block-${blockId}`);
+
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 0);
+  }, []);
+
   const handleQuickCreateBlock = useCallback(
     async (template) => {
       if (!lessonId || !template?.values) {
@@ -1528,7 +1638,7 @@ export function LessonStudioPage({ lessonId }) {
           lesson={lesson}
           blocks={blocks}
           selectedBlockId={selectedBlockId}
-          onSelectBlock={setSelectedBlockId}
+          onSelectBlock={handleSelectBlock}
         />
 
         <section
@@ -1538,7 +1648,7 @@ export function LessonStudioPage({ lessonId }) {
           <LessonStudioCanvas
             blocks={blocks}
             selectedBlockId={selectedBlockId}
-            onSelectBlock={setSelectedBlockId}
+            onSelectBlock={handleSelectBlock}
             onRefreshBlocks={loadBlocks}
             onCreateBlock={handleQuickCreateBlock}
             onMoveBlock={handleMoveBlock}
