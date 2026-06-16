@@ -1,8 +1,6 @@
 import { lazy, Suspense } from "react";
-import {
-  getAdminLessonStudioRouteParams,
-  getAdminPageFromPathname,
-} from "../utils/adminRoutes";
+import { getAdminPageFromPathname } from "../utils/adminRoutes";
+import { getAdminLessonStudioRouteParams } from "../utils/adminRoutes";
 
 function lazyNamed(loader, exportName) {
   return lazy(() =>
