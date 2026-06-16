@@ -102,10 +102,31 @@ export const ADMIN_ROUTE_PAGE_MAP = ADMIN_ROUTE_ITEMS.reduce((acc, item) => {
   return acc;
 }, {});
 
+export function getAdminLessonStudioRouteParams(pathname) {
+  const match = String(pathname || "").match(/^\/admin\/lessons\/([^/]+)\/studio\/?$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    lessonId: decodeURIComponent(match[1]),
+  };
+}
+
 export function getAdminPageFromPathname(pathname) {
+  if (getAdminLessonStudioRouteParams(pathname)) {
+    return "courses";
+  }
+
   return ADMIN_ROUTE_PAGE_MAP[pathname] || null;
 }
 
 export function getAdminPathForPage(pageKey) {
   return ADMIN_ROUTE_ITEMS.find((item) => item.key === pageKey)?.path || "/admin";
+}
+
+
+export function buildAdminLessonStudioPath(lessonId) {
+  return `/admin/lessons/${encodeURIComponent(lessonId)}/studio`;
 }

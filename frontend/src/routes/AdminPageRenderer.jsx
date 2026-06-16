@@ -1,5 +1,8 @@
 import { lazy, Suspense } from "react";
-import { getAdminPageFromPathname } from "../utils/adminRoutes";
+import {
+  getAdminLessonStudioRouteParams,
+  getAdminPageFromPathname,
+} from "../utils/adminRoutes";
 
 function lazyNamed(loader, exportName) {
   return lazy(() =>
@@ -12,6 +15,7 @@ function lazyNamed(loader, exportName) {
 const AuditPage = lazyNamed(() => import("../pages/AuditPage"), "AuditPage");
 const DashboardPage = lazyNamed(() => import("../pages/DashboardPage"), "DashboardPage");
 const AdminCoursesPage = lazyNamed(() => import("../pages/AdminCoursesPage"), "AdminCoursesPage");
+const LessonStudioPage = lazyNamed(() => import("../pages/LessonStudioPage"), "LessonStudioPage");
 const AdminEnrollmentsPage = lazyNamed(() => import("../pages/AdminEnrollmentsPage"), "AdminEnrollmentsPage");
 const DocumentsPage = lazyNamed(() => import("../pages/DocumentsPage"), "DocumentsPage");
 const GroupsPage = lazyNamed(() => import("../pages/GroupsPage"), "GroupsPage");
@@ -110,10 +114,13 @@ export function AdminPageRenderer({
   handleApplyAuditFilters,
 }) {
   const page = getAdminPageFromPathname(locationPathname) || currentPage;
+  const lessonStudioRouteParams = getAdminLessonStudioRouteParams(locationPathname);
 
   let content;
 
-  if (page === "courses") {
+  if (lessonStudioRouteParams) {
+    content = <LessonStudioPage lessonId={lessonStudioRouteParams.lessonId} />;
+  } else if (page === "courses") {
     content = <AdminCoursesPage onRefreshCourses={refreshAdminCourses} />;
   } else if (page === "enrollments") {
     content = <AdminEnrollmentsPage onRefreshEnrollments={refreshAdminEnrollments} />;

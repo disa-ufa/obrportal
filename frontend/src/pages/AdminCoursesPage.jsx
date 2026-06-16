@@ -22,6 +22,7 @@ import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import { AdminMetricCard } from "../components/admin/AdminWorkCenter";
 import { LessonBlocksEditor } from "../components/admin/LessonBlocksEditor";
+import { buildAdminLessonStudioPath } from "../utils/adminRoutes";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
@@ -2697,6 +2698,14 @@ function CourseCard({
                                           )}
 
                                           <div className="mt-4 flex flex-wrap gap-3">
+                                            <a
+                                              data-testid={`lesson-studio-open-${lesson.id}`}
+                                              href={buildAdminLessonStudioPath(lesson.id)}
+                                              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                                            >
+                                              Открыть студию урока
+                                            </a>
+
                                             <ActionButton
                                               type="button"
                                               tone="blue"
