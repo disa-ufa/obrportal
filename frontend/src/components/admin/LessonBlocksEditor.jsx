@@ -44,6 +44,90 @@ const EMPTY_BLOCK_FORM = {
   is_active: true,
 };
 
+const QUICK_BLOCK_TEMPLATES = [
+  {
+    key: "rich_text",
+    label: "Текст",
+    hint: "Короткий текстовый материал",
+    tone: "blue",
+    values: {
+      block_type: "rich_text",
+      title: "Текстовый блок",
+      content_text: "Добавьте текст урока.",
+      is_required: true,
+      is_active: true,
+    },
+  },
+  {
+    key: "video",
+    label: "Видео",
+    hint: "Ссылка на видеоурок",
+    tone: "green",
+    values: {
+      block_type: "video",
+      title: "Видео",
+      content_url: "https://example.com/video",
+      is_required: false,
+      is_active: true,
+    },
+  },
+  {
+    key: "file_link",
+    label: "Файл/ссылка",
+    hint: "Материал, PDF или презентация",
+    tone: "violet",
+    values: {
+      block_type: "file_link",
+      title: "Материал к уроку",
+      content_url: "https://example.com/material",
+      is_required: false,
+      is_active: true,
+    },
+  },
+  {
+    key: "quiz",
+    label: "Тест",
+    hint: "Вопрос с вариантами",
+    tone: "amber",
+    values: {
+      block_type: "quiz",
+      title: "Контрольный вопрос",
+      quiz_question: "Введите вопрос",
+      quiz_options: "Вариант 1\nВариант 2\nВариант 3",
+      quiz_answer: "Вариант 1",
+      is_required: true,
+      is_active: true,
+    },
+  },
+  {
+    key: "assignment",
+    label: "Задание",
+    hint: "Практическая работа",
+    tone: "red",
+    values: {
+      block_type: "assignment",
+      title: "Практическое задание",
+      content_text: "Опишите задание для слушателя.",
+      is_required: true,
+      is_active: true,
+    },
+  },
+  {
+    key: "callout",
+    label: "Врезка",
+    hint: "Важное примечание",
+    tone: "slate",
+    values: {
+      block_type: "callout",
+      title: "Важно",
+      content_text: "Добавьте важное примечание.",
+      callout_tone: "info",
+      is_required: false,
+      is_active: true,
+    },
+  },
+];
+
 function getBlockTypeLabel(blockType) {
   return BLOCK_TYPE_LABELS[blockType] || blockType || "Блок";
 }
@@ -526,6 +610,70 @@ function LessonBlockPreview({ values }) {
   );
 }
 
+function QuickBlockPalette({ templates, onCreate, disabled, actionKey }) {
+  return (
+    <section
+      data-testid="stage83-quick-block-palette"
+      className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-blue-100"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Stage 83.1 · Quick blocks
+          </div>
+          <h5 className="mt-1 text-sm font-bold text-slate-900">
+            Быстро добавить блок
+          </h5>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Создавайте типовые блоки урока в один клик, а затем редактируйте содержимое.
+          </p>
+        </div>
+
+        <StatusBadge tone={disabled ? "gray" : "green"}>
+          {disabled ? "недоступно" : "готово"}
+        </StatusBadge>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {templates.map((template) => {
+          const templateActionKey = `quick-create:${template.key}`;
+          const busy = actionKey === templateActionKey;
+
+          return (
+            <button
+              key={template.key}
+              type="button"
+              onClick={() => onCreate(template)}
+              disabled={disabled}
+              className="rounded-2xl bg-slate-50 p-4 text-left ring-1 ring-slate-200 transition hover:bg-white hover:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-bold text-slate-900">
+                  + {template.label}
+                </div>
+                <StatusBadge tone={template.tone}>
+                  {getBlockTypeLabel(template.values.block_type)}
+                </StatusBadge>
+              </div>
+
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                {template.hint}
+              </p>
+
+              {busy ? (
+                <div className="mt-3 text-xs font-semibold text-blue-600">
+                  Создаём блок...
+                </div>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+
 function LessonMap({ blocks, onSelect }) {
   if (!blocks.length) {
     return null;
@@ -730,6 +878,44 @@ export function LessonBlocksEditor({ lessonId }) {
     }
   };
 
+  const handleQuickCreateBlock = async (template) => {
+    if (!lessonId || !template?.values) {
+      setActionError("Не удалось определить урок или тип блока.");
+      return;
+    }
+
+    const position = getNextBlockPosition(stats.realBlocks);
+    const action = `quick-create:${template.key}`;
+
+    setActionKey(action);
+    setActionError("");
+    setSuccessMessage("");
+
+    try {
+      await createAdminLessonBlock(
+        lessonId,
+        buildBlockPayload(
+          {
+            ...EMPTY_BLOCK_FORM,
+            ...template.values,
+          },
+          position
+        )
+      );
+
+      setCreateForm({
+        ...EMPTY_BLOCK_FORM,
+        block_type: template.values.block_type || "rich_text",
+      });
+      setSuccessMessage(`Блок добавлен: ${template.label}.`);
+      await loadBlocks();
+    } catch (err) {
+      setActionError(formatLessonBlocksError(err, "Не удалось быстро добавить блок урока"));
+    } finally {
+      setActionKey("");
+    }
+  };
+
   const handleEditStart = (block) => {
     setEditingBlockId(block.id);
     setEditForm(buildBlockForm(block));
@@ -897,6 +1083,15 @@ export function LessonBlocksEditor({ lessonId }) {
 
       {loading ? (
         <LoadingBlock className="mt-4" text="Загружаем блоки урока..." />
+      ) : null}
+
+      {!loading ? (
+        <QuickBlockPalette
+          templates={QUICK_BLOCK_TEMPLATES}
+          onCreate={handleQuickCreateBlock}
+          disabled={!lessonId || loading || Boolean(actionKey)}
+          actionKey={actionKey}
+        />
       ) : null}
 
       {!loading && blocks.length > 0 ? (
