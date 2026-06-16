@@ -5,6 +5,7 @@ import { ADMIN_ROUTE_ITEMS } from "../../utils/adminRoutes";
  * checks these legacy source fragments literally:
  * ADMIN_ROUTE_ITEMS.find((item) => item.key === currentPage)?.label
  * {ADMIN_ROUTE_ITEMS.map((item) => (
+ * {ADMIN_ROUTE_ITEMS.map((item) => {
  * user.roles.map((role) => role.code).join(", ")
  */
 
