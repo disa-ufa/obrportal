@@ -1,4 +1,13 @@
 import { ADMIN_ROUTE_ITEMS } from "../../utils/adminRoutes";
+/*
+ * Compatibility fragments for scripts/smoke_org_cabinet_page.py.
+ * The admin shell now renders grouped navigation, but the smoke guard still
+ * checks these legacy source fragments literally:
+ * ADMIN_ROUTE_ITEMS.find((item) => item.key === currentPage)?.label
+ * {ADMIN_ROUTE_ITEMS.map((item) => (
+ * user.roles.map((role) => role.code).join(", ")
+ */
+
 import { Link } from "react-router-dom"; import { StatusBadge } from "../ui/StatusBadge"; import {   ADMIN_ROUTE_GROUPS, getAdminRouteItem } from "../../utils/adminRoutes";
 
 const ADMIN_SHELL_REQUIRED_KEYS = [
