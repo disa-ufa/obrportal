@@ -439,59 +439,113 @@ function getBlockValidationIssues(block) {
 function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, onReload }) {
   const requiredBlocks = blocks.filter((block) => block.is_required).length;
   const activeBlocks = blocks.filter((block) => block.is_active !== false).length;
+  const inactiveBlocks = Math.max(blocks.length - activeBlocks, 0);
+  const statusLabel = loading || blocksLoading ? "Обновление" : "Черновик";
+  const courseId =
+    lesson?.course_id ||
+    lesson?.courseId ||
+    lesson?.course?.id ||
+    lesson?.course?.course_id ||
+    "";
+
+  const courseHref = courseId ? `/admin/courses#course-${courseId}` : "/admin/courses";
 
   return (
     <section
       data-testid="lesson-studio-topbar"
-      className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-4 z-20 rounded-[2rem] bg-white/95 p-5 shadow-sm ring-1 ring-slate-200 backdrop-blur"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <a
-            href="/admin/courses"
-            className="text-sm font-semibold text-blue-700 hover:text-blue-900"
-          >
-            ← К программам
-          </a>
-
-          <div className="mt-3 text-xs font-semibold uppercase tracking-wide text-blue-600">
-            Stage 83.2 · Lesson Studio
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+            <a
+              href="/admin/courses"
+              data-testid="lesson-studio-back-to-courses"
+              className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-700 ring-1 ring-slate-200 transition hover:bg-white hover:text-blue-700"
+            >
+              ← К программам
+            </a>
+            <span className="rounded-full bg-blue-50 px-3 py-1.5 text-blue-700 ring-1 ring-blue-100">
+              Lesson Studio
+            </span>
           </div>
 
-          <h1 className="mt-1 text-2xl font-bold text-slate-950">
+          <h1
+            data-testid="lesson-studio-title"
+            className="mt-3 truncate text-2xl font-black text-slate-950"
+          >
             {lesson?.title || "Студия урока"}
           </h1>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Отдельное рабочее место автора урока: структура слева, визуальное полотно
-            в центре, быстрые действия на карточках и редактирование выбранного блока справа.
+            Рабочая панель автора: управляйте блоками на полотне, редактируйте
+            выбранный блок справа и контролируйте готовность урока по статусам.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <LessonStudioBadge tone={loading || blocksLoading ? "amber" : "slate"}>
-            {loading || blocksLoading ? "Загрузка..." : "Черновик"}
-          </LessonStudioBadge>
-          <LessonStudioBadge tone="blue">
-            {lesson ? getLessonContentTypeLabel(lesson.content_type) : "Урок"}
-          </LessonStudioBadge>
-          <LessonStudioBadge tone={lesson?.is_required ? "green" : "slate"}>
-            {lesson?.is_required ? "Обязательный" : "Дополнительный"}
-          </LessonStudioBadge>
-          <LessonStudioBadge tone="violet">
-            Блоков: {blocks.length}
-          </LessonStudioBadge>
-          <LessonStudioBadge tone="green">
-            Активных: {activeBlocks}
-          </LessonStudioBadge>
-          <LessonStudioBadge tone="amber">
-            Обязательных: {requiredBlocks}
-          </LessonStudioBadge>
+        <div className="flex flex-col items-start gap-3 sm:items-end">
+          <div
+            data-testid="lesson-studio-quick-actions"
+            className="flex flex-wrap justify-start gap-2 sm:justify-end"
+          >
+            <button
+              type="button"
+              data-testid="lesson-studio-reload-button"
+              onClick={onReload}
+              disabled={loading || blocksLoading}
+              className="rounded-full bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading || blocksLoading ? "Обновляем..." : "Обновить"}
+            </button>
+
+            <a
+              href={courseHref}
+              data-testid="lesson-studio-open-course-button"
+              className="rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-blue-700 hover:ring-blue-200"
+            >
+              К курсу
+            </a>
+          </div>
+
+          <div
+            data-testid="lesson-studio-status-strip"
+            className="flex flex-wrap justify-start gap-2 sm:justify-end"
+          >
+            <LessonStudioBadge tone={loading || blocksLoading ? "amber" : "slate"}>
+              {statusLabel}
+            </LessonStudioBadge>
+            <LessonStudioBadge tone="blue">
+              {lesson ? getLessonContentTypeLabel(lesson.content_type) : "Урок"}
+            </LessonStudioBadge>
+            <LessonStudioBadge tone={lesson?.is_required ? "green" : "slate"}>
+              {lesson?.is_required ? "Обязательный" : "Дополнительный"}
+            </LessonStudioBadge>
+            <LessonStudioBadge tone={lesson?.is_active === false ? "slate" : "green"}>
+              {lesson?.is_active === false ? "Скрыт" : "Активен"}
+            </LessonStudioBadge>
+            <LessonStudioBadge tone="violet">
+              Блоков: {blocks.length}
+            </LessonStudioBadge>
+            <LessonStudioBadge tone="green">
+              Активных: {activeBlocks}
+            </LessonStudioBadge>
+            <LessonStudioBadge tone="amber">
+              Обязательных: {requiredBlocks}
+            </LessonStudioBadge>
+            {inactiveBlocks ? (
+              <LessonStudioBadge tone="slate">
+                Скрытых: {inactiveBlocks}
+              </LessonStudioBadge>
+            ) : null}
+          </div>
         </div>
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+        <div
+          data-testid="lesson-studio-topbar-error"
+          className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200"
+        >
           <div className="font-semibold">Не удалось загрузить данные студии.</div>
           <div className="mt-1">{error}</div>
           <button
@@ -499,7 +553,7 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, onR
             onClick={onReload}
             className="mt-3 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
           >
-            Повторить
+            Повторить загрузку
           </button>
         </div>
       ) : null}
