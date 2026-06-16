@@ -48,6 +48,21 @@ function getBlockTypeLabel(blockType) {
   return BLOCK_TYPE_LABELS[blockType] || blockType || "Блок";
 }
 
+function getBlockDisplayTitle(block, index = 0) {
+  const title = normalizeText(block?.title);
+  if (title) {
+    return title;
+  }
+
+  const content = block?.content_json || {};
+  const contentTitle = normalizeText(content.title || content.question || content.text || content.description);
+  if (contentTitle) {
+    return contentTitle.length > 56 ? `${contentTitle.slice(0, 56)}...` : contentTitle;
+  }
+
+  return `${getBlockTypeLabel(block?.block_type)} #${index + 1}`;
+}
+
 function isLegacyBlock(block) {
   return `${block?.id || ""}`.startsWith("legacy:");
 }
@@ -511,6 +526,64 @@ function LessonBlockPreview({ values }) {
   );
 }
 
+function LessonMap({ blocks, onSelect }) {
+  if (!blocks.length) {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid="stage83-lesson-map"
+      className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Stage 83.1 · Lesson map
+          </div>
+          <h5 className="mt-1 text-sm font-bold text-slate-900">Карта урока</h5>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Быстрый переход к нужному блоку урока.
+          </p>
+        </div>
+        <StatusBadge tone="gray">{blocks.length} блоков</StatusBadge>
+      </div>
+
+      <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+        {blocks.map((block, index) => {
+          const legacy = isLegacyBlock(block);
+          const title = getBlockDisplayTitle(block, index);
+
+          return (
+            <button
+              key={block.id}
+              type="button"
+              onClick={() => onSelect(block)}
+              className="group rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    #{block.position || index + 1} · {getBlockTypeLabel(block.block_type)}
+                  </div>
+                  <div className="mt-1 truncate text-sm font-bold text-slate-900 group-hover:text-blue-800">
+                    {title}
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-col gap-1">
+                  {legacy ? <StatusBadge tone="blue">legacy</StatusBadge> : null}
+                  {!block.is_active ? <StatusBadge tone="gray">скрыт</StatusBadge> : null}
+                  {block.is_required ? <StatusBadge tone="blue">обяз.</StatusBadge> : null}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function LessonBlockForm({ values, onChange, prefix }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -716,6 +789,15 @@ export function LessonBlocksEditor({ lessonId }) {
     }
   };
 
+  const handleScrollToBlock = useCallback((block) => {
+    const target = document.getElementById(`lesson-block-${block.id}`);
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   const handleMove = async (block, direction) => {
     const realBlocks = stats.realBlocks
       .slice()
@@ -817,6 +899,10 @@ export function LessonBlocksEditor({ lessonId }) {
         <LoadingBlock className="mt-4" text="Загружаем блоки урока..." />
       ) : null}
 
+      {!loading && blocks.length > 0 ? (
+        <LessonMap blocks={blocks} onSelect={handleScrollToBlock} />
+      ) : null}
+
       <form
         data-testid="stage82-lesson-block-create-form"
         onSubmit={handleCreateSubmit}
@@ -875,9 +961,10 @@ export function LessonBlocksEditor({ lessonId }) {
 
             return (
               <article
+                id={`lesson-block-${block.id}`}
                 key={block.id}
                 data-testid="stage82-lesson-block-card"
-                className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                className="scroll-mt-6 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
               >
                 {!editing ? (
                   <>
