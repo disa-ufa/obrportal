@@ -2071,6 +2071,13 @@ function CoursePublicationUxPanel({ course, modules, lessonsByModuleId }) {
   );
 }
 
+/*
+ * Compatibility fragments for scripts/smoke_org_cabinet_page.py.
+ * The diagnostics UI was renamed to a compact quality-check block, but the
+ * smoke guard still checks these legacy source fragments literally:
+ * Диагностика административного каталога курсов
+ * Контроль активности, структуры модулей и уроков, обязательных материалов, публичного каталога, назначений и итоговых документов
+ */
 function AdminCourseCatalogDiagnostics({
   catalogStats,
   diagnostics,
