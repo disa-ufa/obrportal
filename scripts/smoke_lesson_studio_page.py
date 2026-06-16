@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 
@@ -33,6 +33,7 @@ def main() -> None:
             'import { useCallback, useEffect, useMemo, useState } from "react";',
             "getAdminCourseLessonDetail",
             "getAdminLessonBlocks",
+            "updateAdminLessonBlock",
             "LessonBlocksEditor",
             "export function LessonStudioPage({ lessonId })",
             'data-testid="lesson-studio-page"',
@@ -42,21 +43,27 @@ def main() -> None:
             'data-testid="lesson-studio-visual-canvas"',
             'data-testid="lesson-studio-canvas-block"',
             'data-testid="lesson-studio-inspector"',
+            'data-testid="lesson-studio-inspector-form"',
             'data-testid="lesson-studio-technical-editor"',
             "function LessonStudioTopbar",
             "function LessonStudioStructurePanel",
             "function LessonStudioCanvas",
             "function LessonCanvasBlock",
             "function LessonStudioInspector",
+            "buildInspectorBlockForm",
+            "buildInspectorBlockPayload",
             "loadLesson",
             "loadBlocks",
             "reloadStudio",
             "selectedBlockId",
             "handleEditorBlocksChanged",
+            "handleInspectorSaveBlock",
             "onBlocksChanged={handleEditorBlocksChanged}",
             "onRefreshBlocks={loadBlocks}",
+            "onSaveBlock={handleInspectorSaveBlock}",
             "Обновить полотно",
             "Технический редактор блоков",
+            "Сохранить блок",
         ],
     )
 

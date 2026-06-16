@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getAdminCourseLessonDetail,
   getAdminLessonBlocks,
+  updateAdminLessonBlock,
 } from "../api/client";
 import { LessonBlocksEditor } from "../components/admin/LessonBlocksEditor";
 import { getApiErrorMessage, getApiErrorStatus } from "../utils/apiErrors";
@@ -407,8 +408,65 @@ function LessonStudioCanvas({ blocks, selectedBlockId, onSelectBlock, onRefreshB
   );
 }
 
-function LessonStudioInspector({ lesson, selectedBlock }) {
+function getInspectorContentText(block) {
+  const content =
+    block?.content_json && typeof block.content_json === "object"
+      ? block.content_json
+      : {};
+
+  return `${content.text ?? content.body ?? content.description ?? content.question ?? content.url ?? ""}`;
+}
+
+function buildInspectorBlockForm(block) {
+  return {
+    title: `${block?.title || ""}`,
+    content_text: getInspectorContentText(block),
+    is_required: Boolean(block?.is_required),
+    is_active: block?.is_active !== false,
+  };
+}
+
+function buildInspectorBlockPayload(block, values) {
+  const contentJson =
+    block?.content_json && typeof block.content_json === "object"
+      ? { ...block.content_json }
+      : {};
+
+  const contentText = `${values.content_text || ""}`.trim();
+
+  if (block?.block_type === "video" || block?.block_type === "file_link") {
+    contentJson.url = contentText;
+  } else if (block?.block_type === "quiz") {
+    contentJson.question = contentText;
+  } else if (block?.block_type === "assignment") {
+    contentJson.description = contentText;
+  } else {
+    contentJson.text = contentText;
+  }
+
+  return {
+    block_type: block?.block_type || "rich_text",
+    title: `${values.title || ""}`.trim() || null,
+    content_json: contentJson,
+    position: block?.position || 1,
+    is_required: Boolean(values.is_required),
+    is_active: Boolean(values.is_active),
+  };
+}
+
+function LessonStudioInspector({ lesson, selectedBlock, onSaveBlock, savingBlockId }) {
+  const [form, setForm] = useState(() => buildInspectorBlockForm(selectedBlock));
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+
+  useEffect(() => {
+    setForm(buildInspectorBlockForm(selectedBlock));
+    setFormError("");
+    setFormSuccess("");
+  }, [selectedBlock?.id]);
+
   const blockIssues = selectedBlock ? getBlockValidationIssues(selectedBlock) : [];
+  const saving = Boolean(selectedBlock?.id && savingBlockId === selectedBlock.id);
 
   const lessonFacts = [
     ["ID урока", lesson?.id || "—"],
@@ -423,10 +481,31 @@ function LessonStudioInspector({ lesson, selectedBlock }) {
         ["ID блока", selectedBlock.id || "—"],
         ["Тип блока", getLessonBlockTypeLabel(selectedBlock.block_type)],
         ["Позиция", selectedBlock.position || "—"],
-        ["Активен", selectedBlock.is_active === false ? "Нет" : "Да"],
-        ["Обязательный", selectedBlock.is_required ? "Да" : "Нет"],
       ]
     : [];
+
+  const handleFieldChange = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setFormError("");
+    setFormSuccess("");
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!selectedBlock) {
+      return;
+    }
+
+    try {
+      setFormError("");
+      setFormSuccess("");
+      await onSaveBlock(selectedBlock, form);
+      setFormSuccess("Блок сохранён. Полотно обновлено.");
+    } catch (err) {
+      setFormError(err?.message || "Не удалось сохранить блок.");
+    }
+  };
 
   return (
     <aside
@@ -437,39 +516,130 @@ function LessonStudioInspector({ lesson, selectedBlock }) {
         Инспектор
       </div>
       <h2 className="mt-1 text-sm font-bold text-slate-900">
-        {selectedBlock ? "Выбранный блок" : "Настройки урока"}
+        {selectedBlock ? "Редактирование блока" : "Настройки урока"}
       </h2>
       <p className="mt-2 text-xs leading-5 text-slate-500">
-        Сейчас инспектор показывает свойства. На следующих этапах здесь появится
-        редактирование выбранного блока.
+        Выберите блок на полотне или в структуре. Основные поля можно менять
+        здесь, без прокрутки к техническому редактору.
       </p>
 
       {selectedBlock ? (
-        <div className="mt-4 rounded-2xl bg-blue-50 p-3 ring-1 ring-blue-100">
-          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-            Блок
+        <>
+          <div className="mt-4 rounded-2xl bg-blue-50 p-3 ring-1 ring-blue-100">
+            <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+              Блок
+            </div>
+            <div className="mt-1 text-sm font-bold text-slate-900">
+              {getBlockDisplayTitle(selectedBlock)}
+            </div>
           </div>
-          <div className="mt-1 text-sm font-bold text-slate-900">
-            {getBlockDisplayTitle(selectedBlock)}
-          </div>
+
+          <form
+            data-testid="lesson-studio-inspector-form"
+            onSubmit={handleSubmit}
+            className="mt-4 space-y-3"
+          >
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Заголовок
+              </span>
+              <input
+                value={form.title}
+                onChange={(event) => handleFieldChange("title", event.target.value)}
+                placeholder="Название блока"
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Текст / содержимое
+              </span>
+              <textarea
+                value={form.content_text}
+                onChange={(event) => handleFieldChange("content_text", event.target.value)}
+                rows={6}
+                placeholder="Основной текст, ссылка или описание блока"
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+
+            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.is_required}
+                onChange={(event) => handleFieldChange("is_required", event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span className="font-semibold">Обязательный блок</span>
+            </label>
+
+            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(event) => handleFieldChange("is_active", event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span className="font-semibold">Активен</span>
+            </label>
+
+            {formError ? (
+              <div className="rounded-2xl bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
+                {formError}
+              </div>
+            ) : null}
+
+            {formSuccess ? (
+              <div className="rounded-2xl bg-green-50 p-3 text-sm text-green-800 ring-1 ring-green-200">
+                {formSuccess}
+              </div>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full rounded-2xl bg-blue-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? "Сохраняем..." : "Сохранить блок"}
+            </button>
+          </form>
+        </>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {lessonFacts.map(([label, value]) => (
+            <div
+              key={label}
+              className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {label}
+              </div>
+              <div className="mt-1 break-words text-sm font-semibold text-slate-900">
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selectedBlock ? (
+        <div className="mt-4 space-y-2">
+          {blockFacts.map(([label, value]) => (
+            <div
+              key={label}
+              className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {label}
+              </div>
+              <div className="mt-1 break-words text-sm font-semibold text-slate-900">
+                {value}
+              </div>
+            </div>
+          ))}
         </div>
       ) : null}
-
-      <div className="mt-4 space-y-2">
-        {(selectedBlock ? blockFacts : lessonFacts).map(([label, value]) => (
-          <div
-            key={label}
-            className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
-          >
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {label}
-            </div>
-            <div className="mt-1 break-words text-sm font-semibold text-slate-900">
-              {value}
-            </div>
-          </div>
-        ))}
-      </div>
 
       {blockIssues.length ? (
         <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
@@ -486,6 +656,7 @@ export function LessonStudioPage({ lessonId }) {
   const [selectedBlockId, setSelectedBlockId] = useState("");
   const [loading, setLoading] = useState(false);
   const [blocksLoading, setBlocksLoading] = useState(false);
+  const [blockActionId, setBlockActionId] = useState("");
   const [error, setError] = useState("");
 
   const loadLesson = useCallback(async () => {
@@ -563,6 +734,28 @@ export function LessonStudioPage({ lessonId }) {
     });
   }, []);
 
+  const handleInspectorSaveBlock = useCallback(
+    async (block, values) => {
+      if (!block?.id) {
+        throw new Error("Не выбран блок для сохранения.");
+      }
+
+      setBlockActionId(block.id);
+      setError("");
+
+      try {
+        await updateAdminLessonBlock(block.id, buildInspectorBlockPayload(block, values));
+        await loadBlocks();
+        setSelectedBlockId(block.id);
+      } catch (err) {
+        throw new Error(formatLessonStudioError(err, "Не удалось сохранить блок"));
+      } finally {
+        setBlockActionId("");
+      }
+    },
+    [loadBlocks]
+  );
+
   return (
     <main data-testid="lesson-studio-page" className="space-y-5">
       <LessonStudioTopbar
@@ -615,7 +808,12 @@ export function LessonStudioPage({ lessonId }) {
           </details>
         </section>
 
-        <LessonStudioInspector lesson={lesson} selectedBlock={selectedBlock} />
+        <LessonStudioInspector
+          lesson={lesson}
+          selectedBlock={selectedBlock}
+          onSaveBlock={handleInspectorSaveBlock}
+          savingBlockId={blockActionId}
+        />
       </div>
     </main>
   );
