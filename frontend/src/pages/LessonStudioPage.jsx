@@ -533,6 +533,8 @@ function getLessonReadinessReport(lesson, blocks) {
 }
 
 function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   if (!report) {
     return null;
   }
@@ -543,127 +545,147 @@ function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange })
       ? "bg-red-50 text-red-900 ring-red-200"
       : "bg-amber-50 text-amber-950 ring-amber-200";
 
+  const problemLabel = report.problemBlocks.length
+    ? `${report.problemBlocks.length} проблем`
+    : "без проблем";
+
   return (
     <section
       data-testid="lesson-studio-readiness-checklist"
-      className={`rounded-[2rem] p-4 shadow-sm ring-1 ${statusClass}`}
+      className={`rounded-[1.5rem] p-3 shadow-sm ring-1 ${statusClass}`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div
+        data-testid="lesson-studio-readiness-summary"
+        className="flex flex-wrap items-center justify-between gap-3"
+      >
         <div className="min-w-0">
           <div className="text-xs font-black uppercase tracking-wide opacity-80">
             Готовность урока
           </div>
-          <h2
+          <div
             data-testid="lesson-studio-readiness-status"
-            className="mt-1 text-lg font-black text-slate-950"
+            className="mt-1 flex flex-wrap items-center gap-2"
           >
-            {report.title}
-          </h2>
-          <p className="mt-1 text-sm leading-6">{report.description}</p>
+            <span className="text-base font-black text-slate-950">
+              {report.title}
+            </span>
+            <span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-bold ring-1 ring-black/5">
+              {problemLabel}
+            </span>
+            <span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-bold ring-1 ring-black/5">
+              Активных: {report.activeBlocks}
+            </span>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold ring-1 ring-black/5">
-            Блоков: {report.totalBlocks}
-          </span>
-          <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold ring-1 ring-black/5">
-            Активных: {report.activeBlocks}
-          </span>
-          <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold ring-1 ring-black/5">
-            Проблем: {report.problemBlocks.length}
-          </span>
-        </div>
+        <button
+          type="button"
+          data-testid="lesson-studio-readiness-toggle"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen((current) => !current)}
+          className="rounded-full bg-white px-3 py-2 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+        >
+          {isOpen ? "Скрыть детали" : "Показать детали"}
+        </button>
       </div>
 
-      <div
-        data-testid="lesson-studio-readiness-items"
-        className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-5"
-      >
-        {report.checklistItems.map((item) => {
-          const itemClass = item.ok
-            ? item.warning
-              ? "bg-slate-50 text-slate-800 ring-slate-200"
-              : "bg-white/80 text-green-900 ring-green-100"
-            : item.blocking
-              ? "bg-white text-red-900 ring-red-200"
-              : "bg-white text-amber-900 ring-amber-200";
+      {isOpen ? (
+        <div
+          data-testid="lesson-studio-readiness-panel"
+          className="mt-4 border-t border-black/10 pt-4"
+        >
+          <p className="text-sm leading-6">{report.description}</p>
 
-          return (
-            <div
-              key={item.key}
-              data-testid="lesson-studio-readiness-item"
-              className={`rounded-2xl p-3 text-sm ring-1 ${itemClass}`}
-            >
-              <div className="flex items-start gap-2">
-                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-xs font-black ring-1 ring-black/5">
-                  {item.ok ? "✓" : "!"}
-                </span>
-                <div className="min-w-0">
-                  <div className="font-black text-slate-950">{item.label}</div>
-                  <div className="mt-1 text-xs leading-5 opacity-80">{item.detail}</div>
+          <div
+            data-testid="lesson-studio-readiness-items"
+            className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-5"
+          >
+            {report.checklistItems.map((item) => {
+              const itemClass = item.ok
+                ? item.warning
+                  ? "bg-slate-50 text-slate-800 ring-slate-200"
+                  : "bg-white/80 text-green-900 ring-green-100"
+                : item.blocking
+                  ? "bg-white text-red-900 ring-red-200"
+                  : "bg-white text-amber-900 ring-amber-200";
+
+              return (
+                <div
+                  key={item.key}
+                  data-testid="lesson-studio-readiness-item"
+                  className={`rounded-2xl p-3 text-sm ring-1 ${itemClass}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-xs font-black ring-1 ring-black/5">
+                      {item.ok ? "✓" : "!"}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="font-black text-slate-950">{item.label}</div>
+                      <div className="mt-1 text-xs leading-5 opacity-80">{item.detail}</div>
+                    </div>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+
+          {report.problemBlocks.length ? (
+            <div
+              data-testid="lesson-studio-readiness-problems"
+              className="mt-4 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+            >
+              <div className="text-sm font-black text-slate-950">
+                Проблемные блоки
+              </div>
+              <div className="mt-2 space-y-2">
+                {report.problemBlocks.map((item) => (
+                  <div
+                    key={item.block.id}
+                    data-testid="lesson-studio-readiness-problem"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950 ring-1 ring-amber-100"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-bold">
+                        #{item.block.position || item.index + 1} · {item.title}
+                      </div>
+                      <div className="mt-1 text-xs">
+                        Нужно заполнить: {item.issues.join(", ")}.
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      data-testid="lesson-studio-readiness-problem-jump"
+                      onClick={() => {
+                        if (typeof onModeChange === "function") {
+                          onModeChange("editor");
+                        }
+
+                        if (typeof onSelectBlock === "function") {
+                          onSelectBlock(item.block.id);
+                        }
+                      }}
+                      className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                    >
+                      Перейти к блоку
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {report.problemBlocks.length ? (
-        <div
-          data-testid="lesson-studio-readiness-problems"
-          className="mt-4 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
-        >
-          <div className="text-sm font-black text-slate-950">
-            Проблемные блоки
-          </div>
-          <div className="mt-2 space-y-2">
-            {report.problemBlocks.map((item) => (
-              <div
-                key={item.block.id}
-                data-testid="lesson-studio-readiness-problem"
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950 ring-1 ring-amber-100"
-              >
-                <div className="min-w-0">
-                  <div className="font-bold">
-                    #{item.block.position || item.index + 1} · {item.title}
-                  </div>
-                  <div className="mt-1 text-xs">
-                    Нужно заполнить: {item.issues.join(", ")}.
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  data-testid="lesson-studio-readiness-problem-jump"
-                  onClick={() => {
-                    if (typeof onModeChange === "function") {
-                      onModeChange("editor");
-                    }
-
-                    if (typeof onSelectBlock === "function") {
-                      onSelectBlock(item.block.id);
-                    }
-                  }}
-                  className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
-                >
-                  Перейти к блоку
-                </button>
-              </div>
-            ))}
-          </div>
+          ) : (
+            <div
+              data-testid="lesson-studio-readiness-ready"
+              className="mt-4 rounded-2xl bg-white/80 p-3 text-sm font-bold text-green-900 ring-1 ring-green-100"
+            >
+              Активные блоки готовы. Можно проверить урок в режиме предпросмотра.
+            </div>
+          )}
         </div>
-      ) : (
-        <div
-          data-testid="lesson-studio-readiness-ready"
-          className="mt-4 rounded-2xl bg-white/80 p-3 text-sm font-bold text-green-900 ring-1 ring-green-100"
-        >
-          Активные блоки готовы. Можно проверить урок в режиме предпросмотра.
-        </div>
-      )}
+      ) : null}
     </section>
   );
 }
-
 
 function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, mode = "editor", onModeChange, onReload }) {
   const requiredBlocks = blocks.filter((block) => block.is_required).length;
@@ -706,11 +728,6 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, mod
           >
             {lesson?.title || "Студия урока"}
           </h1>
-
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Рабочая панель автора: управляйте блоками на полотне, редактируйте
-            выбранный блок справа и контролируйте готовность урока по статусам.
-          </p>
         </div>
 
         <div className="flex flex-col items-start gap-3 sm:items-end">

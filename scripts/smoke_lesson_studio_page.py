@@ -91,7 +91,6 @@ def main() -> None:
             'lesson?.is_active === false ? "Скрыт" : "Активен"',
             'Скрытых:',
             'К курсу',
-            'Рабочая панель автора',
             'data-testid="lesson-studio-topbar-error"',
             'data-testid="lesson-studio-status-strip"',
             'data-testid="lesson-studio-open-course-button"',
