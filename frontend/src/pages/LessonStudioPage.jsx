@@ -436,6 +436,235 @@ function getBlockValidationIssues(block) {
   return issues;
 }
 
+
+function getLessonReadinessReport(lesson, blocks) {
+  const allBlocks = Array.isArray(blocks) ? blocks : [];
+  const activeBlocks = allBlocks.filter((block) => block.is_active !== false);
+  const inactiveBlocks = allBlocks.filter((block) => block.is_active === false);
+  const requiredBlocks = activeBlocks.filter((block) => block.is_required);
+
+  const problemBlocks = activeBlocks
+    .map((block, index) => {
+      const originalIndex = allBlocks.findIndex((item) => item.id === block.id);
+      const normalizedIndex = originalIndex >= 0 ? originalIndex : index;
+      const issues = getBlockValidationIssues(block);
+
+      return {
+        block,
+        index: normalizedIndex,
+        title: getBlockDisplayTitle(block, normalizedIndex),
+        issues,
+      };
+    })
+    .filter((item) => item.issues.length > 0);
+
+  const requiredProblemBlocks = problemBlocks.filter((item) => item.block.is_required);
+
+  const checklistItems = [
+    {
+      key: "has-blocks",
+      label: "В урок добавлены блоки",
+      detail: allBlocks.length
+        ? `Всего блоков: ${allBlocks.length}.`
+        : "Добавьте хотя бы один блок урока.",
+      ok: allBlocks.length > 0,
+      blocking: true,
+    },
+    {
+      key: "has-active-blocks",
+      label: "Есть активные блоки для обучающегося",
+      detail: activeBlocks.length
+        ? `Активных блоков: ${activeBlocks.length}.`
+        : "Все блоки скрыты или урок пока пустой.",
+      ok: activeBlocks.length > 0,
+      blocking: true,
+    },
+    {
+      key: "active-content",
+      label: "Активные блоки заполнены",
+      detail: problemBlocks.length
+        ? `Требуют заполнения: ${problemBlocks.length}.`
+        : "Все активные блоки имеют необходимые данные.",
+      ok: problemBlocks.length === 0,
+      blocking: true,
+    },
+    {
+      key: "required-content",
+      label: "Обязательные блоки готовы",
+      detail: requiredProblemBlocks.length
+        ? `Обязательные с проблемами: ${requiredProblemBlocks.length}.`
+        : requiredBlocks.length
+          ? `Готовых обязательных блоков: ${requiredBlocks.length}.`
+          : "Обязательных активных блоков нет.",
+      ok: requiredProblemBlocks.length === 0,
+      blocking: true,
+    },
+    {
+      key: "inactive-reviewed",
+      label: "Скрытые блоки учтены",
+      detail: inactiveBlocks.length
+        ? `Скрытых блоков: ${inactiveBlocks.length}. Они не попадут в предпросмотр.`
+        : "Скрытых блоков нет.",
+      ok: true,
+      blocking: false,
+      warning: inactiveBlocks.length > 0,
+    },
+  ];
+
+  const blockingIssues = checklistItems.filter((item) => item.blocking && !item.ok);
+  const ready = blockingIssues.length === 0;
+
+  return {
+    ready,
+    tone: ready ? "green" : activeBlocks.length ? "amber" : "red",
+    title: ready ? "Готов к публикации" : "Требует доработки",
+    description: ready
+      ? "Урок можно показывать обучающимся: активные блоки заполнены."
+      : "Перед публикацией исправьте пункты чеклиста и проблемные блоки.",
+    totalBlocks: allBlocks.length,
+    activeBlocks: activeBlocks.length,
+    inactiveBlocks: inactiveBlocks.length,
+    requiredBlocks: requiredBlocks.length,
+    problemBlocks,
+    requiredProblemBlocks,
+    checklistItems,
+    blockingIssues,
+  };
+}
+
+function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange }) {
+  if (!report) {
+    return null;
+  }
+
+  const statusClass = report.ready
+    ? "bg-green-50 text-green-900 ring-green-200"
+    : report.tone === "red"
+      ? "bg-red-50 text-red-900 ring-red-200"
+      : "bg-amber-50 text-amber-950 ring-amber-200";
+
+  return (
+    <section
+      data-testid="lesson-studio-readiness-checklist"
+      className={`rounded-[2rem] p-4 shadow-sm ring-1 ${statusClass}`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-xs font-black uppercase tracking-wide opacity-80">
+            Готовность урока
+          </div>
+          <h2
+            data-testid="lesson-studio-readiness-status"
+            className="mt-1 text-lg font-black text-slate-950"
+          >
+            {report.title}
+          </h2>
+          <p className="mt-1 text-sm leading-6">{report.description}</p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold ring-1 ring-black/5">
+            Блоков: {report.totalBlocks}
+          </span>
+          <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold ring-1 ring-black/5">
+            Активных: {report.activeBlocks}
+          </span>
+          <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold ring-1 ring-black/5">
+            Проблем: {report.problemBlocks.length}
+          </span>
+        </div>
+      </div>
+
+      <div
+        data-testid="lesson-studio-readiness-items"
+        className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-5"
+      >
+        {report.checklistItems.map((item) => {
+          const itemClass = item.ok
+            ? item.warning
+              ? "bg-slate-50 text-slate-800 ring-slate-200"
+              : "bg-white/80 text-green-900 ring-green-100"
+            : item.blocking
+              ? "bg-white text-red-900 ring-red-200"
+              : "bg-white text-amber-900 ring-amber-200";
+
+          return (
+            <div
+              key={item.key}
+              data-testid="lesson-studio-readiness-item"
+              className={`rounded-2xl p-3 text-sm ring-1 ${itemClass}`}
+            >
+              <div className="flex items-start gap-2">
+                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-xs font-black ring-1 ring-black/5">
+                  {item.ok ? "✓" : "!"}
+                </span>
+                <div className="min-w-0">
+                  <div className="font-black text-slate-950">{item.label}</div>
+                  <div className="mt-1 text-xs leading-5 opacity-80">{item.detail}</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {report.problemBlocks.length ? (
+        <div
+          data-testid="lesson-studio-readiness-problems"
+          className="mt-4 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+        >
+          <div className="text-sm font-black text-slate-950">
+            Проблемные блоки
+          </div>
+          <div className="mt-2 space-y-2">
+            {report.problemBlocks.map((item) => (
+              <div
+                key={item.block.id}
+                data-testid="lesson-studio-readiness-problem"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950 ring-1 ring-amber-100"
+              >
+                <div className="min-w-0">
+                  <div className="font-bold">
+                    #{item.block.position || item.index + 1} · {item.title}
+                  </div>
+                  <div className="mt-1 text-xs">
+                    Нужно заполнить: {item.issues.join(", ")}.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  data-testid="lesson-studio-readiness-problem-jump"
+                  onClick={() => {
+                    if (typeof onModeChange === "function") {
+                      onModeChange("editor");
+                    }
+
+                    if (typeof onSelectBlock === "function") {
+                      onSelectBlock(item.block.id);
+                    }
+                  }}
+                  className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                >
+                  Перейти к блоку
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div
+          data-testid="lesson-studio-readiness-ready"
+          className="mt-4 rounded-2xl bg-white/80 p-3 text-sm font-bold text-green-900 ring-1 ring-green-100"
+        >
+          Активные блоки готовы. Можно проверить урок в режиме предпросмотра.
+        </div>
+      )}
+    </section>
+  );
+}
+
+
 function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, mode = "editor", onModeChange, onReload }) {
   const requiredBlocks = blocks.filter((block) => block.is_required).length;
   const activeBlocks = blocks.filter((block) => block.is_active !== false).length;
@@ -1667,6 +1896,11 @@ export function LessonStudioPage({ lessonId }) {
   );
   const studioStructureBlocks = viewMode === "preview" ? visiblePreviewBlocks : blocks;
 
+  const lessonReadiness = useMemo(
+    () => getLessonReadinessReport(lesson, blocks),
+    [lesson, blocks]
+  );
+
   const handleEditorBlocksChanged = useCallback((nextBlocks) => {
     const normalizedBlocks = Array.isArray(nextBlocks) ? nextBlocks : [];
 
@@ -1879,6 +2113,13 @@ export function LessonStudioPage({ lessonId }) {
         onModeChange={setViewMode}
         onReload={reloadStudio}
       />
+
+      <LessonStudioReadinessChecklist
+        report={lessonReadiness}
+        onSelectBlock={handleSelectBlock}
+        onModeChange={setViewMode}
+      />
+
 
       <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
         <LessonStudioStructurePanel
