@@ -564,25 +564,93 @@ export function DashboardPage({
         </Alert>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <AuthPanel
-          email={email}
-          password={password}
-          loading={loading}
-          error=""
-          onEmailChange={onEmailChange}
-          onPasswordChange={onPasswordChange}
-          onLogin={onLogin}
-          onLogout={onLogout}
-        />
+      {!user ? (
+        <div className="grid gap-6 xl:grid-cols-2">
+          <AuthPanel
+            email={email}
+            password={password}
+            loading={loading}
+            error=""
+            onEmailChange={onEmailChange}
+            onPasswordChange={onPasswordChange}
+            onLogin={onLogin}
+            onLogout={onLogout}
+          />
 
-        <CurrentUserCard
-          user={user}
-          loading={loading || adminLoading}
-          onRbacCheck={onRbacCheck}
-          onRefreshAdminData={onRefreshAdminData}
-        />
-      </div>
+          <CurrentUserCard
+            user={user}
+            loading={loading || adminLoading}
+            onRbacCheck={onRbacCheck}
+            onRefreshAdminData={onRefreshAdminData}
+          />
+        </div>
+      ) : (
+        <SectionCard
+          title="Операционный обзор"
+          subtitle={dashboardTasksStatusText}
+        >
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <AdminSignalCard
+              title="Документы требуют действия"
+              value={actionRequiredDocumentsCount}
+              hint="Черновики, отозванные или опубликованные без файла"
+              to={buildDocumentsPath({ action_required: "true" })}
+              tone={actionRequiredDocumentsCount ? "amber" : "green"}
+            />
+
+            <AdminSignalCard
+              title="Назначения требуют действия"
+              value={actionRequiredEnrollmentsCount}
+              hint="Старт обучения, завершение или выпускной документ"
+              to={buildEnrollmentsPath({ action_required: "true" })}
+              tone={actionRequiredEnrollmentsCount ? "amber" : "green"}
+            />
+
+            <AdminSignalCard
+              title="Программы"
+              value={coursesTotalCount}
+              hint={`${activeCoursesCount} активных / ${inactiveCoursesCount} неактивных`}
+              to={buildCoursesPath()}
+              tone="blue"
+            />
+
+            <AdminSignalCard
+              title="Пользователи"
+              value={usersTotalCount}
+              hint={`${activeUsersCount} активных / ${inactiveUsersCount} неактивных`}
+              to={buildUsersPath()}
+              tone="blue"
+            />
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onRefreshAdminData}
+              disabled={loading || adminLoading}
+              className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Обновить данные
+            </button>
+
+            <button
+              type="button"
+              onClick={onRbacCheck}
+              disabled={loading || adminLoading}
+              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Проверить RBAC
+            </button>
+
+            <Link
+              to={buildCoursesPath()}
+              className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              К программам
+            </Link>
+          </div>
+        </SectionCard>
+      )}
 
       <SectionCard
         title="Центр управления Admin API"
