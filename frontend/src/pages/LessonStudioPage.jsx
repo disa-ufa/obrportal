@@ -842,7 +842,18 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, mod
   );
 }
 
-function LessonStudioStructurePanel({ lesson, blocks, selectedBlockId, onSelectBlock }) {
+function LessonStudioStructurePanel({
+  lesson,
+  blocks,
+  selectedBlockId,
+  onSelectBlock,
+  mode = "editor",
+  quickAddTemplates = [],
+  onCreateBlock,
+  creatingTemplateKey,
+  quickAddDisabled = false,
+}) {
+  const previewMode = mode === "preview";
   const requiredBlocks = blocks.filter((block) => block.is_required).length;
   const activeBlocks = blocks.filter((block) => block.is_active !== false).length;
   const problemBlocks = blocks.filter((block) => getBlockValidationIssues(block).length > 0);
@@ -879,6 +890,15 @@ function LessonStudioStructurePanel({ lesson, blocks, selectedBlockId, onSelectB
           {lesson?.title || "Урок загружается"}
         </div>
       </div>
+
+      {!previewMode ? (
+        <LessonStudioSidebarQuickAdd
+          templates={quickAddTemplates}
+          onCreateBlock={onCreateBlock}
+          creatingTemplateKey={creatingTemplateKey}
+          disabled={quickAddDisabled}
+        />
+      ) : null}
 
       <div
         data-testid="lesson-studio-structure-stats"
@@ -1164,6 +1184,60 @@ function LessonCanvasBlock({
   );
 }
 
+function LessonStudioSidebarQuickAdd({
+  templates,
+  onCreateBlock,
+  creatingTemplateKey,
+  disabled,
+}) {
+  return (
+    <details
+      data-testid="lesson-studio-sidebar-quick-add"
+      className="mt-4 rounded-2xl bg-blue-50/60 p-3 ring-1 ring-blue-100"
+      open
+    >
+      <summary className="cursor-pointer text-sm font-black text-slate-950">
+        + Добавить блок
+      </summary>
+
+      <p className="mt-2 text-xs leading-5 text-slate-500">
+        Выберите тип блока — он появится на полотне и откроется для настройки.
+      </p>
+
+      <div className="mt-3 grid gap-2">
+        {templates.map((template) => {
+          const creating = creatingTemplateKey === template.key;
+
+          return (
+            <button
+              key={template.key}
+              type="button"
+              data-testid="lesson-studio-sidebar-quick-add-button"
+              onClick={() => onCreateBlock(template)}
+              disabled={disabled || creating}
+              className="rounded-2xl bg-white p-3 text-left ring-1 ring-slate-200 transition hover:bg-blue-50 hover:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-black text-slate-950">
+                  {creating ? "Добавляем..." : `+ ${template.label}`}
+                </span>
+
+                <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  {getLessonBlockTypeLabel(template.values?.block_type)}
+                </span>
+              </div>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                {template.hint}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
 function LessonStudioQuickAddPanel({ templates, onCreateBlock, creatingTemplateKey, disabled }) {
   return (
     <section
@@ -1284,14 +1358,7 @@ function LessonStudioCanvas({
             блоки урока.
           </div>
         </section>
-      ) : (
-        <LessonStudioQuickAddPanel
-          templates={STUDIO_QUICK_BLOCK_TEMPLATES}
-          onCreateBlock={onCreateBlock}
-          creatingTemplateKey={creatingTemplateKey}
-          disabled={blocksLoading}
-        />
-      )}
+      ) : null}
 
       {visibleBlocks.length ? (
         <div className="space-y-3">
@@ -1322,7 +1389,7 @@ function LessonStudioCanvas({
         </div>
       ) : (
         <div className="rounded-[1.5rem] bg-white p-8 text-center text-sm text-slate-500 ring-1 ring-dashed ring-slate-300">
-{previewMode ? "В предпросмотре нет активных блоков." : "Урок пока пустой. Добавьте первый блок через панель выше."}
+{previewMode ? "В предпросмотре нет активных блоков." : "Урок пока пустой. Добавьте первый блок через левую панель."}
         </div>
       )}
     </section>
@@ -2144,6 +2211,11 @@ export function LessonStudioPage({ lessonId }) {
           blocks={studioStructureBlocks}
           selectedBlockId={selectedBlockId}
           onSelectBlock={handleSelectBlock}
+          mode={viewMode}
+          quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}
+          onCreateBlock={handleQuickCreateBlock}
+          creatingTemplateKey={creatingTemplateKey}
+          quickAddDisabled={blocksLoading}
         />
 
         <section

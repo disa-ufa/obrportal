@@ -99,6 +99,12 @@ def main() -> None:
             'data-testid="lesson-studio-title"',
             'data-testid="lesson-studio-back-to-courses"',
             "function LessonStudioStructurePanel",
+            'Добавьте первый блок через левую панель.',
+            'quickAddDisabled={blocksLoading}',
+            'quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}',
+            'data-testid="lesson-studio-sidebar-quick-add-button"',
+            'data-testid="lesson-studio-sidebar-quick-add"',
+            'function LessonStudioSidebarQuickAdd(',
             'className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"',
             'onSelectBlock={handleSelectBlock}',
             'target.scrollIntoView({ behavior: "smooth", block: "center" });',
@@ -274,6 +280,13 @@ def main() -> None:
         "function LessonStudioStructurePanel(",
         "\n\nfunction LessonCanvasBlock",
         ["visibleBlocks"],
+    )
+
+    require_not_contains_between(
+        "frontend/src/pages/LessonStudioPage.jsx",
+        "function LessonStudioCanvas(",
+        "function getInspectorContentText(",
+        ["<LessonStudioQuickAddPanel"],
     )
 
     print("Lesson Studio page smoke passed")
