@@ -597,6 +597,75 @@ function getInspectorContentText(block) {
   return `${content.text ?? content.body ?? content.description ?? content.question ?? content.url ?? ""}`;
 }
 
+function getInspectorContentFieldMeta(block) {
+  const type = `${block?.block_type || "rich_text"}`.toLowerCase();
+
+  const defaults = {
+    label: "Текст блока",
+    placeholder: "Добавьте основной текст учебного блока",
+    help: "Этот текст увидит слушатель в карточке урока.",
+    rows: 7,
+    inputType: "textarea",
+  };
+
+  const metaByType = {
+    rich_text: defaults,
+    text: defaults,
+    callout: {
+      label: "Текст примечания",
+      placeholder: "Добавьте важное примечание или подсказку",
+      help: "Короткая врезка помогает выделить важную мысль внутри урока.",
+      rows: 5,
+      inputType: "textarea",
+    },
+    video: {
+      label: "Ссылка на видео",
+      placeholder: "https://...",
+      help: "Укажите ссылку на видеоурок. После сохранения ссылка попадёт в содержимое блока.",
+      rows: 1,
+      inputType: "url",
+    },
+    file_link: {
+      label: "Ссылка на материал",
+      placeholder: "https://... или ссылка на PDF/презентацию",
+      help: "Добавьте ссылку на файл, презентацию, облачный документ или внешний материал.",
+      rows: 1,
+      inputType: "url",
+    },
+    file: {
+      label: "Ссылка на файл",
+      placeholder: "https://... или ссылка на файл",
+      help: "Добавьте прямую ссылку на учебный файл.",
+      rows: 1,
+      inputType: "url",
+    },
+    link: {
+      label: "Ссылка",
+      placeholder: "https://...",
+      help: "Добавьте внешнюю ссылку для слушателя.",
+      rows: 1,
+      inputType: "url",
+    },
+    quiz: {
+      label: "Вопрос",
+      placeholder: "Введите вопрос для самопроверки",
+      help: "Пока редактируем основной вопрос. Варианты ответов добавим на следующем этапе.",
+      rows: 4,
+      inputType: "textarea",
+    },
+    assignment: {
+      label: "Описание задания",
+      placeholder: "Опишите, что должен выполнить слушатель",
+      help: "Сформулируйте задание простыми шагами: что сделать, куда отправить, какой результат нужен.",
+      rows: 6,
+      inputType: "textarea",
+    },
+  };
+
+  return metaByType[type] || defaults;
+}
+
+
 function buildInspectorBlockForm(block) {
   return {
     title: `${block?.title || ""}`,
@@ -646,6 +715,7 @@ function LessonStudioInspector({ lesson, selectedBlock, onSaveBlock, savingBlock
   }, [selectedBlock?.id]);
 
   const blockIssues = selectedBlock ? getBlockValidationIssues(selectedBlock) : [];
+  const contentFieldMeta = getInspectorContentFieldMeta(selectedBlock);
   const saving = Boolean(selectedBlock?.id && savingBlockId === selectedBlock.id);
 
   const lessonFacts = [
@@ -731,17 +801,32 @@ function LessonStudioInspector({ lesson, selectedBlock, onSaveBlock, savingBlock
               />
             </label>
 
-            <label className="block">
+            <label className="block" data-testid="lesson-studio-inspector-content-field">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Текст / содержимое
+                {contentFieldMeta.label}
               </span>
-              <textarea
-                value={form.content_text}
-                onChange={(event) => handleFieldChange("content_text", event.target.value)}
-                rows={6}
-                placeholder="Основной текст, ссылка или описание блока"
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              />
+
+              {contentFieldMeta.inputType === "url" ? (
+                <input
+                  type="url"
+                  value={form.content_text}
+                  onChange={(event) => handleFieldChange("content_text", event.target.value)}
+                  placeholder={contentFieldMeta.placeholder}
+                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+              ) : (
+                <textarea
+                  value={form.content_text}
+                  onChange={(event) => handleFieldChange("content_text", event.target.value)}
+                  rows={contentFieldMeta.rows}
+                  placeholder={contentFieldMeta.placeholder}
+                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+              )}
+
+              <span className="mt-2 block text-xs leading-5 text-slate-500">
+                {contentFieldMeta.help}
+              </span>
             </label>
 
             <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
