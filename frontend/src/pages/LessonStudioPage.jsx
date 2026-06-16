@@ -1325,25 +1325,6 @@ function LessonStudioCanvas({
 
   return (
     <section data-testid="lesson-studio-visual-canvas" className="space-y-3">
-      <div className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="font-bold">Визуальное полотно урока</div>
-            <div className="mt-1">
-              Блоки отображаются как учебный материал. Добавление и базовое
-              редактирование уже доступны прямо в студии.
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onRefreshBlocks}
-            disabled={blocksLoading}
-            className="rounded-full bg-blue-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {blocksLoading ? "Обновляем..." : "Обновить полотно"}
-          </button>
-        </div>
-      </div>
 
       {previewMode ? (
         <section

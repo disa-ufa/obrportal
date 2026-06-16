@@ -241,7 +241,6 @@ def main() -> None:
             "onBlocksChanged={handleEditorBlocksChanged}",
             "onRefreshBlocks={loadBlocks}",
             "onSaveBlock={handleInspectorSaveBlock}",
-            "Обновить полотно",
             
             "Сохранить блок",
         ],
@@ -288,6 +287,25 @@ def main() -> None:
         "function getInspectorContentText(",
         ["<LessonStudioQuickAddPanel"],
     )
+
+    # stage83_3_3_no_visual_canvas_intro_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    canvas_start = lesson_studio_source.index("function LessonStudioCanvas(")
+    canvas_end = lesson_studio_source.index("function getInspectorContentText(", canvas_start)
+    canvas_source = lesson_studio_source[canvas_start:canvas_end]
+    forbidden_canvas_intro = [
+        "Визуальное полотно урока",
+        "Блоки отображаются как учебный материал",
+        "Обновить полотно",
+    ]
+    present_canvas_intro = [
+        fragment for fragment in forbidden_canvas_intro if fragment in canvas_source
+    ]
+    if present_canvas_intro:
+        print("LessonStudioCanvas still contains removed intro fragments:")
+        for fragment in present_canvas_intro:
+            print(f" - {fragment}")
+        raise SystemExit(1)
 
     print("Lesson Studio page smoke passed")
 
