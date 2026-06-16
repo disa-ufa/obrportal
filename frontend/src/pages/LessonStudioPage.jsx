@@ -3,6 +3,7 @@ import {
   createAdminLessonBlock,
   getAdminCourseLessonDetail,
   getAdminLessonBlocks,
+  reorderAdminLessonBlocks,
   updateAdminLessonBlock,
 } from "../api/client";
 import { LessonBlocksEditor } from "../components/admin/LessonBlocksEditor";
@@ -560,58 +561,100 @@ function LessonStudioStructurePanel({ lesson, blocks, selectedBlockId, onSelectB
   );
 }
 
-function LessonCanvasBlock({ block, index, selected, onSelect }) {
+function LessonCanvasBlock({
+  block,
+  index,
+  selected,
+  canMoveUp,
+  canMoveDown,
+  moving,
+  disabled,
+  onSelect,
+  onMove,
+}) {
   const issues = getBlockValidationIssues(block);
   const typeTone = getLessonBlockTone(block.block_type);
   const title = getBlockDisplayTitle(block, index);
   const preview = getBlockTextPreview(block);
+
+  const handleMoveClick = (event, direction) => {
+    event.stopPropagation();
+
+    if (disabled || moving) {
+      return;
+    }
+
+    onMove(block, direction);
+  };
 
   return (
     <article
       id={`studio-block-${block.id}`}
       data-testid="lesson-studio-canvas-block"
       className={`rounded-[1.5rem] bg-white p-5 shadow-sm ring-1 transition ${
-        selected ? "ring-blue-300" : "ring-slate-200"
+        selected ? "ring-blue-300" : "ring-slate-200 hover:ring-blue-200"
       }`}
+      onClick={() => onSelect(block.id)}
     >
-      <button
-        type="button"
-        onClick={() => onSelect(block.id)}
-        className="block w-full text-left"
-      >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              #{block.position || index + 1} · {getLessonBlockTypeLabel(block.block_type)}
-            </div>
-            <h3 className="mt-1 text-lg font-bold text-slate-950">{title}</h3>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            #{block.position || index + 1} · {getLessonBlockTypeLabel(block.block_type)}
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            <LessonStudioBadge tone={typeTone}>
-              {getLessonBlockTypeLabel(block.block_type)}
-            </LessonStudioBadge>
-            {block.is_required ? (
-              <LessonStudioBadge tone="green">Обязательный</LessonStudioBadge>
-            ) : (
-              <LessonStudioBadge tone="slate">Дополнительный</LessonStudioBadge>
-            )}
-            {block.is_active === false ? (
-              <LessonStudioBadge tone="red">Скрыт</LessonStudioBadge>
-            ) : (
-              <LessonStudioBadge tone="green">Активен</LessonStudioBadge>
-            )}
-          </div>
+          <h3 className="mt-1 text-lg font-black text-slate-900">{title}</h3>
         </div>
 
-        <LessonCanvasTypePreview block={block} preview={preview} />
+        <div className="flex flex-wrap items-center gap-2">
+          <LessonStudioBadge tone={typeTone}>
+            {getLessonBlockTypeLabel(block.block_type)}
+          </LessonStudioBadge>
+          <LessonStudioBadge tone={block.is_required ? "green" : "slate"}>
+            {block.is_required ? "Обязательный" : "Дополнительный"}
+          </LessonStudioBadge>
+          <LessonStudioBadge tone={block.is_active === false ? "slate" : "green"}>
+            {block.is_active === false ? "Скрыт" : "Активен"}
+          </LessonStudioBadge>
+        </div>
+      </div>
 
-        {issues.length ? (
-          <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
-            Нужно заполнить: {issues.join(", ")}.
-          </div>
+      <div
+        data-testid="lesson-studio-block-order-controls"
+        className="mt-4 flex flex-wrap items-center gap-2"
+      >
+        <button
+          type="button"
+          data-testid="lesson-studio-move-up-button"
+          onClick={(event) => handleMoveClick(event, "up")}
+          disabled={!canMoveUp || disabled || moving}
+          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          ↑ Выше
+        </button>
+
+        <button
+          type="button"
+          data-testid="lesson-studio-move-down-button"
+          onClick={(event) => handleMoveClick(event, "down")}
+          disabled={!canMoveDown || disabled || moving}
+          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          ↓ Ниже
+        </button>
+
+        {moving ? (
+          <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
+            Меняем порядок...
+          </span>
         ) : null}
-      </button>
+      </div>
+
+      {issues.length ? (
+        <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
+          Нужно заполнить: {issues.join(", ")}.
+        </div>
+      ) : null}
+
+      <LessonCanvasTypePreview block={block} preview={preview} />
     </article>
   );
 }
@@ -686,7 +729,9 @@ function LessonStudioCanvas({
   onSelectBlock,
   onRefreshBlocks,
   onCreateBlock,
+  onMoveBlock,
   creatingTemplateKey,
+  movingBlockId,
   blocksLoading,
 }) {
   return (
@@ -726,7 +771,12 @@ function LessonStudioCanvas({
               block={block}
               index={index}
               selected={block.id === selectedBlockId}
+              canMoveUp={index > 0}
+              canMoveDown={index < blocks.length - 1}
+              moving={movingBlockId === block.id}
+              disabled={blocksLoading || Boolean(movingBlockId)}
               onSelect={onSelectBlock}
+              onMove={onMoveBlock}
             />
           ))}
         </div>
@@ -1182,6 +1232,50 @@ export function LessonStudioPage({ lessonId }) {
     },
     [blocks, lessonId, loadBlocks]
   );
+
+  const handleMoveBlock = useCallback(
+    async (block, direction) => {
+      if (!lessonId || !block?.id) {
+        setError("Не удалось определить урок или блок для перемещения.");
+        return;
+      }
+
+      const orderedBlocks = blocks
+        .slice()
+        .sort((left, right) => (Number(left.position) || 0) - (Number(right.position) || 0));
+
+      const index = orderedBlocks.findIndex((item) => item.id === block.id);
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+      if (index < 0 || targetIndex < 0 || targetIndex >= orderedBlocks.length) {
+        return;
+      }
+
+      const reorderedBlocks = orderedBlocks.slice();
+      const [movedBlock] = reorderedBlocks.splice(index, 1);
+      reorderedBlocks.splice(targetIndex, 0, movedBlock);
+
+      const payload = reorderedBlocks.map((item, itemIndex) => ({
+        id: item.id,
+        position: itemIndex + 1,
+      }));
+
+      setBlockActionId(block.id);
+      setError("");
+
+      try {
+        await reorderAdminLessonBlocks(lessonId, payload);
+        await loadBlocks();
+        setSelectedBlockId(block.id);
+      } catch (err) {
+        setError(formatLessonStudioError(err, "Не удалось изменить порядок блоков"));
+      } finally {
+        setBlockActionId("");
+      }
+    },
+    [blocks, lessonId, loadBlocks]
+  );
+
   const handleInspectorSaveBlock = useCallback(
     async (block, values) => {
       if (!block?.id) {
@@ -1233,7 +1327,9 @@ export function LessonStudioPage({ lessonId }) {
             onSelectBlock={setSelectedBlockId}
             onRefreshBlocks={loadBlocks}
             onCreateBlock={handleQuickCreateBlock}
+            onMoveBlock={handleMoveBlock}
             creatingTemplateKey={creatingTemplateKey}
+            movingBlockId={blockActionId}
             blocksLoading={blocksLoading}
           />
 
