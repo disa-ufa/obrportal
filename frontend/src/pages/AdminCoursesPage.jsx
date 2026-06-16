@@ -2253,6 +2253,166 @@ function AdminCourseCatalogDiagnostics({
   );
 }
 
+
+function CoursesRegistryTable({
+  courses,
+  courseModulesByCourseId,
+  courseLessonsByModuleId,
+  actionCourseId,
+  editingCourseId,
+  onStartEdit,
+  onToggleActive,
+  onDelete,
+}) {
+  if (!Array.isArray(courses) || courses.length === 0) {
+    return null;
+  }
+
+  return (
+    <SectionCard
+      title="Реестр программ"
+      subtitle="Компактный table-first вид для быстрого контроля программ. Подробные карточки и редактор структуры оставлены ниже."
+    >
+      <div
+        data-testid="admin-courses-registry-table"
+        className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200"
+      >
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3 text-left">Программа</th>
+                <th className="px-4 py-3 text-left">Статус</th>
+                <th className="px-4 py-3 text-left">Формат / документ</th>
+                <th className="px-4 py-3 text-left">Структура</th>
+                <th className="px-4 py-3 text-left">Готовность</th>
+                <th className="px-4 py-3 text-left">Обновлена</th>
+                <th className="px-4 py-3 text-right">Действия</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {courses.map((course) => {
+                const modules = courseModulesByCourseId[course.id] || [];
+                const lessons = modules.flatMap((module) => courseLessonsByModuleId[module.id] || []);
+                const readiness = getCourseBuilderReadiness(
+                  course,
+                  modules,
+                  courseLessonsByModuleId
+                );
+                const isActionRunning = actionCourseId === course.id;
+                const isEditing = editingCourseId === course.id;
+
+                return (
+                  <tr key={course.id} className={isEditing ? "bg-blue-50/70" : "hover:bg-slate-50"}>
+                    <td className="max-w-[360px] px-4 py-4 align-top">
+                      <div className="font-semibold text-slate-950">
+                        {course.title || "-"}
+                      </div>
+                      <div className="mt-1 break-all text-xs text-slate-500">
+                        {course.slug ? `/courses/${course.slug}` : "slug не задан"}
+                      </div>
+                      {course.description ? (
+                        <div className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
+                          {course.description}
+                        </div>
+                      ) : null}
+                    </td>
+
+                    <td className="px-4 py-4 align-top">
+                      <StatusBadge tone={getCourseStatusTone(course)}>
+                        {getCourseStatusLabel(course)}
+                      </StatusBadge>
+                    </td>
+
+                    <td className="px-4 py-4 align-top">
+                      <div className="flex flex-wrap gap-2">
+                        <StatusBadge tone={course.format ? "blue" : "gray"}>
+                          {course.format || "формат не задан"}
+                        </StatusBadge>
+                        <StatusBadge tone={course.document_type ? "violet" : "gray"}>
+                          {course.document_type || "документ не задан"}
+                        </StatusBadge>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4 align-top">
+                      <div className="font-semibold text-slate-900">
+                        {modules.length} мод. / {lessons.length} ур.
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        Обязательных: {readiness.requiredLessons}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4 align-top">
+                      <div className="font-semibold text-slate-900">
+                        {readiness.readinessPercent}%
+                      </div>
+                      <div className="mt-1">
+                        <StatusBadge tone={readiness.publishable ? "green" : "amber"}>
+                          {readiness.publishable ? "Можно публиковать" : "Есть блокеры"}
+                        </StatusBadge>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4 align-top text-xs text-slate-500">
+                      {formatDateTime(course.updated_at)}
+                    </td>
+
+                    <td className="px-4 py-4 align-top">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <a
+                          href={`#course-${course.id}`}
+                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                        >
+                          Детали
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => onStartEdit(course)}
+                          disabled={isActionRunning}
+                          className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isEditing ? "Редактируется" : "Редактировать"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onToggleActive(course)}
+                          disabled={isActionRunning}
+                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isActionRunning
+                            ? RU.running
+                            : course.is_active
+                              ? RU.deactivate
+                              : RU.activate}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onDelete(course)}
+                          disabled={isActionRunning}
+                          className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {RU.delete}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+
 function CourseCard({
   course,
   modules = [],
@@ -2296,7 +2456,7 @@ function CourseCard({
   const courseModules = Array.isArray(modules) ? modules : [];
 
   return (
-    <article className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
+    <article id={`course-${course.id}`} className="scroll-mt-28 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge tone={getCourseStatusTone(course)}>
           {getCourseStatusLabel(course)}
@@ -3695,6 +3855,19 @@ export function AdminCoursesPage() {
           )}
         </div>
       </SectionCard>
+
+      {!loading && courses.length > 0 && (
+        <CoursesRegistryTable
+          courses={courses}
+          courseModulesByCourseId={courseModulesByCourseId}
+          courseLessonsByModuleId={courseLessonsByModuleId}
+          actionCourseId={actionCourseId}
+          editingCourseId={editingCourseId}
+          onStartEdit={handleStartEdit}
+          onToggleActive={handleToggleActive}
+          onDelete={handleDelete}
+        />
+      )}
 
       <AdminCourseCatalogDiagnostics
         catalogStats={adminCourseCatalogStats}
