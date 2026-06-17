@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createAdminLessonBlock,
   deleteAdminLessonBlock,
@@ -1049,6 +1049,40 @@ function LessonCanvasBlock({
   const title = getBlockDisplayTitle(block, index);
   const preview = getBlockTextPreview(block);
   const busy = disabled || moving || duplicating || deleting;
+  const actionsMenuRef = useRef(null);
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!actionsMenuOpen) {
+      return undefined;
+    }
+
+    const handleOutsidePointerDown = (event) => {
+      if (!actionsMenuRef.current) {
+        return;
+      }
+
+      if (actionsMenuRef.current.contains(event.target)) {
+        return;
+      }
+
+      setActionsMenuOpen(false);
+    };
+
+    const handleEscapeKey = (event) => {
+      if (event.key === "Escape") {
+        setActionsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    document.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointerDown);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [actionsMenuOpen]);
 
   const handleMoveClick = (event, direction) => {
     event.stopPropagation();
@@ -1057,6 +1091,7 @@ function LessonCanvasBlock({
       return;
     }
 
+    setActionsMenuOpen(false);
     onMove(block, direction);
   };
 
@@ -1067,6 +1102,7 @@ function LessonCanvasBlock({
       return;
     }
 
+    setActionsMenuOpen(false);
     onDuplicate(block);
   };
 
@@ -1077,6 +1113,7 @@ function LessonCanvasBlock({
       return;
     }
 
+    setActionsMenuOpen(false);
     onDelete(block);
   };
 
@@ -1154,50 +1191,72 @@ function LessonCanvasBlock({
           Редактировать
         </button>
 
-        <div
-          data-testid="lesson-studio-card-actions"
-          className="flex flex-wrap items-center gap-1.5"
+        <details
+          ref={actionsMenuRef}
+          open={actionsMenuOpen}
+          data-testid="lesson-studio-card-actions-menu"
+          className="relative"
+          onClick={(event) => event.stopPropagation()}
+          onToggle={(event) => setActionsMenuOpen(event.currentTarget.open)}
         >
-          <button
-            type="button"
-            data-testid="lesson-studio-move-up-button"
-            onClick={(event) => handleMoveClick(event, "up")}
-            disabled={!canMoveUp || busy}
-            className="rounded-full bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          <summary
+            data-testid="lesson-studio-card-actions-trigger"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white text-lg font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-900"
+            style={{ listStyle: "none" }}
+            aria-label="Действия с блоком"
           >
-            ↑ Выше
-          </button>
+            ⋯
+          </summary>
 
-          <button
-            type="button"
-            data-testid="lesson-studio-move-down-button"
-            onClick={(event) => handleMoveClick(event, "down")}
-            disabled={!canMoveDown || busy}
-            className="rounded-full bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          <div
+            data-testid="lesson-studio-card-actions"
+            className="absolute right-0 z-20 mt-2 w-56 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200"
           >
-            ↓ Ниже
-          </button>
+            <button
+              type="button"
+              data-testid="lesson-studio-move-up-button"
+              onClick={(event) => handleMoveClick(event, "up")}
+              disabled={!canMoveUp || busy}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span>Переместить выше</span>
+              <span>↑</span>
+            </button>
 
-          <button
-            type="button"
-            data-testid="lesson-studio-duplicate-button"
-            onClick={handleDuplicateClick}
-            disabled={busy}
-            className="rounded-full bg-white px-2.5 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Дублировать
-          </button>
+            <button
+              type="button"
+              data-testid="lesson-studio-move-down-button"
+              onClick={(event) => handleMoveClick(event, "down")}
+              disabled={!canMoveDown || busy}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span>Переместить ниже</span>
+              <span>↓</span>
+            </button>
 
-          <button
-            type="button"
-            data-testid="lesson-studio-delete-button"
-            onClick={handleDeleteClick}
-            disabled={busy}
-            className="rounded-full bg-white px-2.5 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Удалить
-          </button>
-        </div>
+            <button
+              type="button"
+              data-testid="lesson-studio-duplicate-button"
+              onClick={handleDuplicateClick}
+              disabled={busy}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span>Дублировать</span>
+              <span>⧉</span>
+            </button>
+
+            <button
+              type="button"
+              data-testid="lesson-studio-delete-button"
+              onClick={handleDeleteClick}
+              disabled={busy}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span>Удалить</span>
+              <span>×</span>
+            </button>
+          </div>
+        </details>
 
         {moving || duplicating || deleting ? (
           <span className="rounded-full bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200">

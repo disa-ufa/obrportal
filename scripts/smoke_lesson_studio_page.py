@@ -53,7 +53,7 @@ def main() -> None:
     require_contains(
         "frontend/src/pages/LessonStudioPage.jsx",
         [
-            'import { useCallback, useEffect, useMemo, useState } from "react";',
+            'import { useCallback, useEffect, useMemo, useRef, useState } from "react";',
             "getAdminCourseLessonDetail",
             "getAdminLessonBlocks",
             "updateAdminLessonBlock",
@@ -437,6 +437,48 @@ def main() -> None:
     if present_noisy_lesson_card_fragments:
         print("Lesson Studio still contains noisy block card fragments:")
         for fragment in present_noisy_lesson_card_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_2_block_actions_menu_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    block_actions_menu_fragments = [
+        'data-testid="lesson-studio-card-actions-menu"',
+        'data-testid="lesson-studio-card-actions-trigger"',
+        'aria-label="Действия с блоком"',
+        "Переместить выше",
+        "Переместить ниже",
+        "⋯",
+    ]
+    missing_block_actions_menu_fragments = [
+        fragment for fragment in block_actions_menu_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_block_actions_menu_fragments:
+        print("Lesson Studio block actions menu fragments are missing:")
+        for fragment in missing_block_actions_menu_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_2_close_actions_menu_outside_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    close_actions_menu_fragments = [
+        "const actionsMenuRef = useRef(null);",
+        "const [actionsMenuOpen, setActionsMenuOpen] = useState(false);",
+        'document.addEventListener("pointerdown", handleOutsidePointerDown);',
+        'document.addEventListener("keydown", handleEscapeKey);',
+        "setActionsMenuOpen(false);",
+        "ref={actionsMenuRef}",
+        "open={actionsMenuOpen}",
+        "onToggle={(event) => setActionsMenuOpen(event.currentTarget.open)}",
+    ]
+    missing_close_actions_menu_fragments = [
+        fragment for fragment in close_actions_menu_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_close_actions_menu_fragments:
+        print("Lesson Studio close-actions-menu fragments are missing:")
+        for fragment in missing_close_actions_menu_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 
