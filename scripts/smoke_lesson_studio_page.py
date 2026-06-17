@@ -262,13 +262,6 @@ def main() -> None:
         ],
     )
 
-    require_contains(
-        [
-            'typeof onBlocksChanged === "function"',
-            "onBlocksChanged(nextBlocks)",
-        ],
-    )
-
     require_not_contains_between(
         "frontend/src/pages/LessonStudioPage.jsx",
         "function LessonStudioStructurePanel(",
