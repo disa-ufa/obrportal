@@ -185,17 +185,6 @@ function getLessonBlockTypeLabel(type) {
   return labels[value] || value;
 }
 
-function getLessonBlockTone(type) {
-  const value = `${type || "rich_text"}`.toLowerCase();
-
-  if (value === "video") return "green";
-  if (value === "file_link" || value === "file" || value === "link") return "blue";
-  if (value === "quiz") return "amber";
-  if (value === "assignment") return "red";
-  if (value === "callout") return "violet";
-
-  return "slate";
-}
 
 function getBadgeClass(tone) {
   const classes = {
@@ -1499,71 +1488,6 @@ function LessonStudioSidebarQuickAdd({
     </details>
   );
 }
-
-function LessonStudioQuickAddPanel({ templates, onCreateBlock, creatingTemplateKey, disabled }) {
-  return (
-    <section
-      data-testid="lesson-studio-quick-add"
-      className="rounded-[1.5rem] bg-white p-4 ring-1 ring-blue-100"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-            Stage 83.2.5 · Quick add
-          </div>
-          <h3 className="mt-1 text-sm font-bold text-slate-900">
-            Добавить блок
-          </h3>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Создайте типовой блок прямо на полотне. После добавления он сразу
-            откроется в инспекторе справа.
-          </p>
-        </div>
-
-        <div className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-200">
-          Быстрое наполнение
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {templates.map((template) => {
-          const creating = creatingTemplateKey === template.key;
-
-          return (
-            <button
-              key={template.key}
-              type="button"
-              data-testid="lesson-studio-quick-add-button"
-              onClick={() => onCreateBlock(template)}
-              disabled={disabled || creating}
-              className="rounded-2xl bg-slate-50 p-4 text-left ring-1 ring-slate-200 transition hover:bg-white hover:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-bold text-slate-900">
-                  + {template.label}
-                </div>
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                  {getLessonBlockTypeLabel(template.values.block_type)}
-                </span>
-              </div>
-
-              <p className="mt-2 text-xs leading-5 text-slate-500">
-                {template.hint}
-              </p>
-
-              {creating ? (
-                <div className="mt-3 text-xs font-semibold text-blue-600">
-                  Создаём блок...
-                </div>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 
 
 function LessonStudioCanvas({

@@ -61,9 +61,6 @@ def main() -> None:
             'creatingTemplateKey={creatingTemplateKey}',
             'onCreateBlock={handleQuickCreateBlock}',
             'handleQuickCreateBlock',
-            'data-testid="lesson-studio-quick-add-button"',
-            'data-testid="lesson-studio-quick-add"',
-            'function LessonStudioQuickAddPanel',
             'buildStudioQuickBlockPayload',
             'getNextStudioBlockPosition',
             'STUDIO_QUICK_BLOCK_TEMPLATES',
@@ -601,6 +598,41 @@ def main() -> None:
     if missing_insert_blocks_between_fragments:
         print("Lesson Studio insert-between-blocks fragments are missing:")
         for fragment in missing_insert_blocks_between_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_7_final_lesson_studio_cleanup_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    final_lesson_studio_required_fragments = [
+        "lesson-studio-inline-inspector",
+        "function getInspectorContentText(",
+        "function LessonCanvasInsertBlockControl(",
+        'data-testid="lesson-studio-canvas-insert-trigger"',
+        'data-testid="lesson-studio-sidebar-quick-add-trigger"',
+    ]
+    missing_final_lesson_studio_required_fragments = [
+        fragment for fragment in final_lesson_studio_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_final_lesson_studio_required_fragments:
+        print("Lesson Studio final required fragments are missing:")
+        for fragment in missing_final_lesson_studio_required_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    final_lesson_studio_removed_fragments = [
+        "function LessonStudioQuickAddPanel(",
+        "function getLessonBlockTone(",
+        "LessonBlocksEditor",
+        "Расширенные технические настройки",
+    ]
+    present_final_lesson_studio_removed_fragments = [
+        fragment for fragment in final_lesson_studio_removed_fragments
+        if fragment in lesson_studio_source
+    ]
+    if present_final_lesson_studio_removed_fragments:
+        print("Lesson Studio still contains removed/obsolete fragments:")
+        for fragment in present_final_lesson_studio_removed_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 
