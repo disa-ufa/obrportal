@@ -524,7 +524,7 @@ function getLessonReadinessReport(lesson, blocks) {
   };
 }
 
-function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange }) {
+function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange, onFixFirstProblem }) {
   const [isOpen, setIsOpen] = useState(false);
 
   if (!report) {
@@ -540,6 +540,7 @@ function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange })
   const problemLabel = report.problemBlocks.length
     ? `${report.problemBlocks.length} проблем`
     : "без проблем";
+  const firstProblemBlock = report.problemBlocks[0]?.block || null;
 
   return (
     <section
@@ -570,15 +571,40 @@ function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange })
           </div>
         </div>
 
-        <button
-          type="button"
-          data-testid="lesson-studio-readiness-toggle"
-          aria-expanded={isOpen}
-          onClick={() => setIsOpen((current) => !current)}
-          className="rounded-full bg-white px-3 py-2 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
-        >
-          {isOpen ? "Скрыть детали" : "Показать детали"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {firstProblemBlock ? (
+            <button
+              type="button"
+              data-testid="lesson-studio-readiness-fix-first-problem"
+              onClick={() => {
+                if (typeof onModeChange === "function") {
+                  onModeChange("editor");
+                }
+
+                if (typeof onFixFirstProblem === "function") {
+                  onFixFirstProblem();
+                } else if (typeof onSelectBlock === "function") {
+                  onSelectBlock(firstProblemBlock.id);
+                }
+
+                setIsOpen(true);
+              }}
+              className="rounded-full bg-blue-700 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-blue-800"
+            >
+              Исправить первую проблему
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="lesson-studio-readiness-toggle"
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen((current) => !current)}
+            className="rounded-full bg-white px-3 py-2 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+          >
+            {isOpen ? "Скрыть детали" : "Показать детали"}
+          </button>
+        </div>
       </div>
 
       {isOpen ? (
@@ -783,11 +809,13 @@ function LessonStudioStructurePanel({
   selectedBlockId,
   editingBlockId,
   onSelectBlock,
-  mode = "editor",
+  mode,
   quickAddTemplates = [],
   onCreateBlock,
   creatingTemplateKey,
-  quickAddDisabled = false,
+  quickAddDisabled,
+  showOnlyProblems = false,
+  onToggleShowOnlyProblems,
 }) {
   const previewMode = mode === "preview";
   const requiredBlocks = blocks.filter((block) => block.is_required).length;
@@ -795,6 +823,8 @@ function LessonStudioStructurePanel({
   const inactiveBlocks = Math.max(blocks.length - activeBlocks, 0);
   const problemBlocks = blocks.filter((block) => getBlockValidationIssues(block).length > 0);
   const readyBlocks = Math.max(blocks.length - problemBlocks.length, 0);
+  const displayedBlocks = showOnlyProblems ? problemBlocks : blocks;
+  const hiddenByProblemFilter = Math.max(blocks.length - displayedBlocks.length, 0);
 
   return (
     <aside
@@ -852,9 +882,37 @@ function LessonStudioStructurePanel({
         ) : null}
       </div>
 
+      <div
+        data-testid="lesson-studio-structure-problem-filter"
+        className="mt-3 flex flex-wrap items-center gap-2"
+      >
+        <button
+          type="button"
+          data-testid="lesson-studio-structure-problems-filter-button"
+          onClick={onToggleShowOnlyProblems}
+          disabled={!problemBlocks.length}
+          className={`rounded-full px-3 py-1.5 text-[11px] font-black ring-1 transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            showOnlyProblems
+              ? "bg-amber-600 text-white ring-amber-600"
+              : "bg-amber-50 text-amber-800 ring-amber-200 hover:bg-amber-100"
+          }`}
+        >
+          {showOnlyProblems ? "Показать все" : "Только проблемные"}
+        </button>
+
+        {showOnlyProblems && hiddenByProblemFilter ? (
+          <span
+            data-testid="lesson-studio-structure-problems-filter-hidden"
+            className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200"
+          >
+            Скрыто готовых: {hiddenByProblemFilter}
+          </span>
+        ) : null}
+      </div>
+
       <div className="mt-3 space-y-1.5">
-        {blocks.length ? (
-          blocks.map((block, index) => {
+        {displayedBlocks.length ? (
+          displayedBlocks.map((block, index) => {
             const selected = block.id === selectedBlockId;
             const editing = block.id === editingBlockId;
             const issues = getBlockValidationIssues(block);
@@ -945,7 +1003,9 @@ function LessonStudioStructurePanel({
           })
         ) : (
           <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-200">
-            Блоки урока пока не добавлены.
+            {showOnlyProblems && blocks.length
+              ? "Проблемных блоков нет. Все отображаемые блоки готовы."
+              : "Блоки урока пока не добавлены."}
           </div>
         )}
       </div>
@@ -2140,6 +2200,7 @@ export function LessonStudioPage({ lessonId }) {
   const [deletingBlockId, setDeletingBlockId] = useState("");
   const [creatingTemplateKey, setCreatingTemplateKey] = useState("");
   const [error, setError] = useState("");
+  const [showOnlyProblemBlocks, setShowOnlyProblemBlocks] = useState(false);
 
   const loadLesson = useCallback(async () => {
     if (!lessonId) {
@@ -2266,6 +2327,18 @@ export function LessonStudioPage({ lessonId }) {
       }
     }, 0);
   }, []);
+
+  const handleFixFirstProblem = useCallback(() => {
+    const firstProblemBlock = lessonReadiness?.problemBlocks?.[0]?.block || null;
+
+    if (!firstProblemBlock?.id) {
+      return;
+    }
+
+    setViewMode("editor");
+    handleSelectBlock(firstProblemBlock.id);
+    setEditingBlockId(firstProblemBlock.id);
+  }, [handleSelectBlock, lessonReadiness]);
 
   const handleQuickCreateBlock = useCallback(
     async (template, insertIndex = null) => {
@@ -2472,8 +2545,12 @@ export function LessonStudioPage({ lessonId }) {
 
       <LessonStudioReadinessChecklist
         report={lessonReadiness}
-        onSelectBlock={handleSelectBlock}
+        onSelectBlock={(blockId) => {
+          handleSelectBlock(blockId);
+          setEditingBlockId(blockId || "");
+        }}
         onModeChange={setViewMode}
+        onFixFirstProblem={handleFixFirstProblem}
       />
 
 
@@ -2488,6 +2565,7 @@ export function LessonStudioPage({ lessonId }) {
           lesson={lesson}
           blocks={studioStructureBlocks}
           selectedBlockId={selectedBlockId}
+          editingBlockId={editingBlockId}
           onSelectBlock={(blockId) => {
             handleSelectBlock(blockId);
             setEditingBlockId(blockId || "");
@@ -2497,6 +2575,8 @@ export function LessonStudioPage({ lessonId }) {
           onCreateBlock={handleQuickCreateBlock}
           creatingTemplateKey={creatingTemplateKey}
           quickAddDisabled={blocksLoading || Boolean(creatingTemplateKey)}
+          showOnlyProblems={showOnlyProblemBlocks}
+          onToggleShowOnlyProblems={() => setShowOnlyProblemBlocks((current) => !current)}
         />
 
         <section

@@ -88,7 +88,6 @@ def main() -> None:
             'data-testid="lesson-studio-sidebar-quick-add"',
             'function LessonStudioSidebarQuickAdd(',
             'className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"',
-            'onSelectBlock={handleSelectBlock}',
             'target.scrollIntoView({ behavior: "smooth", block: "center" });',
             'document.getElementById(`studio-block-${blockId}`)',
             'const handleSelectBlock = useCallback((blockId) => {',
@@ -718,6 +717,56 @@ def main() -> None:
     if present_redundant_edit_button_fragments:
         print("Lesson Studio canvas still contains redundant edit button fragments:")
         for fragment in present_redundant_edit_button_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_10_problem_first_workflow_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    problem_first_required_fragments = [
+        "function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange, onFixFirstProblem })",
+        "const firstProblemBlock = report.problemBlocks[0]?.block || null;",
+        'data-testid="lesson-studio-readiness-fix-first-problem"',
+        "Исправить первую проблему",
+        "handleFixFirstProblem",
+        "setEditingBlockId(firstProblemBlock.id);",
+        "showOnlyProblemBlocks",
+        "setShowOnlyProblemBlocks",
+        "const displayedBlocks = showOnlyProblems ? problemBlocks : blocks;",
+        'data-testid="lesson-studio-structure-problem-filter"',
+        'data-testid="lesson-studio-structure-problems-filter-button"',
+        "displayedBlocks.map((block, index) => {",
+    ]
+
+    missing_problem_first_fragments = [
+        fragment for fragment in problem_first_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_problem_first_fragments:
+        print("Lesson Studio problem-first workflow fragments are missing:")
+        for fragment in missing_problem_first_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_10_structure_editing_prop_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    structure_editing_required_fragments = [
+        "function LessonStudioStructurePanel({",
+        "editingBlockId,",
+        "editingBlockId={editingBlockId}",
+        "const editing = block.id === editingBlockId;",
+    ]
+
+    missing_structure_editing_fragments = [
+        fragment for fragment in structure_editing_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_structure_editing_fragments:
+        print("Lesson Studio structure editing prop fragments are missing:")
+        for fragment in missing_structure_editing_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 
