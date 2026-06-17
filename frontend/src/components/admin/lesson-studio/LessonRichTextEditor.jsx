@@ -3,7 +3,7 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import { CharacterCount, Placeholder } from "@tiptap/extensions";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const RICH_TEXT_CHARACTER_LIMIT = 20000;
 
@@ -74,19 +74,12 @@ function getEditorStats(editor) {
   return { characters, words };
 }
 
-function setEditorLink(editor) {
+function applyEditorLink(editor, nextUrl) {
   if (!editor) {
     return;
   }
 
-  const previousUrl = editor.getAttributes("link")?.href || "";
-  const nextUrl = window.prompt("Введите ссылку", previousUrl);
-
-  if (nextUrl === null) {
-    return;
-  }
-
-  const cleanUrl = nextUrl.trim();
+  const cleanUrl = `${nextUrl || ""}`.trim();
 
   if (!cleanUrl) {
     editor.chain().focus().extendMarkRange("link").unsetLink().run();
@@ -149,6 +142,9 @@ function LessonRichTextEditor({
     onUpdate: ({ editor: currentEditor }) => emitEditorChange(currentEditor, onChange),
   });
 
+  const [linkEditorOpen, setLinkEditorOpen] = useState(false);
+  const [linkInputValue, setLinkInputValue] = useState("");
+
   useEffect(() => {
     if (!editor) {
       return;
@@ -156,6 +152,27 @@ function LessonRichTextEditor({
 
     editor.setEditable(!disabled);
   }, [disabled, editor]);
+
+  const openLinkEditor = () => {
+    if (!editor || disabled) {
+      return;
+    }
+
+    setLinkInputValue(editor.getAttributes("link")?.href || "");
+    setLinkEditorOpen(true);
+  };
+
+  const closeLinkEditor = () => {
+    setLinkEditorOpen(false);
+    setLinkInputValue("");
+  };
+
+  const handleLinkSubmit = (event) => {
+    event.preventDefault();
+
+    applyEditorLink(editor, linkInputValue);
+    closeLinkEditor();
+  };
 
   if (!editor) {
     return (
@@ -202,7 +219,7 @@ function LessonRichTextEditor({
           <button
             type="button"
             data-testid="lesson-rich-text-bubble-link"
-            onClick={() => setEditorLink(editor)}
+            onClick={openLinkEditor}
             className={`rounded-xl px-2 py-1 text-xs font-black transition ${
               editor.isActive("link") ? "bg-white text-slate-950" : "hover:bg-white/10"
             }`}
@@ -283,7 +300,7 @@ function LessonRichTextEditor({
           title="Ссылка"
           active={editor.isActive("link")}
           disabled={disabled}
-          onClick={() => setEditorLink(editor)}
+          onClick={openLinkEditor}
         >
           🔗
         </ToolbarButton>
@@ -347,6 +364,48 @@ function LessonRichTextEditor({
           Очистить
         </ToolbarButton>
       </div>
+
+      {linkEditorOpen ? (
+        <form
+          data-testid="lesson-rich-text-link-editor"
+          onSubmit={handleLinkSubmit}
+          className="mt-2 flex flex-wrap items-center gap-2 rounded-2xl bg-blue-50 p-2 ring-1 ring-blue-100"
+        >
+          <label className="min-w-0 flex-1">
+            <span className="sr-only">Ссылка</span>
+            <input
+              type="url"
+              value={linkInputValue}
+              onChange={(event) => setLinkInputValue(event.target.value)}
+              placeholder="https://example.ru/material"
+              className="w-full rounded-xl border border-blue-100 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
+          <button
+            type="submit"
+            className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-blue-700"
+          >
+            Применить
+          </button>
+
+          <button
+            type="button"
+            onClick={() => applyEditorLink(editor, "")}
+            className="rounded-xl bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+          >
+            Убрать
+          </button>
+
+          <button
+            type="button"
+            onClick={closeLinkEditor}
+            className="rounded-xl bg-white px-3 py-2 text-xs font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50"
+          >
+            Отмена
+          </button>
+        </form>
+      ) : null}
 
       <div
         data-testid="lesson-rich-text-editor-surface"

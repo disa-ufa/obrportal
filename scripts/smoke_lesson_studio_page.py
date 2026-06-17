@@ -898,12 +898,29 @@ def main() -> None:
         "Link.configure",
         "lesson-rich-text-toolbar",
         "lesson-rich-text-character-count",
+        "lesson-rich-text-link-editor",
+        "applyEditorLink",
     ]
 
     missing_rich_text_editor_fragments = [
         fragment for fragment in rich_text_editor_required_fragments
         if fragment not in rich_text_editor_source
     ]
+
+    forbidden_rich_text_editor_fragments = [
+        "window.prompt",
+    ]
+
+    present_forbidden_rich_text_editor_fragments = [
+        fragment for fragment in forbidden_rich_text_editor_fragments
+        if fragment in rich_text_editor_source
+    ]
+
+    if present_forbidden_rich_text_editor_fragments:
+        print("Lesson rich text editor contains forbidden UI patterns:")
+        for fragment in present_forbidden_rich_text_editor_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
 
     if missing_rich_text_editor_fragments:
         print("Lesson rich text editor component is incomplete:")
