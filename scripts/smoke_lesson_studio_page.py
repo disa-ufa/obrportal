@@ -76,13 +76,7 @@ def main() -> None:
             "function LessonStudioTopbar",
             'className="sticky top-4 z-20 rounded-[2rem] bg-white/95 p-5 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
             'const courseHref = courseId ? `/admin/courses#course-${courseId}` : "/admin/courses";',
-            'lesson?.is_active === false ? "Скрыт" : "Активен"',
-            'Скрытых:',
             'К курсу',
-            'data-testid="lesson-studio-topbar-error"',
-            'data-testid="lesson-studio-status-strip"',
-            'data-testid="lesson-studio-open-course-button"',
-            'data-testid="lesson-studio-reload-button"',
             'data-testid="lesson-studio-quick-actions"',
             'data-testid="lesson-studio-title"',
             'data-testid="lesson-studio-back-to-courses"',
@@ -143,7 +137,6 @@ def main() -> None:
             'data-testid="lesson-studio-preview-summary"',
             'data-testid="lesson-studio-preview-panel"',
             'function LessonStudioPreviewPanel',
-            'previewMode ? "Предпросмотр" : "Редактор"',
             'data-testid="lesson-studio-preview-mode-button"',
             'data-testid="lesson-studio-editor-mode-button"',
             'data-testid="lesson-studio-mode-switcher"',
@@ -274,7 +267,6 @@ def main() -> None:
     forbidden_canvas_intro = [
         "Визуальное полотно урока",
         "Блоки отображаются как учебный материал",
-        "Обновить полотно",
     ]
     present_canvas_intro = [
         fragment for fragment in forbidden_canvas_intro if fragment in canvas_source
@@ -633,6 +625,42 @@ def main() -> None:
     if present_final_lesson_studio_removed_fragments:
         print("Lesson Studio still contains removed/obsolete fragments:")
         for fragment in present_final_lesson_studio_removed_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_8_simplified_topbar_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    simplified_topbar_required_fragments = [
+        'data-testid="lesson-studio-mode-switcher"',
+        'data-testid="lesson-studio-editor-mode-button"',
+        'data-testid="lesson-studio-preview-mode-button"',
+        'data-testid="lesson-studio-back-to-courses"',
+        'data-testid="lesson-studio-course-link"',
+        "К курсу",
+    ]
+    missing_simplified_topbar_required_fragments = [
+        fragment for fragment in simplified_topbar_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_simplified_topbar_required_fragments:
+        print("Lesson Studio simplified topbar required fragments are missing:")
+        for fragment in missing_simplified_topbar_required_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    simplified_topbar_removed_fragments = [
+        'data-testid="lesson-studio-reload-button"',
+        'data-testid="lesson-studio-status-badges"',
+        ">Обновить<",
+        "statusLabel",
+    ]
+    present_simplified_topbar_removed_fragments = [
+        fragment for fragment in simplified_topbar_removed_fragments
+        if fragment in lesson_studio_source
+    ]
+    if present_simplified_topbar_removed_fragments:
+        print("Lesson Studio simplified topbar still contains removed fragments:")
+        for fragment in present_simplified_topbar_removed_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 

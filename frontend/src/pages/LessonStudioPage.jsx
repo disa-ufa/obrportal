@@ -679,11 +679,8 @@ function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange })
   );
 }
 
-function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, mode = "editor", onModeChange, onReload }) {
-  const requiredBlocks = blocks.filter((block) => block.is_required).length;
-  const activeBlocks = blocks.filter((block) => block.is_active !== false).length;
-  const inactiveBlocks = Math.max(blocks.length - activeBlocks, 0);
-  const statusLabel = loading || blocksLoading ? "Обновление" : "Черновик";
+
+function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
   const courseId =
     lesson?.course_id ||
     lesson?.courseId ||
@@ -722,112 +719,57 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, mod
           </h1>
         </div>
 
-        <div className="flex flex-col items-start gap-3 sm:items-end">
+        <div
+          data-testid="lesson-studio-quick-actions"
+          className="flex flex-wrap justify-start gap-2 sm:justify-end"
+        >
           <div
-            data-testid="lesson-studio-quick-actions"
-            className="flex flex-wrap justify-start gap-2 sm:justify-end"
+            data-testid="lesson-studio-mode-switcher"
+            className="flex rounded-full bg-slate-100 p-1 ring-1 ring-slate-200"
           >
-            <div
-              data-testid="lesson-studio-mode-switcher"
-              className="flex rounded-full bg-slate-100 p-1 ring-1 ring-slate-200"
+            <button
+              type="button"
+              data-testid="lesson-studio-editor-mode-button"
+              onClick={() => onModeChange("editor")}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                !previewMode
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-slate-600 hover:text-blue-700"
+              }`}
             >
-              <button
-                type="button"
-                data-testid="lesson-studio-editor-mode-button"
-                onClick={() => onModeChange("editor")}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                  !previewMode
-                    ? "bg-white text-blue-700 shadow-sm"
-                    : "text-slate-600 hover:text-blue-700"
-                }`}
-              >
-                Редактор
-              </button>
-
-              <button
-                type="button"
-                data-testid="lesson-studio-preview-mode-button"
-                onClick={() => onModeChange("preview")}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                  previewMode
-                    ? "bg-white text-blue-700 shadow-sm"
-                    : "text-slate-600 hover:text-blue-700"
-                }`}
-              >
-                Предпросмотр
-              </button>
-            </div>
+              Редактор
+            </button>
 
             <button
               type="button"
-              data-testid="lesson-studio-reload-button"
-              onClick={onReload}
-              disabled={loading || blocksLoading}
-              className="rounded-full bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+              data-testid="lesson-studio-preview-mode-button"
+              onClick={() => onModeChange("preview")}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                previewMode
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-slate-600 hover:text-blue-700"
+              }`}
             >
-              {loading || blocksLoading ? "Обновляем..." : "Обновить"}
+              Предпросмотр
             </button>
-
-            <a
-              href={courseHref}
-              data-testid="lesson-studio-open-course-button"
-              className="rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-blue-700 hover:ring-blue-200"
-            >
-              К курсу
-            </a>
           </div>
 
-          <div
-            data-testid="lesson-studio-status-strip"
-            className="flex flex-wrap justify-start gap-2 sm:justify-end"
+          <a
+            href={courseHref}
+            data-testid="lesson-studio-course-link"
+            className="rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
           >
-            <LessonStudioBadge tone={previewMode ? "blue" : "slate"}>
-              {previewMode ? "Предпросмотр" : "Редактор"}
-            </LessonStudioBadge>
-            <LessonStudioBadge tone={loading || blocksLoading ? "amber" : "slate"}>
-              {statusLabel}
-            </LessonStudioBadge>
-            <LessonStudioBadge tone="blue">
-              {lesson ? getLessonContentTypeLabel(lesson.content_type) : "Урок"}
-            </LessonStudioBadge>
-            <LessonStudioBadge tone={lesson?.is_required ? "green" : "slate"}>
-              {lesson?.is_required ? "Обязательный" : "Дополнительный"}
-            </LessonStudioBadge>
-            <LessonStudioBadge tone={lesson?.is_active === false ? "slate" : "green"}>
-              {lesson?.is_active === false ? "Скрыт" : "Активен"}
-            </LessonStudioBadge>
-            <LessonStudioBadge tone="violet">
-              Блоков: {blocks.length}
-            </LessonStudioBadge>
-            <LessonStudioBadge tone="green">
-              Активных: {activeBlocks}
-            </LessonStudioBadge>
-            <LessonStudioBadge tone="amber">
-              Обязательных: {requiredBlocks}
-            </LessonStudioBadge>
-            {inactiveBlocks ? (
-              <LessonStudioBadge tone="slate">
-                Скрытых: {inactiveBlocks}
-              </LessonStudioBadge>
-            ) : null}
-          </div>
+            К курсу
+          </a>
         </div>
       </div>
 
       {error ? (
         <div
-          data-testid="lesson-studio-topbar-error"
-          className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200"
+          data-testid="lesson-studio-error"
+          className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 ring-1 ring-red-200"
         >
-          <div className="font-semibold">Не удалось загрузить данные студии.</div>
-          <div className="mt-1">{error}</div>
-          <button
-            type="button"
-            onClick={onReload}
-            className="mt-3 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
-          >
-            Повторить загрузку
-          </button>
+          {error}
         </div>
       ) : null}
     </section>
@@ -2521,13 +2463,9 @@ export function LessonStudioPage({ lessonId }) {
     <main data-testid="lesson-studio-page" className="space-y-5">
       <LessonStudioTopbar
         lesson={lesson}
-        blocks={blocks}
-        loading={loading}
-        blocksLoading={blocksLoading}
         error={error}
         mode={viewMode}
         onModeChange={setViewMode}
-        onReload={reloadStudio}
       />
 
       <LessonStudioReadinessChecklist
@@ -2566,7 +2504,7 @@ export function LessonStudioPage({ lessonId }) {
           <LessonStudioCanvas
             lesson={lesson}
             blocks={blocks}
-            mode={viewMode}
+                mode={viewMode}
             selectedBlockId={selectedBlockId}
             editingBlockId={editingBlockId}
             onSelectBlock={(blockId) => {
@@ -2586,7 +2524,7 @@ export function LessonStudioPage({ lessonId }) {
             duplicatingBlockId={duplicatingBlockId}
             deletingBlockId={deletingBlockId}
             blocksLoading={blocksLoading}
-          />
+              />
 
         </section>
 
