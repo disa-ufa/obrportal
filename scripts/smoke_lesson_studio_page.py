@@ -828,6 +828,26 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+    # stage83_3_6_13_lesson_studio_jsx_cleanup_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    bad_jsx_cleanup_fragments = [
+        "blocks={blocks}\n                mode={viewMode}",
+        "blocksLoading={blocksLoading}\n              />",
+        "const selectedBlock = useMemo(\n\n    () => blocks.find((block) => block.id === selectedBlockId) || null,",
+    ]
+
+    present_bad_jsx_cleanup_fragments = [
+        fragment for fragment in bad_jsx_cleanup_fragments
+        if fragment in lesson_studio_source
+    ]
+
+    if present_bad_jsx_cleanup_fragments:
+        print("Lesson Studio JSX cleanup regressed:")
+        for fragment in present_bad_jsx_cleanup_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
     print("Lesson Studio page smoke passed")
 
 

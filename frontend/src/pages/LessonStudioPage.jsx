@@ -2356,7 +2356,6 @@ export function LessonStudioPage({ lessonId }) {
   }, [editingBlockId, viewMode]);
 
   const selectedBlock = useMemo(
-
     () => blocks.find((block) => block.id === selectedBlockId) || null,
     [blocks, selectedBlockId]
   );
@@ -2373,7 +2372,6 @@ export function LessonStudioPage({ lessonId }) {
       setSelectedBlockId("");
     }
   }, [blocks, selectedBlockId]);
-
 
   const visiblePreviewBlocks = useMemo(
     () => blocks.filter((block) => block.is_active !== false),
@@ -2398,8 +2396,6 @@ export function LessonStudioPage({ lessonId }) {
       return normalizedBlocks[0]?.id || "";
     });
   }, []);
-
-
 
   const handleSelectBlock = useCallback((blockId) => {
     setSelectedBlockId(blockId);
@@ -2553,7 +2549,6 @@ export function LessonStudioPage({ lessonId }) {
     [blocks, lessonId, loadBlocks]
   );
 
-
   const handleDuplicateBlock = useCallback(
     async (block) => {
       if (!lessonId || !block?.id) {
@@ -2702,7 +2697,7 @@ export function LessonStudioPage({ lessonId }) {
           <LessonStudioCanvas
             lesson={lesson}
             blocks={blocks}
-                mode={viewMode}
+            mode={viewMode}
             selectedBlockId={selectedBlockId}
             editingBlockId={editingBlockId}
             onSelectBlock={(blockId) => {
@@ -2722,8 +2717,7 @@ export function LessonStudioPage({ lessonId }) {
             duplicatingBlockId={duplicatingBlockId}
             deletingBlockId={deletingBlockId}
             blocksLoading={blocksLoading}
-              />
-
+          />
         </section>
 
         {viewMode === "preview" ? (
