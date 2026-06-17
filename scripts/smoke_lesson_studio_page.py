@@ -388,13 +388,10 @@ def main() -> None:
     # stage83_3_6_1_compact_lesson_card_guard
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
     compact_lesson_card_fragments = [
-        'data-testid="lesson-studio-edit-button"',
         'data-testid="lesson-studio-card-actions"',
         'data-testid="lesson-studio-block-readiness-chip"',
         'data-testid="lesson-studio-block-issues"',
-        "const handleEditClick = (event) => {",
         "const blockReady = issues.length === 0;",
-        "Редактировать",
         "Готов",
     ]
     missing_compact_lesson_card_fragments = [
@@ -702,6 +699,25 @@ def main() -> None:
     if present_compact_canvas_forbidden_fragments:
         print("Lesson Studio compact canvas still contains forbidden fragments:")
         for fragment in present_compact_canvas_forbidden_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_9_no_redundant_edit_button_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    lesson_canvas_block_source = lesson_studio_source.split("function LessonCanvasBlock(", 1)[1].split("function LessonStudioSidebarQuickAdd(", 1)[0]
+
+    redundant_edit_button_fragments = [
+        'data-testid="lesson-studio-edit-button"',
+        "handleEditClick",
+        ">Редактировать<",
+    ]
+    present_redundant_edit_button_fragments = [
+        fragment for fragment in redundant_edit_button_fragments
+        if fragment in lesson_canvas_block_source
+    ]
+    if present_redundant_edit_button_fragments:
+        print("Lesson Studio canvas still contains redundant edit button fragments:")
+        for fragment in present_redundant_edit_button_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 

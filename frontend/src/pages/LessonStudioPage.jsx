@@ -1163,16 +1163,6 @@ function LessonCanvasBlock({
     onDelete(block);
   };
 
-  const handleEditClick = (event) => {
-    event.stopPropagation();
-
-    if (previewMode || busy) {
-      return;
-    }
-
-    onSelect(block.id);
-  };
-
   return (
     <article
       data-lesson-studio-block-id={block.id}
@@ -1245,18 +1235,6 @@ function LessonCanvasBlock({
               : "mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5"
         }
       >
-        {!compact ? (
-          <button
-            type="button"
-            data-testid="lesson-studio-edit-button"
-            onClick={handleEditClick}
-            disabled={busy}
-            className="rounded-full bg-blue-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Редактировать
-          </button>
-        ) : null}
-
         <details
           ref={actionsMenuRef}
           open={actionsMenuOpen}
