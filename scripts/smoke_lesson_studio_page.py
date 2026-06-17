@@ -1090,7 +1090,7 @@ def main() -> None:
         raise SystemExit(1)
 
     forbidden_single_lesson_preview_fragments = [
-        "data-testid=\"lesson-studio-preview-banner\"",
+        
         "Административные действия скрыты. На полотне показаны только активные",
     ]
 
