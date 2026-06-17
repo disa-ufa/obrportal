@@ -530,9 +530,9 @@ def main() -> None:
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
     canvas_polish_fragments = [
         '"ring-blue-300 bg-blue-50/20"',
-        'className={`mt-3 rounded-[1.25rem] p-3 text-sm leading-6 ring-1 ${meta.surfaceClass}`}',
+        '? "py-1 text-sm leading-7 text-slate-800"',
         'className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 text-xs font-black shadow-sm ring-1 ring-black/5"',
-        '<section data-testid="lesson-studio-visual-canvas" className="space-y-2.5">',
+        'className={previewMode ? "space-y-0" : "space-y-2.5"}',
     ]
     missing_canvas_polish_fragments = [
         fragment for fragment in canvas_polish_fragments
