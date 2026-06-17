@@ -801,6 +801,34 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+    # stage83_3_6_12_inline_save_feedback_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    inline_save_feedback_required_fragments = [
+        "function getInspectorFormSnapshot(values)",
+        "const savedFormSnapshot = useMemo(",
+        "const currentFormSnapshot = useMemo(",
+        "const hasUnsavedChanges = Boolean(selectedBlock && savedFormSnapshot !== currentFormSnapshot);",
+        "const saveFeedback = saving",
+        'data-testid="lesson-studio-inspector-save-status"',
+        'aria-live="polite"',
+        "Есть несохранённые изменения",
+        "Сохранить изменения",
+        "Ошибка сохранения",
+        "Текущие поля совпадают с сохранённой версией блока.",
+    ]
+
+    missing_inline_save_feedback_fragments = [
+        fragment for fragment in inline_save_feedback_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_inline_save_feedback_fragments:
+        print("Lesson Studio inline save feedback fragments are missing:")
+        for fragment in missing_inline_save_feedback_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
     print("Lesson Studio page smoke passed")
 
 

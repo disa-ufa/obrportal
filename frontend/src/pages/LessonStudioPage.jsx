@@ -1751,6 +1751,16 @@ function buildInspectorBlockForm(block) {
   };
 }
 
+function getInspectorFormSnapshot(values) {
+  return JSON.stringify({
+    title: `${values?.title || ""}`.trim(),
+    content_text: `${values?.content_text || ""}`.trim(),
+    is_required: Boolean(values?.is_required),
+    is_active: Boolean(values?.is_active),
+  });
+}
+
+
 function buildInspectorBlockPayload(block, values) {
   const contentJson =
     block?.content_json && typeof block.content_json === "object"
@@ -1803,6 +1813,44 @@ function LessonStudioInspector({
   const draftBlock = selectedBlock && draftPayload ? { ...selectedBlock, ...draftPayload } : null;
   const blockIssues = draftBlock ? getBlockValidationIssues(draftBlock) : [];
   const blockReady = Boolean(selectedBlock && blockIssues.length === 0);
+  const savedFormSnapshot = useMemo(
+    () => getInspectorFormSnapshot(buildInspectorBlockForm(selectedBlock)),
+    [selectedBlock]
+  );
+  const currentFormSnapshot = useMemo(
+    () => getInspectorFormSnapshot(form),
+    [form]
+  );
+  const hasUnsavedChanges = Boolean(selectedBlock && savedFormSnapshot !== currentFormSnapshot);
+  const saveFeedback = saving
+    ? {
+        label: "Сохраняем…",
+        description: "Отправляем изменения блока на сервер.",
+        className: "bg-blue-50 text-blue-900 ring-blue-200",
+      }
+    : formError
+      ? {
+          label: "Ошибка сохранения",
+          description: formError,
+          className: "bg-red-50 text-red-900 ring-red-200",
+        }
+      : formSuccess
+        ? {
+            label: "Сохранено",
+            description: formSuccess,
+            className: "bg-green-50 text-green-900 ring-green-200",
+          }
+        : hasUnsavedChanges
+          ? {
+              label: "Есть несохранённые изменения",
+              description: "Нажмите «Сохранить изменения», чтобы обновить блок.",
+              className: "bg-amber-50 text-amber-950 ring-amber-200",
+            }
+          : {
+              label: "Сохранено",
+              description: "Текущие поля совпадают с сохранённой версией блока.",
+              className: "bg-slate-50 text-slate-700 ring-slate-200",
+            };
   const inlineMode = variant === "inline";
   const inspectorTestId = inlineMode
     ? "lesson-studio-inline-inspector"
@@ -1836,7 +1884,7 @@ function LessonStudioInspector({
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!selectedBlock) {
+    if (!selectedBlock || saving) {
       return;
     }
 
@@ -1880,6 +1928,20 @@ function LessonStudioInspector({
           </button>
         ) : null}
       </div>
+
+      {selectedBlock ? (
+        <div
+          data-testid="lesson-studio-inspector-save-status"
+          role="status"
+          aria-live="polite"
+          className={`mt-3 rounded-2xl p-3 text-sm ring-1 ${saveFeedback.className}`}
+        >
+          <div className="font-black">{saveFeedback.label}</div>
+          <div className="mt-1 text-xs leading-5 opacity-90">
+            {saveFeedback.description}
+          </div>
+        </div>
+      ) : null}
 
       {!inlineMode ? (
         <p className="mt-2 text-xs leading-5 text-slate-500">
@@ -2058,19 +2120,7 @@ function LessonStudioInspector({
               </div>
             ) : null}
 
-            {formError ? (
-              <div className="rounded-2xl bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
-                {formError}
-              </div>
-            ) : null}
-
-            {formSuccess ? (
-              <div className="rounded-2xl bg-green-50 p-3 text-sm text-green-800 ring-1 ring-green-200">
-                {formSuccess}
-              </div>
-            ) : null}
-
-            <div
+<div
               data-testid="lesson-studio-inspector-save-bar"
               className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-2 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"
             >
@@ -2093,7 +2143,11 @@ function LessonStudioInspector({
                 disabled={saving}
                 className="rounded-2xl bg-blue-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving ? "Сохраняем..." : "Сохранить"}
+                {saving
+                  ? "Сохраняем..."
+                  : hasUnsavedChanges
+                    ? "Сохранить изменения"
+                    : "Сохранить"}
               </button>
             </div>
           </form>
