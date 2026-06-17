@@ -848,6 +848,42 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+    # stage83_3_6_15_visual_block_numbering_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    obsolete_visual_numbering_fragments = [
+        "#{item.block.position || item.index + 1} · {item.title}",
+        "{block.position || index + 1}",
+        "#{block.position || index + 1} · {getLessonBlockTypeLabel(block.block_type)}",
+    ]
+
+    present_obsolete_visual_numbering_fragments = [
+        fragment for fragment in obsolete_visual_numbering_fragments
+        if fragment in lesson_studio_source
+    ]
+
+    if present_obsolete_visual_numbering_fragments:
+        print("Lesson Studio visual numbering still uses database position:")
+        for fragment in present_obsolete_visual_numbering_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    expected_visual_numbering_fragments = [
+        "#{item.index + 1} · {item.title}",
+        "#{index + 1} · {getLessonBlockTypeLabel(block.block_type)}",
+    ]
+
+    missing_visual_numbering_fragments = [
+        fragment for fragment in expected_visual_numbering_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_visual_numbering_fragments:
+        print("Lesson Studio visual numbering fragments are missing:")
+        for fragment in missing_visual_numbering_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
     print("Lesson Studio page smoke passed")
 
 

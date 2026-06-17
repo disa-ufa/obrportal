@@ -699,7 +699,7 @@ function LessonStudioReadinessChecklist({
                   >
                     <div className="min-w-0">
                       <div className="font-bold">
-                        #{item.block.position || item.index + 1} · {item.title}
+                        #{item.index + 1} · {item.title}
                       </div>
                       <div className="mt-1 text-xs">
                         Нужно заполнить: {item.issues.join(", ")}.
@@ -973,7 +973,7 @@ function LessonStudioStructurePanel({
                       ? "bg-white text-blue-700 ring-blue-200"
                       : "bg-slate-50 text-slate-600 ring-slate-200"
                   }`}>
-                    {block.position || index + 1}
+                    {index + 1}
                   </span>
 
                   <div className="min-w-0 flex-1">
@@ -1280,7 +1280,7 @@ function LessonCanvasBlock({
       <div className="flex flex-wrap items-start justify-between gap-2.5">
         <div className="min-w-0">
           <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-            #{block.position || index + 1} · {getLessonBlockTypeLabel(block.block_type)}
+            #{index + 1} · {getLessonBlockTypeLabel(block.block_type)}
           </div>
           <h3 className={`${compact ? "mt-0.5 text-sm" : "mt-1 text-base"} font-black text-slate-900`}>
             {title}
