@@ -293,9 +293,10 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          docker compose ps
-          docker compose logs backend
-          docker compose logs frontend
+          touch .env
+          docker compose ps || true
+          docker compose logs backend || true
+          docker compose logs frontend || true
 
       - name: Stop services
         if: always()
