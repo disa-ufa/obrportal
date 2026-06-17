@@ -76,8 +76,6 @@ def main() -> None:
             'data-testid="lesson-studio-visual-canvas"',
             'data-testid="lesson-studio-canvas-block"',
             'data-testid="lesson-studio-inspector-form"',
-            'Основное наполнение урока теперь выполняется на визуальном полотне',
-            'Используйте только для ручной диагностики и резервного редактирования',
             "function LessonStudioTopbar",
             'className="sticky top-4 z-20 rounded-[2rem] bg-white/95 p-5 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
             'const courseHref = courseId ? `/admin/courses#course-${courseId}` : "/admin/courses";',
@@ -238,7 +236,6 @@ def main() -> None:
             "selectedBlockId",
             "handleEditorBlocksChanged",
             "handleInspectorSaveBlock",
-            "onBlocksChanged={handleEditorBlocksChanged}",
             "onRefreshBlocks={loadBlocks}",
             "onSaveBlock={handleInspectorSaveBlock}",
             
