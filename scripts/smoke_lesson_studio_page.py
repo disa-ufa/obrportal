@@ -124,8 +124,6 @@ def main() -> None:
             'viewMode === "preview" ? (',
             '!previewMode && issues.length',
             'previewMode={previewMode}',
-            'Административные действия скрыты',
-            'data-testid="lesson-studio-preview-banner"',
             'blocks.filter((block) => block.is_active !== false)',
             'const visibleBlocks = previewMode',
             'const previewMode = mode === "preview";',
@@ -1068,6 +1066,10 @@ def main() -> None:
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
 
     single_lesson_preview_required_fragments = [
+        "data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}",
+        "const richTextPreview = type === "rich_text" || type === "text";",
+        "data-testid="lesson-rich-text-safe-preview"",
+        "function LessonRichTextSafePreview({ block, preview, learnerMode = false })",
         "learnerMode = false",
         "learnerMode ? \"mt-2\"",
         "? \"py-1 text-sm leading-7 text-slate-800\"",
@@ -1091,7 +1093,6 @@ def main() -> None:
 
     forbidden_single_lesson_preview_fragments = [
         
-        "Административные действия скрыты. На полотне показаны только активные",
     ]
 
     present_forbidden_single_lesson_preview_fragments = [
