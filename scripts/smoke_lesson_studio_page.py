@@ -956,7 +956,7 @@ def main() -> None:
     hide_text_preview_required_fragments = [
         "const inlineRichTextEditing = !previewMode && selected && editing && isLessonRichTextBlock(block);",
         "{!compact && !inlineRichTextEditing ? (",
-        "<LessonCanvasTypePreview block={block} preview={preview} />",
+        "<LessonCanvasTypePreview block={block} preview={preview} learnerMode={previewMode} />",
     ]
 
     missing_hide_text_preview_fragments = [
