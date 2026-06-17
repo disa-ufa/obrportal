@@ -544,6 +544,41 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+    # stage83_3_6_5_canvas_polish_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    canvas_polish_fragments = [
+        'className={`rounded-[1.35rem] bg-white p-4 shadow-sm ring-1 transition ${',
+        '"ring-blue-300 bg-blue-50/20"',
+        '<h3 className="mt-1 text-base font-black text-slate-900">{title}</h3>',
+        'className={`mt-3 rounded-[1.25rem] p-3 text-sm leading-6 ring-1 ${meta.surfaceClass}`}',
+        'className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 text-xs font-black shadow-sm ring-1 ring-black/5"',
+        '<section data-testid="lesson-studio-visual-canvas" className="space-y-2.5">',
+    ]
+    missing_canvas_polish_fragments = [
+        fragment for fragment in canvas_polish_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_canvas_polish_fragments:
+        print("Lesson Studio canvas polish fragments are missing:")
+        for fragment in missing_canvas_polish_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    noisy_canvas_fragments = [
+        'className={`rounded-[1.5rem] bg-white p-5 shadow-sm ring-1 transition ${',
+        'className={`mt-4 rounded-2xl p-4 text-sm leading-6 ring-1 ${meta.surfaceClass}`}',
+        '<section data-testid="lesson-studio-visual-canvas" className="space-y-3">',
+    ]
+    present_noisy_canvas_fragments = [
+        fragment for fragment in noisy_canvas_fragments
+        if fragment in lesson_studio_source
+    ]
+    if present_noisy_canvas_fragments:
+        print("Lesson Studio still contains noisy canvas fragments:")
+        for fragment in present_noisy_canvas_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
     print("Lesson Studio page smoke passed")
 
 

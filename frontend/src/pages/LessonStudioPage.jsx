@@ -322,10 +322,10 @@ function LessonCanvasTypePreview({ block, preview }) {
   return (
     <div
       data-testid="lesson-studio-canvas-type-preview"
-      className={`mt-4 rounded-2xl p-4 text-sm leading-6 ring-1 ${meta.surfaceClass}`}
+      className={`mt-3 rounded-[1.25rem] p-3 text-sm leading-6 ring-1 ${meta.surfaceClass}`}
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-xs font-black shadow-sm ring-1 ring-black/5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 text-xs font-black shadow-sm ring-1 ring-black/5">
           {meta.icon}
         </div>
 
@@ -342,10 +342,10 @@ function LessonCanvasTypePreview({ block, preview }) {
       {type === "video" ? (
         <div
           data-testid="lesson-studio-video-preview"
-          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-16 items-center justify-center rounded-xl bg-slate-900 text-white">
+            <div className="flex h-10 w-14 items-center justify-center rounded-xl bg-slate-900 text-white">
               ▶
             </div>
             <div className="min-w-0">
@@ -357,7 +357,7 @@ function LessonCanvasTypePreview({ block, preview }) {
       ) : type === "file_link" || type === "file" || type === "link" ? (
         <div
           data-testid="lesson-studio-link-preview"
-          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
         >
           <div className="text-sm font-bold">Открыть материал</div>
           <div className="mt-1 break-words text-xs opacity-80">{previewValue}</div>
@@ -365,7 +365,7 @@ function LessonCanvasTypePreview({ block, preview }) {
       ) : type === "quiz" ? (
         <div
           data-testid="lesson-studio-quiz-preview"
-          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
         >
           <div className="text-sm font-bold">Вопрос</div>
           <div className="mt-1 text-sm">{previewValue}</div>
@@ -376,7 +376,7 @@ function LessonCanvasTypePreview({ block, preview }) {
       ) : type === "assignment" ? (
         <div
           data-testid="lesson-studio-assignment-preview"
-          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
         >
           <div className="text-sm font-bold">Что нужно сделать</div>
           <div className="mt-1 text-sm">{previewValue}</div>
@@ -384,7 +384,7 @@ function LessonCanvasTypePreview({ block, preview }) {
       ) : type === "callout" ? (
         <div
           data-testid="lesson-studio-callout-preview"
-          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
         >
           <div className="text-sm font-bold">Важно</div>
           <div className="mt-1 text-sm">{previewValue}</div>
@@ -392,7 +392,7 @@ function LessonCanvasTypePreview({ block, preview }) {
       ) : (
         <div
           data-testid="lesson-studio-text-preview"
-          className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-black/5"
+          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
         >
           {previewValue}
         </div>
@@ -1128,8 +1128,8 @@ function LessonCanvasBlock({
       style={{ overflowAnchor: "none", scrollMarginTop: "9rem" }}
       id={`studio-block-${block.id}`}
       data-testid="lesson-studio-canvas-block"
-      className={`rounded-[1.5rem] bg-white p-5 shadow-sm ring-1 transition ${
-        !previewMode && selected ? "ring-blue-300" : "ring-slate-200 hover:ring-blue-200"
+      className={`rounded-[1.35rem] bg-white p-4 shadow-sm ring-1 transition ${
+        !previewMode && selected ? "ring-blue-300 bg-blue-50/20" : "ring-slate-200 hover:ring-blue-200"
       }`}
       onClick={() => {
         if (!previewMode) {
@@ -1137,12 +1137,12 @@ function LessonCanvasBlock({
         }
       }}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2.5">
         <div className="min-w-0">
           <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
             #{block.position || index + 1} · {getLessonBlockTypeLabel(block.block_type)}
           </div>
-          <h3 className="mt-1 text-lg font-black text-slate-900">{title}</h3>
+          <h3 className="mt-1 text-base font-black text-slate-900">{title}</h3>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-1.5">
@@ -1172,7 +1172,7 @@ function LessonCanvasBlock({
         className={
           previewMode
             ? "hidden"
-            : "mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3"
+            : "mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5"
         }
       >
         <button
@@ -1262,7 +1262,7 @@ function LessonCanvasBlock({
       {!previewMode && issues.length ? (
         <div
           data-testid="lesson-studio-block-issues"
-          className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-amber-800"
+          className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-amber-800"
         >
           <span className="font-bold">Нужно заполнить:</span>
           {issues.map((issue) => (
@@ -1473,7 +1473,7 @@ function LessonStudioCanvas({
     : blocks;
 
   return (
-    <section data-testid="lesson-studio-visual-canvas" className="space-y-3">
+    <section data-testid="lesson-studio-visual-canvas" className="space-y-2.5">
 
       {previewMode ? (
         <section
@@ -1491,7 +1491,7 @@ function LessonStudioCanvas({
       ) : null}
 
       {visibleBlocks.length ? (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {visibleBlocks.map((block, index) => (
             <LessonCanvasBlock
               key={block.id}
@@ -1522,7 +1522,7 @@ function LessonStudioCanvas({
           ))}
         </div>
       ) : (
-        <div className="rounded-[1.5rem] bg-white p-8 text-center text-sm text-slate-500 ring-1 ring-dashed ring-slate-300">
+        <div className="rounded-[1.35rem] bg-white p-6 text-center text-sm text-slate-500 ring-1 ring-dashed ring-slate-300">
 {previewMode ? "В предпросмотре нет активных блоков." : "Урок пока пустой. Добавьте первый блок через левую панель."}
         </div>
       )}
