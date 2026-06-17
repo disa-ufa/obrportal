@@ -57,7 +57,6 @@ def main() -> None:
             "getAdminCourseLessonDetail",
             "getAdminLessonBlocks",
             "updateAdminLessonBlock",
-            "LessonBlocksEditor",
             'Добавить блок',
             'creatingTemplateKey={creatingTemplateKey}',
             'onCreateBlock={handleQuickCreateBlock}',
@@ -76,15 +75,9 @@ def main() -> None:
             'data-testid="lesson-studio-canvas"',
             'data-testid="lesson-studio-visual-canvas"',
             'data-testid="lesson-studio-canvas-block"',
-            'data-testid="lesson-studio-inspector"',
             'data-testid="lesson-studio-inspector-form"',
-            'data-testid="lesson-studio-technical-editor"',
-            'data-testid="lesson-studio-advanced-technical-body"',
-            'data-testid="lesson-studio-advanced-technical-summary"',
             'Основное наполнение урока теперь выполняется на визуальном полотне',
             'Используйте только для ручной диагностики и резервного редактирования',
-            'Резервный редактор',
-            'Расширенные технические настройки',
             "function LessonStudioTopbar",
             'className="sticky top-4 z-20 rounded-[2rem] bg-white/95 p-5 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
             'const courseHref = courseId ? `/admin/courses#course-${courseId}` : "/admin/courses";',
@@ -201,6 +194,13 @@ def main() -> None:
             'function LessonCanvasTypePreview',
             'getBlockPreviewMeta',
             "function LessonStudioInspector",
+            'stage83_3_4_3_clear_missing_selected_block',
+            'Измените основные поля блока прямо в карточке',
+            'xl:grid-cols-[280px_minmax(0,1fr)]',
+            'savingBlockId={blockActionId}',
+            'variant="inline"',
+            'data-testid="lesson-studio-inline-inspector-close"',
+            'lesson-studio-inline-inspector',
             'className="sticky bottom-0 -mx-1 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
             'const blockReady = Boolean(selectedBlock && blockIssues.length === 0);',
             'const draftBlock = selectedBlock && draftPayload ? { ...selectedBlock, ...draftPayload } : null;',
@@ -266,9 +266,7 @@ def main() -> None:
     )
 
     require_contains(
-        "frontend/src/components/admin/LessonBlocksEditor.jsx",
         [
-            "export function LessonBlocksEditor({ lessonId, onBlocksChanged })",
             'typeof onBlocksChanged === "function"',
             "onBlocksChanged(nextBlocks)",
         ],
@@ -304,6 +302,114 @@ def main() -> None:
     if present_canvas_intro:
         print("LessonStudioCanvas still contains removed intro fragments:")
         for fragment in present_canvas_intro:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_4_no_persistent_editor_inspector_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    main_start = lesson_studio_source.index("<LessonStudioStructurePanel")
+    main_end = lesson_studio_source.index("</main>", main_start)
+    main_source = lesson_studio_source[main_start:main_end]
+    forbidden_persistent_inspector = [
+        "selectedBlock={selectedBlock}",
+    ]
+    present_persistent_inspector = [
+        fragment for fragment in forbidden_persistent_inspector if fragment in main_source
+    ]
+    if present_persistent_inspector:
+        print("Lesson Studio main layout still contains persistent editor inspector:")
+        for fragment in present_persistent_inspector:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_4_2_close_inline_editor_after_save_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    required_close_after_save_fragments = [
+        "onSaveBlock={async (...args) => {",
+        "await onSaveBlock(...args);",
+        'onSelect("");',
+        'variant="inline"',
+    ]
+    missing_close_after_save_fragments = [
+        fragment
+        for fragment in required_close_after_save_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_close_after_save_fragments:
+        print("Lesson Studio inline editor close-after-save fragments are missing:")
+        for fragment in missing_close_after_save_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_4_3_explicit_editing_block_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    explicit_editing_fragments = [
+        'const [editingBlockId, setEditingBlockId] = useState("");',
+        "editingBlockId={editingBlockId}",
+        "editing={editingBlockId === block.id}",
+        "!previewMode && selected && editing ? (",
+        'setEditingBlockId(blockId || "");',
+    ]
+    missing_explicit_editing_fragments = [
+        fragment for fragment in explicit_editing_fragments if fragment not in lesson_studio_source
+    ]
+    if missing_explicit_editing_fragments:
+        print("Lesson Studio explicit edit mode fragments are missing:")
+        for fragment in missing_explicit_editing_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    if "!previewMode && selected ? (" in lesson_studio_source:
+        print("Lesson Studio still opens inline editor from selected state only")
+        raise SystemExit(1)
+
+    # stage83_3_4_4_v3_robust_saved_block_focus_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    robust_saved_focus_fragments = [
+        "data-lesson-studio-block-id={block.id}",
+        "tabIndex={-1}",
+        'scrollMarginTop: "9rem"',
+        'overflowAnchor: "none"',
+        "const savedBlockId = block.id;",
+        "const savedBlockSelector =",
+        "const scrollToSavedBlock = (behavior = \"auto\") => {",
+        'block: "start"',
+        'inline: "nearest"',
+        'window.setTimeout(() => scrollToSavedBlock("auto"), 80);',
+        'window.setTimeout(() => scrollToSavedBlock("smooth"), 220);',
+        'window.setTimeout(() => scrollToSavedBlock("smooth"), 420);',
+    ]
+    missing_robust_saved_focus_fragments = [
+        fragment for fragment in robust_saved_focus_fragments if fragment not in lesson_studio_source
+    ]
+    if missing_robust_saved_focus_fragments:
+        print("Lesson Studio robust saved-block focus fragments are missing:")
+        for fragment in missing_robust_saved_focus_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_4_remove_reserve_editor_label_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    if "Резервный редактор" in lesson_studio_source:
+        print("Lesson Studio still contains redundant reserve editor label")
+        raise SystemExit(1)
+
+    # stage83_3_5_remove_technical_editor_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    forbidden_technical_editor_fragments = [
+        "LessonBlocksEditor",
+        "lesson-studio-technical-editor",
+        "lesson-studio-advanced-technical-summary",
+        "lesson-studio-advanced-technical-body",
+        "Расширенные технические настройки",
+    ]
+    present_technical_editor_fragments = [
+        fragment for fragment in forbidden_technical_editor_fragments
+        if fragment in lesson_studio_source
+    ]
+    if present_technical_editor_fragments:
+        print("Lesson Studio still contains removed technical editor fragments:")
+        for fragment in present_technical_editor_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 
