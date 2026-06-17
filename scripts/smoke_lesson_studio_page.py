@@ -468,7 +468,6 @@ def main() -> None:
         'data-testid="lesson-studio-inline-inspector-cancel"',
         "getBlockDisplayTitle(selectedBlock)",
         'className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-2 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
-        '{saving ? "Сохраняем..." : "Сохранить"}',
     ]
     missing_compact_inline_form_fragments = [
         fragment for fragment in compact_inline_form_fragments
