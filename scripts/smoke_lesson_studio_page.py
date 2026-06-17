@@ -1066,9 +1066,9 @@ def main() -> None:
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
 
     single_lesson_preview_required_fragments = [
-        "data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}",
-        "const richTextPreview = type === "rich_text" || type === "text";",
-        "data-testid="lesson-rich-text-safe-preview"",
+        'data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}',
+        'const richTextPreview = type === "rich_text" || type === "text";',
+        'data-testid="lesson-rich-text-safe-preview"',
         "function LessonRichTextSafePreview({ block, preview, learnerMode = false })",
         "learnerMode = false",
         "learnerMode ? \"mt-2\"",
