@@ -7,6 +7,7 @@ import {
   reorderAdminLessonBlocks,
   updateAdminLessonBlock,
 } from "../api/client";
+import LessonRichTextEditor from "../components/admin/lesson-studio/LessonRichTextEditor";
 import { getApiErrorMessage, getApiErrorStatus } from "../utils/apiErrors";
 
 function formatLessonStudioError(err, fallback) {
@@ -1673,6 +1674,52 @@ function getInspectorContentText(block) {
   return value || "";
 }
 
+function isLessonRichTextBlock(block) {
+  const type = `${block?.block_type || "rich_text"}`.toLowerCase();
+
+  return type === "rich_text" || type === "text";
+}
+
+function buildLessonRichTextDocumentFromText(value) {
+  const text = `${value || ""}`.trim();
+
+  if (!text) {
+    return {
+      type: "doc",
+      content: [{ type: "paragraph" }],
+    };
+  }
+
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  return {
+    type: "doc",
+    content: paragraphs.map((paragraph) => ({
+      type: "paragraph",
+      content: [{ type: "text", text: paragraph }],
+    })),
+  };
+}
+
+function getInspectorEditorJson(block) {
+  const content = safeParseJson(block?.content_json);
+
+  if (content.editor_json?.type === "doc") {
+    return content.editor_json;
+  }
+
+  return buildLessonRichTextDocumentFromText(getInspectorContentText(block));
+}
+
+function getInspectorEditorHtml(block) {
+  const content = safeParseJson(block?.content_json);
+
+  return `${content.editor_html || ""}`;
+}
+
 function getInspectorContentFieldMeta(block) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
 
@@ -1746,6 +1793,8 @@ function buildInspectorBlockForm(block) {
   return {
     title: `${block?.title || ""}`,
     content_text: getInspectorContentText(block),
+    editor_json: getInspectorEditorJson(block),
+    editor_html: getInspectorEditorHtml(block),
     is_required: Boolean(block?.is_required),
     is_active: block?.is_active !== false,
   };
@@ -1755,6 +1804,8 @@ function getInspectorFormSnapshot(values) {
   return JSON.stringify({
     title: `${values?.title || ""}`.trim(),
     content_text: `${values?.content_text || ""}`.trim(),
+    editor_json: values?.editor_json ? JSON.stringify(values.editor_json) : "",
+    editor_html: `${values?.editor_html || ""}`.trim(),
     is_required: Boolean(values?.is_required),
     is_active: Boolean(values?.is_active),
   });
@@ -1767,13 +1818,21 @@ function buildInspectorBlockPayload(block, values) {
       ? { ...block.content_json }
       : {};
 
+  const type = `${block?.block_type || "rich_text"}`.toLowerCase();
   const contentText = `${values.content_text || ""}`.trim();
 
-  if (block?.block_type === "video" || block?.block_type === "file_link") {
+  if (type === "rich_text" || type === "text") {
+    contentJson.text = contentText;
+    contentJson.editor_json =
+      values.editor_json && typeof values.editor_json === "object"
+        ? values.editor_json
+        : buildLessonRichTextDocumentFromText(contentText);
+    contentJson.editor_html = `${values.editor_html || ""}`;
+  } else if (type === "video" || type === "file_link") {
     contentJson.url = contentText;
-  } else if (block?.block_type === "quiz") {
+  } else if (type === "quiz") {
     contentJson.question = contentText;
-  } else if (block?.block_type === "assignment") {
+  } else if (type === "assignment") {
     contentJson.description = contentText;
   } else {
     contentJson.text = contentText;
@@ -1808,6 +1867,7 @@ function LessonStudioInspector({
   }, [selectedBlock?.id]);
 
   const contentFieldMeta = getInspectorContentFieldMeta(selectedBlock);
+  const richTextEditorMode = isLessonRichTextBlock(selectedBlock);
   const saving = Boolean(selectedBlock?.id && savingBlockId === selectedBlock.id);
   const draftPayload = selectedBlock ? buildInspectorBlockPayload(selectedBlock, form) : null;
   const draftBlock = selectedBlock && draftPayload ? { ...selectedBlock, ...draftPayload } : null;
@@ -1877,6 +1937,21 @@ function LessonStudioInspector({
 
   const handleFieldChange = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
+    setFormError("");
+    setFormSuccess("");
+  };
+
+  const handleRichTextChange = (nextValue) => {
+    const nextText = `${nextValue?.text || ""}`;
+    setForm((current) => ({
+      ...current,
+      content_text: nextText,
+      editor_json:
+        nextValue?.editor_json && typeof nextValue.editor_json === "object"
+          ? nextValue.editor_json
+          : buildLessonRichTextDocumentFromText(nextText),
+      editor_html: `${nextValue?.editor_html || ""}`,
+    }));
     setFormError("");
     setFormSuccess("");
   };
@@ -2037,35 +2112,61 @@ function LessonStudioInspector({
                 </div>
               ) : null}
 
-              <label className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {contentFieldMeta.label}
-                </span>
-
-                {contentFieldMeta.inputType === "url" ? (
-                  <input
-                    type="url"
-                    value={form.content_text}
-                    onChange={(event) => handleFieldChange("content_text", event.target.value)}
-                    placeholder={contentFieldMeta.placeholder}
-                    className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                  />
-                ) : (
-                  <textarea
-                    value={form.content_text}
-                    onChange={(event) => handleFieldChange("content_text", event.target.value)}
-                    placeholder={contentFieldMeta.placeholder}
-                    rows={contentFieldMeta.rows}
-                    className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                  />
-                )}
-
-                {contentFieldMeta.help ? (
-                  <span className="mt-2 block text-xs leading-5 text-slate-500">
-                    {contentFieldMeta.help}
+              {richTextEditorMode ? (
+                <div className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {contentFieldMeta.label}
                   </span>
-                ) : null}
-              </label>
+
+                  <LessonRichTextEditor
+                    key={selectedBlock?.id || "lesson-rich-text-editor"}
+                    value={{
+                      text: form.content_text,
+                      editor_json: form.editor_json,
+                      editor_html: form.editor_html,
+                    }}
+                    onChange={handleRichTextChange}
+                    disabled={!selectedBlock || saving}
+                    placeholder="Начните писать учебный текст. Выделите фразу для быстрых действий."
+                  />
+
+                  {contentFieldMeta.help ? (
+                    <span className="mt-2 block text-xs leading-5 text-slate-500">
+                      {contentFieldMeta.help}
+                    </span>
+                  ) : null}
+                </div>
+              ) : (
+                <label className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {contentFieldMeta.label}
+                  </span>
+
+                  {contentFieldMeta.inputType === "url" ? (
+                    <input
+                      type="url"
+                      value={form.content_text}
+                      onChange={(event) => handleFieldChange("content_text", event.target.value)}
+                      placeholder={contentFieldMeta.placeholder}
+                      className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    />
+                  ) : (
+                    <textarea
+                      value={form.content_text}
+                      onChange={(event) => handleFieldChange("content_text", event.target.value)}
+                      placeholder={contentFieldMeta.placeholder}
+                      rows={contentFieldMeta.rows}
+                      className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    />
+                  )}
+
+                  {contentFieldMeta.help ? (
+                    <span className="mt-2 block text-xs leading-5 text-slate-500">
+                      {contentFieldMeta.help}
+                    </span>
+                  ) : null}
+                </label>
+              )}
             </section>
 
             <section

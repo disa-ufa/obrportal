@@ -884,6 +884,53 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+    # stage83_3_7_2_rich_text_editor_component_guard
+    rich_text_editor_source = read_text("frontend/src/components/admin/lesson-studio/LessonRichTextEditor.jsx")
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    rich_text_editor_required_fragments = [
+        "useEditor",
+        "EditorContent",
+        "BubbleMenu",
+        "\"@tiptap/react/menus\"",
+        "Placeholder",
+        "CharacterCount",
+        "Link.configure",
+        "lesson-rich-text-toolbar",
+        "lesson-rich-text-character-count",
+    ]
+
+    missing_rich_text_editor_fragments = [
+        fragment for fragment in rich_text_editor_required_fragments
+        if fragment not in rich_text_editor_source
+    ]
+
+    if missing_rich_text_editor_fragments:
+        print("Lesson rich text editor component is incomplete:")
+        for fragment in missing_rich_text_editor_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    lesson_studio_rich_text_required_fragments = [
+        "import LessonRichTextEditor",
+        "function isLessonRichTextBlock(block)",
+        "contentJson.editor_json",
+        "contentJson.editor_html",
+        "const richTextEditorMode = isLessonRichTextBlock(selectedBlock);",
+        "<LessonRichTextEditor",
+    ]
+
+    missing_lesson_studio_rich_text_fragments = [
+        fragment for fragment in lesson_studio_rich_text_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_lesson_studio_rich_text_fragments:
+        print("Lesson Studio rich text integration is incomplete:")
+        for fragment in missing_lesson_studio_rich_text_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
     print("Lesson Studio page smoke passed")
 
 
