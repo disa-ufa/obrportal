@@ -536,9 +536,7 @@ def main() -> None:
     # stage83_3_6_5_canvas_polish_guard
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
     canvas_polish_fragments = [
-        'className={`rounded-[1.35rem] bg-white p-4 shadow-sm ring-1 transition ${',
         '"ring-blue-300 bg-blue-50/20"',
-        '<h3 className="mt-1 text-base font-black text-slate-900">{title}</h3>',
         'className={`mt-3 rounded-[1.25rem] p-3 text-sm leading-6 ring-1 ${meta.surfaceClass}`}',
         'className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 text-xs font-black shadow-sm ring-1 ring-black/5"',
         '<section data-testid="lesson-studio-visual-canvas" className="space-y-2.5">',
@@ -661,6 +659,49 @@ def main() -> None:
     if present_simplified_topbar_removed_fragments:
         print("Lesson Studio simplified topbar still contains removed fragments:")
         for fragment in present_simplified_topbar_removed_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_9_compact_canvas_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    lesson_canvas_block_source = lesson_studio_source.split("function LessonCanvasBlock(", 1)[1].split("function LessonStudioSidebarQuickAdd(", 1)[0]
+
+    compact_canvas_required_fragments = [
+        'data-compact={compact ? "true" : "false"}',
+        'const compact = !previewMode && !selected;',
+        'data-testid="lesson-studio-block-compact-summary"',
+        "whitespace-pre-wrap break-words",
+        'data-testid="lesson-studio-block-order-controls"',
+        'data-testid="lesson-studio-card-actions-trigger"',
+        'data-testid="lesson-studio-card-actions"',
+        'compact\n              ? "mt-2 flex items-center justify-end gap-2 border-t border-slate-100 pt-2"',
+        "!compact ? <LessonCanvasTypePreview",
+    ]
+
+    missing_compact_canvas_required_fragments = [
+        fragment for fragment in compact_canvas_required_fragments
+        if fragment not in lesson_canvas_block_source
+    ]
+
+    if missing_compact_canvas_required_fragments:
+        print("Lesson Studio compact canvas required fragments are missing:")
+        for fragment in missing_compact_canvas_required_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    compact_canvas_forbidden_fragments = [
+        'data-testid="lesson-studio-block-compact-summary"\n          className={`mt-1.5 line-clamp-2',
+        '{!compact ? (\n        <div\n          data-testid="lesson-studio-block-order-controls"',
+    ]
+
+    present_compact_canvas_forbidden_fragments = [
+        fragment for fragment in compact_canvas_forbidden_fragments
+        if fragment in lesson_canvas_block_source
+    ]
+
+    if present_compact_canvas_forbidden_fragments:
+        print("Lesson Studio compact canvas still contains forbidden fragments:")
+        for fragment in present_compact_canvas_forbidden_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 

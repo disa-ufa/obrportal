@@ -1090,7 +1090,11 @@ function LessonCanvasBlock({
   const blockReady = issues.length === 0;
   const title = getBlockDisplayTitle(block, index);
   const preview = getBlockTextPreview(block);
+  const compact = !previewMode && !selected;
   const busy = disabled || moving || duplicating || deleting;
+  const compactSummary = issues.length
+    ? `Нужно заполнить: ${issues.slice(0, 2).join(", ")}${issues.length > 2 ? "..." : ""}`
+    : preview || "Краткое содержимое блока пока не заполнено.";
   const actionsMenuRef = useRef(null);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
 
@@ -1176,7 +1180,10 @@ function LessonCanvasBlock({
       style={{ overflowAnchor: "none", scrollMarginTop: "9rem" }}
       id={`studio-block-${block.id}`}
       data-testid="lesson-studio-canvas-block"
-      className={`rounded-[1.35rem] bg-white p-4 shadow-sm ring-1 transition ${
+      data-compact={compact ? "true" : "false"}
+      className={`rounded-[1.35rem] bg-white shadow-sm ring-1 transition ${
+        compact ? "p-3" : "p-4"
+      } ${
         !previewMode && selected ? "ring-blue-300 bg-blue-50/20" : "ring-slate-200 hover:ring-blue-200"
       }`}
       onClick={() => {
@@ -1190,7 +1197,9 @@ function LessonCanvasBlock({
           <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
             #{block.position || index + 1} · {getLessonBlockTypeLabel(block.block_type)}
           </div>
-          <h3 className="mt-1 text-base font-black text-slate-900">{title}</h3>
+          <h3 className={`${compact ? "mt-0.5 text-sm" : "mt-1 text-base"} font-black text-slate-900`}>
+            {title}
+          </h3>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-1.5">
@@ -1205,7 +1214,7 @@ function LessonCanvasBlock({
             {blockReady ? "Готов" : `${issues.length} проблем`}
           </span>
 
-          {block.is_required ? (
+          {!compact && block.is_required ? (
             <LessonStudioBadge tone="green">Обязательный</LessonStudioBadge>
           ) : null}
 
@@ -1215,23 +1224,38 @@ function LessonCanvasBlock({
         </div>
       </div>
 
+      {compact ? (
+        <p
+          data-testid="lesson-studio-block-compact-summary"
+          className={`mt-1.5 whitespace-pre-wrap break-words text-xs leading-5 ${
+            issues.length ? "font-semibold text-amber-800" : "text-slate-500"
+          }`}
+        >
+          {compactSummary}
+        </p>
+      ) : null}
+
       <div
         data-testid="lesson-studio-block-order-controls"
         className={
           previewMode
             ? "hidden"
-            : "mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5"
+            : compact
+              ? "mt-2 flex items-center justify-end gap-2 border-t border-slate-100 pt-2"
+              : "mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5"
         }
       >
-        <button
-          type="button"
-          data-testid="lesson-studio-edit-button"
-          onClick={handleEditClick}
-          disabled={busy}
-          className="rounded-full bg-blue-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Редактировать
-        </button>
+        {!compact ? (
+          <button
+            type="button"
+            data-testid="lesson-studio-edit-button"
+            onClick={handleEditClick}
+            disabled={busy}
+            className="rounded-full bg-blue-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Редактировать
+          </button>
+        ) : null}
 
         <details
           ref={actionsMenuRef}
@@ -1307,7 +1331,7 @@ function LessonCanvasBlock({
         ) : null}
       </div>
 
-      {!previewMode && issues.length ? (
+      {!compact && !previewMode && issues.length ? (
         <div
           data-testid="lesson-studio-block-issues"
           className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-amber-800"
@@ -1324,7 +1348,7 @@ function LessonCanvasBlock({
         </div>
       ) : null}
 
-      <LessonCanvasTypePreview block={block} preview={preview} />
+      {!compact ? <LessonCanvasTypePreview block={block} preview={preview} /> : null}
 
       {!previewMode && selected && editing ? (
         <LessonStudioInspector
