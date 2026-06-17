@@ -1045,7 +1045,7 @@ function LessonCanvasBlock({
   savingBlockId,
 }) {
   const issues = getBlockValidationIssues(block);
-  const typeTone = getLessonBlockTone(block.block_type);
+  const blockReady = issues.length === 0;
   const title = getBlockDisplayTitle(block, index);
   const preview = getBlockTextPreview(block);
   const busy = disabled || moving || duplicating || deleting;
@@ -1080,6 +1080,16 @@ function LessonCanvasBlock({
     onDelete(block);
   };
 
+  const handleEditClick = (event) => {
+    event.stopPropagation();
+
+    if (previewMode || busy) {
+      return;
+    }
+
+    onSelect(block.id);
+  };
+
   return (
     <article
       data-lesson-studio-block-id={block.id}
@@ -1104,85 +1114,112 @@ function LessonCanvasBlock({
           <h3 className="mt-1 text-lg font-black text-slate-900">{title}</h3>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <LessonStudioBadge tone={typeTone}>
-            {getLessonBlockTypeLabel(block.block_type)}
-          </LessonStudioBadge>
-          <LessonStudioBadge tone={block.is_required ? "green" : "slate"}>
-            {block.is_required ? "Обязательный" : "Дополнительный"}
-          </LessonStudioBadge>
-          <LessonStudioBadge tone={block.is_active === false ? "slate" : "green"}>
-            {block.is_active === false ? "Скрыт" : "Активен"}
-          </LessonStudioBadge>
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <span
+            data-testid="lesson-studio-block-readiness-chip"
+            className={`rounded-full px-2.5 py-1 text-xs font-black ring-1 ${
+              blockReady
+                ? "bg-green-50 text-green-700 ring-green-200"
+                : "bg-amber-50 text-amber-800 ring-amber-200"
+            }`}
+          >
+            {blockReady ? "Готов" : `${issues.length} проблем`}
+          </span>
+
+          {block.is_required ? (
+            <LessonStudioBadge tone="green">Обязательный</LessonStudioBadge>
+          ) : null}
+
+          {block.is_active === false ? (
+            <LessonStudioBadge tone="slate">Скрыт</LessonStudioBadge>
+          ) : null}
         </div>
       </div>
 
       <div
         data-testid="lesson-studio-block-order-controls"
-        className={previewMode ? "hidden" : "mt-4 flex flex-wrap items-center gap-2"}
+        className={
+          previewMode
+            ? "hidden"
+            : "mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3"
+        }
       >
         <button
           type="button"
-          data-testid="lesson-studio-move-up-button"
-          onClick={(event) => handleMoveClick(event, "up")}
-          disabled={!canMoveUp || busy}
-          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          ↑ Выше
-        </button>
-
-        <button
-          type="button"
-          data-testid="lesson-studio-move-down-button"
-          onClick={(event) => handleMoveClick(event, "down")}
-          disabled={!canMoveDown || busy}
-          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          ↓ Ниже
-        </button>
-
-        <button
-          type="button"
-          data-testid="lesson-studio-duplicate-button"
-          onClick={handleDuplicateClick}
+          data-testid="lesson-studio-edit-button"
+          onClick={handleEditClick}
           disabled={busy}
-          className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full bg-blue-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Дублировать
+          Редактировать
         </button>
 
-        <button
-          type="button"
-          data-testid="lesson-studio-delete-button"
-          onClick={handleDeleteClick}
-          disabled={busy}
-          className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+        <div
+          data-testid="lesson-studio-card-actions"
+          className="flex flex-wrap items-center gap-1.5"
         >
-          Удалить
-        </button>
+          <button
+            type="button"
+            data-testid="lesson-studio-move-up-button"
+            onClick={(event) => handleMoveClick(event, "up")}
+            disabled={!canMoveUp || busy}
+            className="rounded-full bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            ↑ Выше
+          </button>
 
-        {moving ? (
-          <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
-            Меняем порядок...
-          </span>
-        ) : null}
+          <button
+            type="button"
+            data-testid="lesson-studio-move-down-button"
+            onClick={(event) => handleMoveClick(event, "down")}
+            disabled={!canMoveDown || busy}
+            className="rounded-full bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            ↓ Ниже
+          </button>
 
-        {duplicating ? (
-          <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
-            Дублируем...
-          </span>
-        ) : null}
+          <button
+            type="button"
+            data-testid="lesson-studio-duplicate-button"
+            onClick={handleDuplicateClick}
+            disabled={busy}
+            className="rounded-full bg-white px-2.5 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Дублировать
+          </button>
 
-        {deleting ? (
-          <span className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-200">
-            Удаляем...
+          <button
+            type="button"
+            data-testid="lesson-studio-delete-button"
+            onClick={handleDeleteClick}
+            disabled={busy}
+            className="rounded-full bg-white px-2.5 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Удалить
+          </button>
+        </div>
+
+        {moving || duplicating || deleting ? (
+          <span className="rounded-full bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+            {moving ? "Меняем порядок..." : duplicating ? "Дублируем..." : "Удаляем..."}
           </span>
         ) : null}
       </div>
 
       {!previewMode && issues.length ? (
-        <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
-          Нужно заполнить: {issues.join(", ")}.
+        <div
+          data-testid="lesson-studio-block-issues"
+          className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-amber-800"
+        >
+          <span className="font-bold">Нужно заполнить:</span>
+          {issues.map((issue) => (
+            <span
+              key={issue}
+              className="rounded-full bg-amber-50 px-2.5 py-1 font-semibold ring-1 ring-amber-200"
+            >
+              {issue}
+            </span>
+          ))}
         </div>
       ) : null}
 

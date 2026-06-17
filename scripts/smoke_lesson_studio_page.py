@@ -403,6 +403,44 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+    # stage83_3_6_1_compact_lesson_card_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    compact_lesson_card_fragments = [
+        'data-testid="lesson-studio-edit-button"',
+        'data-testid="lesson-studio-card-actions"',
+        'data-testid="lesson-studio-block-readiness-chip"',
+        'data-testid="lesson-studio-block-issues"',
+        "const handleEditClick = (event) => {",
+        "const blockReady = issues.length === 0;",
+        "Редактировать",
+        "Готов",
+    ]
+    missing_compact_lesson_card_fragments = [
+        fragment for fragment in compact_lesson_card_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_compact_lesson_card_fragments:
+        print("Lesson Studio compact block card fragments are missing:")
+        for fragment in missing_compact_lesson_card_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    noisy_lesson_card_fragments = [
+        'const typeTone = getLessonBlockTone(block.block_type);',
+        '{block.is_required ? "Обязательный" : "Дополнительный"}',
+        '{block.is_active === false ? "Скрыт" : "Активен"}',
+        'Нужно заполнить: {issues.join(", ")}.',
+    ]
+    present_noisy_lesson_card_fragments = [
+        fragment for fragment in noisy_lesson_card_fragments
+        if fragment in lesson_studio_source
+    ]
+    if present_noisy_lesson_card_fragments:
+        print("Lesson Studio still contains noisy block card fragments:")
+        for fragment in present_noisy_lesson_card_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
     print("Lesson Studio page smoke passed")
 
 
