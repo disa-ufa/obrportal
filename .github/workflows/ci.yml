@@ -300,4 +300,5 @@ jobs:
       - name: Stop services
         if: always()
         run: |
-          docker compose down -v
+          touch .env
+          docker compose down -v || true
