@@ -136,7 +136,6 @@ def main() -> None:
             '<LessonStudioPreviewPanel lesson={lesson} blocks={blocks} />',
             'viewMode === "preview" ? (',
             '!previewMode && issues.length',
-            'className={previewMode ? "hidden" : "mt-4 flex flex-wrap items-center gap-2"}',
             'previewMode={previewMode}',
             'Административные действия скрыты',
             'data-testid="lesson-studio-preview-banner"',
