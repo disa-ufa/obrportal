@@ -972,6 +972,29 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+    # stage83_3_7_7_text_block_settings_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    text_block_settings_required_fragments = [
+        "const inlineRichTextMode = inlineMode && richTextEditorMode;",
+        "data-testid=\"lesson-studio-text-block-settings\"",
+        "Настройки блока",
+        "Заголовок · обязательность · активность",
+        "data-testid=\"lesson-studio-inspector-title-field\"",
+        "{inlineRichTextMode ? (",
+    ]
+
+    missing_text_block_settings_fragments = [
+        fragment for fragment in text_block_settings_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_text_block_settings_fragments:
+        print("Lesson Studio text block settings layout guard failed:")
+        for fragment in missing_text_block_settings_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
     print("Lesson Studio page smoke passed")
 
 

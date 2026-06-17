@@ -1915,6 +1915,7 @@ function LessonStudioInspector({
               className: "bg-slate-50 text-slate-700 ring-slate-200",
             };
   const inlineMode = variant === "inline";
+  const inlineRichTextMode = inlineMode && richTextEditorMode;
   const inspectorTestId = inlineMode
     ? "lesson-studio-inline-inspector"
     : "lesson-studio-inspector";
@@ -2082,128 +2083,204 @@ function LessonStudioInspector({
             onSubmit={handleSubmit}
             className="mt-3 space-y-3"
           >
-            <section
-              data-testid="lesson-studio-inspector-section-main"
-              className="rounded-2xl bg-slate-50/70 p-3 ring-1 ring-slate-200"
-            >
-              {!inlineMode ? (
-                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Основное
-                </div>
-              ) : null}
+            {inlineRichTextMode ? (
+              <>
+                <section
+                  data-testid="lesson-studio-inspector-section-content"
+                  className="rounded-[1.75rem] bg-white p-0"
+                >
+                  <div className="block" data-testid="lesson-studio-inspector-content-field">
+                    <LessonRichTextEditor
+                      key={selectedBlock?.id || "lesson-rich-text-editor"}
+                      value={{
+                        text: form.content_text,
+                        editor_json: form.editor_json,
+                        editor_html: form.editor_html,
+                      }}
+                      onChange={handleRichTextChange}
+                      disabled={!selectedBlock || saving}
+                      placeholder="Начните писать учебный текст. Выделите фразу для быстрых действий."
+                    />
+                  </div>
+                </section>
 
-              <label className="mt-3 block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Заголовок
-                </span>
-                <input
-                  value={form.title}
-                  onChange={(event) => handleFieldChange("title", event.target.value)}
-                  placeholder="Название блока"
-                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                />
-              </label>
-            </section>
-
-            <section
-              data-testid="lesson-studio-inspector-section-content"
-              className="rounded-2xl bg-slate-50/70 p-3 ring-1 ring-slate-200"
-            >
-              {!inlineMode ? (
-                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Контент
-                </div>
-              ) : null}
-
-              {richTextEditorMode ? (
-                <div className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {contentFieldMeta.label}
-                  </span>
-
-                  <LessonRichTextEditor
-                    key={selectedBlock?.id || "lesson-rich-text-editor"}
-                    value={{
-                      text: form.content_text,
-                      editor_json: form.editor_json,
-                      editor_html: form.editor_html,
-                    }}
-                    onChange={handleRichTextChange}
-                    disabled={!selectedBlock || saving}
-                    placeholder="Начните писать учебный текст. Выделите фразу для быстрых действий."
-                  />
-
-                  {contentFieldMeta.help ? (
-                    <span className="mt-2 block text-xs leading-5 text-slate-500">
-                      {contentFieldMeta.help}
+                <details
+                  data-testid="lesson-studio-text-block-settings"
+                  className="rounded-2xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-black uppercase tracking-wide text-slate-600">
+                    <span>Настройки блока</span>
+                    <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-slate-500 ring-1 ring-slate-200">
+                      Заголовок · обязательность · активность
                     </span>
-                  ) : null}
-                </div>
-              ) : (
-                <label className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {contentFieldMeta.label}
-                  </span>
+                  </summary>
 
-                  {contentFieldMeta.inputType === "url" ? (
+                  <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
+                    <label className="block" data-testid="lesson-studio-inspector-title-field">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Заголовок
+                      </span>
+                      <input
+                        value={form.title}
+                        onChange={(event) => handleFieldChange("title", event.target.value)}
+                        placeholder="Название блока"
+                        className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </label>
+
+                    <div
+                      data-testid="lesson-studio-inspector-section-publication"
+                      className="grid gap-2"
+                    >
+                      <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={form.is_required}
+                          onChange={(event) => handleFieldChange("is_required", event.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        Обязательный блок
+                      </label>
+
+                      <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={form.is_active}
+                          onChange={(event) => handleFieldChange("is_active", event.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        Активен
+                      </label>
+                    </div>
+                  </div>
+                </details>
+              </>
+            ) : (
+              <>
+                <section
+                  data-testid="lesson-studio-inspector-section-main"
+                  className="rounded-2xl bg-slate-50/70 p-3 ring-1 ring-slate-200"
+                >
+                  {!inlineMode ? (
+                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Основное
+                    </div>
+                  ) : null}
+
+                  <label className="mt-3 block" data-testid="lesson-studio-inspector-title-field">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Заголовок
+                    </span>
                     <input
-                      type="url"
-                      value={form.content_text}
-                      onChange={(event) => handleFieldChange("content_text", event.target.value)}
-                      placeholder={contentFieldMeta.placeholder}
+                      value={form.title}
+                      onChange={(event) => handleFieldChange("title", event.target.value)}
+                      placeholder="Название блока"
                       className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     />
-                  ) : (
-                    <textarea
-                      value={form.content_text}
-                      onChange={(event) => handleFieldChange("content_text", event.target.value)}
-                      placeholder={contentFieldMeta.placeholder}
-                      rows={contentFieldMeta.rows}
-                      className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                    />
-                  )}
+                  </label>
+                </section>
 
-                  {contentFieldMeta.help ? (
-                    <span className="mt-2 block text-xs leading-5 text-slate-500">
-                      {contentFieldMeta.help}
-                    </span>
+                <section
+                  data-testid="lesson-studio-inspector-section-content"
+                  className="rounded-2xl bg-slate-50/70 p-3 ring-1 ring-slate-200"
+                >
+                  {!inlineMode ? (
+                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Контент
+                    </div>
                   ) : null}
-                </label>
-              )}
-            </section>
 
-            <section
-              data-testid="lesson-studio-inspector-section-publication"
-              className="rounded-2xl bg-slate-50/70 p-3 ring-1 ring-slate-200"
-            >
-              {!inlineMode ? (
-                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Публикация
-                </div>
-              ) : null}
+                  {richTextEditorMode ? (
+                    <div className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {contentFieldMeta.label}
+                      </span>
 
-              <div className="mt-3 space-y-2">
-                <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={form.is_required}
-                    onChange={(event) => handleFieldChange("is_required", event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Обязательный блок
-                </label>
+                      <LessonRichTextEditor
+                        key={selectedBlock?.id || "lesson-rich-text-editor"}
+                        value={{
+                          text: form.content_text,
+                          editor_json: form.editor_json,
+                          editor_html: form.editor_html,
+                        }}
+                        onChange={handleRichTextChange}
+                        disabled={!selectedBlock || saving}
+                        placeholder="Начните писать учебный текст. Выделите фразу для быстрых действий."
+                      />
 
-                <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={form.is_active}
-                    onChange={(event) => handleFieldChange("is_active", event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Активен
-                </label>
-              </div>
-            </section>
+                      {contentFieldMeta.help ? (
+                        <span className="mt-2 block text-xs leading-5 text-slate-500">
+                          {contentFieldMeta.help}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <label className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {contentFieldMeta.label}
+                      </span>
+
+                      {contentFieldMeta.inputType === "url" ? (
+                        <input
+                          type="url"
+                          value={form.content_text}
+                          onChange={(event) => handleFieldChange("content_text", event.target.value)}
+                          placeholder={contentFieldMeta.placeholder}
+                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        />
+                      ) : (
+                        <textarea
+                          value={form.content_text}
+                          onChange={(event) => handleFieldChange("content_text", event.target.value)}
+                          placeholder={contentFieldMeta.placeholder}
+                          rows={contentFieldMeta.rows}
+                          className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        />
+                      )}
+
+                      {contentFieldMeta.help ? (
+                        <span className="mt-2 block text-xs leading-5 text-slate-500">
+                          {contentFieldMeta.help}
+                        </span>
+                      ) : null}
+                    </label>
+                  )}
+                </section>
+
+                <section
+                  data-testid="lesson-studio-inspector-section-publication"
+                  className="rounded-2xl bg-slate-50/70 p-3 ring-1 ring-slate-200"
+                >
+                  {!inlineMode ? (
+                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Публикация
+                    </div>
+                  ) : null}
+
+                  <div className="mt-3 space-y-2">
+                    <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={form.is_required}
+                        onChange={(event) => handleFieldChange("is_required", event.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Обязательный блок
+                    </label>
+
+                    <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={form.is_active}
+                        onChange={(event) => handleFieldChange("is_active", event.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Активен
+                    </label>
+                  </div>
+                </section>
+              </>
+            )}
 
             {blockIssues.length ? (
               <div
