@@ -105,6 +105,10 @@ function getNextStudioBlockPosition(blocks) {
   return positions.length ? Math.max(...positions) + 1 : blocks.length + 1;
 }
 
+function getCanvasInsertTemplateKey(insertIndex, templateKey) {
+  return `canvas:${insertIndex}:${templateKey}`;
+}
+
 function buildStudioQuickBlockPayload(template, position) {
   return {
     block_type: template.values.block_type || "rich_text",
@@ -1018,6 +1022,119 @@ function LessonStudioStructurePanel({
   );
 }
 
+
+function LessonCanvasInsertBlockControl({
+  templates,
+  insertIndex,
+  onCreateBlock,
+  creatingTemplateKey,
+  disabled,
+}) {
+  const menuRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const handleOutsidePointerDown = (event) => {
+      if (!menuRef.current) {
+        return;
+      }
+
+      if (menuRef.current.contains(event.target)) {
+        return;
+      }
+
+      setOpen(false);
+    };
+
+    const handleEscapeKey = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    document.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointerDown);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [open]);
+
+  return (
+    <div
+      data-testid="lesson-studio-canvas-insert-control"
+      className="relative py-0.5"
+    >
+      <div className="flex items-center gap-2">
+        <div className="h-px flex-1 bg-slate-200/80" />
+
+        <details
+          ref={menuRef}
+          open={open}
+          data-testid="lesson-studio-canvas-insert-menu"
+          className="relative"
+          onToggle={(event) => setOpen(event.currentTarget.open)}
+        >
+          <summary
+            data-testid="lesson-studio-canvas-insert-trigger"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white text-lg font-black text-blue-700 shadow-sm ring-1 ring-blue-200 transition hover:bg-blue-50"
+            style={{ listStyle: "none" }}
+            aria-label="Добавить блок здесь"
+          >
+            +
+          </summary>
+
+          <div
+            data-testid="lesson-studio-canvas-insert-options"
+            className="absolute left-1/2 z-30 mt-2 grid w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 grid-cols-2 gap-2 rounded-[1.35rem] bg-white p-2 shadow-xl ring-1 ring-slate-200 sm:grid-cols-3 xl:grid-cols-6"
+          >
+            {templates.map((template) => {
+              const creatingKey = getCanvasInsertTemplateKey(insertIndex, template.key);
+              const creating = creatingTemplateKey === creatingKey;
+              const meta = getBlockPreviewMeta({ block_type: template.values?.block_type });
+
+              return (
+                <button
+                  key={template.key}
+                  type="button"
+                  data-testid="lesson-studio-canvas-insert-option"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setOpen(false);
+                    onCreateBlock(template, insertIndex);
+                  }}
+                  disabled={disabled || creating}
+                  className="flex min-h-20 flex-col items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-left ring-1 ring-slate-200 transition hover:bg-blue-50 hover:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[11px] font-black text-slate-700 shadow-sm ring-1 ring-slate-200">
+                    {meta.icon}
+                  </span>
+
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-black text-slate-950">
+                      {creating ? "Добавляем..." : template.label}
+                    </span>
+                    <span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-slate-500">
+                      {template.hint}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </details>
+
+        <div className="h-px flex-1 bg-slate-200/80" />
+      </div>
+    </div>
+  );
+}
+
 function LessonCanvasBlock({
   lesson,
   block,
@@ -1447,6 +1564,8 @@ function LessonStudioQuickAddPanel({ templates, onCreateBlock, creatingTemplateK
   );
 }
 
+
+
 function LessonStudioCanvas({
   lesson,
   blocks,
@@ -1455,6 +1574,7 @@ function LessonStudioCanvas({
   editingBlockId,
   onSelectBlock,
   onRefreshBlocks,
+  quickAddTemplates = [],
   onCreateBlock,
   onMoveBlock,
   onDuplicateBlock,
@@ -1471,10 +1591,15 @@ function LessonStudioCanvas({
   const visibleBlocks = previewMode
     ? blocks.filter((block) => block.is_active !== false)
     : blocks;
+  const insertDisabled =
+    blocksLoading ||
+    Boolean(creatingTemplateKey) ||
+    Boolean(movingBlockId) ||
+    Boolean(duplicatingBlockId) ||
+    Boolean(deletingBlockId);
 
   return (
     <section data-testid="lesson-studio-visual-canvas" className="space-y-2.5">
-
       {previewMode ? (
         <section
           data-testid="lesson-studio-preview-banner"
@@ -1493,50 +1618,96 @@ function LessonStudioCanvas({
       {visibleBlocks.length ? (
         <div className="space-y-2.5">
           {visibleBlocks.map((block, index) => (
-            <LessonCanvasBlock
+            <div
               key={block.id}
-              lesson={lesson}
-              block={block}
-              index={index}
-              previewMode={previewMode}
-              selected={block.id === selectedBlockId}
-              editing={editingBlockId === block.id}
-              canMoveUp={index > 0}
-              canMoveDown={index < visibleBlocks.length - 1}
-              moving={movingBlockId === block.id}
-              duplicating={duplicatingBlockId === block.id}
-              deleting={deletingBlockId === block.id}
-              disabled={
-                blocksLoading ||
-                Boolean(movingBlockId) ||
-                Boolean(duplicatingBlockId) ||
-                Boolean(deletingBlockId)
-              }
-              onSelect={onSelectBlock}
-              onMove={onMoveBlock}
-              onDuplicate={onDuplicateBlock}
-              onDelete={onDeleteBlock}
-              onSaveBlock={onSaveBlock}
-              savingBlockId={savingBlockId}
-            />
+              data-testid="lesson-studio-canvas-block-stack"
+              className="space-y-2.5"
+            >
+              <LessonCanvasBlock
+                lesson={lesson}
+                block={block}
+                index={index}
+                previewMode={previewMode}
+                selected={block.id === selectedBlockId}
+                editing={editingBlockId === block.id}
+                canMoveUp={index > 0}
+                canMoveDown={index < visibleBlocks.length - 1}
+                moving={movingBlockId === block.id}
+                duplicating={duplicatingBlockId === block.id}
+                deleting={deletingBlockId === block.id}
+                disabled={
+                  blocksLoading ||
+                  Boolean(movingBlockId) ||
+                  Boolean(duplicatingBlockId) ||
+                  Boolean(deletingBlockId)
+                }
+                onSelect={onSelectBlock}
+                onMove={onMoveBlock}
+                onDuplicate={onDuplicateBlock}
+                onDelete={onDeleteBlock}
+                onSaveBlock={onSaveBlock}
+                savingBlockId={savingBlockId}
+              />
+
+              {!previewMode ? (
+                <LessonCanvasInsertBlockControl
+                  templates={quickAddTemplates}
+                  insertIndex={index + 1}
+                  onCreateBlock={onCreateBlock}
+                  creatingTemplateKey={creatingTemplateKey}
+                  disabled={insertDisabled}
+                />
+              ) : null}
+            </div>
           ))}
         </div>
       ) : (
-        <div className="rounded-[1.35rem] bg-white p-6 text-center text-sm text-slate-500 ring-1 ring-dashed ring-slate-300">
-{previewMode ? "В предпросмотре нет активных блоков." : "Урок пока пустой. Добавьте первый блок через левую панель."}
+        <div className="space-y-2.5">
+          {!previewMode ? (
+            <LessonCanvasInsertBlockControl
+              templates={quickAddTemplates}
+              insertIndex={0}
+              onCreateBlock={onCreateBlock}
+              creatingTemplateKey={creatingTemplateKey}
+              disabled={insertDisabled}
+            />
+          ) : null}
+
+          <div className="rounded-[1.35rem] bg-white p-6 text-center text-sm text-slate-500 ring-1 ring-dashed ring-slate-300">
+            {previewMode
+              ? "В предпросмотре нет активных блоков."
+              : "Урок пока пустой. Добавьте первый блок через левую панель или плюс на полотне."}
+          </div>
         </div>
       )}
     </section>
   );
 }
 
-function getInspectorContentText(block) {
-  const content =
-    block?.content_json && typeof block.content_json === "object"
-      ? block.content_json
-      : {};
 
-  return `${content.text ?? content.body ?? content.description ?? content.question ?? content.url ?? ""}`;
+
+function getInspectorContentText(block) {
+  const content = safeParseJson(block?.content_json);
+  const settings = safeParseJson(block?.settings_json);
+
+  const candidates = [
+    content.text,
+    content.content_text,
+    content.body,
+    content.description,
+    content.url,
+    content.content_url,
+    content.question,
+    content.quiz_question,
+    content.assignment_text,
+    settings.description,
+  ];
+
+  const value = candidates
+    .map((item) => `${item || ""}`.trim())
+    .find(Boolean);
+
+  return value || "";
 }
 
 function getInspectorContentFieldMeta(block) {
@@ -2229,13 +2400,25 @@ export function LessonStudioPage({ lessonId }) {
   }, []);
 
   const handleQuickCreateBlock = useCallback(
-    async (template) => {
+    async (template, insertIndex = null) => {
       if (!lessonId || !template?.values) {
         setError("Не удалось определить урок или тип блока.");
         return;
       }
 
-      setCreatingTemplateKey(template.key);
+      const orderedBlocks = blocks
+        .slice()
+        .sort((left, right) => (Number(left.position) || 0) - (Number(right.position) || 0));
+      const numericInsertIndex = Number(insertIndex);
+      const shouldInsertAtIndex = Number.isInteger(numericInsertIndex);
+      const safeInsertIndex = shouldInsertAtIndex
+        ? Math.min(Math.max(numericInsertIndex, 0), orderedBlocks.length)
+        : null;
+      const creatingKey = shouldInsertAtIndex
+        ? getCanvasInsertTemplateKey(safeInsertIndex, template.key)
+        : template.key;
+
+      setCreatingTemplateKey(creatingKey);
       setError("");
 
       try {
@@ -2245,10 +2428,23 @@ export function LessonStudioPage({ lessonId }) {
           buildStudioQuickBlockPayload(template, position)
         );
 
+        if (createdBlock?.id && shouldInsertAtIndex) {
+          const reorderedBlocks = orderedBlocks.slice();
+          reorderedBlocks.splice(safeInsertIndex, 0, createdBlock);
+
+          const payload = reorderedBlocks.map((item, itemIndex) => ({
+            id: item.id,
+            position: itemIndex + 1,
+          }));
+
+          await reorderAdminLessonBlocks(lessonId, payload);
+        }
+
         await loadBlocks();
 
         if (createdBlock?.id) {
           setSelectedBlockId(createdBlock.id);
+          setEditingBlockId(createdBlock.id);
         }
       } catch (err) {
         setError(formatLessonStudioError(err, "Не удалось добавить блок"));
@@ -2436,7 +2632,7 @@ export function LessonStudioPage({ lessonId }) {
           quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}
           onCreateBlock={handleQuickCreateBlock}
           creatingTemplateKey={creatingTemplateKey}
-          quickAddDisabled={blocksLoading}
+          quickAddDisabled={blocksLoading || Boolean(creatingTemplateKey)}
         />
 
         <section
@@ -2454,6 +2650,7 @@ export function LessonStudioPage({ lessonId }) {
               setEditingBlockId(blockId || "");
             }}
             onRefreshBlocks={loadBlocks}
+            quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}
             onCreateBlock={handleQuickCreateBlock}
             onMoveBlock={handleMoveBlock}
             onDuplicateBlock={handleDuplicateBlock}

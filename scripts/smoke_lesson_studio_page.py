@@ -90,8 +90,8 @@ def main() -> None:
             'data-testid="lesson-studio-title"',
             'data-testid="lesson-studio-back-to-courses"',
             "function LessonStudioStructurePanel",
-            'Добавьте первый блок через левую панель.',
-            'quickAddDisabled={blocksLoading}',
+            'Добавьте первый блок через левую панель или плюс на полотне.',
+            'quickAddDisabled={blocksLoading || Boolean(creatingTemplateKey)}',
             'quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}',
             'data-testid="lesson-studio-sidebar-quick-add-button"',
             'data-testid="lesson-studio-sidebar-quick-add"',
@@ -576,6 +576,31 @@ def main() -> None:
     if present_noisy_canvas_fragments:
         print("Lesson Studio still contains noisy canvas fragments:")
         for fragment in present_noisy_canvas_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_6_insert_blocks_between_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    insert_blocks_between_fragments = [
+        "function LessonCanvasInsertBlockControl(",
+        'data-testid="lesson-studio-canvas-insert-control"',
+        'data-testid="lesson-studio-canvas-insert-trigger"',
+        'data-testid="lesson-studio-canvas-insert-options"',
+        "getCanvasInsertTemplateKey(insertIndex, template.key)",
+        "onCreateBlock(template, insertIndex)",
+        "const insertDisabled =",
+        "quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}",
+        "setEditingBlockId(createdBlock.id);",
+        "await reorderAdminLessonBlocks(lessonId, payload);",
+        "Добавьте первый блок через левую панель или плюс на полотне.",
+    ]
+    missing_insert_blocks_between_fragments = [
+        fragment for fragment in insert_blocks_between_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_insert_blocks_between_fragments:
+        print("Lesson Studio insert-between-blocks fragments are missing:")
+        for fragment in missing_insert_blocks_between_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 
