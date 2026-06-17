@@ -192,13 +192,11 @@ def main() -> None:
             'getBlockPreviewMeta',
             "function LessonStudioInspector",
             'stage83_3_4_3_clear_missing_selected_block',
-            'Измените основные поля блока прямо в карточке',
             'xl:grid-cols-[280px_minmax(0,1fr)]',
             'savingBlockId={blockActionId}',
             'variant="inline"',
             'data-testid="lesson-studio-inline-inspector-close"',
             'lesson-studio-inline-inspector',
-            'className="sticky bottom-0 -mx-1 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
             'const blockReady = Boolean(selectedBlock && blockIssues.length === 0);',
             'const draftBlock = selectedBlock && draftPayload ? { ...selectedBlock, ...draftPayload } : null;',
             'const draftPayload = selectedBlock ? buildInspectorBlockPayload(selectedBlock, form) : null;',
@@ -238,7 +236,6 @@ def main() -> None:
             "onRefreshBlocks={loadBlocks}",
             "onSaveBlock={handleInspectorSaveBlock}",
             
-            "Сохранить блок",
         ],
     )
 
@@ -479,6 +476,39 @@ def main() -> None:
     if missing_close_actions_menu_fragments:
         print("Lesson Studio close-actions-menu fragments are missing:")
         for fragment in missing_close_actions_menu_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_3_compact_inline_form_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    compact_inline_form_fragments = [
+        "Правка блока",
+        'data-testid="lesson-studio-inline-inspector-cancel"',
+        "getBlockDisplayTitle(selectedBlock)",
+        'className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-2 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
+        '{saving ? "Сохраняем..." : "Сохранить"}',
+    ]
+    missing_compact_inline_form_fragments = [
+        fragment for fragment in compact_inline_form_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_compact_inline_form_fragments:
+        print("Lesson Studio compact inline form fragments are missing:")
+        for fragment in missing_compact_inline_form_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    noisy_inline_form_fragments = [
+        '{inlineMode ? "Редактирование" : "Инспектор"}',
+        '{selectedBlock ? "Редактирование блока" : "Настройки урока"}',
+    ]
+    present_noisy_inline_form_fragments = [
+        fragment for fragment in noisy_inline_form_fragments
+        if fragment in lesson_studio_source
+    ]
+    if present_noisy_inline_form_fragments:
+        print("Lesson Studio still contains noisy inline form fragments:")
+        for fragment in present_noisy_inline_form_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 

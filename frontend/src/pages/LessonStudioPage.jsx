@@ -1673,7 +1673,7 @@ function LessonStudioInspector({
     ? "lesson-studio-inline-inspector"
     : "lesson-studio-inspector";
   const inspectorClassName = inlineMode
-    ? "mt-4 rounded-[1.5rem] bg-blue-50/40 p-4 ring-1 ring-blue-100"
+    ? "mt-4 rounded-[1.5rem] bg-white p-3 ring-1 ring-blue-100"
     : "sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200";
 
   const lessonFacts = [
@@ -1720,10 +1720,14 @@ function LessonStudioInspector({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {inlineMode ? "Редактирование" : "Инспектор"}
+            {inlineMode ? "Правка блока" : "Инспектор"}
           </div>
           <h2 className="mt-1 text-sm font-bold text-slate-900">
-            {selectedBlock ? "Редактирование блока" : "Настройки урока"}
+            {selectedBlock
+              ? inlineMode
+                ? getBlockDisplayTitle(selectedBlock)
+                : "Редактирование блока"
+              : "Настройки урока"}
           </h2>
         </div>
 
@@ -1735,24 +1739,24 @@ function LessonStudioInspector({
               event.stopPropagation();
               onClose();
             }}
-            className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+            className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-white"
           >
-            Закрыть
+            Отмена
           </button>
         ) : null}
       </div>
 
-      <p className="mt-2 text-xs leading-5 text-slate-500">
-        {inlineMode
-          ? "Измените основные поля блока прямо в карточке и сохраните изменения."
-          : "Выберите блок на полотне или в структуре. Основные поля можно менять здесь, без прокрутки к техническому редактору."}
-      </p>
+      {!inlineMode ? (
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          Выберите блок на полотне или в структуре. Основные поля можно менять здесь, без прокрутки к техническому редактору.
+        </p>
+      ) : null}
 
       {selectedBlock ? (
         <>
           <div
             data-testid="lesson-studio-inspector-readiness"
-            className={`mt-4 rounded-2xl p-3 ring-1 ${
+            className={`mt-3 rounded-2xl px-3 py-2 ring-1 ${
               blockReady
                 ? "bg-green-50 text-green-900 ring-green-200"
                 : "bg-amber-50 text-amber-950 ring-amber-200"
@@ -1763,7 +1767,7 @@ function LessonStudioInspector({
                 <div className="text-xs font-semibold uppercase tracking-wide">
                   {blockReady ? "Блок готов" : "Нужно заполнить"}
                 </div>
-                <div className="mt-1 text-sm font-black text-slate-900">
+                <div className="mt-0.5 text-sm font-black text-slate-900">
                   {getBlockDisplayTitle(selectedBlock)}
                 </div>
               </div>
@@ -1792,7 +1796,7 @@ function LessonStudioInspector({
                 ))}
               </div>
             ) : (
-              <div className="mt-2 text-xs leading-5 text-green-800">
+              <div className="mt-1 text-xs leading-5 text-green-800">
                 Все обязательные поля блока заполнены.
               </div>
             )}
@@ -1801,15 +1805,17 @@ function LessonStudioInspector({
           <form
             data-testid="lesson-studio-inspector-form"
             onSubmit={handleSubmit}
-            className="mt-4 space-y-4"
+            className="mt-3 space-y-3"
           >
             <section
               data-testid="lesson-studio-inspector-section-main"
-              className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+              className="rounded-2xl bg-slate-50/70 p-3 ring-1 ring-slate-200"
             >
-              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Основное
-              </div>
+              {!inlineMode ? (
+                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Основное
+                </div>
+              ) : null}
 
               <label className="mt-3 block">
                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1826,11 +1832,13 @@ function LessonStudioInspector({
 
             <section
               data-testid="lesson-studio-inspector-section-content"
-              className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+              className="rounded-2xl bg-slate-50/70 p-3 ring-1 ring-slate-200"
             >
-              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Контент
-              </div>
+              {!inlineMode ? (
+                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Контент
+                </div>
+              ) : null}
 
               <label className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1865,11 +1873,13 @@ function LessonStudioInspector({
 
             <section
               data-testid="lesson-studio-inspector-section-publication"
-              className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+              className="rounded-2xl bg-slate-50/70 p-3 ring-1 ring-slate-200"
             >
-              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Публикация
-              </div>
+              {!inlineMode ? (
+                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Публикация
+                </div>
+              ) : null}
 
               <div className="mt-3 space-y-2">
                 <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
@@ -1897,7 +1907,7 @@ function LessonStudioInspector({
             {blockIssues.length ? (
               <div
                 data-testid="lesson-studio-inspector-issues"
-                className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200"
+                className="rounded-2xl bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200"
               >
                 <div className="font-bold">Перед сохранением проверьте поля:</div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1927,14 +1937,28 @@ function LessonStudioInspector({
 
             <div
               data-testid="lesson-studio-inspector-save-bar"
-              className="sticky bottom-0 -mx-1 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"
+              className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-2 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"
             >
+              {inlineMode && onClose ? (
+                <button
+                  type="button"
+                  data-testid="lesson-studio-inline-inspector-cancel"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onClose();
+                  }}
+                  className="rounded-2xl bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white"
+                >
+                  Отмена
+                </button>
+              ) : null}
+
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full rounded-2xl bg-blue-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-2xl bg-blue-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving ? "Сохраняем..." : "Сохранить блок"}
+                {saving ? "Сохраняем..." : "Сохранить"}
               </button>
             </div>
           </form>
