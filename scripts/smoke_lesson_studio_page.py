@@ -1037,13 +1037,13 @@ def main() -> None:
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
 
     safe_rich_text_preview_required_fragments = [
-        "function LessonRichTextSafePreview({ block, preview })",
+        "function LessonRichTextSafePreview({ block, preview, learnerMode = false })",
         "function renderLessonRichTextNode(node, key)",
         "function getSafeLessonRichTextHref(href)",
         "data-testid=\"lesson-rich-text-safe-preview\"",
         "data-testid=\"lesson-rich-text-safe-link\"",
         "const richTextPreview = type === \"rich_text\" || type === \"text\";",
-        "<LessonRichTextSafePreview block={block} preview={previewValue} />",
+        "<LessonRichTextSafePreview block={block} preview={previewValue} learnerMode={learnerMode} />",
         "{richTextPreview ? (",
     ]
 
