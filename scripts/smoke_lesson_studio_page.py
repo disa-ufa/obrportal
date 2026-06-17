@@ -724,7 +724,10 @@ def main() -> None:
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
 
     problem_first_required_fragments = [
-        "function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange, onFixFirstProblem })",
+        "function LessonStudioReadinessChecklist({",
+        "selectedBlockId,",
+        "onFixFirstProblem,",
+        "onFixNextProblem,",
         "const firstProblemBlock = report.problemBlocks[0]?.block || null;",
         'data-testid="lesson-studio-readiness-fix-first-problem"',
         "Исправить первую проблему",
@@ -767,6 +770,34 @@ def main() -> None:
     if missing_structure_editing_fragments:
         print("Lesson Studio structure editing prop fragments are missing:")
         for fragment in missing_structure_editing_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_11_next_problem_navigation_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    next_problem_required_fragments = [
+        "onFixNextProblem",
+        "selectedBlockId,",
+        "currentProblemIndex",
+        "nextProblemNumber",
+        'data-testid="lesson-studio-readiness-fix-next-problem"',
+        "Следующая проблема",
+        "handleFixNextProblem",
+        "const nextProblemIndex =",
+        "setEditingBlockId(nextProblemBlock.id);",
+        "selectedBlockId={selectedBlockId}",
+        "onFixNextProblem={handleFixNextProblem}",
+    ]
+
+    missing_next_problem_fragments = [
+        fragment for fragment in next_problem_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_next_problem_fragments:
+        print("Lesson Studio next problem navigation fragments are missing:")
+        for fragment in missing_next_problem_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 

@@ -524,7 +524,14 @@ function getLessonReadinessReport(lesson, blocks) {
   };
 }
 
-function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange, onFixFirstProblem }) {
+function LessonStudioReadinessChecklist({
+  report,
+  selectedBlockId,
+  onSelectBlock,
+  onModeChange,
+  onFixFirstProblem,
+  onFixNextProblem,
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   if (!report) {
@@ -541,6 +548,13 @@ function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange, o
     ? `${report.problemBlocks.length} проблем`
     : "без проблем";
   const firstProblemBlock = report.problemBlocks[0]?.block || null;
+  const currentProblemIndex = report.problemBlocks.findIndex(
+    (item) => item.block?.id === selectedBlockId
+  );
+  const nextProblemNumber =
+    currentProblemIndex >= 0
+      ? ((currentProblemIndex + 1) % Math.max(report.problemBlocks.length, 1)) + 1
+      : 1;
 
   return (
     <section
@@ -592,6 +606,27 @@ function LessonStudioReadinessChecklist({ report, onSelectBlock, onModeChange, o
               className="rounded-full bg-blue-700 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-blue-800"
             >
               Исправить первую проблему
+            </button>
+          ) : null}
+
+          {report.problemBlocks.length > 1 ? (
+            <button
+              type="button"
+              data-testid="lesson-studio-readiness-fix-next-problem"
+              onClick={() => {
+                if (typeof onModeChange === "function") {
+                  onModeChange("editor");
+                }
+
+                if (typeof onFixNextProblem === "function") {
+                  onFixNextProblem();
+                }
+
+                setIsOpen(true);
+              }}
+              className="rounded-full bg-white px-3 py-2 text-xs font-black text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-50"
+            >
+              Следующая проблема · {nextProblemNumber}/{report.problemBlocks.length}
             </button>
           ) : null}
 
@@ -2340,6 +2375,31 @@ export function LessonStudioPage({ lessonId }) {
     setEditingBlockId(firstProblemBlock.id);
   }, [handleSelectBlock, lessonReadiness]);
 
+  const handleFixNextProblem = useCallback(() => {
+    const problemBlocks = lessonReadiness?.problemBlocks || [];
+
+    if (!problemBlocks.length) {
+      return;
+    }
+
+    const currentProblemIndex = problemBlocks.findIndex(
+      (item) => item.block?.id === selectedBlockId
+    );
+    const nextProblemIndex =
+      currentProblemIndex >= 0
+        ? (currentProblemIndex + 1) % problemBlocks.length
+        : 0;
+    const nextProblemBlock = problemBlocks[nextProblemIndex]?.block || null;
+
+    if (!nextProblemBlock?.id) {
+      return;
+    }
+
+    setViewMode("editor");
+    handleSelectBlock(nextProblemBlock.id);
+    setEditingBlockId(nextProblemBlock.id);
+  }, [handleSelectBlock, lessonReadiness, selectedBlockId]);
+
   const handleQuickCreateBlock = useCallback(
     async (template, insertIndex = null) => {
       if (!lessonId || !template?.values) {
@@ -2545,12 +2605,14 @@ export function LessonStudioPage({ lessonId }) {
 
       <LessonStudioReadinessChecklist
         report={lessonReadiness}
+        selectedBlockId={selectedBlockId}
         onSelectBlock={(blockId) => {
           handleSelectBlock(blockId);
           setEditingBlockId(blockId || "");
         }}
         onModeChange={setViewMode}
         onFixFirstProblem={handleFixFirstProblem}
+        onFixNextProblem={handleFixNextProblem}
       />
 
 
