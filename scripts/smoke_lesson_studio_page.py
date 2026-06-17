@@ -899,6 +899,10 @@ def main() -> None:
         "lesson-rich-text-toolbar",
         "lesson-rich-text-character-count",
         "lesson-rich-text-link-editor",
+        "Совет: короткие абзацы",
+        "H2 Заголовок",
+        "Ctrl+B · Ctrl+I · Enter",
+        "Редактор учебного текста",
         "applyEditorLink",
     ]
 

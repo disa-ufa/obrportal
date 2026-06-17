@@ -41,7 +41,7 @@ function normalizeEditorDocument(value) {
 
 function getToolbarButtonClass(active = false) {
   return [
-    "rounded-xl px-2.5 py-1.5 text-xs font-black ring-1 transition",
+    "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-3 text-xs font-black ring-1 transition focus:outline-none focus:ring-2 focus:ring-blue-200",
     active
       ? "bg-blue-600 text-white ring-blue-600 shadow-sm"
       : "bg-white text-slate-700 ring-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200",
@@ -136,7 +136,7 @@ function LessonRichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-56 rounded-2xl bg-white px-4 py-4 text-sm leading-7 text-slate-900 outline-none ring-1 ring-slate-200 transition focus:ring-2 focus:ring-blue-200",
+          "min-h-64 rounded-[1.25rem] bg-white px-5 py-5 text-[15px] leading-7 text-slate-900 outline-none transition",
       },
     },
     onUpdate: ({ editor: currentEditor }) => emitEditorChange(currentEditor, onChange),
@@ -189,7 +189,7 @@ function LessonRichTextEditor({
   const characterLimitReached = characters >= RICH_TEXT_CHARACTER_LIMIT;
 
   return (
-    <div data-testid="lesson-rich-text-editor" className="mt-2 rounded-[1.5rem] bg-slate-50/70 p-3 ring-1 ring-slate-200">
+    <div data-testid="lesson-rich-text-editor" className="mt-2 rounded-[1.75rem] bg-gradient-to-b from-slate-50 to-white p-3 ring-1 ring-slate-200">
       {editor ? (
         <BubbleMenu
           editor={editor}
@@ -239,9 +239,24 @@ function LessonRichTextEditor({
         </BubbleMenu>
       ) : null}
 
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/80 px-3 py-2 ring-1 ring-slate-200">
+        <div>
+          <div className="text-xs font-black uppercase tracking-wide text-slate-700">
+            Редактор учебного текста
+          </div>
+          <div className="mt-0.5 text-xs text-slate-500">
+            Структурируйте материал заголовками, списками, цитатами и ссылками.
+          </div>
+        </div>
+
+        <div className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-700 ring-1 ring-blue-100">
+          Ctrl+B · Ctrl+I · Enter
+        </div>
+      </div>
+
       <div
         data-testid="lesson-rich-text-toolbar"
-        className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-white p-2 ring-1 ring-slate-200"
+        className="flex flex-wrap items-center gap-2 rounded-[1.35rem] bg-white/95 p-2.5 ring-1 ring-slate-200 shadow-sm"
         role="toolbar"
         aria-label="Панель форматирования учебного текста"
       >
@@ -251,7 +266,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().setParagraph().run()}
         >
-          P
+          Абзац
         </ToolbarButton>
         <ToolbarButton
           title="Заголовок H2"
@@ -259,7 +274,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
         >
-          H2
+          H2 Заголовок
         </ToolbarButton>
         <ToolbarButton
           title="Заголовок H3"
@@ -267,7 +282,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         >
-          H3
+          H3 Подзаг.
         </ToolbarButton>
 
         <Divider />
@@ -278,7 +293,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
-          B
+          Жирный
         </ToolbarButton>
         <ToolbarButton
           title="Курсив"
@@ -286,7 +301,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
-          <span className="italic">I</span>
+          <span className="italic">Курсив</span>
         </ToolbarButton>
         <ToolbarButton
           title="Код в строке"
@@ -294,7 +309,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleCode().run()}
         >
-          {"</>"}
+          Код
         </ToolbarButton>
         <ToolbarButton
           title="Ссылка"
@@ -302,7 +317,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={openLinkEditor}
         >
-          🔗
+          Ссылка
         </ToolbarButton>
 
         <Divider />
@@ -313,7 +328,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
         >
-          •
+          Список
         </ToolbarButton>
         <ToolbarButton
           title="Нумерованный список"
@@ -321,7 +336,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         >
-          1.
+          Нумер.
         </ToolbarButton>
         <ToolbarButton
           title="Цитата"
@@ -329,7 +344,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
         >
-          “”
+          Цитата
         </ToolbarButton>
         <ToolbarButton
           title="Блок кода"
@@ -337,7 +352,7 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         >
-          code
+          Блок кода
         </ToolbarButton>
 
         <Divider />
@@ -347,14 +362,14 @@ function LessonRichTextEditor({
           disabled={disabled || !editor.can().undo()}
           onClick={() => editor.chain().focus().undo().run()}
         >
-          ↶
+          Назад
         </ToolbarButton>
         <ToolbarButton
           title="Повторить"
           disabled={disabled || !editor.can().redo()}
           onClick={() => editor.chain().focus().redo().run()}
         >
-          ↷
+          Вперёд
         </ToolbarButton>
         <ToolbarButton
           title="Очистить форматирование"
@@ -369,12 +384,13 @@ function LessonRichTextEditor({
         <form
           data-testid="lesson-rich-text-link-editor"
           onSubmit={handleLinkSubmit}
-          className="mt-2 flex flex-wrap items-center gap-2 rounded-2xl bg-blue-50 p-2 ring-1 ring-blue-100"
+          className="mt-3 flex flex-wrap items-center gap-2 rounded-[1.25rem] bg-blue-50/80 p-3 ring-1 ring-blue-100"
         >
           <label className="min-w-0 flex-1">
             <span className="sr-only">Ссылка</span>
             <input
               type="url"
+              autoFocus
               value={linkInputValue}
               onChange={(event) => setLinkInputValue(event.target.value)}
               placeholder="https://example.ru/material"
@@ -409,14 +425,14 @@ function LessonRichTextEditor({
 
       <div
         data-testid="lesson-rich-text-editor-surface"
-        className="mt-2 [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-blue-200 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_code]:rounded-md [&_.ProseMirror_code]:bg-slate-100 [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:font-mono [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h2]:font-black [&_.ProseMirror_h3]:text-lg [&_.ProseMirror_h3]:font-black [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-6 [&_.ProseMirror_p]:my-2 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded-2xl [&_.ProseMirror_pre]:bg-slate-950 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_pre]:text-slate-50 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-6 [&_.ProseMirror_a]:font-bold [&_.ProseMirror_a]:text-blue-700 [&_.ProseMirror_a]:underline"
+        className="mt-3 rounded-[1.35rem] bg-white p-2 ring-1 ring-slate-200 shadow-inner [&_.is-editor-empty:first-child::before]:pointer-events-none [&_.is-editor-empty:first-child::before]:float-left [&_.is-editor-empty:first-child::before]:h-0 [&_.is-editor-empty:first-child::before]:text-slate-400 [&_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-blue-200 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_code]:rounded-md [&_.ProseMirror_code]:bg-slate-100 [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:font-mono [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h2]:font-black [&_.ProseMirror_h3]:text-lg [&_.ProseMirror_h3]:font-black [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-6 [&_.ProseMirror_p]:my-2 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded-2xl [&_.ProseMirror_pre]:bg-slate-950 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_pre]:text-slate-50 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-6 [&_.ProseMirror_a]:font-bold [&_.ProseMirror_a]:text-blue-700 [&_.ProseMirror_a]:underline"
       >
         <EditorContent editor={editor} />
       </div>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="text-slate-500">
-          Подсказка: используйте заголовки, списки и цитаты, чтобы материал было легче читать.
+          Совет: короткие абзацы, подзаголовки и списки делают урок понятнее для обучающегося.
         </div>
         <div
           data-testid="lesson-rich-text-character-count"
