@@ -1035,6 +1035,76 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+    # stage83_3_7_9_safe_rich_text_preview_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    safe_rich_text_preview_required_fragments = [
+        "function LessonRichTextSafePreview({ block, preview })",
+        "function renderLessonRichTextNode(node, key)",
+        "function getSafeLessonRichTextHref(href)",
+        "data-testid=\"lesson-rich-text-safe-preview\"",
+        "data-testid=\"lesson-rich-text-safe-link\"",
+        "const richTextPreview = type === \"rich_text\" || type === \"text\";",
+        "<LessonRichTextSafePreview block={block} preview={previewValue} />",
+        "{richTextPreview ? (",
+    ]
+
+    missing_safe_rich_text_preview_fragments = [
+        fragment for fragment in safe_rich_text_preview_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_safe_rich_text_preview_fragments:
+        print("Lesson Studio safe rich text preview guard failed:")
+        for fragment in missing_safe_rich_text_preview_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    if "dangerouslySetInnerHTML" in lesson_studio_source:
+        print("Lesson Studio safe rich text preview uses forbidden dangerouslySetInnerHTML")
+        raise SystemExit(1)
+
+    # stage83_3_7_10_single_lesson_preview_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    single_lesson_preview_required_fragments = [
+        "learnerMode = false",
+        "learnerMode ? \"mt-2\"",
+        "? \"py-1 text-sm leading-7 text-slate-800\"",
+        "<LessonRichTextSafePreview block={block} preview={previewValue} learnerMode={learnerMode} />",
+        "<LessonCanvasTypePreview block={block} preview={preview} learnerMode={previewMode} />",
+        "data-testid={previewMode ? \"lesson-studio-learner-document\" : \"lesson-studio-editor-block-list\"}",
+        "mx-auto max-w-3xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6",
+        "border-b border-slate-100 pb-5 last:border-b-0 last:pb-0",
+    ]
+
+    missing_single_lesson_preview_fragments = [
+        fragment for fragment in single_lesson_preview_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_single_lesson_preview_fragments:
+        print("Lesson Studio single lesson preview guard failed:")
+        for fragment in missing_single_lesson_preview_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    forbidden_single_lesson_preview_fragments = [
+        "data-testid=\"lesson-studio-preview-banner\"",
+        "Административные действия скрыты. На полотне показаны только активные",
+    ]
+
+    present_forbidden_single_lesson_preview_fragments = [
+        fragment for fragment in forbidden_single_lesson_preview_fragments
+        if fragment in lesson_studio_source
+    ]
+
+    if present_forbidden_single_lesson_preview_fragments:
+        print("Lesson Studio preview still has admin banner fragments:")
+        for fragment in present_forbidden_single_lesson_preview_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
     print("Lesson Studio page smoke passed")
 
 

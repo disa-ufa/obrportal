@@ -306,34 +306,294 @@ function getBlockPreviewMeta(block) {
   return metaByType[type] || metaByType.rich_text;
 }
 
-function LessonCanvasTypePreview({ block, preview }) {
+function isLessonRichTextDocumentEmpty(documentValue) {
+  const nodes = Array.isArray(documentValue?.content) ? documentValue.content : [];
+
+  if (!nodes.length) {
+    return true;
+  }
+
+  return !nodes.some((node) => getLessonRichTextPlainText(node).trim());
+}
+
+function getLessonRichTextPlainText(node) {
+  if (!node || typeof node !== "object") {
+    return "";
+  }
+
+  if (node.type === "text") {
+    return `${node.text || ""}`;
+  }
+
+  if (node.type === "hardBreak") {
+    return "\n";
+  }
+
+  if (!Array.isArray(node.content)) {
+    return "";
+  }
+
+  return node.content.map((child) => getLessonRichTextPlainText(child)).join("");
+}
+
+function getSafeLessonRichTextHref(href) {
+  const value = `${href || ""}`.trim();
+
+  if (!value) {
+    return "";
+  }
+
+  if (value.startsWith("/") || value.startsWith("#")) {
+    return value;
+  }
+
+  try {
+    const url = new URL(value);
+    const allowedProtocols = ["http:", "https:", "mailto:", "tel:"];
+
+    return allowedProtocols.includes(url.protocol) ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+function renderLessonRichTextMarks(children, marks = [], keyPrefix = "mark") {
+  return marks.reduce((currentChildren, mark, index) => {
+    const markKey = `${keyPrefix}-${mark.type || "mark"}-${index}`;
+
+    if (mark.type === "bold") {
+      return (
+        <strong key={markKey} className="font-black text-slate-950">
+          {currentChildren}
+        </strong>
+      );
+    }
+
+    if (mark.type === "italic") {
+      return (
+        <em key={markKey} className="italic">
+          {currentChildren}
+        </em>
+      );
+    }
+
+    if (mark.type === "code") {
+      return (
+        <code
+          key={markKey}
+          className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-900 ring-1 ring-slate-200"
+        >
+          {currentChildren}
+        </code>
+      );
+    }
+
+    if (mark.type === "link") {
+      const safeHref = getSafeLessonRichTextHref(mark.attrs?.href);
+
+      if (!safeHref) {
+        return currentChildren;
+      }
+
+      return (
+        <a
+          key={markKey}
+          data-testid="lesson-rich-text-safe-link"
+          href={safeHref}
+          target={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "_blank"}
+          rel={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "noreferrer"}
+          className="font-bold text-blue-700 underline decoration-blue-300 underline-offset-4 transition hover:text-blue-900"
+        >
+          {currentChildren}
+        </a>
+      );
+    }
+
+    return currentChildren;
+  }, children);
+}
+
+function renderLessonRichTextChildren(nodes, keyPrefix) {
+  if (!Array.isArray(nodes)) {
+    return null;
+  }
+
+  return nodes
+    .map((node, index) => renderLessonRichTextNode(node, `${keyPrefix}-${index}`))
+    .filter(Boolean);
+}
+
+function renderLessonRichTextNode(node, key) {
+  if (!node || typeof node !== "object") {
+    return null;
+  }
+
+  if (node.type === "text") {
+    return renderLessonRichTextMarks(`${node.text || ""}`, node.marks, key);
+  }
+
+  if (node.type === "hardBreak") {
+    return <br key={key} />;
+  }
+
+  const children = renderLessonRichTextChildren(node.content, key);
+
+  if (node.type === "paragraph") {
+    return (
+      <p key={key} className="text-sm leading-7 text-slate-700">
+        {children?.length ? children : <br />}
+      </p>
+    );
+  }
+
+  if (node.type === "heading") {
+    const level = Number(node.attrs?.level || 2);
+    const HeadingTag = level >= 3 ? "h3" : "h2";
+    const className =
+      level >= 3
+        ? "mt-4 text-base font-black leading-7 text-slate-950 first:mt-0"
+        : "mt-5 text-lg font-black leading-7 text-slate-950 first:mt-0";
+
+    return (
+      <HeadingTag key={key} className={className}>
+        {children}
+      </HeadingTag>
+    );
+  }
+
+  if (node.type === "bulletList") {
+    return (
+      <ul key={key} className="ml-5 list-disc space-y-1 text-sm leading-7 text-slate-700">
+        {children}
+      </ul>
+    );
+  }
+
+  if (node.type === "orderedList") {
+    return (
+      <ol key={key} className="ml-5 list-decimal space-y-1 text-sm leading-7 text-slate-700">
+        {children}
+      </ol>
+    );
+  }
+
+  if (node.type === "listItem") {
+    return (
+      <li key={key} className="pl-1">
+        {children}
+      </li>
+    );
+  }
+
+  if (node.type === "blockquote") {
+    return (
+      <blockquote
+        key={key}
+        className="rounded-r-2xl border-l-4 border-blue-200 bg-blue-50/70 px-4 py-3 text-sm italic leading-7 text-slate-700"
+      >
+        {children}
+      </blockquote>
+    );
+  }
+
+  if (node.type === "codeBlock") {
+    return (
+      <pre
+        key={key}
+        className="overflow-x-auto rounded-2xl bg-slate-950 p-4 text-xs leading-6 text-slate-50 shadow-inner"
+      >
+        <code>{getLessonRichTextPlainText(node)}</code>
+      </pre>
+    );
+  }
+
+  if (children?.length) {
+    return (
+      <div key={key} className="text-sm leading-7 text-slate-700">
+        {children}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function getLessonRichTextPreviewDocument(block, preview) {
+  const content = safeParseJson(block?.content_json);
+
+  if (content.editor_json?.type === "doc") {
+    return content.editor_json;
+  }
+
+  const fallbackText = `${content.text || content.content_text || preview || ""}`.trim();
+
+  return buildLessonRichTextDocumentFromText(fallbackText);
+}
+
+function LessonRichTextSafePreview({ block, preview, learnerMode = false }) {
+  const documentValue = getLessonRichTextPreviewDocument(block, preview);
+  const fallbackText = `${preview || ""}`.trim();
+  const empty = isLessonRichTextDocumentEmpty(documentValue);
+  const nodes = Array.isArray(documentValue?.content) ? documentValue.content : [];
+
+  return (
+    <div
+      data-testid="lesson-studio-text-preview"
+      className={learnerMode ? "mt-2" : "mt-4 rounded-2xl bg-white/90 p-5 ring-1 ring-black/5"}
+    >
+      <div
+        data-testid="lesson-rich-text-safe-preview"
+        className={learnerMode ? "space-y-3 break-words text-slate-800" : "space-y-3 break-words"}
+      >
+        {empty ? (
+          <p className="text-sm leading-7 text-slate-500">
+            {fallbackText || "Учебный текст пока не заполнен."}
+          </p>
+        ) : (
+          nodes.map((node, index) => renderLessonRichTextNode(node, `rich-text-preview-${index}`))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
   const meta = getBlockPreviewMeta(block);
   const isEmpty = preview === "Контент блока пока не заполнен.";
 
   const previewValue = isEmpty ? "Заполните содержимое справа в инспекторе." : preview;
+  const richTextPreview = type === "rich_text" || type === "text";
 
   return (
     <div
       data-testid="lesson-studio-canvas-type-preview"
-      className={`mt-3 rounded-[1.25rem] p-3 text-sm leading-6 ring-1 ${meta.surfaceClass}`}
+      className={
+        learnerMode
+          ? "py-1 text-sm leading-7 text-slate-800"
+          : `mt-3 rounded-[1.25rem] p-3 text-sm leading-6 ring-1 ${meta.surfaceClass}`
+      }
     >
-      <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 text-xs font-black shadow-sm ring-1 ring-black/5">
-          {meta.icon}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="text-xs font-bold uppercase tracking-wide opacity-75">
-            {meta.kicker}
+      {!learnerMode ? (
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 text-xs font-black shadow-sm ring-1 ring-black/5">
+            {meta.icon}
           </div>
-          <div className="mt-1 text-xs leading-5 opacity-80">
-            {meta.description}
+
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-bold uppercase tracking-wide opacity-75">
+              {meta.kicker}
+            </div>
+            <div className="mt-1 text-xs leading-5 opacity-80">
+              {meta.description}
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
-      {type === "video" ? (
+      {richTextPreview ? (
+        <LessonRichTextSafePreview block={block} preview={previewValue} learnerMode={learnerMode} />
+      ) : type === "video" ? (
         <div
           data-testid="lesson-studio-video-preview"
           className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
@@ -1268,48 +1528,54 @@ function LessonCanvasBlock({
       id={`studio-block-${block.id}`}
       data-testid="lesson-studio-canvas-block"
       data-compact={compact ? "true" : "false"}
-      className={`rounded-[1.35rem] bg-white shadow-sm ring-1 transition ${
-        compact ? "p-3" : "p-4"
-      } ${
-        !previewMode && selected ? "ring-blue-300 bg-blue-50/20" : "ring-slate-200 hover:ring-blue-200"
-      }`}
+      className={
+        previewMode
+          ? "py-3"
+          : `rounded-[1.35rem] bg-white shadow-sm ring-1 transition ${
+              compact ? "p-3" : "p-4"
+            } ${
+              !previewMode && selected ? "ring-blue-300 bg-blue-50/20" : "ring-slate-200 hover:ring-blue-200"
+            }`
+      }
       onClick={() => {
         if (!previewMode) {
           onSelect(block.id);
         }
       }}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2.5">
-        <div className="min-w-0">
-          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-            #{index + 1} · {getLessonBlockTypeLabel(block.block_type)}
+      {!previewMode ? (
+        <div className="flex flex-wrap items-start justify-between gap-2.5">
+          <div className="min-w-0">
+            <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+              #{index + 1} · {getLessonBlockTypeLabel(block.block_type)}
+            </div>
+            <h3 className={`${compact ? "mt-0.5 text-sm" : "mt-1 text-base"} font-black text-slate-900`}>
+              {title}
+            </h3>
           </div>
-          <h3 className={`${compact ? "mt-0.5 text-sm" : "mt-1 text-base"} font-black text-slate-900`}>
-            {title}
-          </h3>
+
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <span
+              data-testid="lesson-studio-block-readiness-chip"
+              className={`rounded-full px-2.5 py-1 text-xs font-black ring-1 ${
+                blockReady
+                  ? "bg-green-50 text-green-700 ring-green-200"
+                  : "bg-amber-50 text-amber-800 ring-amber-200"
+              }`}
+            >
+              {blockReady ? "Готов" : `${issues.length} проблем`}
+            </span>
+
+            {!compact && block.is_required ? (
+              <LessonStudioBadge tone="green">Обязательный</LessonStudioBadge>
+            ) : null}
+
+            {block.is_active === false ? (
+              <LessonStudioBadge tone="slate">Скрыт</LessonStudioBadge>
+            ) : null}
+          </div>
         </div>
-
-        <div className="flex flex-wrap items-center justify-end gap-1.5">
-          <span
-            data-testid="lesson-studio-block-readiness-chip"
-            className={`rounded-full px-2.5 py-1 text-xs font-black ring-1 ${
-              blockReady
-                ? "bg-green-50 text-green-700 ring-green-200"
-                : "bg-amber-50 text-amber-800 ring-amber-200"
-            }`}
-          >
-            {blockReady ? "Готов" : `${issues.length} проблем`}
-          </span>
-
-          {!compact && block.is_required ? (
-            <LessonStudioBadge tone="green">Обязательный</LessonStudioBadge>
-          ) : null}
-
-          {block.is_active === false ? (
-            <LessonStudioBadge tone="slate">Скрыт</LessonStudioBadge>
-          ) : null}
-        </div>
-      </div>
+      ) : null}
 
       {compact ? (
         <p
@@ -1424,7 +1690,7 @@ function LessonCanvasBlock({
       ) : null}
 
       {!compact && !inlineRichTextEditing ? (
-        <LessonCanvasTypePreview block={block} preview={preview} />
+        <LessonCanvasTypePreview block={block} preview={preview} learnerMode={previewMode} />
       ) : null}
 
       {!previewMode && selected && editing ? (
@@ -1566,29 +1832,28 @@ function LessonStudioCanvas({
     Boolean(deletingBlockId);
 
   return (
-    <section data-testid="lesson-studio-visual-canvas" className="space-y-2.5">
-      {previewMode ? (
-        <section
-          data-testid="lesson-studio-preview-banner"
-          className="rounded-[1.5rem] bg-green-50 p-4 text-sm leading-6 text-green-900 ring-1 ring-green-200"
-        >
-          <div className="text-xs font-bold uppercase tracking-wide text-green-700">
-            Предпросмотр глазами обучающегося
-          </div>
-          <div className="mt-1">
-            Административные действия скрыты. На полотне показаны только активные
-            блоки урока.
-          </div>
-        </section>
-      ) : null}
-
+    <section
+      data-testid="lesson-studio-visual-canvas"
+      className={previewMode ? "space-y-0" : "space-y-2.5"}
+    >
       {visibleBlocks.length ? (
-        <div className="space-y-2.5">
+        <div
+          data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}
+          className={
+            previewMode
+              ? "mx-auto max-w-3xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100"
+              : "space-y-2.5"
+          }
+        >
           {visibleBlocks.map((block, index) => (
             <div
               key={block.id}
               data-testid="lesson-studio-canvas-block-stack"
-              className="space-y-2.5"
+              className={
+                previewMode
+                  ? "border-b border-slate-100 pb-5 last:border-b-0 last:pb-0"
+                  : "space-y-2.5"
+              }
             >
               <LessonCanvasBlock
                 lesson={lesson}
