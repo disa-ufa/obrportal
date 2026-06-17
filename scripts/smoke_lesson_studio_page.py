@@ -807,7 +807,7 @@ def main() -> None:
         "function getInspectorFormSnapshot(values)",
         "const savedFormSnapshot = useMemo(",
         "const currentFormSnapshot = useMemo(",
-        "const hasUnsavedChanges = Boolean(selectedBlock && savedFormSnapshot !== currentFormSnapshot);",
+        "const effectiveSavedFormSnapshot = savedFormSnapshotOverride || savedFormSnapshot;",
         "const saveFeedback = saving",
         'data-testid="lesson-studio-inspector-save-status"',
         'aria-live="polite"',
@@ -992,6 +992,46 @@ def main() -> None:
     if missing_text_block_settings_fragments:
         print("Lesson Studio text block settings layout guard failed:")
         for fragment in missing_text_block_settings_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_7_8_rich_text_dirty_state_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    rich_text_dirty_state_required_fragments = [
+        "function stableStringifyLessonValue(value)",
+        "function normalizeInspectorSnapshotEditorJson(values)",
+        "editor_json: stableStringifyLessonValue(normalizeInspectorSnapshotEditorJson(values))",
+        "const [savedFormSnapshotOverride, setSavedFormSnapshotOverride] = useState(\"\");",
+        "const effectiveSavedFormSnapshot = savedFormSnapshotOverride || savedFormSnapshot;",
+        "selectedBlock && effectiveSavedFormSnapshot !== currentFormSnapshot",
+        "setSavedFormSnapshotOverride(getInspectorFormSnapshot(form));",
+    ]
+
+    missing_rich_text_dirty_state_fragments = [
+        fragment for fragment in rich_text_dirty_state_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_rich_text_dirty_state_fragments:
+        print("Lesson Studio rich text dirty-state guard failed:")
+        for fragment in missing_rich_text_dirty_state_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    forbidden_rich_text_dirty_state_fragments = [
+        "editor_html: `${values?.editor_html || \"\"}`.trim(),",
+        "selectedBlock && savedFormSnapshot !== currentFormSnapshot",
+    ]
+
+    present_forbidden_rich_text_dirty_state_fragments = [
+        fragment for fragment in forbidden_rich_text_dirty_state_fragments
+        if fragment in lesson_studio_source
+    ]
+
+    if present_forbidden_rich_text_dirty_state_fragments:
+        print("Lesson Studio rich text dirty-state has stale fragments:")
+        for fragment in present_forbidden_rich_text_dirty_state_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 

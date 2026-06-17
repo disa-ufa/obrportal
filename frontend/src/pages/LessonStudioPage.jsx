@@ -1803,12 +1803,39 @@ function buildInspectorBlockForm(block) {
   };
 }
 
+function stableStringifyLessonValue(value) {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringifyLessonValue(item)).join(",")}]`;
+  }
+
+  const entries = Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringifyLessonValue(value[key])}`);
+
+  return `{${entries.join(",")}}`;
+}
+
+function normalizeInspectorSnapshotEditorJson(values) {
+  const contentText = `${values?.content_text || ""}`.trim();
+
+  if (values?.editor_json?.type === "doc") {
+    return values.editor_json;
+  }
+
+  return buildLessonRichTextDocumentFromText(contentText);
+}
+
 function getInspectorFormSnapshot(values) {
+  const contentText = `${values?.content_text || ""}`.trim();
+
   return JSON.stringify({
     title: `${values?.title || ""}`.trim(),
-    content_text: `${values?.content_text || ""}`.trim(),
-    editor_json: values?.editor_json ? JSON.stringify(values.editor_json) : "",
-    editor_html: `${values?.editor_html || ""}`.trim(),
+    content_text: contentText,
+    editor_json: stableStringifyLessonValue(normalizeInspectorSnapshotEditorJson(values)),
     is_required: Boolean(values?.is_required),
     is_active: Boolean(values?.is_active),
   });
@@ -1862,11 +1889,13 @@ function LessonStudioInspector({
   const [form, setForm] = useState(() => buildInspectorBlockForm(selectedBlock));
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
+  const [savedFormSnapshotOverride, setSavedFormSnapshotOverride] = useState("");
 
   useEffect(() => {
     setForm(buildInspectorBlockForm(selectedBlock));
     setFormError("");
     setFormSuccess("");
+    setSavedFormSnapshotOverride("");
   }, [selectedBlock?.id]);
 
   const contentFieldMeta = getInspectorContentFieldMeta(selectedBlock);
@@ -1884,7 +1913,10 @@ function LessonStudioInspector({
     () => getInspectorFormSnapshot(form),
     [form]
   );
-  const hasUnsavedChanges = Boolean(selectedBlock && savedFormSnapshot !== currentFormSnapshot);
+  const effectiveSavedFormSnapshot = savedFormSnapshotOverride || savedFormSnapshot;
+  const hasUnsavedChanges = Boolean(
+    selectedBlock && effectiveSavedFormSnapshot !== currentFormSnapshot
+  );
   const saveFeedback = saving
     ? {
         label: "Сохраняем…",
@@ -1947,15 +1979,25 @@ function LessonStudioInspector({
 
   const handleRichTextChange = (nextValue) => {
     const nextText = `${nextValue?.text || ""}`;
-    setForm((current) => ({
-      ...current,
-      content_text: nextText,
-      editor_json:
-        nextValue?.editor_json && typeof nextValue.editor_json === "object"
-          ? nextValue.editor_json
-          : buildLessonRichTextDocumentFromText(nextText),
-      editor_html: `${nextValue?.editor_html || ""}`,
-    }));
+
+    setForm((current) => {
+      const nextForm = {
+        ...current,
+        content_text: nextText,
+        editor_json:
+          nextValue?.editor_json && typeof nextValue.editor_json === "object"
+            ? nextValue.editor_json
+            : buildLessonRichTextDocumentFromText(nextText),
+        editor_html: `${nextValue?.editor_html || ""}`,
+      };
+
+      if (getInspectorFormSnapshot(current) === getInspectorFormSnapshot(nextForm)) {
+        return current;
+      }
+
+      return nextForm;
+    });
+
     setFormError("");
     setFormSuccess("");
   };
@@ -1971,6 +2013,7 @@ function LessonStudioInspector({
       setFormError("");
       setFormSuccess("");
       await onSaveBlock(selectedBlock, form);
+      setSavedFormSnapshotOverride(getInspectorFormSnapshot(form));
       setFormSuccess("Блок сохранён. Полотно обновлено.");
     } catch (err) {
       setFormError(err?.message || "Не удалось сохранить блок.");
