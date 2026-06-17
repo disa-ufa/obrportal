@@ -1191,6 +1191,7 @@ function LessonCanvasBlock({
   const compactSummary = issues.length
     ? `Нужно заполнить: ${issues.slice(0, 2).join(", ")}${issues.length > 2 ? "..." : ""}`
     : preview || "Краткое содержимое блока пока не заполнено.";
+  const inlineRichTextEditing = !previewMode && selected && editing && isLessonRichTextBlock(block);
   const actionsMenuRef = useRef(null);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
 
@@ -1422,7 +1423,9 @@ function LessonCanvasBlock({
         </div>
       ) : null}
 
-      {!compact ? <LessonCanvasTypePreview block={block} preview={preview} /> : null}
+      {!compact && !inlineRichTextEditing ? (
+        <LessonCanvasTypePreview block={block} preview={preview} />
+      ) : null}
 
       {!previewMode && selected && editing ? (
         <LessonStudioInspector

@@ -670,7 +670,7 @@ def main() -> None:
         'data-testid="lesson-studio-card-actions-trigger"',
         'data-testid="lesson-studio-card-actions"',
         'compact\n              ? "mt-2 flex items-center justify-end gap-2 border-t border-slate-100 pt-2"',
-        "!compact ? <LessonCanvasTypePreview",
+        "{!compact && !inlineRichTextEditing ? (",
     ]
 
     missing_compact_canvas_required_fragments = [
@@ -949,6 +949,26 @@ def main() -> None:
     if missing_lesson_studio_rich_text_fragments:
         print("Lesson Studio rich text integration is incomplete:")
         for fragment in missing_lesson_studio_rich_text_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_7_6_hide_text_preview_while_editing_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    hide_text_preview_required_fragments = [
+        "const inlineRichTextEditing = !previewMode && selected && editing && isLessonRichTextBlock(block);",
+        "{!compact && !inlineRichTextEditing ? (",
+        "<LessonCanvasTypePreview block={block} preview={preview} />",
+    ]
+
+    missing_hide_text_preview_fragments = [
+        fragment for fragment in hide_text_preview_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_hide_text_preview_fragments:
+        print("Lesson Studio text block preview/edit duplication guard failed:")
+        for fragment in missing_hide_text_preview_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 
