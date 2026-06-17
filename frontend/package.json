@@ -10,6 +10,11 @@
     "lint": "eslint . --ext js,jsx --max-warnings 0"
   },
   "dependencies": {
+    "@tiptap/extension-link": "^3.27.0",
+    "@tiptap/extensions": "^3.27.0",
+    "@tiptap/pm": "^3.27.0",
+    "@tiptap/react": "^3.27.0",
+    "@tiptap/starter-kit": "^3.27.0",
     "@vitejs/plugin-react": "latest",
     "framer-motion": "latest",
     "lucide-react": "latest",
