@@ -841,6 +841,7 @@ function LessonStudioTopbar({ lesson, blocks, loading, blocksLoading, error, mod
   );
 }
 
+
 function LessonStudioStructurePanel({
   lesson,
   blocks,
@@ -856,39 +857,28 @@ function LessonStudioStructurePanel({
   const previewMode = mode === "preview";
   const requiredBlocks = blocks.filter((block) => block.is_required).length;
   const activeBlocks = blocks.filter((block) => block.is_active !== false).length;
+  const inactiveBlocks = Math.max(blocks.length - activeBlocks, 0);
   const problemBlocks = blocks.filter((block) => getBlockValidationIssues(block).length > 0);
   const readyBlocks = Math.max(blocks.length - problemBlocks.length, 0);
 
   return (
     <aside
       data-testid="lesson-studio-structure"
-      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[1.75rem] bg-white p-3 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Структура
+            Структура урока
           </div>
-          <h2 className="mt-1 text-sm font-bold text-slate-900">
-            Навигация урока
+          <h2 className="mt-1 truncate text-sm font-black text-slate-900">
+            {lesson?.title || "Урок загружается"}
           </h2>
         </div>
 
-        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+        <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
           {blocks.length}
         </span>
-      </div>
-
-      <p className="mt-2 text-xs leading-5 text-slate-500">
-        Компактная карта урока. Нажмите на блок — студия выделит его,
-        плавно перейдёт к карточке на полотне и откроет форму редактирования внутри блока.
-      </p>
-
-      <div className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
-        <div className="text-xs font-semibold text-slate-500">Текущий урок</div>
-        <div className="mt-1 text-sm font-bold text-slate-900">
-          {lesson?.title || "Урок загружается"}
-        </div>
       </div>
 
       {!previewMode ? (
@@ -902,48 +892,36 @@ function LessonStudioStructurePanel({
 
       <div
         data-testid="lesson-studio-structure-stats"
-        className="mt-4 grid grid-cols-2 gap-2"
+        className="mt-3 flex flex-wrap gap-1.5"
       >
-        <div className="rounded-2xl bg-blue-50 p-3 ring-1 ring-blue-100">
-          <div className="text-[11px] font-bold uppercase tracking-wide text-blue-600">
-            Всего
-          </div>
-          <div className="mt-1 text-lg font-black text-blue-950">{blocks.length}</div>
-        </div>
+        <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 ring-1 ring-slate-200">
+          Всего: {blocks.length}
+        </span>
+        <span className="rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-bold text-green-700 ring-1 ring-green-100">
+          Готово: {readyBlocks}
+        </span>
+        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700 ring-1 ring-blue-100">
+          Обяз.: {requiredBlocks}
+        </span>
 
-        <div className="rounded-2xl bg-green-50 p-3 ring-1 ring-green-100">
-          <div className="text-[11px] font-bold uppercase tracking-wide text-green-700">
-            Готово
-          </div>
-          <div className="mt-1 text-lg font-black text-green-950">{readyBlocks}</div>
-        </div>
+        {problemBlocks.length ? (
+          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800 ring-1 ring-amber-100">
+            Проблем: {problemBlocks.length}
+          </span>
+        ) : null}
 
-        <div className="rounded-2xl bg-amber-50 p-3 ring-1 ring-amber-100">
-          <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700">
-            Обязательные
-          </div>
-          <div className="mt-1 text-lg font-black text-amber-950">{requiredBlocks}</div>
-        </div>
-
-        <div className="rounded-2xl bg-red-50 p-3 ring-1 ring-red-100">
-          <div className="text-[11px] font-bold uppercase tracking-wide text-red-700">
-            Незаполненных
-          </div>
-          <div className="mt-1 text-lg font-black text-red-950">{problemBlocks.length}</div>
-        </div>
+        {inactiveBlocks ? (
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200">
+            Скрыто: {inactiveBlocks}
+          </span>
+        ) : null}
       </div>
 
-      {activeBlocks !== blocks.length ? (
-        <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-xs leading-5 text-slate-600 ring-1 ring-slate-200">
-          Активных блоков: <span className="font-bold text-slate-900">{activeBlocks}</span>
-          {" "}из <span className="font-bold text-slate-900">{blocks.length}</span>.
-        </div>
-      ) : null}
-
-      <div className="mt-4 space-y-2">
+      <div className="mt-3 space-y-1.5">
         {blocks.length ? (
           blocks.map((block, index) => {
             const selected = block.id === selectedBlockId;
+            const editing = block.id === editingBlockId;
             const issues = getBlockValidationIssues(block);
             const hasIssues = issues.length > 0;
 
@@ -953,62 +931,78 @@ function LessonStudioStructurePanel({
                 type="button"
                 data-testid="lesson-studio-structure-block"
                 onClick={() => onSelectBlock(block.id)}
-                className={`w-full rounded-2xl p-3 text-left ring-1 transition ${
+                className={`w-full rounded-2xl px-3 py-2.5 text-left ring-1 transition ${
                   selected
-                    ? "bg-blue-50 ring-blue-300"
+                    ? "bg-blue-50 ring-blue-300 shadow-sm"
                     : hasIssues
                       ? "bg-amber-50/70 ring-amber-200 hover:bg-amber-50"
                       : "bg-white ring-slate-200 hover:bg-slate-50"
                 }`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    #{block.position || index + 1} · {getLessonBlockTypeLabel(block.block_type)}
+                <div className="flex items-start gap-2.5">
+                  <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ring-1 ${
+                    selected
+                      ? "bg-white text-blue-700 ring-blue-200"
+                      : "bg-slate-50 text-slate-600 ring-slate-200"
+                  }`}>
+                    {block.position || index + 1}
                   </span>
 
-                  {hasIssues ? (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-800 ring-1 ring-amber-200">
-                      !
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-black text-green-700 ring-1 ring-green-200">
-                      ✓
-                    </span>
-                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold text-slate-900">
+                      {getBlockDisplayTitle(block, index)}
+                    </div>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                        {getLessonBlockTypeLabel(block.block_type)}
+                      </span>
+
+                      {block.is_required ? (
+                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700 ring-1 ring-green-100">
+                          обязательный
+                        </span>
+                      ) : null}
+
+                      {block.is_active === false ? (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                          скрыт
+                        </span>
+                      ) : null}
+
+                      {editing ? (
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800 ring-1 ring-blue-200">
+                          правится
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <span
+                    data-testid="lesson-studio-structure-block-status"
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ring-1 ${
+                      hasIssues
+                        ? "bg-amber-100 text-amber-800 ring-amber-200"
+                        : "bg-green-50 text-green-700 ring-green-200"
+                    }`}
+                  >
+                    {hasIssues ? `${issues.length} проблем` : "готов"}
+                  </span>
                 </div>
 
-                <div className="mt-1 truncate text-sm font-bold text-slate-900">
-                  {getBlockDisplayTitle(block, index)}
-                </div>
-
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {block.is_required ? (
-                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700 ring-1 ring-green-100">
-                      обязательный
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
-                      доп.
-                    </span>
-                  )}
-
-                  {block.is_active === false ? (
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
-                      скрыт
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">
-                      активен
-                    </span>
-                  )}
-                </div>
-
-                {hasIssues ? (
+                {selected && hasIssues ? (
                   <div
                     data-testid="lesson-studio-structure-block-issues"
-                    className="mt-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs leading-5 text-amber-900 ring-1 ring-amber-100"
+                    className="mt-2 flex flex-wrap gap-1.5"
                   >
-                    Нужно: {issues.join(", ")}
+                    {issues.map((issue) => (
+                      <span
+                        key={issue}
+                        className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-100"
+                      >
+                        {issue}
+                      </span>
+                    ))}
                   </div>
                 ) : null}
               </button>
@@ -1328,6 +1322,7 @@ function LessonCanvasBlock({
   );
 }
 
+
 function LessonStudioSidebarQuickAdd({
   templates,
   onCreateBlock,
@@ -1337,46 +1332,52 @@ function LessonStudioSidebarQuickAdd({
   return (
     <details
       data-testid="lesson-studio-sidebar-quick-add"
-      className="mt-4 rounded-2xl bg-blue-50/60 p-3 ring-1 ring-blue-100"
-      open
+      className="mt-3 rounded-2xl bg-slate-50/80 ring-1 ring-slate-200"
     >
-      <summary className="cursor-pointer text-sm font-black text-slate-950">
-        + Добавить блок
+      <summary
+        data-testid="lesson-studio-sidebar-quick-add-trigger"
+        className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl px-3 py-2.5 text-sm font-black text-slate-950 transition hover:bg-white"
+        style={{ listStyle: "none" }}
+      >
+        <span>+ Добавить блок</span>
+        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200">
+          {templates.length}
+        </span>
       </summary>
 
-      <p className="mt-2 text-xs leading-5 text-slate-500">
-        Выберите тип блока — он появится на полотне и откроется для настройки.
-      </p>
+      <div
+        data-testid="lesson-studio-sidebar-quick-add-menu"
+        className="border-t border-slate-200 p-2"
+      >
+        <div className="grid gap-1.5">
+          {templates.map((template) => {
+            const creating = creatingTemplateKey === template.key;
 
-      <div className="mt-3 grid gap-2">
-        {templates.map((template) => {
-          const creating = creatingTemplateKey === template.key;
-
-          return (
-            <button
-              key={template.key}
-              type="button"
-              data-testid="lesson-studio-sidebar-quick-add-button"
-              onClick={() => onCreateBlock(template)}
-              disabled={disabled || creating}
-              className="rounded-2xl bg-white p-3 text-left ring-1 ring-slate-200 transition hover:bg-blue-50 hover:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-black text-slate-950">
-                  {creating ? "Добавляем..." : `+ ${template.label}`}
+            return (
+              <button
+                key={template.key}
+                type="button"
+                data-testid="lesson-studio-sidebar-quick-add-button"
+                onClick={() => onCreateBlock(template)}
+                disabled={disabled || creating}
+                className="flex w-full items-start justify-between gap-2 rounded-xl bg-white px-3 py-2 text-left ring-1 ring-slate-200 transition hover:bg-blue-50 hover:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-black text-slate-950">
+                    {creating ? "Добавляем..." : template.label}
+                  </span>
+                  <span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-slate-500">
+                    {template.hint}
+                  </span>
                 </span>
 
-                <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                <span className="shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
                   {getLessonBlockTypeLabel(template.values?.block_type)}
                 </span>
-              </div>
-
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                {template.hint}
-              </p>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </details>
   );

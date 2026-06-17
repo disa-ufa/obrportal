@@ -101,9 +101,6 @@ def main() -> None:
             'target.scrollIntoView({ behavior: "smooth", block: "center" });',
             'document.getElementById(`studio-block-${blockId}`)',
             'const handleSelectBlock = useCallback((blockId) => {',
-            'плавно перейдёт к карточке на полотне',
-            'Компактная карта урока',
-            'Незаполненных',
             'data-testid="lesson-studio-structure-block-issues"',
             'data-testid="lesson-studio-structure-block"',
             'data-testid="lesson-studio-structure-stats"',
@@ -509,6 +506,41 @@ def main() -> None:
     if present_noisy_inline_form_fragments:
         print("Lesson Studio still contains noisy inline form fragments:")
         for fragment in present_noisy_inline_form_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_6_4_compact_left_panel_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    compact_left_panel_fragments = [
+        "Структура урока",
+        'data-testid="lesson-studio-sidebar-quick-add-trigger"',
+        'data-testid="lesson-studio-sidebar-quick-add-menu"',
+        'data-testid="lesson-studio-structure-block-status"',
+        "Проблем:",
+        "Скрыто:",
+        "правится",
+        "line-clamp-2",
+    ]
+    missing_compact_left_panel_fragments = [
+        fragment for fragment in compact_left_panel_fragments
+        if fragment not in lesson_studio_source
+    ]
+    if missing_compact_left_panel_fragments:
+        print("Lesson Studio compact left panel fragments are missing:")
+        for fragment in missing_compact_left_panel_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    noisy_left_panel_fragments = [
+        "Незаполненных",
+    ]
+    present_noisy_left_panel_fragments = [
+        fragment for fragment in noisy_left_panel_fragments
+        if fragment in lesson_studio_source
+    ]
+    if present_noisy_left_panel_fragments:
+        print("Lesson Studio still contains noisy left panel fragments:")
+        for fragment in present_noisy_left_panel_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 
