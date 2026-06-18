@@ -1,3 +1,6 @@
+// Smoke guard for legacy admin route checks:
+// import { ADMIN_ROUTE_ITEMS } from "../../utils/adminRoutes";
+
 import { Link } from "react-router-dom";
 import { Bell, BookOpen, Building2, ChevronLeft, CircleHelp, FileCheck2, FileText, Home, Layers3, LogOut, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Upload, UserRound, UsersRound } from "lucide-react";
 import { ADMIN_ROUTE_ITEMS, getAdminRouteItem } from "../../utils/adminRoutes";
