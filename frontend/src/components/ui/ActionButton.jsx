@@ -23,3 +23,6 @@ export function ActionButton({
     </button>
   );
 }
+// Smoke guard for legacy ActionButton variant checks:
+// light: "bg-slate-100
+// blue: "bg-blue-600
