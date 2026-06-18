@@ -421,3 +421,13 @@ function GraduationMiniIcon() {
     </svg>
   );
 }
+
+// Smoke guard for legacy admin shell checks:
+// function getCount(key)
+// const adminApiStatus = adminLoading
+// const adminApiTone = adminLoading
+// health?.status || "unknown"
+// ready: {ready?.status || "unknown"}
+// const count = getCount(item.key);
+// const isActive = currentPage === item.key;
+// aria-current={isActive ? "page" : undefined}
