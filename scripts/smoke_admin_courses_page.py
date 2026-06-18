@@ -30,10 +30,10 @@ def main():
         raise SystemExit(1)
 
     forbidden_fragments = [
-        'data-testid="admin-courses-legacy-tools"',
-        'title="Технический редактор курса"',
-        'data-testid="admin-courses-detailed-builder"',
-        'Дополнительные инструменты: старый реестр и диагностика',
+        'data-testid="admin-courses-structure-tree"',
+        'title="Структура программ"',
+        'data-testid="admin-courses-structure-tree"',
+        'Структура программ',
         'Открыть подробный конструктор курса',
         'onClick={() => onLessonEditStart(lesson)}',
     ]
