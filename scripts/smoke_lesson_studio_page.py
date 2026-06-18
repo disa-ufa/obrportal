@@ -1071,7 +1071,7 @@ def main() -> None:
         "function LessonRichTextSafePreview({ block, preview, learnerMode = false })",
         "learnerMode = false",
         "learnerMode ? \"mt-2\"",
-        "? \"py-1 text-sm leading-7 text-slate-800\"",
+        "? \"py-1 text-base leading-8 text-slate-800\"",
         "<LessonRichTextSafePreview block={block} preview={previewValue} learnerMode={learnerMode} />",
         "<LessonCanvasTypePreview block={block} preview={preview} learnerMode={previewMode} />",
         "data-testid={previewMode ? \"lesson-studio-learner-document\" : \"lesson-studio-editor-block-list\"}",
