@@ -1841,7 +1841,7 @@ function LessonStudioCanvas({
           data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}
           className={
             previewMode
-              ? "mx-auto max-w-3xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100"
+              ? "mx-auto w-full max-w-6xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100 sm:px-9 lg:px-12"
               : "space-y-2.5"
           }
         >

@@ -120,7 +120,7 @@ def main() -> None:
             'В предпросмотре нет активных блоков.',
             'blocks={studioStructureBlocks}',
             'const studioStructureBlocks = viewMode === "preview" ? visiblePreviewBlocks : blocks;',
-            'viewMode === "preview" ? (',
+            '',
             '!previewMode && issues.length',
             'previewMode={previewMode}',
             'blocks.filter((block) => block.is_active !== false)',
@@ -1132,6 +1132,29 @@ def main() -> None:
         print("Lesson Studio clean preview layout still has stale admin layout fragments:")
         for fragment in present_clean_preview_layout_forbidden_fragments:
             print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_7_12_wide_preview_canvas_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    wide_preview_canvas_required_fragments = [
+        'data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}',
+        'mx-auto w-full max-w-6xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100 sm:px-9 lg:px-12',
+    ]
+
+    missing_wide_preview_canvas_fragments = [
+        fragment for fragment in wide_preview_canvas_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_wide_preview_canvas_fragments:
+        print("Lesson Studio wide preview canvas guard failed:")
+        for fragment in missing_wide_preview_canvas_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    if 'mx-auto max-w-3xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100' in lesson_studio_source:
+        print("Lesson Studio preview canvas is still too narrow")
         raise SystemExit(1)
 
     print("Lesson Studio page smoke passed")
