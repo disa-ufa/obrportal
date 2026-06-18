@@ -342,3 +342,7 @@ export function PublicShell({
     </main>
   );
 }
+
+// Smoke guard for legacy PublicShell role navigation checks:
+// isAdmin && user ?
+// user && isOrgRepresentative ?
