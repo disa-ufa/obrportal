@@ -1075,7 +1075,7 @@ def main() -> None:
         "<LessonRichTextSafePreview block={block} preview={previewValue} learnerMode={learnerMode} />",
         "<LessonCanvasTypePreview block={block} preview={preview} learnerMode={previewMode} />",
         "data-testid={previewMode ? \"lesson-studio-learner-document\" : \"lesson-studio-editor-block-list\"}",
-        "mx-auto max-w-3xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6",
+        "mx-auto w-full max-w-6xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100 sm:px-9 lg:px-12",
         "border-b border-slate-100 pb-5 last:border-b-0 last:pb-0",
     ]
 
@@ -1153,7 +1153,7 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
-    if 'mx-auto max-w-3xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100' in lesson_studio_source:
+    if 'mx-auto w-full max-w-6xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100 sm:px-9 lg:px-12' in lesson_studio_source:
         print("Lesson Studio preview canvas is still too narrow")
         raise SystemExit(1)
 
