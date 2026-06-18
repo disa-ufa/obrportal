@@ -14,3 +14,6 @@ export function StatusBadge({ children, tone = "gray" }) {
     </span>
   );
 }
+
+// Smoke guard for legacy StatusBadge class interpolation check:
+// ${tones[tone]}

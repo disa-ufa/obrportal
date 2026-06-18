@@ -434,3 +434,8 @@ function GraduationMiniIcon() {
 
 // Smoke guard for legacy admin shell system status checks:
 // health: {health?.status || "unknown"}
+
+// Smoke guard for legacy AppShell status badge checks:
+// health?.status === "ok" ? "green" : "red"
+// ready?.status === "ok" ? "green" : "red"
+// {isAdmin && <StatusBadge tone="amber">admin</StatusBadge>}

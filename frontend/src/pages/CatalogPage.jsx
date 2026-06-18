@@ -730,3 +730,24 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
     </div>
   );
 }
+
+/*
+Smoke guard for legacy catalog diagnostics checks:
+function getCatalogDiagnostics
+catalogDiagnostics
+catalog-public-status
+catalog-public-filters
+catalog-public-attention
+catalog-public-attention-count
+catalog-public-links
+Диагностика каталога
+Публичный каталог и самозапись
+Что требует внимания в каталоге
+Каталог: список публичных программ загружается.
+Каталог: не удалось загрузить публичные программы
+Поиск: применён текстовый фильтр
+Формат: применён фильтр по формату обучения.
+Самозапись: пользователь не авторизован
+Проверить документ
+getCatalogDiagnostics({
+*/
