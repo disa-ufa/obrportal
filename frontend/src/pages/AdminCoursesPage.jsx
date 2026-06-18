@@ -754,7 +754,7 @@ function CourseLessonEditorUxPanel({ values }) {
       <div className="mt-3 grid gap-3 md:grid-cols-3">
         <div
           data-testid="lesson-editor-ux-required-fields"
-          className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
         >
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.requiredFields}
@@ -770,7 +770,7 @@ function CourseLessonEditorUxPanel({ values }) {
 
         <div
           data-testid="lesson-editor-ux-missing-fields"
-          className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
         >
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.missingFields}
@@ -792,7 +792,7 @@ function CourseLessonEditorUxPanel({ values }) {
 
         <div
           data-testid="lesson-editor-ux-publication-mode"
-          className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
         >
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.publicationMode}
@@ -943,7 +943,7 @@ function CourseLessonContentPreviewPanel({ values }) {
       <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr]">
         <div
           data-testid="lesson-content-preview-kind"
-          className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
         >
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.previewType}
@@ -961,7 +961,7 @@ function CourseLessonContentPreviewPanel({ values }) {
 
         <div
           data-testid="lesson-content-preview-body"
-          className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
         >
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.learnerView}
@@ -1403,7 +1403,7 @@ function CourseBuilderReadinessPanel({ course, modules, lessonsByModuleId }) {
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-4">
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_READINESS_LABELS.checksPassed}
           </div>
@@ -1418,7 +1418,7 @@ function CourseBuilderReadinessPanel({ course, modules, lessonsByModuleId }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_READINESS_LABELS.modules}
           </div>
@@ -1427,7 +1427,7 @@ function CourseBuilderReadinessPanel({ course, modules, lessonsByModuleId }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_READINESS_LABELS.lessons}
           </div>
@@ -1436,7 +1436,7 @@ function CourseBuilderReadinessPanel({ course, modules, lessonsByModuleId }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_READINESS_LABELS.requiredLessons}
           </div>
@@ -1549,7 +1549,7 @@ function CourseBuilderCardUxPanel({ course, modules, lessonsByModuleId }) {
         data-testid="course-builder-card-ux-sections"
         className="mt-4 grid gap-3 lg:grid-cols-5"
       >
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_CARD_UX_LABELS.basic}
           </div>
@@ -1561,7 +1561,7 @@ function CourseBuilderCardUxPanel({ course, modules, lessonsByModuleId }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_CARD_UX_LABELS.structure}
           </div>
@@ -1573,7 +1573,7 @@ function CourseBuilderCardUxPanel({ course, modules, lessonsByModuleId }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_CARD_UX_LABELS.activeModules}
           </div>
@@ -1585,7 +1585,7 @@ function CourseBuilderCardUxPanel({ course, modules, lessonsByModuleId }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_CARD_UX_LABELS.requiredLessons}
           </div>
@@ -1597,7 +1597,7 @@ function CourseBuilderCardUxPanel({ course, modules, lessonsByModuleId }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_BUILDER_CARD_UX_LABELS.publicCard}
           </div>
@@ -1975,7 +1975,7 @@ function CoursePublicationUxPanel({ course, modules, lessonsByModuleId }) {
         data-testid="course-publication-ux-decision"
         className="mt-4 grid gap-3 md:grid-cols-3"
       >
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_PUBLICATION_UX_LABELS.readiness}
           </div>
@@ -1987,7 +1987,7 @@ function CoursePublicationUxPanel({ course, modules, lessonsByModuleId }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_PUBLICATION_UX_LABELS.visibility}
           </div>
@@ -1998,7 +1998,7 @@ function CoursePublicationUxPanel({ course, modules, lessonsByModuleId }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {COURSE_PUBLICATION_UX_LABELS.publicCard}
           </div>
@@ -2089,7 +2089,7 @@ function AdminCourseCatalogDiagnostics({
     >
       <details
         data-testid="admin-course-catalog-diagnostics"
-        className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+        className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
       >
         <summary className="flex cursor-pointer select-none flex-wrap items-center justify-between gap-3 text-sm font-semibold text-slate-900">
           <span>Открыть диагностику каталога</span>
@@ -2103,7 +2103,7 @@ function AdminCourseCatalogDiagnostics({
           data-testid="admin-course-catalog-summary"
           className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
         >
-          <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Всего / показано
             </div>
@@ -2112,7 +2112,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Активные / неактивные
             </div>
@@ -2121,7 +2121,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Модули / уроки
             </div>
@@ -2130,7 +2130,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Активные фильтры
             </div>
@@ -2144,7 +2144,7 @@ function AdminCourseCatalogDiagnostics({
           data-testid="admin-course-catalog-structure"
           className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
         >
-          <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Курсы без модулей
             </div>
@@ -2153,7 +2153,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Модули без уроков
             </div>
@@ -2162,7 +2162,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Обязательные уроки
             </div>
@@ -2171,7 +2171,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Итоговый документ
             </div>
@@ -2558,8 +2558,8 @@ function CourseStructureTree({
   }
 
   return (
-    <div data-testid="admin-courses-structure-tree" className="space-y-3">
-      <div className="rounded-3xl bg-blue-50/80 p-4 text-sm leading-6 text-blue-950 ring-1 ring-blue-100">
+    <div data-testid="admin-courses-structure-tree" className="admin-course-structure space-y-3">
+      <div className="admin-course-structure-help rounded-3xl bg-blue-50/80 p-4 text-sm leading-6 text-blue-950 ring-1 ring-blue-100">
         <div className="font-bold">Программа → Модуль → Урок</div>
         <div className="mt-1 text-xs leading-5">
           Нажмите на программу, чтобы открыть модули. Нажмите на модуль, чтобы увидеть уроки. Содержимое урока редактируется в Lesson Studio.
@@ -2579,10 +2579,11 @@ function CourseStructureTree({
         return (
           <details
             key={course.id}
+            open={course.id === courses[0]?.id}
             data-testid={`admin-course-tree-course-${course.id}`}
-            className="group rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition open:ring-2 open:ring-blue-200"
+            className="admin-course-node group rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition open:ring-2 open:ring-blue-200"
           >
-            <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-4">
+            <summary className="admin-course-summary flex cursor-pointer list-none flex-wrap items-start justify-between gap-4">
               <div className="flex min-w-0 flex-1 gap-3">
                 <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-black text-slate-600 group-open:bg-blue-600 group-open:text-white">
                   <span className="group-open:hidden">›</span>
@@ -2706,7 +2707,7 @@ function CourseStructureTree({
                 </details>
               )}
 
-              <div className="space-y-3">
+              <div className="admin-course-structure space-y-3">
                 {modules.length === 0 ? (
                   <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500 ring-1 ring-slate-200">
                     {RU.modulesNotFound}
@@ -2728,10 +2729,11 @@ function CourseStructureTree({
                     return (
                       <details
                         key={module.id}
+                        open={course.id === courses[0]?.id && module.id === modules[0]?.id}
                         data-testid={`admin-course-tree-module-${module.id}`}
-                        className="group/module ml-5 rounded-3xl bg-slate-50/80 p-4 ring-1 ring-slate-200 transition open:bg-white open:ring-2 open:ring-blue-100"
+                        className="admin-module-node group/module ml-5 rounded-3xl bg-slate-50/80 p-4 ring-1 ring-slate-200 transition open:bg-white open:ring-2 open:ring-blue-100"
                       >
-                        <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-4">
+                        <summary className="admin-course-summary flex cursor-pointer list-none flex-wrap items-start justify-between gap-4">
                           <div className="flex min-w-0 flex-1 gap-3">
                             <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-black text-slate-600 ring-1 ring-slate-200 group-open/module:bg-blue-600 group-open/module:text-white">
                               <span className="group-open/module:hidden">›</span>
@@ -2837,10 +2839,11 @@ function CourseStructureTree({
                                 return (
                                   <details
                                     key={lesson.id}
+                                    open={course.id === courses[0]?.id && module.id === modules[0]?.id && lesson.id === moduleLessons[0]?.id}
                                     data-testid={`admin-course-tree-lesson-${lesson.id}`}
-                                    className="group/lesson ml-5 rounded-2xl bg-white p-4 ring-1 ring-slate-200 transition open:ring-2 open:ring-slate-200"
+                                    className="admin-lesson-node group/lesson ml-5 rounded-2xl bg-white p-4 ring-1 ring-slate-200 transition open:ring-2 open:ring-slate-200"
                                   >
-                                    <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-4">
+                                    <summary className="admin-course-summary flex cursor-pointer list-none flex-wrap items-start justify-between gap-4">
                                       <div className="flex min-w-0 flex-1 gap-3">
                                         <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-50 text-xs font-black text-slate-600 ring-1 ring-slate-200 group-open/lesson:bg-slate-900 group-open/lesson:text-white">
                                           <span className="group-open/lesson:hidden">›</span>
@@ -2914,7 +2917,7 @@ function CourseStructureTree({
                                       ) : (
                                         <div
                                           data-testid={`admin-course-tree-lesson-preview-${lesson.id}`}
-                                          className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+                                          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
                                         >
                                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                             Превью урока
@@ -2927,7 +2930,7 @@ function CourseStructureTree({
                                             <a
                                               data-testid={`lesson-studio-open-tree-${lesson.id}`}
                                               href={buildAdminLessonStudioPath(lesson.id)}
-                                              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                                              className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
                                             >
                                               Редактировать в Lesson Studio
                                             </a>
@@ -2966,7 +2969,7 @@ function CourseStructureTree({
 
                           <details
                             data-testid={`admin-course-tree-lesson-create-${module.id}`}
-                            className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 p-4 ring-1 ring-blue-100"
+                            className="admin-lesson-create rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 p-4 ring-1 ring-blue-100"
                           >
                             <summary className="cursor-pointer list-none text-sm font-bold text-slate-900">
                               + {RU.addLesson}
@@ -3013,7 +3016,7 @@ function CourseStructureTree({
 
               <details
                 data-testid={`admin-course-tree-module-create-${course.id}`}
-                className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                className="admin-module-create rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200"
               >
                 <summary className="cursor-pointer list-none text-sm font-bold text-slate-900">
                   + {RU.addModule}
@@ -3216,7 +3219,7 @@ function CourseCard({
                   return (
                     <div
                       key={module.id}
-                      className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+                      className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
                     >
                       {!isModuleEditing ? (
                         <>
@@ -3276,7 +3279,7 @@ function CourseCard({
                                   return (
                                     <div
                                       key={lesson.id}
-                                      className="rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+                                      className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
                                     >
                                       {!isLessonEditing ? (
                                         <>
@@ -3329,7 +3332,7 @@ function CourseCard({
                                             <a
                                               data-testid={`lesson-studio-open-${lesson.id}`}
                                               href={buildAdminLessonStudioPath(lesson.id)}
-                                              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                                              className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
                                             >
                                               Открыть студию урока
                                             </a>
@@ -4337,6 +4340,55 @@ export function AdminCoursesPage() {
   return (
     <div className="space-y-6">
       <SectionCard
+        title="Структура программ"
+        subtitle="Основной рабочий вид: программа раскрывает модули, модуль раскрывает уроки, урок открывает превью и переход в Lesson Studio."
+      >
+        <CourseStructureTree
+          courses={courses}
+          loading={loading}
+          hasActiveFilters={hasActiveFilters}
+          onResetFilters={handleResetFilter}
+          courseModulesByCourseId={courseModulesByCourseId}
+          courseLessonsByModuleId={courseLessonsByModuleId}
+          lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
+          lessonEditFormsByLessonId={lessonEditFormsByLessonId}
+          editingLessonId={editingLessonId}
+          lessonCreatingModuleId={lessonCreatingModuleId}
+          lessonActionId={lessonActionId}
+          moduleCreateFormsByCourseId={moduleCreateFormsByCourseId}
+          moduleEditFormsByModuleId={moduleEditFormsByModuleId}
+          editingModuleId={editingModuleId}
+          moduleCreatingCourseId={moduleCreatingCourseId}
+          moduleActionId={moduleActionId}
+          editingCourseId={editingCourseId}
+          actionCourseId={actionCourseId}
+          editForm={editForm}
+          onEditFieldChange={updateEditField}
+          onStartEdit={handleStartEdit}
+          onEditSubmit={handleEditSubmit}
+          onCancelEdit={resetEditState}
+          onToggleActive={handleToggleActive}
+          onDelete={handleDelete}
+          onModuleCreateFieldChange={updateModuleCreateField}
+          onModuleCreateSubmit={handleModuleCreateSubmit}
+          onModuleCreateReset={resetModuleCreateForm}
+          onModuleEditStart={handleModuleEditStart}
+          onModuleEditFieldChange={updateModuleEditField}
+          onModuleEditSubmit={handleModuleEditSubmit}
+          onModuleEditCancel={resetModuleEditState}
+          onModuleDelete={handleModuleDelete}
+          onLessonCreateFieldChange={updateLessonCreateField}
+          onLessonCreateSubmit={handleLessonCreateSubmit}
+          onLessonCreateReset={resetLessonCreateForm}
+          onLessonEditStart={handleLessonEditStart}
+          onLessonEditFieldChange={updateLessonEditField}
+          onLessonEditSubmit={handleLessonEditSubmit}
+          onLessonEditCancel={resetLessonEditState}
+          onLessonDelete={handleLessonDelete}
+        />
+      </SectionCard>
+
+      <SectionCard
         title="Программы"
         subtitle="Поиск, фильтр и создание программ. Основная работа со структурой курса находится ниже."
         action={
@@ -4499,54 +4551,7 @@ export function AdminCoursesPage() {
         </div>
       </SectionCard>
 
-      <SectionCard
-        title="Структура программ"
-        subtitle="Основной рабочий вид: программа раскрывает модули, модуль раскрывает уроки, урок открывает превью и переход в Lesson Studio."
-      >
-        <CourseStructureTree
-          courses={courses}
-          loading={loading}
-          hasActiveFilters={hasActiveFilters}
-          onResetFilters={handleResetFilter}
-          courseModulesByCourseId={courseModulesByCourseId}
-          courseLessonsByModuleId={courseLessonsByModuleId}
-          lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
-          lessonEditFormsByLessonId={lessonEditFormsByLessonId}
-          editingLessonId={editingLessonId}
-          lessonCreatingModuleId={lessonCreatingModuleId}
-          lessonActionId={lessonActionId}
-          moduleCreateFormsByCourseId={moduleCreateFormsByCourseId}
-          moduleEditFormsByModuleId={moduleEditFormsByModuleId}
-          editingModuleId={editingModuleId}
-          moduleCreatingCourseId={moduleCreatingCourseId}
-          moduleActionId={moduleActionId}
-          editingCourseId={editingCourseId}
-          actionCourseId={actionCourseId}
-          editForm={editForm}
-          onEditFieldChange={updateEditField}
-          onStartEdit={handleStartEdit}
-          onEditSubmit={handleEditSubmit}
-          onCancelEdit={resetEditState}
-          onToggleActive={handleToggleActive}
-          onDelete={handleDelete}
-          onModuleCreateFieldChange={updateModuleCreateField}
-          onModuleCreateSubmit={handleModuleCreateSubmit}
-          onModuleCreateReset={resetModuleCreateForm}
-          onModuleEditStart={handleModuleEditStart}
-          onModuleEditFieldChange={updateModuleEditField}
-          onModuleEditSubmit={handleModuleEditSubmit}
-          onModuleEditCancel={resetModuleEditState}
-          onModuleDelete={handleModuleDelete}
-          onLessonCreateFieldChange={updateLessonCreateField}
-          onLessonCreateSubmit={handleLessonCreateSubmit}
-          onLessonCreateReset={resetLessonCreateForm}
-          onLessonEditStart={handleLessonEditStart}
-          onLessonEditFieldChange={updateLessonEditField}
-          onLessonEditSubmit={handleLessonEditSubmit}
-          onLessonEditCancel={resetLessonEditState}
-          onLessonDelete={handleLessonDelete}
-        />
-      </SectionCard>
+
 
 
     </div>

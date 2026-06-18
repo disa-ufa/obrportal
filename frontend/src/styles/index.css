@@ -192,3 +192,179 @@ summary::-webkit-details-marker {
 [data-testid="lesson-studio-canvas-block"] {
   border-radius: 18px !important;
 }
+
+/* Stage 3 design pass: wider public pages and mockup-like course structure workspace. */
+@layer components {
+  .portal-container {
+    @apply max-w-[1480px] px-5 md:px-10 2xl:px-12;
+  }
+}
+
+@media (min-width: 1280px) {
+  .program-art {
+    min-height: 128px;
+  }
+}
+
+[data-testid="admin-courses-structure-tree"] {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-course-structure-help {
+  display: none;
+}
+
+.admin-course-node {
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 18px !important;
+  border: 1px solid #dfe7f5 !important;
+  background: #ffffff !important;
+  box-shadow: 0 14px 38px rgba(17, 25, 54, 0.055) !important;
+}
+
+.admin-course-node > summary.admin-course-summary {
+  min-height: 92px;
+  padding: 22px 28px;
+  background: linear-gradient(90deg, #ffffff 0%, #f7fbff 100%);
+}
+
+.admin-course-node > summary .mt-1.inline-flex.h-8 {
+  width: 54px !important;
+  height: 54px !important;
+  margin-top: 0 !important;
+  border-radius: 18px !important;
+  background: #eef5ff !important;
+  color: #1559db !important;
+  box-shadow: inset 0 0 0 1px #dce8ff;
+}
+
+.admin-course-node > summary .text-xs.uppercase {
+  margin-bottom: 2px;
+  color: #7a88a6 !important;
+  font-size: 11px !important;
+}
+
+.admin-course-node > summary h3 {
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em;
+}
+
+.admin-course-node > summary p.break-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px !important;
+  color: #667391 !important;
+}
+
+.admin-course-node > summary p.break-all::before {
+  content: "slug:";
+  color: #9aa6bd;
+}
+
+.admin-course-node > .mt-5 {
+  margin-top: 0 !important;
+  padding: 18px 28px 24px !important;
+  border-top-color: #edf2fa !important;
+  background: #fbfdff;
+}
+
+.admin-course-node [data-testid^="admin-course-tree-course-actions-"] {
+  margin-bottom: 14px;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+}
+
+.admin-course-node [data-testid^="admin-course-tree-course-actions-"] > summary,
+.admin-module-node [data-testid^="admin-course-tree-module-actions-"] > summary {
+  color: #51607d !important;
+}
+
+.admin-module-node {
+  margin-left: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  border: 1px solid #e4ebf6 !important;
+  box-shadow: 0 8px 22px rgba(17, 25, 54, 0.035);
+}
+
+.admin-module-node > summary.admin-course-summary {
+  min-height: 70px;
+  padding: 16px 20px;
+  background: #ffffff;
+}
+
+.admin-module-node > summary .mt-1.inline-flex.h-7 {
+  width: 38px !important;
+  height: 38px !important;
+  margin-top: 0 !important;
+  border-radius: 12px !important;
+  background: #e9fbf6 !important;
+  color: #0d8f83 !important;
+  border: 0 !important;
+}
+
+.admin-module-node > summary h4 {
+  font-size: 17px !important;
+  line-height: 1.25 !important;
+}
+
+.admin-module-node > summary p {
+  max-width: 780px;
+  color: #667391 !important;
+}
+
+.admin-module-node > .mt-4 {
+  margin-top: 0 !important;
+  padding: 14px 20px 18px !important;
+  border-top-color: #edf2fa !important;
+  background: #f8fbff;
+}
+
+.admin-lesson-node {
+  margin-left: 0 !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  border: 1px solid #d9e5ff !important;
+  box-shadow: 0 10px 26px rgba(15, 91, 232, 0.06);
+}
+
+.admin-lesson-node > summary.admin-course-summary {
+  align-items: center;
+}
+
+.admin-lesson-node > summary .mt-1.inline-flex.h-7 {
+  width: 38px !important;
+  height: 38px !important;
+  margin-top: 0 !important;
+  border-radius: 12px !important;
+  background: #eef5ff !important;
+  color: #1559db !important;
+}
+
+.admin-lesson-preview {
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  border: 1px solid #e3eaf6 !important;
+}
+
+.admin-module-create,
+.admin-lesson-create {
+  border-style: dashed !important;
+  background: #f7fbff !important;
+}
+
+[data-testid="admin-courses-compact-summary"] {
+  background: #f8fbff !important;
+}
+
+@media (min-width: 1280px) {
+  [data-testid="admin-courses-structure-tree"] {
+    gap: 16px;
+  }
+}
