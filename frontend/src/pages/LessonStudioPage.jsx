@@ -440,7 +440,7 @@ function renderLessonRichTextNode(node, key) {
 
   if (node.type === "paragraph") {
     return (
-      <p key={key} className="text-sm leading-7 text-slate-700">
+      <p key={key} className="text-base leading-8 text-slate-700">
         {children?.length ? children : <br />}
       </p>
     );
@@ -451,8 +451,8 @@ function renderLessonRichTextNode(node, key) {
     const HeadingTag = level >= 3 ? "h3" : "h2";
     const className =
       level >= 3
-        ? "mt-4 text-base font-black leading-7 text-slate-950 first:mt-0"
-        : "mt-5 text-lg font-black leading-7 text-slate-950 first:mt-0";
+        ? "mt-5 text-lg font-black leading-8 text-slate-950 first:mt-0"
+        : "mt-6 text-2xl font-black leading-9 text-slate-950 first:mt-0";
 
     return (
       <HeadingTag key={key} className={className}>
@@ -463,7 +463,7 @@ function renderLessonRichTextNode(node, key) {
 
   if (node.type === "bulletList") {
     return (
-      <ul key={key} className="ml-5 list-disc space-y-1 text-sm leading-7 text-slate-700">
+      <ul key={key} className="ml-6 list-disc space-y-2 text-base leading-8 text-slate-700">
         {children}
       </ul>
     );
@@ -471,7 +471,7 @@ function renderLessonRichTextNode(node, key) {
 
   if (node.type === "orderedList") {
     return (
-      <ol key={key} className="ml-5 list-decimal space-y-1 text-sm leading-7 text-slate-700">
+      <ol key={key} className="ml-6 list-decimal space-y-2 text-base leading-8 text-slate-700">
         {children}
       </ol>
     );
@@ -489,7 +489,7 @@ function renderLessonRichTextNode(node, key) {
     return (
       <blockquote
         key={key}
-        className="rounded-r-2xl border-l-4 border-blue-200 bg-blue-50/70 px-4 py-3 text-sm italic leading-7 text-slate-700"
+        className="rounded-2xl border-l-4 border-blue-300 bg-blue-50 px-5 py-4 text-base italic leading-8 text-slate-700"
       >
         {children}
       </blockquote>
@@ -500,7 +500,7 @@ function renderLessonRichTextNode(node, key) {
     return (
       <pre
         key={key}
-        className="overflow-x-auto rounded-2xl bg-slate-950 p-4 text-xs leading-6 text-slate-50 shadow-inner"
+        className="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-50 shadow-inner"
       >
         <code>{getLessonRichTextPlainText(node)}</code>
       </pre>
@@ -509,7 +509,7 @@ function renderLessonRichTextNode(node, key) {
 
   if (children?.length) {
     return (
-      <div key={key} className="text-sm leading-7 text-slate-700">
+      <div key={key} className="text-base leading-8 text-slate-700">
         {children}
       </div>
     );
@@ -543,10 +543,10 @@ function LessonRichTextSafePreview({ block, preview, learnerMode = false }) {
     >
       <div
         data-testid="lesson-rich-text-safe-preview"
-        className={learnerMode ? "space-y-3 break-words text-slate-800" : "space-y-3 break-words"}
+        className={learnerMode ? "space-y-4 break-words text-slate-800" : "space-y-3 break-words"}
       >
         {empty ? (
-          <p className="text-sm leading-7 text-slate-500">
+          <p className="text-base leading-8 text-slate-500">
             {fallbackText || "Учебный текст пока не заполнен."}
           </p>
         ) : (
@@ -570,7 +570,7 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
       data-testid="lesson-studio-canvas-type-preview"
       className={
         learnerMode
-          ? "py-1 text-sm leading-7 text-slate-800"
+          ? "py-1 text-base leading-8 text-slate-800"
           : `mt-3 rounded-[1.25rem] p-3 text-sm leading-6 ring-1 ${meta.surfaceClass}`
       }
     >
@@ -596,33 +596,75 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
       ) : type === "video" ? (
         <div
           data-testid="lesson-studio-video-preview"
-          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          className={
+            learnerMode
+              ? "mt-5 overflow-hidden rounded-3xl bg-slate-950 p-4 text-white shadow-sm ring-1 ring-slate-900/10"
+              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          }
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-14 items-center justify-center rounded-xl bg-slate-900 text-white">
+          <div className={learnerMode ? "flex items-center gap-4" : "flex items-center gap-3"}>
+            <div
+              className={
+                learnerMode
+                  ? "flex h-16 w-24 items-center justify-center rounded-2xl bg-white/10 text-xl text-white ring-1 ring-white/10"
+                  : "flex h-10 w-14 items-center justify-center rounded-xl bg-slate-900 text-white"
+              }
+            >
               ▶
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-bold">Видео для просмотра</div>
-              <div className="mt-1 break-words text-xs opacity-80">{previewValue}</div>
+              <div className={learnerMode ? "text-base font-black" : "text-sm font-bold"}>
+                Видео для просмотра
+              </div>
+              <div
+                className={
+                  learnerMode
+                    ? "mt-2 break-words text-sm leading-6 text-slate-200"
+                    : "mt-1 break-words text-xs opacity-80"
+                }
+              >
+                {previewValue}
+              </div>
             </div>
           </div>
         </div>
       ) : type === "file_link" || type === "file" || type === "link" ? (
         <div
           data-testid="lesson-studio-link-preview"
-          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          className={
+            learnerMode
+              ? "mt-5 rounded-3xl bg-blue-50 p-5 ring-1 ring-blue-100"
+              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          }
         >
-          <div className="text-sm font-bold">Открыть материал</div>
-          <div className="mt-1 break-words text-xs opacity-80">{previewValue}</div>
+          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-bold"}>
+            Открыть материал
+          </div>
+          <div
+            className={
+              learnerMode
+                ? "mt-2 break-words text-sm leading-6 text-blue-800"
+                : "mt-1 break-words text-xs opacity-80"
+            }
+          >
+            {previewValue}
+          </div>
         </div>
       ) : type === "quiz" ? (
         <div
           data-testid="lesson-studio-quiz-preview"
-          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          className={
+            learnerMode
+              ? "mt-5 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-100"
+              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          }
         >
-          <div className="text-sm font-bold">Вопрос</div>
-          <div className="mt-1 text-sm">{previewValue}</div>
+          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-bold"}>
+            Вопрос
+          </div>
+          <div className={learnerMode ? "mt-2 text-base leading-8 text-slate-800" : "mt-1 text-sm"}>
+            {previewValue}
+          </div>
           <div className="mt-3 rounded-xl bg-amber-100/70 px-3 py-2 text-xs font-semibold">
             Варианты ответов добавим следующим этапом.
           </div>
@@ -630,23 +672,43 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
       ) : type === "assignment" ? (
         <div
           data-testid="lesson-studio-assignment-preview"
-          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          className={
+            learnerMode
+              ? "mt-5 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200"
+              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          }
         >
-          <div className="text-sm font-bold">Что нужно сделать</div>
-          <div className="mt-1 text-sm">{previewValue}</div>
+          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-bold"}>
+            Что нужно сделать
+          </div>
+          <div className={learnerMode ? "mt-2 text-base leading-8 text-slate-800" : "mt-1 text-sm"}>
+            {previewValue}
+          </div>
         </div>
       ) : type === "callout" ? (
         <div
           data-testid="lesson-studio-callout-preview"
-          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          className={
+            learnerMode
+              ? "mt-5 rounded-3xl border-l-4 border-amber-300 bg-amber-50 p-5 ring-1 ring-amber-100"
+              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          }
         >
-          <div className="text-sm font-bold">Важно</div>
-          <div className="mt-1 text-sm">{previewValue}</div>
+          <div className={learnerMode ? "text-base font-black text-amber-950" : "text-sm font-bold"}>
+            Важно
+          </div>
+          <div className={learnerMode ? "mt-2 text-base leading-8 text-amber-950" : "mt-1 text-sm"}>
+            {previewValue}
+          </div>
         </div>
       ) : (
         <div
           data-testid="lesson-studio-text-preview"
-          className="mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          className={
+            learnerMode
+              ? "mt-4 text-base leading-8 text-slate-800"
+              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
+          }
         >
           {previewValue}
         </div>

@@ -529,7 +529,7 @@ def main() -> None:
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
     canvas_polish_fragments = [
         '"ring-blue-300 bg-blue-50/20"',
-        '? "py-1 text-sm leading-7 text-slate-800"',
+        '? "py-1 text-base leading-8 text-slate-800"',
         'className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 text-xs font-black shadow-sm ring-1 ring-black/5"',
         'className={previewMode ? "space-y-0" : "space-y-2.5"}',
     ]
@@ -1155,6 +1155,30 @@ def main() -> None:
 
     if 'mx-auto max-w-3xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6' in lesson_studio_source:
         print("Lesson Studio preview canvas is still too narrow")
+        raise SystemExit(1)
+
+    # stage83_3_7_13_learner_preview_polish_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    learner_preview_polish_required_fragments = [
+        'learnerMode ? "space-y-4 break-words text-slate-800" : "space-y-3 break-words"',
+        '? "py-1 text-base leading-8 text-slate-800"',
+        'mt-5 overflow-hidden rounded-3xl bg-slate-950 p-4 text-white shadow-sm ring-1 ring-slate-900/10',
+        'mt-5 rounded-3xl border-l-4 border-amber-300 bg-amber-50 p-5 ring-1 ring-amber-100',
+        'mt-5 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200',
+        'mt-5 rounded-3xl bg-blue-50 p-5 ring-1 ring-blue-100',
+        'text-base leading-8 text-slate-700',
+    ]
+
+    missing_learner_preview_polish_fragments = [
+        fragment for fragment in learner_preview_polish_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_learner_preview_polish_fragments:
+        print("Lesson Studio learner preview polish guard failed:")
+        for fragment in missing_learner_preview_polish_fragments:
+            print(f" - {fragment}")
         raise SystemExit(1)
 
     print("Lesson Studio page smoke passed")
