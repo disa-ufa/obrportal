@@ -86,6 +86,16 @@ export function PublicRoutes({
           }
         />
         <Route
+          path="/programs"
+          element={
+            <CatalogPage
+              onPageChange={handleNavigatePublicPage}
+              onOpenCourse={handleOpenPublicCourse}
+              user={user}
+            />
+          }
+        />
+        <Route
           path="/courses/:slug"
           element={
             <CourseDetailPublicRoute

@@ -239,15 +239,24 @@ export function HomePage({ onPageChange, onOpenCourse }) {
   }, []);
 
   const displayCourses = useMemo(() => {
-    if (featuredCourses.length) {
-      return featuredCourses.slice(0, 4);
+    const primaryCourses = Array.isArray(featuredCourses) ? featuredCourses : [];
+    const designFallbackCourses = PUBLIC_COURSES.length ? PUBLIC_COURSES : FALLBACK_HOME_COURSES;
+
+    if (!primaryCourses.length) {
+      return designFallbackCourses.slice(0, 4);
     }
 
-    if (PUBLIC_COURSES.length) {
-      return PUBLIC_COURSES.slice(0, 4);
+    if (!import.meta.env.DEV || primaryCourses.length >= 4) {
+      return primaryCourses.slice(0, 4);
     }
 
-    return FALLBACK_HOME_COURSES;
+    const usedKeys = new Set(primaryCourses.map((course) => course.slug || course.id || course.title).filter(Boolean));
+    const supplementCourses = designFallbackCourses.filter((course) => {
+      const key = course.slug || course.id || course.title;
+      return key && !usedKeys.has(key);
+    });
+
+    return [...primaryCourses, ...supplementCourses].slice(0, 4);
   }, [featuredCourses]);
 
   function handleSearchSubmit(event) {

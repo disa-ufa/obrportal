@@ -440,15 +440,24 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
 
   const enrollmentMap = useMemo(() => buildEnrollmentMap(accountCourses), [accountCourses]);
   const displayCourses = useMemo(() => {
-    if (courses.length) {
-      return courses;
+    const primaryCourses = Array.isArray(courses) ? courses : [];
+    const designFallbackCourses = PUBLIC_COURSES.length ? PUBLIC_COURSES : CATALOG_FALLBACK_COURSES;
+
+    if (!primaryCourses.length) {
+      return designFallbackCourses;
     }
 
-    if (PUBLIC_COURSES.length) {
-      return PUBLIC_COURSES;
+    if (!import.meta.env.DEV || primaryCourses.length >= 6) {
+      return primaryCourses;
     }
 
-    return CATALOG_FALLBACK_COURSES;
+    const usedKeys = new Set(primaryCourses.map((course) => course.slug || course.id || course.title).filter(Boolean));
+    const supplementCourses = designFallbackCourses.filter((course) => {
+      const key = course.slug || course.id || course.title;
+      return key && !usedKeys.has(key);
+    });
+
+    return [...primaryCourses, ...supplementCourses].slice(0, 6);
   }, [courses]);
 
   const filteredCourses = useMemo(() => {
@@ -662,7 +671,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
               <CatalogEmptyState resetFilters={resetFilters} onPageChange={onPageChange} />
             </div>
           ) : (
-            <div className="mt-6 grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+            <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filteredCourses.slice(0, 6).map((course, index) => {
                 const enrollment = getCourseEnrollment(course, enrollmentMap);
 

@@ -17,7 +17,7 @@ export const PUBLIC_ROUTE_MAP = {
 
 export function getPublicPageFromPathname(pathname) {
   if (pathname === "/") return "home";
-  if (pathname === "/catalog") return "catalog";
+  if (pathname === "/catalog" || pathname === "/programs") return "catalog";
   if (pathname.startsWith("/courses/")) return "course-detail";
   if (pathname === "/organization-info") return "organization-info";
   if (pathname === "/organization") return "organization";
@@ -54,7 +54,7 @@ export function buildPublicMeta(pathname) {
     };
   }
 
-  if (pathname === "/catalog") {
+  if (pathname === "/catalog" || pathname === "/programs") {
     return {
       title: "Каталог программ — ObrPortal",
       description:
