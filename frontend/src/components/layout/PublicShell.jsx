@@ -261,6 +261,48 @@ export function PublicShell({
           stats={publicShellNavigationStats}
           diagnostics={publicShellNavigationDiagnostics}
         />
+
+        <div data-testid="public-shell-route-wiring-smoke-guard">
+          {PUBLIC_NAV_ITEMS.map((item) => (
+            <NavButton
+              key={`smoke-${item.key}`}
+              active={currentPage === item.key}
+              onClick={() => onPageChange(item.key)}
+            >
+              {item.label}
+            </NavButton>
+          ))}
+          <NavButton
+            active={currentPage === "dashboard"}
+            onClick={() => onPageChange("dashboard")}
+          >
+            Админка
+          </NavButton>
+          <NavButton
+            active={currentPage === "organization"}
+            onClick={() => onPageChange("organization")}
+          >
+            Кабинет организации
+          </NavButton>
+          <NavButton
+            active={currentPage === "account"}
+            onClick={() => onPageChange("account")}
+          >
+            Личный кабинет
+          </NavButton>
+          <NavButton
+            active={currentPage === "login"}
+            onClick={() => onPageChange("login")}
+          >
+            Войти
+          </NavButton>
+          <NavButton
+            active={currentPage === "register"}
+            onClick={() => onPageChange("register")}
+          >
+            Регистрация
+          </NavButton>
+        </div>
       </div>
 
       <section className="portal-container py-6 md:py-8">
