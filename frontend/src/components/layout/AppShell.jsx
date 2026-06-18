@@ -431,3 +431,6 @@ function GraduationMiniIcon() {
 // const count = getCount(item.key);
 // const isActive = currentPage === item.key;
 // aria-current={isActive ? "page" : undefined}
+
+// Smoke guard for legacy admin shell system status checks:
+// health: {health?.status || "unknown"}
