@@ -173,7 +173,7 @@ def main() -> None:
             "Завершённое обучение",
             "Черновики документов",
             "Аудит курсов",
-            "data-testid="admin-courses-structure-tree"",
+            'data-testid="admin-courses-structure-tree"',
             "getAdminCourseCatalogDiagnostics({",
         ],
     )
