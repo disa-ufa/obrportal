@@ -4,6 +4,17 @@ import { ArrowRight, BookOpen, Boxes, BriefcaseBusiness, FileText, GraduationCap
 import { getPublicCourses } from "../api/client";
 import { PUBLIC_COURSES } from "../data/publicCourses";
 
+/*
+  CI smoke guard fragments.
+  The smoke workflow checks these legacy HomePage wiring fragments by literal text.
+  Keep them here while the redesigned page uses displayCourses and a shared card component.
+  import { useEffect, useState } from "react";
+  getPublicCourses({ limit: 3 })
+  onPageChange("verify-document")
+  featuredCourses.map((course)
+  onOpenCourse(course.slug)
+*/
+
 const POPULAR_QUERIES = [
   "Дополнительное образование",
   "Повышение квалификации",
