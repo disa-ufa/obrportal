@@ -3141,47 +3141,55 @@ export function LessonStudioPage({ lessonId }) {
         onModeChange={setViewMode}
       />
 
-      <LessonStudioReadinessChecklist
-        report={lessonReadiness}
-        selectedBlockId={selectedBlockId}
-        onSelectBlock={(blockId) => {
-          handleSelectBlock(blockId);
-          setEditingBlockId(blockId || "");
-        }}
-        onModeChange={setViewMode}
-        onFixFirstProblem={handleFixFirstProblem}
-        onFixNextProblem={handleFixNextProblem}
-      />
-
-
-      <div
-        className={`grid gap-5 ${
-          viewMode === "preview"
-            ? "xl:grid-cols-[280px_minmax(0,1fr)_320px]"
-            : "xl:grid-cols-[280px_minmax(0,1fr)]"
-        }`}
-      >
-        <LessonStudioStructurePanel
-          lesson={lesson}
-          blocks={studioStructureBlocks}
+      {viewMode !== "preview" ? (
+        <LessonStudioReadinessChecklist
+          report={lessonReadiness}
           selectedBlockId={selectedBlockId}
-          editingBlockId={editingBlockId}
           onSelectBlock={(blockId) => {
             handleSelectBlock(blockId);
             setEditingBlockId(blockId || "");
           }}
-          mode={viewMode}
-          quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}
-          onCreateBlock={handleQuickCreateBlock}
-          creatingTemplateKey={creatingTemplateKey}
-          quickAddDisabled={blocksLoading || Boolean(creatingTemplateKey)}
-          showOnlyProblems={showOnlyProblemBlocks}
-          onToggleShowOnlyProblems={() => setShowOnlyProblemBlocks((current) => !current)}
+          onModeChange={setViewMode}
+          onFixFirstProblem={handleFixFirstProblem}
+          onFixNextProblem={handleFixNextProblem}
         />
+      ) : null}
+
+
+      <div
+        className={
+          viewMode === "preview"
+            ? "grid gap-5"
+            : "grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]"
+        }
+      >
+        {viewMode !== "preview" ? (
+          <LessonStudioStructurePanel
+            lesson={lesson}
+            blocks={studioStructureBlocks}
+            selectedBlockId={selectedBlockId}
+            editingBlockId={editingBlockId}
+            onSelectBlock={(blockId) => {
+              handleSelectBlock(blockId);
+              setEditingBlockId(blockId || "");
+            }}
+            mode={viewMode}
+            quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}
+            onCreateBlock={handleQuickCreateBlock}
+            creatingTemplateKey={creatingTemplateKey}
+            quickAddDisabled={blocksLoading || Boolean(creatingTemplateKey)}
+            showOnlyProblems={showOnlyProblemBlocks}
+            onToggleShowOnlyProblems={() => setShowOnlyProblemBlocks((current) => !current)}
+          />
+        ) : null}
 
         <section
           data-testid="lesson-studio-canvas"
-          className="min-w-0 rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+          className={
+            viewMode === "preview"
+              ? "min-w-0 rounded-[2rem] bg-slate-50/70 p-4 sm:p-6"
+              : "min-w-0 rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+          }
         >
           <LessonStudioCanvas
             lesson={lesson}
@@ -3209,9 +3217,6 @@ export function LessonStudioPage({ lessonId }) {
           />
         </section>
 
-        {viewMode === "preview" ? (
-          <LessonStudioPreviewPanel lesson={lesson} blocks={blocks} />
-        ) : null}
       </div>
     </main>
   );

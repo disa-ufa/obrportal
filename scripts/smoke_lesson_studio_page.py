@@ -120,7 +120,6 @@ def main() -> None:
             'В предпросмотре нет активных блоков.',
             'blocks={studioStructureBlocks}',
             'const studioStructureBlocks = viewMode === "preview" ? visiblePreviewBlocks : blocks;',
-            '<LessonStudioPreviewPanel lesson={lesson} blocks={blocks} />',
             'viewMode === "preview" ? (',
             '!previewMode && issues.length',
             'previewMode={previewMode}',
@@ -1103,6 +1102,35 @@ def main() -> None:
     if present_forbidden_single_lesson_preview_fragments:
         print("Lesson Studio preview still has admin banner fragments:")
         for fragment in present_forbidden_single_lesson_preview_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    # stage83_3_7_11_clean_preview_layout_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    clean_preview_layout_required_fragments = ['viewMode !== "preview" ? (', '? "grid gap-5"', '"grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]"', '"min-w-0 rounded-[2rem] bg-slate-50/70 p-4 sm:p-6"', 'data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}']
+
+    missing_clean_preview_layout_fragments = [
+        fragment for fragment in clean_preview_layout_required_fragments
+        if fragment not in lesson_studio_source
+    ]
+
+    if missing_clean_preview_layout_fragments:
+        print("Lesson Studio clean preview layout guard failed:")
+        for fragment in missing_clean_preview_layout_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    clean_preview_layout_forbidden_fragments = ['xl:grid-cols-[280px_minmax(0,1fr)_320px]', '<LessonStudioPreviewPanel lesson={lesson} blocks={blocks} />']
+
+    present_clean_preview_layout_forbidden_fragments = [
+        fragment for fragment in clean_preview_layout_forbidden_fragments
+        if fragment in lesson_studio_source
+    ]
+
+    if present_clean_preview_layout_forbidden_fragments:
+        print("Lesson Studio clean preview layout still has stale admin layout fragments:")
+        for fragment in present_clean_preview_layout_forbidden_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 
