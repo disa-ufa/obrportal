@@ -2913,20 +2913,6 @@ function CourseStructureTree({
                                             >
                                               Редактировать в Lesson Studio
                                             </a>
-
-                                            <ActionButton
-                                              type="button"
-                                              tone="blue"
-                                              onClick={() => onLessonEditStart(lesson)}
-                                              disabled={
-                                                isLessonCreating ||
-                                                Boolean(editingLessonId) ||
-                                                Boolean(lessonActionId)
-                                              }
-                                            >
-                                              {RU.edit}
-                                            </ActionButton>
-
                                             <ActionButton
                                               type="button"
                                               tone="red"
@@ -3318,20 +3304,6 @@ function CourseCard({
                                             >
                                               Открыть студию урока
                                             </a>
-
-                                            <ActionButton
-                                              type="button"
-                                              tone="blue"
-                                              onClick={() => onLessonEditStart(lesson)}
-                                              disabled={
-                                                isLessonCreating ||
-                                                Boolean(editingLessonId) ||
-                                                Boolean(lessonActionId)
-                                              }
-                                            >
-                                              {RU.edit}
-                                            </ActionButton>
-
                                             <ActionButton
                                               type="button"
                                               tone="red"
@@ -4539,119 +4511,7 @@ export function AdminCoursesPage() {
         />
       </SectionCard>
 
-      <details
-        data-testid="admin-courses-legacy-tools"
-        className="rounded-3xl bg-white p-4 ring-1 ring-slate-200"
-      >
-        <summary className="cursor-pointer select-none text-sm font-semibold text-slate-900">
-          Дополнительные инструменты: старый реестр и диагностика
-        </summary>
 
-        <div className="mt-4 space-y-4">
-      {!loading && courses.length > 0 && (
-        <CoursesRegistryTable
-          courses={courses}
-          courseModulesByCourseId={courseModulesByCourseId}
-          courseLessonsByModuleId={courseLessonsByModuleId}
-          actionCourseId={actionCourseId}
-          editingCourseId={editingCourseId}
-          onStartEdit={handleStartEdit}
-          onToggleActive={handleToggleActive}
-          onDelete={handleDelete}
-        />
-      )}
-
-      <AdminCourseCatalogDiagnostics
-        catalogStats={adminCourseCatalogStats}
-        diagnostics={adminCourseCatalogDiagnostics}
-      />
-        </div>
-      </details>
-
-      <SectionCard
-        title="Технический редактор курса"
-        subtitle="Резервный режим с прежним подробным отображением. Основная работа теперь выполняется выше в дереве «Программа → Модуль → Урок»."
-      >
-        {loading ? (
-          <LoadingBlock text={RU.loadingPrograms} />
-        ) : courses.length === 0 ? (
-          <AdminEmptyState
-            title={RU.programsNotFound}
-            description={getFilteredEmptyText(
-              hasActiveFilters,
-              RU.filteredEmpty,
-              RU.defaultEmpty
-            )}
-            onReset={handleResetFilter}
-            showReset={hasActiveFilters}
-          />
-        ) : (
-          <details
-            data-testid="admin-courses-detailed-builder"
-            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-          >
-            <summary className="cursor-pointer select-none text-sm font-semibold text-slate-900">
-              Открыть подробный конструктор курса: структура, модули, уроки и материалы
-              <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-slate-500 ring-1 ring-slate-200">
-                {courses.length}
-              </span>
-            </summary>
-
-            <p className="mt-2 text-xs leading-5 text-slate-500">
-              Этот режим нужен для глубокого редактирования. Для быстрого контроля используйте таблицу «Реестр программ» выше.
-            </p>
-
-            <div className="mt-4 space-y-4">
-              {courses.map((course) => (
-              <CourseCard
-                key={course.id}
-                course={course}
-                modules={courseModulesByCourseId[course.id] || []}
-                lessonsByModuleId={courseLessonsByModuleId}
-                lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
-                lessonEditFormsByLessonId={lessonEditFormsByLessonId}
-                editingLessonId={editingLessonId}
-                lessonCreatingModuleId={lessonCreatingModuleId}
-                lessonActionId={lessonActionId}
-                moduleCreateForm={
-                  moduleCreateFormsByCourseId[course.id] ||
-                  buildModuleCreateForm(courseModulesByCourseId[course.id] || [])
-                }
-                moduleEditFormsByModuleId={moduleEditFormsByModuleId}
-                editingModuleId={editingModuleId}
-                isModuleCreating={moduleCreatingCourseId === course.id}
-                moduleActionId={moduleActionId}
-                isEditing={editingCourseId === course.id}
-                isActionRunning={actionCourseId === course.id}
-                editForm={editForm}
-                onEditFieldChange={updateEditField}
-                onStartEdit={handleStartEdit}
-                onEditSubmit={handleEditSubmit}
-                onCancelEdit={resetEditState}
-                onToggleActive={handleToggleActive}
-                onDelete={handleDelete}
-                onModuleCreateFieldChange={updateModuleCreateField}
-                onModuleCreateSubmit={handleModuleCreateSubmit}
-                onModuleCreateReset={resetModuleCreateForm}
-                onModuleEditStart={handleModuleEditStart}
-                onModuleEditFieldChange={updateModuleEditField}
-                onModuleEditSubmit={handleModuleEditSubmit}
-                onModuleEditCancel={resetModuleEditState}
-                onModuleDelete={handleModuleDelete}
-                onLessonCreateFieldChange={updateLessonCreateField}
-                onLessonCreateSubmit={handleLessonCreateSubmit}
-                onLessonCreateReset={resetLessonCreateForm}
-                onLessonEditStart={handleLessonEditStart}
-                onLessonEditFieldChange={updateLessonEditField}
-                onLessonEditSubmit={handleLessonEditSubmit}
-                onLessonEditCancel={resetLessonEditState}
-                onLessonDelete={handleLessonDelete}
-              />
-            ))}
-            </div>
-          </details>
-        )}
-      </SectionCard>
     </div>
   );
 }
