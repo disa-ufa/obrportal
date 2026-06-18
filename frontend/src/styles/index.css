@@ -2,11 +2,193 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --obr-blue: #0f5be8;
+  --obr-blue-dark: #0b49bf;
+  --obr-blue-soft: #eef5ff;
+  --obr-teal: #0eaaa7;
+  --obr-ink: #111936;
+  --obr-muted: #64708f;
+  --obr-border: #dfe6f3;
+  --obr-bg: #f7faff;
+}
+
 html {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--obr-bg);
+  color: var(--obr-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   margin: 0;
   min-width: 320px;
+  background:
+    radial-gradient(circle at 84% 0%, rgba(15, 91, 232, 0.08), transparent 34rem),
+    linear-gradient(180deg, #ffffff 0%, var(--obr-bg) 42%, #ffffff 100%);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+@layer components {
+  .portal-container {
+    @apply mx-auto w-full max-w-[1320px] px-4 md:px-8;
+  }
+
+  .portal-surface {
+    @apply rounded-[1.35rem] border border-slate-200/80 bg-white shadow-[0_18px_45px_rgba(17,25,54,0.06)];
+  }
+
+  .portal-card {
+    @apply rounded-[1.35rem] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(17,25,54,0.055)] transition duration-200;
+  }
+
+  .portal-card-hover {
+    @apply hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_18px_42px_rgba(15,91,232,0.12)];
+  }
+
+  .portal-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.22)] transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .portal-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-blue-700 transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .portal-icon-tile {
+    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100;
+  }
+
+  .portal-input {
+    @apply h-12 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100;
+  }
+
+  .portal-chip {
+    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-blue-50 px-3 text-xs font-bold text-blue-700 ring-1 ring-blue-100;
+  }
+
+  .portal-muted-chip {
+    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-slate-50 px-3 text-xs font-bold text-slate-600 ring-1 ring-slate-200;
+  }
+
+  .program-art {
+    @apply relative h-[108px] overflow-hidden rounded-t-[1.35rem];
+    background:
+      radial-gradient(circle at 78% 28%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(15,91,232,0.78), rgba(14,170,167,0.58)),
+      linear-gradient(135deg, #dfeaff, #ffffff);
+  }
+
+  .program-art::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.2), transparent 45%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.14) 0 1px, transparent 1px 38px);
+  }
+
+  .program-art::after {
+    content: "";
+    position: absolute;
+    right: 22px;
+    bottom: 16px;
+    width: 136px;
+    height: 52px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.42);
+    box-shadow: -82px -22px 0 rgba(255,255,255,0.24), -42px 18px 0 rgba(255,255,255,0.18);
+    transform: rotate(-4deg);
+  }
+
+  .program-art-books {
+    background:
+      radial-gradient(circle at 78% 30%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(21,128,61,0.72), rgba(15,91,232,0.48)),
+      linear-gradient(135deg, #e8fff4, #ffffff);
+  }
+
+  .program-art-robot {
+    background:
+      radial-gradient(circle at 78% 30%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(14,170,167,0.84), rgba(15,91,232,0.56)),
+      linear-gradient(135deg, #e7fbff, #ffffff);
+  }
+
+  .program-art-laptop {
+    background:
+      radial-gradient(circle at 78% 30%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(15,91,232,0.78), rgba(103,86,245,0.5)),
+      linear-gradient(135deg, #eef3ff, #ffffff);
+  }
+
+  .program-art-headset {
+    background:
+      radial-gradient(circle at 78% 30%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(87,83,245,0.68), rgba(15,91,232,0.44)),
+      linear-gradient(135deg, #f4f0ff, #ffffff);
+  }
+
+  .admin-soft-shell {
+    background:
+      radial-gradient(circle at 88% 4%, rgba(15, 91, 232, 0.07), transparent 28rem),
+      linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  }
+
+  .admin-glass-card {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_32px_rgba(17,25,54,0.055)];
+  }
+}
+
+/* Точечная доводка существующих сложных экранов под макеты без переписывания логики. */
+[data-testid="admin-courses-structure-tree"] > .rounded-3xl.bg-blue-50\/80 {
+  border-radius: 18px;
+  background: #f3f8ff;
+  color: #27406f;
+  border: 1px solid #dfe8f7;
+}
+
+[data-testid^="admin-course-tree-course-"] {
+  border-radius: 18px !important;
+  box-shadow: 0 12px 28px rgba(17, 25, 54, 0.055) !important;
+}
+
+[data-testid^="admin-course-tree-course-"] > summary {
+  align-items: center;
+}
+
+[data-testid^="admin-course-tree-course-"] details,
+[data-testid^="admin-course-tree-module-create-"] {
+  border-radius: 16px !important;
+}
+
+[data-testid="lesson-studio-page"] {
+  --studio-border: #dfe6f3;
+}
+
+[data-testid="lesson-studio-topbar"],
+[data-testid="lesson-studio-structure"],
+[data-testid="lesson-studio-canvas"] {
+  border-radius: 18px !important;
+  border: 1px solid var(--studio-border);
+  box-shadow: 0 14px 34px rgba(17, 25, 54, 0.06) !important;
+}
+
+[data-testid="lesson-studio-topbar"] {
+  top: 84px !important;
+}
+
+[data-testid="lesson-studio-canvas-block"] {
+  border-radius: 18px !important;
 }

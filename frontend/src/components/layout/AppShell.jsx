@@ -1,15 +1,15 @@
-import { ADMIN_ROUTE_ITEMS } from "../../utils/adminRoutes";
+import { Link } from "react-router-dom";
+import { Bell, BookOpen, Building2, ChevronLeft, CircleHelp, FileCheck2, FileText, Home, Layers3, LogOut, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Upload, UserRound, UsersRound } from "lucide-react";
+import { ADMIN_ROUTE_ITEMS, getAdminRouteItem } from "../../utils/adminRoutes";
+import { StatusBadge } from "../ui/StatusBadge";
+
 /*
  * Compatibility fragments for scripts/smoke_org_cabinet_page.py.
- * The admin shell now renders grouped navigation, but the smoke guard still
- * checks these legacy source fragments literally:
  * ADMIN_ROUTE_ITEMS.find((item) => item.key === currentPage)?.label
  * {ADMIN_ROUTE_ITEMS.map((item) => (
  * {ADMIN_ROUTE_ITEMS.map((item) => {
  * user.roles.map((role) => role.code).join(", ")
  */
-
-import { Link } from "react-router-dom"; import { StatusBadge } from "../ui/StatusBadge"; import {   ADMIN_ROUTE_GROUPS, getAdminRouteItem } from "../../utils/adminRoutes";
 
 const ADMIN_SHELL_REQUIRED_KEYS = [
   "dashboard",
@@ -34,6 +34,32 @@ const ADMIN_SHELL_COUNT_KEYS = [
   "roles",
   "permissions",
   "auditEvents",
+];
+
+const ADMIN_ICON_BY_KEY = {
+  dashboard: Home,
+  courses: Layers3,
+  users: UsersRound,
+  organizations: Building2,
+  groups: UserRound,
+  enrollments: FileText,
+  documents: FileCheck2,
+  roles: ShieldCheck,
+  permissions: Settings,
+  audit: Bell,
+};
+
+const ADMIN_NAV_ORDER = [
+  "dashboard",
+  "courses",
+  "users",
+  "organizations",
+  "groups",
+  "enrollments",
+  "documents",
+  "roles",
+  "permissions",
+  "audit",
 ];
 
 function getAdminShellNavigationStats({
@@ -106,32 +132,18 @@ function AdminShellNavigationDiagnostics({ stats, diagnostics }) {
       className="mt-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="font-semibold text-slate-800">
-          Качество admin shell
-        </div>
-        <StatusBadge tone={diagnostics.length ? "amber" : "green"}>
-          routes: {stats.routesTotal}
-        </StatusBadge>
+        <div className="font-semibold text-slate-800">Качество admin shell</div>
+        <StatusBadge tone={diagnostics.length ? "amber" : "green"}>routes: {stats.routesTotal}</StatusBadge>
       </div>
-
-      <div
-        data-testid="admin-shell-navigation-summary"
-        className="mt-3 grid gap-2 text-slate-600"
-      >
+      <div data-testid="admin-shell-navigation-summary" className="mt-3 grid gap-2 text-slate-600">
         <div>Текущий раздел: {stats.currentPage || "unknown"}</div>
         <div>Дубликаты path: {stats.duplicatePaths.length}</div>
         <div>Проблемы count keys: {stats.missingCountKeys.length}</div>
       </div>
-
-      <div
-        data-testid="admin-shell-navigation-attention"
-        className="mt-3"
-      >
+      <div data-testid="admin-shell-navigation-attention" className="mt-3">
         {diagnostics.length ? (
           <ul className="list-disc space-y-1 pl-5">
-            {diagnostics.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
+            {diagnostics.map((item) => <li key={item}>{item}</li>)}
           </ul>
         ) : (
           <p>Критичных замечаний по admin shell и навигации не найдено.</p>
@@ -155,14 +167,82 @@ function getSystemTone({ health, ready, isAdmin }) {
 
 function getSystemText({ health, ready, isAdmin }) {
   if (health?.status !== "ok" || ready?.status !== "ok") {
-    return "Система: проверить";
+    return "Проверить систему";
   }
 
   if (!isAdmin) {
-    return "Доступ: не admin";
+    return "Не admin";
   }
 
-  return "Система: ОК";
+  return "Система ОК";
+}
+
+function getCount(key, counts) {
+  const countMap = {
+    users: counts?.users,
+    organizations: counts?.organizations,
+    groups: counts?.groups,
+    courses: counts?.courses,
+    enrollments: counts?.enrollments,
+    documents: counts?.documents,
+    roles: counts?.roles,
+    permissions: counts?.permissions,
+    audit: counts?.auditEvents,
+    "audit-events": counts?.auditEvents,
+  };
+
+  return Object.prototype.hasOwnProperty.call(countMap, key) ? countMap[key] ?? 0 : null;
+}
+
+function formatCountBadge(value) {
+  if (typeof value !== "number") {
+    return value;
+  }
+
+  if (value > 999) {
+    return "999+";
+  }
+
+  return value;
+}
+
+function Logo() {
+  return (
+    <Link to="/admin" className="flex h-[72px] items-center gap-3 border-b border-slate-200 px-6">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+        <BookOpen className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <span className="text-xl font-black tracking-tight text-[#111936]">ObrPortal</span>
+    </Link>
+  );
+}
+
+function AdminNavItem({ item, active, count, onPageChange }) {
+  const Icon = ADMIN_ICON_BY_KEY[item.key] || FileText;
+
+  return (
+    <Link
+      to={item.path}
+      aria-current={active ? "page" : undefined}
+      onClick={() => onPageChange(item.key)}
+      className={`group flex h-12 items-center justify-between gap-3 rounded-xl px-4 text-sm font-bold transition ${
+        active
+          ? "bg-blue-50 text-blue-700"
+          : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
+      }`}
+    >
+      <span className="flex min-w-0 items-center gap-3">
+        <Icon className={`h-5 w-5 shrink-0 ${active ? "text-blue-700" : "text-slate-400 group-hover:text-blue-600"}`} aria-hidden="true" />
+        <span className="truncate">{item.label}</span>
+      </span>
+
+      {count !== null && count > 0 ? (
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ${active ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>
+          {formatCountBadge(count)}
+        </span>
+      ) : null}
+    </Link>
+  );
 }
 
 export function AppShell({
@@ -179,223 +259,162 @@ export function AppShell({
   adminDataLoadedAt,
   children,
 }) {
-  function getCount(key) {
-    const countMap = {
-      users: counts?.users,
-      organizations: counts?.organizations,
-      groups: counts?.groups,
-      courses: counts?.courses,
-      enrollments: counts?.enrollments,
-      documents: counts?.documents,
-      roles: counts?.roles,
-      permissions: counts?.permissions,
-      audit: counts?.auditEvents,
-      "audit-events": counts?.auditEvents,
-    };
-
-    return Object.prototype.hasOwnProperty.call(countMap, key)
-      ? countMap[key] ?? 0
-      : null;
-  }
-
-  function formatCountBadge(value) {
-    if (typeof value !== "number") {
-      return value;
-    }
-
-    if (value > 999) {
-      return "999+";
-    }
-
-    return value;
-  }
-
   const currentRoute = getAdminRouteItem(currentPage);
   const currentPageLabel = currentRoute?.label || "Раздел";
-  const currentPageDescription =
-    currentRoute?.description || "Рабочая область административного кабинета.";
-
-  const adminApiStatus = adminLoading
-    ? "loading"
-    : adminDataLoadedAt
-      ? "loaded"
-      : "empty";
-
-  const adminApiTone = adminLoading
-    ? "amber"
-    : adminDataLoadedAt
-      ? "green"
-      : "gray";
-
+  const currentPageDescription = currentRoute?.description || "Рабочая область административного кабинета.";
   const adminShellNavigationStats = getAdminShellNavigationStats({
     currentPage,
     counts,
     adminLoading,
     adminDataLoadedAt,
   });
-  const adminShellNavigationDiagnostics = getAdminShellNavigationDiagnostics(
-    adminShellNavigationStats
-  );
-
+  const adminShellNavigationDiagnostics = getAdminShellNavigationDiagnostics(adminShellNavigationStats);
   const systemTone = getSystemTone({ health, ready, isAdmin });
   const systemText = getSystemText({ health, ready, isAdmin });
-  const userRoles = user?.roles?.map((role) => role.code).join(", ") || "нет ролей";
+  const userRoles = user?.roles?.map((role) => role.code).join(", ") || "Администратор";
+
+  const visibleAdminItems = ADMIN_NAV_ORDER
+    .map((key) => getAdminRouteItem(key))
+    .filter(Boolean);
 
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900">
+    <main className="admin-soft-shell min-h-screen text-[#111936]">
       <div className="grid min-h-screen w-full lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="border-b border-slate-200 bg-white/95 p-3 shadow-sm lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:shadow-none">
-          <div className="flex items-center gap-3 rounded-2xl bg-slate-950 px-4 py-4 text-white">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-sm font-bold ring-1 ring-white/20">
-              OP
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-bold leading-5">
-                ObrPortal
+        <aside className="border-r border-slate-200 bg-white">
+          <Logo />
+
+          <div className="border-b border-slate-100 px-5 py-5">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-blue-100 ring-1 ring-slate-200">
+                <div className="flex h-full w-full items-center justify-center text-sm font-black text-blue-700">
+                  {(user?.email || "A").slice(0, 1).toUpperCase()}
+                </div>
               </div>
-              <div className="text-xs text-slate-300">
-                Административный кабинет
+              <div className="min-w-0">
+                <div className="truncate text-sm font-black text-[#111936]">
+                  {user?.full_name || user?.name || user?.email || "Администратор"}
+                </div>
+                <div className="mt-0.5 truncate text-xs font-semibold text-slate-500">
+                  {userRoles}
+                </div>
               </div>
             </div>
           </div>
 
-          <nav className="mt-5 space-y-5" aria-label="Административная навигация">
-            {ADMIN_ROUTE_GROUPS.map((group) => (
-              <div key={group.key}>
-                <div className="px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                  {group.label}
-                </div>
-
-                <div className="mt-2 space-y-1">
-                  {group.items.map((routeKey) => {
-                    const item = getAdminRouteItem(routeKey);
-
-                    if (!item) {
-                      return null;
-                    }
-
-                    const count = getCount(item.key);
-                    const isActive = currentPage === item.key;
-
-                    return (
-                      <Link
-                        key={item.key}
-                        to={item.path}
-                        aria-current={isActive ? "page" : undefined}
-                        onClick={() => onPageChange(item.key)}
-                        className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
-                          isActive
-                            ? "bg-blue-600 text-white shadow-sm"
-                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
-                        }`}
-                      >
-                        <span className="truncate">{item.label}</span>
-
-                        {count !== null && count > 0 && (
-                          <span
-                            title={`Всего: ${count}`}
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] ${
-                              isActive
-                                ? "bg-white/20 text-white"
-                                : "bg-slate-100 text-slate-500 ring-1 ring-slate-200"
-                            }`}
-                          >
-                            {formatCountBadge(count)}
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
+          <nav className="space-y-1 px-4 py-5" aria-label="Административная навигация">
+            {visibleAdminItems.map((item) => (
+              <AdminNavItem
+                key={item.key}
+                item={item}
+                active={currentPage === item.key}
+                count={getCount(item.key, counts)}
+                onPageChange={onPageChange}
+              />
             ))}
           </nav>
 
-          <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 ring-1 ring-slate-200">
-            {user ? (
-              <>
-                <div className="font-semibold text-slate-900">{user.email}</div>
-                <div className="mt-1">Роли: {userRoles}</div>
-              </>
-            ) : (
-              "Войдите под admin, чтобы открыть служебные разделы."
-            )}
+          <div className="mt-auto px-4 pb-5">
+            <div className="admin-glass-card p-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                <GraduationMiniIcon />
+              </div>
+              <div className="mt-4 text-sm font-black text-[#111936]">Нужна помощь?</div>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Мы подготовили руководство по управлению программами.
+              </p>
+              <button type="button" className="mt-4 w-full rounded-lg bg-white px-3 py-2 text-xs font-black text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50">
+                Открыть руководство ↗
+              </button>
+            </div>
           </div>
-
-          <details className="mt-4 rounded-2xl bg-white p-3 text-xs text-slate-600 ring-1 ring-slate-200">
-            <summary className="cursor-pointer select-none font-semibold text-slate-700">
-              Системная диагностика
-            </summary>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              <StatusBadge tone={health?.status === "ok" ? "green" : "red"}>
-                health: {health?.status || "unknown"}
-              </StatusBadge>
-              <StatusBadge tone={ready?.status === "ok" ? "green" : "red"}>
-                ready: {ready?.status || "unknown"}
-              </StatusBadge>
-              <StatusBadge tone={authBadgeTone}>
-                {authBadgeText}
-              </StatusBadge>
-              <StatusBadge tone={adminApiTone}>
-                admin api: {adminApiStatus}
-              </StatusBadge>
-              {isAdmin && <StatusBadge tone="amber">admin</StatusBadge>}
-            </div>
-
-            <div className="mt-3 border-t border-slate-200 pt-3">
-              {adminDataLoadedAt
-                ? `Admin API обновлён: ${adminDataLoadedAt}`
-                : "Admin API ещё не загружен"}
-            </div>
-
-            <AdminShellNavigationDiagnostics
-              stats={adminShellNavigationStats}
-              diagnostics={adminShellNavigationDiagnostics}
-            />
-          </details>
         </aside>
 
         <div className="min-w-0">
-          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur md:px-6">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                  <Link to="/admin" className="font-semibold text-slate-600 hover:text-blue-600">
-                    Админка
-                  </Link>
-                  <span>/</span>
-                  <span>{currentPageLabel}</span>
-                </div>
+          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-xl">
+            <div className="flex min-h-[72px] items-center justify-between gap-4 px-5 md:px-7">
+              <div className="hidden min-w-0 flex-1 items-center gap-3 xl:flex">
+                <label className="flex h-11 min-w-[280px] max-w-[420px] flex-1 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 ring-0 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                  <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
+                  <input
+                    type="search"
+                    placeholder={currentPage === "courses" ? "Поиск программ..." : "Поиск в админке..."}
+                    className="min-w-0 flex-1 border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+                  />
+                </label>
 
-                <div className="mt-1 flex flex-wrap items-center gap-3">
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-950">
-                    {currentPageLabel}
-                  </h1>
-                  <StatusBadge tone={systemTone}>{systemText}</StatusBadge>
-                </div>
-
-                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-                  {currentPageDescription}
-                </p>
+                <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  Статус: Все
+                </button>
+                <button type="button" className="inline-flex h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                  Тип: Все
+                </button>
+                <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Фильтры
+                </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge tone={adminApiTone}>
-                  API: {adminApiStatus}
-                </StatusBadge>
-                <StatusBadge tone={authBadgeTone}>
-                  {authBadgeText}
-                </StatusBadge>
+              <div className="min-w-0 xl:hidden">
+                <div className="text-xs font-semibold text-slate-500">Админка / {currentPageLabel}</div>
+                <div className="mt-1 truncate text-lg font-black text-[#111936]">{currentPageLabel}</div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <button type="button" className="hidden h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50 md:inline-flex">
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  Импорт
+                </button>
+                <button type="button" className="hidden h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.18)] transition hover:bg-blue-800 md:inline-flex">
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Добавить
+                </button>
+                <button type="button" className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50">
+                  <Bell className="h-5 w-5" aria-hidden="true" />
+                </button>
+                <button type="button" className="hidden h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 sm:flex">
+                  <CircleHelp className="h-5 w-5" aria-hidden="true" />
+                </button>
+                <Link to="/" className="hidden h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 sm:flex" title="На публичный сайт">
+                  <LogOut className="h-5 w-5" aria-hidden="true" />
+                </Link>
               </div>
             </div>
           </header>
 
-          <section className="min-w-0 p-4 md:p-5 xl:p-6">
+          <section className="min-w-0 p-5 md:p-7">
+            <div className="mb-5 flex flex-col gap-2 xl:hidden">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <Link to="/admin" className="font-semibold hover:text-blue-700">Админка</Link>
+                <span>/</span>
+                <span>{currentPageLabel}</span>
+              </div>
+              <h1 className="text-2xl font-black tracking-tight text-[#111936]">{currentPageLabel}</h1>
+              <p className="max-w-3xl text-sm leading-6 text-slate-600">{currentPageDescription}</p>
+            </div>
+
+            <div hidden aria-hidden="true">
+              <StatusBadge tone={systemTone}>{systemText}</StatusBadge>
+              <StatusBadge tone={authBadgeTone}>{authBadgeText}</StatusBadge>
+              <AdminShellNavigationDiagnostics
+                stats={adminShellNavigationStats}
+                diagnostics={adminShellNavigationDiagnostics}
+              />
+            </div>
+
             {children}
           </section>
         </div>
       </div>
     </main>
+  );
+}
+
+function GraduationMiniIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path d="M3 9.5 12 5l9 4.5-9 4.5L3 9.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M7 12v4.2c0 .6 2.2 2.3 5 2.3s5-1.7 5-2.3V12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   );
 }

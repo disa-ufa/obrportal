@@ -1,19 +1,18 @@
+import { BookOpen, LockKeyhole, LogIn, Mail, Send, UserRound } from "lucide-react";
 import { userHasRole } from "../../utils/adminState";
+
 const PUBLIC_NAV_ITEMS = [
   { key: "home", label: "Главная" },
-  { key: "catalog", label: "Каталог" },
-  { key: "organization-info", label: "Сведения об организации" },
-  { key: "verify-document", label: "Проверка документа" },
-  { key: "contacts", label: "Контакты" },
-  { key: "faq", label: "FAQ" },
+  { key: "catalog", label: "Программы" },
+  { key: "verify-document", label: "Документы" },
+  { key: "organization-info", label: "О центре" },
 ];
 
 const FOOTER_LINKS = [
-  { key: "privacy", label: "Политика ПДн" },
-  { key: "offer", label: "Условия использования" },
-  { key: "organization-info", label: "Сведения об организации" },
+  { key: "privacy", label: "Политика конфиденциальности" },
+  { key: "offer", label: "Пользовательское соглашение" },
+  { key: "faq", label: "Помощь" },
   { key: "contacts", label: "Контакты" },
-  { key: "faq", label: "FAQ" },
 ];
 
 function getPublicShellNavigationStats({ user, isAdmin, currentPage }) {
@@ -124,20 +123,52 @@ function PublicShellNavigationDiagnostics({ stats, diagnostics }) {
   );
 }
 
+function getPublicNavActiveState(itemKey, currentPage) {
+  if (itemKey === "catalog") {
+    return currentPage === "catalog" || currentPage === "course-detail";
+  }
+
+  if (itemKey === "verify-document") {
+    return currentPage === "verify-document";
+  }
+
+  return currentPage === itemKey;
+}
+
 function NavButton({ active, children, onClick }) {
-
-
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-        active
-          ? "bg-blue-600 text-white shadow-sm"
-          : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+      className={`relative h-[68px] px-2 text-sm font-bold transition md:px-4 ${
+        active ? "text-blue-700" : "text-[#172143] hover:text-blue-700"
       }`}
     >
       {children}
+      <span
+        aria-hidden="true"
+        className={`absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-blue-700 transition ${
+          active ? "opacity-100" : "opacity-0"
+        }`}
+      />
+    </button>
+  );
+}
+
+function Logo({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-3 text-left"
+      aria-label="На главную"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+        <BookOpen className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <span className="text-xl font-black tracking-tight text-[#111936]">
+        ObrPortal
+      </span>
     </button>
   );
 }
@@ -159,30 +190,23 @@ export function PublicShell({
     publicShellNavigationStats
   );
 
-  return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 md:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <button
-              type="button"
-              onClick={() => onPageChange("home")}
-              className="text-left"
-            >
-              <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-                ГБОУ РЦДО
-              </div>
-              <div className="mt-1 text-2xl font-bold text-slate-900">
-                Образовательный портал
-              </div>
-            </button>
-          </div>
+  const cabinetTarget = isAdmin && user
+    ? { page: "dashboard", label: "Админка" }
+    : user && isOrgRepresentative
+      ? { page: "organization", label: "Кабинет организации" }
+      : { page: user ? "account" : "register", label: "Личный кабинет" };
 
-          <nav className="flex flex-wrap gap-2">
+  return (
+    <main className="min-h-screen bg-[#f7faff] text-[#111936]">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
+        <div className="portal-container flex min-h-[68px] items-center justify-between gap-4">
+          <Logo onClick={() => onPageChange("home")} />
+
+          <nav className="hidden items-center gap-6 lg:flex" aria-label="Публичная навигация">
             {PUBLIC_NAV_ITEMS.map((item) => (
               <NavButton
                 key={item.key}
-                active={currentPage === item.key}
+                active={getPublicNavActiveState(item.key, currentPage)}
                 onClick={() => onPageChange(item.key)}
               >
                 {item.label}
@@ -190,45 +214,45 @@ export function PublicShell({
             ))}
           </nav>
 
-          <div className="flex flex-wrap gap-2">
-            {isAdmin && user ? (
-              <NavButton
-                active={currentPage === "dashboard"}
-                onClick={() => onPageChange("dashboard")}
+          <div className="flex shrink-0 items-center gap-2">
+            {!user && (
+              <button
+                type="button"
+                onClick={() => onPageChange("login")}
+                className="hidden h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-[#172143] transition hover:border-blue-200 hover:bg-blue-50 sm:inline-flex"
               >
-                В админку
-              </NavButton>
-            ) : user && isOrgRepresentative ? (
-              <NavButton
-                active={currentPage === "organization"}
-                onClick={() => onPageChange("organization")}
-              >
-                Кабинет организации
-              </NavButton>
-            ) : user ? (
-              <NavButton
-                active={currentPage === "account"}
-                onClick={() => onPageChange("account")}
-              >
-                Личный кабинет
-              </NavButton>
-            ) : (
-              <>
-                <NavButton
-                  active={currentPage === "login"}
-                  onClick={() => onPageChange("login")}
-                >
-                  Войти
-                </NavButton>
-                <NavButton
-                  active={currentPage === "register"}
-                  onClick={() => onPageChange("register")}
-                >
-                  Регистрация
-                </NavButton>
-              </>
+                <LogIn className="h-4 w-4" aria-hidden="true" />
+                Войти
+              </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => onPageChange(cabinetTarget.page)}
+              className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.22)] transition hover:bg-blue-800"
+            >
+              {user ? <UserRound className="h-4 w-4" aria-hidden="true" /> : <LockKeyhole className="h-4 w-4" aria-hidden="true" />}
+              <span className="hidden sm:inline">{cabinetTarget.label}</span>
+              <span className="sm:hidden">Кабинет</span>
+            </button>
           </div>
+        </div>
+
+        <div className="portal-container flex gap-2 overflow-x-auto pb-3 lg:hidden">
+          {PUBLIC_NAV_ITEMS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => onPageChange(item.key)}
+              className={`shrink-0 rounded-lg px-3 py-2 text-sm font-bold transition ${
+                getPublicNavActiveState(item.key, currentPage)
+                  ? "bg-blue-700 text-white"
+                  : "bg-white text-slate-700 ring-1 ring-slate-200"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -239,33 +263,37 @@ export function PublicShell({
         />
       </div>
 
-      <section className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      <section className="portal-container py-6 md:py-8">
         {children}
       </section>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 md:px-6 lg:grid-cols-[1.5fr_1fr]">
-          <div>
-            <div className="text-lg font-bold text-slate-900">
-              Единая образовательная платформа
-            </div>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Образовательный портал для выбора программ, знакомства с образовательной
-              организацией, правовой информацией и проверки подлинности документов.
-            </p>
+      <footer className="border-t border-slate-200/80 bg-white/90">
+        <div className="portal-container flex flex-col gap-5 py-5 md:flex-row md:items-center md:justify-between">
+          <div className="text-sm font-medium text-slate-500">
+            © 2024 РЦДО. Все права защищены.
           </div>
 
-          <div className="flex flex-wrap gap-2 lg:justify-end">
+          <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm font-medium text-slate-500">
             {FOOTER_LINKS.map((item) => (
               <button
                 key={item.key}
                 type="button"
                 onClick={() => onPageChange(item.key)}
-                className="rounded-full bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                className="transition hover:text-blue-700"
               >
                 {item.label}
               </button>
             ))}
+          </div>
+
+          <div className="flex items-center gap-3 text-slate-500">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-xs font-black">VK</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+              <Send className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+              <Mail className="h-4 w-4" aria-hidden="true" />
+            </span>
           </div>
         </div>
       </footer>
