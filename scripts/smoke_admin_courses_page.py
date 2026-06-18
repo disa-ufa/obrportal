@@ -9,6 +9,13 @@ def main():
     source = read_text("frontend/src/pages/AdminCoursesPage.jsx")
 
     required_fragments = [
+        'title="Программы"',
+        'data-testid="admin-courses-compact-summary"',
+        'Всего: {courseCounts.all || 0}',
+        'Активные: {activeCount}',
+        'Неактивные: {inactiveCount}',
+        'data-testid="admin-courses-extra-tools"',
+        'Дополнительно: быстрые фильтры и экспорт CSV',
         'title="Структура программ"',
         '<CourseStructureTree',
         'data-testid="admin-courses-structure-tree"',
@@ -43,6 +50,9 @@ def main():
         'Дополнительные инструменты: старый реестр и диагностика',
         'Открыть подробный конструктор курса',
         'onClick={() => onLessonEditStart(lesson)}',
+        '<AdminMetricCard',
+        'title={RU.pageTitle}',
+        'className="grid gap-4 md:grid-cols-3"',
         '<AdminCourseCatalogDiagnostics',
     ]
 

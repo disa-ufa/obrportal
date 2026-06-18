@@ -4337,8 +4337,8 @@ export function AdminCoursesPage() {
   return (
     <div className="space-y-6">
       <SectionCard
-        title={RU.pageTitle}
-        subtitle={RU.pageSubtitle}
+        title="Программы"
+        subtitle="Поиск, фильтр и создание программ. Основная работа со структурой курса находится ниже."
         action={
           <AdminPageActions
             loading={loading}
@@ -4349,29 +4349,26 @@ export function AdminCoursesPage() {
           />
         }
       >
-        <div className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-3">
-            <AdminMetricCard
-              title={RU.totalPrograms}
-              value={courseCounts.all || 0}
-              hint={RU.totalProgramsHint}
-              to={buildCoursesPath()}
-              tone="blue"
-            />
-            <AdminMetricCard
-              title={RU.activePlural}
-              value={activeCount}
-              hint={RU.activeHint}
-              to={buildCoursesPath({ is_active: "true" })}
-              tone="green"
-            />
-            <AdminMetricCard
-              title={RU.inactivePlural}
-              value={inactiveCount}
-              hint={RU.inactiveHint}
-              to={buildCoursesPath({ is_active: "false" })}
-              tone={inactiveCount ? "amber" : "gray"}
-            />
+        <div className="space-y-4">
+          <div
+            data-testid="admin-courses-compact-summary"
+            className="flex flex-wrap items-center gap-2 rounded-2xl bg-slate-50/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200"
+          >
+            <span className="font-semibold text-slate-950">
+              Всего: {courseCounts.all || 0}
+            </span>
+            <span className="text-slate-300">·</span>
+            <span className="font-medium text-emerald-700">
+              Активные: {activeCount}
+            </span>
+            <span className="text-slate-300">·</span>
+            <span className="font-medium text-slate-600">
+              Неактивные: {inactiveCount}
+            </span>
+            <span className="text-slate-300">·</span>
+            <span>
+              Показано: {courses.length} из {courseCounts.all || courses.length}
+            </span>
           </div>
 
           {showCreateForm && (
@@ -4433,20 +4430,6 @@ export function AdminCoursesPage() {
             </ActionButton>
           </AdminFilterPanel>
 
-          <AdminQuickFilterButtons
-            items={COURSE_ACTIVE_FILTERS}
-            activeValue={filterActive}
-            counts={courseCounts}
-            disabled={loading}
-            onChange={handleQuickActiveFilter}
-            getCount={(item, counts) =>
-              item.value === "true"
-                ? counts.active || 0
-                : item.value === "false"
-                  ? counts.inactive || 0
-                  : counts.all || 0}
-          />
-
           <AdminActiveFiltersSummary
             items={activeCourseFilterItems}
             onReset={handleResetFilter}
@@ -4454,28 +4437,53 @@ export function AdminCoursesPage() {
             emptyText="Фильтры программ не применены."
           />
 
-          <div
-            data-testid="admin-courses-export-summary"
-            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          <details
+            data-testid="admin-courses-extra-tools"
+            className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200"
           >
-            <div>
-              <div className="text-sm font-semibold text-slate-900">Экспорт программ</div>
-              <p className="mt-1 text-xs text-slate-600">
-                CSV содержит текущую выборку после поиска и фильтра активности:
-                {" "}{courses.length} из {courseCounts.all || courses.length}.
-              </p>
-            </div>
+            <summary className="cursor-pointer list-none text-sm font-semibold text-slate-700">
+              Дополнительно: быстрые фильтры и экспорт CSV
+            </summary>
 
-            <ActionButton
-              type="button"
-              tone="light"
-              onClick={handleExportCoursesCsv}
-              disabled={loading || courses.length === 0}
-              data-testid="admin-courses-export-csv-button"
-            >
-              Скачать CSV
-            </ActionButton>
-          </div>
+            <div className="mt-4 space-y-4">
+              <AdminQuickFilterButtons
+                items={COURSE_ACTIVE_FILTERS}
+                activeValue={filterActive}
+                counts={courseCounts}
+                disabled={loading}
+                onChange={handleQuickActiveFilter}
+                getCount={(item, counts) =>
+                  item.value === "true"
+                    ? counts.active || 0
+                    : item.value === "false"
+                      ? counts.inactive || 0
+                      : counts.all || 0}
+              />
+
+              <div
+                data-testid="admin-courses-export-summary"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+              >
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Экспорт программ</div>
+                  <p className="mt-1 text-xs text-slate-600">
+                    CSV содержит текущую выборку после поиска и фильтра активности:
+                    {" "}{courses.length} из {courseCounts.all || courses.length}.
+                  </p>
+                </div>
+
+                <ActionButton
+                  type="button"
+                  tone="light"
+                  onClick={handleExportCoursesCsv}
+                  disabled={loading || courses.length === 0}
+                  data-testid="admin-courses-export-csv-button"
+                >
+                  Скачать CSV
+                </ActionButton>
+              </div>
+            </div>
+          </details>
 
           {error && (
             <Alert title={RU.error} tone="red">
