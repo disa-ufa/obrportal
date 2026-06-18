@@ -148,8 +148,8 @@ function ProgramCard({ course, index, onOpenCourse }) {
         </span>
       </div>
 
-      <div className="p-4">
-        <h3 className="line-clamp-2 min-h-[3rem] text-lg font-black leading-6 text-[#111936]">
+      <div className="p-5">
+        <h3 className="line-clamp-2 min-h-[3.25rem] text-xl font-black leading-7 text-[#111936]">
           {course.title}
         </h3>
 
@@ -168,7 +168,7 @@ function ProgramCard({ course, index, onOpenCourse }) {
           <span className="portal-chip">{formatCourseDocument(course)}</span>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-3">
+        <div className="mt-6 flex items-center justify-between gap-3">
           <div className={`text-base font-black ${formatCoursePrice(course).toLowerCase().includes("бесплат") ? "text-teal-700" : "text-[#111936]"}`}>
             {formatCoursePrice(course)}
           </div>
@@ -266,8 +266,8 @@ export function HomePage({ onPageChange, onOpenCourse }) {
   }
 
   return (
-    <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-[1.6rem] bg-gradient-to-r from-white via-white to-blue-50/90 px-6 py-8 md:px-10 lg:min-h-[330px] lg:px-12 lg:py-10">
+    <div className="public-home-page space-y-10 md:space-y-12">
+      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-white via-white to-blue-50/90 px-7 py-10 md:px-12 lg:min-h-[430px] lg:px-16 lg:py-14 2xl:px-20">
         <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[48%] overflow-hidden lg:block">
           <div className="absolute right-10 top-8 h-56 w-56 rounded-full bg-blue-100/80 blur-2xl" />
           <div className="absolute right-28 top-14 h-48 w-72 rounded-[4rem] bg-blue-200/35" />
@@ -279,15 +279,15 @@ export function HomePage({ onPageChange, onOpenCourse }) {
           <FileText className="absolute right-16 top-28 h-12 w-12 text-blue-700/50" />
         </div>
 
-        <div className="relative max-w-3xl">
-          <h1 className="max-w-2xl text-4xl font-black leading-[1.05] tracking-tight text-[#111936] md:text-6xl">
+        <div className="relative max-w-4xl">
+          <h1 className="max-w-3xl text-5xl font-black leading-[1.02] tracking-tight text-[#111936] md:text-6xl xl:text-[4.4rem]">
             Образовательный портал РЦДО
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
+          <p className="mt-6 max-w-3xl text-base leading-7 text-slate-600 md:text-xl md:leading-8">
             Современная платформа для дистанционного обучения и эффективного управления образовательными программами.
           </p>
 
-          <form onSubmit={handleSearchSubmit} className="mt-8 flex max-w-2xl gap-3 rounded-xl bg-white p-2 shadow-[0_18px_40px_rgba(17,25,54,0.09)] ring-1 ring-slate-200">
+          <form onSubmit={handleSearchSubmit} className="mt-9 flex max-w-3xl gap-3 rounded-xl bg-white p-2.5 shadow-[0_18px_40px_rgba(17,25,54,0.09)] ring-1 ring-slate-200">
             <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
               <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
               <input
@@ -295,10 +295,10 @@ export function HomePage({ onPageChange, onOpenCourse }) {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Поиск программ и материалов..."
-                className="h-11 min-w-0 flex-1 border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+                className="h-12 min-w-0 flex-1 border-0 bg-transparent text-base font-semibold text-slate-900 outline-none placeholder:text-slate-400"
               />
             </label>
-            <button type="submit" className="portal-btn-primary !h-11 !rounded-lg !px-7 !py-0">
+            <button type="submit" className="portal-btn-primary !h-12 !rounded-lg !px-9 !py-0">
               Найти
             </button>
           </form>
@@ -323,16 +323,16 @@ export function HomePage({ onPageChange, onOpenCourse }) {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {PORTAL_STATS.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className="portal-card flex items-center gap-5 p-5">
+            <div key={item.label} className="portal-card flex items-center gap-5 p-6 xl:p-7">
               <span className="portal-icon-tile">
                 <Icon className="h-6 w-6" aria-hidden="true" />
               </span>
               <div>
-                <div className="text-3xl font-black leading-none text-[#111936]">{item.value}</div>
+                <div className="text-4xl font-black leading-none text-[#111936]">{item.value}</div>
                 <div className="mt-1 text-base font-black text-[#111936]">{item.label}</div>
                 <div className="mt-1 text-xs leading-5 text-slate-500">{item.hint}</div>
               </div>
@@ -357,7 +357,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
         {loadingCourses && !displayCourses.length ? (
           <div className="portal-card p-6 text-sm text-slate-600">Загружаем программы...</div>
         ) : (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {displayCourses.map((course, index) => (
               <ProgramCard
                 key={course.id || course.slug || index}
@@ -378,7 +378,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
 
       <section>
         <h2 className="mb-5 text-2xl font-black text-[#111936]">Направления обучения</h2>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-6">
           {DIRECTIONS.map((item) => {
             const Icon = item.icon;
             return (
@@ -389,7 +389,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
                   saveCatalogQuery(item.label);
                   onPageChange("catalog");
                 }}
-                className="portal-card portal-card-hover flex min-h-[78px] items-center gap-4 p-4 text-left"
+                className="portal-card portal-card-hover flex min-h-[92px] items-center gap-4 p-5 text-left"
               >
                 <span className="portal-icon-tile !h-11 !w-11">
                   <Icon className="h-5 w-5" aria-hidden="true" />
@@ -401,7 +401,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
         </div>
       </section>
 
-      <section className="portal-card flex flex-col gap-5 bg-blue-50/80 p-6 md:flex-row md:items-center md:justify-between md:p-8">
+      <section className="portal-card flex flex-col gap-5 bg-blue-50/80 p-7 md:flex-row md:items-center md:justify-between md:p-9">
         <div className="flex items-center gap-5">
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-700 text-white shadow-[0_12px_24px_rgba(15,91,232,0.25)]">
             <Layers3 className="h-8 w-8" aria-hidden="true" />

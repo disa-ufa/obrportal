@@ -287,7 +287,7 @@ function CatalogFilterSidebar({
   resetFilters,
 }) {
   return (
-    <aside className="portal-card sticky top-28 h-max p-4">
+    <aside className="portal-card sticky top-28 h-max p-5 xl:p-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-[#111936]">Фильтры</h2>
         <button
@@ -300,7 +300,7 @@ function CatalogFilterSidebar({
         </button>
       </div>
 
-      <div className="mt-5 space-y-5">
+      <div className="mt-6 space-y-6">
         <SelectFilter label="Направление" value={direction} onChange={setDirection} options={FILTER_OPTIONS.directions} />
 
         <div className="space-y-3">
@@ -342,8 +342,8 @@ function CourseCard({ course, index, user, enrollment, onOpenCourse, onPageChang
         </span>
       </div>
 
-      <div className="p-4">
-        <h2 className="line-clamp-2 min-h-[3rem] text-lg font-black leading-6 text-[#111936]">
+      <div className="p-5">
+        <h2 className="line-clamp-2 min-h-[3.25rem] text-xl font-black leading-7 text-[#111936]">
           {course.title}
         </h2>
 
@@ -369,7 +369,7 @@ function CourseCard({ course, index, user, enrollment, onOpenCourse, onPageChang
           )}
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-3">
+        <div className="mt-6 flex items-center justify-between gap-3">
           <div className={`text-base font-black ${isCourseFree(course) ? "text-teal-700" : "text-[#111936]"}`}>
             {formatCoursePrice(course)}
           </div>
@@ -556,8 +556,8 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
   const foundLabel = courses.length ? filteredCourses.length : 1248;
 
   return (
-    <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-[1.6rem] bg-white px-6 py-8 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 md:px-8 lg:px-10">
+    <div className="public-catalog-page space-y-7 md:space-y-8">
+      <section className="relative overflow-hidden rounded-[2rem] bg-white px-7 py-9 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 md:px-10 lg:px-12 lg:py-12">
         <div className="absolute right-0 top-0 hidden h-full w-[36%] bg-gradient-to-l from-blue-50 to-transparent lg:block" />
         <div className="relative">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
@@ -565,16 +565,16 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
             <span>›</span>
             <span>Программы</span>
           </div>
-          <h1 className="mt-4 text-4xl font-black tracking-[0.06em] text-[#111936] md:text-5xl">
+          <h1 className="mt-5 text-5xl font-black tracking-[0.06em] text-[#111936] md:text-6xl">
             Каталог программ
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
+          <p className="mt-5 max-w-4xl text-base leading-7 text-slate-600 md:text-lg md:leading-8">
             Выберите программу и начните обучение уже сегодня. В каталоге представлено {courses.length ? courses.length : "1 248"} программ по различным направлениям.
           </p>
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
         <CatalogFilterSidebar
           direction={direction}
           setDirection={setDirection}
@@ -593,7 +593,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
           resetFilters={resetFilters}
         />
 
-        <section className="portal-card p-4 md:p-5">
+        <section className="portal-card p-5 md:p-6 xl:p-7">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <label className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 ring-0 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
               <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
@@ -602,7 +602,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Поиск по названию программы или ключевому слову..."
-                className="min-w-0 flex-1 border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+                className="min-w-0 flex-1 border-0 bg-transparent text-base font-semibold text-slate-900 outline-none placeholder:text-slate-400"
               />
             </label>
 
@@ -671,7 +671,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
               <CatalogEmptyState resetFilters={resetFilters} onPageChange={onPageChange} />
             </div>
           ) : (
-            <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-7 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {filteredCourses.slice(0, 6).map((course, index) => {
                 const enrollment = getCourseEnrollment(course, enrollmentMap);
 

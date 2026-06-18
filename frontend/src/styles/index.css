@@ -368,3 +368,47 @@ summary::-webkit-details-marker {
     gap: 16px;
   }
 }
+
+
+/* Stage 4 public design scaling: closer to wide EdTech mockups. */
+@layer components {
+  .portal-container {
+    @apply max-w-[1540px] px-5 md:px-8 lg:px-10 2xl:px-12;
+  }
+
+  .public-home-page,
+  .public-catalog-page {
+    @apply mx-auto w-full max-w-[1380px];
+  }
+
+  .public-home-page .portal-card,
+  .public-catalog-page .portal-card {
+    @apply shadow-[0_14px_36px_rgba(17,25,54,0.055)];
+  }
+}
+
+.public-home-page .program-art,
+.public-catalog-page .program-art {
+  min-height: 142px;
+}
+
+.public-home-page .portal-chip,
+.public-catalog-page .portal-chip,
+.public-home-page .portal-muted-chip,
+.public-catalog-page .portal-muted-chip {
+  min-height: 30px;
+}
+
+@media (min-width: 1280px) {
+  .public-home-page .program-art,
+  .public-catalog-page .program-art {
+    min-height: 154px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .public-home-page .program-art,
+  .public-catalog-page .program-art {
+    min-height: 164px;
+  }
+}
