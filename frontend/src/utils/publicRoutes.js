@@ -205,3 +205,8 @@ export function getPublicRoutesMetaDiagnostics() {
     ok: duplicatedPaths.length === 0 && brokenMetaCases.length === 0,
   };
 }
+
+
+// Smoke guard for legacy public route checks:
+// if (pathname === "/catalog") return "catalog";
+// if (pathname === "/catalog")
