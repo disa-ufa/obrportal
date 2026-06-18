@@ -4490,6 +4490,55 @@ export function AdminCoursesPage() {
         </div>
       </SectionCard>
 
+      <SectionCard
+        title="Структура программ"
+        subtitle="Основной рабочий вид: программа раскрывает модули, модуль раскрывает уроки, урок открывает превью и переход в Lesson Studio."
+      >
+        <CourseStructureTree
+          courses={courses}
+          loading={loading}
+          hasActiveFilters={hasActiveFilters}
+          onResetFilters={handleResetFilter}
+          courseModulesByCourseId={courseModulesByCourseId}
+          courseLessonsByModuleId={courseLessonsByModuleId}
+          lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
+          lessonEditFormsByLessonId={lessonEditFormsByLessonId}
+          editingLessonId={editingLessonId}
+          lessonCreatingModuleId={lessonCreatingModuleId}
+          lessonActionId={lessonActionId}
+          moduleCreateFormsByCourseId={moduleCreateFormsByCourseId}
+          moduleEditFormsByModuleId={moduleEditFormsByModuleId}
+          editingModuleId={editingModuleId}
+          moduleCreatingCourseId={moduleCreatingCourseId}
+          moduleActionId={moduleActionId}
+          editingCourseId={editingCourseId}
+          actionCourseId={actionCourseId}
+          editForm={editForm}
+          onEditFieldChange={updateEditField}
+          onStartEdit={handleStartEdit}
+          onEditSubmit={handleEditSubmit}
+          onCancelEdit={resetEditState}
+          onToggleActive={handleToggleActive}
+          onDelete={handleDelete}
+          onModuleCreateFieldChange={updateModuleCreateField}
+          onModuleCreateSubmit={handleModuleCreateSubmit}
+          onModuleCreateReset={resetModuleCreateForm}
+          onModuleEditStart={handleModuleEditStart}
+          onModuleEditFieldChange={updateModuleEditField}
+          onModuleEditSubmit={handleModuleEditSubmit}
+          onModuleEditCancel={resetModuleEditState}
+          onModuleDelete={handleModuleDelete}
+          onLessonCreateFieldChange={updateLessonCreateField}
+          onLessonCreateSubmit={handleLessonCreateSubmit}
+          onLessonCreateReset={resetLessonCreateForm}
+          onLessonEditStart={handleLessonEditStart}
+          onLessonEditFieldChange={updateLessonEditField}
+          onLessonEditSubmit={handleLessonEditSubmit}
+          onLessonEditCancel={resetLessonEditState}
+          onLessonDelete={handleLessonDelete}
+        />
+      </SectionCard>
+
       <details
         data-testid="admin-courses-legacy-tools"
         className="rounded-3xl bg-white p-4 ring-1 ring-slate-200"
