@@ -1153,7 +1153,7 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
-    if 'mx-auto w-full max-w-6xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100 sm:px-9 lg:px-12' in lesson_studio_source:
+    if 'mx-auto max-w-3xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6' in lesson_studio_source:
         print("Lesson Studio preview canvas is still too narrow")
         raise SystemExit(1)
 
