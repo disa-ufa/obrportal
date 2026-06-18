@@ -20,6 +20,13 @@ def main():
         'data-testid={`admin-course-tree-module-create-${course.id}`}',
         'data-testid={`admin-course-tree-lesson-create-${module.id}`}',
         'Редактировать в Lesson Studio',
+        'border border-dashed border-blue-200',
+        'Действия урока',
+        'Действия модуля',
+        'Действия программы',
+        'data-testid={`admin-course-tree-lesson-actions-${lesson.id}`}',
+        'data-testid={`admin-course-tree-module-actions-${module.id}`}',
+        'data-testid={`admin-course-tree-course-actions-${course.id}`}',
     ]
 
     missing = [fragment for fragment in required_fragments if fragment not in source]
