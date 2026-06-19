@@ -2739,61 +2739,80 @@ function LessonStudioInspector({
                   data-testid="lesson-studio-text-block-settings"
                   className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-black text-slate-950">
                         Настройки блока
                       </div>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
-                        Заголовок, обязательность и видимость блока для обучающихся.
+                        Название, обязательность и видимость блока для обучающихся.
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_18rem_18rem]">
-                    <label className="block rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200" data-testid="lesson-studio-inspector-title-field">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_17rem_17rem]">
+                    <label
+                      className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+                      data-testid="lesson-studio-inspector-title-field"
+                    >
+                      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
                         Название блока
                       </span>
                       <input
                         value={form.title}
                         onChange={(event) => handleFieldChange("title", event.target.value)}
                         placeholder="Название блока"
-                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                       />
                     </label>
 
-                    <label className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700 ring-1 ring-slate-200">
-                      <span>
-                        <span className="block font-bold text-slate-900">Обязательный</span>
+                    <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+                      form.is_required
+                        ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+                        : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+                    }`}>
+                      <span className="min-w-0">
+                        <span className="block font-bold text-slate-950">Обязательный</span>
                         <span className="mt-1 block text-xs leading-5 text-slate-500">
                           Обучающийся должен пройти этот блок.
                         </span>
                       </span>
-                      <input
-                        type="checkbox"
-                        checked={form.is_required}
-                        onChange={(event) => handleFieldChange("is_required", event.target.checked)}
-                        className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
+
+                      <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+                        <input
+                          type="checkbox"
+                          checked={form.is_required}
+                          onChange={(event) => handleFieldChange("is_required", event.target.checked)}
+                          className="peer sr-only"
+                        />
+                        <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+                      </span>
                     </label>
 
                     <label
                       data-testid="lesson-studio-inspector-section-publication"
-                      className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700 ring-1 ring-slate-200"
+                      className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+                        form.is_active
+                          ? "bg-emerald-50/70 text-emerald-900 ring-emerald-200"
+                          : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+                      }`}
                     >
-                      <span>
-                        <span className="block font-bold text-slate-900">Показывать в уроке</span>
+                      <span className="min-w-0">
+                        <span className="block font-bold text-slate-950">Показывать в уроке</span>
                         <span className="mt-1 block text-xs leading-5 text-slate-500">
                           Блок будет виден обучающимся.
                         </span>
                       </span>
-                      <input
-                        type="checkbox"
-                        checked={form.is_active}
-                        onChange={(event) => handleFieldChange("is_active", event.target.checked)}
-                        className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
+
+                      <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-emerald-600">
+                        <input
+                          type="checkbox"
+                          checked={form.is_active}
+                          onChange={(event) => handleFieldChange("is_active", event.target.checked)}
+                          className="peer sr-only"
+                        />
+                        <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+                      </span>
                     </label>
                   </div>
                 </section>
