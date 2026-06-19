@@ -2519,13 +2519,6 @@ function LessonStudioInspector({
     ["Обязательный", lesson?.is_required ? "Да" : "Нет"],
   ];
 
-  const blockFacts = selectedBlock
-    ? [
-        ["ID блока", selectedBlock.id || "—"],
-        ["Тип блока", getLessonBlockTypeLabel(selectedBlock.block_type)],
-        ["Позиция", selectedBlock.position || "—"],
-      ]
-    : [];
 
   const handleFieldChange = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -2965,7 +2958,7 @@ function LessonStudioInspector({
 
 <div
               data-testid="lesson-studio-inspector-save-bar"
-              className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/95 p-3 shadow-sm ring-1 ring-slate-200 backdrop-blur"
+              className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white/95 p-3 shadow-sm ring-1 ring-slate-200 backdrop-blur"
             >
               {inlineMode && onClose ? (
                 <button
@@ -2975,7 +2968,7 @@ function LessonStudioInspector({
                     event.stopPropagation();
                     onClose();
                   }}
-                  className="rounded-xl bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white"
+                  className="rounded-xl bg-slate-50 px-5 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white hover:text-slate-950"
                 >
                   Отмена
                 </button>
@@ -2984,41 +2977,12 @@ function LessonStudioInspector({
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-xl bg-blue-700 px-8 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-w-[132px] rounded-xl bg-blue-700 px-8 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving
-                  ? "Сохраняем..."
-                  : hasUnsavedChanges
-                    ? "Сохранить изменения"
-                    : "Сохранить"}
+                {saving ? "Сохраняем..." : "Сохранить"}
               </button>
             </div>
           </form>
-
-          <details
-            data-testid="lesson-studio-inspector-service-info"
-            className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
-          >
-            <summary className="cursor-pointer text-xs font-bold uppercase tracking-wide text-slate-500">
-              Служебная информация
-            </summary>
-
-            <div className="mt-3 space-y-2">
-              {blockFacts.map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-2xl bg-white p-3 ring-1 ring-slate-200"
-                >
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {label}
-                  </div>
-                  <div className="mt-1 break-words text-sm font-semibold text-slate-900">
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </details>
         </>
       ) : (
         <div className="mt-4 space-y-2">
