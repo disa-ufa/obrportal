@@ -1129,7 +1129,8 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
               Конструктор урока
             </h1>
 
-            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-black text-green-700 ring-1 ring-green-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+              <span aria-hidden="true" className="text-emerald-500/70">&#10003;</span>
               Черновик сохранён
             </span>
 

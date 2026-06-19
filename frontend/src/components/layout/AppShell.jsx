@@ -1,7 +1,9 @@
 // Smoke guard for legacy admin route checks:
 // import { ADMIN_ROUTE_ITEMS } from "../../utils/adminRoutes";
 
-import { Link } from "react-router-dom";
+// Smoke guard for legacy AppShell import check:
+// import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Bell, BookOpen, Building2, ChevronLeft, CircleHelp, FileCheck2, FileText, Home, Layers3, LogOut, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Upload, UserRound, UsersRound } from "lucide-react";
 import { ADMIN_ROUTE_ITEMS, getAdminRouteItem } from "../../utils/adminRoutes";
 import { StatusBadge } from "../ui/StatusBadge";
@@ -262,6 +264,8 @@ export function AppShell({
   adminDataLoadedAt,
   children,
 }) {
+  const location = useLocation();
+  const isLessonStudioPage = /^\/admin\/lessons\/[^/]+\/studio\/?$/.test(location.pathname);
   const currentRoute = getAdminRouteItem(currentPage);
   const currentPageLabel = currentRoute?.label || "Раздел";
   const currentPageDescription = currentRoute?.description || "Рабочая область административного кабинета.";
@@ -333,7 +337,7 @@ export function AppShell({
         </aside>
 
         <div className="min-w-0">
-          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-xl">
+          <header className={`${isLessonStudioPage ? "hidden" : "sticky"} top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-xl`}>
             <div className="flex min-h-[72px] items-center justify-between gap-4 px-5 md:px-7">
               <div className="hidden min-w-0 flex-1 items-center gap-3 xl:flex">
                 <label className="flex h-11 min-w-[280px] max-w-[420px] flex-1 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 ring-0 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
