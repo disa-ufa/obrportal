@@ -562,6 +562,223 @@ function LessonRichTextSafePreview({ block, preview, learnerMode = false }) {
 }
 
 
+
+function isLessonFileLinkBlock(block) {
+  const type = `${block?.block_type || ""}`.toLowerCase();
+
+  return type === "file_link" || type === "file" || type === "link";
+}
+
+function getFileLinkBlockContent(block) {
+  return safeParseJson(block?.content_json);
+}
+
+function getFileLinkBlockUrl(block) {
+  const content = getFileLinkBlockContent(block);
+
+  return `${content.url || content.content_url || content.file_url || content.href || content.link || ""}`.trim();
+}
+
+function getFileLinkHostLabel(value) {
+  const source = `${value || ""}`.trim();
+
+  if (!source) return "—";
+  if (source.startsWith("/") || source.startsWith("#")) return "Внутренняя ссылка";
+
+  try {
+    const url = new URL(source);
+    return url.hostname.replace(/^www\./, "") || "Ссылка";
+  } catch {
+    return "Ссылка";
+  }
+}
+
+function getFileLinkKindMeta(value) {
+  const source = `${value || ""}`.trim();
+  const lowerSource = source.split("?")[0].split("#")[0].toLowerCase();
+
+  if (lowerSource.endsWith(".pdf")) {
+    return {
+      icon: "PDF",
+      label: "PDF-документ",
+      hint: "Документ для чтения или скачивания",
+      tone: "red",
+    };
+  }
+
+  if (lowerSource.endsWith(".doc") || lowerSource.endsWith(".docx")) {
+    return {
+      icon: "DOC",
+      label: "Документ Word",
+      hint: "Текстовый учебный материал",
+      tone: "blue",
+    };
+  }
+
+  if (lowerSource.endsWith(".ppt") || lowerSource.endsWith(".pptx")) {
+    return {
+      icon: "PPT",
+      label: "Презентация",
+      hint: "Слайды или демонстрационный материал",
+      tone: "amber",
+    };
+  }
+
+  if (lowerSource.endsWith(".xls") || lowerSource.endsWith(".xlsx")) {
+    return {
+      icon: "XLS",
+      label: "Таблица",
+      hint: "Табличный материал или форма",
+      tone: "green",
+    };
+  }
+
+  if (/\.(png|jpe?g|webp|gif|svg)$/i.test(lowerSource)) {
+    return {
+      icon: "IMG",
+      label: "Изображение",
+      hint: "Графический материал",
+      tone: "violet",
+    };
+  }
+
+  if (/\.(zip|rar|7z)$/i.test(lowerSource)) {
+    return {
+      icon: "ZIP",
+      label: "Архив",
+      hint: "Набор файлов для скачивания",
+      tone: "slate",
+    };
+  }
+
+  try {
+    const url = new URL(source);
+    const host = url.hostname.replace(/^www\./, "");
+
+    if (host.includes("disk.yandex") || host.includes("drive.google") || host.includes("docs.google")) {
+      return {
+        icon: "☁",
+        label: "Облачный материал",
+        hint: "Файл или документ во внешнем хранилище",
+        tone: "blue",
+      };
+    }
+  } catch {
+    // ignore
+  }
+
+  return {
+    icon: "↗",
+    label: "Внешняя ссылка",
+    hint: "Материал откроется по ссылке",
+    tone: "blue",
+  };
+}
+
+function getFileLinkKindToneClass(tone) {
+  const classes = {
+    red: "bg-red-50 text-red-700 ring-red-200",
+    blue: "bg-blue-50 text-blue-700 ring-blue-200",
+    amber: "bg-amber-50 text-amber-800 ring-amber-200",
+    green: "bg-green-50 text-green-700 ring-green-200",
+    violet: "bg-violet-50 text-violet-700 ring-violet-200",
+    slate: "bg-slate-50 text-slate-700 ring-slate-200",
+  };
+
+  return classes[tone] || classes.blue;
+}
+
+function LessonFileLinkCanvasPreview({ block, previewValue, learnerMode = false }) {
+  const sourceValue = getFileLinkBlockUrl(block) || `${previewValue || ""}`.trim();
+  const safeHref = getSafeLessonRichTextHref(sourceValue);
+  const ready = Boolean(safeHref);
+  const title = `${block?.title || "Файл или ссылка"}`.trim() || "Файл или ссылка";
+  const kind = getFileLinkKindMeta(sourceValue);
+  const hostLabel = getFileLinkHostLabel(sourceValue);
+
+  return (
+    <div
+      data-testid="lesson-studio-file-link-preview"
+      className={
+        learnerMode
+          ? "mt-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+          : "mt-4 rounded-2xl bg-white/90 p-4 shadow-sm ring-1 ring-black/5"
+      }
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-4">
+          <div
+            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-sm font-black shadow-sm ring-1 ${getFileLinkKindToneClass(kind.tone)}`}
+          >
+            {kind.icon}
+          </div>
+
+          <div className="min-w-0">
+            <div className="text-base font-black text-slate-950">
+              {title}
+            </div>
+            <div className="mt-1 text-sm font-semibold text-slate-600">
+              {ready ? kind.label : "Материал не настроен"}
+            </div>
+            <div className="mt-1 max-w-3xl break-words text-xs leading-5 text-slate-500">
+              {ready ? sourceValue : "Добавьте ссылку на файл, облачный документ или внешний ресурс."}
+            </div>
+          </div>
+        </div>
+
+        {ready ? (
+          <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+            ✓ Материал готов
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            Требуется ссылка
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+        {[
+          ["Тип материала", ready ? kind.label : "—"],
+          ["Источник", ready ? hostLabel : "—"],
+          ["Описание", ready ? kind.hint : "Ссылка пока не добавлена"],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="grid grid-cols-[11rem_minmax(0,1fr)] border-b border-slate-100 px-4 py-3 last:border-b-0"
+          >
+            <div className="text-sm font-semibold text-slate-500">{label}</div>
+            <div className="break-words text-sm font-semibold text-slate-800">{value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-xs leading-5 text-slate-500">
+          Материал откроется в новой вкладке. Проверьте, что у обучающихся есть доступ по ссылке.
+        </div>
+
+        {ready ? (
+          <a
+            href={safeHref}
+            target={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "_blank"}
+            rel={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "noreferrer"}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
+          >
+            Открыть материал
+          </a>
+        ) : (
+          <span className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-50 px-5 text-sm font-bold text-slate-400 ring-1 ring-slate-200">
+            Открыть материал
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 function LessonVideoCanvasPreview({ block, previewValue, learnerMode = false }) {
   const content = getVideoBlockContent(block);
   const sourceValue = getVideoBlockSourceValue(block) || previewValue;
@@ -698,27 +915,11 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
           learnerMode={learnerMode}
         />
       ) : type === "file_link" || type === "file" || type === "link" ? (
-        <div
-          data-testid="lesson-studio-link-preview"
-          className={
-            learnerMode
-              ? "mt-5 rounded-3xl bg-blue-50 p-5 ring-1 ring-blue-100"
-              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
-          }
-        >
-          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-bold"}>
-            Открыть материал
-          </div>
-          <div
-            className={
-              learnerMode
-                ? "mt-2 break-words text-sm leading-6 text-blue-800"
-                : "mt-1 break-words text-xs opacity-80"
-            }
-          >
-            {previewValue}
-          </div>
-        </div>
+        <LessonFileLinkCanvasPreview
+          block={block}
+          previewValue={previewValue}
+          learnerMode={learnerMode}
+        />
       ) : type === "quiz" ? (
         <div
           data-testid="lesson-studio-quiz-preview"
@@ -1773,6 +1974,8 @@ function LessonCanvasBlock({
   const blockTypeLabel = getLessonBlockTypeLabel(block.block_type);
   const compactBlockType = `${block?.block_type || "rich_text"}`.toLowerCase();
   const isCompactVideo = compactBlockType === "video";
+  const isCompactFileLink =
+    compactBlockType === "file_link" || compactBlockType === "file" || compactBlockType === "link";
   const compactPreviewLines = `${preview || ""}`
     .split(/\n+/)
     .map((line) => line.trim())
@@ -1914,11 +2117,17 @@ function LessonCanvasBlock({
 
       {compact ? (
         <div
-          className={isCompactVideo ? "mt-5 w-full" : "mt-5 max-w-4xl"}
+          className={isCompactVideo || isCompactFileLink ? "mt-5 w-full" : "mt-5 max-w-4xl"}
           data-testid="lesson-studio-block-compact-summary"
         >
           {isCompactVideo ? (
             <LessonVideoCanvasPreview
+              block={block}
+              previewValue={compactSummary}
+              learnerMode={false}
+            />
+          ) : isCompactFileLink ? (
+            <LessonFileLinkCanvasPreview
               block={block}
               previewValue={compactSummary}
               learnerMode={false}
@@ -2767,6 +2976,191 @@ function LessonStudioVideoBlockEditor({ form, saving, onFieldChange }) {
 }
 
 
+
+function LessonStudioFileLinkBlockEditor({ form, saving, onFieldChange }) {
+  const materialUrl = `${form.content_text || ""}`;
+  const draftBlock = {
+    block_type: "file_link",
+    title: form.title || "Файл или ссылка",
+    content_json: {
+      url: materialUrl,
+      content_url: materialUrl,
+    },
+    is_required: form.is_required,
+    is_active: form.is_active,
+  };
+  const safeHref = getSafeLessonRichTextHref(materialUrl);
+  const ready = Boolean(safeHref);
+  const kind = getFileLinkKindMeta(materialUrl);
+
+  return (
+    <>
+      <section
+        data-testid="lesson-studio-inspector-section-content"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">Материал</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Добавьте ссылку на файл, презентацию, облачный документ или внешний ресурс.
+            </p>
+          </div>
+
+          {ready ? (
+            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+              ✓ Материал готов
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+              Требуется ссылка
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4" data-testid="lesson-studio-inspector-content-field">
+          <label className="block">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              Ссылка на материал
+            </span>
+
+            <div className="mt-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_11rem]">
+              <input
+                type="text"
+                value={materialUrl}
+                onChange={(event) => onFieldChange("content_text", event.target.value)}
+                placeholder="https://... или ссылка на PDF/презентацию"
+                disabled={saving}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+
+              {ready ? (
+                <a
+                  href={safeHref}
+                  target={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "_blank"}
+                  rel={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "noreferrer"}
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                >
+                  Проверить
+                </a>
+              ) : (
+                <span className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-50 px-4 text-sm font-bold text-slate-400 ring-1 ring-slate-200">
+                  Проверить
+                </span>
+              )}
+            </div>
+          </label>
+
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Подойдут ссылки на PDF, Word, презентации, таблицы, Яндекс.Диск, Google Drive и другие открытые материалы.
+          </p>
+        </div>
+      </section>
+
+      <section
+        data-testid="lesson-studio-file-link-preview-editor"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">Предпросмотр</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Так материал будет выглядеть на полотне урока.
+            </p>
+          </div>
+
+          {ready ? (
+            <span className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getFileLinkKindToneClass(kind.tone)}`}>
+              {kind.label}
+            </span>
+          ) : null}
+        </div>
+
+        <LessonFileLinkCanvasPreview
+          block={draftBlock}
+          previewValue={materialUrl}
+          learnerMode={false}
+        />
+      </section>
+
+      <section
+        data-testid="lesson-studio-inspector-section-publication"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="text-lg font-black text-slate-950">Настройки блока</div>
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          Заголовок, обязательность и видимость материала для обучающихся.
+        </p>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_17rem_17rem]">
+          <label
+            className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+            data-testid="lesson-studio-inspector-title-field"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              Название блока
+            </span>
+            <input
+              value={form.title}
+              onChange={(event) => onFieldChange("title", event.target.value)}
+              placeholder="Файл или ссылка"
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_required
+              ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Обязательный</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Обучающийся должен открыть этот материал.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+              <input
+                type="checkbox"
+                checked={form.is_required}
+                onChange={(event) => onFieldChange("is_required", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_active
+              ? "bg-emerald-50/70 text-emerald-900 ring-emerald-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Показывать в уроке</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Блок будет виден обучающимся.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-emerald-600">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(event) => onFieldChange("is_active", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+        </div>
+      </section>
+    </>
+  );
+}
+
+
 function getInspectorContentText(block) {
   const content = safeParseJson(block?.content_json);
   const settings = safeParseJson(block?.settings_json);
@@ -3000,8 +3394,9 @@ function buildInspectorBlockPayload(block, values) {
     contentJson.embed_code = sourceType === "embed" ? embedCode : "";
     contentJson.video_embed_code = sourceType === "embed" ? embedCode : "";
     contentJson.allow_fullscreen = values.allow_fullscreen !== false;
-  } else if (type === "file_link") {
+  } else if (type === "file_link" || type === "file" || type === "link") {
     contentJson.url = contentText;
+    contentJson.content_url = contentText;
   } else if (type === "quiz") {
     contentJson.question = contentText;
   } else if (type === "assignment") {
@@ -3453,6 +3848,12 @@ function LessonStudioInspector({
               </>
             ) : isLessonVideoBlock(selectedBlock) ? (
               <LessonStudioVideoBlockEditor
+                form={form}
+                saving={saving}
+                onFieldChange={handleFieldChange}
+              />
+            ) : isLessonFileLinkBlock(selectedBlock) ? (
+              <LessonStudioFileLinkBlockEditor
                 form={form}
                 saving={saving}
                 onFieldChange={handleFieldChange}
