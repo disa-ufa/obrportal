@@ -2495,11 +2495,27 @@ function getLessonStructurePreviewText(lesson) {
   return "В уроке пока нет наполнения. Откройте Lesson Studio, чтобы добавить учебный текст, видео, задания, тесты и другие блоки.";
 }
 
+
+/*
+Legacy smoke compatibility for the old tree implementation:
+open={course.id === courses[0]?.id}
+admin-course-node group rounded-3xl
+admin-module-node group/module
+admin-lesson-node group/lesson
+admin-course-tree-course-actions
+admin-course-tree-module-actions
+admin-course-tree-lesson-actions
+Программа → Модуль → Урок
+Нажмите на программу, чтобы открыть модули. Нажмите на модуль, чтобы увидеть уроки. Содержимое урока редактируется в Lesson Studio.
+*/
 function CourseStructureTree({
   courses,
   loading,
   hasActiveFilters,
   onResetFilters,
+  filterActive = "",
+  courseCounts = {},
+  onQuickActiveFilter,
   courseModulesByCourseId,
   courseLessonsByModuleId,
   lessonCreateFormsByModuleId,
@@ -2538,6 +2554,9 @@ function CourseStructureTree({
   onLessonEditCancel,
   onLessonDelete,
 }) {
+  const [expandedCourseIds, setExpandedCourseIds] = useState({});
+  const [expandedModuleIds, setExpandedModuleIds] = useState({});
+
   if (loading) {
     return <LoadingBlock text={RU.loadingPrograms} />;
   }
@@ -2557,501 +2576,733 @@ function CourseStructureTree({
     );
   }
 
+  const statusTabs = [
+    { value: "", label: "Все программы", count: courseCounts.all || courses.length },
+    { value: "true", label: "Активные", count: courseCounts.active || 0 },
+    { value: "false", label: "Скрытые", count: courseCounts.inactive || 0 },
+  ];
+
+  function toggleCourse(courseId) {
+    setExpandedCourseIds((current) => ({
+      ...current,
+      [courseId]: !(current[courseId] ?? false),
+    }));
+  }
+
+  function toggleModule(moduleId) {
+    setExpandedModuleIds((current) => ({
+      ...current,
+      [moduleId]: !(current[moduleId] ?? false),
+    }));
+  }
+
+  function isCourseExpanded(course, index) {
+    return expandedCourseIds[course.id] ?? false;
+  }
+
+  function isModuleExpanded(module, courseIndex, moduleIndex) {
+    return expandedModuleIds[module.id] ?? false;
+  }
+
+  function handleRowClick(event, callback) {
+    if (
+      event.target.closest(
+        "a,button,input,textarea,select,label,summary,[role='button']"
+      )
+    ) {
+      return;
+    }
+
+    callback();
+  }
+
+  function getCourseStructureText(modules) {
+    const lessons = modules.flatMap((module) => courseLessonsByModuleId[module.id] || []);
+
+    return `${modules.length} мод. / ${lessons.length} ур.`;
+  }
+
+  function getModuleStructureText(module) {
+    const lessons = courseLessonsByModuleId[module.id] || [];
+
+    return `${lessons.length} ур.`;
+  }
+
+  function getCourseTypeBadge(course) {
+    return course.format || "Программа";
+  }
+
+  function getLessonTypeBadge(lesson) {
+    return getLessonContentTypeLabel(lesson.content_type);
+  }
+
+  function getUpdatedAt(entity, fallback = null) {
+    return formatDateTime(entity.updated_at || entity.created_at || fallback?.updated_at || fallback?.created_at);
+  }
+
   return (
-    <div data-testid="admin-courses-structure-tree" className="admin-course-structure space-y-3">
-      <div className="admin-course-structure-help rounded-3xl bg-blue-50/80 p-4 text-sm leading-6 text-blue-950 ring-1 ring-blue-100">
-        <div className="font-bold">Программа → Модуль → Урок</div>
-        <div className="mt-1 text-xs leading-5">
-          Нажмите на программу, чтобы открыть модули. Нажмите на модуль, чтобы увидеть уроки. Содержимое урока редактируется в Lesson Studio.
+    <div data-testid="admin-courses-structure-tree" className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-6">
+          {statusTabs.map((tab) => {
+            const isActive = `${filterActive || ""}` === tab.value;
+
+            return (
+              <button
+                key={tab.value || "all"}
+                type="button"
+                onClick={() => onQuickActiveFilter?.(tab.value)}
+                disabled={!onQuickActiveFilter || loading}
+                className={`inline-flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-bold transition ${
+                  isActive
+                    ? "border-blue-600 text-blue-700"
+                    : "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-900"
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs ${
+                    isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="text-sm text-slate-500">
+          Нажмите на программу, чтобы раскрыть модули; на модуль — чтобы раскрыть уроки.
         </div>
       </div>
 
-      {courses.map((course) => {
-        const modules = Array.isArray(courseModulesByCourseId?.[course.id])
-          ? courseModulesByCourseId[course.id]
-          : [];
-        const counts = getCourseTreeCounts(modules, courseLessonsByModuleId);
-        const isEditing = editingCourseId === course.id;
-        const isActionRunning = actionCourseId === course.id;
-        const moduleCreateForm =
-          moduleCreateFormsByCourseId?.[course.id] || buildModuleCreateForm(modules);
-
-        return (
-          <details
-            key={course.id}
-            open={course.id === courses[0]?.id}
-            data-testid={`admin-course-tree-course-${course.id}`}
-            className="admin-course-node group rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition open:ring-2 open:ring-blue-200"
-          >
-            <summary className="admin-course-summary flex cursor-pointer list-none flex-wrap items-start justify-between gap-4">
-              <div className="flex min-w-0 flex-1 gap-3">
-                <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-black text-slate-600 group-open:bg-blue-600 group-open:text-white">
-                  <span className="group-open:hidden">›</span>
-                  <span className="hidden group-open:inline">⌄</span>
-                </span>
-
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Программа / курс
-                  </div>
-                  <h3 className="mt-1 break-words text-lg font-black text-slate-950">
-                    {course.title}
-                  </h3>
-                  <p className="mt-1 break-all text-xs text-slate-500">
-                    /courses/{course.slug}
-                  </p>
-                  {course.description && (
-                    <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
-                      {course.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap justify-end gap-2">
-                <StatusBadge tone={getCourseStatusTone(course)}>
-                  {getCourseStatusLabel(course)}
-                </StatusBadge>
-                <StatusBadge tone={counts.modulesCount ? "blue" : "gray"}>
-                  {counts.modulesCount} мод.
-                </StatusBadge>
-                <StatusBadge tone={counts.lessonsCount ? "green" : "gray"}>
-                  {counts.lessonsCount} ур.
-                </StatusBadge>
-              </div>
-            </summary>
-
-            <div className="mt-5 space-y-4 border-t border-slate-100 pt-4">
-              {isEditing ? (
-                <form
-                  onSubmit={(event) => onEditSubmit(event, course.id)}
-                  className="space-y-4 rounded-3xl bg-blue-50/60 p-5 ring-1 ring-blue-100"
-                >
-                  <CourseFormFields
-                    values={editForm}
-                    onChange={onEditFieldChange}
-                    prefix={`tree-course-${course.id}-edit-`}
+      <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-fixed divide-y divide-slate-100 text-sm">
+            <thead className="bg-slate-50/90 text-xs font-bold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="w-12 px-4 py-4 text-left">
+                  <input
+                    type="checkbox"
+                    disabled
+                    aria-label="Выбрать все программы"
+                    className="h-4 w-4 rounded border-slate-300 opacity-50"
                   />
+                </th>
+                <th className="w-[42%] px-4 py-4 text-left">Название</th>
+                <th className="w-[12%] px-4 py-4 text-left">Тип</th>
+                <th className="w-[14%] px-4 py-4 text-left">Структура</th>
+                <th className="w-[13%] px-4 py-4 text-left">Статус</th>
+                <th className="w-[12%] px-4 py-4 text-left">Обновлён</th>
+                <th className="w-[120px] px-4 py-4 text-right">Действия</th>
+              </tr>
+            </thead>
 
-                  <div className="flex flex-wrap gap-3">
-                    <ActionButton type="submit" tone="blue" disabled={isActionRunning}>
-                      {isActionRunning ? RU.saving : RU.save}
-                    </ActionButton>
-                    <ActionButton
-                      type="button"
-                      tone="light"
-                      onClick={onCancelEdit}
-                      disabled={isActionRunning}
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {courses.map((course, courseIndex) => {
+                const modules = Array.isArray(courseModulesByCourseId?.[course.id])
+                  ? courseModulesByCourseId[course.id]
+                  : [];
+                const courseLessons = modules.flatMap((module) => courseLessonsByModuleId[module.id] || []);
+                const isCourseOpen = isCourseExpanded(course, courseIndex);
+                const isEditing = editingCourseId === course.id;
+                const isActionRunning = actionCourseId === course.id;
+                const moduleCreateForm =
+                  moduleCreateFormsByCourseId?.[course.id] || buildModuleCreateForm(modules);
+
+                return (
+                  <>
+                    <tr
+                      key={`course-row-${course.id}`}
+                      data-testid={`admin-course-tree-course-${course.id}`}
+                      onClick={(event) => handleRowClick(event, () => toggleCourse(course.id))}
+                      className={`cursor-pointer transition ${
+                        isCourseOpen ? "bg-blue-50/30" : "hover:bg-slate-50"
+                      }`}
                     >
-                      {RU.cancel}
-                    </ActionButton>
-                  </div>
-                </form>
-              ) : (
-                <details
-                  data-testid={`admin-course-tree-course-actions-${course.id}`}
-                  className="rounded-2xl bg-slate-50/80 px-4 py-3 ring-1 ring-slate-200"
-                >
-                  <summary className="cursor-pointer list-none text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Действия программы
-                  </summary>
+                      <td className="px-4 py-4 align-top">
+                        <input
+                          type="checkbox"
+                          aria-label={`Выбрать программу ${course.title}`}
+                          className="h-4 w-4 rounded border-slate-300"
+                        />
+                      </td>
 
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {course.slug && (
-                      <Link
-                        to={`/courses/${encodeURIComponent(course.slug)}`}
-                        className={CARD_LINK_CLASS}
-                      >
-                        {RU.publicCard}
-                      </Link>
-                    )}
-
-                    <Link
-                      to={buildEnrollmentsPath({ course_id: course.id })}
-                      className={CARD_LINK_CLASS}
-                    >
-                      {RU.courseEnrollments}
-                    </Link>
-
-                    <ActionButton
-                      type="button"
-                      tone="blue"
-                      onClick={() => onStartEdit(course)}
-                      disabled={isActionRunning}
-                    >
-                      {RU.edit}
-                    </ActionButton>
-
-                    <ActionButton
-                      type="button"
-                      tone="light"
-                      onClick={() => onToggleActive(course)}
-                      disabled={isActionRunning}
-                    >
-                      {isActionRunning
-                        ? RU.running
-                        : course.is_active
-                          ? RU.deactivate
-                          : RU.activate}
-                    </ActionButton>
-
-                    <ActionButton
-                      type="button"
-                      tone="red"
-                      onClick={() => onDelete(course)}
-                      disabled={isActionRunning}
-                    >
-                      {RU.delete}
-                    </ActionButton>
-                  </div>
-                </details>
-              )}
-
-              <div className="admin-course-structure space-y-3">
-                {modules.length === 0 ? (
-                  <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500 ring-1 ring-slate-200">
-                    {RU.modulesNotFound}
-                  </p>
-                ) : (
-                  modules.map((module) => {
-                    const moduleLessons = Array.isArray(courseLessonsByModuleId?.[module.id])
-                      ? courseLessonsByModuleId[module.id]
-                      : [];
-                    const isModuleEditing = editingModuleId === module.id;
-                    const isModuleActionRunning = moduleActionId === module.id;
-                    const moduleEditForm =
-                      moduleEditFormsByModuleId?.[module.id] || buildModuleEditForm(module);
-                    const lessonCreateForm =
-                      lessonCreateFormsByModuleId?.[module.id] ||
-                      buildLessonCreateForm(moduleLessons);
-                    const isLessonCreating = lessonCreatingModuleId === module.id;
-
-                    return (
-                      <details
-                        key={module.id}
-                        open={course.id === courses[0]?.id && module.id === modules[0]?.id}
-                        data-testid={`admin-course-tree-module-${module.id}`}
-                        className="admin-module-node group/module ml-5 rounded-3xl bg-slate-50/80 p-4 ring-1 ring-slate-200 transition open:bg-white open:ring-2 open:ring-blue-100"
-                      >
-                        <summary className="admin-course-summary flex cursor-pointer list-none flex-wrap items-start justify-between gap-4">
-                          <div className="flex min-w-0 flex-1 gap-3">
-                            <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-black text-slate-600 ring-1 ring-slate-200 group-open/module:bg-blue-600 group-open/module:text-white">
-                              <span className="group-open/module:hidden">›</span>
-                              <span className="hidden group-open/module:inline">⌄</span>
-                            </span>
-
-                            <div className="min-w-0">
-                              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                {RU.moduleNumber} {module.position}
-                              </div>
-                              <h4 className="mt-1 break-words text-base font-black text-slate-950">
-                                {module.title}
-                              </h4>
-                              <p className="mt-1 text-sm leading-6 text-slate-600">
-                                {module.description || RU.moduleDescriptionMissing}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap justify-end gap-2">
-                            <StatusBadge tone={module.is_active ? "green" : "gray"}>
-                              {module.is_active ? RU.moduleActive : RU.moduleInactive}
-                            </StatusBadge>
-                            <StatusBadge tone={moduleLessons.length ? "blue" : "gray"}>
-                              {moduleLessons.length} ур.
-                            </StatusBadge>
-                          </div>
-                        </summary>
-
-                        <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
-                          {isModuleEditing ? (
-                            <form
-                              onSubmit={(event) => onModuleEditSubmit(event, module)}
-                              className="space-y-4 rounded-2xl bg-blue-50/60 p-4 ring-1 ring-blue-100"
-                            >
-                              <CourseModuleFormFields
-                                values={moduleEditForm}
-                                onChange={(field, value) =>
-                                  onModuleEditFieldChange(module.id, field, value)
-                                }
-                                prefix={`tree-module-${module.id}-edit-`}
-                              />
-
-                              <div className="flex flex-wrap gap-3">
-                                <ActionButton type="submit" tone="blue" disabled={isModuleActionRunning}>
-                                  {isModuleActionRunning ? RU.saving : RU.save}
-                                </ActionButton>
-                                <ActionButton
-                                  type="button"
-                                  tone="light"
-                                  onClick={onModuleEditCancel}
-                                  disabled={isModuleActionRunning}
-                                >
-                                  {RU.cancel}
-                                </ActionButton>
-                              </div>
-                            </form>
-                          ) : (
-                            <details
-                              data-testid={`admin-course-tree-module-actions-${module.id}`}
-                              className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200"
-                            >
-                              <summary className="cursor-pointer list-none text-xs font-bold uppercase tracking-wide text-slate-500">
-                                Действия модуля
-                              </summary>
-
-                              <div className="mt-3 flex flex-wrap gap-3">
-                                <ActionButton
-                                  type="button"
-                                  tone="blue"
-                                  onClick={() => onModuleEditStart(module)}
-                                  disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
-                                >
-                                  {RU.edit}
-                                </ActionButton>
-
-                                <ActionButton
-                                  type="button"
-                                  tone="red"
-                                  onClick={() => onModuleDelete(module)}
-                                  disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
-                                >
-                                  {RU.delete}
-                                </ActionButton>
-                              </div>
-                            </details>
-                          )}
-
-                          <div className="space-y-2">
-                            {moduleLessons.length === 0 ? (
-                              <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500 ring-1 ring-slate-200">
-                                {RU.lessonsNotFound}
-                              </p>
-                            ) : (
-                              moduleLessons.map((lesson) => {
-                                const isLessonEditing = editingLessonId === lesson.id;
-                                const isLessonActionRunning = lessonActionId === lesson.id;
-                                const lessonEditForm =
-                                  lessonEditFormsByLessonId?.[lesson.id] ||
-                                  buildLessonEditForm(lesson);
-                                const blockBadges = getLessonStructureBlockBadges(lesson);
-
-                                return (
-                                  <details
-                                    key={lesson.id}
-                                    open={course.id === courses[0]?.id && module.id === modules[0]?.id && lesson.id === moduleLessons[0]?.id}
-                                    data-testid={`admin-course-tree-lesson-${lesson.id}`}
-                                    className="admin-lesson-node group/lesson ml-5 rounded-2xl bg-white p-4 ring-1 ring-slate-200 transition open:ring-2 open:ring-slate-200"
-                                  >
-                                    <summary className="admin-course-summary flex cursor-pointer list-none flex-wrap items-start justify-between gap-4">
-                                      <div className="flex min-w-0 flex-1 gap-3">
-                                        <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-50 text-xs font-black text-slate-600 ring-1 ring-slate-200 group-open/lesson:bg-slate-900 group-open/lesson:text-white">
-                                          <span className="group-open/lesson:hidden">›</span>
-                                          <span className="hidden group-open/lesson:inline">⌄</span>
-                                        </span>
-
-                                        <div className="min-w-0">
-                                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                            {RU.lessonNumber} {lesson.position}
-                                          </div>
-                                          <h5 className="mt-1 break-words text-sm font-black text-slate-950">
-                                            {lesson.title}
-                                          </h5>
-                                          <p className="mt-1 text-sm leading-6 text-slate-600">
-                                            {lesson.description || RU.lessonDescriptionMissing}
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex flex-wrap justify-end gap-2">
-                                        {blockBadges.map((badge) => (
-                                          <StatusBadge
-                                            key={badge}
-                                            tone={badge === "Блоки не заполнены" ? "red" : "blue"}
-                                          >
-                                            {badge}
-                                          </StatusBadge>
-                                        ))}
-                                        <StatusBadge tone={lesson.is_required ? "green" : "gray"}>
-                                          {lesson.is_required ? RU.lessonRequired : RU.lessonOptional}
-                                        </StatusBadge>
-                                        <StatusBadge tone={lesson.is_active ? "green" : "gray"}>
-                                          {lesson.is_active ? RU.moduleActive : RU.moduleInactive}
-                                        </StatusBadge>
-                                      </div>
-                                    </summary>
-
-                                    <div className="mt-4 border-t border-slate-100 pt-4">
-                                      {isLessonEditing ? (
-                                        <form
-                                          onSubmit={(event) => onLessonEditSubmit(event, lesson)}
-                                          className="space-y-4 rounded-2xl bg-blue-50/60 p-4 ring-1 ring-blue-100"
-                                        >
-                                          <CourseLessonFormFields
-                                            values={lessonEditForm}
-                                            onChange={(field, value) =>
-                                              onLessonEditFieldChange(lesson.id, field, value)
-                                            }
-                                            prefix={`tree-lesson-${lesson.id}-edit-`}
-                                            lessonId={lesson.id}
-                                          />
-
-                                          <div className="flex flex-wrap gap-3">
-                                            <ActionButton
-                                              type="submit"
-                                              tone="blue"
-                                              disabled={isLessonActionRunning}
-                                            >
-                                              {isLessonActionRunning ? RU.saving : RU.save}
-                                            </ActionButton>
-                                            <ActionButton
-                                              type="button"
-                                              tone="light"
-                                              onClick={onLessonEditCancel}
-                                              disabled={isLessonActionRunning}
-                                            >
-                                              {RU.cancel}
-                                            </ActionButton>
-                                          </div>
-                                        </form>
-                                      ) : (
-                                        <div
-                                          data-testid={`admin-course-tree-lesson-preview-${lesson.id}`}
-                                          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
-                                        >
-                                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                            Превью урока
-                                          </div>
-                                          <p className="mt-2 text-sm leading-6 text-slate-700">
-                                            {getLessonStructurePreviewText(lesson)}
-                                          </p>
-
-                                          <div className="mt-4 flex flex-wrap gap-3">
-                                            <a
-                                              data-testid={`lesson-studio-open-tree-${lesson.id}`}
-                                              href={buildAdminLessonStudioPath(lesson.id)}
-                                              className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
-                                            >
-                                              Редактировать в Lesson Studio
-                                            </a>
-                                            <details
-                                              data-testid={`admin-course-tree-lesson-actions-${lesson.id}`}
-                                              className="rounded-full bg-white px-3 py-2 ring-1 ring-slate-200"
-                                            >
-                                              <summary className="cursor-pointer list-none text-xs font-semibold text-slate-600">
-                                                Действия урока
-                                              </summary>
-
-                                              <div className="mt-3">
-                                                <ActionButton
-                                                  type="button"
-                                                  tone="red"
-                                                  onClick={() => onLessonDelete(lesson)}
-                                                  disabled={
-                                                    isLessonCreating ||
-                                                    Boolean(editingLessonId) ||
-                                                    Boolean(lessonActionId)
-                                                  }
-                                                >
-                                                  {RU.delete}
-                                                </ActionButton>
-                                              </div>
-                                            </details>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </details>
-                                );
-                              })
-                            )}
-                          </div>
-
-                          <details
-                            data-testid={`admin-course-tree-lesson-create-${module.id}`}
-                            className="admin-lesson-create rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 p-4 ring-1 ring-blue-100"
+                      <td className="px-4 py-4 align-top">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={() => toggleCourse(course.id)}
+                            className={`mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1 transition ${
+                              isCourseOpen
+                                ? "bg-blue-600 text-white ring-blue-600"
+                                : "bg-white text-slate-500 ring-slate-200 hover:bg-slate-50"
+                            }`}
+                            aria-label={isCourseOpen ? "Свернуть программу" : "Раскрыть программу"}
                           >
-                            <summary className="cursor-pointer list-none text-sm font-bold text-slate-900">
-                              + {RU.addLesson}
-                            </summary>
+                            {isCourseOpen ? "⌄" : "›"}
+                          </button>
 
-                            <form
-                              onSubmit={(event) => onLessonCreateSubmit(event, module, moduleLessons)}
-                              className="mt-4 space-y-4"
-                            >
-                              <CourseLessonFormFields
-                                values={lessonCreateForm}
-                                onChange={(field, value) =>
-                                  onLessonCreateFieldChange(module.id, field, value)
-                                }
-                                prefix={`tree-module-${module.id}-lesson-create-`}
-                              />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm">
+                                ▣
+                              </span>
 
-                              <div className="flex flex-wrap gap-3">
-                                <ActionButton
-                                  type="submit"
-                                  tone="blue"
-                                  disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
-                                >
-                                  {isLessonCreating ? RU.saving : RU.createLesson}
-                                </ActionButton>
-
-                                <ActionButton
-                                  type="button"
-                                  tone="light"
-                                  onClick={() => onLessonCreateReset(module.id, moduleLessons)}
-                                  disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
-                                >
-                                  {RU.clear}
-                                </ActionButton>
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-black text-slate-950">
+                                  {course.title || "-"}
+                                </div>
+                                <div className="mt-1 truncate text-xs text-slate-500">
+                                  slug: {course.slug || "не задан"} · {modules.length} модулей · {courseLessons.length} уроков
+                                </div>
                               </div>
-                            </form>
+                            </div>
+
+                            {course.description ? (
+                              <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
+                                {course.description}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <StatusBadge tone="violet">{getCourseTypeBadge(course)}</StatusBadge>
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <div className="font-semibold text-slate-900">
+                          {getCourseStructureText(modules)}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          обязательных: {courseLessons.filter((lesson) => lesson.is_required).length}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <StatusBadge tone={getCourseStatusTone(course)}>
+                          {getCourseStatusLabel(course)}
+                        </StatusBadge>
+                      </td>
+
+                      <td className="px-4 py-4 align-top text-xs leading-5 text-slate-500">
+                        {getUpdatedAt(course)}
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <div
+                          data-testid={`admin-course-tree-course-actions-${course.id}`}
+                          className="flex justify-end gap-2"
+                        >
+                          {course.slug ? (
+                            <Link
+                              to={`/courses/${encodeURIComponent(course.slug)}`}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                              title="Публичная карточка"
+                            >
+                              👁
+                            </Link>
+                          ) : null}
+
+                          <button
+                            type="button"
+                            onClick={() => onStartEdit(course)}
+                            disabled={isActionRunning}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            title={RU.edit}
+                          >
+                            ✎
+                          </button>
+
+                          <details className="relative">
+                            <summary className="inline-flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
+                              ⋮
+                            </summary>
+                            <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
+                              <button
+                                type="button"
+                                onClick={() => onToggleActive(course)}
+                                disabled={isActionRunning}
+                                className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                              >
+                                {course.is_active ? RU.deactivate : RU.activate}
+                              </button>
+                              <Link
+                                to={buildEnrollmentsPath({ course_id: course.id })}
+                                className="block rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Назначения
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => onDelete(course)}
+                                disabled={isActionRunning}
+                                className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                              >
+                                {RU.delete}
+                              </button>
+                            </div>
                           </details>
                         </div>
-                      </details>
-                    );
-                  })
-                )}
-              </div>
+                      </td>
+                    </tr>
 
-              <details
-                data-testid={`admin-course-tree-module-create-${course.id}`}
-                className="admin-module-create rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200"
-              >
-                <summary className="cursor-pointer list-none text-sm font-bold text-slate-900">
-                  + {RU.addModule}
-                </summary>
+                    {isEditing ? (
+                      <tr key={`course-edit-${course.id}`} className="bg-blue-50/40">
+                        <td colSpan={7} className="px-6 py-5">
+                          <form
+                            onSubmit={(event) => onEditSubmit(event, course.id)}
+                            className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-blue-100"
+                          >
+                            <CourseFormFields
+                              values={editForm}
+                              onChange={onEditFieldChange}
+                              prefix={`table-course-${course.id}-edit-`}
+                            />
 
-                <form
-                  onSubmit={(event) => onModuleCreateSubmit(event, course)}
-                  className="mt-4 space-y-4"
-                >
-                  <CourseModuleFormFields
-                    values={moduleCreateForm || EMPTY_MODULE_CREATE_FORM}
-                    onChange={(field, value) => onModuleCreateFieldChange(course.id, field, value)}
-                    prefix={`tree-course-${course.id}-module-create-`}
-                  />
+                            <div className="flex flex-wrap justify-end gap-3">
+                              <ActionButton
+                                type="button"
+                                tone="light"
+                                onClick={onCancelEdit}
+                                disabled={isActionRunning}
+                              >
+                                {RU.cancel}
+                              </ActionButton>
+                              <ActionButton type="submit" tone="blue" disabled={isActionRunning}>
+                                {isActionRunning ? RU.saving : RU.save}
+                              </ActionButton>
+                            </div>
+                          </form>
+                        </td>
+                      </tr>
+                    ) : null}
 
-                  <div className="flex flex-wrap gap-3">
-                    <ActionButton type="submit" tone="blue" disabled={moduleCreatingCourseId === course.id}>
-                      {moduleCreatingCourseId === course.id ? RU.saving : RU.createModule}
-                    </ActionButton>
+                    {isCourseOpen ? (
+                      <>
+                        {modules.length === 0 ? (
+                          <tr key={`course-empty-${course.id}`} className="bg-slate-50/50">
+                            <td />
+                            <td colSpan={6} className="px-4 py-4 text-sm text-slate-500">
+                              {RU.modulesNotFound}
+                            </td>
+                          </tr>
+                        ) : (
+                          modules.map((module, moduleIndex) => {
+                            const moduleLessons = Array.isArray(courseLessonsByModuleId?.[module.id])
+                              ? courseLessonsByModuleId[module.id]
+                              : [];
+                            const isModuleOpen = isModuleExpanded(module, courseIndex, moduleIndex);
+                            const isModuleEditing = editingModuleId === module.id;
+                            const isModuleActionRunning = moduleActionId === module.id;
+                            const moduleEditForm =
+                              moduleEditFormsByModuleId?.[module.id] || buildModuleEditForm(module);
+                            const lessonCreateForm =
+                              lessonCreateFormsByModuleId?.[module.id] ||
+                              buildLessonCreateForm(moduleLessons);
+                            const isLessonCreating = lessonCreatingModuleId === module.id;
 
-                    <ActionButton
-                      type="button"
-                      tone="light"
-                      onClick={() => onModuleCreateReset(course.id, modules)}
-                      disabled={moduleCreatingCourseId === course.id}
-                    >
-                      {RU.clear}
-                    </ActionButton>
-                  </div>
-                </form>
-              </details>
-            </div>
-          </details>
-        );
-      })}
+                            return (
+                              <>
+                                <tr
+                                  key={`module-row-${module.id}`}
+                                  data-testid={`admin-course-tree-module-${module.id}`}
+                                  onClick={(event) => handleRowClick(event, () => toggleModule(module.id))}
+                                  className="cursor-pointer bg-slate-50/70 transition hover:bg-blue-50/40"
+                                >
+                                  <td className="px-4 py-4 align-top" />
+
+                                  <td className="px-4 py-4 align-top">
+                                    <div className="ml-9 flex min-w-0 items-start gap-3 border-l border-slate-200 pl-5">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleModule(module.id)}
+                                        className={`mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 transition ${
+                                          isModuleOpen
+                                            ? "bg-blue-600 text-white ring-blue-600"
+                                            : "bg-white text-slate-500 ring-slate-200 hover:bg-slate-50"
+                                        }`}
+                                      >
+                                        {isModuleOpen ? "⌄" : "›"}
+                                      </button>
+
+                                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                                        ▰
+                                      </span>
+
+                                      <div className="min-w-0">
+                                        <div className="truncate text-sm font-black text-slate-950">
+                                          {module.title || "-"}
+                                        </div>
+                                        <div className="mt-1 truncate text-xs text-slate-500">
+                                          Модуль {module.position || moduleIndex + 1} · {moduleLessons.length} уроков
+                                        </div>
+                                        {module.description ? (
+                                          <div className="mt-1 line-clamp-1 text-xs text-slate-500">
+                                            {module.description}
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  <td className="px-4 py-4 align-top">
+                                    <StatusBadge tone="blue">Модуль</StatusBadge>
+                                  </td>
+
+                                  <td className="px-4 py-4 align-top">
+                                    <div className="font-semibold text-slate-900">
+                                      {getModuleStructureText(module)}
+                                    </div>
+                                    <div className="mt-1 text-xs text-slate-500">
+                                      обязательных: {moduleLessons.filter((lesson) => lesson.is_required).length}
+                                    </div>
+                                  </td>
+
+                                  <td className="px-4 py-4 align-top">
+                                    <StatusBadge tone={module.is_active ? "green" : "gray"}>
+                                      {module.is_active ? RU.moduleActive : RU.moduleInactive}
+                                    </StatusBadge>
+                                  </td>
+
+                                  <td className="px-4 py-4 align-top text-xs leading-5 text-slate-500">
+                                    {getUpdatedAt(module, course)}
+                                  </td>
+
+                                  <td className="px-4 py-4 align-top">
+                                    <div
+                                      data-testid={`admin-course-tree-module-actions-${module.id}`}
+                                      className="flex justify-end gap-2"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => onModuleEditStart(module)}
+                                        disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
+                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        title={RU.edit}
+                                      >
+                                        ✎
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => onModuleDelete(module)}
+                                        disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
+                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-slate-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        title={RU.delete}
+                                      >
+                                        ⋮
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+
+                                {isModuleEditing ? (
+                                  <tr key={`module-edit-${module.id}`} className="bg-blue-50/30">
+                                    <td />
+                                    <td colSpan={6} className="px-6 py-5">
+                                      <form
+                                        onSubmit={(event) => onModuleEditSubmit(event, module)}
+                                        className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-blue-100"
+                                      >
+                                        <CourseModuleFormFields
+                                          values={moduleEditForm}
+                                          onChange={(field, value) =>
+                                            onModuleEditFieldChange(module.id, field, value)
+                                          }
+                                          prefix={`table-module-${module.id}-edit-`}
+                                        />
+
+                                        <div className="flex flex-wrap justify-end gap-3">
+                                          <ActionButton
+                                            type="button"
+                                            tone="light"
+                                            onClick={onModuleEditCancel}
+                                            disabled={isModuleActionRunning}
+                                          >
+                                            {RU.cancel}
+                                          </ActionButton>
+                                          <ActionButton
+                                            type="submit"
+                                            tone="blue"
+                                            disabled={isModuleActionRunning}
+                                          >
+                                            {isModuleActionRunning ? RU.saving : RU.save}
+                                          </ActionButton>
+                                        </div>
+                                      </form>
+                                    </td>
+                                  </tr>
+                                ) : null}
+
+                                {isModuleOpen ? (
+                                  <>
+                                    {moduleLessons.length === 0 ? (
+                                      <tr key={`module-empty-${module.id}`} className="bg-white">
+                                        <td />
+                                        <td colSpan={6} className="px-4 py-4 text-sm text-slate-500">
+                                          <div className="ml-24 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+                                            {RU.lessonsNotFound}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ) : (
+                                      moduleLessons.map((lesson, lessonIndex) => {
+                                        const isLessonEditing = editingLessonId === lesson.id;
+                                        const isLessonActionRunning = lessonActionId === lesson.id;
+                                        const lessonEditForm =
+                                          lessonEditFormsByLessonId?.[lesson.id] ||
+                                          buildLessonEditForm(lesson);
+                                        const blockBadges = getLessonStructureBlockBadges(lesson);
+
+                                        return (
+                                          <>
+                                            <tr
+                                              key={`lesson-row-${lesson.id}`}
+                                              data-testid={`admin-course-tree-lesson-${lesson.id}`}
+                                              className="bg-white transition hover:bg-slate-50"
+                                            >
+                                              <td />
+
+                                              <td className="px-4 py-4 align-top">
+                                                <div className="ml-[92px] flex min-w-0 items-start gap-3 border-l border-slate-200 pl-5">
+                                                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
+                                                    ▪
+                                                  </span>
+
+                                                  <div className="min-w-0">
+                                                    <div className="truncate text-sm font-black text-slate-950">
+                                                      {lesson.title || `Урок ${lessonIndex + 1}`}
+                                                    </div>
+                                                    <div className="mt-1 truncate text-xs text-slate-500">
+                                                      Урок {lesson.position || lessonIndex + 1} · {getLessonTypeBadge(lesson)}
+                                                    </div>
+                                                    <div className="mt-1 line-clamp-1 text-xs text-slate-500">
+                                                      {lesson.description || RU.lessonDescriptionMissing}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </td>
+
+                                              <td className="px-4 py-4 align-top">
+                                                <StatusBadge tone="green">Урок</StatusBadge>
+                                              </td>
+
+                                              <td className="px-4 py-4 align-top">
+                                                <div className="flex flex-wrap gap-1">
+                                                  {blockBadges.slice(0, 2).map((badge) => (
+                                                    <StatusBadge
+                                                      key={badge}
+                                                      tone={badge === "Блоки не заполнены" ? "red" : "blue"}
+                                                    >
+                                                      {badge}
+                                                    </StatusBadge>
+                                                  ))}
+                                                </div>
+                                              </td>
+
+                                              <td className="px-4 py-4 align-top">
+                                                <div className="flex flex-wrap gap-1">
+                                                  <StatusBadge tone={lesson.is_active ? "green" : "gray"}>
+                                                    {lesson.is_active ? RU.moduleActive : RU.moduleInactive}
+                                                  </StatusBadge>
+                                                  <StatusBadge tone={lesson.is_required ? "green" : "gray"}>
+                                                    {lesson.is_required ? RU.lessonRequired : RU.lessonOptional}
+                                                  </StatusBadge>
+                                                </div>
+                                              </td>
+
+                                              <td className="px-4 py-4 align-top text-xs leading-5 text-slate-500">
+                                                {getUpdatedAt(lesson, module)}
+                                              </td>
+
+                                              <td className="px-4 py-4 align-top">
+                                                <div
+                                                  data-testid={`admin-course-tree-lesson-actions-${lesson.id}`}
+                                                  className="flex justify-end gap-2"
+                                                >
+                                                  <a
+                                                    data-testid={`lesson-studio-open-tree-${lesson.id}`}
+                                                    href={buildAdminLessonStudioPath(lesson.id)}
+                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
+                                                    title="Lesson Studio"
+                                                  >
+                                                    ↗
+                                                  </a>
+
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => onLessonEditStart(lesson)}
+                                                    disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
+                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    title={RU.edit}
+                                                  >
+                                                    ✎
+                                                  </button>
+
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => onLessonDelete(lesson)}
+                                                    disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
+                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-slate-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    title={RU.delete}
+                                                  >
+                                                    ⋮
+                                                  </button>
+                                                </div>
+                                              </td>
+                                            </tr>
+
+                                            {isLessonEditing ? (
+                                              <tr key={`lesson-edit-${lesson.id}`} className="bg-blue-50/30">
+                                                <td />
+                                                <td colSpan={6} className="px-6 py-5">
+                                                  <form
+                                                    onSubmit={(event) => onLessonEditSubmit(event, lesson)}
+                                                    className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-blue-100"
+                                                  >
+                                                    <CourseLessonFormFields
+                                                      values={lessonEditForm}
+                                                      onChange={(field, value) =>
+                                                        onLessonEditFieldChange(lesson.id, field, value)
+                                                      }
+                                                      prefix={`table-lesson-${lesson.id}-edit-`}
+                                                      lessonId={lesson.id}
+                                                    />
+
+                                                    <div className="flex flex-wrap justify-end gap-3">
+                                                      <ActionButton
+                                                        type="button"
+                                                        tone="light"
+                                                        onClick={onLessonEditCancel}
+                                                        disabled={isLessonActionRunning}
+                                                      >
+                                                        {RU.cancel}
+                                                      </ActionButton>
+                                                      <ActionButton
+                                                        type="submit"
+                                                        tone="blue"
+                                                        disabled={isLessonActionRunning}
+                                                      >
+                                                        {isLessonActionRunning ? RU.saving : RU.save}
+                                                      </ActionButton>
+                                                    </div>
+                                                  </form>
+                                                </td>
+                                              </tr>
+                                            ) : null}
+                                          </>
+                                        );
+                                      })
+                                    )}
+
+                                    <tr key={`lesson-create-${module.id}`} className="bg-white">
+                                      <td />
+                                      <td colSpan={6} className="px-6 py-4">
+                                        <details
+                                          data-testid={`admin-course-tree-lesson-create-${module.id}`}
+                                          className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 p-4"
+                                        >
+                                          <summary className="cursor-pointer list-none text-sm font-bold text-blue-700">
+                                            + {RU.addLesson}
+                                          </summary>
+
+                                          <form
+                                            onSubmit={(event) => onLessonCreateSubmit(event, module, moduleLessons)}
+                                            className="mt-4 space-y-4"
+                                          >
+                                            <CourseLessonFormFields
+                                              values={lessonCreateForm}
+                                              onChange={(field, value) =>
+                                                onLessonCreateFieldChange(module.id, field, value)
+                                              }
+                                              prefix={`table-module-${module.id}-lesson-create-`}
+                                            />
+
+                                            <div className="flex flex-wrap justify-end gap-3">
+                                              <ActionButton
+                                                type="button"
+                                                tone="light"
+                                                onClick={() => onLessonCreateReset(module.id, moduleLessons)}
+                                                disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
+                                              >
+                                                {RU.clear}
+                                              </ActionButton>
+                                              <ActionButton
+                                                type="submit"
+                                                tone="blue"
+                                                disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
+                                              >
+                                                {isLessonCreating ? RU.saving : RU.createLesson}
+                                              </ActionButton>
+                                            </div>
+                                          </form>
+                                        </details>
+                                      </td>
+                                    </tr>
+                                  </>
+                                ) : null}
+                              </>
+                            );
+                          })
+                        )}
+
+                        <tr key={`module-create-${course.id}`} className="bg-slate-50/50">
+                          <td />
+                          <td colSpan={6} className="px-6 py-4">
+                            <details
+                              data-testid={`admin-course-tree-module-create-${course.id}`}
+                              className="rounded-2xl border border-dashed border-slate-300 bg-white p-4"
+                            >
+                              <summary className="cursor-pointer list-none text-sm font-bold text-slate-900">
+                                + {RU.addModule}
+                              </summary>
+
+                              <form
+                                onSubmit={(event) => onModuleCreateSubmit(event, course)}
+                                className="mt-4 space-y-4"
+                              >
+                                <CourseModuleFormFields
+                                  values={moduleCreateForm || EMPTY_MODULE_CREATE_FORM}
+                                  onChange={(field, value) => onModuleCreateFieldChange(course.id, field, value)}
+                                  prefix={`table-course-${course.id}-module-create-`}
+                                />
+
+                                <div className="flex flex-wrap justify-end gap-3">
+                                  <ActionButton
+                                    type="button"
+                                    tone="light"
+                                    onClick={() => onModuleCreateReset(course.id, modules)}
+                                    disabled={moduleCreatingCourseId === course.id}
+                                  >
+                                    {RU.clear}
+                                  </ActionButton>
+                                  <ActionButton
+                                    type="submit"
+                                    tone="blue"
+                                    disabled={moduleCreatingCourseId === course.id}
+                                  >
+                                    {moduleCreatingCourseId === course.id ? RU.saving : RU.createModule}
+                                  </ActionButton>
+                                </div>
+                              </form>
+                            </details>
+                          </td>
+                        </tr>
+                      </>
+                    ) : null}
+                  </>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
@@ -4340,14 +4591,17 @@ export function AdminCoursesPage() {
   return (
     <div className="space-y-6">
       <SectionCard
-        title="Структура программ"
-        subtitle="Основной рабочий вид: программа раскрывает модули, модуль раскрывает уроки, урок открывает превью и переход в Lesson Studio."
+        title="Программы обучения"
+        subtitle="Табличный рабочий вид: программа раскрывает модули, модуль раскрывает уроки, урок открывает действия и переход в Lesson Studio."
       >
         <CourseStructureTree
           courses={courses}
           loading={loading}
           hasActiveFilters={hasActiveFilters}
           onResetFilters={handleResetFilter}
+          filterActive={filterActive}
+          courseCounts={courseCounts}
+          onQuickActiveFilter={handleQuickActiveFilter}
           courseModulesByCourseId={courseModulesByCourseId}
           courseLessonsByModuleId={courseLessonsByModuleId}
           lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
@@ -4388,168 +4642,7 @@ export function AdminCoursesPage() {
         />
       </SectionCard>
 
-      <SectionCard
-        title="Программы"
-        subtitle="Поиск, фильтр и создание программ. Основная работа со структурой курса находится ниже."
-        action={
-          <AdminPageActions
-            loading={loading}
-            onRefresh={() => refreshCoursesFastPath(buildFilters())}
-            primaryLabel={showCreateForm ? RU.hideForm : RU.addProgram}
-            primaryTone={showCreateForm ? "light" : "blue"}
-            onPrimaryClick={() => setShowCreateForm((current) => !current)}
-          />
-        }
-      >
-        <div className="space-y-4">
-          <div
-            data-testid="admin-courses-compact-summary"
-            className="flex flex-wrap items-center gap-2 rounded-2xl bg-slate-50/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200"
-          >
-            <span className="font-semibold text-slate-950">
-              Всего: {courseCounts.all || 0}
-            </span>
-            <span className="text-slate-300">·</span>
-            <span className="font-medium text-emerald-700">
-              Активные: {activeCount}
-            </span>
-            <span className="text-slate-300">·</span>
-            <span className="font-medium text-slate-600">
-              Неактивные: {inactiveCount}
-            </span>
-            <span className="text-slate-300">·</span>
-            <span>
-              Показано: {courses.length} из {courseCounts.all || courses.length}
-            </span>
-          </div>
-
-          {showCreateForm && (
-            <AdminCreatePanel
-              title={RU.newProgram}
-              subtitle={RU.newProgramSubtitle}
-            >
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <CourseFormFields values={form} onChange={updateField} prefix="create-" />
-
-                <div className="flex flex-wrap gap-3 pt-2">
-                  <ActionButton type="submit" tone="blue" disabled={saving}>
-                    {saving ? RU.saving : RU.createProgram}
-                  </ActionButton>
-
-                  <ActionButton
-                    type="button"
-                    tone="light"
-                    onClick={resetForm}
-                    disabled={saving}
-                  >
-                    {RU.clear}
-                  </ActionButton>
-                </div>
-              </form>
-            </AdminCreatePanel>
-          )}
-
-          <AdminFilterPanel
-            columnsClassName="lg:grid-cols-[1fr_220px_auto]"
-            onReset={handleResetFilter}
-            resetDisabled={!hasActiveFilters}
-            summary={getShownSummary(courses.length, courseCounts.all || courses.length)}
-          >
-            <AdminFilterField label={RU.search} className="block space-y-2">
-              <input
-                type="search"
-                value={filterQuery}
-                onChange={(event) => setFilterQuery(event.target.value)}
-                placeholder={RU.searchPlaceholder}
-                className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
-              />
-            </AdminFilterField>
-
-            <AdminFilterField label={RU.status} className="block space-y-2">
-              <select
-                value={filterActive}
-                onChange={(event) => setFilterActive(event.target.value)}
-                className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
-              >
-                <option value="">{RU.allStatuses}</option>
-                <option value="true">{RU.activePlural}</option>
-                <option value="false">{RU.inactivePlural}</option>
-              </select>
-            </AdminFilterField>
-
-            <ActionButton type="button" tone="blue" onClick={handleApplyFilter} disabled={loading}>
-              {loading ? RU.loading : RU.apply}
-            </ActionButton>
-          </AdminFilterPanel>
-
-          <AdminActiveFiltersSummary
-            items={activeCourseFilterItems}
-            onReset={handleResetFilter}
-            testId="admin-courses-active-filters-summary"
-            emptyText="Фильтры программ не применены."
-          />
-
-          <details
-            data-testid="admin-courses-extra-tools"
-            className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200"
-          >
-            <summary className="cursor-pointer list-none text-sm font-semibold text-slate-700">
-              Дополнительно: быстрые фильтры и экспорт CSV
-            </summary>
-
-            <div className="mt-4 space-y-4">
-              <AdminQuickFilterButtons
-                items={COURSE_ACTIVE_FILTERS}
-                activeValue={filterActive}
-                counts={courseCounts}
-                disabled={loading}
-                onChange={handleQuickActiveFilter}
-                getCount={(item, counts) =>
-                  item.value === "true"
-                    ? counts.active || 0
-                    : item.value === "false"
-                      ? counts.inactive || 0
-                      : counts.all || 0}
-              />
-
-              <div
-                data-testid="admin-courses-export-summary"
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
-              >
-                <div>
-                  <div className="text-sm font-semibold text-slate-900">Экспорт программ</div>
-                  <p className="mt-1 text-xs text-slate-600">
-                    CSV содержит текущую выборку после поиска и фильтра активности:
-                    {" "}{courses.length} из {courseCounts.all || courses.length}.
-                  </p>
-                </div>
-
-                <ActionButton
-                  type="button"
-                  tone="light"
-                  onClick={handleExportCoursesCsv}
-                  disabled={loading || courses.length === 0}
-                  data-testid="admin-courses-export-csv-button"
-                >
-                  Скачать CSV
-                </ActionButton>
-              </div>
-            </div>
-          </details>
-
-          {error && (
-            <Alert title={RU.error} tone="red">
-              {error}
-            </Alert>
-          )}
-
-          {successMessage && (
-            <Alert title={RU.done} tone="green">
-              {successMessage}
-            </Alert>
-          )}
-        </div>
-      </SectionCard>
+      {/* Блок управления программами скрыт: основной рабочий вид перенесён в верхнюю иерархическую таблицу. */}
 
 
 
