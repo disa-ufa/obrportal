@@ -231,6 +231,9 @@ function getBlockTextPreview(block) {
     content.description,
     content.url,
     content.content_url,
+    content.video_url,
+    content.embed_code,
+    content.video_embed_code,
     content.question,
     content.quiz_question,
     content.assignment_text,
@@ -558,6 +561,100 @@ function LessonRichTextSafePreview({ block, preview, learnerMode = false }) {
   );
 }
 
+
+function LessonVideoCanvasPreview({ block, previewValue, learnerMode = false }) {
+  const content = getVideoBlockContent(block);
+  const sourceValue = getVideoBlockSourceValue(block) || previewValue;
+  const previewEmbedUrl = getVideoPreviewEmbedUrl(sourceValue);
+  const previewReady = Boolean(previewEmbedUrl);
+  const allowFullscreen = content.allow_fullscreen !== false;
+  const videoTitle = `${block?.title || content.title || "Видео"}`.trim() || "Видео";
+  const videoHost = getVideoHostLabel(sourceValue || previewEmbedUrl);
+  const insertTypeLabel = getVideoBlockSourceType(block) === "embed" ? "Код вставки" : "Ссылка";
+
+  return (
+    <div
+      data-testid="lesson-studio-video-preview"
+      className={
+        learnerMode
+          ? "mt-5 overflow-hidden rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
+          : "mt-4 overflow-hidden rounded-2xl bg-white/90 p-3 shadow-sm ring-1 ring-black/5"
+      }
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-base font-black text-slate-950">
+            Видео для просмотра
+          </div>
+          <div className="mt-1 truncate text-xs font-semibold text-slate-500">
+            {previewReady ? sourceValue : "Добавьте ссылку или код вставки"}
+          </div>
+        </div>
+
+        {previewReady ? (
+          <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+            ✓ Видео найдено
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            Нет источника
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-2xl bg-slate-950 shadow-sm ring-1 ring-slate-900/10">
+        <div className="relative aspect-[16/9] min-h-[220px] bg-slate-950">
+          {previewReady ? (
+            <iframe
+              title={videoTitle}
+              src={previewEmbedUrl}
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen={allowFullscreen}
+            />
+          ) : (
+            <>
+              <div className="absolute inset-0 opacity-45 [background-image:linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:42px_42px]" />
+
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-xl text-blue-700 shadow-xl">
+                  ▶
+                </div>
+
+                <div className="mt-4 text-sm font-semibold text-white/90">
+                  Видео пока не настроено
+                </div>
+                <div className="mt-1 max-w-md text-xs leading-5 text-white/60">
+                  Вставьте ссылку YouTube, Rutube, VK Видео, Vimeo или iframe-код.
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+        {[
+          ["Название видео", previewReady ? videoTitle : "—"],
+          ["Источник", previewReady ? videoHost : "—"],
+          ["Тип вставки", previewReady ? insertTypeLabel : "—"],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="grid grid-cols-[10rem_minmax(0,1fr)] border-b border-slate-100 px-4 py-3 last:border-b-0"
+          >
+            <div className="text-sm font-semibold text-slate-500">{label}</div>
+            <div className="break-words text-sm font-semibold text-slate-800">{value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
   const meta = getBlockPreviewMeta(block);
@@ -595,40 +692,11 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
       {richTextPreview ? (
         <LessonRichTextSafePreview block={block} preview={previewValue} learnerMode={learnerMode} />
       ) : type === "video" ? (
-        <div
-          data-testid="lesson-studio-video-preview"
-          className={
-            learnerMode
-              ? "mt-5 overflow-hidden rounded-3xl bg-slate-950 p-4 text-white shadow-sm ring-1 ring-slate-900/10"
-              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
-          }
-        >
-          <div className={learnerMode ? "flex items-center gap-4" : "flex items-center gap-3"}>
-            <div
-              className={
-                learnerMode
-                  ? "flex h-16 w-24 items-center justify-center rounded-2xl bg-white/10 text-xl text-white ring-1 ring-white/10"
-                  : "flex h-10 w-14 items-center justify-center rounded-xl bg-slate-900 text-white"
-              }
-            >
-              ▶
-            </div>
-            <div className="min-w-0 pr-0 lg:pr-4">
-              <div className={learnerMode ? "text-base font-black" : "text-sm font-bold"}>
-                Видео для просмотра
-              </div>
-              <div
-                className={
-                  learnerMode
-                    ? "mt-2 break-words text-sm leading-6 text-slate-200"
-                    : "mt-1 break-words text-xs opacity-80"
-                }
-              >
-                {previewValue}
-              </div>
-            </div>
-          </div>
-        </div>
+        <LessonVideoCanvasPreview
+          block={block}
+          previewValue={previewValue}
+          learnerMode={learnerMode}
+        />
       ) : type === "file_link" || type === "file" || type === "link" ? (
         <div
           data-testid="lesson-studio-link-preview"
@@ -732,7 +800,11 @@ function getBlockValidationIssues(block) {
     issues.push("нет текста");
   }
 
-  if ((type === "video" || type === "file_link" || type === "file" || type === "link") && !`${content.url || content.content_url || ""}`.trim()) {
+  if (type === "video" && !getVideoBlockSourceValue({ content_json: content })) {
+    issues.push("нет источника видео");
+  }
+
+  if ((type === "file_link" || type === "file" || type === "link") && !`${content.url || content.content_url || ""}`.trim()) {
     issues.push("нет ссылки");
   }
 
@@ -1841,21 +1913,16 @@ function LessonCanvasBlock({
       ) : null}
 
       {compact ? (
-        <div className="mt-5 max-w-4xl" data-testid="lesson-studio-block-compact-summary">
+        <div
+          className={isCompactVideo ? "mt-5 w-full" : "mt-5 max-w-4xl"}
+          data-testid="lesson-studio-block-compact-summary"
+        >
           {isCompactVideo ? (
-            <div className="flex items-center gap-3 text-sm leading-6 text-slate-600">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-blue-700 ring-1 ring-slate-200">
-                <PlayCircle className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <span className="min-w-0">
-                <span className="block font-semibold text-slate-600">
-                  Видео размещено в уроке
-                </span>
-                <span className="mt-0.5 block truncate text-blue-700">
-                  {compactSummary}
-                </span>
-              </span>
-            </div>
+            <LessonVideoCanvasPreview
+              block={block}
+              previewValue={compactSummary}
+              learnerMode={false}
+            />
           ) : isLessonRichTextBlock(block) ? (
             <div className="lesson-studio-canvas-rich-preview text-slate-700">
               <LessonRichTextSafePreview
@@ -1981,7 +2048,7 @@ function LessonCanvasBlock({
         </div>
       ) : null}
 
-      {!compact && !inlineRichTextEditing ? (
+      {!compact && !inlineEditing ? (
         <LessonCanvasTypePreview block={block} preview={preview} learnerMode={previewMode} />
       ) : null}
 
@@ -2219,6 +2286,487 @@ function LessonStudioCanvas({
 
 
 
+
+function isLessonVideoBlock(block) {
+  const type = `${block?.block_type || ""}`.toLowerCase();
+
+  return type === "video";
+}
+
+function getVideoBlockContent(block) {
+  return safeParseJson(block?.content_json);
+}
+
+function normalizeVideoSourceType(value) {
+  return `${value || ""}`.toLowerCase() === "embed" ? "embed" : "link";
+}
+
+function getVideoBlockEmbedCode(block) {
+  const content = getVideoBlockContent(block);
+
+  return `${content.embed_code || content.video_embed_code || content.iframe || ""}`;
+}
+
+function getVideoEmbedSrc(value) {
+  const code = `${value || ""}`;
+  const match = code.match(/src=["']([^"']+)["']/i);
+
+  return match?.[1]?.replaceAll("&amp;", "&").trim() || "";
+}
+
+function normalizeVideoEmbedUrl(value) {
+  const source = `${value || ""}`.trim().replaceAll("&amp;", "&");
+
+  if (!source) return "";
+  if (source.startsWith("//")) return `https:${source}`;
+  if (source.startsWith("http://") || source.startsWith("https://")) return source;
+
+  return "";
+}
+
+function getYouTubeVideoId(url) {
+  const host = url.hostname.replace(/^www\./, "");
+  const pathParts = url.pathname.split("/").filter(Boolean);
+
+  if (host === "youtu.be") {
+    return pathParts[0] || "";
+  }
+
+  if (host.includes("youtube.com")) {
+    if (url.pathname === "/watch") {
+      return url.searchParams.get("v") || "";
+    }
+
+    if (pathParts[0] === "embed" || pathParts[0] === "shorts" || pathParts[0] === "live") {
+      return pathParts[1] || "";
+    }
+  }
+
+  return "";
+}
+
+function getVideoPreviewEmbedUrl(value) {
+  const source = `${value || ""}`.trim().replaceAll("&amp;", "&");
+
+  if (!source) return "";
+
+  const iframeSrc = getVideoEmbedSrc(source);
+
+  if (iframeSrc) {
+    return normalizeVideoEmbedUrl(iframeSrc);
+  }
+
+  try {
+    const url = new URL(source);
+    const host = url.hostname.replace(/^www\./, "");
+    const pathParts = url.pathname.split("/").filter(Boolean);
+
+    const youtubeId = getYouTubeVideoId(url);
+    if (youtubeId) {
+      return `https://www.youtube.com/embed/${youtubeId}`;
+    }
+
+    if (host.includes("rutube.ru")) {
+      const rutubeId = pathParts[0] === "video" ? pathParts[1] : pathParts[0] === "play" && pathParts[1] === "embed" ? pathParts[2] : "";
+
+      if (rutubeId) {
+        return `https://rutube.ru/play/embed/${rutubeId}`;
+      }
+    }
+
+    if (host.includes("vk.com") || host.includes("vkvideo.ru")) {
+      const videoMatch = url.pathname.match(/video(-?\d+)_(\d+)/);
+
+      if (videoMatch) {
+        return `https://vk.com/video_ext.php?oid=${videoMatch[1]}&id=${videoMatch[2]}`;
+      }
+
+      if (url.pathname.includes("video_ext.php")) {
+        return normalizeVideoEmbedUrl(source);
+      }
+    }
+
+    if (host.includes("vimeo.com")) {
+      const videoId = pathParts.find((part) => /^\d+$/.test(part));
+
+      if (videoId) {
+        return `https://player.vimeo.com/video/${videoId}`;
+      }
+    }
+
+    if (
+      url.pathname.includes("/embed/") ||
+      host.includes("player.") ||
+      host.includes("video_ext.php")
+    ) {
+      return normalizeVideoEmbedUrl(source);
+    }
+
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+function getVideoBlockSourceType(block) {
+  const content = getVideoBlockContent(block);
+  const explicitType = content.video_source_type || content.source_type || content.insert_type;
+
+  if (explicitType) {
+    return normalizeVideoSourceType(explicitType);
+  }
+
+  return getVideoBlockEmbedCode(block).trim() ? "embed" : "link";
+}
+
+function getVideoBlockUrl(block) {
+  const content = getVideoBlockContent(block);
+
+  return `${content.url || content.content_url || content.video_url || content.src || getVideoEmbedSrc(getVideoBlockEmbedCode(block)) || ""}`;
+}
+
+function getVideoBlockSourceValue(block) {
+  const sourceType = getVideoBlockSourceType(block);
+
+  if (sourceType === "embed") {
+    return getVideoBlockEmbedCode(block).trim() || getVideoBlockUrl(block).trim();
+  }
+
+  return getVideoBlockUrl(block).trim();
+}
+
+function getVideoHostLabel(value) {
+  const source = `${value || ""}`.trim();
+
+  if (!source) {
+    return "—";
+  }
+
+  try {
+    const url = new URL(source);
+    const host = url.hostname.replace(/^www\./, "");
+
+    if (host.includes("youtube") || host.includes("youtu.be")) return "YouTube";
+    if (host.includes("rutube")) return "Rutube";
+    if (host.includes("vk.com") || host.includes("vkvideo")) return "VK Видео";
+    if (host.includes("vimeo")) return "Vimeo";
+
+    return host;
+  } catch {
+    return "Код вставки";
+  }
+}
+
+function LessonStudioVideoBlockEditor({ form, saving, onFieldChange }) {
+  const sourceType = normalizeVideoSourceType(form.video_source_type);
+  const videoUrl = `${form.video_url || ""}`;
+  const embedCode = `${form.video_embed_code || ""}`;
+  const sourceValue = sourceType === "embed" ? embedCode : videoUrl;
+  const rawPreviewSource = sourceType === "embed" ? getVideoEmbedSrc(embedCode) || embedCode : videoUrl;
+  const previewEmbedUrl = getVideoPreviewEmbedUrl(rawPreviewSource);
+  const previewReady = Boolean(previewEmbedUrl);
+  const videoHost = getVideoHostLabel(rawPreviewSource || previewEmbedUrl);
+  const insertTypeLabel = sourceType === "embed" ? "Код вставки" : "Ссылка";
+  const videoTitle = `${form.title || "Видео"}`.trim() || "Видео";
+
+  const handleSourceTypeChange = (nextType) => {
+    const normalizedType = normalizeVideoSourceType(nextType);
+
+    onFieldChange("video_source_type", normalizedType);
+    onFieldChange("content_text", normalizedType === "embed" ? embedCode : videoUrl);
+  };
+
+  const handleVideoUrlChange = (value) => {
+    onFieldChange("video_url", value);
+
+    if (sourceType === "link") {
+      onFieldChange("content_text", value);
+    }
+  };
+
+  const handleEmbedCodeChange = (value) => {
+    onFieldChange("video_embed_code", value);
+
+    if (sourceType === "embed") {
+      onFieldChange("content_text", value);
+    }
+  };
+
+  return (
+    <>
+      <section
+        data-testid="lesson-studio-inspector-section-content"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">Источник видео</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Добавьте видео из видеохостинга по ссылке или через код вставки.
+            </p>
+          </div>
+
+          {previewReady ? (
+            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+              ✓ Видео найдено
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+              Требуется источник
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-xl bg-slate-50 p-1 ring-1 ring-slate-200">
+          <button
+            type="button"
+            onClick={() => handleSourceTypeChange("link")}
+            disabled={saving}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-bold transition ${
+              sourceType === "link"
+                ? "bg-white text-blue-700 shadow-sm ring-1 ring-blue-200"
+                : "text-slate-500 hover:bg-white/70 hover:text-slate-900"
+            }`}
+          >
+            <span aria-hidden="true">🔗</span>
+            Ссылка на видео
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleSourceTypeChange("embed")}
+            disabled={saving}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-bold transition ${
+              sourceType === "embed"
+                ? "bg-white text-blue-700 shadow-sm ring-1 ring-blue-200"
+                : "text-slate-500 hover:bg-white/70 hover:text-slate-900"
+            }`}
+          >
+            <span aria-hidden="true">&lt;/&gt;</span>
+            Код вставки
+          </button>
+        </div>
+
+        {sourceType === "link" ? (
+          <div className="mt-4" data-testid="lesson-studio-inspector-content-field">
+            <label className="block">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                Ссылка на видео
+              </span>
+
+              <div className="mt-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_9rem]">
+                <input
+                  type="url"
+                  value={videoUrl}
+                  onChange={(event) => handleVideoUrlChange(event.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  disabled={saving}
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+
+                <button
+                  type="button"
+                  disabled={saving}
+                  className="h-11 rounded-xl bg-white px-4 text-sm font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Проверить
+                </button>
+              </div>
+            </label>
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Поддерживаются публичные ссылки YouTube, VK Видео, Rutube, Vimeo и других видеохостингов.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4" data-testid="lesson-studio-inspector-content-field">
+            <label className="block">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                HTML-код для вставки
+              </span>
+
+              <textarea
+                value={embedCode}
+                onChange={(event) => handleEmbedCodeChange(event.target.value)}
+                placeholder='<iframe src="https://..." width="560" height="315" allowfullscreen></iframe>'
+                rows={6}
+                disabled={saving}
+                className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Вставьте iframe-код из плеера видеохостинга. В урок попадёт только код выбранного источника.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <section
+        data-testid="lesson-studio-video-preview-editor"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-lg font-black text-slate-950">Предпросмотр</div>
+
+          {previewReady ? (
+            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+              ✓ Видео найдено
+            </span>
+          ) : (
+            <span className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-500 ring-1 ring-slate-200">
+              Ожидает проверки
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-2xl bg-slate-950 shadow-sm ring-1 ring-slate-900/10">
+          <div className="relative aspect-[16/9] min-h-[260px] bg-slate-950">
+            {previewReady ? (
+              <iframe
+                title={videoTitle}
+                src={previewEmbedUrl}
+                className="absolute inset-0 h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen={form.allow_fullscreen !== false}
+              />
+            ) : (
+              <>
+                <div className="absolute inset-0 opacity-45 [background-image:linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:42px_42px]" />
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-2xl text-blue-700 shadow-xl">
+                    ▶
+                  </div>
+
+                  <div className="mt-4 text-sm font-semibold text-white/90">
+                    Добавьте корректную ссылку или iframe-код
+                  </div>
+                  <div className="mt-1 max-w-md text-xs leading-5 text-white/60">
+                    Поддерживаются YouTube, Rutube, VK Видео, Vimeo и прямые embed-ссылки.
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+          {[
+            ["Название видео", previewReady ? videoTitle : "—"],
+            ["Источник", previewReady ? videoHost : "—"],
+            ["Тип вставки", previewReady ? insertTypeLabel : "—"],
+          ].map(([label, value]) => (
+            <div key={label} className="grid grid-cols-[12rem_minmax(0,1fr)] border-b border-slate-100 px-4 py-3 last:border-b-0">
+              <div className="text-sm font-semibold text-slate-500">{label}</div>
+              <div className="break-words text-sm font-semibold text-slate-800">{value}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section
+        data-testid="lesson-studio-inspector-section-publication"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="text-lg font-black text-slate-950">Настройки блока</div>
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          Заголовок, обязательность и видимость видео для обучающихся.
+        </p>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_15rem_15rem_17rem]">
+          <label
+            className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+            data-testid="lesson-studio-inspector-title-field"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              Название блока
+            </span>
+            <input
+              value={form.title}
+              onChange={(event) => onFieldChange("title", event.target.value)}
+              placeholder="Видео"
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_required
+              ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Обязательный</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Обучающийся должен пройти этот блок.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+              <input
+                type="checkbox"
+                checked={form.is_required}
+                onChange={(event) => onFieldChange("is_required", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_active
+              ? "bg-emerald-50/70 text-emerald-900 ring-emerald-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Показывать в уроке</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Блок будет виден обучающимся.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-emerald-600">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(event) => onFieldChange("is_active", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.allow_fullscreen
+              ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Полный экран</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Видео можно открыть на весь экран.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+              <input
+                type="checkbox"
+                checked={form.allow_fullscreen}
+                onChange={(event) => onFieldChange("allow_fullscreen", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+        </div>
+      </section>
+    </>
+  );
+}
+
+
 function getInspectorContentText(block) {
   const content = safeParseJson(block?.content_json);
   const settings = safeParseJson(block?.settings_json);
@@ -2359,11 +2907,21 @@ function getInspectorContentFieldMeta(block) {
 
 
 function buildInspectorBlockForm(block) {
+  const videoContent = getVideoBlockContent(block);
+  const videoSourceType = getVideoBlockSourceType(block);
+  const videoUrl = getVideoBlockUrl(block);
+  const videoEmbedCode = getVideoBlockEmbedCode(block);
+  const videoSourceValue = videoSourceType === "embed" ? videoEmbedCode : videoUrl;
+
   return {
     title: `${block?.title || ""}`,
-    content_text: getInspectorContentText(block),
+    content_text: isLessonVideoBlock(block) ? videoSourceValue : getInspectorContentText(block),
     editor_json: getInspectorEditorJson(block),
     editor_html: getInspectorEditorHtml(block),
+    video_source_type: videoSourceType,
+    video_url: videoUrl,
+    video_embed_code: videoEmbedCode,
+    allow_fullscreen: videoContent.allow_fullscreen !== false,
     is_required: Boolean(block?.is_required),
     is_active: block?.is_active !== false,
   };
@@ -2402,6 +2960,10 @@ function getInspectorFormSnapshot(values) {
     title: `${values?.title || ""}`.trim(),
     content_text: contentText,
     editor_json: stableStringifyLessonValue(normalizeInspectorSnapshotEditorJson(values)),
+    video_source_type: normalizeVideoSourceType(values?.video_source_type),
+    video_url: `${values?.video_url || ""}`.trim(),
+    video_embed_code: `${values?.video_embed_code || ""}`.trim(),
+    allow_fullscreen: values?.allow_fullscreen !== false,
     is_required: Boolean(values?.is_required),
     is_active: Boolean(values?.is_active),
   });
@@ -2424,7 +2986,21 @@ function buildInspectorBlockPayload(block, values) {
         ? values.editor_json
         : buildLessonRichTextDocumentFromText(contentText);
     contentJson.editor_html = `${values.editor_html || ""}`;
-  } else if (type === "video" || type === "file_link") {
+  } else if (type === "video") {
+    const sourceType = normalizeVideoSourceType(values.video_source_type);
+    const videoUrl = `${values.video_url || ""}`.trim();
+    const embedCode = `${values.video_embed_code || ""}`.trim();
+    const embedSrc = getVideoEmbedSrc(embedCode);
+
+    contentJson.video_source_type = sourceType;
+    contentJson.source_type = sourceType;
+    contentJson.url = sourceType === "embed" ? embedSrc : videoUrl;
+    contentJson.content_url = contentJson.url;
+    contentJson.video_url = videoUrl;
+    contentJson.embed_code = sourceType === "embed" ? embedCode : "";
+    contentJson.video_embed_code = sourceType === "embed" ? embedCode : "";
+    contentJson.allow_fullscreen = values.allow_fullscreen !== false;
+  } else if (type === "file_link") {
     contentJson.url = contentText;
   } else if (type === "quiz") {
     contentJson.question = contentText;
@@ -2875,6 +3451,12 @@ function LessonStudioInspector({
                   </div>
                 </section>
               </>
+            ) : isLessonVideoBlock(selectedBlock) ? (
+              <LessonStudioVideoBlockEditor
+                form={form}
+                saving={saving}
+                onFieldChange={handleFieldChange}
+              />
             ) : (
               <>
                 <section
