@@ -59,6 +59,30 @@ const STUDIO_QUICK_BLOCK_TEMPLATES = [
     },
   },
   {
+    key: "image",
+    label: "Изображение",
+    hint: "Картинка по ссылке",
+    tone: "violet",
+    values: {
+      block_type: "file_link",
+      title: "Изображение",
+      content_json: {
+        material_kind: "image",
+        kind: "image",
+        media_type: "image",
+        image_url: "",
+        image_src: "",
+        src: "",
+        caption: "",
+        alt_text: "",
+        full_width: true,
+        open_full_size: true,
+      },
+      is_required: false,
+      is_active: true,
+    },
+  },
+  {
     key: "quiz",
     label: "Тест",
     hint: "Вопрос с вариантами",
@@ -164,6 +188,7 @@ function getLessonContentTypeLabel(type) {
     link: "Ссылка",
     quiz: "Тест",
     assignment: "Задание",
+    image: "Изображение",
   };
 
   return labels[value] || value;
@@ -181,6 +206,7 @@ function getLessonBlockTypeLabel(type) {
     link: "Ссылка",
     quiz: "Тест",
     assignment: "Задание",
+    image: "Изображение",
     callout: "Врезка",
   };
 
@@ -234,6 +260,11 @@ function getBlockTextPreview(block) {
     content.video_url,
     content.embed_code,
     content.video_embed_code,
+    content.image_url,
+    content.image_src,
+    content.src,
+    content.caption,
+    content.alt_text,
     content.question,
     content.quiz_question,
     content.assignment_text,
@@ -287,6 +318,12 @@ function getBlockPreviewMeta(block) {
       description: "Ссылка на файл, презентацию, документ или внешний ресурс.",
       surfaceClass: "bg-blue-50 text-blue-900 ring-blue-200",
     },
+    image: {
+      icon: "IMG",
+      kicker: "Учебное изображение",
+      description: "Иллюстрация, схема или скриншот внутри урока.",
+      surfaceClass: "bg-violet-50 text-violet-900 ring-violet-200",
+    },
     quiz: {
       icon: "?",
       kicker: "Вопрос для самопроверки",
@@ -306,6 +343,10 @@ function getBlockPreviewMeta(block) {
       surfaceClass: "bg-violet-50 text-violet-900 ring-violet-200",
     },
   };
+
+  if (isLessonImageBlock(block)) {
+    return metaByType.image;
+  }
 
   return metaByType[type] || metaByType.rich_text;
 }
@@ -561,6 +602,242 @@ function LessonRichTextSafePreview({ block, preview, learnerMode = false }) {
   );
 }
 
+
+
+
+function isLessonCalloutBlock(block) {
+  const type = `${block?.block_type || ""}`.toLowerCase();
+
+  return type === "callout";
+}
+
+function getCalloutBlockContent(block) {
+  return safeParseJson(block?.content_json);
+}
+
+function getCalloutBlockText(block, previewValue = "") {
+  const content = getCalloutBlockContent(block);
+
+  return `${content.text || content.content_text || content.body || previewValue || ""}`.trim();
+}
+
+function LessonCalloutCanvasPreview({ block, previewValue, learnerMode = false }) {
+  const textValue = getCalloutBlockText(block, previewValue);
+  const ready = Boolean(textValue);
+  const title = `${block?.title || "Важно"}`.trim() || "Важно";
+
+  return (
+    <div
+      data-testid="lesson-studio-callout-preview"
+      className={
+        learnerMode
+          ? "mt-5 rounded-3xl border-l-4 border-indigo-300 bg-indigo-50 p-5 shadow-sm ring-1 ring-indigo-100"
+          : "mt-4 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-white p-4 shadow-sm ring-1 ring-indigo-100/70"
+      }
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-xl font-black text-indigo-700 shadow-sm ring-1 ring-indigo-200">
+            !
+          </div>
+
+          <div className="min-w-0">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-indigo-700">
+              Врезка
+            </div>
+            <div className="mt-1 text-lg font-black leading-7 text-slate-950">
+              {title}
+            </div>
+          </div>
+        </div>
+
+        {ready ? (
+          <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+            ✓ Готово
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            Требуется текст
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-white/80 p-4 text-base font-semibold leading-8 text-slate-700 ring-1 ring-indigo-100">
+        {ready ? (
+          <div className="whitespace-pre-wrap break-words">{textValue}</div>
+        ) : (
+          <div className="text-slate-400">
+            Добавьте короткое важное примечание, предупреждение или подсказку.
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 text-xs leading-5 text-indigo-700/80">
+        Врезка выделяет ключевую мысль и помогает обучающемуся обратить внимание на важный фрагмент урока.
+      </div>
+    </div>
+  );
+}
+
+
+
+function isLessonImageBlock(block) {
+  const type = `${block?.block_type || ""}`.toLowerCase();
+  const content = safeParseJson(block?.content_json);
+  const kind = `${content.material_kind || content.kind || content.media_type || ""}`.toLowerCase();
+  const imageUrl = `${content.image_url || content.image_src || content.src || ""}`.trim();
+  const title = `${block?.title || content.title || ""}`.toLowerCase();
+
+  return (
+    type === "image" ||
+    type === "picture" ||
+    (
+      (type === "file_link" || type === "file" || type === "link") &&
+      (kind === "image" || Boolean(imageUrl) || title.includes("изображ"))
+    )
+  );
+}
+
+function getImageBlockContent(block) {
+  return safeParseJson(block?.content_json);
+}
+
+function getImageBlockUrl(block) {
+  const content = getImageBlockContent(block);
+
+  return `${content.image_url || content.image_src || content.src || content.url || content.content_url || ""}`.trim();
+}
+
+function getImageBlockCaption(block) {
+  const content = getImageBlockContent(block);
+
+  return `${content.caption || content.description || ""}`.trim();
+}
+
+function getImageBlockAlt(block) {
+  const content = getImageBlockContent(block);
+
+  return `${content.alt_text || content.alt || content.caption || block?.title || "Изображение урока"}`.trim();
+}
+
+function getImageHostLabel(value) {
+  const source = `${value || ""}`.trim();
+
+  if (!source) return "—";
+  if (source.startsWith("/") || source.startsWith("#")) return "Внутренний ресурс";
+
+  try {
+    const url = new URL(source);
+    return url.hostname.replace(/^www\./, "") || "Изображение";
+  } catch {
+    return "Изображение";
+  }
+}
+
+function LessonImageCanvasPreview({ block, previewValue, learnerMode = false }) {
+  const sourceValue = getImageBlockUrl(block) || `${previewValue || ""}`.trim();
+  const safeSrc = getSafeLessonRichTextHref(sourceValue);
+  const ready = Boolean(safeSrc);
+  const title = `${block?.title || "Изображение"}`.trim() || "Изображение";
+  const caption = getImageBlockCaption(block);
+  const altText = getImageBlockAlt(block);
+  const hostLabel = getImageHostLabel(sourceValue);
+  const content = getImageBlockContent(block);
+  const openFullSize = content.open_full_size !== false;
+  const fullWidth = content.full_width !== false;
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [safeSrc]);
+
+  return (
+    <div
+      data-testid="lesson-studio-image-preview"
+      className={
+        learnerMode
+          ? "mt-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+          : "mt-4 rounded-2xl bg-white/90 p-4 shadow-sm ring-1 ring-black/5"
+      }
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-base font-black text-slate-950">{title}</div>
+          <div className="mt-1 text-sm font-semibold text-slate-600">
+            {ready ? "Изображение по ссылке" : "Изображение не настроено"}
+          </div>
+          <div className="mt-1 max-w-3xl break-words text-xs leading-5 text-slate-500">
+            {ready ? sourceValue : "Добавьте прямую ссылку на картинку или открытый графический материал."}
+          </div>
+        </div>
+
+        {ready && !imageFailed ? (
+          <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+            ✓ Изображение найдено
+          </span>
+        ) : ready && imageFailed ? (
+          <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            Не удалось загрузить
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            Требуется ссылка
+          </span>
+        )}
+      </div>
+
+      <div className={`mt-4 overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200 ${fullWidth ? "w-full" : "mx-auto max-w-3xl"}`}>
+        {ready && !imageFailed ? (
+          <img
+            src={safeSrc}
+            alt={altText}
+            onError={() => setImageFailed(true)}
+            className="max-h-[520px] w-full object-contain"
+          />
+        ) : (
+          <div className="flex min-h-[260px] flex-col items-center justify-center bg-gradient-to-br from-violet-50 via-white to-slate-50 p-8 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 text-lg font-black text-violet-700 ring-1 ring-violet-200">
+              IMG
+            </div>
+            <div className="mt-4 text-base font-black text-slate-950">
+              {ready ? "Изображение не загрузилось" : "Добавьте изображение"}
+            </div>
+            <div className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+              {ready
+                ? "Проверьте, что ссылка открыта для просмотра и ведёт именно на изображение."
+                : "Вставьте ссылку на JPG, PNG, WebP, SVG или другое открытое изображение."}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {caption ? (
+        <div className="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold leading-6 text-slate-600 ring-1 ring-slate-200">
+          {caption}
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-xs leading-5 text-slate-500">
+          Источник: {ready ? hostLabel : "—"}. Alt-текст: {altText || "не указан"}.
+        </div>
+
+        {ready && openFullSize ? (
+          <a
+            href={safeSrc}
+            target={safeSrc.startsWith("/") || safeSrc.startsWith("#") ? undefined : "_blank"}
+            rel={safeSrc.startsWith("/") || safeSrc.startsWith("#") ? undefined : "noreferrer"}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
+          >
+            Открыть изображение
+          </a>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 
 function isLessonFileLinkBlock(block) {
@@ -914,6 +1191,12 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
           previewValue={previewValue}
           learnerMode={learnerMode}
         />
+      ) : isLessonImageBlock(block) ? (
+        <LessonImageCanvasPreview
+          block={block}
+          previewValue={previewValue}
+          learnerMode={learnerMode}
+        />
       ) : type === "file_link" || type === "file" || type === "link" ? (
         <LessonFileLinkCanvasPreview
           block={block}
@@ -956,21 +1239,11 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
           </div>
         </div>
       ) : type === "callout" ? (
-        <div
-          data-testid="lesson-studio-callout-preview"
-          className={
-            learnerMode
-              ? "mt-5 rounded-3xl border-l-4 border-amber-300 bg-amber-50 p-5 ring-1 ring-amber-100"
-              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
-          }
-        >
-          <div className={learnerMode ? "text-base font-black text-amber-950" : "text-sm font-bold"}>
-            Важно
-          </div>
-          <div className={learnerMode ? "mt-2 text-base leading-8 text-amber-950" : "mt-1 text-sm"}>
-            {previewValue}
-          </div>
-        </div>
+        <LessonCalloutCanvasPreview
+          block={block}
+          previewValue={previewValue}
+          learnerMode={learnerMode}
+        />
       ) : (
         <div
           data-testid="lesson-studio-text-preview"
@@ -1005,8 +1278,12 @@ function getBlockValidationIssues(block) {
     issues.push("нет источника видео");
   }
 
-  if ((type === "file_link" || type === "file" || type === "link") && !`${content.url || content.content_url || ""}`.trim()) {
+  if ((type === "file_link" || type === "file" || type === "link") && !isLessonImageBlock({ ...block, content_json: content }) && !`${content.url || content.content_url || ""}`.trim()) {
     issues.push("нет ссылки");
+  }
+
+  if (isLessonImageBlock({ ...block, content_json: content }) && !`${content.image_url || content.image_src || content.src || content.url || content.content_url || ""}`.trim()) {
+    issues.push("нет изображения");
   }
 
   if (type === "quiz") {
@@ -1895,7 +2172,7 @@ function LessonCanvasInsertBlockControl({
                 {templates.map((template, index) => {
                   const creatingKey = getCanvasInsertTemplateKey(insertIndex, template.key);
                   const creating = creatingTemplateKey === creatingKey;
-                  const meta = getBlockPreviewMeta({ block_type: template.values?.block_type });
+                  const meta = getBlockPreviewMeta({ block_type: template.values?.block_type, content_json: template.values?.content_json });
                   const primary = index === 0;
 
                   return (
@@ -1971,11 +2248,14 @@ function LessonCanvasBlock({
   const blockReady = issues.length === 0;
   const title = getBlockDisplayTitle(block, index);
   const preview = getBlockTextPreview(block);
-  const blockTypeLabel = getLessonBlockTypeLabel(block.block_type);
+  const blockTypeLabel = isLessonImageBlock(block) ? "Изображение" : getLessonBlockTypeLabel(block.block_type);
   const compactBlockType = `${block?.block_type || "rich_text"}`.toLowerCase();
   const isCompactVideo = compactBlockType === "video";
+  const isCompactImage = isLessonImageBlock(block);
   const isCompactFileLink =
-    compactBlockType === "file_link" || compactBlockType === "file" || compactBlockType === "link";
+    !isCompactImage &&
+    (compactBlockType === "file_link" || compactBlockType === "file" || compactBlockType === "link");
+  const isCompactCallout = compactBlockType === "callout";
   const compactPreviewLines = `${preview || ""}`
     .split(/\n+/)
     .map((line) => line.trim())
@@ -2117,7 +2397,7 @@ function LessonCanvasBlock({
 
       {compact ? (
         <div
-          className={isCompactVideo || isCompactFileLink ? "mt-5 w-full" : "mt-5 max-w-4xl"}
+          className={isCompactVideo || isCompactFileLink || isCompactImage || isCompactCallout ? "mt-5 w-full" : "mt-5 max-w-4xl"}
           data-testid="lesson-studio-block-compact-summary"
         >
           {isCompactVideo ? (
@@ -2126,8 +2406,20 @@ function LessonCanvasBlock({
               previewValue={compactSummary}
               learnerMode={false}
             />
+          ) : isCompactImage ? (
+            <LessonImageCanvasPreview
+              block={block}
+              previewValue={compactSummary}
+              learnerMode={false}
+            />
           ) : isCompactFileLink ? (
             <LessonFileLinkCanvasPreview
+              block={block}
+              previewValue={compactSummary}
+              learnerMode={false}
+            />
+          ) : isCompactCallout ? (
+            <LessonCalloutCanvasPreview
               block={block}
               previewValue={compactSummary}
               learnerMode={false}
@@ -2977,6 +3269,441 @@ function LessonStudioVideoBlockEditor({ form, saving, onFieldChange }) {
 
 
 
+
+function LessonStudioCalloutBlockEditor({ form, saving, onFieldChange }) {
+  const calloutText = `${form.content_text || ""}`;
+  const draftBlock = {
+    block_type: "callout",
+    title: form.title || "Важно",
+    content_json: {
+      text: calloutText,
+      content_text: calloutText,
+    },
+    is_required: form.is_required,
+    is_active: form.is_active,
+  };
+  const ready = Boolean(calloutText.trim());
+
+  return (
+    <>
+      <section
+        data-testid="lesson-studio-inspector-section-content"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">Содержимое врезки</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Добавьте короткое примечание, предупреждение или подсказку для обучающегося.
+            </p>
+          </div>
+
+          {ready ? (
+            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+              ✓ Врезка готова
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+              Требуется текст
+            </span>
+          )}
+        </div>
+
+        <label className="mt-4 block" data-testid="lesson-studio-inspector-content-field">
+          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+            Текст врезки
+          </span>
+
+          <textarea
+            value={calloutText}
+            onChange={(event) => onFieldChange("content_text", event.target.value)}
+            placeholder="Например: обратите внимание на важное правило или частую ошибку."
+            rows={5}
+            disabled={saving}
+            className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          Лучше использовать короткий текст: 1–3 предложения. Для большого материала используйте текстовый блок.
+        </p>
+      </section>
+
+      <section
+        data-testid="lesson-studio-callout-preview-editor"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">Предпросмотр</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Так врезка будет выглядеть на полотне урока.
+            </p>
+          </div>
+
+          {ready ? (
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+              Важное примечание
+            </span>
+          ) : null}
+        </div>
+
+        <LessonCalloutCanvasPreview
+          block={draftBlock}
+          previewValue={calloutText}
+          learnerMode={false}
+        />
+      </section>
+
+      <section
+        data-testid="lesson-studio-inspector-section-publication"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="text-lg font-black text-slate-950">Настройки блока</div>
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          Заголовок, обязательность и видимость врезки для обучающихся.
+        </p>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_17rem_17rem]">
+          <label
+            className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+            data-testid="lesson-studio-inspector-title-field"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              Название блока
+            </span>
+            <input
+              value={form.title}
+              onChange={(event) => onFieldChange("title", event.target.value)}
+              placeholder="Важно"
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_required
+              ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Обязательный</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Обучающийся должен прочитать эту врезку.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+              <input
+                type="checkbox"
+                checked={form.is_required}
+                onChange={(event) => onFieldChange("is_required", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_active
+              ? "bg-emerald-50/70 text-emerald-900 ring-emerald-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Показывать в уроке</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Блок будет виден обучающимся.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-emerald-600">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(event) => onFieldChange("is_active", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+        </div>
+      </section>
+    </>
+  );
+}
+
+
+
+function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
+  const imageUrl = `${form.image_url || form.content_text || ""}`;
+  const imageCaption = `${form.image_caption || ""}`;
+  const imageAlt = `${form.image_alt || ""}`;
+  const draftBlock = {
+    block_type: "image",
+    title: form.title || "Изображение",
+    content_json: {
+      image_url: imageUrl,
+      image_src: imageUrl,
+      src: imageUrl,
+      caption: imageCaption,
+      description: imageCaption,
+      alt_text: imageAlt,
+      alt: imageAlt,
+      full_width: form.image_full_width !== false,
+      open_full_size: form.image_open_full_size !== false,
+    },
+    is_required: form.is_required,
+    is_active: form.is_active,
+  };
+  const ready = Boolean(getSafeLessonRichTextHref(imageUrl));
+
+  const handleImageUrlChange = (value) => {
+    onFieldChange("image_url", value);
+    onFieldChange("content_text", value);
+  };
+
+  return (
+    <>
+      <section
+        data-testid="lesson-studio-inspector-section-content"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">Источник изображения</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Добавьте открытую ссылку на изображение. Загрузку файла с компьютера подключим отдельным этапом.
+            </p>
+          </div>
+
+          {ready ? (
+            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+              ✓ Изображение указано
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+              Требуется ссылка
+            </span>
+          )}
+        </div>
+
+        <label className="mt-4 block" data-testid="lesson-studio-inspector-content-field">
+          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+            Ссылка на изображение
+          </span>
+
+          <div className="mt-2 flex flex-col gap-2 lg:flex-row">
+            <input
+              type="url"
+              value={imageUrl}
+              onChange={(event) => handleImageUrlChange(event.target.value)}
+              placeholder="https://example.com/image.jpg"
+              disabled={saving}
+              className="h-12 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+
+            {ready ? (
+              <a
+                href={getSafeLessonRichTextHref(imageUrl)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 items-center justify-center rounded-xl bg-blue-700 px-5 text-sm font-bold text-white transition hover:bg-blue-800"
+              >
+                Проверить
+              </a>
+            ) : (
+              <span className="inline-flex h-12 items-center justify-center rounded-xl bg-slate-50 px-5 text-sm font-bold text-slate-400 ring-1 ring-slate-200">
+                Проверить
+              </span>
+            )}
+          </div>
+        </label>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <label className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              Подпись под изображением
+            </span>
+            <input
+              value={imageCaption}
+              onChange={(event) => onFieldChange("image_caption", event.target.value)}
+              placeholder="Например: схема подключения оборудования"
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
+          <label className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              Alt-текст
+            </span>
+            <input
+              value={imageAlt}
+              onChange={(event) => onFieldChange("image_alt", event.target.value)}
+              placeholder="Кратко опишите, что изображено"
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+        </div>
+
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          Для стабильного отображения лучше использовать прямую ссылку на JPG, PNG, WebP или SVG.
+        </p>
+      </section>
+
+      <section
+        data-testid="lesson-studio-image-preview-editor"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">Предпросмотр</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Так изображение будет выглядеть на полотне урока.
+            </p>
+          </div>
+
+          {ready ? (
+            <span className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 ring-1 ring-violet-200">
+              Изображение
+            </span>
+          ) : null}
+        </div>
+
+        <LessonImageCanvasPreview
+          block={draftBlock}
+          previewValue={imageUrl}
+          learnerMode={false}
+        />
+      </section>
+
+      <section
+        data-testid="lesson-studio-inspector-section-publication"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="text-lg font-black text-slate-950">Настройки блока</div>
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          Заголовок, обязательность, видимость и поведение изображения.
+        </p>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_17rem_17rem]">
+          <label
+            className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+            data-testid="lesson-studio-inspector-title-field"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              Название блока
+            </span>
+            <input
+              value={form.title}
+              onChange={(event) => onFieldChange("title", event.target.value)}
+              placeholder="Изображение"
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_required
+              ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Обязательный</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Обучающийся должен просмотреть изображение.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+              <input
+                type="checkbox"
+                checked={form.is_required}
+                onChange={(event) => onFieldChange("is_required", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_active
+              ? "bg-emerald-50/70 text-emerald-900 ring-emerald-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Показывать в уроке</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Блок будет виден обучающимся.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-emerald-600">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(event) => onFieldChange("is_active", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+        </div>
+
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.image_full_width !== false
+              ? "bg-violet-50/70 text-violet-900 ring-violet-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">На всю ширину</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Изображение занимает всю ширину блока.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-violet-600">
+              <input
+                type="checkbox"
+                checked={form.image_full_width !== false}
+                onChange={(event) => onFieldChange("image_full_width", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.image_open_full_size !== false
+              ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">Открывать отдельно</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Показывать кнопку открытия в новой вкладке.
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+              <input
+                type="checkbox"
+                checked={form.image_open_full_size !== false}
+                onChange={(event) => onFieldChange("image_open_full_size", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+        </div>
+      </section>
+    </>
+  );
+}
+
+
 function LessonStudioFileLinkBlockEditor({ form, saving, onFieldChange }) {
   const materialUrl = `${form.content_text || ""}`;
   const draftBlock = {
@@ -3306,16 +4033,27 @@ function buildInspectorBlockForm(block) {
   const videoUrl = getVideoBlockUrl(block);
   const videoEmbedCode = getVideoBlockEmbedCode(block);
   const videoSourceValue = videoSourceType === "embed" ? videoEmbedCode : videoUrl;
+  const imageContent = getImageBlockContent(block);
+  const imageUrl = getImageBlockUrl(block);
 
   return {
     title: `${block?.title || ""}`,
-    content_text: isLessonVideoBlock(block) ? videoSourceValue : getInspectorContentText(block),
+    content_text: isLessonVideoBlock(block)
+      ? videoSourceValue
+      : isLessonImageBlock(block)
+        ? imageUrl
+        : getInspectorContentText(block),
     editor_json: getInspectorEditorJson(block),
     editor_html: getInspectorEditorHtml(block),
     video_source_type: videoSourceType,
     video_url: videoUrl,
     video_embed_code: videoEmbedCode,
     allow_fullscreen: videoContent.allow_fullscreen !== false,
+    image_url: imageUrl,
+    image_caption: `${imageContent.caption || imageContent.description || ""}`,
+    image_alt: `${imageContent.alt_text || imageContent.alt || ""}`,
+    image_full_width: imageContent.full_width !== false,
+    image_open_full_size: imageContent.open_full_size !== false,
     is_required: Boolean(block?.is_required),
     is_active: block?.is_active !== false,
   };
@@ -3358,6 +4096,11 @@ function getInspectorFormSnapshot(values) {
     video_url: `${values?.video_url || ""}`.trim(),
     video_embed_code: `${values?.video_embed_code || ""}`.trim(),
     allow_fullscreen: values?.allow_fullscreen !== false,
+    image_url: `${values?.image_url || ""}`.trim(),
+    image_caption: `${values?.image_caption || ""}`.trim(),
+    image_alt: `${values?.image_alt || ""}`.trim(),
+    image_full_width: values?.image_full_width !== false,
+    image_open_full_size: values?.image_open_full_size !== false,
     is_required: Boolean(values?.is_required),
     is_active: Boolean(values?.is_active),
   });
@@ -3397,6 +4140,9 @@ function buildInspectorBlockPayload(block, values) {
   } else if (type === "file_link" || type === "file" || type === "link") {
     contentJson.url = contentText;
     contentJson.content_url = contentText;
+  } else if (type === "callout") {
+    contentJson.text = contentText;
+    contentJson.content_text = contentText;
   } else if (type === "quiz") {
     contentJson.question = contentText;
   } else if (type === "assignment") {
@@ -3852,8 +4598,20 @@ function LessonStudioInspector({
                 saving={saving}
                 onFieldChange={handleFieldChange}
               />
+            ) : isLessonImageBlock(selectedBlock) ? (
+              <LessonStudioImageBlockEditor
+                form={form}
+                saving={saving}
+                onFieldChange={handleFieldChange}
+              />
             ) : isLessonFileLinkBlock(selectedBlock) ? (
               <LessonStudioFileLinkBlockEditor
+                form={form}
+                saving={saving}
+                onFieldChange={handleFieldChange}
+              />
+            ) : isLessonCalloutBlock(selectedBlock) ? (
+              <LessonStudioCalloutBlockEditor
                 form={form}
                 saving={saving}
                 onFieldChange={handleFieldChange}
