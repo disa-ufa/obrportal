@@ -613,7 +613,7 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
             >
               ▶
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 pr-0 lg:pr-4">
               <div className={learnerMode ? "text-base font-black" : "text-sm font-bold"}>
                 Видео для просмотра
               </div>
@@ -1567,7 +1567,7 @@ function LessonCanvasInsertBlockControl({
   return (
     <div
       data-testid="lesson-studio-canvas-insert-control"
-      className="relative py-4"
+      className="relative py-3"
     >
       <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-slate-200/80" />
@@ -1581,7 +1581,7 @@ function LessonCanvasInsertBlockControl({
         >
           <summary
             data-testid="lesson-studio-canvas-insert-trigger"
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white text-xl font-black text-blue-700 shadow-sm ring-1 ring-blue-200 transition hover:bg-blue-50 hover:shadow-md"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white text-lg font-black text-blue-700 shadow-sm ring-1 ring-blue-200 transition hover:bg-blue-50 hover:shadow-md"
             style={{ listStyle: "none" }}
             aria-label="Добавить блок здесь"
           >
@@ -1692,6 +1692,7 @@ function LessonCanvasBlock({
   onDelete,
   onSaveBlock,
   savingBlockId,
+  onUnsavedStateChange,
 }) {
   const issues = getBlockValidationIssues(block);
   const blockReady = issues.length === 0;
@@ -1791,7 +1792,7 @@ function LessonCanvasBlock({
       className={
         previewMode
           ? "py-3"
-          : `rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.045)] ring-1 transition duration-200 ${
+          : `relative rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.045)] ring-1 transition duration-200 ${
               inlineEditing ? "p-3" : compact ? "p-6" : "p-5"
             } ${
               !previewMode && selected
@@ -1816,7 +1817,7 @@ function LessonCanvasBlock({
             </h3>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <div className="flex flex-wrap items-center justify-end gap-1.5 pr-12">
             <span
               data-testid="lesson-studio-block-readiness-chip"
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${
@@ -1886,9 +1887,7 @@ function LessonCanvasBlock({
         className={
           previewMode || inlineEditing
             ? "hidden"
-            : compact
-              ? "mt-7 flex items-center justify-end gap-2 border-t border-slate-200/80 pt-4"
-              : "mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/80 pt-4"
+            : "absolute right-5 top-5 z-10 flex items-center justify-end"
         }
       >
         <details
@@ -1901,7 +1900,7 @@ function LessonCanvasBlock({
         >
           <summary
             data-testid="lesson-studio-card-actions-trigger"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white text-lg font-black text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white text-base font-black text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
             style={{ listStyle: "none" }}
             aria-label="Действия с блоком"
           >
@@ -1996,6 +1995,15 @@ function LessonCanvasBlock({
 
             await onSaveBlock(...args);
             onSelect("");
+
+            const saveAndSwitchTargetBlockId =
+              typeof window !== "undefined"
+                ? window.__lessonStudioSaveAndSwitchTargetBlockId
+                : "";
+
+            if (saveAndSwitchTargetBlockId) {
+              return;
+            }
 
             const scrollToSavedBlock = (behavior = "auto") => {
               const savedBlockElement = document.querySelector(savedBlockSelector);
@@ -2105,6 +2113,7 @@ function LessonStudioCanvas({
   onDeleteBlock,
   onSaveBlock,
   savingBlockId,
+  onUnsavedStateChange,
   creatingTemplateKey,
   movingBlockId,
   duplicatingBlockId,
@@ -2170,6 +2179,7 @@ function LessonStudioCanvas({
                 onDelete={onDeleteBlock}
                 onSaveBlock={onSaveBlock}
                 savingBlockId={savingBlockId}
+                onUnsavedStateChange={onUnsavedStateChange}
               />
 
               {!previewMode ? (
@@ -2441,6 +2451,7 @@ function LessonStudioInspector({
   savingBlockId,
   variant = "sidebar",
   onClose,
+  onUnsavedStateChange,
 }) {
   const [form, setForm] = useState(() => buildInspectorBlockForm(selectedBlock));
   const [formError, setFormError] = useState("");
@@ -2551,11 +2562,9 @@ function LessonStudioInspector({
     setFormSuccess("");
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
+  const saveCurrentForm = useCallback(async () => {
     if (!selectedBlock || saving) {
-      return;
+      return false;
     }
 
     try {
@@ -2564,14 +2573,62 @@ function LessonStudioInspector({
       await onSaveBlock(selectedBlock, form);
       setSavedFormSnapshotOverride(getInspectorFormSnapshot(form));
       setFormSuccess("Блок сохранён. Полотно обновлено.");
+      return true;
     } catch (err) {
-      setFormError(err?.message || "Не удалось сохранить блок.");
+      const message = err?.message || "Не удалось сохранить блок.";
+      setFormError(message);
+      throw new Error(message);
     }
+  }, [form, onSaveBlock, saving, selectedBlock]);
+
+  const discardCurrentForm = useCallback(() => {
+    const restoredForm = buildInspectorBlockForm(selectedBlock);
+
+    setForm(restoredForm);
+    setFormError("");
+    setFormSuccess("");
+    setSavedFormSnapshotOverride("");
+  }, [selectedBlock]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await saveCurrentForm();
   };
 
+  useEffect(() => {
+    if (!inlineMode || typeof onUnsavedStateChange !== "function") {
+      return undefined;
+    }
+
+    onUnsavedStateChange({
+      blockId: selectedBlock?.id || "",
+      hasUnsavedChanges,
+      saving,
+      save: saveCurrentForm,
+      discard: discardCurrentForm,
+    });
+
+    return () => {
+      onUnsavedStateChange(null);
+    };
+  }, [
+    discardCurrentForm,
+    hasUnsavedChanges,
+    inlineMode,
+    onUnsavedStateChange,
+    saveCurrentForm,
+    saving,
+    selectedBlock?.id,
+  ]);
+
   return (
-    <aside data-testid={inspectorTestId} className={inspectorClassName}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <aside
+      data-testid={inspectorTestId}
+      className={inspectorClassName}
+      onPointerDown={inlineMode ? (event) => event.stopPropagation() : undefined}
+      onClick={inlineMode ? (event) => event.stopPropagation() : undefined}
+    >
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="min-w-0">
           <div className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">
             {inlineMode ? "Правка блока" : "Инспектор"}
@@ -2586,15 +2643,23 @@ function LessonStudioInspector({
 
           {inlineMode ? (
             <p className="mt-2 max-w-3xl text-[15px] leading-6 text-slate-500">
-              Редактируйте содержимое выбранного блока. Изменения сохраняются кнопкой внутри формы.
+              Редактируйте содержимое выбранного блока.
             </p>
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 lg:justify-end">
           {selectedBlock ? (
             <>
-              <span className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-slate-600 shadow-sm ring-1 ring-slate-200">
+              <span
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-sm ring-1 transition ${
+                  saving
+                    ? "bg-blue-50 text-blue-700 ring-blue-200"
+                    : hasUnsavedChanges
+                      ? "bg-amber-50 text-amber-800 ring-amber-200"
+                      : "bg-white text-slate-600 ring-slate-200"
+                }`}
+              >
                 {saving ? "Сохраняем…" : hasUnsavedChanges ? "Есть изменения" : "Сохранено"}
               </span>
 
@@ -2977,7 +3042,11 @@ function LessonStudioInspector({
               <button
                 type="submit"
                 disabled={saving}
-                className="min-w-[132px] rounded-xl bg-blue-700 px-8 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className={`min-w-[132px] rounded-xl px-8 py-2.5 text-sm font-bold shadow-sm ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  hasUnsavedChanges || saving
+                    ? "bg-blue-700 text-white ring-blue-700 hover:bg-blue-800"
+                    : "bg-slate-50 text-slate-600 ring-slate-200 hover:bg-white hover:text-slate-950"
+                }`}
               >
                 {saving ? "Сохраняем..." : "Сохранить"}
               </button>
@@ -3244,6 +3313,88 @@ function LessonStudioLivePreviewPanel({ lesson, blocks, selectedBlock }) {
   );
 }
 
+
+function LessonStudioUnsavedChangesDialog({
+  open,
+  saving,
+  onStay,
+  onDiscard,
+  onSaveAndContinue,
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid="lesson-studio-unsaved-changes-dialog"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm"
+      role="presentation"
+      onClick={onStay}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lesson-studio-unsaved-changes-title"
+        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.22)] ring-1 ring-slate-200"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start gap-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-xl text-amber-700 ring-1 ring-amber-200">
+            !
+          </span>
+
+          <div className="min-w-0">
+            <h2
+              id="lesson-studio-unsaved-changes-title"
+              className="text-lg font-black text-slate-950"
+            >
+              Есть несохранённые изменения
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Вы изменили текущий блок, но ещё не сохранили его. Перед переходом
+              к другому блоку выберите, что сделать с изменениями.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+          <button
+            type="button"
+            data-testid="lesson-studio-unsaved-stay"
+            onClick={onStay}
+            disabled={saving}
+            className="rounded-xl bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Остаться
+          </button>
+
+          <button
+            type="button"
+            data-testid="lesson-studio-unsaved-discard"
+            onClick={onDiscard}
+            disabled={saving}
+            className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-red-50 hover:text-red-700 hover:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Перейти без сохранения
+          </button>
+
+          <button
+            type="button"
+            data-testid="lesson-studio-unsaved-save-and-switch"
+            onClick={onSaveAndContinue}
+            disabled={saving}
+            className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm ring-1 ring-blue-700 transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? "Сохраняем..." : "Сохранить и перейти"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export function LessonStudioPage({ lessonId }) {
   const [lesson, setLesson] = useState(null);
   const [blocks, setBlocks] = useState([]);
@@ -3258,6 +3409,16 @@ export function LessonStudioPage({ lessonId }) {
   const [creatingTemplateKey, setCreatingTemplateKey] = useState("");
   const [error, setError] = useState("");
   const [showOnlyProblemBlocks, setShowOnlyProblemBlocks] = useState(false);
+  const [pendingBlockSelection, setPendingBlockSelection] = useState(null);
+  const [pendingSelectionSaving, setPendingSelectionSaving] = useState(false);
+  const [inlineEditorDirty, setInlineEditorDirty] = useState(false);
+  const inlineEditorGuardRef = useRef({
+    blockId: "",
+    hasUnsavedChanges: false,
+    saving: false,
+    save: null,
+    discard: null,
+  });
 
   const loadLesson = useCallback(async () => {
     if (!lessonId) {
@@ -3365,10 +3526,12 @@ export function LessonStudioPage({ lessonId }) {
     });
   }, []);
 
-  const handleSelectBlock = useCallback((blockId) => {
+  const commitSelectBlock = useCallback((blockId) => {
+    const shouldScrollToBlock = Boolean(blockId && blockId !== selectedBlockId);
+
     setSelectedBlockId(blockId);
 
-    if (typeof document === "undefined" || !blockId) {
+    if (!shouldScrollToBlock || typeof document === "undefined") {
       return;
     }
 
@@ -3376,10 +3539,196 @@ export function LessonStudioPage({ lessonId }) {
       const target = document.getElementById(`studio-block-${blockId}`);
 
       if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "nearest",
+        });
       }
     }, 0);
+  }, [selectedBlockId]);
+
+  const handleInlineEditorUnsavedStateChange = useCallback((nextState) => {
+    inlineEditorGuardRef.current = nextState || {
+      blockId: "",
+      hasUnsavedChanges: false,
+      saving: false,
+      save: null,
+      discard: null,
+    };
+
+    setInlineEditorDirty(Boolean(nextState?.hasUnsavedChanges));
   }, []);
+
+  const getVisibleInlineUnsavedState = useCallback(() => {
+    if (typeof document === "undefined") {
+      return false;
+    }
+
+    const inlineInspector = document.querySelector(
+      '[data-testid="lesson-studio-inline-inspector"]'
+    );
+
+    const inspectorText = inlineInspector?.textContent || "";
+
+    return (
+      inspectorText.includes("Есть изменения") ||
+      inspectorText.includes("Есть несохранённые изменения")
+    );
+  }, []);
+
+  const handleSelectBlock = useCallback((blockId, options = {}) => {
+    const guard = inlineEditorGuardRef.current || {};
+    const currentEditingBlockId = guard.blockId || editingBlockId || selectedBlockId || "";
+    const hasGuardUnsavedChanges = Boolean(guard.hasUnsavedChanges);
+    const hasVisibleUnsavedChanges = getVisibleInlineUnsavedState();
+
+    const shouldAskBeforeSwitch =
+      !options.force &&
+      Boolean(blockId) &&
+      Boolean(currentEditingBlockId) &&
+      blockId !== currentEditingBlockId &&
+      (hasGuardUnsavedChanges || hasVisibleUnsavedChanges);
+
+    if (shouldAskBeforeSwitch) {
+      setPendingBlockSelection({ blockId });
+      setInlineEditorDirty(true);
+      return false;
+    }
+
+    commitSelectBlock(blockId);
+    return true;
+  }, [
+    commitSelectBlock,
+    editingBlockId,
+    getVisibleInlineUnsavedState,
+    selectedBlockId,
+  ]);
+
+  const handleStayOnUnsavedBlock = useCallback(() => {
+    setPendingBlockSelection(null);
+  }, []);
+
+  const handleDiscardAndSwitchBlock = useCallback(() => {
+    const targetBlockId = pendingBlockSelection?.blockId || "";
+    const guard = inlineEditorGuardRef.current;
+
+    if (typeof guard?.discard === "function") {
+      guard.discard();
+    }
+
+    setPendingBlockSelection(null);
+    setEditingBlockId(targetBlockId || "");
+    commitSelectBlock(targetBlockId);
+  }, [commitSelectBlock, pendingBlockSelection]);
+
+  const handleSaveAndSwitchBlock = useCallback(async () => {
+    const targetBlockId = pendingBlockSelection?.blockId || "";
+
+    if (!targetBlockId) {
+      setPendingBlockSelection(null);
+      return;
+    }
+
+    setPendingSelectionSaving(true);
+    setError("");
+
+    if (typeof window !== "undefined") {
+      window.__lessonStudioSaveAndSwitchTargetBlockId = targetBlockId;
+    }
+
+    try {
+      const inlineForm =
+        typeof document !== "undefined"
+          ? document.querySelector('[data-testid="lesson-studio-inline-inspector"] form')
+          : null;
+
+      if (!inlineForm || typeof inlineForm.requestSubmit !== "function") {
+        const guard = inlineEditorGuardRef.current;
+
+        if (typeof guard?.save !== "function") {
+          throw new Error("Не удалось найти открытую форму редактирования блока.");
+        }
+
+        await guard.save();
+      } else {
+        inlineForm.requestSubmit();
+
+        await new Promise((resolve, reject) => {
+          const startedAt = Date.now();
+
+          const checkSaved = () => {
+            const hasUnsavedChanges = getVisibleInlineUnsavedState();
+
+            if (!hasUnsavedChanges) {
+              resolve();
+              return;
+            }
+
+            if (Date.now() - startedAt > 8000) {
+              reject(new Error("Блок не был сохранён. Проверьте поля формы и попробуйте ещё раз."));
+              return;
+            }
+
+            window.setTimeout(checkSaved, 150);
+          };
+
+          window.setTimeout(checkSaved, 250);
+        });
+      }
+
+      setPendingBlockSelection(null);
+      setEditingBlockId(targetBlockId);
+      commitSelectBlock(targetBlockId);
+
+      const scrollToTargetBlock = (behavior = "smooth") => {
+        if (typeof document === "undefined") {
+          return;
+        }
+
+        const safeTargetBlockId =
+          typeof window !== "undefined" && window.CSS?.escape
+            ? window.CSS.escape(targetBlockId)
+            : targetBlockId.replace(/"/g, '\\"');
+
+        const targetBlockElement = document.querySelector(
+          `[data-lesson-studio-block-id="${safeTargetBlockId}"]`
+        );
+
+        if (!targetBlockElement) {
+          return;
+        }
+
+        targetBlockElement.scrollIntoView({
+          behavior,
+          block: "start",
+          inline: "nearest",
+        });
+
+        targetBlockElement.focus?.({ preventScroll: true });
+      };
+
+      window.requestAnimationFrame(() => {
+        scrollToTargetBlock("auto");
+
+        window.setTimeout(() => scrollToTargetBlock("auto"), 120);
+        window.setTimeout(() => scrollToTargetBlock("smooth"), 360);
+        window.setTimeout(() => scrollToTargetBlock("smooth"), 700);
+      });
+    } catch (err) {
+      setError(err?.message || "Не удалось сохранить блок перед переходом.");
+    } finally {
+      setPendingSelectionSaving(false);
+
+      if (typeof window !== "undefined") {
+        window.setTimeout(() => {
+          if (window.__lessonStudioSaveAndSwitchTargetBlockId === targetBlockId) {
+            delete window.__lessonStudioSaveAndSwitchTargetBlockId;
+          }
+        }, 1200);
+      }
+    }
+  }, [commitSelectBlock, getVisibleInlineUnsavedState, pendingBlockSelection]);
 
   const handleFixFirstProblem = useCallback(() => {
     const firstProblemBlock = lessonReadiness?.problemBlocks?.[0]?.block || null;
@@ -3389,8 +3738,9 @@ export function LessonStudioPage({ lessonId }) {
     }
 
     setViewMode("editor");
-    handleSelectBlock(firstProblemBlock.id);
-    setEditingBlockId(firstProblemBlock.id);
+    if (handleSelectBlock(firstProblemBlock.id)) {
+      setEditingBlockId(firstProblemBlock.id);
+    }
   }, [handleSelectBlock, lessonReadiness]);
 
   const handleFixNextProblem = useCallback(() => {
@@ -3414,8 +3764,9 @@ export function LessonStudioPage({ lessonId }) {
     }
 
     setViewMode("editor");
-    handleSelectBlock(nextProblemBlock.id);
-    setEditingBlockId(nextProblemBlock.id);
+    if (handleSelectBlock(nextProblemBlock.id)) {
+      setEditingBlockId(nextProblemBlock.id);
+    }
   }, [handleSelectBlock, lessonReadiness, selectedBlockId]);
 
   const handleQuickCreateBlock = useCallback(
@@ -3649,8 +4000,9 @@ export function LessonStudioPage({ lessonId }) {
             selectedBlockId={selectedBlockId}
             editingBlockId={editingBlockId}
             onSelectBlock={(blockId) => {
-              handleSelectBlock(blockId);
-              setEditingBlockId(blockId || "");
+              if (handleSelectBlock(blockId)) {
+                setEditingBlockId(blockId || "");
+              }
             }}
             mode={viewMode}
             quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}
@@ -3686,8 +4038,9 @@ export function LessonStudioPage({ lessonId }) {
             selectedBlockId={selectedBlockId}
             editingBlockId={editingBlockId}
             onSelectBlock={(blockId) => {
-              handleSelectBlock(blockId);
-              setEditingBlockId(blockId || "");
+              if (handleSelectBlock(blockId)) {
+                setEditingBlockId(blockId || "");
+              }
             }}
             onRefreshBlocks={loadBlocks}
             quickAddTemplates={STUDIO_QUICK_BLOCK_TEMPLATES}
@@ -3697,6 +4050,7 @@ export function LessonStudioPage({ lessonId }) {
             onDeleteBlock={handleDeleteBlock}
             onSaveBlock={handleInspectorSaveBlock}
             savingBlockId={blockActionId}
+            onUnsavedStateChange={handleInlineEditorUnsavedStateChange}
             creatingTemplateKey={creatingTemplateKey}
             movingBlockId={blockActionId}
             duplicatingBlockId={duplicatingBlockId}
@@ -3708,6 +4062,14 @@ export function LessonStudioPage({ lessonId }) {
 
 
       </div>
+
+      <LessonStudioUnsavedChangesDialog
+        open={Boolean(pendingBlockSelection)}
+        saving={pendingSelectionSaving}
+        onStay={handleStayOnUnsavedBlock}
+        onDiscard={handleDiscardAndSwitchBlock}
+        onSaveAndContinue={handleSaveAndSwitchBlock}
+      />
     </main>
   );
 }
