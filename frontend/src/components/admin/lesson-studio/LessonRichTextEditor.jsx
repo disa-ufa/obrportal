@@ -41,7 +41,7 @@ function normalizeEditorDocument(value) {
 
 function getToolbarButtonClass(active = false) {
   return [
-    "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-3 text-xs font-black ring-1 transition focus:outline-none focus:ring-2 focus:ring-blue-200",
+    "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-[11px] font-semibold ring-1 transition focus:outline-none focus:ring-2 focus:ring-blue-100",
     active
       ? "bg-blue-600 text-white ring-blue-600 shadow-sm"
       : "bg-white text-slate-700 ring-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200",
@@ -64,7 +64,7 @@ function ToolbarButton({ active = false, disabled = false, title, onClick, child
 }
 
 function Divider() {
-  return <span aria-hidden="true" className="h-6 w-px bg-slate-200" />;
+  return <span aria-hidden="true" className="mx-0.5 h-6 w-px shrink-0 bg-slate-200" />;
 }
 
 function getEditorStats(editor) {
@@ -136,7 +136,7 @@ function LessonRichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-64 rounded-[1.25rem] bg-white px-5 py-5 text-[15px] leading-7 text-slate-900 outline-none transition",
+          "min-h-[240px] rounded-xl bg-white px-6 py-6 text-[15px] leading-7 text-slate-900 outline-none transition",
       },
     },
     onUpdate: ({ editor: currentEditor }) => emitEditorChange(currentEditor, onChange),
@@ -189,7 +189,7 @@ function LessonRichTextEditor({
   const characterLimitReached = characters >= RICH_TEXT_CHARACTER_LIMIT;
 
   return (
-    <div data-testid="lesson-rich-text-editor" className="mt-2 rounded-[1.75rem] bg-gradient-to-b from-slate-50 to-white p-3 ring-1 ring-slate-200">
+    <div data-testid="lesson-rich-text-editor" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
       {editor ? (
         <BubbleMenu
           editor={editor}
@@ -224,7 +224,8 @@ function LessonRichTextEditor({
               editor.isActive("link") ? "bg-white text-slate-950" : "hover:bg-white/10"
             }`}
           >
-            Ссылка
+            <span>↗</span>
+          <span>Ссылка</span>
           </button>
           <button
             type="button"
@@ -234,17 +235,18 @@ function LessonRichTextEditor({
               editor.isActive("code") ? "bg-white text-slate-950" : "hover:bg-white/10"
             }`}
           >
-            Код
+            <span className="font-mono text-[11px]">&lt;&gt;</span>
+          <span>Код</span>
           </button>
         </BubbleMenu>
       ) : null}
 
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/80 px-3 py-2 ring-1 ring-slate-200">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50/90 px-4 py-3 ring-1 ring-slate-200">
         <div>
-          <div className="text-xs font-black uppercase tracking-wide text-slate-700">
+          <div className="text-sm font-black text-slate-950">
             Редактор учебного текста
           </div>
-          <div className="mt-0.5 text-xs text-slate-500">
+          <div className="mt-1 text-xs leading-5 text-slate-500">
             Структурируйте материал заголовками, списками, цитатами и ссылками.
           </div>
         </div>
@@ -256,17 +258,18 @@ function LessonRichTextEditor({
 
       <div
         data-testid="lesson-rich-text-toolbar"
-        className="flex flex-wrap items-center gap-2 rounded-[1.35rem] bg-white/95 p-2.5 ring-1 ring-slate-200 shadow-sm"
+        className="flex items-center gap-1 overflow-x-auto rounded-xl bg-white/95 p-1.5 ring-1 ring-slate-200 shadow-sm [scrollbar-width:none]"
         role="toolbar"
         aria-label="Панель форматирования учебного текста"
       >
         <ToolbarButton
           title="Абзац"
-          active={editor.isActive("paragraph")}
+          active={false}
           disabled={disabled}
           onClick={() => editor.chain().focus().setParagraph().run()}
         >
-          Абзац
+          <span>Абзац</span>
+          <span className="text-slate-400">⌄</span>
         </ToolbarButton>
         <ToolbarButton
           title="Заголовок H2"
@@ -274,7 +277,8 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
         >
-          H2 Заголовок
+          <span className="font-black">H2</span>
+          <span>Загол.</span>
         </ToolbarButton>
         <ToolbarButton
           title="Заголовок H3"
@@ -282,7 +286,8 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         >
-          H3 Подзаг.
+          <span className="font-black">H3</span>
+          <span>Подз.</span>
         </ToolbarButton>
 
         <Divider />
@@ -293,7 +298,8 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
-          Жирный
+          <span className="font-black">B</span>
+          <span>Жирн.</span>
         </ToolbarButton>
         <ToolbarButton
           title="Курсив"
@@ -301,7 +307,8 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
-          <span className="italic">Курсив</span>
+          <span className="italic font-black">I</span>
+          <span>Курс.</span>
         </ToolbarButton>
         <ToolbarButton
           title="Код в строке"
@@ -328,7 +335,8 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
         >
-          Список
+          <span>☰</span>
+          <span>Список</span>
         </ToolbarButton>
         <ToolbarButton
           title="Нумерованный список"
@@ -336,7 +344,8 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         >
-          Нумер.
+          <span>1.</span>
+          <span>Нум.</span>
         </ToolbarButton>
         <ToolbarButton
           title="Цитата"
@@ -344,7 +353,8 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
         >
-          Цитата
+          <span>❝</span>
+          <span>Цитата</span>
         </ToolbarButton>
         <ToolbarButton
           title="Блок кода"
@@ -352,7 +362,8 @@ function LessonRichTextEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         >
-          Блок кода
+          <span className="font-mono text-[11px]">&lt;/&gt;</span>
+          <span>Блок</span>
         </ToolbarButton>
 
         <Divider />
@@ -362,21 +373,22 @@ function LessonRichTextEditor({
           disabled={disabled || !editor.can().undo()}
           onClick={() => editor.chain().focus().undo().run()}
         >
-          Назад
+          <span className="text-sm leading-none">↶</span>
         </ToolbarButton>
         <ToolbarButton
           title="Повторить"
           disabled={disabled || !editor.can().redo()}
           onClick={() => editor.chain().focus().redo().run()}
         >
-          Вперёд
+          <span className="text-sm leading-none">↷</span>
         </ToolbarButton>
         <ToolbarButton
           title="Очистить форматирование"
           disabled={disabled}
           onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
         >
-          Очистить
+          <span>⊘</span>
+          <span>Сброс</span>
         </ToolbarButton>
       </div>
 
@@ -425,18 +437,18 @@ function LessonRichTextEditor({
 
       <div
         data-testid="lesson-rich-text-editor-surface"
-        className="mt-3 rounded-[1.35rem] bg-white p-2 ring-1 ring-slate-200 shadow-inner [&_.is-editor-empty:first-child::before]:pointer-events-none [&_.is-editor-empty:first-child::before]:float-left [&_.is-editor-empty:first-child::before]:h-0 [&_.is-editor-empty:first-child::before]:text-slate-400 [&_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-blue-200 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_code]:rounded-md [&_.ProseMirror_code]:bg-slate-100 [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:font-mono [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h2]:font-black [&_.ProseMirror_h3]:text-lg [&_.ProseMirror_h3]:font-black [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-6 [&_.ProseMirror_p]:my-2 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded-2xl [&_.ProseMirror_pre]:bg-slate-950 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_pre]:text-slate-50 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-6 [&_.ProseMirror_a]:font-bold [&_.ProseMirror_a]:text-blue-700 [&_.ProseMirror_a]:underline"
+        className="mt-3 rounded-xl bg-white p-2 ring-1 ring-slate-200 shadow-inner [&_.is-editor-empty:first-child::before]:pointer-events-none [&_.is-editor-empty:first-child::before]:float-left [&_.is-editor-empty:first-child::before]:h-0 [&_.is-editor-empty:first-child::before]:text-slate-400 [&_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-blue-200 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_code]:rounded-md [&_.ProseMirror_code]:bg-slate-100 [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:font-mono [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h2]:font-black [&_.ProseMirror_h3]:text-lg [&_.ProseMirror_h3]:font-black [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-6 [&_.ProseMirror_p]:my-2 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded-2xl [&_.ProseMirror_pre]:bg-slate-950 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_pre]:text-slate-50 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-6 [&_.ProseMirror_a]:font-bold [&_.ProseMirror_a]:text-blue-700 [&_.ProseMirror_a]:underline"
       >
         <EditorContent editor={editor} />
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="text-slate-500">
           Совет: короткие абзацы, подзаголовки и списки делают урок понятнее для обучающегося.
         </div>
         <div
           data-testid="lesson-rich-text-character-count"
-          className={`rounded-full px-2.5 py-1 font-bold ring-1 ${
+          className={`rounded-full px-3 py-1.5 font-bold ring-1 ${
             characterLimitReached
               ? "bg-red-50 text-red-700 ring-red-200"
               : "bg-white text-slate-600 ring-slate-200"

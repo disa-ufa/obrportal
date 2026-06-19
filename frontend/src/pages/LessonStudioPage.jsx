@@ -1711,6 +1711,7 @@ function LessonCanvasBlock({
     ? `Нужно заполнить: ${issues.slice(0, 2).join(", ")}${issues.length > 2 ? "..." : ""}`
     : preview || "Краткое содержимое блока пока не заполнено.";
   const inlineRichTextEditing = !previewMode && selected && editing && isLessonRichTextBlock(block);
+  const inlineEditing = !previewMode && selected && editing;
   const actionsMenuRef = useRef(null);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
 
@@ -1791,7 +1792,7 @@ function LessonCanvasBlock({
         previewMode
           ? "py-3"
           : `rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.045)] ring-1 transition duration-200 ${
-              compact ? "p-6" : "p-5"
+              inlineEditing ? "p-3" : compact ? "p-6" : "p-5"
             } ${
               !previewMode && selected
                 ? "ring-blue-300 bg-blue-50/20"
@@ -1804,8 +1805,8 @@ function LessonCanvasBlock({
         }
       }}
     >
-      {!previewMode ? (
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      {!previewMode && !inlineEditing ? (
+        <div className="flex flex-wrap items-start justify-between gap-5 border-b border-slate-100 pb-4">
           <div className="min-w-0 max-w-4xl">
             <div className="text-[13px] font-black uppercase tracking-[0.12em] text-blue-700">
               #{index + 1} · {blockTypeLabel}
@@ -1883,7 +1884,7 @@ function LessonCanvasBlock({
       <div
         data-testid="lesson-studio-block-order-controls"
         className={
-          previewMode
+          previewMode || inlineEditing
             ? "hidden"
             : compact
               ? "mt-7 flex items-center justify-end gap-2 border-t border-slate-200/80 pt-4"
@@ -1964,7 +1965,7 @@ function LessonCanvasBlock({
         ) : null}
       </div>
 
-      {!compact && !previewMode && issues.length ? (
+      {!compact && !previewMode && !inlineEditing && issues.length ? (
         <div
           data-testid="lesson-studio-block-issues"
           className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-amber-800"
@@ -2507,7 +2508,7 @@ function LessonStudioInspector({
     ? "lesson-studio-inline-inspector"
     : "lesson-studio-inspector";
   const inspectorClassName = inlineMode
-    ? "mt-4 rounded-[1.5rem] bg-white p-3 ring-1 ring-blue-100"
+    ? "mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-blue-100"
     : "sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200";
 
   const lessonFacts = [
@@ -2577,33 +2578,65 @@ function LessonStudioInspector({
 
   return (
     <aside data-testid={inspectorTestId} className={inspectorClassName}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">
             {inlineMode ? "Правка блока" : "Инспектор"}
           </div>
-          <h2 className="mt-1 text-sm font-bold text-slate-900">
+          <h2 className="mt-2 text-[26px] font-black leading-tight text-slate-950">
             {selectedBlock
               ? inlineMode
                 ? getBlockDisplayTitle(selectedBlock)
                 : "Редактирование блока"
               : "Настройки урока"}
           </h2>
+
+          {inlineMode ? (
+            <p className="mt-2 max-w-3xl text-[15px] leading-6 text-slate-500">
+              Редактируйте содержимое выбранного блока. Изменения сохраняются кнопкой внутри формы.
+            </p>
+          ) : null}
         </div>
 
-        {inlineMode && onClose ? (
-          <button
-            type="button"
-            data-testid="lesson-studio-inline-inspector-close"
-            onClick={(event) => {
-              event.stopPropagation();
-              onClose();
-            }}
-            className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-white"
-          >
-            Отмена
-          </button>
-        ) : null}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {selectedBlock ? (
+            <>
+              <span className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-slate-600 shadow-sm ring-1 ring-slate-200">
+                {saving ? "Сохраняем…" : hasUnsavedChanges ? "Есть изменения" : "Сохранено"}
+              </span>
+
+              <span
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-sm ring-1 ${
+                  blockReady
+                    ? "bg-green-50 text-green-700 ring-green-200"
+                    : "bg-amber-50 text-amber-800 ring-amber-200"
+                }`}
+              >
+                {blockReady ? "✓ Готов" : `${blockIssues.length} проблем`}
+              </span>
+
+              {form.is_required ? (
+                <span className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 shadow-sm ring-1 ring-blue-200">
+                  ☆ Обязательный
+                </span>
+              ) : null}
+            </>
+          ) : null}
+
+          {inlineMode && onClose ? (
+            <button
+              type="button"
+              data-testid="lesson-studio-inline-inspector-close"
+              onClick={(event) => {
+                event.stopPropagation();
+                onClose();
+              }}
+              className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-900"
+            >
+              Отмена
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {selectedBlock ? (
@@ -2611,7 +2644,7 @@ function LessonStudioInspector({
           data-testid="lesson-studio-inspector-save-status"
           role="status"
           aria-live="polite"
-          className={`mt-3 rounded-2xl p-3 text-sm ring-1 ${saveFeedback.className}`}
+          className={inlineMode ? "hidden" : `mt-4 rounded-xl p-4 text-sm ring-1 ${saveFeedback.className}`}
         >
           <div className="font-black">{saveFeedback.label}</div>
           <div className="mt-1 text-xs leading-5 opacity-90">
@@ -2630,7 +2663,7 @@ function LessonStudioInspector({
         <>
           <div
             data-testid="lesson-studio-inspector-readiness"
-            className={`mt-3 rounded-2xl px-3 py-2 ring-1 ${
+            className={inlineMode ? "hidden" : `mt-3 rounded-xl px-4 py-3 ring-1 ${
               blockReady
                 ? "bg-green-50 text-green-900 ring-green-200"
                 : "bg-amber-50 text-amber-950 ring-amber-200"
@@ -2679,13 +2712,13 @@ function LessonStudioInspector({
           <form
             data-testid="lesson-studio-inspector-form"
             onSubmit={handleSubmit}
-            className="mt-3 space-y-3"
+            className="mt-4 space-y-4"
           >
             {inlineRichTextMode ? (
               <>
-                <section
+<section
                   data-testid="lesson-studio-inspector-section-content"
-                  className="rounded-[1.75rem] bg-white p-0"
+                  className="rounded-2xl bg-white"
                 >
                   <div className="block" data-testid="lesson-studio-inspector-content-field">
                     <LessonRichTextEditor
@@ -2702,56 +2735,68 @@ function LessonStudioInspector({
                   </div>
                 </section>
 
-                <details
+                <section
                   data-testid="lesson-studio-text-block-settings"
-                  className="rounded-2xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+                  className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
                 >
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-black uppercase tracking-wide text-slate-600">
-                    <span>Настройки блока</span>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-slate-500 ring-1 ring-slate-200">
-                      Заголовок · обязательность · активность
-                    </span>
-                  </summary>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-black text-slate-950">
+                        Настройки блока
+                      </div>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Заголовок, обязательность и видимость блока для обучающихся.
+                      </p>
+                    </div>
+                  </div>
 
-                  <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
-                    <label className="block" data-testid="lesson-studio-inspector-title-field">
+                  <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_18rem_18rem]">
+                    <label className="block rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200" data-testid="lesson-studio-inspector-title-field">
                       <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Заголовок
+                        Название блока
                       </span>
                       <input
                         value={form.title}
                         onChange={(event) => handleFieldChange("title", event.target.value)}
                         placeholder="Название блока"
-                        className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                       />
                     </label>
 
-                    <div
-                      data-testid="lesson-studio-inspector-section-publication"
-                      className="grid gap-2"
-                    >
-                      <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
-                        <input
-                          type="checkbox"
-                          checked={form.is_required}
-                          onChange={(event) => handleFieldChange("is_required", event.target.checked)}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        Обязательный блок
-                      </label>
+                    <label className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700 ring-1 ring-slate-200">
+                      <span>
+                        <span className="block font-bold text-slate-900">Обязательный</span>
+                        <span className="mt-1 block text-xs leading-5 text-slate-500">
+                          Обучающийся должен пройти этот блок.
+                        </span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={form.is_required}
+                        onChange={(event) => handleFieldChange("is_required", event.target.checked)}
+                        className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </label>
 
-                      <label className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
-                        <input
-                          type="checkbox"
-                          checked={form.is_active}
-                          onChange={(event) => handleFieldChange("is_active", event.target.checked)}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        Активен
-                      </label>
-                    </div>
+                    <label
+                      data-testid="lesson-studio-inspector-section-publication"
+                      className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700 ring-1 ring-slate-200"
+                    >
+                      <span>
+                        <span className="block font-bold text-slate-900">Показывать в уроке</span>
+                        <span className="mt-1 block text-xs leading-5 text-slate-500">
+                          Блок будет виден обучающимся.
+                        </span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={form.is_active}
+                        onChange={(event) => handleFieldChange("is_active", event.target.checked)}
+                        className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </label>
                   </div>
-                </details>
+                </section>
               </>
             ) : (
               <>
@@ -2901,7 +2946,7 @@ function LessonStudioInspector({
 
 <div
               data-testid="lesson-studio-inspector-save-bar"
-              className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-2 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"
+              className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/95 p-3 shadow-sm ring-1 ring-slate-200 backdrop-blur"
             >
               {inlineMode && onClose ? (
                 <button
@@ -2911,7 +2956,7 @@ function LessonStudioInspector({
                     event.stopPropagation();
                     onClose();
                   }}
-                  className="rounded-2xl bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white"
+                  className="rounded-xl bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white"
                 >
                   Отмена
                 </button>
@@ -2920,7 +2965,7 @@ function LessonStudioInspector({
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-2xl bg-blue-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-xl bg-blue-700 px-8 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving
                   ? "Сохраняем..."
