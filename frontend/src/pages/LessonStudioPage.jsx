@@ -1265,7 +1265,7 @@ function LessonStudioStructurePanel({
   return (
     <aside
       data-testid="lesson-studio-structure"
-      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

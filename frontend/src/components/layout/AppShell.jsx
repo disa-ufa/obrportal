@@ -3,6 +3,7 @@
 
 // Smoke guard for legacy AppShell import check:
 // import { Link } from "react-router-dom";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Bell, BookOpen, Building2, ChevronLeft, CircleHelp, FileCheck2, FileText, Home, Layers3, LogOut, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Upload, UserRound, UsersRound } from "lucide-react";
 import { ADMIN_ROUTE_ITEMS, getAdminRouteItem } from "../../utils/adminRoutes";
@@ -211,37 +212,74 @@ function formatCountBadge(value) {
   return value;
 }
 
-function Logo() {
+function Logo({ collapsed, onToggle }) {
   return (
-    <Link to="/admin" className="flex h-[72px] items-center gap-3 border-b border-slate-200 px-6">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
-        <BookOpen className="h-5 w-5" aria-hidden="true" />
-      </span>
-      <span className="text-xl font-black tracking-tight text-[#111936]">ObrPortal</span>
-    </Link>
+    <div className={`flex h-[72px] items-center border-b border-slate-200 ${
+      collapsed ? "justify-center px-3" : "justify-between gap-2 px-5"
+    }`}>
+      <Link
+        to="/admin"
+        className={`flex min-w-0 items-center gap-3 ${collapsed ? "justify-center" : ""}`}
+        title="ObrPortal"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+          <BookOpen className="h-5 w-5" aria-hidden="true" />
+        </span>
+
+        {!collapsed ? (
+          <span className="truncate text-xl font-black tracking-tight text-[#111936]">
+            ObrPortal
+          </span>
+        ) : null}
+      </Link>
+
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500 ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 ${
+          collapsed ? "absolute left-[70px] top-4 z-30 shadow-sm" : ""
+        }`}
+        aria-label={collapsed ? "Развернуть меню" : "Свернуть меню"}
+        title={collapsed ? "Развернуть меню" : "Свернуть меню"}
+      >
+        <ChevronLeft
+          className={`h-4 w-4 transition ${collapsed ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+    </div>
   );
 }
 
-function AdminNavItem({ item, active, count, onPageChange }) {
+function AdminNavItem({ item, active, count, onPageChange, collapsed = false }) {
   const Icon = ADMIN_ICON_BY_KEY[item.key] || FileText;
 
   return (
     <Link
       to={item.path}
+      title={collapsed ? item.label : undefined}
       aria-current={active ? "page" : undefined}
       onClick={() => onPageChange(item.key)}
-      className={`group flex h-12 items-center justify-between gap-3 rounded-xl px-4 text-sm font-bold transition ${
+      className={`group flex h-12 items-center rounded-xl text-sm font-bold transition ${
+        collapsed ? "justify-center px-0" : "justify-between gap-3 px-4"
+      } ${
         active
           ? "bg-blue-50 text-blue-700"
           : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
       }`}
     >
-      <span className="flex min-w-0 items-center gap-3">
-        <Icon className={`h-5 w-5 shrink-0 ${active ? "text-blue-700" : "text-slate-400 group-hover:text-blue-600"}`} aria-hidden="true" />
-        <span className="truncate">{item.label}</span>
+      <span className={`flex min-w-0 items-center ${collapsed ? "justify-center" : "gap-3"}`}>
+        <Icon
+          className={`h-5 w-5 shrink-0 ${
+            active ? "text-blue-700" : "text-slate-400 group-hover:text-blue-600"
+          }`}
+          aria-hidden="true"
+        />
+
+        {!collapsed ? <span className="truncate">{item.label}</span> : null}
       </span>
 
-      {count !== null && count > 0 ? (
+      {!collapsed && count !== null && count > 0 ? (
         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ${active ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>
           {formatCountBadge(count)}
         </span>
@@ -265,6 +303,7 @@ export function AppShell({
   children,
 }) {
   const location = useLocation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const isLessonStudioPage = /^\/admin\/lessons\/[^/]+\/studio\/?$/.test(location.pathname);
   const currentRoute = getAdminRouteItem(currentPage);
   const currentPageLabel = currentRoute?.label || "Раздел";
@@ -286,10 +325,11 @@ export function AppShell({
 
   return (
     <main className="admin-soft-shell min-h-screen text-[#111936]">
-      <div className="grid min-h-screen w-full lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="border-r border-slate-200 bg-white">
-          <Logo />
+      <div className={`grid min-h-screen w-full transition-[grid-template-columns] duration-200 ${sidebarCollapsed ? "lg:grid-cols-[88px_minmax(0,1fr)]" : "lg:grid-cols-[260px_minmax(0,1fr)]"}`}>
+        <aside className={`relative border-r border-slate-200 bg-white transition-all duration-200 ${sidebarCollapsed ? "w-[88px]" : "w-[260px]"}`}>
+          <Logo collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((current) => !current)} />
 
+          {!sidebarCollapsed ? (
           <div className="border-b border-slate-100 px-5 py-5">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-blue-100 ring-1 ring-slate-200">
@@ -307,8 +347,9 @@ export function AppShell({
               </div>
             </div>
           </div>
+          ) : null}
 
-          <nav className="space-y-1 px-4 py-5" aria-label="Административная навигация">
+          <nav className={`space-y-1 py-5 ${sidebarCollapsed ? "px-3" : "px-4"}`} aria-label="Административная навигация">
             {visibleAdminItems.map((item) => (
               <AdminNavItem
                 key={item.key}
@@ -316,10 +357,12 @@ export function AppShell({
                 active={currentPage === item.key}
                 count={getCount(item.key, counts)}
                 onPageChange={onPageChange}
+                collapsed={sidebarCollapsed}
               />
             ))}
           </nav>
 
+          {!sidebarCollapsed ? (
           <div className="mt-auto px-4 pb-5">
             <div className="admin-glass-card p-4">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
@@ -334,6 +377,7 @@ export function AppShell({
               </button>
             </div>
           </div>
+          ) : null}
         </aside>
 
         <div className="min-w-0">
