@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Eye, Save, Send } from "lucide-react";
 import {
   createAdminLessonBlock,
   deleteAdminLessonBlock,
@@ -1099,7 +1100,7 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
   return (
     <section
       data-testid="lesson-studio-topbar"
-      className="rounded-[1.75rem] bg-white/95 p-5 shadow-sm ring-1 ring-slate-200 backdrop-blur"
+      className="rounded-2xl bg-white/95 p-5 shadow-sm ring-1 ring-slate-200 backdrop-blur"
     >
       <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
         <a
@@ -1152,9 +1153,9 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
             type="button"
             data-testid="lesson-studio-save-shortcut-button"
             onClick={handleSaveShortcut}
-            className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
           >
-            <span>▣</span>
+            <Save className="h-4 w-4" aria-hidden="true" />
             Сохранить
           </button>
 
@@ -1162,9 +1163,9 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
             type="button"
             data-testid="lesson-studio-preview-mode-button"
             onClick={() => onModeChange(previewMode ? "editor" : "preview")}
-            className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
           >
-            <span>◉</span>
+            <Eye className="h-4 w-4" aria-hidden="true" />
             {previewMode ? "К редактору" : "Предпросмотр"}
           </button>
 
@@ -1172,19 +1173,22 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
             type="button"
             data-testid="lesson-studio-publish-placeholder-button"
             title="Публикация урока будет подключена отдельным этапом"
-            className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-blue-800"
+            disabled
+            aria-disabled="true"
+            className="inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-xl bg-blue-700/60 px-4 text-sm font-bold text-white shadow-sm"
           >
-            <span>↑</span>
+            <Send className="h-4 w-4" aria-hidden="true" />
             Опубликовать
           </button>
 
           <a
             href={courseHref}
             data-testid="lesson-studio-course-link"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-lg font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-900"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-blue-700 hover:ring-blue-200"
             aria-label="Вернуться к курсу"
           >
-            ⋯
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            К курсу
           </a>
         </div>
       </div>
@@ -3423,7 +3427,7 @@ export function LessonStudioPage({ lessonId }) {
         className={
           viewMode === "preview"
             ? "grid gap-5"
-            : "grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[310px_minmax(0,1fr)_420px]"
+            : "grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[310px_minmax(0,1fr)]"
         }
       >
         {viewMode !== "preview" ? (
@@ -3489,15 +3493,7 @@ export function LessonStudioPage({ lessonId }) {
           />
         </section>
 
-        {viewMode !== "preview" ? (
-          <div className="hidden 2xl:block">
-            <LessonStudioLivePreviewPanel
-              lesson={lesson}
-              blocks={blocks}
-              selectedBlock={selectedBlock}
-            />
-          </div>
-        ) : null}
+
 
       </div>
     </main>
