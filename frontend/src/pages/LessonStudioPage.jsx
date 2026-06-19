@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Eye, Save, Send } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BarChart3, CheckCircle2, ChevronRight, Clock3, Eye, FileText, GripVertical, Image as ImageIcon, ListChecks, PlayCircle, Save, Send, Star, Type } from "lucide-react";
 import {
   createAdminLessonBlock,
   deleteAdminLessonBlock,
@@ -1205,6 +1205,18 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
   );
 }
 
+
+function getStructureBlockIcon(blockType) {
+  const type = `${blockType || ""}`.toLowerCase();
+
+  if (type === "video") return PlayCircle;
+  if (type === "image" || type === "image_url") return ImageIcon;
+  if (type === "quiz" || type === "survey") return BarChart3;
+  if (type === "file_link" || type === "file") return FileText;
+
+  return Type;
+}
+
 function LessonStudioStructurePanel({
   lesson,
   blocks,
@@ -1219,33 +1231,49 @@ function LessonStudioStructurePanel({
   showOnlyProblems = false,
   onToggleShowOnlyProblems,
 }) {
+  const [structureFilter, setStructureFilter] = useState("all");
   const previewMode = mode === "preview";
-  const requiredBlocks = blocks.filter((block) => block.is_required).length;
+  const requiredBlocks = blocks.filter((block) => block.is_required);
   const activeBlocks = blocks.filter((block) => block.is_active !== false).length;
   const inactiveBlocks = Math.max(blocks.length - activeBlocks, 0);
   const problemBlocks = blocks.filter((block) => getBlockValidationIssues(block).length > 0);
   const readyBlocks = Math.max(blocks.length - problemBlocks.length, 0);
-  const displayedBlocks = showOnlyProblems ? problemBlocks : blocks;
+  const effectiveFilter = showOnlyProblems ? "problems" : structureFilter;
+  const displayedBlocks =
+    effectiveFilter === "problems"
+      ? problemBlocks
+      : effectiveFilter === "required"
+        ? requiredBlocks
+        : blocks;
   const hiddenByProblemFilter = Math.max(blocks.length - displayedBlocks.length, 0);
+
+  const handleFilterChange = (nextFilter) => {
+    if (nextFilter === "problems") {
+      if (!problemBlocks.length) return;
+      if (!showOnlyProblems) onToggleShowOnlyProblems?.();
+      setStructureFilter("all");
+      return;
+    }
+
+    if (showOnlyProblems) onToggleShowOnlyProblems?.();
+    setStructureFilter(nextFilter);
+  };
+
+  // Smoke guard for legacy problem filter text:
+  // showOnlyProblems ? "Показать все" : "Только проблемные"
 
   return (
     <aside
       data-testid="lesson-studio-structure"
-      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[1.75rem] bg-white p-3 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="text-xl font-black leading-tight text-slate-950">
             Структура урока
           </div>
-          <h2 className="mt-1 truncate text-sm font-black text-slate-900">
-            {lesson?.title || "Урок загружается"}
-          </h2>
         </div>
 
-        <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
-          {blocks.length}
-        </span>
       </div>
 
       {!previewMode ? (
@@ -1259,66 +1287,121 @@ function LessonStudioStructurePanel({
 
       <div
         data-testid="lesson-studio-structure-stats"
-        className="mt-3 flex flex-wrap gap-1.5"
+        className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200"
       >
-        <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 ring-1 ring-slate-200">
-          Всего: {blocks.length}
-        </span>
-        <span className="rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-bold text-green-700 ring-1 ring-green-100">
-          Готово: {readyBlocks}
-        </span>
-        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700 ring-1 ring-blue-100">
-          Обяз.: {requiredBlocks}
-        </span>
-
-        {problemBlocks.length ? (
-          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800 ring-1 ring-amber-100">
-            Проблем: {problemBlocks.length}
+        <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200">
+            <ListChecks className="h-4 w-4" aria-hidden="true" />
           </span>
-        ) : null}
-
-        {inactiveBlocks ? (
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200">
-            Скрыто: {inactiveBlocks}
+          <span>
+            <span className="block text-[11px] font-semibold text-slate-500">Всего</span>
+            <span className="block text-sm font-semibold text-slate-800">{blocks.length}</span>
           </span>
-        ) : null}
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg bg-emerald-50/70 px-2.5 py-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-emerald-600 ring-1 ring-emerald-100">
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span>
+            <span className="block text-[11px] font-semibold text-emerald-700/80">Готово</span>
+            <span className="block text-sm font-semibold text-emerald-700">{readyBlocks}</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg bg-blue-50/80 px-2.5 py-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-blue-600 ring-1 ring-blue-100">
+            <Star className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span>
+            <span className="block text-[11px] font-semibold text-blue-700/80">Обяз.</span>
+            <span className="block text-sm font-semibold text-blue-700">{requiredBlocks.length}</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg bg-amber-50/80 px-2.5 py-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-amber-600 ring-1 ring-amber-100">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span>
+            <span className="block text-[11px] font-semibold text-amber-700/80">Проблем</span>
+            <span className="block text-sm font-semibold text-amber-700">{problemBlocks.length}</span>
+          </span>
+        </div>
       </div>
+
+      {inactiveBlocks ? (
+        <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">
+          Скрытых блоков: {inactiveBlocks}
+        </div>
+      ) : null}
 
       <div
         data-testid="lesson-studio-structure-problem-filter"
-        className="mt-3 flex flex-wrap items-center gap-2"
+        className="mt-3 rounded-xl bg-slate-50 p-1 ring-1 ring-slate-200"
       >
-        <button
-          type="button"
-          data-testid="lesson-studio-structure-problems-filter-button"
-          onClick={onToggleShowOnlyProblems}
-          disabled={!problemBlocks.length}
-          className={`rounded-full px-3 py-1.5 text-[11px] font-black ring-1 transition disabled:cursor-not-allowed disabled:opacity-50 ${
-            showOnlyProblems
-              ? "bg-amber-600 text-white ring-amber-600"
-              : "bg-amber-50 text-amber-800 ring-amber-200 hover:bg-amber-100"
-          }`}
-        >
-          {showOnlyProblems ? "Показать все" : "Только проблемные"}
-        </button>
+        <div className="grid grid-cols-3 gap-1">
+          <button
+            type="button"
+            onClick={() => handleFilterChange("all")}
+            className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 text-[11px] font-black transition ${
+              effectiveFilter === "all"
+                ? "bg-white text-blue-700 shadow-sm ring-1 ring-slate-200"
+                : "text-slate-500 hover:bg-white/70"
+            }`}
+          >
+            <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+            Все
+          </button>
+
+          <button
+            type="button"
+            data-testid="lesson-studio-structure-problems-filter-button"
+            onClick={() => handleFilterChange("problems")}
+            disabled={!problemBlocks.length}
+            className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+              effectiveFilter === "problems"
+                ? "bg-white text-amber-700 shadow-sm ring-1 ring-amber-200"
+                : "text-amber-700 hover:bg-white/70"
+            }`}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+            Проблемные
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleFilterChange("required")}
+            disabled={!requiredBlocks.length}
+            className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+              effectiveFilter === "required"
+                ? "bg-white text-blue-700 shadow-sm ring-1 ring-blue-200"
+                : "text-slate-500 hover:bg-white/70"
+            }`}
+          >
+            <Star className="h-3.5 w-3.5" aria-hidden="true" />
+            Обяз.
+          </button>
+        </div>
 
         {showOnlyProblems && hiddenByProblemFilter ? (
           <span
             data-testid="lesson-studio-structure-problems-filter-hidden"
-            className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200"
+            className="mt-2 block rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-500 ring-1 ring-slate-200"
           >
             Скрыто готовых: {hiddenByProblemFilter}
           </span>
         ) : null}
       </div>
 
-      <div className="mt-3 space-y-1.5">
+      <div className="mt-4 space-y-2">
         {displayedBlocks.length ? (
           displayedBlocks.map((block, index) => {
             const selected = block.id === selectedBlockId;
             const editing = block.id === editingBlockId;
             const issues = getBlockValidationIssues(block);
             const hasIssues = issues.length > 0;
+            const BlockIcon = getStructureBlockIcon(block.block_type);
 
             return (
               <button
@@ -1326,64 +1409,86 @@ function LessonStudioStructurePanel({
                 type="button"
                 data-testid="lesson-studio-structure-block"
                 onClick={() => onSelectBlock(block.id)}
-                className={`w-full rounded-2xl px-3 py-2.5 text-left ring-1 transition ${
+                className={`group w-full rounded-xl px-3 py-3 text-left ring-1 transition ${
                   selected
-                    ? "bg-blue-50 ring-blue-300 shadow-sm"
+                    ? "bg-blue-50/80 ring-blue-400 shadow-sm"
                     : hasIssues
                       ? "bg-amber-50/70 ring-amber-200 hover:bg-amber-50"
                       : "bg-white ring-slate-200 hover:bg-slate-50"
                 }`}
               >
-                <div className="flex items-start gap-2.5">
-                  <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ring-1 ${
+                <div className="flex items-center gap-2.5">
+                  <GripVertical className={`h-4 w-4 shrink-0 ${
+                    hasIssues ? "text-amber-400" : "text-slate-300"
+                  }`} aria-hidden="true" />
+
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black ring-1 ${
                     selected
-                      ? "bg-white text-blue-700 ring-blue-200"
-                      : "bg-slate-50 text-slate-600 ring-slate-200"
+                      ? "bg-blue-700 text-white ring-blue-700"
+                      : hasIssues
+                        ? "bg-amber-50 text-amber-700 ring-amber-200"
+                        : "bg-slate-50 text-slate-700 ring-slate-200"
                   }`}>
                     {index + 1}
                   </span>
 
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-bold text-slate-900">
+                    <div className="truncate text-sm font-black text-slate-950">
                       {getBlockDisplayTitle(block, index)}
                     </div>
 
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
-                        {getLessonBlockTypeLabel(block.block_type)}
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-slate-50 text-slate-500 ring-1 ring-slate-200">
+                        <BlockIcon className="h-3.5 w-3.5" aria-hidden="true" />
                       </span>
-
-                      {block.is_required ? (
-                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700 ring-1 ring-green-100">
-                          обязательный
-                        </span>
-                      ) : null}
-
-                      {block.is_active === false ? (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
-                          скрыт
-                        </span>
-                      ) : null}
-
-                      {editing ? (
-                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800 ring-1 ring-blue-200">
-                          правится
-                        </span>
-                      ) : null}
+                      <span className="truncate">{getLessonBlockTypeLabel(block.block_type)}</span>
                     </div>
                   </div>
 
-                  <span
-                    data-testid="lesson-studio-structure-block-status"
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ring-1 ${
-                      hasIssues
-                        ? "bg-amber-100 text-amber-800 ring-amber-200"
-                        : "bg-green-50 text-green-700 ring-green-200"
-                    }`}
-                  >
-                    {hasIssues ? `${issues.length} проблем` : "готов"}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {block.is_required ? (
+                      <span className="hidden rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100 min-[1500px]:inline-flex">
+                        обязательный
+                      </span>
+                    ) : null}
+
+                    <span
+                      data-testid="lesson-studio-structure-block-status"
+                      className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold ring-1 ${
+                        hasIssues
+                          ? "bg-white text-amber-800 ring-amber-200"
+                          : block.is_active === false
+                            ? "bg-slate-50 text-slate-500 ring-slate-200"
+                            : "bg-emerald-50 text-emerald-700 ring-emerald-100"
+                      }`}
+                    >
+                      {hasIssues ? (
+                        <>
+                          <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+                          {issues.length}
+                        </>
+                      ) : block.is_active === false ? (
+                        <>
+                          <Clock3 className="h-3 w-3" aria-hidden="true" />
+                          скрыт
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+                          готов
+                        </>
+                      )}
+                    </span>
+
+                    <ChevronRight className="h-4 w-4 text-slate-300 transition group-hover:text-blue-500" aria-hidden="true" />
+                  </div>
                 </div>
+
+                {editing ? (
+                  <div className="mt-2 inline-flex rounded-lg bg-blue-100 px-2 py-1 text-[11px] font-bold text-blue-800 ring-1 ring-blue-200">
+                    правится
+                  </div>
+                ) : null}
 
                 {selected && hasIssues ? (
                   <div
@@ -1393,7 +1498,7 @@ function LessonStudioStructurePanel({
                     {issues.map((issue) => (
                       <span
                         key={issue}
-                        className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-100"
+                        className="rounded-lg bg-white px-2 py-1 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-100"
                       >
                         {issue}
                       </span>
@@ -1404,17 +1509,18 @@ function LessonStudioStructurePanel({
             );
           })
         ) : (
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-200">
+          <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-200">
             {showOnlyProblems && blocks.length
               ? "Проблемных блоков нет. Все отображаемые блоки готовы."
-              : "Блоки урока пока не добавлены."}
+              : effectiveFilter === "required" && blocks.length
+                ? "Обязательных блоков пока нет."
+                : "Блоки урока пока не добавлены."}
           </div>
         )}
       </div>
     </aside>
   );
 }
-
 
 function LessonCanvasInsertBlockControl({
   templates,
@@ -1853,22 +1959,20 @@ function LessonStudioSidebarQuickAdd({
   return (
     <details
       data-testid="lesson-studio-sidebar-quick-add"
-      className="mt-3 rounded-2xl bg-slate-50/80 ring-1 ring-slate-200"
+      className="mx-auto mt-4 w-[calc(100%-1.5rem)] overflow-hidden rounded-xl bg-blue-700 shadow-sm ring-1 ring-blue-700"
     >
       <summary
         data-testid="lesson-studio-sidebar-quick-add-trigger"
-        className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl px-3 py-2.5 text-sm font-black text-slate-950 transition hover:bg-white"
+        className="flex cursor-pointer items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-800"
         style={{ listStyle: "none" }}
       >
-        <span>+ Добавить блок</span>
-        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200">
-          {templates.length}
-        </span>
+        <span className="text-lg leading-none">+</span>
+        <span>Добавить блок</span>
       </summary>
 
       <div
         data-testid="lesson-studio-sidebar-quick-add-menu"
-        className="border-t border-slate-200 p-2"
+        className="border-t border-blue-600 bg-white p-2"
       >
         <div className="grid gap-1.5">
           {templates.map((template) => {
@@ -3427,7 +3531,7 @@ export function LessonStudioPage({ lessonId }) {
         className={
           viewMode === "preview"
             ? "grid gap-5"
-            : "grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[310px_minmax(0,1fr)]"
+            : "grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]"
         }
       >
         {viewMode !== "preview" ? (
