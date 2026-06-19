@@ -1567,10 +1567,10 @@ function LessonCanvasInsertBlockControl({
   return (
     <div
       data-testid="lesson-studio-canvas-insert-control"
-      className="relative py-0.5"
+      className="relative py-4"
     >
-      <div className="flex items-center gap-2">
-        <div className="h-px flex-1 bg-slate-200/80" />
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-slate-200/80" />
 
         <details
           ref={menuRef}
@@ -1581,7 +1581,7 @@ function LessonCanvasInsertBlockControl({
         >
           <summary
             data-testid="lesson-studio-canvas-insert-trigger"
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white text-lg font-black text-blue-700 shadow-sm ring-1 ring-blue-200 transition hover:bg-blue-50"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white text-xl font-black text-blue-700 shadow-sm ring-1 ring-blue-200 transition hover:bg-blue-50 hover:shadow-md"
             style={{ listStyle: "none" }}
             aria-label="Добавить блок здесь"
           >
@@ -1590,45 +1590,84 @@ function LessonCanvasInsertBlockControl({
 
           <div
             data-testid="lesson-studio-canvas-insert-options"
-            className="absolute left-1/2 z-30 mt-2 grid w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 grid-cols-2 gap-2 rounded-[1.35rem] bg-white p-2 shadow-xl ring-1 ring-slate-200 sm:grid-cols-3 xl:grid-cols-6"
+            className="absolute left-1/2 z-40 mt-3 w-[min(760px,calc(100vw-3rem))] -translate-x-1/2 rounded-2xl bg-white p-4 shadow-[0_20px_55px_rgba(15,23,42,0.14)] ring-1 ring-slate-200"
           >
-            {templates.map((template) => {
-              const creatingKey = getCanvasInsertTemplateKey(insertIndex, template.key);
-              const creating = creatingTemplateKey === creatingKey;
-              const meta = getBlockPreviewMeta({ block_type: template.values?.block_type });
+            <div className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 bg-white ring-1 ring-slate-200" />
+            <div className="absolute left-1/2 top-0 h-5 w-12 -translate-x-1/2 bg-white" />
 
-              return (
-                <button
-                  key={template.key}
-                  type="button"
-                  data-testid="lesson-studio-canvas-insert-option"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setOpen(false);
-                    onCreateBlock(template, insertIndex);
-                  }}
-                  disabled={disabled || creating}
-                  className="flex min-h-20 flex-col items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-left ring-1 ring-slate-200 transition hover:bg-blue-50 hover:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[11px] font-black text-slate-700 shadow-sm ring-1 ring-slate-200">
-                    {meta.icon}
-                  </span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setOpen(false);
+                }}
+                className="absolute right-0 top-0 flex h-8 w-8 items-center justify-center rounded-full bg-white text-lg font-semibold text-slate-400 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-700"
+                aria-label="Закрыть выбор блока"
+              >
+                ×
+              </button>
 
-                  <span className="min-w-0">
-                    <span className="block truncate text-xs font-black text-slate-950">
-                      {creating ? "Добавляем..." : template.label}
-                    </span>
-                    <span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-slate-500">
-                      {template.hint}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 text-base font-black text-slate-950">
+                  <span className="text-blue-500">✦</span>
+                  Добавить новый блок
+                </div>
+                <p className="mt-1.5 text-xs font-semibold text-slate-500">
+                  Выберите тип блока, который хотите добавить в урок
+                </p>
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
+                {templates.map((template, index) => {
+                  const creatingKey = getCanvasInsertTemplateKey(insertIndex, template.key);
+                  const creating = creatingTemplateKey === creatingKey;
+                  const meta = getBlockPreviewMeta({ block_type: template.values?.block_type });
+                  const primary = index === 0;
+
+                  return (
+                    <button
+                      key={template.key}
+                      type="button"
+                      data-testid="lesson-studio-canvas-insert-option"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setOpen(false);
+                        onCreateBlock(template, insertIndex);
+                      }}
+                      disabled={disabled || creating}
+                      className={`group flex min-h-[132px] flex-col items-center justify-center rounded-xl px-3 py-3 text-center ring-1 transition duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
+                        primary
+                          ? "bg-blue-50/60 ring-blue-500 hover:bg-blue-50 hover:shadow-[0_14px_34px_rgba(37,99,235,0.12)]"
+                          : "bg-white ring-slate-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:ring-blue-200 hover:shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-black shadow-sm ring-1 transition ${
+                          primary
+                            ? "bg-blue-100 text-blue-700 ring-blue-100"
+                            : "bg-blue-50 text-blue-700 ring-blue-100 group-hover:bg-blue-100"
+                        }`}
+                      >
+                        {meta.icon}
+                      </span>
+
+                      <span className="mt-3 block text-sm font-black text-slate-950">
+                        {creating ? "Добавляем..." : template.label}
+                      </span>
+
+                      <span className="mt-1.5 block max-w-[7.5rem] text-xs font-semibold leading-4 text-slate-500">
+                        {template.hint}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </details>
 
-        <div className="h-px flex-1 bg-slate-200/80" />
+        <div className="h-px flex-1 bg-gradient-to-r from-slate-200/80 via-slate-200 to-transparent" />
       </div>
     </div>
   );
@@ -1658,6 +1697,14 @@ function LessonCanvasBlock({
   const blockReady = issues.length === 0;
   const title = getBlockDisplayTitle(block, index);
   const preview = getBlockTextPreview(block);
+  const blockTypeLabel = getLessonBlockTypeLabel(block.block_type);
+  const compactBlockType = `${block?.block_type || "rich_text"}`.toLowerCase();
+  const isCompactVideo = compactBlockType === "video";
+  const compactPreviewLines = `${preview || ""}`
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 4);
   const compact = !previewMode && !selected;
   const busy = disabled || moving || duplicating || deleting;
   const compactSummary = issues.length
@@ -1743,10 +1790,12 @@ function LessonCanvasBlock({
       className={
         previewMode
           ? "py-3"
-          : `rounded-[1.35rem] bg-white shadow-sm ring-1 transition ${
-              compact ? "p-3" : "p-4"
+          : `rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.045)] ring-1 transition duration-200 ${
+              compact ? "p-6" : "p-5"
             } ${
-              !previewMode && selected ? "ring-blue-300 bg-blue-50/20" : "ring-slate-200 hover:ring-blue-200"
+              !previewMode && selected
+                ? "ring-blue-300 bg-blue-50/20"
+                : "ring-slate-200 hover:-translate-y-0.5 hover:ring-blue-200 hover:shadow-[0_22px_55px_rgba(37,99,235,0.08)]"
             }`
       }
       onClick={() => {
@@ -1756,12 +1805,12 @@ function LessonCanvasBlock({
       }}
     >
       {!previewMode ? (
-        <div className="flex flex-wrap items-start justify-between gap-2.5">
-          <div className="min-w-0">
-            <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-              #{index + 1} · {getLessonBlockTypeLabel(block.block_type)}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 max-w-4xl">
+            <div className="text-[13px] font-black uppercase tracking-[0.12em] text-blue-700">
+              #{index + 1} · {blockTypeLabel}
             </div>
-            <h3 className={`${compact ? "mt-0.5 text-sm" : "mt-1 text-base"} font-black text-slate-900`}>
+            <h3 className={`${compact ? "mt-2 text-xl" : "mt-1.5 text-lg"} font-black text-slate-950`}>
               {title}
             </h3>
           </div>
@@ -1769,13 +1818,13 @@ function LessonCanvasBlock({
           <div className="flex flex-wrap items-center justify-end gap-1.5">
             <span
               data-testid="lesson-studio-block-readiness-chip"
-              className={`rounded-full px-2.5 py-1 text-xs font-black ring-1 ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${
                 blockReady
                   ? "bg-green-50 text-green-700 ring-green-200"
                   : "bg-amber-50 text-amber-800 ring-amber-200"
               }`}
             >
-              {blockReady ? "Готов" : `${issues.length} проблем`}
+              {blockReady ? "✓ Готов" : `${issues.length} проблем`}
             </span>
 
             {!compact && block.is_required ? (
@@ -1790,14 +1839,45 @@ function LessonCanvasBlock({
       ) : null}
 
       {compact ? (
-        <p
-          data-testid="lesson-studio-block-compact-summary"
-          className={`mt-1.5 whitespace-pre-wrap break-words text-xs leading-5 ${
-            issues.length ? "font-semibold text-amber-800" : "text-slate-500"
-          }`}
-        >
-          {compactSummary}
-        </p>
+        <div className="mt-5 max-w-4xl" data-testid="lesson-studio-block-compact-summary">
+          {isCompactVideo ? (
+            <div className="flex items-center gap-3 text-sm leading-6 text-slate-600">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-blue-700 ring-1 ring-slate-200">
+                <PlayCircle className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-slate-600">
+                  Видео размещено в уроке
+                </span>
+                <span className="mt-0.5 block truncate text-blue-700">
+                  {compactSummary}
+                </span>
+              </span>
+            </div>
+          ) : isLessonRichTextBlock(block) ? (
+            <div className="lesson-studio-canvas-rich-preview text-slate-700">
+              <LessonRichTextSafePreview
+                block={block}
+                preview={preview}
+                learnerMode
+              />
+            </div>
+          ) : (
+            <p
+              className={`whitespace-pre-wrap break-words text-base leading-7 ${
+                issues.length ? "font-semibold text-amber-800" : "text-slate-600"
+              }`}
+            >
+              {compactPreviewLines.length
+                ? compactPreviewLines.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))
+                : compactSummary}
+            </p>
+          )}
+        </div>
       ) : null}
 
       <div
@@ -1806,8 +1886,8 @@ function LessonCanvasBlock({
           previewMode
             ? "hidden"
             : compact
-              ? "mt-2 flex items-center justify-end gap-2 border-t border-slate-100 pt-2"
-              : "mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5"
+              ? "mt-7 flex items-center justify-end gap-2 border-t border-slate-200/80 pt-4"
+              : "mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/80 pt-4"
         }
       >
         <details
@@ -1820,7 +1900,7 @@ function LessonCanvasBlock({
         >
           <summary
             data-testid="lesson-studio-card-actions-trigger"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white text-lg font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-900"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white text-lg font-black text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
             style={{ listStyle: "none" }}
             aria-label="Действия с блоком"
           >
@@ -2999,7 +3079,7 @@ function LessonStudioEditorPanelHeader({ lesson, selectedBlock, blocks, blocksLo
           <p className="mt-1 text-sm leading-6 text-slate-500">
             {selectedBlock
               ? "Редактируйте выбранный блок прямо на полотне. Изменения сохраняются кнопкой внутри формы."
-              : "Выберите блок слева или добавьте новый элемент в структуру урока."}
+              : ""}
           </p>
         </div>
 
