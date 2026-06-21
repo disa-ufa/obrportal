@@ -4114,6 +4114,14 @@ export function AdminCoursesPage() {
 
   useEffect(() => {
     const nextFilters = getCourseFiltersFromSearch(location.search);
+    const params = new URLSearchParams(location.search);
+
+    if (params.get("create") === "course") {
+      setShowCreateForm(true);
+      setEditingCourseId("");
+      setSuccessMessage("");
+      setError("");
+    }
 
     setFilterQuery(nextFilters.q);
     setFilterActive(nextFilters.is_active);
@@ -4138,6 +4146,18 @@ export function AdminCoursesPage() {
 
   function resetForm() {
     setForm(EMPTY_COURSE_FORM);
+  }
+
+  function closeCreateForm() {
+    setShowCreateForm(false);
+    resetForm();
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("create") === "course") {
+      params.delete("create");
+      const nextSearch = params.toString();
+      navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ""}`, { replace: true });
+    }
   }
 
   function resetEditState() {
@@ -4178,8 +4198,7 @@ export function AdminCoursesPage() {
       const created = await createAdminCourse(buildPayload(form));
 
       setSuccessMessage(`${RU.createdMessage}: ${created.title}`);
-      resetForm();
-      setShowCreateForm(false);
+      closeCreateForm();
       await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseApiError(err, RU.createFailed));
@@ -4622,6 +4641,67 @@ export function AdminCoursesPage() {
 
   return (
     <div className="space-y-6">
+      {showCreateForm ? (
+        <section
+          id="admin-course-create-form"
+          className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-blue-100"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">
+                Создание программы
+              </div>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                Новая программа
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+                Заполните основные данные программы. После создания можно будет добавить модули, уроки и перейти к наполнению уроков в Lesson Studio.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={closeCreateForm}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+            >
+              Отмена
+            </button>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="mt-6 space-y-5 rounded-3xl bg-slate-50/70 p-5 ring-1 ring-slate-200"
+          >
+            <CourseFormFields
+              values={form}
+              onChange={updateField}
+              prefix="create-"
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
+              <div className="text-xs leading-5 text-slate-500">
+                Slug используется в публичной ссылке программы. Название обязательно для отображения в каталоге.
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <ActionButton
+                  type="button"
+                  tone="light"
+                  onClick={closeCreateForm}
+                  disabled={saving}
+                >
+                  Отмена
+                </ActionButton>
+
+                <ActionButton type="submit" tone="blue" disabled={saving}>
+                  {saving ? RU.creating : RU.createProgram}
+                </ActionButton>
+              </div>
+            </div>
+          </form>
+        </section>
+      ) : null}
+
       <SectionCard
         title="Программы обучения"
         subtitle="Табличный рабочий вид: программа раскрывает модули, модуль раскрывает уроки, урок открывает действия и переход в Lesson Studio."

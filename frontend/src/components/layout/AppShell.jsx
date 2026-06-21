@@ -4,7 +4,7 @@
 // Smoke guard for legacy AppShell import check:
 // import { Link } from "react-router-dom";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, BookOpen, Building2, ChevronLeft, CircleHelp, FileCheck2, FileText, Home, Layers3, LogOut, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Upload, UserRound, UsersRound } from "lucide-react";
 import { ADMIN_ROUTE_ITEMS, getAdminRouteItem } from "../../utils/adminRoutes";
 import { StatusBadge } from "../ui/StatusBadge";
@@ -303,6 +303,7 @@ export function AppShell({
   children,
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const isLessonStudioPage = /^\/admin\/lessons\/[^/]+\/studio\/?$/.test(location.pathname);
   const currentRoute = getAdminRouteItem(currentPage);
@@ -318,6 +319,14 @@ export function AppShell({
   const systemTone = getSystemTone({ health, ready, isAdmin });
   const systemText = getSystemText({ health, ready, isAdmin });
   const userRoles = user?.roles?.map((role) => role.code).join(", ") || "Администратор";
+
+  function handleAdminAddClick() {
+    if (currentPage === "courses") {
+      const params = new URLSearchParams(location.search);
+      params.set("create", "course");
+      navigate(`${location.pathname}?${params.toString()}`);
+    }
+  }
 
   const visibleAdminItems = ADMIN_NAV_ORDER
     .map((key) => getAdminRouteItem(key))
@@ -416,7 +425,7 @@ export function AppShell({
                   <Upload className="h-4 w-4" aria-hidden="true" />
                   Импорт
                 </button>
-                <button type="button" className="hidden h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.18)] transition hover:bg-blue-800 md:inline-flex">
+                <button type="button" onClick={handleAdminAddClick} title={currentPage === "courses" ? "Добавить программу" : "Добавить"} className="hidden h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.18)] transition hover:bg-blue-800 md:inline-flex">
                   <Plus className="h-4 w-4" aria-hidden="true" />
                   Добавить
                 </button>
