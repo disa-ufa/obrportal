@@ -2698,12 +2698,12 @@ function CourseStructureTree({
                     className="h-4 w-4 rounded border-slate-300 opacity-50"
                   />
                 </th>
-                <th className="w-[46%] px-3 py-4 text-left">Название</th>
+                <th className="w-[43%] px-3 py-4 text-left">Название</th>
                 <th className="w-[10%] px-3 py-4 text-left">Тип</th>
                 <th className="w-[12%] px-3 py-4 text-left">Структура</th>
                 <th className="w-[12%] px-3 py-4 text-left">Статус</th>
                 <th className="w-[10%] px-3 py-4 text-left">Обновлён</th>
-                <th className="w-[96px] px-3 py-4 text-right">Действия</th>
+                <th className="w-[132px] px-3 py-4 text-right">Действия</th>
               </tr>
             </thead>
 
@@ -2809,9 +2809,9 @@ function CourseStructureTree({
                             <Link
                               to={`/courses/${encodeURIComponent(course.slug)}`}
                               className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
-                              title="Публичная карточка"
+                              title="Открыть публичную карточку"
                             >
-                              👁
+                              ↗
                             </Link>
                           ) : null}
 
@@ -2820,14 +2820,14 @@ function CourseStructureTree({
                             onClick={() => onStartEdit(course)}
                             disabled={isActionRunning}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            title={RU.edit}
+                            title="Редактировать программу"
                           >
                             ✎
                           </button>
 
                           <details className="relative">
-                            <summary className="inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
-                              ⋮
+                            <summary title="Дополнительные действия" className="inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
+                              ⋯
                             </summary>
                             <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
                               <button
@@ -3004,7 +3004,7 @@ function CourseStructureTree({
                                         onClick={() => onModuleEditStart(module)}
                                         disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
                                         className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                        title={RU.edit}
+                                        title="Редактировать модуль"
                                       >
                                         ✎
                                       </button>
@@ -3013,10 +3013,10 @@ function CourseStructureTree({
                                         type="button"
                                         onClick={() => onModuleDelete(module)}
                                         disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-slate-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                        title={RU.delete}
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-red-100 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        title="Удалить модуль"
                                       >
-                                        ⋮
+                                        ×
                                       </button>
                                     </div>
                                   </td>
@@ -3161,10 +3161,10 @@ function CourseStructureTree({
                                                   <a
                                                     data-testid={`lesson-studio-open-tree-${lesson.id}`}
                                                     href={buildAdminLessonStudioPath(lesson.id)}
-                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
-                                                    title="Lesson Studio"
+                                                    className="inline-flex h-8 items-center justify-center rounded-xl bg-blue-600 px-2.5 text-xs font-black text-white shadow-sm transition hover:bg-blue-700"
+                                                    title="Открыть урок в Lesson Studio"
                                                   >
-                                                    ↗
+                                                    Studio
                                                   </a>
 
                                                   <button
@@ -3172,7 +3172,7 @@ function CourseStructureTree({
                                                     onClick={() => onLessonEditStart(lesson)}
                                                     disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
                                                     className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                                    title={RU.edit}
+                                                    title="Редактировать урок"
                                                   >
                                                     ✎
                                                   </button>
@@ -3181,10 +3181,10 @@ function CourseStructureTree({
                                                     type="button"
                                                     onClick={() => onLessonDelete(lesson)}
                                                     disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
-                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-slate-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                                    title={RU.delete}
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-red-100 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    title="Удалить урок"
                                                   >
-                                                    ⋮
+                                                    ×
                                                   </button>
                                                 </div>
                                               </td>
