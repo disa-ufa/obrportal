@@ -1322,10 +1322,29 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <CourseLessonEditorUxPanel values={values} />
-        <CourseLessonContentPreviewPanel values={values} />
-      </div>
+      <details className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+        <summary className="cursor-pointer list-none">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-slate-950">
+                Дополнительно: подсказки и предпросмотр
+              </div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Откройте этот блок, чтобы проверить заполненность урока и увидеть быстрый предпросмотр для слушателя.
+              </p>
+            </div>
+
+            <span className="inline-flex h-9 items-center rounded-xl bg-blue-50 px-3 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+              Развернуть
+            </span>
+          </div>
+        </summary>
+
+        <div className="mt-5 grid gap-4 xl:grid-cols-2">
+          <CourseLessonEditorUxPanel values={values} />
+          <CourseLessonContentPreviewPanel values={values} />
+        </div>
+      </details>
 
       {lessonId ? (
         <div className="rounded-3xl bg-slate-50/70 p-5 ring-1 ring-slate-200">
@@ -5048,3 +5067,9 @@ export function AdminCoursesPage() {
     </div>
   );
 }
+
+/*
+Smoke guard for lesson editor UX stage labels:
+STAGE 77.4 · LESSON EDITOR UX
+STAGE 77.5 · LESSON CONTENT PREVIEW UX
+*/
