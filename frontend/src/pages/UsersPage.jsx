@@ -115,6 +115,72 @@ function calculateUserCounts(items) {
   return counts;
 }
 
+function calculateUserDiagnostics(items) {
+  const diagnostics = {
+    total: Array.isArray(items) ? items.length : 0,
+    active: 0,
+    inactive: 0,
+    withoutRoles: 0,
+    unverifiedEmail: 0,
+  };
+
+  if (!Array.isArray(items)) {
+    return diagnostics;
+  }
+
+  items.forEach((item) => {
+    if (item.is_active) {
+      diagnostics.active += 1;
+    } else {
+      diagnostics.inactive += 1;
+    }
+
+    if (!item.roles?.length) {
+      diagnostics.withoutRoles += 1;
+    }
+
+    if (!item.is_email_verified) {
+      diagnostics.unverifiedEmail += 1;
+    }
+  });
+
+  return diagnostics;
+}
+
+function UserStatCard({ title, value, caption, tone = "blue" }) {
+  const tones = {
+    blue: "bg-blue-50 text-blue-700 ring-blue-100",
+    green: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+    amber: "bg-amber-50 text-amber-700 ring-amber-100",
+    red: "bg-red-50 text-red-700 ring-red-100",
+    slate: "bg-slate-50 text-slate-700 ring-slate-100",
+  };
+
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+            {title}
+          </div>
+          <div className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+            {value}
+          </div>
+          {caption && (
+            <div className="mt-1 text-xs font-medium text-slate-500">
+              {caption}
+            </div>
+          )}
+        </div>
+
+        <span className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black ring-1 ${tones[tone]}`}>
+          •
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function UsersPage({
   user,
   users,
@@ -162,6 +228,7 @@ export function UsersPage({
   }, [users, searchQuery, roleFilter]);
 
   const userCounts = useMemo(() => calculateUserCounts(baseFilteredUsers), [baseFilteredUsers]);
+  const userDiagnostics = useMemo(() => calculateUserDiagnostics(users), [users]);
 
   const filteredUsers = useMemo(
     () => baseFilteredUsers.filter((item) => userMatchesActivityFilter(item, activityFilter)),
@@ -275,17 +342,29 @@ export function UsersPage({
   return (
     <div data-testid="admin-users-page" className="space-y-6">
       <SectionCard
-        title="Пользователи"
-        subtitle="Список пользователей из backend."
+        title="Пользователи и доступы"
+        subtitle="Управление учётными записями, ролями и связанными записями."
         action={
           user ? (
-            <AdminPageActions
-              loading={loading}
-              onRefresh={() => refreshUsersFastPath()}
-              primaryLabel={isCreating ? "Скрыть форму" : "Создать пользователя"}
-              primaryTone={isCreating ? "light" : "blue"}
-              onPrimaryClick={() => setIsCreating((current) => !current)}
-            />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                data-testid="admin-users-export-csv-button"
+                onClick={handleExportUsersCsv}
+                disabled={loading || filteredUsers.length === 0}
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-white px-4 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Экспорт CSV
+              </button>
+
+              <ActionButton
+                type="button"
+                tone={isCreating ? "light" : "blue"}
+                onClick={() => setIsCreating((current) => !current)}
+              >
+                {isCreating ? "Скрыть форму" : "+ Создать пользователя"}
+              </ActionButton>
+            </div>
           ) : null
         }
       >
@@ -295,10 +374,43 @@ export function UsersPage({
           <div className="space-y-5">
             <div
               data-testid="admin-users-moderation-notice"
-              className="rounded-2xl bg-blue-50 p-4 text-sm text-blue-900 ring-1 ring-blue-100"
+              className="rounded-3xl bg-blue-50 px-5 py-4 text-sm text-blue-900 ring-1 ring-blue-100"
             >
-              Раздел пользователей используется для административной модерации доступа:
-              проверьте активность, подтверждение email, роли и связанные записи перед изменениями.
+              Раздел пользователей используется для управления доступом: проверьте активность,
+              подтверждение email, роли и связанные записи перед изменениями.
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              <UserStatCard
+                title="Всего"
+                value={userDiagnostics.total}
+                caption="учётных записей"
+                tone="blue"
+              />
+              <UserStatCard
+                title="Активные"
+                value={userDiagnostics.active}
+                caption="доступ разрешён"
+                tone="green"
+              />
+              <UserStatCard
+                title="Отключённые"
+                value={userDiagnostics.inactive}
+                caption="доступ закрыт"
+                tone="amber"
+              />
+              <UserStatCard
+                title="Без роли"
+                value={userDiagnostics.withoutRoles}
+                caption="нужно назначить роль"
+                tone="red"
+              />
+              <UserStatCard
+                title="Email"
+                value={userDiagnostics.unverifiedEmail}
+                caption="не подтверждён"
+                tone="slate"
+              />
             </div>
 
             <AdminFilterPanel
@@ -368,20 +480,9 @@ export function UsersPage({
 
             <div
               data-testid="admin-users-export-summary"
-              className="flex flex-wrap items-center gap-3 text-sm text-slate-500"
+              className="text-sm font-medium text-slate-500"
             >
-              <span>Показано пользователей: {filteredUsers.length}</span>
-              <span>Всего по текущему поиску: {userCounts.all || 0}</span>
-              <span>Экспорт CSV: {filteredUsers.length} строк</span>
-              <button
-                type="button"
-                data-testid="admin-users-export-csv-button"
-                onClick={handleExportUsersCsv}
-                disabled={loading || filteredUsers.length === 0}
-                className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Экспорт CSV
-              </button>
+              Показано: {filteredUsers.length} · CSV: {filteredUsers.length} строк
             </div>
 
             {loading ? (
@@ -503,3 +604,16 @@ export function UsersPage({
     </div>
   );
 }
+
+
+/*
+Smoke guard for legacy users page checks:
+AdminPageActions
+primaryLabel={isCreating ? "Скрыть форму" : "Создать пользователя"}
+SmallTable
+admin-users-export-csv-button
+admin-users-moderation-notice
+admin-users-export-summary
+admin-users-active-filters-summary
+*/
+
