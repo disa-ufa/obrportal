@@ -264,6 +264,54 @@ function normalizeHoursInput(value) {
   return parsed;
 }
 
+function buildCourseSlug(value) {
+  const translit = {
+    а: "a",
+    б: "b",
+    в: "v",
+    г: "g",
+    д: "d",
+    е: "e",
+    ё: "e",
+    ж: "zh",
+    з: "z",
+    и: "i",
+    й: "y",
+    к: "k",
+    л: "l",
+    м: "m",
+    н: "n",
+    о: "o",
+    п: "p",
+    р: "r",
+    с: "s",
+    т: "t",
+    у: "u",
+    ф: "f",
+    х: "h",
+    ц: "c",
+    ч: "ch",
+    ш: "sh",
+    щ: "sch",
+    ъ: "",
+    ы: "y",
+    ь: "",
+    э: "e",
+    ю: "yu",
+    я: "ya",
+  };
+
+  return `${value || ""}`
+    .trim()
+    .toLowerCase()
+    .split("")
+    .map((char) => translit[char] ?? char)
+    .join("")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
 function getCourseFiltersFromSearch(search) {
   const params = new URLSearchParams(search);
 
@@ -358,6 +406,9 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
           placeholder="povyshenie-kvalifikatsii"
           className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
         />
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          Заполнится автоматически из названия. Можно изменить вручную.
+        </p>
       </label>
 
       <label className="block">
@@ -4131,10 +4182,24 @@ export function AdminCoursesPage() {
   }, [location.search]);
 
   function updateField(field, value) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setForm((current) => {
+      if (field === "title") {
+        const currentAutoSlug = buildCourseSlug(current.title);
+        const nextAutoSlug = buildCourseSlug(value);
+        const shouldUpdateSlug = !current.slug || current.slug === currentAutoSlug;
+
+        return {
+          ...current,
+          title: value,
+          slug: shouldUpdateSlug ? nextAutoSlug : current.slug,
+        };
+      }
+
+      return {
+        ...current,
+        [field]: value,
+      };
+    });
   }
 
   function updateEditField(field, value) {
