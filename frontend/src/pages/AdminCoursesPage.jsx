@@ -2339,13 +2339,13 @@ function CoursesRegistryTable({
                       ) : null}
                     </td>
 
-                    <td className="px-4 py-4 align-top">
+                    <td className="px-3 py-4 align-top">
                       <StatusBadge tone={getCourseStatusTone(course)}>
                         {getCourseStatusLabel(course)}
                       </StatusBadge>
                     </td>
 
-                    <td className="px-4 py-4 align-top">
+                    <td className="px-3 py-4 align-top">
                       <div className="flex flex-wrap gap-2">
                         <StatusBadge tone={course.format ? "blue" : "gray"}>
                           {course.format || "формат не задан"}
@@ -2356,7 +2356,7 @@ function CoursesRegistryTable({
                       </div>
                     </td>
 
-                    <td className="px-4 py-4 align-top">
+                    <td className="px-3 py-4 align-top">
                       <div className="font-semibold text-slate-900">
                         {modules.length} мод. / {lessons.length} ур.
                       </div>
@@ -2365,7 +2365,7 @@ function CoursesRegistryTable({
                       </div>
                     </td>
 
-                    <td className="px-4 py-4 align-top">
+                    <td className="px-3 py-4 align-top">
                       <div className="font-semibold text-slate-900">
                         {readiness.readinessPercent}%
                       </div>
@@ -2380,7 +2380,7 @@ function CoursesRegistryTable({
                       {formatDateTime(course.updated_at)}
                     </td>
 
-                    <td className="px-4 py-4 align-top">
+                    <td className="px-3 py-4 align-top">
                       <div className="flex flex-wrap justify-end gap-2">
                         <a
                           href={`#course-${course.id}`}
@@ -2686,11 +2686,11 @@ function CourseStructureTree({
       </div>
 
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-fixed divide-y divide-slate-100 text-sm">
+        <div className="overflow-hidden">
+          <table className="w-full table-fixed divide-y divide-slate-100 text-sm">
             <thead className="bg-slate-50/90 text-xs font-bold uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="w-12 px-4 py-4 text-left">
+                <th className="w-10 px-3 py-4 text-left">
                   <input
                     type="checkbox"
                     disabled
@@ -2698,12 +2698,12 @@ function CourseStructureTree({
                     className="h-4 w-4 rounded border-slate-300 opacity-50"
                   />
                 </th>
-                <th className="w-[42%] px-4 py-4 text-left">Название</th>
-                <th className="w-[12%] px-4 py-4 text-left">Тип</th>
-                <th className="w-[14%] px-4 py-4 text-left">Структура</th>
-                <th className="w-[13%] px-4 py-4 text-left">Статус</th>
-                <th className="w-[12%] px-4 py-4 text-left">Обновлён</th>
-                <th className="w-[120px] px-4 py-4 text-right">Действия</th>
+                <th className="w-[46%] px-3 py-4 text-left">Название</th>
+                <th className="w-[10%] px-3 py-4 text-left">Тип</th>
+                <th className="w-[12%] px-3 py-4 text-left">Структура</th>
+                <th className="w-[12%] px-3 py-4 text-left">Статус</th>
+                <th className="w-[10%] px-3 py-4 text-left">Обновлён</th>
+                <th className="w-[96px] px-3 py-4 text-right">Действия</th>
               </tr>
             </thead>
 
@@ -2729,7 +2729,7 @@ function CourseStructureTree({
                         isCourseOpen ? "bg-blue-50/30" : "hover:bg-slate-50"
                       }`}
                     >
-                      <td className="px-4 py-4 align-top">
+                      <td className="px-3 py-4 align-top">
                         <input
                           type="checkbox"
                           aria-label={`Выбрать программу ${course.title}`}
@@ -2737,7 +2737,7 @@ function CourseStructureTree({
                         />
                       </td>
 
-                      <td className="px-4 py-4 align-top">
+                      <td className="px-3 py-4 align-top">
                         <div className="flex min-w-0 items-start gap-3">
                           <button
                             type="button"
@@ -2754,7 +2754,7 @@ function CourseStructureTree({
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-3">
-                              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm">
+                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm">
                                 ▣
                               </span>
 
@@ -2777,11 +2777,11 @@ function CourseStructureTree({
                         </div>
                       </td>
 
-                      <td className="px-4 py-4 align-top">
+                      <td className="px-3 py-4 align-top">
                         <StatusBadge tone="violet">{getCourseTypeBadge(course)}</StatusBadge>
                       </td>
 
-                      <td className="px-4 py-4 align-top">
+                      <td className="px-3 py-4 align-top">
                         <div className="font-semibold text-slate-900">
                           {getCourseStructureText(modules)}
                         </div>
@@ -2790,25 +2790,25 @@ function CourseStructureTree({
                         </div>
                       </td>
 
-                      <td className="px-4 py-4 align-top">
+                      <td className="px-3 py-4 align-top">
                         <StatusBadge tone={getCourseStatusTone(course)}>
                           {getCourseStatusLabel(course)}
                         </StatusBadge>
                       </td>
 
-                      <td className="px-4 py-4 align-top text-xs leading-5 text-slate-500">
+                      <td className="px-3 py-4 align-top text-xs leading-5 text-slate-500">
                         {getUpdatedAt(course)}
                       </td>
 
-                      <td className="px-4 py-4 align-top">
+                      <td className="px-3 py-4 align-top">
                         <div
                           data-testid={`admin-course-tree-course-actions-${course.id}`}
-                          className="flex justify-end gap-2"
+                          className="flex justify-end gap-1.5"
                         >
                           {course.slug ? (
                             <Link
                               to={`/courses/${encodeURIComponent(course.slug)}`}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
                               title="Публичная карточка"
                             >
                               👁
@@ -2819,14 +2819,14 @@ function CourseStructureTree({
                             type="button"
                             onClick={() => onStartEdit(course)}
                             disabled={isActionRunning}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                             title={RU.edit}
                           >
                             ✎
                           </button>
 
                           <details className="relative">
-                            <summary className="inline-flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
+                            <summary className="inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
                               ⋮
                             </summary>
                             <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
@@ -2894,7 +2894,7 @@ function CourseStructureTree({
                         {modules.length === 0 ? (
                           <tr key={`course-empty-${course.id}`} className="bg-slate-50/50">
                             <td />
-                            <td colSpan={6} className="px-4 py-4 text-sm text-slate-500">
+                            <td colSpan={6} className="px-3 py-4 text-sm text-slate-500">
                               {RU.modulesNotFound}
                             </td>
                           </tr>
@@ -2921,9 +2921,9 @@ function CourseStructureTree({
                                   onClick={(event) => handleRowClick(event, () => toggleModule(module.id))}
                                   className="cursor-pointer bg-slate-50/70 transition hover:bg-blue-50/40"
                                 >
-                                  <td className="px-4 py-4 align-top" />
+                                  <td className="px-3 py-4 align-top" />
 
-                                  <td className="px-4 py-4 align-top">
+                                  <td className="px-3 py-4 align-top">
                                     <div className="ml-9 flex min-w-0 items-start gap-3 border-l border-slate-200 pl-5">
                                       <button
                                         type="button"
@@ -2937,7 +2937,7 @@ function CourseStructureTree({
                                         {isModuleOpen ? "⌄" : "›"}
                                       </button>
 
-                                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
                                         ▰
                                       </span>
 
@@ -2957,11 +2957,11 @@ function CourseStructureTree({
                                     </div>
                                   </td>
 
-                                  <td className="px-4 py-4 align-top">
+                                  <td className="px-3 py-4 align-top">
                                     <StatusBadge tone="blue">Модуль</StatusBadge>
                                   </td>
 
-                                  <td className="px-4 py-4 align-top">
+                                  <td className="px-3 py-4 align-top">
                                     <div className="font-semibold text-slate-900">
                                       {getModuleStructureText(module)}
                                     </div>
@@ -2970,26 +2970,26 @@ function CourseStructureTree({
                                     </div>
                                   </td>
 
-                                  <td className="px-4 py-4 align-top">
+                                  <td className="px-3 py-4 align-top">
                                     <StatusBadge tone={module.is_active ? "green" : "gray"}>
                                       {module.is_active ? RU.moduleActive : RU.moduleInactive}
                                     </StatusBadge>
                                   </td>
 
-                                  <td className="px-4 py-4 align-top text-xs leading-5 text-slate-500">
+                                  <td className="px-3 py-4 align-top text-xs leading-5 text-slate-500">
                                     {getUpdatedAt(module, course)}
                                   </td>
 
-                                  <td className="px-4 py-4 align-top">
+                                  <td className="px-3 py-4 align-top">
                                     <div
                                       data-testid={`admin-course-tree-module-actions-${module.id}`}
-                                      className="flex justify-end gap-2"
+                                      className="flex justify-end gap-1.5"
                                     >
                                       <button
                                         type="button"
                                         onClick={() => onModuleEditStart(module)}
                                         disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
-                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                         title={RU.edit}
                                       >
                                         ✎
@@ -2999,7 +2999,7 @@ function CourseStructureTree({
                                         type="button"
                                         onClick={() => onModuleDelete(module)}
                                         disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
-                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-slate-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-slate-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                                         title={RU.delete}
                                       >
                                         ⋮
@@ -3051,7 +3051,7 @@ function CourseStructureTree({
                                     {moduleLessons.length === 0 ? (
                                       <tr key={`module-empty-${module.id}`} className="bg-white">
                                         <td />
-                                        <td colSpan={6} className="px-4 py-4 text-sm text-slate-500">
+                                        <td colSpan={6} className="px-3 py-4 text-sm text-slate-500">
                                           <div className="ml-24 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
                                             {RU.lessonsNotFound}
                                           </div>
@@ -3075,9 +3075,9 @@ function CourseStructureTree({
                                             >
                                               <td />
 
-                                              <td className="px-4 py-4 align-top">
+                                              <td className="px-3 py-4 align-top">
                                                 <div className="ml-[92px] flex min-w-0 items-start gap-3 border-l border-slate-200 pl-5">
-                                                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
+                                                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
                                                     ▪
                                                   </span>
 
@@ -3095,11 +3095,11 @@ function CourseStructureTree({
                                                 </div>
                                               </td>
 
-                                              <td className="px-4 py-4 align-top">
+                                              <td className="px-3 py-4 align-top">
                                                 <StatusBadge tone="green">Урок</StatusBadge>
                                               </td>
 
-                                              <td className="px-4 py-4 align-top">
+                                              <td className="px-3 py-4 align-top">
                                                 <div className="flex flex-wrap gap-1">
                                                   {blockBadges.slice(0, 2).map((badge) => (
                                                     <StatusBadge
@@ -3112,7 +3112,7 @@ function CourseStructureTree({
                                                 </div>
                                               </td>
 
-                                              <td className="px-4 py-4 align-top">
+                                              <td className="px-3 py-4 align-top">
                                                 <div className="flex flex-wrap gap-1">
                                                   <StatusBadge tone={lesson.is_active ? "green" : "gray"}>
                                                     {lesson.is_active ? RU.moduleActive : RU.moduleInactive}
@@ -3123,19 +3123,19 @@ function CourseStructureTree({
                                                 </div>
                                               </td>
 
-                                              <td className="px-4 py-4 align-top text-xs leading-5 text-slate-500">
+                                              <td className="px-3 py-4 align-top text-xs leading-5 text-slate-500">
                                                 {getUpdatedAt(lesson, module)}
                                               </td>
 
-                                              <td className="px-4 py-4 align-top">
+                                              <td className="px-3 py-4 align-top">
                                                 <div
                                                   data-testid={`admin-course-tree-lesson-actions-${lesson.id}`}
-                                                  className="flex justify-end gap-2"
+                                                  className="flex justify-end gap-1.5"
                                                 >
                                                   <a
                                                     data-testid={`lesson-studio-open-tree-${lesson.id}`}
                                                     href={buildAdminLessonStudioPath(lesson.id)}
-                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
                                                     title="Lesson Studio"
                                                   >
                                                     ↗
@@ -3145,7 +3145,7 @@ function CourseStructureTree({
                                                     type="button"
                                                     onClick={() => onLessonEditStart(lesson)}
                                                     disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
-                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                                     title={RU.edit}
                                                   >
                                                     ✎
@@ -3155,7 +3155,7 @@ function CourseStructureTree({
                                                     type="button"
                                                     onClick={() => onLessonDelete(lesson)}
                                                     disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
-                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-slate-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-slate-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                                                     title={RU.delete}
                                                   >
                                                     ⋮
