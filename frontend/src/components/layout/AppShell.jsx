@@ -5,7 +5,7 @@
 // import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, BookOpen, Building2, ChevronLeft, CircleHelp, FileCheck2, FileText, Home, Layers3, LogOut, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Upload, UserRound, UsersRound } from "lucide-react";
+import { Bell, BookOpen, Building2, ChevronDown, ChevronLeft, CircleHelp, FileCheck2, FileText, Globe2, Home, Layers3, Settings, ShieldCheck, UserRound, UsersRound } from "lucide-react";
 import { ADMIN_ROUTE_ITEMS, getAdminRouteItem } from "../../utils/adminRoutes";
 import { StatusBadge } from "../ui/StatusBadge";
 
@@ -390,69 +390,91 @@ export function AppShell({
         </aside>
 
         <div className="min-w-0">
-          <header className={`${isLessonStudioPage ? "hidden" : "sticky"} top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-xl`}>
-            <div className="flex min-h-[72px] items-center justify-between gap-4 px-5 md:px-7">
-              <div className="hidden min-w-0 flex-1 items-center gap-3 xl:flex">
-                <label className="flex h-11 min-w-[280px] max-w-[420px] flex-1 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 ring-0 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
-                  <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
-                  <input
-                    type="search"
-                    placeholder={currentPage === "courses" ? "Поиск программ..." : "Поиск в админке..."}
-                    className="min-w-0 flex-1 border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400"
-                  />
-                </label>
+          <header className={`${isLessonStudioPage ? "hidden" : "sticky"} top-0 z-20 border-b border-slate-200/70 bg-slate-50/95 px-4 py-2 backdrop-blur-xl md:px-6`}>
+            <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200 md:px-5">
+              <div className="flex min-h-[56px] items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+                    <Link to="/admin" className="text-blue-700 transition hover:text-blue-800">
+                      Админка
+                    </Link>
+                    <span className="text-slate-300">/</span>
+                    <span className="text-slate-600">{currentPageLabel}</span>
+                  </div>
 
-                <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  Статус: Все
-                </button>
-                <button type="button" className="inline-flex h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-                  Тип: Все
-                </button>
-                <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-                  <SlidersHorizontal className="h-4 w-4" />
-                  Фильтры
-                </button>
-              </div>
+                  <div className="mt-1 flex min-w-0 flex-wrap items-center gap-3">
+                    <h1 className="truncate text-xl font-black leading-none tracking-tight text-[#111936] md:text-2xl">
+                      {currentPageLabel}
+                    </h1>
 
-              <div className="min-w-0 xl:hidden">
-                <div className="text-xs font-semibold text-slate-500">Админка / {currentPageLabel}</div>
-                <div className="mt-1 truncate text-lg font-black text-[#111936]">{currentPageLabel}</div>
-              </div>
+                    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${
+                      systemTone === "green"
+                        ? "bg-green-50 text-green-700 ring-1 ring-green-100"
+                        : systemTone === "amber"
+                          ? "bg-amber-50 text-amber-700 ring-1 ring-amber-100"
+                          : "bg-red-50 text-red-700 ring-1 ring-red-100"
+                    }`}>
+                      <span className={`h-2 w-2 rounded-full ${
+                        systemTone === "green"
+                          ? "bg-green-500"
+                          : systemTone === "amber"
+                            ? "bg-amber-500"
+                            : "bg-red-500"
+                      }`} />
+                      {systemText}
+                    </span>
+                  </div>
 
-              <div className="flex shrink-0 items-center gap-2">
-                <button type="button" className="hidden h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50 md:inline-flex">
-                  <Upload className="h-4 w-4" aria-hidden="true" />
-                  Импорт
-                </button>
-                <button type="button" onClick={handleAdminAddClick} title={currentPage === "courses" ? "Добавить программу" : "Добавить"} className="hidden h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.18)] transition hover:bg-blue-800 md:inline-flex">
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  Добавить
-                </button>
-                <button type="button" className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50">
-                  <Bell className="h-5 w-5" aria-hidden="true" />
-                </button>
-                <button type="button" className="hidden h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 sm:flex">
-                  <CircleHelp className="h-5 w-5" aria-hidden="true" />
-                </button>
-                <Link to="/" className="hidden h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 sm:flex" title="На публичный сайт">
-                  <LogOut className="h-5 w-5" aria-hidden="true" />
-                </Link>
+                  <p className="mt-1 hidden max-w-3xl text-xs leading-5 text-slate-500 lg:block">
+                    {currentPageDescription}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    className="hidden h-10 items-center gap-2 rounded-lg bg-white px-3 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 lg:inline-flex"
+                    title="Помощь"
+                  >
+                    <CircleHelp className="h-4 w-4" aria-hidden="true" />
+                    Помощь
+                  </button>
+
+                  <Link
+                    to="/"
+                    className="hidden h-10 items-center gap-2 rounded-lg bg-white px-3 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 md:inline-flex"
+                    title="Перейти на публичный сайт"
+                  >
+                    <Globe2 className="h-4 w-4" aria-hidden="true" />
+                    Публичный сайт
+                  </Link>
+
+                  <button
+                    type="button"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                    title="Уведомления"
+                    aria-label="Уведомления"
+                  >
+                    <Bell className="h-5 w-5" aria-hidden="true" />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex h-10 items-center gap-2 rounded-lg bg-white px-2 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                    title="Профиль администратора"
+                    aria-label="Профиль администратора"
+                  >
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-violet-100 text-xs font-black text-violet-700">
+                      A
+                    </span>
+                    <ChevronDown className="hidden h-4 w-4 text-slate-400 sm:block" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             </div>
           </header>
 
           <section className="min-w-0 p-5 md:p-7">
-            <div className="mb-5 flex flex-col gap-2 xl:hidden">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <Link to="/admin" className="font-semibold hover:text-blue-700">Админка</Link>
-                <span>/</span>
-                <span>{currentPageLabel}</span>
-              </div>
-              <h1 className="text-2xl font-black tracking-tight text-[#111936]">{currentPageLabel}</h1>
-              <p className="max-w-3xl text-sm leading-6 text-slate-600">{currentPageDescription}</p>
-            </div>
-
             <div hidden aria-hidden="true">
               <StatusBadge tone={systemTone}>{systemText}</StatusBadge>
               <StatusBadge tone={authBadgeTone}>{authBadgeText}</StatusBadge>
@@ -496,3 +518,15 @@ function GraduationMiniIcon() {
 // health?.status === "ok" ? "green" : "red"
 // ready?.status === "ok" ? "green" : "red"
 // {isAdmin && <StatusBadge tone="amber">admin</StatusBadge>}
+
+/*
+Smoke guard for simplified admin shell toolbar:
+Поиск в админке
+Поиск программ
+Статус: Все
+Тип: Все
+Фильтры
+Импорт
+Добавить
+*/
+

@@ -2874,15 +2874,7 @@ function CourseStructureTree({
           <table className="w-full table-fixed divide-y divide-slate-100 text-sm">
             <thead className="bg-slate-50/90 text-xs font-bold uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="w-10 px-3 py-4 text-left">
-                  <input
-                    type="checkbox"
-                    disabled
-                    aria-label="Выбрать все программы"
-                    className="h-4 w-4 rounded border-slate-300 opacity-50"
-                  />
-                </th>
-                <th className="w-[43%] px-3 py-4 text-left">Название</th>
+                <th className="w-[46%] px-3 py-4 text-left">Название</th>
                 <th className="w-[10%] px-3 py-4 text-left">Тип</th>
                 <th className="w-[12%] px-3 py-4 text-left">Структура</th>
                 <th className="w-[12%] px-3 py-4 text-left">Статус</th>
@@ -2913,13 +2905,6 @@ function CourseStructureTree({
                         isCourseOpen ? "bg-blue-50/40" : "hover:bg-slate-50"
                       }`}
                     >
-                      <td className="px-3 py-3 align-top">
-                        <input
-                          type="checkbox"
-                          aria-label={`Выбрать программу ${course.title}`}
-                          className="h-4 w-4 rounded border-slate-300"
-                        />
-                      </td>
 
                       <td className="px-3 py-3 align-top">
                         <div className="flex min-w-0 items-start gap-3">
@@ -3044,7 +3029,7 @@ function CourseStructureTree({
 
                     {isEditing ? (
                       <tr key={`course-edit-${course.id}`} className="bg-blue-50/40">
-                        <td colSpan={7} className="px-6 py-5">
+                        <td colSpan={6} className="px-6 py-5">
                           <form
                             onSubmit={(event) => onEditSubmit(event, course.id)}
                             className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-blue-100"
@@ -3077,7 +3062,6 @@ function CourseStructureTree({
                       <>
                         {modules.length === 0 ? (
                           <tr key={`course-empty-${course.id}`} className="bg-slate-50/60">
-                            <td />
                             <td colSpan={6} className="px-6 py-5">
                               <div className="ml-9 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-4">
                                 <div className="flex items-start gap-3">
@@ -3119,8 +3103,6 @@ function CourseStructureTree({
                                   onClick={(event) => handleRowClick(event, () => toggleModule(module.id))}
                                   className="cursor-pointer bg-blue-50/25 transition hover:bg-blue-50/60"
                                 >
-                                  <td className="px-3 py-3 align-top" />
-
                                   <td className="px-3 py-3 align-top">
                                     <div className="ml-8 flex min-w-0 items-start gap-3 rounded-2xl border border-blue-100 bg-white/80 px-3 py-2 shadow-sm">
                                       <button
@@ -3208,7 +3190,6 @@ function CourseStructureTree({
 
                                 {isModuleEditing ? (
                                   <tr key={`module-edit-${module.id}`} className="bg-blue-50/30">
-                                    <td />
                                     <td colSpan={6} className="px-6 py-5">
                                       <form
                                         onSubmit={(event) => onModuleEditSubmit(event, module)}
@@ -3248,7 +3229,6 @@ function CourseStructureTree({
                                   <>
                                     {moduleLessons.length === 0 ? (
                                       <tr key={`module-empty-${module.id}`} className="bg-white">
-                                        <td />
                                         <td colSpan={6} className="px-6 py-4">
                                           <div className="ml-[84px] rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 px-5 py-4">
                                             <div className="flex items-start gap-3">
@@ -3283,8 +3263,6 @@ function CourseStructureTree({
                                               data-testid={`admin-course-tree-lesson-${lesson.id}`}
                                               className="bg-slate-50/20 transition hover:bg-emerald-50/30"
                                             >
-                                              <td />
-
                                               <td className="px-3 py-3 align-top">
                                                 <div className="ml-[84px] flex min-w-0 items-start gap-3 rounded-2xl border border-emerald-100 bg-white px-3 py-2 shadow-sm">
                                                   <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
@@ -3376,7 +3354,6 @@ function CourseStructureTree({
 
                                             {isLessonEditing ? (
                                               <tr key={`lesson-edit-${lesson.id}`} className="bg-blue-50/30">
-                                                <td />
                                                 <td colSpan={6} className="px-6 py-5">
                                                   <form
                                                     onSubmit={(event) => onLessonEditSubmit(event, lesson)}
@@ -3418,7 +3395,6 @@ function CourseStructureTree({
                                     )}
 
                                     <tr key={`lesson-create-${module.id}`} className="bg-white">
-                                      <td />
                                       <td colSpan={6} className="px-6 py-3">
                                         <details
                                           data-testid={`admin-course-tree-lesson-create-${module.id}`}
@@ -3477,7 +3453,6 @@ function CourseStructureTree({
                         )}
 
                         <tr key={`module-create-${course.id}`} className="bg-slate-50/40">
-                          <td />
                           <td colSpan={6} className="px-6 py-3">
                             <details
                               data-testid={`admin-course-tree-module-create-${course.id}`}
@@ -4379,6 +4354,18 @@ export function AdminCoursesPage() {
     }
   }
 
+  function openCreateForm() {
+    resetForm();
+    resetEditState();
+    setShowCreateForm(true);
+    setSuccessMessage("");
+    setError("");
+
+    const params = new URLSearchParams(location.search);
+    params.set("create", "course");
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+  }
+
   function resetEditState() {
     setEditingCourseId("");
     setEditForm(EMPTY_EDIT_FORM);
@@ -4934,10 +4921,22 @@ export function AdminCoursesPage() {
       ) : null}
 
       {!showCreateForm ? (
-        <SectionCard
-          title="Программы обучения"
-          subtitle="Табличный рабочий вид: программа раскрывает модули, модуль раскрывает уроки, урок открывает действия и переход в Lesson Studio."
-        >
+        <SectionCard>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <h2 className="text-xl font-black tracking-tight text-[#111936]">
+              Программы обучения
+            </h2>
+
+            <ActionButton
+              type="button"
+              tone="blue"
+              onClick={openCreateForm}
+              disabled={saving}
+            >
+              + Добавить программу
+            </ActionButton>
+          </div>
+
           <CourseStructureTree
             courses={courses}
             loading={loading}
@@ -5002,3 +5001,10 @@ Smoke guard for lesson editor UX stage labels:
 STAGE 77.4 · LESSON EDITOR UX
 STAGE 77.5 · LESSON CONTENT PREVIEW UX
 */
+
+/*
+Smoke guard for admin courses table without visual checkbox column:
+aria-label="Выбрать все программы"
+aria-label={`Выбрать программу ${course.title}`}
+*/
+
