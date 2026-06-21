@@ -1134,121 +1134,220 @@ function CourseLessonContentPreviewPanel({ values }) {
 }
 
 function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }) {
+  const contentType = `${values.content_type || "text"}`.toLowerCase();
+  const titleReady = Boolean(`${values.title || ""}`.trim());
+  const positionReady = Boolean(`${values.position || ""}`.trim());
+  const hasUrl = Boolean(`${values.content_url || ""}`.trim());
+  const hasText = Boolean(`${values.content_text || ""}`.trim());
+  const hasDescription = Boolean(`${values.description || ""}`.trim());
+
+  const contentReady =
+    contentType === "text"
+      ? hasText
+      : ["video", "file", "link"].includes(contentType)
+        ? hasUrl
+        : contentType === "assignment"
+          ? hasDescription || hasText
+          : hasText || hasUrl || hasDescription;
+
+  const lessonReady = titleReady && positionReady && contentReady;
+
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_180px_140px]">
-      <CourseLessonEditorUxPanel values={values} />
-      <CourseLessonContentPreviewPanel values={values} />
-      <LessonBlocksEditor lessonId={lessonId} />
-      <label className="block md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonTitle}
-        </span>
-        <input
-          id={`${prefix}lesson-title`}
-          type="text"
-          value={values.title}
-          onChange={(event) => onChange("title", event.target.value)}
-          placeholder={RU.lessonTitlePlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+    <div className="space-y-5">
+      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-slate-950">Основные данные урока</div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Укажите название, порядок отображения и тип учебного материала. Содержимое можно быстро заполнить здесь или затем открыть урок в Lesson Studio.
+              </p>
+            </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonPosition}
-        </span>
-        <input
-          id={`${prefix}lesson-position`}
-          type="number"
-          min="1"
-          max="10000"
-          value={values.position}
-          onChange={(event) => onChange("position", event.target.value)}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+            <StatusBadge tone={lessonReady ? "green" : "red"}>
+              {lessonReady ? "Готов к созданию" : "Нужно заполнить"}
+            </StatusBadge>
+          </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonContentType}
-        </span>
-        <select
-          id={`${prefix}lesson-content-type`}
-          value={values.content_type}
-          onChange={(event) => onChange("content_type", event.target.value)}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        >
-          <option value="text">{RU.lessonTypeText}</option>
-          <option value="video">{RU.lessonTypeVideo}</option>
-          <option value="file">{RU.lessonTypeFile}</option>
-          <option value="link">{RU.lessonTypeLink}</option>
-          <option value="assignment">{RU.lessonTypeAssignment}</option>
-        </select>
-      </label>
+          <div className="grid gap-4 md:grid-cols-[1fr_140px_220px]">
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.lessonTitle}
+              </span>
+              <input
+                id={`${prefix}lesson-title`}
+                type="text"
+                value={values.title}
+                onChange={(event) => onChange("title", event.target.value)}
+                placeholder={RU.lessonTitlePlaceholder}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              />
+            </label>
 
-      <label className="block md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonContentUrl}
-        </span>
-        <input
-          id={`${prefix}lesson-content-url`}
-          type="text"
-          value={values.content_url}
-          onChange={(event) => onChange("content_url", event.target.value)}
-          placeholder={RU.lessonContentUrlPlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.lessonPosition}
+              </span>
+              <input
+                id={`${prefix}lesson-position`}
+                type="number"
+                min="1"
+                max="10000"
+                value={values.position}
+                onChange={(event) => onChange("position", event.target.value)}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              />
+            </label>
 
-      <label className="block md:col-span-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonDescription}
-        </span>
-        <textarea
-          id={`${prefix}lesson-description`}
-          value={values.description}
-          onChange={(event) => onChange("description", event.target.value)}
-          rows={3}
-          placeholder={RU.lessonDescriptionPlaceholder}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.lessonContentType}
+              </span>
+              <select
+                id={`${prefix}lesson-content-type`}
+                value={values.content_type}
+                onChange={(event) => onChange("content_type", event.target.value)}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="text">{RU.lessonTypeText}</option>
+                <option value="video">{RU.lessonTypeVideo}</option>
+                <option value="file">{RU.lessonTypeFile}</option>
+                <option value="link">{RU.lessonTypeLink}</option>
+                <option value="assignment">{RU.lessonTypeAssignment}</option>
+              </select>
+            </label>
+          </div>
+        </div>
 
-      <label className="block md:col-span-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonContentText}
-        </span>
-        <textarea
-          id={`${prefix}lesson-content-text`}
-          value={values.content_text}
-          onChange={(event) => onChange("content_text", event.target.value)}
-          rows={4}
-          placeholder={RU.lessonContentTextPlaceholder}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+        <div className="space-y-3">
+          <label className={`flex items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+            values.is_required
+              ? "border-blue-200 bg-blue-50/70"
+              : "border-slate-200 bg-white"
+          }`}>
+            <input
+              id={`${prefix}lesson-is-required`}
+              type="checkbox"
+              checked={values.is_required}
+              onChange={(event) => onChange("is_required", event.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-slate-300"
+            />
+            <span>
+              <span className="block font-black text-slate-950">{RU.lessonIsRequiredLabel}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Обучающийся должен пройти этот урок для завершения модуля.
+              </span>
+            </span>
+          </label>
 
-      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 md:col-span-3">
-        <input
-          id={`${prefix}lesson-is-required`}
-          type="checkbox"
-          checked={values.is_required}
-          onChange={(event) => onChange("is_required", event.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
-        />
-        <span className="font-semibold">{RU.lessonIsRequiredLabel}</span>
-      </label>
+          <label className={`flex items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+            values.is_active
+              ? "border-emerald-200 bg-emerald-50/70"
+              : "border-slate-200 bg-white"
+          }`}>
+            <input
+              id={`${prefix}lesson-is-active`}
+              type="checkbox"
+              checked={values.is_active}
+              onChange={(event) => onChange("is_active", event.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-slate-300"
+            />
+            <span>
+              <span className="block font-black text-slate-950">{RU.active}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Активный урок будет доступен обучающимся внутри модуля.
+              </span>
+            </span>
+          </label>
+        </div>
+      </div>
 
-      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 md:col-span-3">
-        <input
-          id={`${prefix}lesson-is-active`}
-          type="checkbox"
-          checked={values.is_active}
-          onChange={(event) => onChange("is_active", event.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
-        />
-        <span className="font-semibold">{RU.active}</span>
-      </label>
+      <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+        <div className="mb-4">
+          <div className="text-sm font-black text-slate-950">Содержимое урока</div>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Заполните минимальное содержимое, чтобы урок не был пустым. Детальную сборку блоков можно продолжить в Lesson Studio.
+          </p>
+        </div>
+
+        {["video", "file", "link"].includes(contentType) ? (
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.lessonContentUrl}
+            </span>
+            <input
+              id={`${prefix}lesson-content-url`}
+              type="text"
+              value={values.content_url}
+              onChange={(event) => onChange("content_url", event.target.value)}
+              placeholder={RU.lessonContentUrlPlaceholder}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Для видео, файла или внешней ссылки укажите URL материала.
+            </p>
+          </label>
+        ) : null}
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.lessonDescription}
+            </span>
+            <textarea
+              id={`${prefix}lesson-description`}
+              value={values.description}
+              onChange={(event) => onChange("description", event.target.value)}
+              rows={4}
+              placeholder={RU.lessonDescriptionPlaceholder}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+          </label>
+
+          {contentType === "text" || contentType === "assignment" ? (
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {contentType === "assignment" ? "Инструкция к заданию" : RU.lessonContentText}
+              </span>
+              <textarea
+                id={`${prefix}lesson-content-text`}
+                value={values.content_text}
+                onChange={(event) => onChange("content_text", event.target.value)}
+                rows={4}
+                placeholder={RU.lessonContentTextPlaceholder}
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              />
+            </label>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <CourseLessonEditorUxPanel values={values} />
+        <CourseLessonContentPreviewPanel values={values} />
+      </div>
+
+      {lessonId ? (
+        <div className="rounded-3xl bg-slate-50/70 p-5 ring-1 ring-slate-200">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-slate-950">Блоки урока</div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Основное наполнение урока редактируется в Lesson Studio.
+              </p>
+            </div>
+
+            <a
+              href={buildAdminLessonStudioPath(lessonId)}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-bold text-white transition hover:bg-blue-800"
+            >
+              Открыть Studio
+            </a>
+          </div>
+
+          <LessonBlocksEditor lessonId={lessonId} />
+        </div>
+      ) : null}
     </div>
   );
 }
