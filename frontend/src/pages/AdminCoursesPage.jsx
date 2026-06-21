@@ -1,5 +1,5 @@
 import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   activateAdminCourse,
@@ -2714,7 +2714,7 @@ function CourseStructureTree({
                   moduleCreateFormsByCourseId?.[course.id] || buildModuleCreateForm(modules);
 
                 return (
-                  <>
+                  <Fragment key={`course-group-${course.id}`}>
                     <tr
                       key={`course-row-${course.id}`}
                       data-testid={`admin-course-tree-course-${course.id}`}
@@ -2908,7 +2908,7 @@ function CourseStructureTree({
                             const isLessonCreating = lessonCreatingModuleId === module.id;
 
                             return (
-                              <>
+                              <Fragment key={`module-group-${course.id}-${module.id}`}>
                                 <tr
                                   key={`module-row-${module.id}`}
                                   data-testid={`admin-course-tree-module-${module.id}`}
@@ -3061,7 +3061,7 @@ function CourseStructureTree({
                                         const blockBadges = getLessonStructureBlockBadges(lesson);
 
                                         return (
-                                          <>
+                                          <Fragment key={`lesson-group-${module.id}-${lesson.id}`}>
                                             <tr
                                               key={`lesson-row-${lesson.id}`}
                                               data-testid={`admin-course-tree-lesson-${lesson.id}`}
@@ -3196,7 +3196,7 @@ function CourseStructureTree({
                                                 </td>
                                               </tr>
                                             ) : null}
-                                          </>
+                                          </Fragment>
                                         );
                                       })
                                     )}
@@ -3247,7 +3247,7 @@ function CourseStructureTree({
                                     </tr>
                                   </>
                                 ) : null}
-                              </>
+                              </Fragment>
                             );
                           })
                         )}
@@ -3296,7 +3296,7 @@ function CourseStructureTree({
                         </tr>
                       </>
                     ) : null}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
