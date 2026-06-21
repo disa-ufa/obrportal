@@ -2892,10 +2892,24 @@ function CourseStructureTree({
                     {isCourseOpen ? (
                       <>
                         {modules.length === 0 ? (
-                          <tr key={`course-empty-${course.id}`} className="bg-slate-50/50">
+                          <tr key={`course-empty-${course.id}`} className="bg-slate-50/60">
                             <td />
-                            <td colSpan={6} className="px-3 py-4 text-sm text-slate-500">
-                              {RU.modulesNotFound}
+                            <td colSpan={6} className="px-6 py-5">
+                              <div className="ml-9 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-4">
+                                <div className="flex items-start gap-3">
+                                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                                    +
+                                  </span>
+                                  <div>
+                                    <div className="text-sm font-black text-slate-900">
+                                      Модули пока не добавлены
+                                    </div>
+                                    <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                                      Создайте первый модуль, чтобы внутри него добавить уроки и открыть переход в Lesson Studio.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
                             </td>
                           </tr>
                         ) : (
@@ -3051,9 +3065,21 @@ function CourseStructureTree({
                                     {moduleLessons.length === 0 ? (
                                       <tr key={`module-empty-${module.id}`} className="bg-white">
                                         <td />
-                                        <td colSpan={6} className="px-3 py-4 text-sm text-slate-500">
-                                          <div className="ml-24 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
-                                            {RU.lessonsNotFound}
+                                        <td colSpan={6} className="px-6 py-4">
+                                          <div className="ml-[92px] rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 px-5 py-4">
+                                            <div className="flex items-start gap-3">
+                                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-blue-700 ring-1 ring-blue-100">
+                                                +
+                                              </span>
+                                              <div>
+                                                <div className="text-sm font-black text-slate-900">
+                                                  Уроки пока не добавлены
+                                                </div>
+                                                <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                                                  Добавьте первый урок, затем наполните его текстом, видео, файлом, ссылкой или изображением в Lesson Studio.
+                                                </p>
+                                              </div>
+                                            </div>
                                           </div>
                                         </td>
                                       </tr>
