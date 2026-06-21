@@ -2556,6 +2556,12 @@ function CourseStructureTree({
 }) {
   const [expandedCourseIds, setExpandedCourseIds] = useState({});
   const [expandedModuleIds, setExpandedModuleIds] = useState({});
+  const courseIdsKey = courses.map((course) => course.id).join("|");
+
+  useEffect(() => {
+    setExpandedCourseIds({});
+    setExpandedModuleIds({});
+  }, [courseIdsKey, filterActive]);
 
   if (loading) {
     return <LoadingBlock text={RU.loadingPrograms} />;
