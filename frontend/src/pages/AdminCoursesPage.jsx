@@ -3419,18 +3419,26 @@ function CourseStructureTree({
 
                                     <tr key={`lesson-create-${module.id}`} className="bg-white">
                                       <td />
-                                      <td colSpan={6} className="px-6 py-4">
+                                      <td colSpan={6} className="px-6 py-3">
                                         <details
                                           data-testid={`admin-course-tree-lesson-create-${module.id}`}
-                                          className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 p-4"
+                                          className="ml-[84px] overflow-hidden rounded-2xl border border-dashed border-emerald-200 bg-white"
                                         >
-                                          <summary className="cursor-pointer list-none text-sm font-bold text-blue-700">
-                                            + {RU.addLesson}
+                                          <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-50/60">
+                                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100">
+                                              +
+                                            </span>
+                                            <span>
+                                              {RU.addLesson}
+                                              <span className="block text-xs font-medium text-slate-500">
+                                                Новая строка урока внутри этого модуля
+                                              </span>
+                                            </span>
                                           </summary>
 
                                           <form
                                             onSubmit={(event) => onLessonCreateSubmit(event, module, moduleLessons)}
-                                            className="mt-4 space-y-4"
+                                            className="space-y-4 border-t border-emerald-100 bg-emerald-50/20 p-4"
                                           >
                                             <CourseLessonFormFields
                                               values={lessonCreateForm}
@@ -3468,28 +3476,28 @@ function CourseStructureTree({
                           })
                         )}
 
-                        <tr key={`module-create-${course.id}`} className="bg-slate-50/50">
+                        <tr key={`module-create-${course.id}`} className="bg-slate-50/40">
                           <td />
-                          <td colSpan={6} className="px-6 py-4">
+                          <td colSpan={6} className="px-6 py-3">
                             <details
                               data-testid={`admin-course-tree-module-create-${course.id}`}
-                              className="rounded-3xl border border-dashed border-blue-200 bg-blue-50/50 p-5"
+                              className="ml-8 overflow-hidden rounded-2xl border border-dashed border-blue-200 bg-white"
                             >
-                              <summary className="flex cursor-pointer list-none items-center gap-3 text-sm font-black text-blue-700">
-                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-blue-700 ring-1 ring-blue-100">
+                              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-50/60">
+                                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
                                   +
                                 </span>
                                 <span>
                                   {RU.addModule}
                                   <span className="block text-xs font-medium text-slate-500">
-                                    Создайте раздел программы, затем добавьте в него уроки.
+                                    Новая строка модуля внутри этой программы
                                   </span>
                                 </span>
                               </summary>
 
                               <form
                                 onSubmit={(event) => onModuleCreateSubmit(event, course)}
-                                className="mt-5 space-y-5 rounded-3xl bg-slate-50/70 p-5 ring-1 ring-slate-200"
+                                className="space-y-5 border-t border-blue-100 bg-blue-50/20 p-4"
                               >
                                 <CourseModuleFormFields
                                   values={moduleCreateForm || EMPTY_MODULE_CREATE_FORM}
@@ -3497,28 +3505,22 @@ function CourseStructureTree({
                                   prefix={`table-course-${course.id}-module-create-`}
                                 />
 
-                                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
-                                  <div className="text-xs leading-5 text-slate-500">
-                                    После создания модуль появится в структуре программы. Внутри него можно будет добавить уроки.
-                                  </div>
-
-                                  <div className="flex flex-wrap gap-3">
-                                    <ActionButton
-                                      type="button"
-                                      tone="light"
-                                      onClick={() => onModuleCreateReset(course.id, modules)}
-                                      disabled={moduleCreatingCourseId === course.id}
-                                    >
-                                      {RU.clear}
-                                    </ActionButton>
-                                    <ActionButton
-                                      type="submit"
-                                      tone="blue"
-                                      disabled={moduleCreatingCourseId === course.id}
-                                    >
-                                      {moduleCreatingCourseId === course.id ? RU.saving : RU.createModule}
-                                    </ActionButton>
-                                  </div>
+                                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-5">
+                                  <ActionButton
+                                    type="button"
+                                    tone="light"
+                                    onClick={() => onModuleCreateReset(course.id, modules)}
+                                    disabled={moduleCreatingCourseId === course.id}
+                                  >
+                                    {RU.clear}
+                                  </ActionButton>
+                                  <ActionButton
+                                    type="submit"
+                                    tone="blue"
+                                    disabled={moduleCreatingCourseId === course.id}
+                                  >
+                                    {moduleCreatingCourseId === course.id ? RU.saving : RU.createModule}
+                                  </ActionButton>
                                 </div>
                               </form>
                             </details>
@@ -4931,58 +4933,60 @@ export function AdminCoursesPage() {
         </section>
       ) : null}
 
-      <SectionCard
-        title="Программы обучения"
-        subtitle="Табличный рабочий вид: программа раскрывает модули, модуль раскрывает уроки, урок открывает действия и переход в Lesson Studio."
-      >
-        <CourseStructureTree
-          courses={courses}
-          loading={loading}
-          hasActiveFilters={hasActiveFilters}
-          onResetFilters={handleResetFilter}
-          filterActive={filterActive}
-          focusCourseId={focusCourseId}
-          courseCounts={courseCounts}
-          onQuickActiveFilter={handleQuickActiveFilter}
-          courseModulesByCourseId={courseModulesByCourseId}
-          courseLessonsByModuleId={courseLessonsByModuleId}
-          lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
-          lessonEditFormsByLessonId={lessonEditFormsByLessonId}
-          editingLessonId={editingLessonId}
-          lessonCreatingModuleId={lessonCreatingModuleId}
-          lessonActionId={lessonActionId}
-          moduleCreateFormsByCourseId={moduleCreateFormsByCourseId}
-          moduleEditFormsByModuleId={moduleEditFormsByModuleId}
-          editingModuleId={editingModuleId}
-          moduleCreatingCourseId={moduleCreatingCourseId}
-          moduleActionId={moduleActionId}
-          editingCourseId={editingCourseId}
-          actionCourseId={actionCourseId}
-          editForm={editForm}
-          onEditFieldChange={updateEditField}
-          onStartEdit={handleStartEdit}
-          onEditSubmit={handleEditSubmit}
-          onCancelEdit={resetEditState}
-          onToggleActive={handleToggleActive}
-          onDelete={handleDelete}
-          onModuleCreateFieldChange={updateModuleCreateField}
-          onModuleCreateSubmit={handleModuleCreateSubmit}
-          onModuleCreateReset={resetModuleCreateForm}
-          onModuleEditStart={handleModuleEditStart}
-          onModuleEditFieldChange={updateModuleEditField}
-          onModuleEditSubmit={handleModuleEditSubmit}
-          onModuleEditCancel={resetModuleEditState}
-          onModuleDelete={handleModuleDelete}
-          onLessonCreateFieldChange={updateLessonCreateField}
-          onLessonCreateSubmit={handleLessonCreateSubmit}
-          onLessonCreateReset={resetLessonCreateForm}
-          onLessonEditStart={handleLessonEditStart}
-          onLessonEditFieldChange={updateLessonEditField}
-          onLessonEditSubmit={handleLessonEditSubmit}
-          onLessonEditCancel={resetLessonEditState}
-          onLessonDelete={handleLessonDelete}
-        />
-      </SectionCard>
+      {!showCreateForm ? (
+        <SectionCard
+          title="Программы обучения"
+          subtitle="Табличный рабочий вид: программа раскрывает модули, модуль раскрывает уроки, урок открывает действия и переход в Lesson Studio."
+        >
+          <CourseStructureTree
+            courses={courses}
+            loading={loading}
+            hasActiveFilters={hasActiveFilters}
+            onResetFilters={handleResetFilter}
+            filterActive={filterActive}
+            focusCourseId={focusCourseId}
+            courseCounts={courseCounts}
+            onQuickActiveFilter={handleQuickActiveFilter}
+            courseModulesByCourseId={courseModulesByCourseId}
+            courseLessonsByModuleId={courseLessonsByModuleId}
+            lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
+            lessonEditFormsByLessonId={lessonEditFormsByLessonId}
+            editingLessonId={editingLessonId}
+            lessonCreatingModuleId={lessonCreatingModuleId}
+            lessonActionId={lessonActionId}
+            moduleCreateFormsByCourseId={moduleCreateFormsByCourseId}
+            moduleEditFormsByModuleId={moduleEditFormsByModuleId}
+            editingModuleId={editingModuleId}
+            moduleCreatingCourseId={moduleCreatingCourseId}
+            moduleActionId={moduleActionId}
+            editingCourseId={editingCourseId}
+            actionCourseId={actionCourseId}
+            editForm={editForm}
+            onEditFieldChange={updateEditField}
+            onStartEdit={handleStartEdit}
+            onEditSubmit={handleEditSubmit}
+            onCancelEdit={resetEditState}
+            onToggleActive={handleToggleActive}
+            onDelete={handleDelete}
+            onModuleCreateFieldChange={updateModuleCreateField}
+            onModuleCreateSubmit={handleModuleCreateSubmit}
+            onModuleCreateReset={resetModuleCreateForm}
+            onModuleEditStart={handleModuleEditStart}
+            onModuleEditFieldChange={updateModuleEditField}
+            onModuleEditSubmit={handleModuleEditSubmit}
+            onModuleEditCancel={resetModuleEditState}
+            onModuleDelete={handleModuleDelete}
+            onLessonCreateFieldChange={updateLessonCreateField}
+            onLessonCreateSubmit={handleLessonCreateSubmit}
+            onLessonCreateReset={resetLessonCreateForm}
+            onLessonEditStart={handleLessonEditStart}
+            onLessonEditFieldChange={updateLessonEditField}
+            onLessonEditSubmit={handleLessonEditSubmit}
+            onLessonEditCancel={resetLessonEditState}
+            onLessonDelete={handleLessonDelete}
+          />
+        </SectionCard>
+      ) : null}
 
       {/* Блок управления программами скрыт: основной рабочий вид перенесён в верхнюю иерархическую таблицу. */}
 
