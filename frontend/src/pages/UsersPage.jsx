@@ -61,6 +61,18 @@ function userMatchesRoleFilter(user, roleId) {
   return (user.roles || []).some((role) => role.id === roleId);
 }
 
+function userMatchesOrganizationFilter(user, organizationFilter) {
+  if (!organizationFilter) {
+    return true;
+  }
+
+  if (organizationFilter === "global") {
+    return !(user.roles || []).some((role) => role.organization_id);
+  }
+
+  return (user.roles || []).some((role) => role.organization_id === organizationFilter);
+}
+
 const USER_ACTIVITY_FILTERS = [
   { value: "all", label: "Все" },
   { value: "active", label: "Активные" },
@@ -157,25 +169,25 @@ function UserStatCard({ title, value, caption, tone = "blue" }) {
   };
 
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+    <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
+      <div className="flex items-center gap-4">
+        <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-black ring-1 ${tones[tone]}`}>
+          •
+        </span>
+
+        <div className="min-w-0">
+          <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
             {title}
           </div>
-          <div className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+          <div className="mt-2 text-3xl font-black tracking-tight text-slate-950">
             {value}
           </div>
           {caption && (
-            <div className="mt-1 text-xs font-medium text-slate-500">
+            <div className="mt-1 truncate text-xs font-medium text-slate-500">
               {caption}
             </div>
           )}
         </div>
-
-        <span className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black ring-1 ${tones[tone]}`}>
-          •
-        </span>
       </div>
     </div>
   );
@@ -228,6 +240,27 @@ function getUserAccessScope(user, organizations) {
   return organizations.find((organization) => organization.id === scopedRole.organization_id)?.name || "Организация";
 }
 
+function formatUserDateTime(value) {
+  if (!value) {
+    return { date: "-", time: "" };
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return { date: "-", time: "" };
+  }
+
+  return {
+    date: date.toLocaleDateString("ru-RU"),
+    time: date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
+  };
+}
+
+function getUserLastActivity(user) {
+  return user.last_login_at || user.updated_at || user.created_at || null;
+}
+
 export function UsersPage({
   user,
   users,
@@ -257,6 +290,7 @@ export function UsersPage({
   const [searchQuery, setSearchQuery] = useState(initialFilters.q);
   const [activityFilter, setActivityFilter] = useState(initialFilters.activity);
   const [roleFilter, setRoleFilter] = useState(initialFilters.role_id);
+  const [organizationFilter, setOrganizationFilter] = useState("");
 
   useEffect(() => {
     const nextFilters = getUserFiltersFromSearch(location.search);
@@ -270,9 +304,12 @@ export function UsersPage({
     const query = normalizeSearchValue(searchQuery);
 
     return users.filter(
-      (item) => userMatchesSearch(item, query) && userMatchesRoleFilter(item, roleFilter)
+      (item) =>
+        userMatchesSearch(item, query) &&
+        userMatchesRoleFilter(item, roleFilter) &&
+        userMatchesOrganizationFilter(item, organizationFilter)
     );
-  }, [users, searchQuery, roleFilter]);
+  }, [users, searchQuery, roleFilter, organizationFilter]);
 
   const userCounts = useMemo(() => calculateUserCounts(baseFilteredUsers), [baseFilteredUsers]);
   const userDiagnostics = useMemo(() => calculateUserDiagnostics(users), [users]);
@@ -307,11 +344,20 @@ export function UsersPage({
       });
     }
 
+    if (organizationFilter) {
+      const organization = organizations.find((item) => item.id === organizationFilter);
+      items.push({
+        key: "organization_id",
+        label: "Организация",
+        value: organizationFilter === "global" ? "Глобальный доступ" : organization?.name || organizationFilter,
+      });
+    }
+
     return items;
-  }, [searchQuery, activityFilter, roleFilter, roles]);
+  }, [searchQuery, activityFilter, roleFilter, organizationFilter, roles, organizations]);
 
   const hasActiveFilters =
-    searchQuery.trim() !== "" || activityFilter !== "all" || roleFilter !== "";
+    searchQuery.trim() !== "" || activityFilter !== "all" || roleFilter !== "" || organizationFilter !== "";
 
   const currentUserFastPathFilters = useMemo(
     () => buildUserFilters(),
@@ -370,10 +416,15 @@ export function UsersPage({
     refreshUsersFastPath(nextFilters);
   }
 
+  function handleOrganizationChange(value) {
+    setOrganizationFilter(value);
+  }
+
   function resetFilters() {
     setSearchQuery("");
     setActivityFilter("all");
     setRoleFilter("");
+    setOrganizationFilter("");
     navigateToUserFilters({}, { replace: true });
     refreshUsersFastPath({});
   }
@@ -396,6 +447,14 @@ export function UsersPage({
             <div className="flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-white px-4 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                title="Импорт пользователей добавим отдельным шагом"
+              >
+                Импорт пользователей
+              </button>
+
+              <button
+                type="button"
                 data-testid="admin-users-export-csv-button"
                 onClick={handleExportUsersCsv}
                 disabled={loading || filteredUsers.length === 0}
@@ -404,13 +463,24 @@ export function UsersPage({
                 Экспорт CSV
               </button>
 
-              <ActionButton
-                type="button"
-                tone={isCreating ? "light" : "blue"}
-                onClick={() => setIsCreating((current) => !current)}
-              >
-                {isCreating ? "Скрыть форму" : "+ Создать пользователя"}
-              </ActionButton>
+              <div className="inline-flex overflow-hidden rounded-2xl shadow-sm">
+                <ActionButton
+                  type="button"
+                  tone={isCreating ? "light" : "blue"}
+                  onClick={() => setIsCreating((current) => !current)}
+                >
+                  {isCreating ? "Скрыть форму" : "+ Создать пользователя"}
+                </ActionButton>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreating((current) => !current)}
+                  className="inline-flex h-11 items-center justify-center bg-blue-700 px-3 text-sm font-black text-white transition hover:bg-blue-800"
+                  aria-label="Открыть меню создания пользователя"
+                >
+                  ˅
+                </button>
+              </div>
             </div>
           ) : null
         }
@@ -419,12 +489,8 @@ export function UsersPage({
           <p className="text-slate-600">Войдите под admin, чтобы увидеть пользователей.</p>
         ) : (
           <div className="space-y-5">
-            <div
-              data-testid="admin-users-moderation-notice"
-              className="rounded-3xl bg-blue-50 px-5 py-4 text-sm text-blue-900 ring-1 ring-blue-100"
-            >
-              Раздел пользователей используется для управления доступом: проверьте активность,
-              подтверждение email, роли и связанные записи перед изменениями.
+            <div data-testid="admin-users-moderation-notice" className="sr-only">
+              Раздел пользователей используется для управления доступом.
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -461,7 +527,7 @@ export function UsersPage({
             </div>
 
             <AdminFilterPanel
-              columnsClassName="lg:grid-cols-[1fr_220px_220px_auto]"
+              columnsClassName="xl:grid-cols-[minmax(0,1.35fr)_190px_220px_190px_auto]"
               onReset={resetFilters}
               resetDisabled={!hasActiveFilters}
               summary={getShownSummary(filteredUsers.length, users.length)}
@@ -476,18 +542,6 @@ export function UsersPage({
                 />
               </AdminFilterField>
 
-              <AdminFilterField label="Активность">
-                <select
-                  value={activityFilter}
-                  onChange={(event) => handleActivityChange(event.target.value)}
-                  className={ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS}
-                >
-                  <option value="all">Все пользователи</option>
-                  <option value="active">Только активные</option>
-                  <option value="inactive">Только отключённые</option>
-                </select>
-              </AdminFilterField>
-
               <AdminFilterField label="Роль">
                 <select
                   value={roleFilter}
@@ -500,6 +554,34 @@ export function UsersPage({
                       {role.code}{role.name ? ` — ${role.name}` : ""}
                     </option>
                   ))}
+                </select>
+              </AdminFilterField>
+
+              <AdminFilterField label="Организация">
+                <select
+                  value={organizationFilter}
+                  onChange={(event) => handleOrganizationChange(event.target.value)}
+                  className={ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS}
+                >
+                  <option value="">Все организации</option>
+                  <option value="global">Глобальный доступ</option>
+                  {organizations.map((organization) => (
+                    <option key={organization.id} value={organization.id}>
+                      {organization.name}
+                    </option>
+                  ))}
+                </select>
+              </AdminFilterField>
+
+              <AdminFilterField label="Статус">
+                <select
+                  value={activityFilter}
+                  onChange={(event) => handleActivityChange(event.target.value)}
+                  className={ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS}
+                >
+                  <option value="all">Все статусы</option>
+                  <option value="active">Активные</option>
+                  <option value="inactive">Отключённые</option>
                 </select>
               </AdminFilterField>
             </AdminFilterPanel>
@@ -541,14 +623,22 @@ export function UsersPage({
                 {filteredUsers.length ? (
                   <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1120px] divide-y divide-slate-100 text-sm">
+                      <table className="w-full min-w-[1320px] divide-y divide-slate-100 text-sm">
                         <thead className="bg-slate-50/80">
                           <tr className="text-left text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                            <th className="w-12 px-5 py-4">
+                              <input
+                                type="checkbox"
+                                aria-label="Выбрать всех пользователей"
+                                className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                              />
+                            </th>
                             <th className="px-5 py-4">Пользователь</th>
-                            <th className="px-5 py-4">Роли</th>
-                            <th className="px-5 py-4">Доступ</th>
-                            <th className="px-5 py-4">Область</th>
-                            <th className="px-5 py-4">Связанные записи</th>
+                            <th className="px-5 py-4">Роль</th>
+                            <th className="px-5 py-4">Организация</th>
+                            <th className="px-5 py-4">Статус</th>
+                            <th className="px-5 py-4">Дата регистрации</th>
+                            <th className="px-5 py-4">Последняя активность</th>
                             <th className="px-5 py-4 text-right">Действия</th>
                           </tr>
                         </thead>
@@ -557,12 +647,22 @@ export function UsersPage({
                           {filteredUsers.map((row) => {
                             const primaryRole = getPrimaryUserRole(row);
                             const isSelected = selectedUser?.id === row.id;
+                            const createdAt = formatUserDateTime(row.created_at || row.createdAt || row.created);
+                            const activityAt = formatUserDateTime(getUserLastActivity(row));
 
                             return (
                               <tr
                                 key={row.id}
                                 className={`transition ${isSelected ? "bg-blue-50/70" : "hover:bg-slate-50"}`}
                               >
+                                <td className="px-5 py-4 align-middle">
+                                  <input
+                                    type="checkbox"
+                                    aria-label={`Выбрать пользователя ${getUserDisplayName(row)}`}
+                                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                                  />
+                                </td>
+
                                 <td className="px-5 py-4 align-top">
                                   <button
                                     type="button"
@@ -570,8 +670,15 @@ export function UsersPage({
                                     disabled={selectedUserLoading}
                                     className="flex w-full min-w-0 items-start gap-3 text-left disabled:cursor-wait disabled:opacity-70"
                                   >
-                                    <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
+                                    <span className={`relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black ring-1 ${
+                                      row.is_active
+                                        ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+                                        : "bg-slate-100 text-slate-500 ring-slate-200"
+                                    }`}>
                                       {getUserInitials(row)}
+                                      <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full ring-2 ring-white ${
+                                        row.is_active ? "bg-emerald-500" : "bg-slate-300"
+                                      }`} />
                                     </span>
 
                                     <span className="min-w-0">
@@ -607,16 +714,22 @@ export function UsersPage({
                                   </div>
 
                                   {primaryRole && (
-                                    <div className="mt-2 max-w-[240px] truncate text-xs font-medium text-slate-500">
+                                    <div className="mt-2 max-w-[220px] truncate text-xs font-medium text-slate-500">
                                       {primaryRole.name || primaryRole.code}
                                     </div>
                                   )}
                                 </td>
 
                                 <td className="px-5 py-4 align-top">
-                                  <div className="flex flex-wrap gap-1.5">
+                                  <div className="max-w-[220px] truncate text-sm font-semibold text-slate-700">
+                                    {getUserAccessScope(row, organizations)}
+                                  </div>
+                                </td>
+
+                                <td className="px-5 py-4 align-top">
+                                  <div className="flex flex-col items-start gap-1.5">
                                     <StatusBadge tone={row.is_active ? "green" : "red"}>
-                                      {row.is_active ? "Активен" : "Отключён"}
+                                      {row.is_active ? "Активен" : "Неактивен"}
                                     </StatusBadge>
 
                                     <StatusBadge tone={row.is_email_verified ? "green" : "amber"}>
@@ -626,27 +739,17 @@ export function UsersPage({
                                 </td>
 
                                 <td className="px-5 py-4 align-top">
-                                  <div className="max-w-[240px] truncate text-sm font-semibold text-slate-700">
-                                    {getUserAccessScope(row, organizations)}
-                                  </div>
+                                  <div className="font-bold text-slate-800">{createdAt.date}</div>
+                                  {createdAt.time && (
+                                    <div className="mt-1 text-xs text-slate-500">{createdAt.time}</div>
+                                  )}
                                 </td>
 
                                 <td className="px-5 py-4 align-top">
-                                  <div className="flex flex-wrap gap-2">
-                                    <Link
-                                      to={buildDocumentsPath({ user_id: row.id })}
-                                      className="inline-flex h-9 items-center rounded-xl bg-white px-3 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
-                                    >
-                                      Документы
-                                    </Link>
-
-                                    <Link
-                                      to={buildEnrollmentsPath({ user_id: row.id })}
-                                      className="inline-flex h-9 items-center rounded-xl bg-white px-3 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
-                                    >
-                                      Назначения
-                                    </Link>
-                                  </div>
+                                  <div className="font-bold text-slate-800">{activityAt.date}</div>
+                                  {activityAt.time && (
+                                    <div className="mt-1 text-xs text-slate-500">{activityAt.time}</div>
+                                  )}
                                 </td>
 
                                 <td className="px-5 py-4 align-top">
@@ -655,10 +758,27 @@ export function UsersPage({
                                       type="button"
                                       onClick={() => onOpenUser(row.id)}
                                       disabled={selectedUserLoading}
-                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-slate-950 px-3 text-xs font-bold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
+                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
+                                      title={isSelected ? "Пользователь открыт" : "Открыть пользователя"}
                                     >
-                                      {isSelected ? "Открыто" : "Открыть"}
+                                      👁
                                     </button>
+
+                                    <Link
+                                      to={buildDocumentsPath({ user_id: row.id })}
+                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                      title="Документы пользователя"
+                                    >
+                                      ✎
+                                    </Link>
+
+                                    <Link
+                                      to={buildEnrollmentsPath({ user_id: row.id })}
+                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-lg font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                      title="Назначения пользователя"
+                                    >
+                                      …
+                                    </Link>
                                   </div>
                                 </td>
                               </tr>
