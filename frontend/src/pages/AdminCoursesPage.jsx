@@ -2639,7 +2639,7 @@ function getLessonStructureBlockBadges(lesson) {
     badges.push("Задание");
   }
 
-  return badges.length ? badges : ["Блоки не заполнены"];
+  return badges.length ? badges : ["Требует наполнения"];
 }
 
 function getLessonStructurePreviewText(lesson) {
@@ -3314,7 +3314,7 @@ function CourseStructureTree({
                                                   {blockBadges.slice(0, 2).map((badge) => (
                                                     <StatusBadge
                                                       key={badge}
-                                                      tone={badge === "Блоки не заполнены" ? "red" : "blue"}
+                                                      tone={badge === "Требует наполнения" ? "red" : "blue"}
                                                     >
                                                       {badge}
                                                     </StatusBadge>
