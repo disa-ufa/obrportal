@@ -181,6 +181,53 @@ function UserStatCard({ title, value, caption, tone = "blue" }) {
   );
 }
 
+function getUserDisplayName(user) {
+  return user.full_name?.trim() || user.email || "Пользователь";
+}
+
+function getUserInitials(user) {
+  const parts = getUserDisplayName(user)
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (!parts.length) {
+    return "U";
+  }
+
+  return parts.map((part) => part[0]).join("").toUpperCase();
+}
+
+function getUserRoleTone(role) {
+  if (!role) {
+    return "gray";
+  }
+
+  if (role.code === "admin") {
+    return "amber";
+  }
+
+  if (role.code === "learner") {
+    return "green";
+  }
+
+  return "blue";
+}
+
+function getPrimaryUserRole(user) {
+  return user.roles?.[0] || null;
+}
+
+function getUserAccessScope(user, organizations) {
+  const scopedRole = user.roles?.find((role) => role.organization_id);
+
+  if (!scopedRole) {
+    return "Глобальный доступ";
+  }
+
+  return organizations.find((organization) => organization.id === scopedRole.organization_id)?.name || "Организация";
+}
+
 export function UsersPage({
   user,
   users,
@@ -491,73 +538,145 @@ export function UsersPage({
               </div>
             ) : (
               <div data-testid={filteredUsers.length ? "admin-users-table-state" : "admin-users-empty-state"}>
-                <SmallTable
-                emptyText={getFilteredEmptyText(
-                  hasActiveFilters,
-                  "Пользователей по фильтру нет.",
-                  "Пользователей нет."
+                {filteredUsers.length ? (
+                  <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[1120px] divide-y divide-slate-100 text-sm">
+                        <thead className="bg-slate-50/80">
+                          <tr className="text-left text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                            <th className="px-5 py-4">Пользователь</th>
+                            <th className="px-5 py-4">Роли</th>
+                            <th className="px-5 py-4">Доступ</th>
+                            <th className="px-5 py-4">Область</th>
+                            <th className="px-5 py-4">Связанные записи</th>
+                            <th className="px-5 py-4 text-right">Действия</th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {filteredUsers.map((row) => {
+                            const primaryRole = getPrimaryUserRole(row);
+                            const isSelected = selectedUser?.id === row.id;
+
+                            return (
+                              <tr
+                                key={row.id}
+                                className={`transition ${isSelected ? "bg-blue-50/70" : "hover:bg-slate-50"}`}
+                              >
+                                <td className="px-5 py-4 align-top">
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenUser(row.id)}
+                                    disabled={selectedUserLoading}
+                                    className="flex w-full min-w-0 items-start gap-3 text-left disabled:cursor-wait disabled:opacity-70"
+                                  >
+                                    <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
+                                      {getUserInitials(row)}
+                                    </span>
+
+                                    <span className="min-w-0">
+                                      <span className="block truncate text-sm font-black text-slate-950">
+                                        {getUserDisplayName(row)}
+                                      </span>
+                                      <span className="mt-1 block truncate text-xs font-medium text-slate-500">
+                                        {row.email}
+                                      </span>
+                                      {row.phone && (
+                                        <span className="mt-1 block truncate text-xs text-slate-400">
+                                          {row.phone}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </button>
+                                </td>
+
+                                <td className="px-5 py-4 align-top">
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {row.roles?.length ? (
+                                      row.roles.slice(0, 3).map((role) => (
+                                        <StatusBadge
+                                          key={role.id}
+                                          tone={getUserRoleTone(role)}
+                                        >
+                                          {role.code}
+                                        </StatusBadge>
+                                      ))
+                                    ) : (
+                                      <StatusBadge tone="gray">Без роли</StatusBadge>
+                                    )}
+                                  </div>
+
+                                  {primaryRole && (
+                                    <div className="mt-2 max-w-[240px] truncate text-xs font-medium text-slate-500">
+                                      {primaryRole.name || primaryRole.code}
+                                    </div>
+                                  )}
+                                </td>
+
+                                <td className="px-5 py-4 align-top">
+                                  <div className="flex flex-wrap gap-1.5">
+                                    <StatusBadge tone={row.is_active ? "green" : "red"}>
+                                      {row.is_active ? "Активен" : "Отключён"}
+                                    </StatusBadge>
+
+                                    <StatusBadge tone={row.is_email_verified ? "green" : "amber"}>
+                                      email {row.is_email_verified ? "OK" : "не подтверждён"}
+                                    </StatusBadge>
+                                  </div>
+                                </td>
+
+                                <td className="px-5 py-4 align-top">
+                                  <div className="max-w-[240px] truncate text-sm font-semibold text-slate-700">
+                                    {getUserAccessScope(row, organizations)}
+                                  </div>
+                                </td>
+
+                                <td className="px-5 py-4 align-top">
+                                  <div className="flex flex-wrap gap-2">
+                                    <Link
+                                      to={buildDocumentsPath({ user_id: row.id })}
+                                      className="inline-flex h-9 items-center rounded-xl bg-white px-3 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                    >
+                                      Документы
+                                    </Link>
+
+                                    <Link
+                                      to={buildEnrollmentsPath({ user_id: row.id })}
+                                      className="inline-flex h-9 items-center rounded-xl bg-white px-3 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                    >
+                                      Назначения
+                                    </Link>
+                                  </div>
+                                </td>
+
+                                <td className="px-5 py-4 align-top">
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => onOpenUser(row.id)}
+                                      disabled={selectedUserLoading}
+                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-slate-950 px-3 text-xs font-bold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
+                                    >
+                                      {isSelected ? "Открыто" : "Открыть"}
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-3xl bg-white px-6 py-12 text-center text-sm font-medium text-slate-500 shadow-sm ring-1 ring-slate-200">
+                    {getFilteredEmptyText(
+                      hasActiveFilters,
+                      "Пользователей по фильтру нет.",
+                      "Пользователей нет."
+                    )}
+                  </div>
                 )}
-                rows={filteredUsers}
-                selectedRowId={selectedUser?.id}
-                minWidth="980px"
-                columns={[
-                  { key: "email", title: "Email" },
-                  { key: "full_name", title: "ФИО" },
-                  {
-                    key: "roles",
-                    title: "Роли",
-                    render: (row) => (
-                      <div className="flex flex-wrap gap-1">
-                        {(row.roles || []).map((role) => (
-                          <StatusBadge
-                            key={role.id}
-                            tone={role.code === "admin" ? "amber" : "blue"}
-                          >
-                            {role.code}
-                          </StatusBadge>
-                        ))}
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "is_active",
-                    title: "Активен",
-                    render: (row) => (
-                      <StatusBadge tone={row.is_active ? "green" : "red"}>
-                        {row.is_active ? "да" : "нет"}
-                      </StatusBadge>
-                    ),
-                  },
-                  {
-                    key: "actions",
-                    title: "Действия",
-                    render: (row) => (
-                      <div className="flex flex-wrap gap-2">
-                        <ActionButton
-                          onClick={() => onOpenUser(row.id)}
-                          disabled={selectedUserLoading}
-                        >
-                          {selectedUser?.id === row.id ? "Открыто" : "Открыть"}
-                        </ActionButton>
-
-                        <Link
-                          to={buildDocumentsPath({ user_id: row.id })}
-                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                        >
-                          Документы
-                        </Link>
-
-                        <Link
-                          to={buildEnrollmentsPath({ user_id: row.id })}
-                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                        >
-                          Назначения
-                        </Link>
-                      </div>
-                    ),
-                  },
-                ]}
-                />
               </div>
             )}
           </div>
