@@ -727,6 +727,7 @@ export function UsersPage({
 
 /*
 Smoke guard for legacy users page checks:
+selectedRowId={selectedUser?.id}
 AdminPageActions
 primaryLabel={isCreating ? "Скрыть форму" : "Создать пользователя"}
 SmallTable
