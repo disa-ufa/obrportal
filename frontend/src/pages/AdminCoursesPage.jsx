@@ -2339,13 +2339,13 @@ function CoursesRegistryTable({
                       ) : null}
                     </td>
 
-                    <td className="px-3 py-4 align-top">
+                    <td className="px-3 py-3 align-top">
                       <StatusBadge tone={getCourseStatusTone(course)}>
                         {getCourseStatusLabel(course)}
                       </StatusBadge>
                     </td>
 
-                    <td className="px-3 py-4 align-top">
+                    <td className="px-3 py-3 align-top">
                       <div className="flex flex-wrap gap-2">
                         <StatusBadge tone={course.format ? "blue" : "gray"}>
                           {course.format || "формат не задан"}
@@ -2356,7 +2356,7 @@ function CoursesRegistryTable({
                       </div>
                     </td>
 
-                    <td className="px-3 py-4 align-top">
+                    <td className="px-3 py-3 align-top">
                       <div className="font-semibold text-slate-900">
                         {modules.length} мод. / {lessons.length} ур.
                       </div>
@@ -2365,7 +2365,7 @@ function CoursesRegistryTable({
                       </div>
                     </td>
 
-                    <td className="px-3 py-4 align-top">
+                    <td className="px-3 py-3 align-top">
                       <div className="font-semibold text-slate-900">
                         {readiness.readinessPercent}%
                       </div>
@@ -2380,7 +2380,7 @@ function CoursesRegistryTable({
                       {formatDateTime(course.updated_at)}
                     </td>
 
-                    <td className="px-3 py-4 align-top">
+                    <td className="px-3 py-3 align-top">
                       <div className="flex flex-wrap justify-end gap-2">
                         <a
                           href={`#course-${course.id}`}
@@ -2726,10 +2726,10 @@ function CourseStructureTree({
                       data-testid={`admin-course-tree-course-${course.id}`}
                       onClick={(event) => handleRowClick(event, () => toggleCourse(course.id))}
                       className={`cursor-pointer transition ${
-                        isCourseOpen ? "bg-blue-50/30" : "hover:bg-slate-50"
+                        isCourseOpen ? "bg-blue-50/40" : "hover:bg-slate-50"
                       }`}
                     >
-                      <td className="px-3 py-4 align-top">
+                      <td className="px-3 py-3 align-top">
                         <input
                           type="checkbox"
                           aria-label={`Выбрать программу ${course.title}`}
@@ -2737,7 +2737,7 @@ function CourseStructureTree({
                         />
                       </td>
 
-                      <td className="px-3 py-4 align-top">
+                      <td className="px-3 py-3 align-top">
                         <div className="flex min-w-0 items-start gap-3">
                           <button
                             type="button"
@@ -2777,11 +2777,11 @@ function CourseStructureTree({
                         </div>
                       </td>
 
-                      <td className="px-3 py-4 align-top">
+                      <td className="px-3 py-3 align-top">
                         <StatusBadge tone="violet">{getCourseTypeBadge(course)}</StatusBadge>
                       </td>
 
-                      <td className="px-3 py-4 align-top">
+                      <td className="px-3 py-3 align-top">
                         <div className="font-semibold text-slate-900">
                           {getCourseStructureText(modules)}
                         </div>
@@ -2790,17 +2790,17 @@ function CourseStructureTree({
                         </div>
                       </td>
 
-                      <td className="px-3 py-4 align-top">
+                      <td className="px-3 py-3 align-top">
                         <StatusBadge tone={getCourseStatusTone(course)}>
                           {getCourseStatusLabel(course)}
                         </StatusBadge>
                       </td>
 
-                      <td className="px-3 py-4 align-top text-xs leading-5 text-slate-500">
+                      <td className="px-3 py-3 align-top text-xs leading-5 text-slate-500">
                         {getUpdatedAt(course)}
                       </td>
 
-                      <td className="px-3 py-4 align-top">
+                      <td className="px-3 py-3 align-top">
                         <div
                           data-testid={`admin-course-tree-course-actions-${course.id}`}
                           className="flex justify-end gap-1.5"
@@ -2933,12 +2933,12 @@ function CourseStructureTree({
                                   key={`module-row-${module.id}`}
                                   data-testid={`admin-course-tree-module-${module.id}`}
                                   onClick={(event) => handleRowClick(event, () => toggleModule(module.id))}
-                                  className="cursor-pointer bg-slate-50/70 transition hover:bg-blue-50/40"
+                                  className="cursor-pointer bg-blue-50/25 transition hover:bg-blue-50/60"
                                 >
-                                  <td className="px-3 py-4 align-top" />
+                                  <td className="px-3 py-3 align-top" />
 
-                                  <td className="px-3 py-4 align-top">
-                                    <div className="ml-9 flex min-w-0 items-start gap-3 border-l border-slate-200 pl-5">
+                                  <td className="px-3 py-3 align-top">
+                                    <div className="ml-8 flex min-w-0 items-start gap-3 rounded-2xl border border-blue-100 bg-white/80 px-3 py-2 shadow-sm">
                                       <button
                                         type="button"
                                         onClick={() => toggleModule(module.id)}
@@ -2971,11 +2971,11 @@ function CourseStructureTree({
                                     </div>
                                   </td>
 
-                                  <td className="px-3 py-4 align-top">
+                                  <td className="px-3 py-3 align-top">
                                     <StatusBadge tone="blue">Модуль</StatusBadge>
                                   </td>
 
-                                  <td className="px-3 py-4 align-top">
+                                  <td className="px-3 py-3 align-top">
                                     <div className="font-semibold text-slate-900">
                                       {getModuleStructureText(module)}
                                     </div>
@@ -2984,17 +2984,17 @@ function CourseStructureTree({
                                     </div>
                                   </td>
 
-                                  <td className="px-3 py-4 align-top">
+                                  <td className="px-3 py-3 align-top">
                                     <StatusBadge tone={module.is_active ? "green" : "gray"}>
                                       {module.is_active ? RU.moduleActive : RU.moduleInactive}
                                     </StatusBadge>
                                   </td>
 
-                                  <td className="px-3 py-4 align-top text-xs leading-5 text-slate-500">
+                                  <td className="px-3 py-3 align-top text-xs leading-5 text-slate-500">
                                     {getUpdatedAt(module, course)}
                                   </td>
 
-                                  <td className="px-3 py-4 align-top">
+                                  <td className="px-3 py-3 align-top">
                                     <div
                                       data-testid={`admin-course-tree-module-actions-${module.id}`}
                                       className="flex justify-end gap-1.5"
@@ -3066,7 +3066,7 @@ function CourseStructureTree({
                                       <tr key={`module-empty-${module.id}`} className="bg-white">
                                         <td />
                                         <td colSpan={6} className="px-6 py-4">
-                                          <div className="ml-[92px] rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 px-5 py-4">
+                                          <div className="ml-[84px] rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 px-5 py-4">
                                             <div className="flex items-start gap-3">
                                               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-blue-700 ring-1 ring-blue-100">
                                                 +
@@ -3097,12 +3097,12 @@ function CourseStructureTree({
                                             <tr
                                               key={`lesson-row-${lesson.id}`}
                                               data-testid={`admin-course-tree-lesson-${lesson.id}`}
-                                              className="bg-white transition hover:bg-slate-50"
+                                              className="bg-slate-50/20 transition hover:bg-emerald-50/30"
                                             >
                                               <td />
 
-                                              <td className="px-3 py-4 align-top">
-                                                <div className="ml-[92px] flex min-w-0 items-start gap-3 border-l border-slate-200 pl-5">
+                                              <td className="px-3 py-3 align-top">
+                                                <div className="ml-[84px] flex min-w-0 items-start gap-3 rounded-2xl border border-emerald-100 bg-white px-3 py-2 shadow-sm">
                                                   <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
                                                     ▪
                                                   </span>
@@ -3121,11 +3121,11 @@ function CourseStructureTree({
                                                 </div>
                                               </td>
 
-                                              <td className="px-3 py-4 align-top">
+                                              <td className="px-3 py-3 align-top">
                                                 <StatusBadge tone="green">Урок</StatusBadge>
                                               </td>
 
-                                              <td className="px-3 py-4 align-top">
+                                              <td className="px-3 py-3 align-top">
                                                 <div className="flex flex-wrap gap-1">
                                                   {blockBadges.slice(0, 2).map((badge) => (
                                                     <StatusBadge
@@ -3138,7 +3138,7 @@ function CourseStructureTree({
                                                 </div>
                                               </td>
 
-                                              <td className="px-3 py-4 align-top">
+                                              <td className="px-3 py-3 align-top">
                                                 <div className="flex flex-wrap gap-1">
                                                   <StatusBadge tone={lesson.is_active ? "green" : "gray"}>
                                                     {lesson.is_active ? RU.moduleActive : RU.moduleInactive}
@@ -3149,11 +3149,11 @@ function CourseStructureTree({
                                                 </div>
                                               </td>
 
-                                              <td className="px-3 py-4 align-top text-xs leading-5 text-slate-500">
+                                              <td className="px-3 py-3 align-top text-xs leading-5 text-slate-500">
                                                 {getUpdatedAt(lesson, module)}
                                               </td>
 
-                                              <td className="px-3 py-4 align-top">
+                                              <td className="px-3 py-3 align-top">
                                                 <div
                                                   data-testid={`admin-course-tree-lesson-actions-${lesson.id}`}
                                                   className="flex justify-end gap-1.5"
