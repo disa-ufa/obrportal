@@ -394,99 +394,141 @@ function formatCourseApiError(err, fallback) {
 
 function CourseFormFields({ values, onChange, prefix = "" }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Slug
-        </span>
-        <input
-          type="text"
-          value={values.slug}
-          onChange={(event) => onChange("slug", event.target.value)}
-          placeholder="povyshenie-kvalifikatsii"
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-        <p className="mt-2 text-xs leading-5 text-slate-500">
-          Заполнится автоматически из названия. Можно изменить вручную.
-        </p>
-      </label>
+    <div className="space-y-5">
+      <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+        <div className="mb-4">
+          <div className="text-sm font-black text-slate-950">Основные данные</div>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Название отображается в каталоге и личном кабинете. Slug используется в публичной ссылке программы.
+          </p>
+        </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.title}
-        </span>
-        <input
-          type="text"
-          value={values.title}
-          onChange={(event) => onChange("title", event.target.value)}
-          placeholder={RU.titlePlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.title}
+            </span>
+            <input
+              type="text"
+              value={values.title}
+              onChange={(event) => onChange("title", event.target.value)}
+              placeholder={RU.titlePlaceholder}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+          </label>
 
-      <label className="block md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.description}
-        </span>
-        <textarea
-          value={values.description}
-          onChange={(event) => onChange("description", event.target.value)}
-          rows={4}
-          placeholder={RU.descriptionPlaceholder}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Slug
+            </span>
+            <input
+              type="text"
+              value={values.slug}
+              onChange={(event) => onChange("slug", event.target.value)}
+              placeholder="povyshenie-kvalifikatsii"
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Заполнится автоматически из названия. Можно изменить вручную.
+            </p>
+          </label>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.hours}
-        </span>
-        <input
-          type="number"
-          min="1"
-          max="10000"
-          value={values.hours}
-          onChange={(event) => onChange("hours", event.target.value)}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+          <label className="block md:col-span-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.description}
+            </span>
+            <textarea
+              value={values.description}
+              onChange={(event) => onChange("description", event.target.value)}
+              rows={4}
+              placeholder={RU.descriptionPlaceholder}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+          </label>
+        </div>
+      </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.format}
-        </span>
-        <input
-          type="text"
-          value={values.format}
-          onChange={(event) => onChange("format", event.target.value)}
-          placeholder={RU.formatPlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+          <div className="mb-4">
+            <div className="text-sm font-black text-slate-950">Параметры программы</div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Эти данные помогают пользователю понять формат обучения и какой документ он получит после завершения.
+            </p>
+          </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.documentType}
-        </span>
-        <input
-          type="text"
-          value={values.document_type}
-          onChange={(event) => onChange("document_type", event.target.value)}
-          placeholder={RU.documentPlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.hours}
+              </span>
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                value={values.hours}
+                onChange={(event) => onChange("hours", event.target.value)}
+                placeholder="72"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              />
+            </label>
 
-      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
-        <input
-          id={`${prefix}is-active`}
-          type="checkbox"
-          checked={values.is_active}
-          onChange={(event) => onChange("is_active", event.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
-        />
-        <span className="font-semibold">{RU.active}</span>
-      </label>
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.format}
+              </span>
+              <select
+                value={values.format}
+                onChange={(event) => onChange("format", event.target.value)}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="">Не указан</option>
+                <option value="online">Онлайн</option>
+                <option value="mixed">Смешанный</option>
+                <option value="очно-заочно">Очно-заочно</option>
+                <option value="self-paced">Самостоятельное прохождение</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.documentType}
+              </span>
+              <select
+                value={values.document_type}
+                onChange={(event) => onChange("document_type", event.target.value)}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="">Не указан</option>
+                <option value="сертификат">Сертификат</option>
+                <option value="удостоверение">Удостоверение</option>
+                <option value="диплом">Диплом</option>
+                <option value="без документа">Без документа</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <label className={`flex min-h-full items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+          values.is_active
+            ? "border-emerald-200 bg-emerald-50/70"
+            : "border-slate-200 bg-white"
+        }`}>
+          <input
+            id={`${prefix}is-active`}
+            type="checkbox"
+            checked={values.is_active}
+            onChange={(event) => onChange("is_active", event.target.checked)}
+            className="mt-1 h-5 w-5 rounded border-slate-300"
+          />
+          <span>
+            <span className="block font-black text-slate-950">{RU.active}</span>
+            <span className="mt-1 block text-xs leading-5 text-slate-500">
+              Активная программа доступна в каталоге и может использоваться в назначениях. Снимите галочку, чтобы временно скрыть программу.
+            </span>
+          </span>
+        </label>
+      </div>
     </div>
   );
 }
