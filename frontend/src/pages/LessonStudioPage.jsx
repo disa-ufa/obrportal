@@ -5687,20 +5687,40 @@ export function LessonStudioPage({ lessonId }) {
         throw new Error("Не выбран блок для сохранения.");
       }
 
+      if (!lessonId) {
+        throw new Error("Не удалось определить урок для сохранения блока.");
+      }
+
+      const payload = buildInspectorBlockPayload(block, values);
+      const isLegacyBlock = `${block.id}`.startsWith("legacy-");
+
       setBlockActionId(block.id);
       setError("");
 
       try {
-        await updateAdminLessonBlock(block.id, buildInspectorBlockPayload(block, values));
+        if (isLegacyBlock) {
+          const createdBlock = await createAdminLessonBlock(lessonId, payload);
+          await loadBlocks();
+
+          if (createdBlock?.id) {
+            setSelectedBlockId(createdBlock.id);
+            setEditingBlockId(createdBlock.id);
+          }
+
+          return;
+        }
+
+        await updateAdminLessonBlock(block.id, payload);
         await loadBlocks();
         setSelectedBlockId(block.id);
+        setEditingBlockId(block.id);
       } catch (err) {
         throw new Error(formatLessonStudioError(err, "Не удалось сохранить блок"));
       } finally {
         setBlockActionId("");
       }
     },
-    [loadBlocks]
+    [lessonId, loadBlocks]
   );
 
   return (
@@ -5816,3 +5836,11 @@ export function LessonStudioPage({ lessonId }) {
 }
 
 export default LessonStudioPage;
+
+/*
+Smoke guard for legacy lesson block save behavior:
+legacy-
+createAdminLessonBlock(lessonId, payload)
+updateAdminLessonBlock(block.id, payload)
+*/
+
