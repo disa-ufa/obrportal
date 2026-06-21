@@ -585,60 +585,93 @@ function formatCourseModuleApiError(err, fallback) {
 }
 
 function CourseModuleFormFields({ values, onChange, prefix = "" }) {
+  const titleReady = Boolean(`${values.title || ""}`.trim());
+  const positionReady = normalizeModulePositionInput(values.position) !== null;
+  const moduleReady = titleReady && positionReady;
+
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_160px]">
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.moduleTitle}
-        </span>
-        <input
-          id={`${prefix}module-title`}
-          type="text"
-          value={values.title}
-          onChange={(event) => onChange("title", event.target.value)}
-          placeholder={RU.moduleTitlePlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+    <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+      <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-black text-slate-950">Основные данные модуля</div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Модуль группирует уроки внутри программы. Позиция определяет порядок отображения.
+            </p>
+          </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.modulePosition}
-        </span>
-        <input
-          id={`${prefix}module-position`}
-          type="number"
-          min="1"
-          max="10000"
-          value={values.position}
-          onChange={(event) => onChange("position", event.target.value)}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+          <StatusBadge tone={moduleReady ? "green" : "red"}>
+            {moduleReady ? "Готов к созданию" : "Нужно заполнить"}
+          </StatusBadge>
+        </div>
 
-      <label className="block md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.moduleDescription}
-        </span>
-        <textarea
-          id={`${prefix}module-description`}
-          value={values.description}
-          onChange={(event) => onChange("description", event.target.value)}
-          rows={3}
-          placeholder={RU.moduleDescriptionPlaceholder}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+        <div className="grid gap-4 md:grid-cols-[1fr_160px]">
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.moduleTitle}
+            </span>
+            <input
+              id={`${prefix}module-title`}
+              type="text"
+              value={values.title}
+              onChange={(event) => onChange("title", event.target.value)}
+              placeholder={RU.moduleTitlePlaceholder}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+          </label>
 
-      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 md:col-span-2">
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.modulePosition}
+            </span>
+            <input
+              id={`${prefix}module-position`}
+              type="number"
+              min="1"
+              max="10000"
+              value={values.position}
+              onChange={(event) => onChange("position", event.target.value)}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Заполняется следующим номером автоматически.
+            </p>
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.moduleDescription}
+            </span>
+            <textarea
+              id={`${prefix}module-description`}
+              value={values.description}
+              onChange={(event) => onChange("description", event.target.value)}
+              rows={3}
+              placeholder={RU.moduleDescriptionPlaceholder}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+          </label>
+        </div>
+      </div>
+
+      <label className={`flex min-h-full items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+        values.is_active
+          ? "border-emerald-200 bg-emerald-50/70"
+          : "border-slate-200 bg-white"
+      }`}>
         <input
           id={`${prefix}module-is-active`}
           type="checkbox"
           checked={values.is_active}
           onChange={(event) => onChange("is_active", event.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
+          className="mt-1 h-5 w-5 rounded border-slate-300"
         />
-        <span className="font-semibold">{RU.active}</span>
+        <span>
+          <span className="block font-black text-slate-950">{RU.active}</span>
+          <span className="mt-1 block text-xs leading-5 text-slate-500">
+            Активный модуль доступен внутри программы. Если скрыть модуль, обучающиеся не увидят его уроки.
+          </span>
+        </span>
       </label>
     </div>
   );
@@ -3399,15 +3432,23 @@ function CourseStructureTree({
                           <td colSpan={6} className="px-6 py-4">
                             <details
                               data-testid={`admin-course-tree-module-create-${course.id}`}
-                              className="rounded-2xl border border-dashed border-slate-300 bg-white p-4"
+                              className="rounded-3xl border border-dashed border-blue-200 bg-blue-50/50 p-5"
                             >
-                              <summary className="cursor-pointer list-none text-sm font-bold text-slate-900">
-                                + {RU.addModule}
+                              <summary className="flex cursor-pointer list-none items-center gap-3 text-sm font-black text-blue-700">
+                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-blue-700 ring-1 ring-blue-100">
+                                  +
+                                </span>
+                                <span>
+                                  {RU.addModule}
+                                  <span className="block text-xs font-medium text-slate-500">
+                                    Создайте раздел программы, затем добавьте в него уроки.
+                                  </span>
+                                </span>
                               </summary>
 
                               <form
                                 onSubmit={(event) => onModuleCreateSubmit(event, course)}
-                                className="mt-4 space-y-4"
+                                className="mt-5 space-y-5 rounded-3xl bg-slate-50/70 p-5 ring-1 ring-slate-200"
                               >
                                 <CourseModuleFormFields
                                   values={moduleCreateForm || EMPTY_MODULE_CREATE_FORM}
@@ -3415,22 +3456,28 @@ function CourseStructureTree({
                                   prefix={`table-course-${course.id}-module-create-`}
                                 />
 
-                                <div className="flex flex-wrap justify-end gap-3">
-                                  <ActionButton
-                                    type="button"
-                                    tone="light"
-                                    onClick={() => onModuleCreateReset(course.id, modules)}
-                                    disabled={moduleCreatingCourseId === course.id}
-                                  >
-                                    {RU.clear}
-                                  </ActionButton>
-                                  <ActionButton
-                                    type="submit"
-                                    tone="blue"
-                                    disabled={moduleCreatingCourseId === course.id}
-                                  >
-                                    {moduleCreatingCourseId === course.id ? RU.saving : RU.createModule}
-                                  </ActionButton>
+                                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
+                                  <div className="text-xs leading-5 text-slate-500">
+                                    После создания модуль появится в структуре программы. Внутри него можно будет добавить уроки.
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-3">
+                                    <ActionButton
+                                      type="button"
+                                      tone="light"
+                                      onClick={() => onModuleCreateReset(course.id, modules)}
+                                      disabled={moduleCreatingCourseId === course.id}
+                                    >
+                                      {RU.clear}
+                                    </ActionButton>
+                                    <ActionButton
+                                      type="submit"
+                                      tone="blue"
+                                      disabled={moduleCreatingCourseId === course.id}
+                                    >
+                                      {moduleCreatingCourseId === course.id ? RU.saving : RU.createModule}
+                                    </ActionButton>
+                                  </div>
                                 </div>
                               </form>
                             </details>
