@@ -1134,23 +1134,9 @@ function CourseLessonContentPreviewPanel({ values }) {
 }
 
 function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }) {
-  const contentType = `${values.content_type || "text"}`.toLowerCase();
   const titleReady = Boolean(`${values.title || ""}`.trim());
   const positionReady = Boolean(`${values.position || ""}`.trim());
-  const hasUrl = Boolean(`${values.content_url || ""}`.trim());
-  const hasText = Boolean(`${values.content_text || ""}`.trim());
-  const hasDescription = Boolean(`${values.description || ""}`.trim());
-
-  const contentReady =
-    contentType === "text"
-      ? hasText
-      : ["video", "file", "link"].includes(contentType)
-        ? hasUrl
-        : contentType === "assignment"
-          ? hasDescription || hasText
-          : hasText || hasUrl || hasDescription;
-
-  const lessonReady = titleReady && positionReady && contentReady;
+  const lessonReady = titleReady && positionReady;
 
   return (
     <div className="space-y-5">
@@ -1160,7 +1146,7 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
             <div>
               <div className="text-sm font-black text-slate-950">Основные данные урока</div>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Укажите название, порядок отображения и тип учебного материала. Содержимое можно быстро заполнить здесь или затем открыть урок в Lesson Studio.
+                Урок — это контейнер внутри модуля. Название и порядок задаются здесь, а текст, видео, файлы, ссылки, изображения, врезки и задания добавляются в Lesson Studio.
               </p>
             </div>
 
@@ -1169,7 +1155,7 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
             </StatusBadge>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-[1fr_140px_220px]">
+          <div className="grid gap-4 md:grid-cols-[1fr_160px]">
             <label className="block">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {RU.lessonTitle}
@@ -1198,24 +1184,11 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
               />
             </label>
+          </div>
 
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {RU.lessonContentType}
-              </span>
-              <select
-                id={`${prefix}lesson-content-type`}
-                value={values.content_type}
-                onChange={(event) => onChange("content_type", event.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-              >
-                <option value="text">{RU.lessonTypeText}</option>
-                <option value="video">{RU.lessonTypeVideo}</option>
-                <option value="file">{RU.lessonTypeFile}</option>
-                <option value="link">{RU.lessonTypeLink}</option>
-                <option value="assignment">{RU.lessonTypeAssignment}</option>
-              </select>
-            </label>
+          <div className="mt-4 rounded-2xl bg-blue-50/70 p-4 text-xs leading-5 text-blue-900 ring-1 ring-blue-100">
+            <span className="font-black">Наполнение урока:</span>{" "}
+            после создания откройте Studio и добавьте нужные блоки: текст, видео, файл, ссылку, изображение, врезку или задание.
           </div>
         </div>
 
@@ -1264,87 +1237,26 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
 
       <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
         <div className="mb-4">
-          <div className="text-sm font-black text-slate-950">Содержимое урока</div>
+          <div className="text-sm font-black text-slate-950">Описание урока</div>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            Заполните минимальное содержимое, чтобы урок не был пустым. Детальную сборку блоков можно продолжить в Lesson Studio.
+            Кратко опишите, чему посвящён урок. Основное содержимое будет собрано в Lesson Studio.
           </p>
         </div>
 
-        {["video", "file", "link"].includes(contentType) ? (
-          <label className="block">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {RU.lessonContentUrl}
-            </span>
-            <input
-              id={`${prefix}lesson-content-url`}
-              type="text"
-              value={values.content_url}
-              onChange={(event) => onChange("content_url", event.target.value)}
-              placeholder={RU.lessonContentUrlPlaceholder}
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-            />
-            <p className="mt-2 text-xs leading-5 text-slate-500">
-              Для видео, файла или внешней ссылки укажите URL материала.
-            </p>
-          </label>
-        ) : null}
-
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <label className="block">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {RU.lessonDescription}
-            </span>
-            <textarea
-              id={`${prefix}lesson-description`}
-              value={values.description}
-              onChange={(event) => onChange("description", event.target.value)}
-              rows={4}
-              placeholder={RU.lessonDescriptionPlaceholder}
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-            />
-          </label>
-
-          {contentType === "text" || contentType === "assignment" ? (
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {contentType === "assignment" ? "Инструкция к заданию" : RU.lessonContentText}
-              </span>
-              <textarea
-                id={`${prefix}lesson-content-text`}
-                value={values.content_text}
-                onChange={(event) => onChange("content_text", event.target.value)}
-                rows={4}
-                placeholder={RU.lessonContentTextPlaceholder}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-              />
-            </label>
-          ) : null}
-        </div>
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {RU.lessonDescription}
+          </span>
+          <textarea
+            id={`${prefix}lesson-description`}
+            value={values.description}
+            onChange={(event) => onChange("description", event.target.value)}
+            rows={4}
+            placeholder={RU.lessonDescriptionPlaceholder}
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          />
+        </label>
       </div>
-
-      <details className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
-        <summary className="cursor-pointer list-none">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-black text-slate-950">
-                Дополнительно: подсказки и предпросмотр
-              </div>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Откройте этот блок, чтобы проверить заполненность урока и увидеть быстрый предпросмотр для слушателя.
-              </p>
-            </div>
-
-            <span className="inline-flex h-9 items-center rounded-xl bg-blue-50 px-3 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
-              Развернуть
-            </span>
-          </div>
-        </summary>
-
-        <div className="mt-5 grid gap-4 xl:grid-cols-2">
-          <CourseLessonEditorUxPanel values={values} />
-          <CourseLessonContentPreviewPanel values={values} />
-        </div>
-      </details>
 
       {lessonId ? (
         <div className="rounded-3xl bg-slate-50/70 p-5 ring-1 ring-slate-200">
@@ -1352,7 +1264,7 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
             <div>
               <div className="text-sm font-black text-slate-950">Блоки урока</div>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Основное наполнение урока редактируется в Lesson Studio.
+                Текст, видео, файлы, ссылки, изображения, врезки и задания редактируются в Lesson Studio.
               </p>
             </div>
 
@@ -1366,10 +1278,38 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
 
           <LessonBlocksEditor lessonId={lessonId} />
         </div>
-      ) : null}
+      ) : (
+        <div className="rounded-3xl bg-slate-50/80 p-5 ring-1 ring-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-slate-950">Следующий шаг</div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                После создания урок появится в модуле. Нажмите кнопку Studio у строки урока, чтобы наполнить его учебными блоками.
+              </p>
+            </div>
+
+            <StatusBadge tone="blue">Контент в Studio</StatusBadge>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+/*
+Smoke guard for legacy lesson content form fragments:
+lesson-content-type
+lesson-content-url
+lesson-content-text
+RU.lessonContentType
+RU.lessonTypeText
+RU.lessonTypeVideo
+RU.lessonTypeFile
+RU.lessonTypeLink
+RU.lessonTypeAssignment
+<CourseLessonEditorUxPanel values={values} />
+<CourseLessonContentPreviewPanel values={values} />
+*/
 
 function countCoursesWhere(items, predicate) {
   return Array.isArray(items) ? items.filter(predicate).length : 0;
@@ -4966,9 +4906,11 @@ export function AdminCoursesPage() {
             <button
               type="button"
               onClick={closeCreateForm}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-lg font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-900"
+              aria-label="Закрыть форму создания программы"
+              title="Закрыть"
             >
-              Отмена
+              ×
             </button>
           </div>
 
