@@ -2607,6 +2607,7 @@ function CourseStructureTree({
   hasActiveFilters,
   onResetFilters,
   filterActive = "",
+  focusCourseId = "",
   courseCounts = {},
   onQuickActiveFilter,
   courseModulesByCourseId,
@@ -2655,6 +2656,22 @@ function CourseStructureTree({
     setExpandedCourseIds({});
     setExpandedModuleIds({});
   }, [courseIdsKey, filterActive]);
+
+  useEffect(() => {
+    if (!focusCourseId) {
+      return;
+    }
+
+    const courseExists = courses.some((course) => course.id === focusCourseId);
+
+    if (!courseExists) {
+      return;
+    }
+
+    setExpandedCourseIds((current) =>
+      current[focusCourseId] ? current : { ...current, [focusCourseId]: true }
+    );
+  }, [focusCourseId, courseIdsKey, courses]);
 
   if (loading) {
     return <LoadingBlock text={RU.loadingPrograms} />;
@@ -3986,6 +4003,11 @@ export function AdminCoursesPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const initialFilters = getCourseFiltersFromSearch(location.search);
+  const focusCourseId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+
+    return params.get("focus_course_id") || "";
+  }, [location.search]);
 
   const [courses, setCourses] = useState([]);
   const [courseModulesByCourseId, setCourseModulesByCourseId] = useState({});
@@ -4303,10 +4325,20 @@ export function AdminCoursesPage() {
       setSuccessMessage("");
 
       const created = await createAdminCourse(buildPayload(form));
+      const nextActiveFilter = created.is_active ? "true" : "false";
+      const nextFilters = { q: "", is_active: nextActiveFilter };
+      const params = new URLSearchParams();
+
+      params.set("is_active", nextActiveFilter);
+      params.set("focus_course_id", created.id);
 
       setSuccessMessage(`${RU.createdMessage}: ${created.title}`);
-      closeCreateForm();
-      await refreshCoursesFastPath(buildFilters());
+      setShowCreateForm(false);
+      resetForm();
+      setFilterQuery("");
+      setFilterActive(nextActiveFilter);
+      navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+      await refreshCoursesFastPath(nextFilters);
     } catch (err) {
       setError(formatCourseApiError(err, RU.createFailed));
     } finally {
@@ -4819,6 +4851,7 @@ export function AdminCoursesPage() {
           hasActiveFilters={hasActiveFilters}
           onResetFilters={handleResetFilter}
           filterActive={filterActive}
+          focusCourseId={focusCourseId}
           courseCounts={courseCounts}
           onQuickActiveFilter={handleQuickActiveFilter}
           courseModulesByCourseId={courseModulesByCourseId}
