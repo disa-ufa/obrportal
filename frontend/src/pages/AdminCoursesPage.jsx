@@ -1186,10 +1186,6 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
             </label>
           </div>
 
-          <div className="mt-4 rounded-2xl bg-blue-50/70 p-4 text-xs leading-5 text-blue-900 ring-1 ring-blue-100">
-            <span className="font-black">Наполнение урока:</span>{" "}
-            после создания откройте Studio и добавьте нужные блоки: текст, видео, файл, ссылку, изображение, врезку или задание.
-          </div>
         </div>
 
         <div className="space-y-3">
@@ -1278,20 +1274,7 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
 
           <LessonBlocksEditor lessonId={lessonId} />
         </div>
-      ) : (
-        <div className="rounded-3xl bg-slate-50/80 p-5 ring-1 ring-slate-200">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-black text-slate-950">Следующий шаг</div>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                После создания урок появится в модуле. Нажмите кнопку Studio у строки урока, чтобы наполнить его учебными блоками.
-              </p>
-            </div>
-
-            <StatusBadge tone="blue">Контент в Studio</StatusBadge>
-          </div>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
