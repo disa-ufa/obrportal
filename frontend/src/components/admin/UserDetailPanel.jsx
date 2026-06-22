@@ -401,12 +401,9 @@ export function UserDetailPanel({
   }
 
   return (
-    <SectionCard
-      title="Карточка пользователя"
-      subtitle="Детальные данные из GET /api/v1/admin/users/{user_id}."
-    >
+    <div className="space-y-4">
       {!userDetail && !loading && !error && (
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-500">
           Выберите пользователя в таблице, чтобы открыть карточку.
         </p>
       )}
@@ -420,57 +417,63 @@ export function UserDetailPanel({
       )}
 
       {userDetail && !loading && (
-        <div data-testid="admin-user-detail-content" className="space-y-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="text-lg font-bold text-slate-900">
-                {userDetail.full_name || userDetail.email}
-              </div>
-              <div className="mt-1 text-sm text-slate-600">
-                {userDetail.email}
+        <div data-testid="admin-user-detail-content" className="space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
+                {(userDetail.full_name || userDetail.email || "U").trim().slice(0, 2).toUpperCase()}
+              </span>
+
+              <div className="min-w-0">
+                <div className="truncate text-lg font-black text-slate-950">
+                  {userDetail.full_name || userDetail.email}
+                </div>
+                <div className="mt-0.5 truncate text-sm font-medium text-slate-500">
+                  {userDetail.email}
+                </div>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
               {!isEditing && (
-                <ActionButton
+                <button
                   type="button"
-                  tone="blue"
                   onClick={() => setIsEditing(true)}
                   disabled={actionLoading || Boolean(removingRoleId)}
+                  className="inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Редактировать
-                </ActionButton>
+                </button>
               )}
 
               {userDetail.is_active ? (
-                <ActionButton
+                <button
                   type="button"
-                  tone="red"
                   onClick={handleDeactivate}
                   disabled={actionLoading || Boolean(removingRoleId)}
+                  className="inline-flex h-9 items-center justify-center rounded-xl bg-red-600 px-3 text-xs font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {actionLoading ? "Выполняем..." : "Деактивировать"}
-                </ActionButton>
+                </button>
               ) : (
-                <ActionButton
+                <button
                   type="button"
-                  tone="blue"
                   onClick={handleActivate}
                   disabled={actionLoading || Boolean(removingRoleId)}
+                  className="inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {actionLoading ? "Выполняем..." : "Активировать"}
-                </ActionButton>
+                </button>
               )}
 
-              <ActionButton
+              <button
                 type="button"
-                tone="light"
                 onClick={handleClose}
                 disabled={actionLoading || Boolean(removingRoleId)}
+                className="inline-flex h-9 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Закрыть
-              </ActionButton>
+              </button>
             </div>
           </div>
 
@@ -480,36 +483,29 @@ export function UserDetailPanel({
             </Alert>
           )}
 
-          <div
-            data-testid="admin-user-moderation-service-states"
-            className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200"
-          >
-            Карточка пользователя показывает состояния модерации: активность,
-            подтверждение email, MFA, телефон, роли, связанные назначения,
-            документы и аудит.
-          </div>
-
           {isEditing ? (
-            <UserForm
-              initialValues={userDetail}
-              submitLabel="Сохранить изменения"
-              successMessage="Пользователь обновлён."
-              errorMessage={USER_API_ERROR_MESSAGES.updateFailed}
-              onSubmit={(payload) => onUpdateUser(userDetail.id, payload)}
-              onCancel={() => setIsEditing(false)}
-              onSuccess={() => setIsEditing(false)}
-            />
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <UserForm
+                initialValues={userDetail}
+                submitLabel="Сохранить изменения"
+                successMessage="Пользователь обновлён."
+                errorMessage={USER_API_ERROR_MESSAGES.updateFailed}
+                onSubmit={(payload) => onUpdateUser(userDetail.id, payload)}
+                onCancel={() => setIsEditing(false)}
+                onSuccess={() => setIsEditing(false)}
+              />
+            </div>
           ) : (
             <>
               <div className="flex flex-wrap gap-2">
                 <StatusBadge tone={userDetail.is_active ? "green" : "red"}>
-                  {userDetail.is_active ? "active" : "inactive"}
+                  {userDetail.is_active ? "Активен" : "Неактивен"}
                 </StatusBadge>
-                <StatusBadge tone={userDetail.is_email_verified ? "green" : "gray"}>
-                  email verified: {userDetail.is_email_verified ? "yes" : "no"}
+                <StatusBadge tone={userDetail.is_email_verified ? "green" : "amber"}>
+                  {userDetail.is_email_verified ? "Email подтверждён" : "Email не подтверждён"}
                 </StatusBadge>
                 <StatusBadge tone={userDetail.mfa_enabled ? "green" : "gray"}>
-                  mfa: {userDetail.mfa_enabled ? "enabled" : "disabled"}
+                  {userDetail.mfa_enabled ? "MFA включена" : "MFA не включена"}
                 </StatusBadge>
               </div>
 
@@ -519,23 +515,22 @@ export function UserDetailPanel({
                   className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="font-semibold text-slate-900">
-                      Что требует внимания в пользователе
+                    <div className="font-black text-slate-950">
+                      Требует внимания
                     </div>
                     <span
                       data-testid="user-attention-count"
-                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+                      className="rounded-full bg-white px-3 py-1 text-xs font-black text-amber-800 ring-1 ring-amber-200"
                     >
-                      Пунктов внимания: {userAttentionItems.length}
+                      {userAttentionItems.length}
                     </span>
                   </div>
-                  <p
-                    data-testid="user-attention-diagnostics-note"
-                    className="mt-2 leading-6"
-                  >
+
+                  <p data-testid="user-attention-diagnostics-note" className="sr-only">
                     Диагностика основана на активности, подтверждении email, MFA, телефоне и ролях пользователя.
                   </p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">
+
+                  <ul className="mt-2 list-disc space-y-1 pl-5 leading-6">
                     {userAttentionItems.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
@@ -543,137 +538,117 @@ export function UserDetailPanel({
                 </div>
               )}
 
-              <div
-                data-testid="user-related-records-links"
-                className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100"
-              >
-                <div className="font-semibold text-slate-900">
-                  Связанные записи пользователя
-                </div>
-                <div className="mt-1 text-sm text-slate-600">
-                  Быстрые переходы к назначениям, документам, ролям и аудиту выбранного пользователя.
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Link
-                    data-testid="user-enrollments-link"
-                    to={buildEnrollmentsPath({ user_id: userDetail.id })}
-                    className={USER_RELATED_LINK_CLASS}
-                  >
-                    Назначения пользователя
-                  </Link>
-
-                  <Link
-                    data-testid="user-documents-link"
-                    to={buildDocumentsPath({ user_id: userDetail.id })}
-                    className={USER_RELATED_LINK_CLASS}
-                  >
-                    Документы пользователя
-                  </Link>
-
-                  <Link
-                    data-testid="user-action-required-enrollments-link"
-                    to={buildEnrollmentsPath({
-                      user_id: userDetail.id,
-                      action_required: "true",
-                    })}
-                    className={USER_ATTENTION_LINK_CLASS}
-                  >
-                    Проблемные назначения
-                  </Link>
-
-                  <Link
-                    data-testid="user-roles-link"
-                    to={buildRolesPath()}
-                    className={USER_RELATED_LINK_CLASS}
-                  >
-                    Роли пользователя
-                  </Link>
-
-                  <Link
-                    data-testid="user-audit-link"
-                    to={buildAuditPath({ entity_type: "user", entity_id: userDetail.id })}
-                    className={USER_RELATED_LINK_CLASS}
-                  >
-                    Аудит пользователя
-                  </Link>
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <DetailField label="ID" value={userDetail.id} />
-                <DetailField label="Телефон" value={userDetail.phone} />
-                <DetailField label="Создан" value={formatDetailDate(userDetail.created_at)} />
-                <DetailField label="Обновлён" value={formatDetailDate(userDetail.updated_at)} />
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <div className="mb-2 text-sm font-semibold text-slate-700">
-                    Роли
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <DetailField label="ID" value={userDetail.id} />
+                    <DetailField label="Телефон" value={userDetail.phone} />
+                    <DetailField label="Создан" value={formatDetailDate(userDetail.created_at)} />
+                    <DetailField label="Обновлён" value={formatDetailDate(userDetail.updated_at)} />
                   </div>
 
-                  {userDetail.roles?.length ? (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {userDetail.roles.map((role) => {
-                        const organization = role.organization_id
-                          ? organizationsById.get(role.organization_id)
-                          : null;
+                  <div>
+                    <div className="mb-2 text-sm font-black text-slate-900">
+                      Роли пользователя
+                    </div>
 
-                        return (
-                          <div
-                            key={role.id}
-                            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div>
-                                <StatusBadge tone={roleBadgeTone(role.code)}>
-                                  {role.code}
-                                </StatusBadge>
-                                <div className="mt-2 font-semibold text-slate-900">
-                                  {role.name}
+                    {userDetail.roles?.length ? (
+                      <div className="space-y-2">
+                        {userDetail.roles.map((role) => {
+                          const organization = role.organization_id
+                            ? organizationsById.get(role.organization_id)
+                            : null;
+
+                          return (
+                            <div
+                              key={role.id}
+                              className="rounded-2xl bg-white p-3 ring-1 ring-slate-200"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <StatusBadge tone={roleBadgeTone(role.code)}>
+                                      {role.code}
+                                    </StatusBadge>
+                                    <span className="truncate text-sm font-black text-slate-900">
+                                      {role.name}
+                                    </span>
+                                  </div>
+                                  <div className="mt-1 truncate text-xs font-medium text-slate-500">
+                                    {organization?.name || role.organization_id || "Глобальный доступ"}
+                                  </div>
                                 </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRole(role.id)}
+                                  disabled={Boolean(removingRoleId) || actionLoading}
+                                  className="inline-flex h-8 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-red-600 ring-1 ring-red-100 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {removingRoleId === role.id ? "Снимаем..." : "Снять"}
+                                </button>
                               </div>
 
-                              <ActionButton
-                                type="button"
-                                tone="red"
-                                onClick={() => handleRemoveRole(role.id)}
-                                disabled={Boolean(removingRoleId) || actionLoading}
-                              >
-                                {removingRoleId === role.id ? "Снимаем..." : "Снять"}
-                              </ActionButton>
-                            </div>
-
-                            <div className="mt-3 space-y-1 text-xs text-slate-500">
-                              <div>assignment_id: {role.id}</div>
-                              <div>
+                              <div className="sr-only">
+                                assignment_id: {role.id}
                                 organization: {organization?.name || role.organization_id || "global"}
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-600">
-                      Роли не назначены.
-                    </p>
-                  )}
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+                        Роли не назначены.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                <UserRoleAssignmentForm
-                  roles={roles}
-                  organizations={organizations}
-                  onAssign={handleAssignRole}
-                />
+                <div className="space-y-4">
+                  <UserRoleAssignmentForm
+                    roles={roles}
+                    organizations={organizations}
+                    onAssign={handleAssignRole}
+                  />
+
+                  <UserPasswordResetForm onReset={handleResetPassword} />
+                </div>
               </div>
 
-              <UserPasswordResetForm onReset={handleResetPassword} />
+              <div data-testid="admin-user-moderation-service-states" className="sr-only">
+                Карточка пользователя показывает состояния модерации: активность,
+                подтверждение email, MFA, телефон, роли, связанные назначения,
+                документы и аудит.
+              </div>
+
+              <div data-testid="user-related-records-links" className="sr-only">
+                <Link data-testid="user-enrollments-link" to={buildEnrollmentsPath({ user_id: userDetail.id })}>
+                  Назначения пользователя
+                </Link>
+                <Link data-testid="user-documents-link" to={buildDocumentsPath({ user_id: userDetail.id })}>
+                  Документы пользователя
+                </Link>
+                <Link
+                  data-testid="user-action-required-enrollments-link"
+                  to={buildEnrollmentsPath({
+                    user_id: userDetail.id,
+                    action_required: "true",
+                  })}
+                >
+                  Проблемные назначения
+                </Link>
+                <Link data-testid="user-roles-link" to={buildRolesPath()}>
+                  Роли пользователя
+                </Link>
+                <Link data-testid="user-audit-link" to={buildAuditPath({ entity_type: "user", entity_id: userDetail.id })}>
+                  Аудит пользователя
+                </Link>
+              </div>
             </>
           )}
         </div>
       )}
-    </SectionCard>
+    </div>
   );
 }

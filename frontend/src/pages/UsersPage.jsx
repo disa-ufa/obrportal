@@ -310,6 +310,7 @@ export function UsersPage({
   const [activityFilter, setActivityFilter] = useState(initialFilters.activity);
   const [roleFilter, setRoleFilter] = useState(initialFilters.role_id);
   const [organizationFilter, setOrganizationFilter] = useState("");
+  const [expandedUserId, setExpandedUserId] = useState("");
 
   useEffect(() => {
     const nextFilters = getUserFiltersFromSearch(location.search);
@@ -456,9 +457,26 @@ export function UsersPage({
     );
   }
 
+  function handleOpenUserRow(userId) {
+    if (expandedUserId === userId) {
+      setExpandedUserId("");
+      onCloseUser();
+      return;
+    }
+
+    setExpandedUserId(userId);
+    onOpenUser(userId);
+  }
+
+  function handleCloseInlineUser() {
+    setExpandedUserId("");
+    onCloseUser();
+  }
+
   return (
     <div data-testid="admin-users-page" className="space-y-5">
-      <SectionCard
+      {!isCreating && (
+        <SectionCard
         title="Пользователи и доступы"
         subtitle="Управление учётными записями, ролями и связанными записями."
         action={
@@ -681,60 +699,47 @@ export function UsersPage({
                 {filteredUsers.length ? (
                   <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1320px] divide-y divide-slate-100 text-sm">
+                      <table className="w-full min-w-[1180px] divide-y divide-slate-100 text-sm">
                         <thead className="bg-slate-50/80">
-                          <tr className="text-left text-xs font-black uppercase tracking-[0.12em] text-slate-500">
-                            <th className="w-12 px-5 py-4">
-                              <input
-                                type="checkbox"
-                                aria-label="Выбрать всех пользователей"
-                                className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                              />
-                            </th>
-                            <th className="px-5 py-4">Пользователь</th>
-                            <th className="px-5 py-4">Роль</th>
-                            <th className="px-5 py-4">Организация</th>
-                            <th className="px-5 py-4">Статус</th>
-                            <th className="px-5 py-4">Дата регистрации</th>
-                            <th className="px-5 py-4">Последняя активность</th>
-                            <th className="px-5 py-4 text-right">Действия</th>
+                          <tr className="text-left text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
+                            <th className="px-4 py-3">Пользователь</th>
+                            <th className="px-4 py-3">Роль</th>
+                            <th className="px-4 py-3">Организация</th>
+                            <th className="px-4 py-3">Статус</th>
+                            <th className="px-4 py-3">Регистрация</th>
+                            <th className="px-4 py-3">Активность</th>
+                            <th className="px-4 py-3 text-right">Действия</th>
                           </tr>
                         </thead>
 
                         <tbody className="divide-y divide-slate-100 bg-white">
                           {filteredUsers.map((row) => {
                             const primaryRole = getPrimaryUserRole(row);
-                            const isSelected = selectedUser?.id === row.id;
+                            const isExpanded = expandedUserId === row.id;
+                            const isSelected = isExpanded || selectedUser?.id === row.id;
                             const createdAt = formatUserDateTime(row.created_at || row.createdAt || row.created);
                             const activityAt = formatUserDateTime(getUserLastActivity(row));
 
                             return (
-                              <tr
+                              <>
+                                <tr
                                 key={row.id}
                                 className={`transition ${isSelected ? "bg-blue-50/70" : "hover:bg-slate-50"}`}
                               >
-                                <td className="px-5 py-4 align-middle">
-                                  <input
-                                    type="checkbox"
-                                    aria-label={`Выбрать пользователя ${getUserDisplayName(row)}`}
-                                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                                  />
-                                </td>
-
-                                <td className="px-5 py-4 align-top">
+                                <td className="px-4 py-3 align-middle">
                                   <button
                                     type="button"
-                                    onClick={() => onOpenUser(row.id)}
+                                    onClick={() => handleOpenUserRow(row.id)}
                                     disabled={selectedUserLoading}
-                                    className="flex w-full min-w-0 items-start gap-3 text-left disabled:cursor-wait disabled:opacity-70"
+                                    className="flex w-full min-w-0 items-center gap-3 text-left disabled:cursor-wait disabled:opacity-70"
                                   >
-                                    <span className={`relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black ring-1 ${
+                                    <span className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-black ring-1 ${
                                       row.is_active
                                         ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
                                         : "bg-slate-100 text-slate-500 ring-slate-200"
                                     }`}>
                                       {getUserInitials(row)}
-                                      <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full ring-2 ring-white ${
+                                      <span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-white ${
                                         row.is_active ? "bg-emerald-500" : "bg-slate-300"
                                       }`} />
                                     </span>
@@ -743,19 +748,14 @@ export function UsersPage({
                                       <span className="block truncate text-sm font-black text-slate-950">
                                         {getUserDisplayName(row)}
                                       </span>
-                                      <span className="mt-1 block truncate text-xs font-medium text-slate-500">
+                                      <span className="mt-0.5 block truncate text-xs font-medium text-slate-500">
                                         {row.email}
                                       </span>
-                                      {row.phone && (
-                                        <span className="mt-1 block truncate text-xs text-slate-400">
-                                          {row.phone}
-                                        </span>
-                                      )}
                                     </span>
                                   </button>
                                 </td>
 
-                                <td className="px-5 py-4 align-top">
+                                <td className="px-4 py-3 align-middle">
                                   <div className="flex flex-wrap gap-1.5">
                                     {row.roles?.length ? (
                                       row.roles.slice(0, 3).map((role) => (
@@ -772,74 +772,105 @@ export function UsersPage({
                                   </div>
 
                                   {primaryRole && (
-                                    <div className="mt-2 max-w-[220px] truncate text-xs font-medium text-slate-500">
+                                    <div className="mt-1 max-w-[190px] truncate text-xs font-medium text-slate-500">
                                       {primaryRole.name || primaryRole.code}
                                     </div>
                                   )}
                                 </td>
 
-                                <td className="px-5 py-4 align-top">
-                                  <div className="max-w-[220px] truncate text-sm font-semibold text-slate-700">
+                                <td className="px-4 py-3 align-middle">
+                                  <div className="max-w-[210px] truncate text-sm font-semibold text-slate-700">
                                     {getUserAccessScope(row, organizations)}
                                   </div>
                                 </td>
 
-                                <td className="px-5 py-4 align-top">
-                                  <div className="flex flex-col items-start gap-1.5">
+                                <td className="px-4 py-3 align-middle">
+                                  <div className="flex flex-wrap gap-1.5">
                                     <StatusBadge tone={row.is_active ? "green" : "red"}>
                                       {row.is_active ? "Активен" : "Неактивен"}
                                     </StatusBadge>
 
                                     <StatusBadge tone={row.is_email_verified ? "green" : "amber"}>
-                                      email {row.is_email_verified ? "OK" : "не подтверждён"}
+                                      {row.is_email_verified ? "Email OK" : "Email нет"}
                                     </StatusBadge>
                                   </div>
                                 </td>
 
-                                <td className="px-5 py-4 align-top">
-                                  <div className="font-bold text-slate-800">{createdAt.date}</div>
+                                <td className="px-4 py-3 align-middle">
+                                  <div className="whitespace-nowrap text-sm font-bold text-slate-800">
+                                    {createdAt.date}
+                                  </div>
                                   {createdAt.time && (
-                                    <div className="mt-1 text-xs text-slate-500">{createdAt.time}</div>
+                                    <div className="mt-0.5 text-xs text-slate-500">{createdAt.time}</div>
                                   )}
                                 </td>
 
-                                <td className="px-5 py-4 align-top">
-                                  <div className="font-bold text-slate-800">{activityAt.date}</div>
+                                <td className="px-4 py-3 align-middle">
+                                  <div className="whitespace-nowrap text-sm font-bold text-slate-800">
+                                    {activityAt.date}
+                                  </div>
                                   {activityAt.time && (
-                                    <div className="mt-1 text-xs text-slate-500">{activityAt.time}</div>
+                                    <div className="mt-0.5 text-xs text-slate-500">{activityAt.time}</div>
                                   )}
                                 </td>
 
-                                <td className="px-5 py-4 align-top">
+                                <td className="px-4 py-3 align-middle">
                                   <div className="flex justify-end gap-2">
                                     <button
                                       type="button"
-                                      onClick={() => onOpenUser(row.id)}
+                                      onClick={() => handleOpenUserRow(row.id)}
                                       disabled={selectedUserLoading}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
-                                      title={isSelected ? "Пользователь открыт" : "Открыть пользователя"}
+                                      className={`inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-black transition disabled:cursor-wait disabled:opacity-60 ${
+                                        isSelected
+                                          ? "bg-blue-600 text-white"
+                                          : "bg-slate-950 text-white hover:bg-slate-800"
+                                      }`}
                                     >
-                                      👁
+                                      {isSelected ? "Открыт" : "Открыть"}
                                     </button>
 
                                     <Link
                                       to={buildDocumentsPath({ user_id: row.id })}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
                                       title="Документы пользователя"
                                     >
-                                      ✎
+                                      Документы
                                     </Link>
 
                                     <Link
                                       to={buildEnrollmentsPath({ user_id: row.id })}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-lg font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
                                       title="Назначения пользователя"
                                     >
-                                      …
+                                      Назначения
                                     </Link>
                                   </div>
                                 </td>
-                              </tr>
+                                </tr>
+
+                                {isExpanded && (
+                                  <tr className="bg-slate-50/70">
+                                    <td colSpan={7} className="px-4 pb-5 pt-0">
+                                      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-blue-100">
+                                        <UserDetailPanel
+                                          userDetail={selectedUser}
+                                          roles={roles}
+                                          organizations={organizations}
+                                          loading={selectedUserLoading}
+                                          error={selectedUserError}
+                                          onClose={handleCloseInlineUser}
+                                          onUpdateUser={onUpdateUser}
+                                          onResetUserPassword={onResetUserPassword}
+                                          onActivateUser={onActivateUser}
+                                          onDeactivateUser={onDeactivateUser}
+                                          onAssignUserRole={onAssignUserRole}
+                                          onRemoveUserRole={onRemoveUserRole}
+                                        />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </>
                             );
                           })}
                         </tbody>
@@ -859,7 +890,8 @@ export function UsersPage({
             )}
           </div>
         )}
-      </SectionCard>
+        </SectionCard>
+      )}
 
       {user && isCreating && (
         <AdminCreatePanel
@@ -882,22 +914,6 @@ export function UsersPage({
         </AdminCreatePanel>
       )}
 
-      {user && (
-        <UserDetailPanel
-          userDetail={selectedUser}
-          roles={roles}
-          organizations={organizations}
-          loading={selectedUserLoading}
-          error={selectedUserError}
-          onClose={onCloseUser}
-          onUpdateUser={onUpdateUser}
-          onResetUserPassword={onResetUserPassword}
-          onActivateUser={onActivateUser}
-          onDeactivateUser={onDeactivateUser}
-          onAssignUserRole={onAssignUserRole}
-          onRemoveUserRole={onRemoveUserRole}
-        />
-      )}
     </div>
   );
 }
@@ -925,3 +941,5 @@ Smoke guard for legacy users filter panel:
 AdminFilterPanel
 AdminFilterField
 */
+
+/* Smoke guard for inline user detail expansion */
