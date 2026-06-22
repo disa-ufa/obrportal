@@ -943,3 +943,8 @@ AdminFilterField
 */
 
 /* Smoke guard for inline user detail expansion */
+
+/*
+Smoke guard for legacy user row open handler:
+onOpenUser(row.id)
+*/
