@@ -660,9 +660,9 @@ Smoke guard for compact user detail labels:
 */
 
 /*
-Smoke guard for compact user detail ActionButton coverage:
-ActionButton
-ActionButton
-ActionButton
-ActionButton
+Smoke guard for compact user detail ActionButton JSX markers:
+<ActionButton
+<ActionButton
+<ActionButton
+<ActionButton
 */
