@@ -159,7 +159,7 @@ function calculateUserDiagnostics(items) {
   return diagnostics;
 }
 
-function UserStatCard({ title, value, caption, tone = "blue" }) {
+function UserStatCard({ title, value, caption, tone = "blue", icon = "•" }) {
   const tones = {
     blue: "bg-blue-50 text-blue-700 ring-blue-100",
     green: "bg-emerald-50 text-emerald-700 ring-emerald-100",
@@ -169,21 +169,21 @@ function UserStatCard({ title, value, caption, tone = "blue" }) {
   };
 
   return (
-    <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-center gap-4">
-        <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-black ring-1 ${tones[tone]}`}>
-          •
+        <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-black ring-1 ${tones[tone]}`}>
+          {icon}
         </span>
 
         <div className="min-w-0">
           <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
             {title}
           </div>
-          <div className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+          <div className="mt-1.5 text-3xl font-black tracking-tight text-slate-950">
             {value}
           </div>
           {caption && (
-            <div className="mt-1 truncate text-xs font-medium text-slate-500">
+            <div className="mt-1 truncate text-xs font-semibold text-slate-500">
               {caption}
             </div>
           )}
@@ -438,7 +438,7 @@ export function UsersPage({
   }
 
   return (
-    <div data-testid="admin-users-page" className="space-y-6">
+    <div data-testid="admin-users-page" className="space-y-5">
       <SectionCard
         title="Пользователи и доступы"
         subtitle="Управление учётными записями, ролями и связанными записями."
@@ -463,23 +463,53 @@ export function UsersPage({
                 Экспорт CSV
               </button>
 
-              <div className="inline-flex overflow-hidden rounded-2xl shadow-sm">
-                <ActionButton
-                  type="button"
-                  tone={isCreating ? "light" : "blue"}
-                  onClick={() => setIsCreating((current) => !current)}
-                >
-                  {isCreating ? "Скрыть форму" : "+ Создать пользователя"}
-                </ActionButton>
+              <div className="group relative inline-flex">
+                <div className="inline-flex overflow-hidden rounded-2xl shadow-sm">
+                  <ActionButton
+                    type="button"
+                    tone={isCreating ? "light" : "blue"}
+                    onClick={() => setIsCreating((current) => !current)}
+                  >
+                    {isCreating ? "Скрыть форму" : "+ Создать пользователя"}
+                  </ActionButton>
 
-                <button
-                  type="button"
-                  onClick={() => setIsCreating((current) => !current)}
-                  className="inline-flex h-11 items-center justify-center bg-blue-700 px-3 text-sm font-black text-white transition hover:bg-blue-800"
-                  aria-label="Открыть меню создания пользователя"
-                >
-                  ˅
-                </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-11 items-center justify-center bg-blue-700 px-3 text-sm font-black text-white transition hover:bg-blue-800"
+                    aria-label="Открыть меню создания пользователя"
+                  >
+                    ˅
+                  </button>
+                </div>
+
+                <div className="invisible absolute right-0 top-12 z-20 w-64 translate-y-1 rounded-2xl bg-white p-2 opacity-0 shadow-xl ring-1 ring-slate-200 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(true)}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+                  >
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-700">+</span>
+                    Создать пользователя
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-400"
+                    title="Приглашение по email добавим после формы создания"
+                  >
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 text-slate-400">✉</span>
+                    Пригласить по email
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-400"
+                    title="Импорт CSV добавим отдельным шагом"
+                  >
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 text-slate-400">⇧</span>
+                    Импорт из CSV
+                  </button>
+                </div>
               </div>
             </div>
           ) : null
@@ -488,7 +518,7 @@ export function UsersPage({
         {!user ? (
           <p className="text-slate-600">Войдите под admin, чтобы увидеть пользователей.</p>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div data-testid="admin-users-moderation-notice" className="sr-only">
               Раздел пользователей используется для управления доступом.
             </div>
@@ -499,30 +529,35 @@ export function UsersPage({
                 value={userDiagnostics.total}
                 caption="учётных записей"
                 tone="blue"
+                icon="👥"
               />
               <UserStatCard
                 title="Активные"
                 value={userDiagnostics.active}
                 caption="доступ разрешён"
                 tone="green"
+                icon="✓"
               />
               <UserStatCard
                 title="Отключённые"
                 value={userDiagnostics.inactive}
                 caption="доступ закрыт"
                 tone="amber"
+                icon="⏻"
               />
               <UserStatCard
                 title="Без роли"
                 value={userDiagnostics.withoutRoles}
                 caption="нужно назначить роль"
                 tone="red"
+                icon="!"
               />
               <UserStatCard
                 title="Email"
                 value={userDiagnostics.unverifiedEmail}
                 caption="не подтверждён"
                 tone="slate"
+                icon="✉"
               />
             </div>
 
@@ -600,12 +635,14 @@ export function UsersPage({
                     : counts.all || 0}
             />
 
-            <AdminActiveFiltersSummary
-              items={activeUserFilterItems}
-              onReset={resetFilters}
-              testId="admin-users-active-filters-summary"
-              emptyText="Фильтры пользователей не применены."
-            />
+            <div className={!hasActiveFilters ? "sr-only" : ""}>
+              <AdminActiveFiltersSummary
+                items={activeUserFilterItems}
+                onReset={resetFilters}
+                testId="admin-users-active-filters-summary"
+                emptyText="Фильтры пользователей не применены."
+              />
+            </div>
 
             <div
               data-testid="admin-users-export-summary"
