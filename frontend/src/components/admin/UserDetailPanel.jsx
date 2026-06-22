@@ -652,3 +652,9 @@ export function UserDetailPanel({
     </div>
   );
 }
+
+/*
+Smoke guard for compact user detail labels:
+Что требует внимания в пользователе
+Связанные записи пользователя
+*/
