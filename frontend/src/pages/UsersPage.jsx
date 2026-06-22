@@ -8,7 +8,6 @@ import {
 import { AdminPageActions } from "../components/admin/AdminPageActions";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
-import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
 import { AdminActiveFiltersSummary } from "../components/admin/AdminActiveFiltersSummary";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { ActionButton } from "../components/ui/ActionButton";
@@ -50,6 +49,14 @@ function userMatchesActivityFilter(user, activityFilter) {
     return !user.is_active;
   }
 
+  if (activityFilter === "without_roles") {
+    return !user.roles?.length;
+  }
+
+  if (activityFilter === "unverified_email") {
+    return !user.is_email_verified;
+  }
+
   return true;
 }
 
@@ -77,6 +84,8 @@ const USER_ACTIVITY_FILTERS = [
   { value: "all", label: "Все" },
   { value: "active", label: "Активные" },
   { value: "inactive", label: "Отключённые" },
+  { value: "without_roles", label: "Без роли" },
+  { value: "unverified_email", label: "Email" },
 ];
 
 
@@ -110,6 +119,8 @@ function calculateUserCounts(items) {
     all: Array.isArray(items) ? items.length : 0,
     active: 0,
     inactive: 0,
+    without_roles: 0,
+    unverified_email: 0,
   };
 
   if (!Array.isArray(items)) {
@@ -121,6 +132,14 @@ function calculateUserCounts(items) {
       counts.active += 1;
     } else {
       counts.inactive += 1;
+    }
+
+    if (!item.roles?.length) {
+      counts.without_roles += 1;
+    }
+
+    if (!item.is_email_verified) {
+      counts.unverified_email += 1;
     }
   });
 
@@ -330,7 +349,7 @@ export function UsersPage({
       const activity = USER_ACTIVITY_FILTERS.find((item) => item.value === activityFilter);
       items.push({
         key: "activity",
-        label: "Активность",
+        label: "Статус",
         value: activity?.label || activityFilter,
       });
     }
@@ -523,117 +542,119 @@ export function UsersPage({
               Раздел пользователей используется для управления доступом.
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-              <UserStatCard
-                title="Всего"
-                value={userDiagnostics.total}
-                caption="учётных записей"
-                tone="blue"
-                icon="👥"
-              />
-              <UserStatCard
-                title="Активные"
-                value={userDiagnostics.active}
-                caption="доступ разрешён"
-                tone="green"
-                icon="✓"
-              />
-              <UserStatCard
-                title="Отключённые"
-                value={userDiagnostics.inactive}
-                caption="доступ закрыт"
-                tone="amber"
-                icon="⏻"
-              />
-              <UserStatCard
-                title="Без роли"
-                value={userDiagnostics.withoutRoles}
-                caption="нужно назначить роль"
-                tone="red"
-                icon="!"
-              />
-              <UserStatCard
-                title="Email"
-                value={userDiagnostics.unverifiedEmail}
-                caption="не подтверждён"
-                tone="slate"
-                icon="✉"
-              />
+            <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+              <div className="grid gap-3 xl:grid-cols-[minmax(320px,1fr)_180px_220px_180px_auto] xl:items-end">
+                <label className="block">
+                  <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                    Поиск
+                  </span>
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => handleSearchChange(event.target.value)}
+                    placeholder="Email, ФИО, телефон или роль"
+                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                    Роль
+                  </span>
+                  <select
+                    value={roleFilter}
+                    onChange={(event) => handleRoleChange(event.target.value)}
+                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  >
+                    <option value="">Все роли</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.code}{role.name ? ` — ${role.name}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                    Организация
+                  </span>
+                  <select
+                    value={organizationFilter}
+                    onChange={(event) => handleOrganizationChange(event.target.value)}
+                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  >
+                    <option value="">Все организации</option>
+                    <option value="global">Глобальный доступ</option>
+                    {organizations.map((organization) => (
+                      <option key={organization.id} value={organization.id}>
+                        {organization.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                    Статус
+                  </span>
+                  <select
+                    value={activityFilter}
+                    onChange={(event) => handleActivityChange(event.target.value)}
+                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  >
+                    <option value="all">Все статусы</option>
+                    <option value="active">Активные</option>
+                    <option value="inactive">Отключённые</option>
+                  </select>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  disabled={!hasActiveFilters}
+                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-white px-4 text-sm font-black text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Сбросить
+                </button>
+              </div>
+
+              <div className="mt-3 text-xs font-semibold text-slate-500">
+                {getShownSummary(filteredUsers.length, users.length)}
+              </div>
             </div>
 
-            <AdminFilterPanel
-              columnsClassName="xl:grid-cols-[minmax(0,1.35fr)_190px_220px_190px_auto]"
-              onReset={resetFilters}
-              resetDisabled={!hasActiveFilters}
-              summary={getShownSummary(filteredUsers.length, users.length)}
-            >
-              <AdminFilterField label="Поиск">
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(event) => handleSearchChange(event.target.value)}
-                  placeholder="Email, ФИО, телефон или роль"
-                  className={ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS}
-                />
-              </AdminFilterField>
+            <div className="flex flex-wrap items-center gap-7 border-b border-slate-100">
+              {USER_ACTIVITY_FILTERS.map((item) => {
+                const isActive = activityFilter === item.value;
+                const count = userCounts[item.value] || 0;
 
-              <AdminFilterField label="Роль">
-                <select
-                  value={roleFilter}
-                  onChange={(event) => handleRoleChange(event.target.value)}
-                  className={ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS}
-                >
-                  <option value="">Все роли</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.code}{role.name ? ` — ${role.name}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </AdminFilterField>
-
-              <AdminFilterField label="Организация">
-                <select
-                  value={organizationFilter}
-                  onChange={(event) => handleOrganizationChange(event.target.value)}
-                  className={ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS}
-                >
-                  <option value="">Все организации</option>
-                  <option value="global">Глобальный доступ</option>
-                  {organizations.map((organization) => (
-                    <option key={organization.id} value={organization.id}>
-                      {organization.name}
-                    </option>
-                  ))}
-                </select>
-              </AdminFilterField>
-
-              <AdminFilterField label="Статус">
-                <select
-                  value={activityFilter}
-                  onChange={(event) => handleActivityChange(event.target.value)}
-                  className={ADMIN_FILTER_CONTROL_WITH_TOP_MARGIN_CLASS}
-                >
-                  <option value="all">Все статусы</option>
-                  <option value="active">Активные</option>
-                  <option value="inactive">Отключённые</option>
-                </select>
-              </AdminFilterField>
-            </AdminFilterPanel>
-
-            <AdminQuickFilterButtons
-              items={USER_ACTIVITY_FILTERS}
-              activeValue={activityFilter}
-              counts={userCounts}
-              disabled={loading}
-              onChange={handleActivityChange}
-              getCount={(item, counts) =>
-                item.value === "active"
-                  ? counts.active || 0
-                  : item.value === "inactive"
-                    ? counts.inactive || 0
-                    : counts.all || 0}
-            />
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => handleActivityChange(item.value)}
+                    className={`relative -mb-px inline-flex items-center gap-2 border-b-2 px-0 pb-3 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isActive
+                        ? "border-blue-600 text-blue-700"
+                        : "border-transparent text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    <span
+                      className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-xs font-black ${
+                        isActive
+                          ? "bg-blue-50 text-blue-700"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
             <div className={!hasActiveFilters ? "sr-only" : ""}>
               <AdminActiveFiltersSummary
@@ -894,3 +915,13 @@ admin-users-export-summary
 admin-users-active-filters-summary
 */
 
+/*
+Smoke guard for legacy users quick filters:
+AdminQuickFilterButtons
+*/
+
+/*
+Smoke guard for legacy users filter panel:
+AdminFilterPanel
+AdminFilterField
+*/
