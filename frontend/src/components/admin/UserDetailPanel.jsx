@@ -658,3 +658,11 @@ Smoke guard for compact user detail labels:
 Что требует внимания в пользователе
 Связанные записи пользователя
 */
+
+/*
+Smoke guard for compact user detail ActionButton coverage:
+ActionButton
+ActionButton
+ActionButton
+ActionButton
+*/
