@@ -3,14 +3,46 @@
 @tailwind utilities;
 
 :root {
-  --obr-blue: #0f5be8;
-  --obr-blue-dark: #0b49bf;
-  --obr-blue-soft: #eef5ff;
-  --obr-teal: #0eaaa7;
-  --obr-ink: #111936;
-  --obr-muted: #64708f;
-  --obr-border: #dfe6f3;
-  --obr-bg: #f7faff;
+  color-scheme: light;
+
+  /* Core palette */
+  --color-bg: #f7faff;
+  --color-surface: #ffffff;
+  --color-ink: #111936;
+  --color-muted: #64708f;
+  --color-border: #dfe6f3;
+
+  /* Brand colors */
+  --color-primary: #0f5be8;
+  --color-primary-hover: #0b49bf;
+  --color-primary-soft: #eef5ff;
+  --color-teal: #0eaaa7;
+
+  /* Shape */
+  --radius-card: 1.15rem;
+  --radius-control: 0.75rem;
+  --radius-shell: 2rem;
+
+  /* Elevation */
+  --shadow-card: 0 10px 30px rgba(17, 25, 54, 0.055);
+  --shadow-card-hover: 0 18px 42px rgba(15, 91, 232, 0.12);
+  --shadow-shell: 0 18px 45px rgba(17, 25, 54, 0.06);
+  --shadow-primary: 0 10px 20px rgba(15, 91, 232, 0.22);
+
+  /* Layout */
+  --header-height-public: 68px;
+  --sidebar-admin-expanded: 260px;
+  --sidebar-admin-collapsed: 88px;
+
+  /* Legacy aliases. Keep while old screens are being migrated. */
+  --obr-blue: var(--color-primary);
+  --obr-blue-dark: var(--color-primary-hover);
+  --obr-blue-soft: var(--color-primary-soft);
+  --obr-teal: var(--color-teal);
+  --obr-ink: var(--color-ink);
+  --obr-muted: var(--color-muted);
+  --obr-border: var(--color-border);
+  --obr-bg: var(--color-bg);
 }
 
 html {
