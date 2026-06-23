@@ -413,7 +413,7 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
               value={values.title}
               onChange={(event) => onChange("title", event.target.value)}
               placeholder={RU.titlePlaceholder}
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </label>
 
@@ -426,7 +426,7 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
               value={values.slug}
               onChange={(event) => onChange("slug", event.target.value)}
               placeholder="povyshenie-kvalifikatsii"
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
             <p className="mt-2 text-xs leading-5 text-slate-500">
               Заполнится автоматически из названия. Можно изменить вручную.
@@ -442,7 +442,7 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
               onChange={(event) => onChange("description", event.target.value)}
               rows={4}
               placeholder={RU.descriptionPlaceholder}
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </label>
         </div>
@@ -469,7 +469,7 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
                 value={values.hours}
                 onChange={(event) => onChange("hours", event.target.value)}
                 placeholder="72"
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               />
             </label>
 
@@ -480,7 +480,7 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
               <select
                 value={values.format}
                 onChange={(event) => onChange("format", event.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               >
                 <option value="">Не указан</option>
                 <option value="online">Онлайн</option>
@@ -497,7 +497,7 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
               <select
                 value={values.document_type}
                 onChange={(event) => onChange("document_type", event.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               >
                 <option value="">Не указан</option>
                 <option value="сертификат">Сертификат</option>
@@ -616,7 +616,7 @@ function CourseModuleFormFields({ values, onChange, prefix = "" }) {
               value={values.title}
               onChange={(event) => onChange("title", event.target.value)}
               placeholder={RU.moduleTitlePlaceholder}
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </label>
 
@@ -631,7 +631,7 @@ function CourseModuleFormFields({ values, onChange, prefix = "" }) {
               max="10000"
               value={values.position}
               onChange={(event) => onChange("position", event.target.value)}
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
             <p className="mt-2 text-xs leading-5 text-slate-500">
               Заполняется следующим номером автоматически.
@@ -648,7 +648,7 @@ function CourseModuleFormFields({ values, onChange, prefix = "" }) {
               onChange={(event) => onChange("description", event.target.value)}
               rows={3}
               placeholder={RU.moduleDescriptionPlaceholder}
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </label>
         </div>
@@ -1166,7 +1166,7 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
                 value={values.title}
                 onChange={(event) => onChange("title", event.target.value)}
                 placeholder={RU.lessonTitlePlaceholder}
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               />
             </label>
 
@@ -1181,7 +1181,7 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
                 max="10000"
                 value={values.position}
                 onChange={(event) => onChange("position", event.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               />
             </label>
           </div>
@@ -1249,7 +1249,7 @@ function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }
             onChange={(event) => onChange("description", event.target.value)}
             rows={4}
             placeholder={RU.lessonDescriptionPlaceholder}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
       </div>
@@ -3790,7 +3790,7 @@ function CourseCard({
                                             <a
                                               data-testid={`lesson-studio-open-${lesson.id}`}
                                               href={buildAdminLessonStudioPath(lesson.id)}
-                                              className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+                                              className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
                                             >
                                               Открыть студию урока
                                             </a>
