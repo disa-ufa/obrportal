@@ -168,8 +168,8 @@ def main() -> None:
     require_contains(
         "frontend/src/routes/PublicRoutes.jsx",
         [
-            'import { AuthPage } from "../pages/AuthPage";',
-            'import { RegisterPage } from "../pages/RegisterPage";',
+            "const AuthPage = lazyNamed(() => import(\"../pages/AuthPage\"), \"AuthPage\");",
+            "const RegisterPage = lazyNamed(() => import(\"../pages/RegisterPage\"), \"RegisterPage\");",
             "handleLogin,",
             "handleLogout,",
             "handleRegister,",

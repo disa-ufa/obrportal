@@ -19,7 +19,7 @@ export function AuthPanel({
         <label className="block">
           <span className="text-sm font-medium text-slate-700">Email</span>
           <input
-            className="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            className="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
             value={email}
             onChange={(event) => onEmailChange(event.target.value)}
           />
@@ -29,7 +29,7 @@ export function AuthPanel({
           <span className="text-sm font-medium text-slate-700">Пароль</span>
           <input
             type="password"
-            className="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            className="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
             value={password}
             onChange={(event) => onPasswordChange(event.target.value)}
           />

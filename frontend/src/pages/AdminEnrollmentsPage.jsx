@@ -71,7 +71,7 @@ const ENROLLMENT_CSV_EXPORT_COLUMNS = [
 ];
 
 const INPUT_CLASS =
-  "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
+  "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
 
 const BUTTON_PRIMARY_CLASS =
   "rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60";
@@ -853,6 +853,7 @@ function EnrollmentWorkflowPanel({ statusCounts, courses, groups }) {
 }
 
 export function AdminEnrollmentsPage() {
+  const { onRefreshEnrollments } = arguments[0] || {};
   const location = useLocation();
   const navigate = useNavigate();
   const initialFilters = getEnrollmentFiltersFromSearch(location.search);
@@ -1170,7 +1171,7 @@ export function AdminEnrollmentsPage() {
     const currentPath = `${location.pathname}${location.search}`;
 
     if (currentPath === nextPath) {
-      await loadData(filters);
+      await refreshEnrollmentsFastPath(filters);
       return;
     }
 
@@ -1238,6 +1239,21 @@ export function AdminEnrollmentsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function refreshEnrollmentsFastPath(filters = buildFilters()) {
+    const nextFilters = filters ?? buildFilters();
+    const localRefresh = loadData(nextFilters);
+
+    if (!onRefreshEnrollments) {
+      await localRefresh;
+      return;
+    }
+
+    await Promise.all([
+      localRefresh,
+      onRefreshEnrollments(nextFilters),
+    ]);
   }
 
   useEffect(() => {
@@ -1465,7 +1481,7 @@ export function AdminEnrollmentsPage() {
 
       setSuccessMessage(`Назначение создано: ${created.user_email} → ${created.course_title}`);
       resetForm();
-      await loadData(buildFilters());
+      await refreshEnrollmentsFastPath(buildFilters());
     } catch (err) {
       setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.createFailed));
     } finally {
@@ -1570,7 +1586,7 @@ export function AdminEnrollmentsPage() {
         status: "completed",
       });
 
-      await loadData(buildFilters());
+      await refreshEnrollmentsFastPath(buildFilters());
 
       setSuccessMessage(
         `Обучение завершено: ${updated.user_email} → ${updated.course_title}. Черновик документа создан.`
@@ -1601,7 +1617,7 @@ export function AdminEnrollmentsPage() {
 
       setSuccessMessage(`Назначение обновлено: ${updated.user_email} → ${updated.course_title}`);
       resetEditState();
-      await loadData(buildFilters());
+      await refreshEnrollmentsFastPath(buildFilters());
     } catch (err) {
       setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.updateFailed));
     } finally {
@@ -1630,7 +1646,7 @@ export function AdminEnrollmentsPage() {
       }
 
       setSuccessMessage(`Назначение удалено: ${enrollment.user_email} → ${enrollment.course_title}`);
-      await loadData(buildFilters());
+      await refreshEnrollmentsFastPath(buildFilters());
     } catch (err) {
       setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.deleteFailed));
     } finally {
@@ -1702,7 +1718,7 @@ export function AdminEnrollmentsPage() {
 
   return (
     <div data-testid="admin-enrollments-page" className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Администрирование
         </div>
@@ -2208,7 +2224,7 @@ export function AdminEnrollmentsPage() {
                   <article
                     key={enrollment.id}
                     data-testid="admin-enrollment-card"
-                    className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
+                    className="rounded-shell bg-slate-50 p-5 ring-1 ring-slate-200"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getStatusTone(enrollment.status)}`}>
@@ -2454,7 +2470,7 @@ export function AdminEnrollmentsPage() {
                       <form
                         data-testid="admin-enrollment-edit-form"
                         onSubmit={(event) => handleEditSubmit(event, enrollment.id)}
-                        className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
+                        className="mt-5 space-y-4 rounded-shell bg-white p-5 ring-1 ring-blue-100"
                       >
                         <div className="grid gap-4 md:grid-cols-2">
                           <AdminFormField contentClassName="mt-2" label="Организация">

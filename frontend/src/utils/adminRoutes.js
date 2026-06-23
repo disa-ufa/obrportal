@@ -1,16 +1,97 @@
 export const ADMIN_ROUTE_ITEMS = [
-  { key: "dashboard", label: "\u041e\u0431\u0437\u043e\u0440", path: "/admin" },
-  { key: "users", label: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438", path: "/admin/users" },
-  { key: "organizations", label: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438", path: "/admin/organizations" },
-  { key: "groups", label: "\u0413\u0440\u0443\u043f\u043f\u044b", path: "/admin/groups" },
-  { key: "courses", label: "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b", path: "/admin/courses" },
-  { key: "enrollments", label: "\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f", path: "/admin/enrollments" },
-  { key: "documents", label: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b", path: "/admin/documents" },
-  { key: "roles", label: "\u0420\u043e\u043b\u0438", path: "/admin/roles" },
-  { key: "permissions", label: "\u041f\u0440\u0430\u0432\u0430", path: "/admin/permissions" },
-  { key: "audit", label: "\u0410\u0443\u0434\u0438\u0442", path: "/admin/audit-events" },
+  {
+    key: "dashboard",
+    label: "Обзор",
+    path: "/admin",
+    description: "Главная сводка, очереди внимания и быстрые переходы.",
+  },
+  {
+    key: "users",
+    label: "Пользователи",
+    path: "/admin/users",
+    description: "Учётные записи, роли, активность и доступ.",
+  },
+  {
+    key: "organizations",
+    label: "Организации",
+    path: "/admin/organizations",
+    description: "Образовательные организации и их реквизиты.",
+  },
+  {
+    key: "groups",
+    label: "Группы",
+    path: "/admin/groups",
+    description: "Учебные группы и привязка слушателей.",
+  },
+  {
+    key: "courses",
+    label: "Программы",
+    path: "/admin/courses",
+    description: "Каталог программ, структура курсов и публикация.",
+  },
+  {
+    key: "enrollments",
+    label: "Назначения",
+    path: "/admin/enrollments",
+    description: "Назначения программ слушателям и группам.",
+  },
+  {
+    key: "documents",
+    label: "Документы",
+    path: "/admin/documents",
+    description: "Выданные документы, PDF, QR и проверка.",
+  },
+  {
+    key: "roles",
+    label: "Роли",
+    path: "/admin/roles",
+    description: "Ролевые модели и административные права.",
+  },
+  {
+    key: "permissions",
+    label: "Права",
+    path: "/admin/permissions",
+    description: "Технические разрешения для RBAC.",
+  },
+  {
+    key: "audit",
+    label: "Аудит",
+    path: "/admin/audit-events",
+    description: "Журнал действий и контроль изменений.",
+  },
 ];
 
+export const ADMIN_ROUTE_GROUPS = [
+  {
+    key: "overview",
+    label: "Обзор",
+    items: ["dashboard"],
+  },
+  {
+    key: "operations",
+    label: "Операции",
+    items: ["users", "organizations", "groups", "enrollments", "documents"],
+  },
+  {
+    key: "content",
+    label: "Контент",
+    items: ["courses"],
+  },
+  {
+    key: "access",
+    label: "Доступ и контроль",
+    items: ["roles", "permissions", "audit"],
+  },
+];
+
+export const ADMIN_ROUTE_ITEM_BY_KEY = ADMIN_ROUTE_ITEMS.reduce((acc, item) => {
+  acc[item.key] = item;
+  return acc;
+}, {});
+
+export function getAdminRouteItem(pageKey) {
+  return ADMIN_ROUTE_ITEM_BY_KEY[pageKey] || null;
+}
 
 export function isAdminPathname(pathname) {
   return pathname === "/admin" || pathname.startsWith("/admin/");
@@ -21,10 +102,31 @@ export const ADMIN_ROUTE_PAGE_MAP = ADMIN_ROUTE_ITEMS.reduce((acc, item) => {
   return acc;
 }, {});
 
+export function getAdminLessonStudioRouteParams(pathname) {
+  const match = String(pathname || "").match(/^\/admin\/lessons\/([^/]+)\/studio\/?$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    lessonId: decodeURIComponent(match[1]),
+  };
+}
+
 export function getAdminPageFromPathname(pathname) {
+  if (getAdminLessonStudioRouteParams(pathname)) {
+    return "courses";
+  }
+
   return ADMIN_ROUTE_PAGE_MAP[pathname] || null;
 }
 
 export function getAdminPathForPage(pageKey) {
   return ADMIN_ROUTE_ITEMS.find((item) => item.key === pageKey)?.path || "/admin";
+}
+
+
+export function buildAdminLessonStudioPath(lessonId) {
+  return `/admin/lessons/${encodeURIComponent(lessonId)}/studio`;
 }

@@ -173,7 +173,7 @@ def main() -> None:
             "Завершённое обучение",
             "Черновики документов",
             "Аудит курсов",
-            "<AdminCourseCatalogDiagnostics",
+            'data-testid="admin-courses-structure-tree"',
             "getAdminCourseCatalogDiagnostics({",
         ],
     )
@@ -519,7 +519,7 @@ def main() -> None:
             "Что показывает проверка",
             "Запрос: номер документа или код проверки ещё не введён.",
             "Запрос: значение введено, нажмите кнопку проверки.",
-            "Проверка: запрос к публичному реестру выполняется.",
+            "Проверка: выполняется запрос к публичному реестру.",
             "Реестр: документ по введённому номеру или коду проверки не найден.",
             "Статус: документ опубликован и подтверждается публичным реестром.",
             "Статус: документ отозван, его нельзя считать действующим.",
@@ -1453,6 +1453,27 @@ def main() -> None:
     require_occurs("frontend/src/pages/AuditPage.jsx", "useMemo(", 3)
     require_occurs("frontend/src/pages/AdminCoursesPage.jsx", "useState(", 8)
     require_occurs("frontend/src/pages/AdminEnrollmentsPage.jsx", "useState(", 10)
+
+    require_contains(
+        "frontend/src/components/admin/OrganizationForm.jsx",
+        [
+            "organization-form-document-profile-hint",
+            "Профиль итогового PDF",
+            "Эти поля попадут в PDF-шаблоны удостоверений, сертификатов и справок",
+            "Заполните их до публикации документов",
+            "fallback-настройки приложения",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/admin/OrganizationDetailPanel.jsx",
+        [
+            "organization-document-profile-card",
+            "Профиль итогового PDF",
+            "Эти значения используются в PDF-шаблонах удостоверений, сертификатов и справок",
+            "Если поле пустое, при генерации документа может использоваться fallback-настройка приложения.",
+        ],
+    )
 
     print("Frontend admin pages behavior smoke passed")
 

@@ -14,6 +14,7 @@ ADMIN_EMAIL = os.getenv("SMOKE_ADMIN_EMAIL", "admin@obrportal.local")
 ADMIN_PASSWORD = os.getenv("SMOKE_ADMIN_PASSWORD", "Admin123Local2026!")
 LEARNER_EMAIL = os.getenv("SMOKE_LEARNER_EMAIL", "learner@obrportal.local")
 LEARNER_PASSWORD = os.getenv("SMOKE_LEARNER_PASSWORD", "Learner123Local2026!")
+REQUEST_TIMEOUT = int(os.getenv("SMOKE_REQUEST_TIMEOUT", "60"))
 
 
 def unique_inn() -> str:
@@ -119,7 +120,7 @@ def request_json(
     )
 
     try:
-        with urlopen(request, timeout=15) as response:
+        with urlopen(request, timeout=REQUEST_TIMEOUT) as response:
             raw = response.read().decode("utf-8")
             payload = json.loads(raw) if raw else None
             return response.status, payload
@@ -154,7 +155,7 @@ def request_form(
     )
 
     try:
-        with urlopen(request, timeout=15) as response:
+        with urlopen(request, timeout=REQUEST_TIMEOUT) as response:
             raw = response.read().decode("utf-8")
             payload = json.loads(raw) if raw else None
             return response.status, payload
@@ -197,7 +198,7 @@ def request_frontend_text(path: str) -> tuple[int, str, dict]:
     )
 
     try:
-        with urlopen(request, timeout=15) as response:
+        with urlopen(request, timeout=REQUEST_TIMEOUT) as response:
             return response.status, response.read().decode("utf-8", errors="replace"), dict(response.headers)
     except HTTPError as error:
         return error.code, error.read().decode("utf-8", errors="replace"), dict(error.headers)

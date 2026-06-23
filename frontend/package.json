@@ -1,7 +1,7 @@
 {
   "name": "obrportal-frontend",
   "private": true,
-  "version": "0.1.0-stage6",
+  "version": "0.1.0-stage64-dev",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,11 @@
     "lint": "eslint . --ext js,jsx --max-warnings 0"
   },
   "dependencies": {
+    "@tiptap/extension-link": "^3.27.0",
+    "@tiptap/extensions": "^3.27.0",
+    "@tiptap/pm": "^3.27.0",
+    "@tiptap/react": "^3.27.0",
+    "@tiptap/starter-kit": "^3.27.0",
     "@vitejs/plugin-react": "latest",
     "framer-motion": "latest",
     "lucide-react": "latest",
@@ -23,6 +28,9 @@
   "devDependencies": {
     "@vitejs/plugin-react": "latest",
     "autoprefixer": "10.4.20",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
     "vite": "latest"

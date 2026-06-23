@@ -1,21 +1,49 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { AccountPage } from "../pages/AccountPage";
-import { AuthPage } from "../pages/AuthPage";
-import { CatalogPage } from "../pages/CatalogPage";
-import { ContactsPage } from "../pages/ContactsPage";
-import { FaqPage } from "../pages/FaqPage";
-import { HomePage } from "../pages/HomePage";
-import { NotFoundPage } from "../pages/NotFoundPage";
-import { OfferPage } from "../pages/OfferPage";
-import { OrganizationInfoPage } from "../pages/OrganizationInfoPage";
-import { OrganizationCabinetPage } from "../pages/OrganizationCabinetPage";
-import { PrivacyPage } from "../pages/PrivacyPage";
-import { RegisterPage } from "../pages/RegisterPage";
-import { VerifyDocumentPage } from "../pages/VerifyDocumentPage";
 import { getAdminPathForPage } from "../utils/adminRoutes";
-import { CourseDetailPublicRoute, VerifyDocumentCodeRoute } from "./PublicRouteComponents";
 import { userHasRole } from "../utils/adminState";
+
+function lazyNamed(loader, exportName) {
+  return lazy(() =>
+    loader().then((module) => ({
+      default: module[exportName],
+    }))
+  );
+}
+
+const AccountPage = lazyNamed(() => import("../pages/AccountPage"), "AccountPage");
+const AuthPage = lazyNamed(() => import("../pages/AuthPage"), "AuthPage");
+const CatalogPage = lazyNamed(() => import("../pages/CatalogPage"), "CatalogPage");
+const ContactsPage = lazyNamed(() => import("../pages/ContactsPage"), "ContactsPage");
+const FaqPage = lazyNamed(() => import("../pages/FaqPage"), "FaqPage");
+const HomePage = lazyNamed(() => import("../pages/HomePage"), "HomePage");
+const NotFoundPage = lazyNamed(() => import("../pages/NotFoundPage"), "NotFoundPage");
+const OfferPage = lazyNamed(() => import("../pages/OfferPage"), "OfferPage");
+const OrganizationInfoPage = lazyNamed(() => import("../pages/OrganizationInfoPage"), "OrganizationInfoPage");
+const OrganizationCabinetPage = lazyNamed(() => import("../pages/OrganizationCabinetPage"), "OrganizationCabinetPage");
+const PrivacyPage = lazyNamed(() => import("../pages/PrivacyPage"), "PrivacyPage");
+const RegisterPage = lazyNamed(() => import("../pages/RegisterPage"), "RegisterPage");
+const VerifyDocumentPage = lazyNamed(() => import("../pages/VerifyDocumentPage"), "VerifyDocumentPage");
+const CourseDetailPublicRoute = lazyNamed(
+  () => import("./PublicRouteComponents"),
+  "CourseDetailPublicRoute"
+);
+const VerifyDocumentCodeRoute = lazyNamed(
+  () => import("./PublicRouteComponents"),
+  "VerifyDocumentCodeRoute"
+);
+
+function PublicRouteLoadingFallback() {
+  return (
+    <div
+      data-testid="public-route-loading-state"
+      className="rounded-3xl bg-white p-6 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200"
+    >
+      Загружаем страницу...
+    </div>
+  );
+}
 
 export function PublicRoutes({
   email,
@@ -36,6 +64,7 @@ export function PublicRoutes({
   const isOrgRepresentative = userHasRole(user, "org_rep");
 
   return (
+    <Suspense fallback={<PublicRouteLoadingFallback />}>
       <Routes>
         <Route
           path="/"
@@ -48,6 +77,16 @@ export function PublicRoutes({
         />
         <Route
           path="/catalog"
+          element={
+            <CatalogPage
+              onPageChange={handleNavigatePublicPage}
+              onOpenCourse={handleOpenPublicCourse}
+              user={user}
+            />
+          }
+        />
+        <Route
+          path="/programs"
           element={
             <CatalogPage
               onPageChange={handleNavigatePublicPage}
@@ -165,5 +204,6 @@ export function PublicRoutes({
         />
         <Route path="*" element={<NotFoundPage onPageChange={handleNavigatePublicPage} />} />
       </Routes>
+    </Suspense>
   );
 }

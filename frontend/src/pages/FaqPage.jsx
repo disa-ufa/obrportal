@@ -1,39 +1,49 @@
 const FAQ_ITEMS = [
   {
-    question: "Как выбрать подходящий курс?",
+    question: "Что такое портал ГБОУ РЦДО?",
     answer:
-      "Используйте каталог программ: фильтруйте по формату, направлению и типу итогового документа, затем откройте карточку курса.",
+      "Это публичный образовательный портал для выбора программ, регистрации пользователей, сопровождения обучения, выдачи итоговых документов и проверки их подлинности.",
+  },
+  {
+    question: "Как выбрать подходящую программу?",
+    answer:
+      "Откройте каталог программ, изучите карточку курса, объем часов, формат обучения и тип итогового документа. После выбора можно перейти к регистрации или входу в личный кабинет.",
   },
   {
     question: "Когда открывается доступ к обучению?",
     answer:
-      "В целевом сценарии доступ к обучению открывается после подтверждения оплаты или после оформления корпоративного заказа и назначения пользователя на программу.",
+      "Доступ отображается в личном кабинете после назначения пользователя на программу. Для разных категорий пользователей порядок назначения может отличаться.",
   },
   {
-    question: "Какой документ я получу после обучения?",
+    question: "Где посмотреть назначенные программы?",
     answer:
-      "Это зависит от программы: в карточке курса указывается тип итогового документа и формат итоговой аттестации.",
+      "После входа откройте личный кабинет. В нем отображаются назначенные программы, статусы прохождения и доступные итоговые документы.",
+  },
+  {
+    question: "Какой документ выдается после обучения?",
+    answer:
+      "Тип итогового документа указывается в карточке программы и зависит от содержания курса, объема часов и правил завершения обучения.",
   },
   {
     question: "Как проверить подлинность документа?",
     answer:
-      "Через публичную страницу проверки документа по безопасному идентификатору или номеру документа.",
+      "Используйте публичную страницу проверки документа. Введите номер или безопасный код, после чего портал покажет доступные сведения о документе без раскрытия лишних персональных данных.",
   },
   {
-    question: "Куда обращаться по вопросам корпоративного обучения?",
+    question: "Куда обращаться по вопросам портала?",
     answer:
-      "Через публичные контакты и будущий корпоративный контур для юридических лиц.",
+      "Используйте раздел контактов: телефон +7 (347) 200 10 17, e-mail rcdodist@gmail.com, режим работы Пн-Пт, 09:00-18:00.",
   },
   {
-    question: "Где находятся правовые документы платформы?",
+    question: "Где размещены сведения об образовательной организации?",
     answer:
-      "В футере публичного контура: политика обработки ПДн, оферта, сведения об образовательной организации и другие обязательные страницы.",
+      "Официальные сведения о ГБОУ РЦДО доступны в разделе «Сведения об организации»: наименование, учредитель, руководитель, ИНН, адрес и каналы связи.",
   },
 ];
 
 function FaqItem({ question, answer }) {
   return (
-    <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <h2 className="text-lg font-bold text-slate-900">{question}</h2>
       <p className="mt-3 text-sm leading-6 text-slate-600">{answer}</p>
     </div>
@@ -42,17 +52,18 @@ function FaqItem({ question, answer }) {
 
 export function FaqPage({ onPageChange }) {
   return (
-    <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+    <div className="space-y-6" data-testid="public-faq-page">
+      <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Публичная поддержка
         </div>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">
-          FAQ
+          Частые вопросы
         </h1>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-600">
-          Частые вопросы по выбору курса, обучению, итоговым документам,
-          проверке подлинности и публичным правилам работы платформы.
+          Ответы на основные вопросы о портале ГБОУ РЦДО: выбор программы,
+          регистрация, личный кабинет, итоговые документы, проверка подлинности и
+          официальные сведения об организации.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -70,6 +81,13 @@ export function FaqPage({ onPageChange }) {
           >
             Контакты
           </button>
+          <button
+            type="button"
+            onClick={() => onPageChange("verify-document")}
+            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+          >
+            Проверить документ
+          </button>
         </div>
       </section>
 
@@ -83,21 +101,12 @@ export function FaqPage({ onPageChange }) {
         ))}
       </section>
 
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="text-2xl font-bold text-slate-900">
-          Что дальше
-        </h2>
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200">
-            Политика обработки ПДн
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200">
-            Оферта / пользовательское соглашение
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200">
-            Доработка SEO и человеко-понятных URL
-          </div>
-        </div>
+      <section className="rounded-shell bg-blue-50 p-6 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">
+        <h2 className="text-2xl font-bold text-blue-950">Не нашли ответ?</h2>
+        <p className="mt-3">
+          Напишите на rcdodist@gmail.com или позвоните по телефону +7 (347) 200 10 17.
+          Для проверки документа используйте отдельный публичный раздел проверки.
+        </p>
       </section>
     </div>
   );

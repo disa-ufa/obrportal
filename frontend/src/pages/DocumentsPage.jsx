@@ -767,6 +767,886 @@ function AdminDocumentRegistryDiagnostics({
   );
 }
 
+
+const LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS = {
+  stage: "Stage 79.3 - Learner Documents UX Foundation",
+  title: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f",
+  subtitle: "\u041f\u043e\u043d\u044f\u0442\u043d\u0430\u044f \u0432\u0438\u0442\u0440\u0438\u043d\u0430 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0445 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432: \u0447\u0442\u043e \u0443\u0436\u0435 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e, \u043a\u0430\u043a\u0438\u0435 \u043a\u0443\u0440\u0441\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b, \u0433\u0434\u0435 \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0438 \u043a\u0430\u043a \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0435\u0433\u043e \u043f\u043e\u0434\u043b\u0438\u043d\u043d\u043e\u0441\u0442\u044c.",
+  availableDocuments: "\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
+  completedCourses: "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u044b",
+  pendingDocuments: "\u041e\u0436\u0438\u0434\u0430\u044e\u0442 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+  verificationReady: "\u0413\u043e\u0442\u043e\u0432\u044b \u043a \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0435",
+  emptyTitle: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u043f\u043e\u043a\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b",
+  emptyText: "\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0437\u0434\u0435\u0441\u044c \u0438\u043b\u0438 \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u0435\u043d \u0447\u0435\u0440\u0435\u0437 \u0444\u0438\u043b\u044c\u0442\u0440 \u043f\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u043c\u0443 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044e.",
+  completedHandoffTitle: "\u0421\u0432\u044f\u0437\u043a\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u0433\u043e \u043a\u0443\u0440\u0441\u0430 \u0438 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+  completedHandoffReady: "\u0414\u043b\u044f \u0447\u0430\u0441\u0442\u0438 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0445 \u043a\u0443\u0440\u0441\u043e\u0432 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b. \u0418\u0445 \u043c\u043e\u0436\u043d\u043e \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0438\u043b\u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043f\u043e \u043d\u043e\u043c\u0435\u0440\u0443/\u043a\u043e\u0434\u0443.",
+  completedHandoffWaiting: "\u0415\u0441\u0442\u044c \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u044b \u0431\u0435\u0437 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u043e\u0433\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0444\u0438\u043b\u044c\u0442\u0440 \u043f\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u043c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u043c \u0438\u043b\u0438 \u0434\u043e\u0436\u0434\u0438\u0442\u0435\u0441\u044c \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.",
+  actionDocuments: "\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
+  actionCompleted: "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f",
+  actionVerify: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+  actionAll: "\u0412\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
+  unknownCourse: "\u041a\u0443\u0440\u0441 \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d",
+  loadingText: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b, \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u0438 \u0441\u0442\u0430\u0442\u0443\u0441\u044b \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.",
+  errorText: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0435 \u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0443.",
+  primaryDocumentTitle: "\u0411\u043b\u0438\u0436\u0430\u0439\u0448\u0438\u0439 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+  genericDocument: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+  documentNumber: "\u041d\u043e\u043c\u0435\u0440",
+  verificationCode: "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
+  createdAt: "\u0421\u043e\u0437\u0434\u0430\u043d",
+};
+
+function getLearnerDocumentCourseTitle(documentItem, courses, enrollments) {
+  if (documentItem.course_title) {
+    return documentItem.course_title;
+  }
+
+  const enrollment = enrollments.find((item) => item.id === documentItem.enrollment_id) || null;
+  const courseId = documentItem.course_id || enrollment?.course_id || "";
+  const course = courses.find((item) => item.id === courseId) || null;
+
+  return course?.title || LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.unknownCourse;
+}
+
+function getLearnerDocumentsUXStats({ documents, enrollments }) {
+  const availableDocuments = documents.filter(
+    (documentItem) => documentItem.status === "available" && documentItem.file_available
+  );
+  const completedEnrollments = enrollments.filter(
+    (enrollment) => enrollment.status === "completed"
+  );
+  const documentEnrollmentIds = new Set(
+    documents.map((documentItem) => documentItem.enrollment_id).filter(Boolean)
+  );
+  const pendingCompletedEnrollments = completedEnrollments.filter(
+    (enrollment) => !documentEnrollmentIds.has(enrollment.id)
+  );
+  const verificationReadyDocuments = availableDocuments.filter(
+    (documentItem) => documentItem.document_number || documentItem.verification_code
+  );
+
+  return {
+    availableDocuments,
+    completedEnrollments,
+    pendingCompletedEnrollments,
+    verificationReadyDocuments,
+  };
+}
+
+function LearnerDocumentsUXFoundationPanel({
+  documents,
+  courses,
+  enrollments,
+  loading,
+  error,
+  getDocumentFilterPath,
+  getEnrollmentFilterPath,
+}) {
+  const stats = getLearnerDocumentsUXStats({ documents, enrollments });
+  const primaryDocument = stats.availableDocuments[0] || null;
+  const hasAnyLearnerSignal =
+    stats.availableDocuments.length > 0 ||
+    stats.completedEnrollments.length > 0 ||
+    stats.pendingCompletedEnrollments.length > 0;
+
+  const handoffText =
+    stats.pendingCompletedEnrollments.length > 0
+      ? LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedHandoffWaiting
+      : LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedHandoffReady;
+
+  return (
+    <SectionCard
+      title={LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.title}
+      subtitle={LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.subtitle}
+    >
+      <div data-testid="learner-documents-ux-foundation-panel" className="space-y-5">
+        <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+          {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.stage}
+        </div>
+
+        <div
+          data-testid="learner-documents-ux-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.availableDocuments}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.availableDocuments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedCourses}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.completedEnrollments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.pendingDocuments}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.pendingCompletedEnrollments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.verificationReady}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.verificationReadyDocuments.length}
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div
+            data-testid="learner-documents-ux-loading-state"
+            className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.loadingText}
+          </div>
+        ) : null}
+
+        {error ? (
+          <div
+            data-testid="learner-documents-ux-error-state"
+            className="rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700 ring-1 ring-red-200"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.errorText}
+          </div>
+        ) : null}
+
+        {!loading && !error && !hasAnyLearnerSignal ? (
+          <div
+            data-testid="learner-documents-ux-empty-state"
+            className="rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
+          >
+            <div className="font-semibold text-slate-900">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.emptyTitle}
+            </div>
+            <p className="mt-2">{LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.emptyText}</p>
+          </div>
+        ) : null}
+
+        {hasAnyLearnerSignal ? (
+          <div
+            data-testid="learner-documents-completed-handoff"
+            className={`rounded-2xl p-5 text-sm leading-6 ring-1 ${
+              stats.pendingCompletedEnrollments.length > 0
+                ? "bg-amber-50 text-amber-900 ring-amber-200"
+                : "bg-green-50 text-green-800 ring-green-200"
+            }`}
+          >
+            <div className="font-semibold text-slate-900">
+              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedHandoffTitle}
+            </div>
+            <p className="mt-2">{handoffText}</p>
+          </div>
+        ) : null}
+
+        {primaryDocument ? (
+          <div
+            data-testid="learner-documents-primary-document-card"
+            className="rounded-2xl bg-white p-5 ring-1 ring-slate-200"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.primaryDocumentTitle}
+                </div>
+                <div className="mt-2 text-lg font-bold text-slate-900">
+                  {primaryDocument.title || primaryDocument.document_type || LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.genericDocument}
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  {getLearnerDocumentCourseTitle(primaryDocument, courses, enrollments)}
+                </div>
+              </div>
+
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getDocumentStatusTone(primaryDocument.status)}`}>
+                {getDocumentStatusLabel(primaryDocument.status)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.documentNumber}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.document_number || "-"}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.verificationCode}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.verification_code || "-"}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.createdAt}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {formatDateTime(primaryDocument.created_at)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div
+          data-testid="learner-documents-ux-actions"
+          className="flex flex-wrap gap-3"
+        >
+          <Link
+            data-testid="learner-documents-available-action"
+            to={getDocumentFilterPath({ status: "available" })}
+            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionDocuments}
+          </Link>
+
+          <Link
+            data-testid="learner-documents-completed-action"
+            to={getEnrollmentFilterPath({ status: "completed" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionCompleted}
+          </Link>
+
+          <Link
+            data-testid="learner-documents-verify-action"
+            to={
+              primaryDocument?.verification_code || primaryDocument?.document_number
+                ? buildDocumentVerificationPath(
+                    primaryDocument.verification_code || primaryDocument.document_number
+                  )
+                : "/verify-document"
+            }
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionVerify}
+          </Link>
+
+          <Link
+            data-testid="learner-documents-all-action"
+            to={getDocumentFilterPath({ status: "", action_required: "" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionAll}
+          </Link>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+const LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS = {
+  stage: "Stage 79.5 - Learner Document Download UX Integration",
+  title: "- - -",
+  subtitle: "- -, - - - - - - -, - - - - ? - - -.",
+  ready: "- ? -",
+  available: "- -",
+  waiting: "- -",
+  completed: "- -",
+  verifyReady: "- -",
+  primaryTitle: "- - ? -",
+  noReadyTitle: "- - ?? - ? -",
+  noReadyText: "- - - -, - - - -. - - - - - ? - - -.",
+  downloadAction: "- / - -",
+  availableAction: "- - -",
+  completedAction: "- -",
+  verifyAction: "- -",
+  allAction: "- -",
+  fileStatus: "-",
+  fileReady: "-",
+  fileWaiting: "-",
+  documentNumber: "-",
+  verificationCode: "- -",
+  createdAt: "-",
+  course: "-",
+  genericDocument: "-",
+  emptyValue: "-",
+};
+
+function getLearnerDocumentDownloadUrl(documentItem) {
+  return (
+    documentItem.download_url ||
+    documentItem.file_url ||
+    documentItem.public_url ||
+    documentItem.url ||
+    ""
+  );
+}
+
+function isLearnerDocumentDownloadReady(documentItem) {
+  return documentItem.status === "available" && Boolean(documentItem.file_available);
+}
+
+function getLearnerDocumentDownloadStats({ documents, enrollments }) {
+  const availableDocuments = documents.filter(
+    (documentItem) => documentItem.status === "available"
+  );
+  const downloadableDocuments = availableDocuments.filter(isLearnerDocumentDownloadReady);
+  const completedEnrollments = enrollments.filter(
+    (enrollment) => enrollment.status === "completed"
+  );
+
+  const documentEnrollmentIds = new Set(
+    documents.map((documentItem) => documentItem.enrollment_id).filter(Boolean)
+  );
+  const waitingCompletedEnrollments = completedEnrollments.filter(
+    (enrollment) => !documentEnrollmentIds.has(enrollment.id)
+  );
+
+  const verificationReadyDocuments = availableDocuments.filter(
+    (documentItem) => documentItem.document_number || documentItem.verification_code
+  );
+
+  return {
+    availableDocuments,
+    downloadableDocuments,
+    completedEnrollments,
+    waitingCompletedEnrollments,
+    verificationReadyDocuments,
+  };
+}
+
+function LearnerDocumentDownloadUXPanel({
+  documents,
+  courses,
+  enrollments,
+  getDocumentFilterPath,
+  getEnrollmentFilterPath,
+}) {
+  const stats = getLearnerDocumentDownloadStats({ documents, enrollments });
+  const primaryDocument = stats.downloadableDocuments[0] || stats.availableDocuments[0] || null;
+  const primaryDownloadUrl = primaryDocument ? getLearnerDocumentDownloadUrl(primaryDocument) : "";
+  const primaryVerificationValue =
+    primaryDocument?.verification_code || primaryDocument?.document_number || "";
+  const primaryTone = primaryDocument
+    ? getDocumentStatusTone(primaryDocument.status)
+    : "bg-slate-50 text-slate-700 ring-slate-200";
+
+  return (
+    <SectionCard
+      title={LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.title}
+      subtitle={LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.subtitle}
+    >
+      <div data-testid="learner-document-download-ux-panel" className="space-y-5">
+        <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+          {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.stage}
+        </div>
+
+        <div
+          data-testid="learner-document-download-ux-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div
+            data-testid="learner-document-download-ready-count"
+            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.ready}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.downloadableDocuments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.available}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.availableDocuments.length}
+            </div>
+          </div>
+
+          <div
+            data-testid="learner-document-download-pending-count"
+            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.waiting}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.waitingCompletedEnrollments.length}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.verifyReady}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">
+              {stats.verificationReadyDocuments.length}
+            </div>
+          </div>
+        </div>
+
+        {primaryDocument ? (
+          <div
+            data-testid="learner-document-download-primary-card"
+            className="rounded-2xl bg-white p-5 ring-1 ring-slate-200"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.primaryTitle}
+                </div>
+                <div className="mt-2 text-lg font-bold text-slate-900">
+                  {primaryDocument.title || primaryDocument.document_type || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.genericDocument}
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  {getLearnerDocumentCourseTitle(primaryDocument, courses, enrollments)}
+                </div>
+              </div>
+
+              <span className={"rounded-full px-3 py-1 text-xs font-semibold ring-1 " + primaryTone}>
+                {getDocumentStatusLabel(primaryDocument.status)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-4">
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.fileStatus}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.file_available
+                    ? LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.fileReady
+                    : LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.fileWaiting}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.documentNumber}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.document_number || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.emptyValue}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.verificationCode}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {primaryDocument.verification_code || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.emptyValue}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.createdAt}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {formatDateTime(primaryDocument.created_at)}
+                </div>
+              </div>
+            </div>
+
+            <div
+              data-testid="learner-document-download-actions"
+              className="mt-5 flex flex-wrap gap-3"
+            >
+              {primaryDownloadUrl ? (
+                <a
+                  data-testid="learner-document-download-open-action"
+                  href={primaryDownloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.downloadAction}
+                </a>
+              ) : (
+                <Link
+                  data-testid="learner-document-download-open-action"
+                  to={getDocumentFilterPath({ status: "available" })}
+                  className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.availableAction}
+                </Link>
+              )}
+
+              <Link
+                data-testid="learner-document-download-verify-action"
+                to={
+                  primaryVerificationValue
+                    ? buildDocumentVerificationPath(primaryVerificationValue)
+                    : "/verify-document"
+                }
+                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+              >
+                {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.verifyAction}
+              </Link>
+
+              <Link
+                data-testid="learner-document-download-documents-action"
+                to={getDocumentFilterPath({ status: "available" })}
+                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+              >
+                {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.availableAction}
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div
+            data-testid="learner-document-download-empty-state"
+            className="rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
+          >
+            <div className="font-semibold text-slate-900">
+              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.noReadyTitle}
+            </div>
+            <p className="mt-2">{LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.noReadyText}</p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          <Link
+            data-testid="learner-document-download-completed-action"
+            to={getEnrollmentFilterPath({ status: "completed" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.completedAction}
+          </Link>
+
+          <Link
+            data-testid="learner-document-download-all-action"
+            to={getDocumentFilterPath({ status: "", action_required: "" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.allAction}
+          </Link>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+
+
+const STAGE82_ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW =
+  "stage82_18_admin_generated_document_publication_workflow";
+
+const ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS = {
+  stage: "Stage 82.18 · Generated Document Publication Workflow",
+  title: "Очередь публикации автоматически сформированных документов",
+  subtitle:
+    "Быстрый рабочий блок для итоговых PDF, которые уже сформированы после завершения курса и ждут публикации.",
+  readyTitle: "Готовы к публикации",
+  readyHint: "Черновики с уже сформированным PDF. Их можно опубликовать без загрузки файла.",
+  waitingTitle: "Ждут проверки",
+  waitingHint: "Документ есть, но пока не готов к публикации. Проверьте файл, статус или пересоберите PDF.",
+  publishedTitle: "Опубликованы",
+  publishedHint: "Документы уже доступны слушателям для скачивания и публичной проверки.",
+  revokedTitle: "Отозваны",
+  revokedHint: "Документы нельзя использовать как действующие.",
+  emptyTitle: "Нет автоматически сформированных документов в текущей выборке",
+  emptyText:
+    "Когда слушатель завершит курс, итоговый PDF появится здесь как черновик и попадёт в очередь публикации.",
+  publishAction: "Опубликовать PDF",
+  publishingAction: "Публикуем...",
+  showReadyAction: "Показать готовые черновики",
+  showAllGeneratedAction: "Показать авто PDF",
+  showPublishedAction: "Показать опубликованные",
+  documentAuditAction: "Аудит документа",
+  enrollmentAction: "Назначение",
+  userDocumentsAction: "Документы слушателя",
+};
+
+function getGeneratedDocumentPublicationWorkflowStats(documents = []) {
+  const generatedDocuments = documents.filter(isGeneratedCompletionDocument);
+  const readyDrafts = generatedDocuments.filter(canPublishGeneratedCompletionDocument);
+  const waitingDrafts = generatedDocuments.filter(
+    (documentItem) =>
+      documentItem.status === "draft" && !canPublishGeneratedCompletionDocument(documentItem)
+  );
+  const publishedDocuments = generatedDocuments.filter(
+    (documentItem) => documentItem.status === "available"
+  );
+  const revokedDocuments = generatedDocuments.filter(
+    (documentItem) => documentItem.status === "revoked"
+  );
+
+  return {
+    generatedDocuments,
+    readyDrafts,
+    waitingDrafts,
+    publishedDocuments,
+    revokedDocuments,
+    total: generatedDocuments.length,
+    readyCount: readyDrafts.length,
+    waitingCount: waitingDrafts.length,
+    publishedCount: publishedDocuments.length,
+    revokedCount: revokedDocuments.length,
+  };
+}
+
+function getGeneratedDocumentPublicationWorkflowTone(stats) {
+  if (stats.readyCount > 0) {
+    return "bg-amber-50 text-amber-900 ring-amber-200";
+  }
+
+  if (stats.waitingCount > 0 || stats.revokedCount > 0) {
+    return "bg-slate-50 text-slate-700 ring-slate-200";
+  }
+
+  if (stats.publishedCount > 0) {
+    return "bg-green-50 text-green-800 ring-green-200";
+  }
+
+  return "bg-slate-50 text-slate-600 ring-slate-200";
+}
+
+function getGeneratedDocumentPublicationWorkflowFocusText(stats) {
+  if (stats.readyCount > 0) {
+    return `${stats.readyCount} автоматически сформированных PDF готовы к публикации.`;
+  }
+
+  if (stats.waitingCount > 0) {
+    return `${stats.waitingCount} автоматически сформированных PDF требуют проверки перед публикацией.`;
+  }
+
+  if (stats.publishedCount > 0) {
+    return `${stats.publishedCount} автоматически сформированных PDF уже опубликованы.`;
+  }
+
+  return ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.emptyText;
+}
+
+function GeneratedDocumentPublicationWorkflowPanel({
+  documents,
+  loading,
+  getDocumentFilterPath,
+  getEnrollmentFilterPath,
+  onPublishDocument,
+  statusSavingKey,
+  deleteSavingId,
+}) {
+  const stats = getGeneratedDocumentPublicationWorkflowStats(documents);
+  const readyPreviewItems = stats.readyDrafts.slice(0, 3);
+  const panelTone = getGeneratedDocumentPublicationWorkflowTone(stats);
+
+  return (
+    <SectionCard
+      title={ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.title}
+      subtitle={ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.subtitle}
+    >
+      <div
+        data-testid="admin-generated-document-publication-workflow"
+        data-stage={STAGE82_ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW}
+        data-generated-publication-total={stats.total}
+        data-generated-publication-ready={stats.readyCount}
+        data-generated-publication-waiting={stats.waitingCount}
+        data-generated-publication-published={stats.publishedCount}
+        className="space-y-5"
+      >
+        <div
+          data-testid="admin-generated-document-publication-workflow-focus"
+          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${panelTone}`}
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide">
+            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.stage}
+          </div>
+          <div className="mt-1 font-semibold text-slate-900">
+            {loading
+              ? "Обновляем очередь публикации..."
+              : getGeneratedDocumentPublicationWorkflowFocusText(stats)}
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-generated-document-publication-workflow-summary"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <div className="rounded-2xl bg-amber-50 p-4 text-amber-900 ring-1 ring-amber-200">
+            <div className="text-xs font-semibold uppercase tracking-wide">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.readyTitle}
+            </div>
+            <div className="mt-2 text-2xl font-bold">{stats.readyCount}</div>
+            <p className="mt-1 text-sm leading-6">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.readyHint}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 text-slate-700 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.waitingTitle}
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-900">{stats.waitingCount}</div>
+            <p className="mt-1 text-sm leading-6">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.waitingHint}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-green-50 p-4 text-green-800 ring-1 ring-green-200">
+            <div className="text-xs font-semibold uppercase tracking-wide">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishedTitle}
+            </div>
+            <div className="mt-2 text-2xl font-bold">{stats.publishedCount}</div>
+            <p className="mt-1 text-sm leading-6">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishedHint}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-red-50 p-4 text-red-800 ring-1 ring-red-200">
+            <div className="text-xs font-semibold uppercase tracking-wide">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.revokedTitle}
+            </div>
+            <div className="mt-2 text-2xl font-bold">{stats.revokedCount}</div>
+            <p className="mt-1 text-sm leading-6">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.revokedHint}
+            </p>
+          </div>
+        </div>
+
+        <div
+          data-testid="admin-generated-document-publication-workflow-actions"
+          className="flex flex-wrap gap-3"
+        >
+          <Link
+            to={getDocumentFilterPath({ status: "draft", action_required: "true", q: "AUTO-" })}
+            className="rounded-full bg-amber-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700"
+          >
+            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.showReadyAction}
+          </Link>
+
+          <Link
+            to={getDocumentFilterPath({ status: "", action_required: "", q: "AUTO-" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.showAllGeneratedAction}
+          </Link>
+
+          <Link
+            to={getDocumentFilterPath({ status: "available", action_required: "", q: "AUTO-" })}
+            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          >
+            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.showPublishedAction}
+          </Link>
+        </div>
+
+        {readyPreviewItems.length > 0 ? (
+          <div
+            data-testid="admin-generated-document-publication-ready-list"
+            className="space-y-3"
+          >
+            {readyPreviewItems.map((documentItem) => {
+              const isPublishing = statusSavingKey === `${documentItem.id}:available`;
+              const isDeleteSaving = deleteSavingId === documentItem.id;
+
+              return (
+                <div
+                  key={documentItem.id}
+                  data-testid="admin-generated-document-publication-ready-item"
+                  className="rounded-2xl bg-white p-4 ring-1 ring-amber-200"
+                >
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getDocumentStatusTone(documentItem.status)}`}>
+                          {getDocumentStatusLabel(documentItem.status)}
+                        </span>
+                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700 ring-1 ring-indigo-200">
+                          PDF сформирован
+                        </span>
+                      </div>
+
+                      <div className="mt-3 text-lg font-bold text-slate-900">
+                        {documentItem.title}
+                      </div>
+                      <div className="mt-1 text-sm text-slate-500">
+                        {documentItem.document_number}
+                      </div>
+                      <div className="mt-1 text-sm text-slate-600">
+                        {documentItem.course_title || "Курс не указан"}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        Сформирован: {formatDateTime(documentItem.generated_at)}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        data-testid="admin-generated-document-publication-publish-action"
+                        onClick={() => onPublishDocument(documentItem)}
+                        disabled={isPublishing || isDeleteSaving}
+                        className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isPublishing
+                          ? ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishingAction
+                          : ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishAction}
+                      </button>
+
+                      {documentItem.enrollment_id && (
+                        <Link
+                          to={getEnrollmentFilterPath({
+                            status: "completed",
+                            user_id: documentItem.user_id || "",
+                          })}
+                          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                        >
+                          {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.enrollmentAction}
+                        </Link>
+                      )}
+
+                      {documentItem.user_id && (
+                        <Link
+                          to={getDocumentFilterPath({
+                            user_id: documentItem.user_id,
+                            status: "",
+                            action_required: "",
+                            q: "",
+                          })}
+                          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                        >
+                          {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.userDocumentsAction}
+                        </Link>
+                      )}
+
+                      <Link
+                        to={buildAuditPath({ entity_type: "document", entity_id: documentItem.id })}
+                        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                      >
+                        {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.documentAuditAction}
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div
+            data-testid="admin-generated-document-publication-empty"
+            className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200"
+          >
+            <div className="font-semibold text-slate-900">
+              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.emptyTitle}
+            </div>
+            <p className="mt-1">{ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.emptyText}</p>
+          </div>
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
 function DocumentsSummaryCards({ documentStatusCounts, documents, courses, enrollments }) {
   const filesCount = documents.filter((documentItem) => documentItem.file_available).length;
   const completedEnrollmentsCount = enrollments.filter(
@@ -849,6 +1729,7 @@ function DocumentsWorkflowPanel({ documentStatusCounts, courses, enrollments }) 
 
 
 export function DocumentsPage() {
+  const { onRefreshDocuments } = arguments[0] || {};
   const location = useLocation();
   const navigate = useNavigate();
   const initialFilters = getDocumentFiltersFromSearch(location.search);
@@ -1141,7 +2022,7 @@ export function DocumentsPage() {
     const currentPath = `${location.pathname}${location.search}`;
 
     if (currentPath === nextPath) {
-      await loadData(filters);
+      await refreshDocumentsFastPath(filters);
       return;
     }
 
@@ -1198,6 +2079,21 @@ export function DocumentsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function refreshDocumentsFastPath(filters = buildDocumentFilters()) {
+    const nextFilters = filters ?? buildDocumentFilters();
+    const localRefresh = loadData(nextFilters);
+
+    if (!onRefreshDocuments) {
+      await localRefresh;
+      return;
+    }
+
+    await Promise.all([
+      localRefresh,
+      onRefreshDocuments(nextFilters),
+    ]);
   }
 
   useEffect(() => {
@@ -1362,7 +2258,7 @@ export function DocumentsPage() {
 
       setSuccessMessage(`Документ создан: ${created.document_number}`);
       resetForm();
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.createFailed));
     } finally {
@@ -1426,7 +2322,7 @@ export function DocumentsPage() {
 
       setSuccessMessage(`Документ обновлён: ${updated.document_number}`);
       resetEditState();
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.updateFailed));
     } finally {
@@ -1490,7 +2386,7 @@ export function DocumentsPage() {
       setSuccessMessage(
         `Статус документа ${updated.document_number} изменён: ${getDocumentStatusLabel(updated.status)}`
       );
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.statusChangeFailed));
     } finally {
@@ -1531,7 +2427,7 @@ export function DocumentsPage() {
       const regenerated = await regenerateAdminDocument(documentItem.id);
 
       setSuccessMessage(`PDF пересобран: ${regenerated.document_number}`);
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, "Не удалось пересобрать итоговый PDF."));
     } finally {
@@ -1596,7 +2492,7 @@ export function DocumentsPage() {
       }
 
       setSuccessMessage(`Документ удалён: ${documentItem.document_number}`);
-      await loadData(buildDocumentFilters());
+      await refreshDocumentsFastPath(buildDocumentFilters());
     } catch (err) {
       setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.deleteFailed));
     } finally {
@@ -1714,7 +2610,7 @@ export function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Администрирование
         </div>
@@ -1753,6 +2649,34 @@ export function DocumentsPage() {
         enrollments={enrollments}
       />
 
+      <GeneratedDocumentPublicationWorkflowPanel
+        documents={documents}
+        loading={loading}
+        getDocumentFilterPath={getDocumentFilterPath}
+        getEnrollmentFilterPath={getEnrollmentFilterPath}
+        onPublishDocument={(documentItem) => handleQuickStatusUpdate(documentItem, "available")}
+        statusSavingKey={statusSavingKey}
+        deleteSavingId={deleteSavingId}
+      />
+
+      <LearnerDocumentsUXFoundationPanel
+        documents={documents}
+        courses={courses}
+        enrollments={enrollments}
+        loading={loading}
+        error={error}
+        getDocumentFilterPath={getDocumentFilterPath}
+        getEnrollmentFilterPath={getEnrollmentFilterPath}
+      />
+
+      <LearnerDocumentDownloadUXPanel
+        documents={documents}
+        courses={courses}
+        enrollments={enrollments}
+        getDocumentFilterPath={getDocumentFilterPath}
+        getEnrollmentFilterPath={getEnrollmentFilterPath}
+      />
+
       <AdminDocumentRegistryDiagnostics
         registryStats={adminDocumentRegistryStats}
         diagnostics={adminDocumentRegistryDiagnostics}
@@ -1770,7 +2694,7 @@ export function DocumentsPage() {
               <select
                 value={form.user_id}
                 onChange={(event) => updateField("user_id", event.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               >
                 <option value="">Выберите пользователя</option>
                 {users.map((user) => (
@@ -1795,7 +2719,7 @@ export function DocumentsPage() {
                 <select
                   value={form.enrollment_id}
                   onChange={(event) => updateField("enrollment_id", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                 >
                   <option value="">Без привязки к назначению</option>
                   {selectedUserEnrollments.map((enrollment) => (
@@ -1821,7 +2745,7 @@ export function DocumentsPage() {
                   value={form.course_id}
                   onChange={(event) => updateField("course_id", event.target.value)}
                   disabled={Boolean(form.enrollment_id)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                 >
                   <option value="">Без привязки к курсу</option>
                   {courses.map((course) => (
@@ -1847,7 +2771,7 @@ export function DocumentsPage() {
                 value={form.title}
                 onChange={(event) => updateField("title", event.target.value)}
                 placeholder="Например: Сертификат о прохождении программы"
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               />
             </label>
 
@@ -1860,7 +2784,7 @@ export function DocumentsPage() {
                   type="text"
                   value={form.document_type}
                   onChange={(event) => updateField("document_type", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                 />
               </label>
 
@@ -1871,7 +2795,7 @@ export function DocumentsPage() {
                 <select
                   value={form.status}
                   onChange={(event) => updateField("status", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                 >
                   {DOCUMENT_STATUSES.map((statusItem) => (
                     <option key={statusItem.value} value={statusItem.value}>
@@ -1892,7 +2816,7 @@ export function DocumentsPage() {
                   onChange={(event) => updateField("revocation_reason", event.target.value)}
                   rows={3}
                   placeholder={"\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435, \u043f\u043e\u0447\u0435\u043c\u0443 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
-                  className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                 />
                 <span className="mt-2 block text-xs text-slate-500">
                   {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u043d\u0430 \u0432 \u0430\u0434\u043c\u0438\u043d\u0441\u043a\u043e\u043c \u0440\u0435\u0435\u0441\u0442\u0440\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432."}
@@ -1910,7 +2834,7 @@ export function DocumentsPage() {
                 value={form.document_number}
                 onChange={(event) => updateField("document_number", event.target.value)}
                 placeholder="Можно оставить пустым — номер сгенерируется автоматически"
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               />
             </label>
 
@@ -2080,13 +3004,13 @@ export function DocumentsPage() {
               value={filterQuery}
               onChange={(event) => setFilterQuery(event.target.value)}
               placeholder="Поиск: номер, код, название, e-mail, ФИО"
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
 
             <select
               value={filterUserId}
               onChange={(event) => setFilterUserId(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             >
               <option value="">Все пользователи</option>
               {users.map((user) => (
@@ -2099,7 +3023,7 @@ export function DocumentsPage() {
             <select
               value={filterOrganizationId}
               onChange={(event) => setFilterOrganizationId(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             >
               <option value="">Все организации</option>
               {sortedOrganizations.map((organization) => (
@@ -2112,7 +3036,7 @@ export function DocumentsPage() {
             <select
               value={filterStatus}
               onChange={(event) => setFilterStatus(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             >
               <option value="">Все статусы</option>
               {DOCUMENT_STATUSES.map((statusItem) => (
@@ -2127,7 +3051,7 @@ export function DocumentsPage() {
               value={filterDocumentType}
               onChange={(event) => setFilterDocumentType(event.target.value)}
               placeholder="Тип документа"
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
 
             <button
@@ -2238,7 +3162,7 @@ export function DocumentsPage() {
                 return (
                   <article
                     key={documentItem.id}
-                    className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
+                    className="rounded-shell bg-slate-50 p-5 ring-1 ring-slate-200"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span
@@ -2702,11 +3626,11 @@ export function DocumentsPage() {
                             code={documentItem.verification_code}
                             documentNumber={documentItem.document_number}
                             containerId={`admin-document-qr-${documentItem.id}`}
-                            title="QR-код проверки"
-                            description="QR-код можно использовать для размещения на документе или отправки слушателю."
+                            title="QR-код публичной проверки документа"
+                            description="QR-код ведёт на публичную страницу проверки по номеру или коду документа. Файл документа и личный кабинет не раскрываются."
                             showPublicLink
                             showCopyLink
-                            publicLinkLabel="Публичная проверка"
+                            publicLinkLabel="Открыть публичную проверку"
                             className="mt-5"
                           />
                         ) : (
@@ -2716,13 +3640,13 @@ export function DocumentsPage() {
                           >
                             <div className="font-semibold text-slate-800">
                               {documentItem.status === "revoked"
-                                ? "Публичная проверка скрыта: документ отозван"
-                                : "Публичная проверка скрыта до публикации"}
+                                ? "Публичная проверка недоступна: документ отозван"
+                                : "Публичная проверка появится после публикации"}
                             </div>
                             <div className="mt-1">
                               {documentItem.status === "revoked"
-                                ? "QR-код и публичная ссылка не показываются для отозванного документа."
-                                : "QR-код и публичная ссылка появятся после перевода документа в статус «Доступен»."}
+                                ? "QR-код и публичная ссылка скрыты, чтобы отозванный документ не использовали как действующий."
+                                : "После публикации появятся QR-код, публичная ссылка и кнопка проверки."}
                             </div>
                           </div>
                         )}
@@ -2937,7 +3861,7 @@ export function DocumentsPage() {
                                 onChange={(event) => setRevocationReason(event.target.value)}
                                 rows={3}
                                 placeholder="Кратко укажите причину отзыва документа"
-                                className="mt-2 min-h-24 w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+                                className="mt-2 min-h-24 w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-red-400 focus-visible:ring-4 focus-visible:ring-red-100"
                               />
                             </label>
 
@@ -2966,7 +3890,7 @@ export function DocumentsPage() {
                     ) : (
                       <form
                         onSubmit={(event) => handleEditSubmit(event, documentItem.id)}
-                        className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
+                        className="mt-5 space-y-4 rounded-shell bg-white p-5 ring-1 ring-blue-100"
                       >
                         <div className="grid gap-4 md:grid-cols-2">
                           <label className="block md:col-span-2">
@@ -2977,7 +3901,7 @@ export function DocumentsPage() {
                               type="text"
                               value={editForm.title}
                               onChange={(event) => updateEditField("title", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             />
                           </label>
 
@@ -2989,7 +3913,7 @@ export function DocumentsPage() {
                               type="text"
                               value={editForm.document_type}
                               onChange={(event) => updateEditField("document_type", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             />
                           </label>
 
@@ -3000,7 +3924,7 @@ export function DocumentsPage() {
                             <select
                               value={editForm.status}
                               onChange={(event) => updateEditField("status", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             >
                               {DOCUMENT_STATUSES.map((statusItem) => (
                                 <option key={statusItem.value} value={statusItem.value}>
@@ -3020,7 +3944,7 @@ export function DocumentsPage() {
                                 onChange={(event) => updateEditField("revocation_reason", event.target.value)}
                                 rows={3}
                                 placeholder={"\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435, \u043f\u043e\u0447\u0435\u043c\u0443 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
-                                className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                                className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                               />
                             </label>
                           )}
@@ -3034,7 +3958,7 @@ export function DocumentsPage() {
                               type="text"
                               value={editForm.document_number}
                               onChange={(event) => updateEditField("document_number", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             />
                           </label>
 
@@ -3045,7 +3969,7 @@ export function DocumentsPage() {
                             <select
                               value={editForm.enrollment_id}
                               onChange={(event) => updateEditField("enrollment_id", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             >
                               <option value="">Без привязки к назначению</option>
                               {enrollments
@@ -3066,7 +3990,7 @@ export function DocumentsPage() {
                               value={editForm.course_id}
                               onChange={(event) => updateEditField("course_id", event.target.value)}
                               disabled={Boolean(editForm.enrollment_id)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                             >
                               <option value="">Без привязки к курсу</option>
                               {courses.map((course) => (

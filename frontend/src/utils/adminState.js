@@ -37,8 +37,44 @@ export function sortUsers(users) {
   );
 }
 
+export function sortCourses(courses) {
+  return [...courses].sort((left, right) =>
+    left.title.localeCompare(right.title, "ru-RU")
+  );
+}
+
+export function sortEnrollments(enrollments) {
+  return [...enrollments].sort((left, right) => {
+    const leftLabel = `${left.user_email || ""} ${left.course_title || ""}`;
+    const rightLabel = `${right.user_email || ""} ${right.course_title || ""}`;
+
+    return leftLabel.localeCompare(rightLabel, "ru-RU");
+  });
+}
+
+export function sortDocuments(documents) {
+  return [...documents].sort((left, right) => {
+    const leftLabel = `${left.document_number || ""} ${left.title || ""}`;
+    const rightLabel = `${right.document_number || ""} ${right.title || ""}`;
+
+    return leftLabel.localeCompare(rightLabel, "ru-RU");
+  });
+}
+
 export function sortRoles(roles) {
   return [...roles].sort((left, right) =>
     left.code.localeCompare(right.code, "ru-RU")
+  );
+}
+
+export function sortPermissions(permissions) {
+  return [...permissions].sort((left, right) =>
+    left.code.localeCompare(right.code, "ru-RU")
+  );
+}
+
+export function sortAuditEvents(auditEvents) {
+  return [...auditEvents].sort((left, right) =>
+    String(right.created_at || "").localeCompare(String(left.created_at || ""), "ru-RU")
   );
 }

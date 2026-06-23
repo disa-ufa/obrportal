@@ -564,36 +564,104 @@ export function DashboardPage({
         </Alert>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <AuthPanel
-          email={email}
-          password={password}
-          loading={loading}
-          error=""
-          onEmailChange={onEmailChange}
-          onPasswordChange={onPasswordChange}
-          onLogin={onLogin}
-          onLogout={onLogout}
-        />
+      {!user ? (
+        <div className="grid gap-6 xl:grid-cols-2">
+          <AuthPanel
+            email={email}
+            password={password}
+            loading={loading}
+            error=""
+            onEmailChange={onEmailChange}
+            onPasswordChange={onPasswordChange}
+            onLogin={onLogin}
+            onLogout={onLogout}
+          />
 
-        <CurrentUserCard
-          user={user}
-          loading={loading || adminLoading}
-          onRbacCheck={onRbacCheck}
-          onRefreshAdminData={onRefreshAdminData}
-        />
-      </div>
+          <CurrentUserCard
+            user={user}
+            loading={loading || adminLoading}
+            onRbacCheck={onRbacCheck}
+            onRefreshAdminData={onRefreshAdminData}
+          />
+        </div>
+      ) : (
+        <SectionCard
+          title="Операционный обзор"
+          subtitle={dashboardTasksStatusText}
+        >
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <AdminSignalCard
+              title="Документы требуют действия"
+              value={actionRequiredDocumentsCount}
+              hint="Черновики, отозванные или опубликованные без файла"
+              to={buildDocumentsPath({ action_required: "true" })}
+              tone={actionRequiredDocumentsCount ? "amber" : "green"}
+            />
+
+            <AdminSignalCard
+              title="Назначения требуют действия"
+              value={actionRequiredEnrollmentsCount}
+              hint="Старт обучения, завершение или выпускной документ"
+              to={buildEnrollmentsPath({ action_required: "true" })}
+              tone={actionRequiredEnrollmentsCount ? "amber" : "green"}
+            />
+
+            <AdminSignalCard
+              title="Программы"
+              value={coursesTotalCount}
+              hint={`${activeCoursesCount} активных / ${inactiveCoursesCount} неактивных`}
+              to={buildCoursesPath()}
+              tone="blue"
+            />
+
+            <AdminSignalCard
+              title="Пользователи"
+              value={usersTotalCount}
+              hint={`${activeUsersCount} активных / ${inactiveUsersCount} неактивных`}
+              to={buildUsersPath()}
+              tone="blue"
+            />
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onRefreshAdminData}
+              disabled={loading || adminLoading}
+              className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Обновить данные
+            </button>
+
+            <button
+              type="button"
+              onClick={onRbacCheck}
+              disabled={loading || adminLoading}
+              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Проверить RBAC
+            </button>
+
+            <Link
+              to={buildCoursesPath()}
+              className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              К программам
+            </Link>
+          </div>
+        </SectionCard>
+      )}
 
       <SectionCard
-        title="Центр управления Admin API"
-        subtitle={adminDataLoadedAt ? `Последнее обновление: ${adminDataLoadedAt}` : "Данные ещё не загружены."}
+        title="Сводка по разделам"
+        subtitle={adminDataLoadedAt ? `Данные обновлены: ${adminDataLoadedAt}` : "Данные ещё не загружены."}
       >
         {!user ? (
           <p className="text-slate-600">
             Войдите под admin, чтобы загрузить служебные данные.
           </p>
         ) : adminLoading ? (
-          <LoadingBlock text="Загружаем Admin API..." />
+          <LoadingBlock text="Загружаем административную сводку..." />
         ) : (
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -611,56 +679,9 @@ export function DashboardPage({
               ))}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              <AdminSignalCard
-                title="Назначения требуют действия"
-                value={actionRequiredEnrollmentsCount}
-                hint="Назначены или завершены — нужен контроль администратора"
-                to={buildEnrollmentsPath({ action_required: "true" })}
-                tone={actionRequiredEnrollmentsCount ? "amber" : "green"}
-              />
-              <AdminSignalCard
-                title="Документы требуют действия"
-                value={actionRequiredDocumentsCount}
-                hint="Черновики, отозванные или опубликованные без файла"
-                to={buildDocumentsPath({ action_required: "true" })}
-                tone={actionRequiredDocumentsCount ? "amber" : "green"}
-              />
-              <AdminSignalCard
-                title="Неактивные пользователи"
-                value={inactiveUsersCount}
-                hint="Проверить доступы и блокировки"
-                to={buildUsersPath({ activity: "inactive" })}
-                tone={inactiveUsersCount ? "amber" : "green"}
-              />
-              <AdminSignalCard
-                title="Черновики документов"
-                value={draftDocumentsCount}
-                hint="Ожидают публикации"
-                to={buildDocumentsPath({ status: "draft" })}
-                tone={draftDocumentsCount ? "amber" : "green"}
-              />
-              <AdminSignalCard
-                title="Отозванные документы"
-                value={revokedDocumentsCount}
-                hint="Недействующие документы"
-                to={buildDocumentsPath({ status: "revoked" })}
-                tone={revokedDocumentsCount ? "red" : "green"}
-              />
-              <AdminSignalCard
-                title="Назначения в работе"
-                value={activeEnrollmentsCount}
-                hint="Текущие обучения"
-                to={buildEnrollmentsPath({ status: "active" })}
-                tone="blue"
-              />
-              <AdminSignalCard
-                title="Пользовательские роли"
-                value={customRolesCount}
-                hint="Проверить RBAC-настройки"
-                to={buildRolesPath({ type: "custom" })}
-                tone={customRolesCount ? "violet" : "green"}
-              />
+            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+              Основные рабочие сигналы вынесены в верхний блок «Операционный обзор».
+              Ниже оставлены только сводные показатели по разделам кабинета.
             </div>
           </div>
         )}

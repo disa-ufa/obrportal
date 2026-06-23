@@ -10,6 +10,7 @@ from app.db.session import get_db
 from app.models.course import Course
 from app.models.course_lesson import CourseLesson
 from app.models.course_module import CourseModule
+from app.models.lesson_block import LessonBlock
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.user import User
@@ -18,6 +19,7 @@ from app.schemas.public import (
     PublicCourseItemResponse,
     PublicCourseLessonResponse,
     PublicCourseModuleResponse,
+    PublicLessonBlockResponse,
     PublicDocumentVerifyResponse,
 )
 
@@ -39,7 +41,27 @@ def build_public_course_item(course: Course) -> PublicCourseItemResponse:
     )
 
 
-def build_public_course_lesson(lesson: CourseLesson) -> PublicCourseLessonResponse:
+def build_public_lesson_block(block: LessonBlock) -> PublicLessonBlockResponse:
+    return PublicLessonBlockResponse(
+        id=str(block.id),
+        lesson_id=str(block.lesson_id),
+        block_type=block.block_type,
+        position=block.position,
+        title=block.title,
+        content_json=block.content_json or {},
+        settings_json=block.settings_json or {},
+        is_required=block.is_required,
+        is_active=block.is_active,
+    )
+
+
+def build_public_course_lesson(
+    lesson: CourseLesson,
+    blocks_by_lesson_id: dict[str, list[LessonBlock]] | None = None,
+) -> PublicCourseLessonResponse:
+    blocks_by_lesson_id = blocks_by_lesson_id or {}
+    lesson_blocks = blocks_by_lesson_id.get(str(lesson.id), [])
+
     return PublicCourseLessonResponse(
         id=str(lesson.id),
         module_id=str(lesson.module_id),
@@ -50,12 +72,14 @@ def build_public_course_lesson(lesson: CourseLesson) -> PublicCourseLessonRespon
         content_text=lesson.content_text,
         position=lesson.position,
         is_required=lesson.is_required,
+        blocks=[build_public_lesson_block(block) for block in lesson_blocks],
     )
 
 
 def build_public_course_module(
     module: CourseModule,
     lessons: list[CourseLesson],
+    blocks_by_lesson_id: dict[str, list[LessonBlock]] | None = None,
 ) -> PublicCourseModuleResponse:
     return PublicCourseModuleResponse(
         id=str(module.id),
@@ -63,7 +87,13 @@ def build_public_course_module(
         title=module.title,
         description=module.description,
         position=module.position,
-        lessons=[build_public_course_lesson(lesson) for lesson in lessons],
+        lessons=[
+            build_public_course_lesson(
+                lesson,
+                blocks_by_lesson_id=blocks_by_lesson_id,
+            )
+            for lesson in lessons
+        ],
     )
 
 
@@ -116,6 +146,27 @@ async def load_public_course_modules(
     )
     lessons = list(lessons_result.scalars().all())
 
+    blocks_by_lesson_id: dict[str, list[LessonBlock]] = {}
+
+    if lessons:
+        lesson_ids = [lesson.id for lesson in lessons]
+
+        blocks_result = await session.execute(
+            select(LessonBlock)
+            .where(
+                LessonBlock.lesson_id.in_(lesson_ids),
+                LessonBlock.is_active.is_(True),
+            )
+            .order_by(
+                LessonBlock.lesson_id.asc(),
+                LessonBlock.position.asc(),
+                LessonBlock.title.asc(),
+            )
+        )
+
+        for block in blocks_result.scalars().all():
+            blocks_by_lesson_id.setdefault(str(block.lesson_id), []).append(block)
+
     lessons_by_module_id: dict[str, list[CourseLesson]] = {
         str(module.id): []
         for module in modules
@@ -128,6 +179,7 @@ async def load_public_course_modules(
         build_public_course_module(
             module,
             lessons_by_module_id.get(str(module.id), []),
+            blocks_by_lesson_id=blocks_by_lesson_id,
         )
         for module in modules
     ]
@@ -194,10 +246,17 @@ async def get_public_course_detail(
 
 @router.get("/documents/verify", response_model=PublicDocumentVerifyResponse)
 async def verify_document(
-    number: str = Query(min_length=3, max_length=128),
+    number: str | None = Query(default=None, min_length=3, max_length=128),
+    value: str | None = Query(default=None, min_length=3, max_length=128),
     session: AsyncSession = Depends(get_db),
 ) -> PublicDocumentVerifyResponse:
-    normalized_number = number.strip()
+    normalized_number = (value or number or "").strip()
+
+    if not normalized_number:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Verification value is required",
+        )
 
     result = await session.execute(
         select(
@@ -274,6 +333,9 @@ async def verify_document(
         issuer_ogrn=settings.document_org_ogrn,
         registry_status=row.registry_status,
         verification_status=verification_status,
+        status=row.registry_status,
+        organization_name=settings.document_org_name,
+        message=verification_status,
         revoked_at=row.revoked_at,
         revocation_reason=row.revocation_reason,
     )

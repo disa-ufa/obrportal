@@ -2,11 +2,439 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+
+  /* Core palette */
+  --color-bg: #f7faff;
+  --color-surface: #ffffff;
+  --color-ink: #111936;
+  --color-muted: #64708f;
+  --color-border: #dfe6f3;
+
+  /* Brand colors */
+  --color-primary: #0f5be8;
+  --color-primary-hover: #0b49bf;
+  --color-primary-soft: #eef5ff;
+  --color-teal: #0eaaa7;
+
+  /* Shape */
+  --radius-card: 1.15rem;
+  --radius-control: 0.75rem;
+  --radius-shell: 2rem;
+
+  /* Elevation */
+  --shadow-card: 0 10px 30px rgba(17, 25, 54, 0.055);
+  --shadow-card-hover: 0 18px 42px rgba(15, 91, 232, 0.12);
+  --shadow-public-card: 0 14px 36px rgba(17, 25, 54, 0.055);
+  --shadow-admin-card: 0 12px 32px rgba(17, 25, 54, 0.055);
+  --shadow-shell: 0 18px 45px rgba(17, 25, 54, 0.06);
+  --shadow-primary: 0 10px 20px rgba(15, 91, 232, 0.22);
+
+  /* Layout */
+  --header-height-public: 68px;
+  --sidebar-admin-expanded: 260px;
+  --sidebar-admin-collapsed: 88px;
+
+  /* Legacy aliases. Keep while old screens are being migrated. */
+  --obr-blue: var(--color-primary);
+  --obr-blue-dark: var(--color-primary-hover);
+  --obr-blue-soft: var(--color-primary-soft);
+  --obr-teal: var(--color-teal);
+  --obr-ink: var(--color-ink);
+  --obr-muted: var(--color-muted);
+  --obr-border: var(--color-border);
+  --obr-bg: var(--color-bg);
+}
+
 html {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--obr-bg);
+  color: var(--obr-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   margin: 0;
   min-width: 320px;
+  background:
+    radial-gradient(circle at 84% 0%, rgba(15, 91, 232, 0.08), transparent 34rem),
+    linear-gradient(180deg, #ffffff 0%, var(--obr-bg) 42%, #ffffff 100%);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+@layer components {
+  .portal-container {
+    @apply mx-auto w-full max-w-[1540px] px-5 md:px-8 lg:px-10 2xl:px-12;
+  }
+
+  .portal-surface {
+    @apply rounded-card border border-obr-border bg-obr-surface shadow-shell;
+  }
+
+  .portal-card {
+    @apply rounded-card border border-obr-border bg-obr-surface shadow-card transition duration-200;
+  }
+
+  .portal-card-hover {
+    @apply hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-cardHover;
+  }
+
+  .portal-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-control bg-obr-primary px-5 py-3 text-sm font-bold text-white shadow-primary transition hover:bg-obr-primaryHover focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .portal-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-control border border-obr-border bg-obr-surface px-5 py-3 text-sm font-bold text-obr-primary transition hover:border-blue-200 hover:bg-obr-primarySoft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .portal-icon-tile {
+    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100;
+  }
+
+  .portal-input {
+    @apply h-12 w-full rounded-control border border-obr-border bg-obr-surface px-4 text-sm font-medium text-obr-ink transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100;
+  }
+
+  .portal-chip {
+    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-obr-primarySoft px-3 text-xs font-bold text-obr-primary ring-1 ring-blue-100;
+  }
+
+  .portal-muted-chip {
+    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-slate-50 px-3 text-xs font-bold text-obr-muted ring-1 ring-slate-200;
+  }
+
+  .program-art {
+    @apply relative h-[108px] overflow-hidden rounded-t-[1.15rem];
+    background:
+      radial-gradient(circle at 78% 28%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(15,91,232,0.78), rgba(14,170,167,0.58)),
+      linear-gradient(135deg, #dfeaff, #ffffff);
+  }
+
+  .program-art::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.2), transparent 45%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.14) 0 1px, transparent 1px 38px);
+  }
+
+  .program-art::after {
+    content: "";
+    position: absolute;
+    right: 22px;
+    bottom: 16px;
+    width: 136px;
+    height: 52px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.42);
+    box-shadow: -82px -22px 0 rgba(255,255,255,0.24), -42px 18px 0 rgba(255,255,255,0.18);
+    transform: rotate(-4deg);
+  }
+
+  .program-art-books {
+    background:
+      radial-gradient(circle at 78% 30%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(21,128,61,0.72), rgba(15,91,232,0.48)),
+      linear-gradient(135deg, #e8fff4, #ffffff);
+  }
+
+  .program-art-robot {
+    background:
+      radial-gradient(circle at 78% 30%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(14,170,167,0.84), rgba(15,91,232,0.56)),
+      linear-gradient(135deg, #e7fbff, #ffffff);
+  }
+
+  .program-art-laptop {
+    background:
+      radial-gradient(circle at 78% 30%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(15,91,232,0.78), rgba(103,86,245,0.5)),
+      linear-gradient(135deg, #eef3ff, #ffffff);
+  }
+
+  .program-art-headset {
+    background:
+      radial-gradient(circle at 78% 30%, rgba(255,255,255,0.9) 0 11%, transparent 12%),
+      linear-gradient(135deg, rgba(87,83,245,0.68), rgba(15,91,232,0.44)),
+      linear-gradient(135deg, #f4f0ff, #ffffff);
+  }
+
+  .admin-soft-shell {
+    background:
+      radial-gradient(circle at 88% 4%, rgba(15, 91, 232, 0.07), transparent 28rem),
+      linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  }
+
+  .admin-glass-card {
+    @apply rounded-xl border border-slate-200/80 bg-white shadow-adminCard;
+  }
+}
+
+/* Точечная доводка существующих сложных экранов под макеты без переписывания логики. */
+[data-testid="admin-courses-structure-tree"] > .rounded-3xl.bg-blue-50\/80 {
+  border-radius: 14px;
+  background: #f3f8ff;
+  color: #27406f;
+  border: 1px solid #dfe8f7;
+}
+
+[data-testid^="admin-course-tree-course-"] {
+  border-radius: 14px !important;
+  box-shadow: 0 12px 28px rgba(17, 25, 54, 0.055) !important;
+}
+
+[data-testid^="admin-course-tree-course-"] > summary {
+  align-items: center;
+}
+
+[data-testid^="admin-course-tree-course-"] details,
+[data-testid^="admin-course-tree-module-create-"] {
+  border-radius: 14px !important;
+}
+
+/* Lesson studio overrides. */
+[data-testid="lesson-studio-page"] {
+  --studio-border: #dfe6f3;
+}
+
+[data-testid="lesson-studio-topbar"],
+[data-testid="lesson-studio-structure"],
+[data-testid="lesson-studio-canvas"] {
+  border-radius: 14px !important;
+  border: 1px solid var(--studio-border);
+  box-shadow: 0 14px 34px rgba(17, 25, 54, 0.06) !important;
+}
+
+[data-testid="lesson-studio-topbar"] {
+  top: 84px !important;
+}
+
+[data-testid="lesson-studio-canvas-block"] {
+  border-radius: 14px !important;
+}
+
+/* Stage 3 design pass: wider public pages and mockup-like course structure workspace. */
+@media (min-width: 1280px) {
+  .program-art {
+    min-height: 128px;
+  }
+}
+
+/* Admin course structure overrides. */
+[data-testid="admin-courses-structure-tree"] {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-course-structure-help {
+  display: none;
+}
+
+.admin-course-node {
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 14px !important;
+  border: 1px solid #dfe7f5 !important;
+  background: #ffffff !important;
+  box-shadow: 0 14px 38px rgba(17, 25, 54, 0.055) !important;
+}
+
+.admin-course-node > summary.admin-course-summary {
+  min-height: 92px;
+  padding: 22px 28px;
+  background: linear-gradient(90deg, #ffffff 0%, #f7fbff 100%);
+}
+
+.admin-course-node > summary .mt-1.inline-flex.h-8 {
+  width: 54px !important;
+  height: 54px !important;
+  margin-top: 0 !important;
+  border-radius: 14px !important;
+  background: #eef5ff !important;
+  color: #1559db !important;
+  box-shadow: inset 0 0 0 1px #dce8ff;
+}
+
+.admin-course-node > summary .text-xs.uppercase {
+  margin-bottom: 2px;
+  color: #7a88a6 !important;
+  font-size: 11px !important;
+}
+
+.admin-course-node > summary h3 {
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em;
+}
+
+.admin-course-node > summary p.break-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px !important;
+  color: #667391 !important;
+}
+
+.admin-course-node > summary p.break-all::before {
+  content: "slug:";
+  color: #9aa6bd;
+}
+
+.admin-course-node > .mt-5 {
+  margin-top: 0 !important;
+  padding: 18px 28px 24px !important;
+  border-top-color: #edf2fa !important;
+  background: #fbfdff;
+}
+
+.admin-course-node [data-testid^="admin-course-tree-course-actions-"] {
+  margin-bottom: 14px;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+}
+
+.admin-course-node [data-testid^="admin-course-tree-course-actions-"] > summary,
+.admin-module-node [data-testid^="admin-course-tree-module-actions-"] > summary {
+  color: #51607d !important;
+}
+
+.admin-module-node {
+  margin-left: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  border: 1px solid #e4ebf6 !important;
+  box-shadow: 0 8px 22px rgba(17, 25, 54, 0.035);
+}
+
+.admin-module-node > summary.admin-course-summary {
+  min-height: 70px;
+  padding: 16px 20px;
+  background: #ffffff;
+}
+
+.admin-module-node > summary .mt-1.inline-flex.h-7 {
+  width: 38px !important;
+  height: 38px !important;
+  margin-top: 0 !important;
+  border-radius: 12px !important;
+  background: #e9fbf6 !important;
+  color: #0d8f83 !important;
+  border: 0 !important;
+}
+
+.admin-module-node > summary h4 {
+  font-size: 17px !important;
+  line-height: 1.25 !important;
+}
+
+.admin-module-node > summary p {
+  max-width: 780px;
+  color: #667391 !important;
+}
+
+.admin-module-node > .mt-4 {
+  margin-top: 0 !important;
+  padding: 14px 20px 18px !important;
+  border-top-color: #edf2fa !important;
+  background: #f8fbff;
+}
+
+.admin-lesson-node {
+  margin-left: 0 !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  border: 1px solid #d9e5ff !important;
+  box-shadow: 0 10px 26px rgba(15, 91, 232, 0.06);
+}
+
+.admin-lesson-node > summary.admin-course-summary {
+  align-items: center;
+}
+
+.admin-lesson-node > summary .mt-1.inline-flex.h-7 {
+  width: 38px !important;
+  height: 38px !important;
+  margin-top: 0 !important;
+  border-radius: 12px !important;
+  background: #eef5ff !important;
+  color: #1559db !important;
+}
+
+.admin-lesson-preview {
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  border: 1px solid #e3eaf6 !important;
+}
+
+.admin-module-create,
+.admin-lesson-create {
+  border-style: dashed !important;
+  background: #f7fbff !important;
+}
+
+[data-testid="admin-courses-compact-summary"] {
+  background: #f8fbff !important;
+}
+
+@media (min-width: 1280px) {
+  [data-testid="admin-courses-structure-tree"] {
+    gap: 16px;
+  }
+}
+
+
+/* Stage 4 public design scaling: closer to wide EdTech mockups. */
+@layer components {
+  .public-home-page,
+  .public-catalog-page {
+    @apply mx-auto w-full max-w-[1380px];
+  }
+
+  .public-home-page .portal-card,
+  .public-catalog-page .portal-card {
+    @apply shadow-publicCard;
+  }
+}
+
+.public-home-page .program-art,
+.public-catalog-page .program-art {
+  min-height: 142px;
+}
+
+.public-home-page .portal-chip,
+.public-catalog-page .portal-chip,
+.public-home-page .portal-muted-chip,
+.public-catalog-page .portal-muted-chip {
+  min-height: 30px;
+}
+
+@media (min-width: 1280px) {
+  .public-home-page .program-art,
+  .public-catalog-page .program-art {
+    min-height: 154px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .public-home-page .program-art,
+  .public-catalog-page .program-art {
+    min-height: 164px;
+  }
 }

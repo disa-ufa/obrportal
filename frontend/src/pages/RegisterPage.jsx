@@ -147,7 +147,7 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
               placeholder="Иванов Иван Иванович"
-              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </div>
 
@@ -160,7 +160,7 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="user@example.com"
-              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               required
             />
           </div>
@@ -174,7 +174,7 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               placeholder="+7 (900) 000-00-00"
-              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </div>
 
@@ -187,7 +187,7 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Минимум 8 символов"
-              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               required
               minLength={8}
             />

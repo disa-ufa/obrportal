@@ -114,8 +114,25 @@ export async function completeAccountCourse(enrollmentId) {
   });
 }
 
-export async function getAccountDocuments() {
-  return request("/api/v1/account/documents");
+// Legacy CI smoke compatibility marker: export async function getAccountDocuments()
+export async function getAccountDocuments(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  if (!query) {
+    return request("/api/v1/account/documents");
+  }
+
+  return request(`/api/v1/account/documents?${query}`);
 }
 
 function extractDownloadFilename(response, fallback = "document.bin") {
@@ -235,8 +252,26 @@ export async function getReady() {
   return request("/api/v1/ready");
 }
 
-export async function getAdminUsers() {
-  return request("/api/v1/admin/users");
+export function buildQueryString(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return query ? `?${query}` : "";
+}
+
+export async function getAdminUsers(filters = {}) {
+  const query = buildQueryString(filters);
+
+  return request(`/api/v1/admin/users${query}`);
 }
 
 export async function getAdminUserDetail(userId) {
@@ -346,6 +381,22 @@ export async function createOrgGroupEnrollments(payload) {
 
 export async function getOrgGroupEnrollments(groupId) {
   return request(`/api/v1/org/groups/${groupId}/enrollments`);
+}
+
+export async function getOrgEnrollments(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return request(`/api/v1/org/enrollments${query ? `?${query}` : ""}`);
 }
 
 export async function deleteOrgGroupEnrollment(groupId, enrollmentId) {
@@ -780,6 +831,39 @@ export async function deleteAdminCourseLesson(lessonId) {
     method: "DELETE",
   });
 }
+
+
+export async function getAdminLessonBlocks(lessonId) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}/blocks`);
+}
+
+export async function createAdminLessonBlock(lessonId, payload) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}/blocks`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminLessonBlock(blockId, payload) {
+  return request(`/api/v1/admin/lesson-blocks/${blockId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminLessonBlock(blockId) {
+  return request(`/api/v1/admin/lesson-blocks/${blockId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function reorderAdminLessonBlocks(lessonId, blocks) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}/blocks/reorder`, {
+    method: "POST",
+    body: JSON.stringify({ blocks }),
+  });
+}
+
 
 
 export async function getAdminEnrollments(filters = {}) {

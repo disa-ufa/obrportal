@@ -194,6 +194,8 @@ export function useAdminEntityActions({
 
   async function handleAssignRolePermission(roleId, payload) {
     const updated = await assignAdminRolePermission(roleId, payload);
+
+    replaceAdminCollectionItem(setAdminData, "roles", updated, sortRoles);
     setSelectedRole(updated);
 
     return updated;
@@ -201,6 +203,8 @@ export function useAdminEntityActions({
 
   async function handleRemoveRolePermission(roleId, rolePermissionId) {
     const updated = await removeAdminRolePermission(roleId, rolePermissionId);
+
+    replaceAdminCollectionItem(setAdminData, "roles", updated, sortRoles);
     setSelectedRole(updated);
 
     return updated;

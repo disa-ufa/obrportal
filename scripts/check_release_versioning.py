@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
-REQUIRED_VERSION = "0.1.0-stage6"
+
+LEGACY_RELEASE_VERSION = "0.1.0-stage6"
+DEVELOPMENT_VERSION = "0.1.0-stage64-dev"
 
 BACKEND_MAIN_PATH = ROOT / "backend" / "app" / "main.py"
+BACKEND_CONFIG_PATH = ROOT / "backend" / "app" / "core" / "config.py"
+ENV_EXAMPLE_PATH = ROOT / ".env.example"
 FRONTEND_PACKAGE_PATH = ROOT / "frontend" / "package.json"
+FRONTEND_PACKAGE_LOCK_PATH = ROOT / "frontend" / "package-lock.json"
 CHANGELOG_PATH = ROOT / "CHANGELOG.md"
 HANDOFF_PATH = ROOT / "docs" / "release-handoff.md"
-CI_WORKFLOW_PATH = ROOT / ".github" / "workflows" / "ci.yml"
 
 REQUIRED_CHANGELOG_SECTIONS = [
     "# Changelog",
@@ -33,7 +35,7 @@ REQUIRED_HANDOFF_SECTIONS = [
     "## Rollback order",
 ]
 
-REQUIRED_HANDOFF_COMMANDS = [
+REQUIRED_LEGACY_HANDOFF_COMMANDS = [
     "python .\\scripts\\check_release_versioning.py",
     "docker compose exec backend pytest app/tests -q",
     "docker compose exec frontend npm run build",
@@ -49,80 +51,78 @@ def read_required_file(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def parse_frontend_version(package_text: str) -> str:
-    payload = json.loads(package_text)
-    version = payload.get("version")
-    return version if isinstance(version, str) else ""
-
-
-def parse_backend_versions(main_text: str) -> list[str]:
-    versions = re.findall(r'version\s*=\s*"([^"]+)"', main_text)
-    versions.extend(re.findall(r'"version"\s*:\s*"([^"]+)"', main_text))
-    return versions
-
-
-def get_release_versioning_diagnostics(
-    *,
-    backend_main_text: str,
-    frontend_package_text: str,
-    changelog_text: str,
-    handoff_text: str,
-) -> dict[str, object]:
-    frontend_version = parse_frontend_version(frontend_package_text)
-    backend_versions = parse_backend_versions(backend_main_text)
-
-    missing_backend_versions = [
-        REQUIRED_VERSION
-        for version in [REQUIRED_VERSION]
-        if version not in backend_versions
-    ]
-    mismatched_backend_versions = [
-        version for version in backend_versions if version != REQUIRED_VERSION
-    ]
-
-    return {
-        "requiredVersion": REQUIRED_VERSION,
-        "frontendVersion": frontend_version,
-        "backendVersions": backend_versions,
-        "missingBackendVersions": missing_backend_versions,
-        "mismatchedBackendVersions": mismatched_backend_versions,
-        "missingChangelogSections": [
-            section for section in REQUIRED_CHANGELOG_SECTIONS if section not in changelog_text
-        ],
-        "missingHandoffSections": [
-            section for section in REQUIRED_HANDOFF_SECTIONS if section not in handoff_text
-        ],
-        "missingHandoffCommands": [
-            command for command in REQUIRED_HANDOFF_COMMANDS if command not in handoff_text
-        ],
-    }
+def parse_json(path: Path) -> dict:
+    return json.loads(read_required_file(path))
 
 
 def main() -> None:
-    diagnostics = get_release_versioning_diagnostics(
-        backend_main_text=read_required_file(BACKEND_MAIN_PATH),
-        frontend_package_text=read_required_file(FRONTEND_PACKAGE_PATH),
-        changelog_text=read_required_file(CHANGELOG_PATH),
-        handoff_text=read_required_file(HANDOFF_PATH),
-    )
+    backend_main = read_required_file(BACKEND_MAIN_PATH)
+    backend_config = read_required_file(BACKEND_CONFIG_PATH)
+    env_example = read_required_file(ENV_EXAMPLE_PATH)
+    changelog = read_required_file(CHANGELOG_PATH)
+    handoff = read_required_file(HANDOFF_PATH)
 
-    errors = []
+    package = parse_json(FRONTEND_PACKAGE_PATH)
+    package_lock = parse_json(FRONTEND_PACKAGE_LOCK_PATH)
 
-    if diagnostics["frontendVersion"] != diagnostics["requiredVersion"]:
+    errors: list[str] = []
+
+    # Stage 31 runtime metadata is now configurable.
+    if "app_version: str = Field(" not in backend_config:
+        errors.append("backend settings.app_version field is missing")
+
+    if 'default="0.1.0-stage64-dev"' not in backend_config:
+        errors.append("backend settings.app_version default must be 0.1.0-stage64-dev")
+
+    if 'AliasChoices("APP_VERSION", "OBRPORTAL_APP_VERSION")' not in backend_config:
+        errors.append("backend settings.app_version must accept APP_VERSION/OBRPORTAL_APP_VERSION")
+
+    if "version=settings.app_version" not in backend_main:
+        errors.append("FastAPI(version=...) must use settings.app_version")
+
+    if '"version": settings.app_version' not in backend_main:
+        errors.append("/health version must use settings.app_version")
+
+    if "APP_VERSION=0.1.0-stage64-dev" not in env_example:
+        errors.append(".env.example must document APP_VERSION=0.1.0-stage64-dev")
+
+    if package.get("version") != DEVELOPMENT_VERSION:
         errors.append(
             "frontend/package.json version mismatch: "
-            f"expected={diagnostics['requiredVersion']} actual={diagnostics['frontendVersion']}"
+            f"expected={DEVELOPMENT_VERSION} actual={package.get('version')}"
         )
 
-    for key in [
-        "missingBackendVersions",
-        "mismatchedBackendVersions",
-        "missingChangelogSections",
-        "missingHandoffSections",
-        "missingHandoffCommands",
-    ]:
-        for item in diagnostics[key]:
-            errors.append(f"{key}: {item}")
+    if package_lock.get("version") != DEVELOPMENT_VERSION:
+        errors.append(
+            "frontend/package-lock.json top-level version mismatch: "
+            f"expected={DEVELOPMENT_VERSION} actual={package_lock.get('version')}"
+        )
+
+    root_package = package_lock.get("packages", {}).get("", {})
+    if root_package.get("version") != DEVELOPMENT_VERSION:
+        errors.append(
+            "frontend/package-lock.json root package version mismatch: "
+            f"expected={DEVELOPMENT_VERSION} actual={root_package.get('version')}"
+        )
+
+    # Historical release artifacts remain Stage 6 by design.
+    for section in REQUIRED_CHANGELOG_SECTIONS:
+        if section not in changelog:
+            errors.append(f"missingChangelogSections: {section}")
+
+    for section in REQUIRED_HANDOFF_SECTIONS:
+        if section not in handoff:
+            errors.append(f"missingHandoffSections: {section}")
+
+    for command in REQUIRED_LEGACY_HANDOFF_COMMANDS:
+        if command not in handoff:
+            errors.append(f"missingHandoffCommands: {command}")
+
+    if LEGACY_RELEASE_VERSION not in changelog:
+        errors.append(f"legacy changelog release line missing: {LEGACY_RELEASE_VERSION}")
+
+    if LEGACY_RELEASE_VERSION not in handoff:
+        errors.append(f"legacy handoff release line missing: {LEGACY_RELEASE_VERSION}")
 
     if errors:
         print("Release versioning diagnostics failed:")
@@ -132,11 +132,10 @@ def main() -> None:
 
     print(
         "release versioning diagnostics passed: "
-        f"version={diagnostics['requiredVersion']}, "
-        f"backend_versions={len(diagnostics['backendVersions'])}, "
-        f"changelog_sections={len(REQUIRED_CHANGELOG_SECTIONS)}, "
-        f"handoff_sections={len(REQUIRED_HANDOFF_SECTIONS)}, "
-        f"handoff_commands={len(REQUIRED_HANDOFF_COMMANDS)}"
+        f"runtime_version={DEVELOPMENT_VERSION}, "
+        f"legacy_release_line={LEGACY_RELEASE_VERSION}, "
+        "backend_version_source=settings.app_version, "
+        "health_version_source=settings.app_version"
     )
 
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.core.config import settings
 
 import json
 import os
@@ -34,6 +35,7 @@ def test_health_endpoint_is_ok() -> None:
     assert isinstance(payload, dict)
     assert payload["status"] == "ok"
     assert payload["app"] == "ObrPortal"
+    assert payload["version"] == settings.app_version
 
 
 def test_ready_endpoint_is_ok() -> None:

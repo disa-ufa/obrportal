@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_name: str = "ObrPortal"
+    app_version: str = Field(
+        default="0.1.0-stage64-dev",
+        validation_alias=AliasChoices("APP_VERSION", "OBRPORTAL_APP_VERSION"),
+    )
     environment: str = "local"
     secret_key: str = Field(default="change-me-local-only")
     access_token_expire_minutes: int = 60
@@ -22,6 +26,17 @@ class Settings(BaseSettings):
     s3_bucket_public: str = "obrportal-public"
 
     document_storage_dir: str = "/app/storage/private"
+
+    public_base_url: str = Field(
+        default="http://localhost:5173",
+        validation_alias=AliasChoices(
+            "PUBLIC_BASE_URL",
+            "FRONTEND_PUBLIC_URL",
+            "FRONTEND_URL",
+            "APP_PUBLIC_URL",
+            "OBRPORTAL_PUBLIC_BASE_URL",
+        ),
+    )
 
     document_org_name: str = Field(
         default="\u0413\u0411\u041e\u0423 \u0420\u0426\u0414\u041e",

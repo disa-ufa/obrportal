@@ -11,13 +11,13 @@ export function DocumentVerificationQrBlock({
   code,
   documentNumber,
   containerId,
-  title = "QR-код проверки",
-  description = "По этому QR-коду можно открыть публичную проверку документа.",
+  title = "QR-код публичной проверки",
+  description = "QR-код открывает публичную страницу проверки по безопасному коду документа. Он не выдаёт файл документа и не открывает личный кабинет.",
   size = 116,
   showUrl = false,
   showCopyLink = false,
   showPublicLink = false,
-  publicLinkLabel = "Публичная проверка",
+  publicLinkLabel = "Открыть публичную проверку",
   className = "",
 }) {
   const verificationCode = code || documentNumber || "";

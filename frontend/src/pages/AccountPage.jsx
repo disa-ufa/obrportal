@@ -83,6 +83,10 @@ function calculateStatusCounts(items, getStatus) {
   return counts;
 }
 
+function countWhere(items, predicate) {
+  return Array.isArray(items) ? items.filter(predicate).length : 0;
+}
+
 function getDocumentStatusLabel(status) {
   switch (status) {
     case "available":
@@ -1592,7 +1596,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Личный кабинет
         </div>
@@ -1811,7 +1815,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
             {visibleCourses.map((course) => (
               <article
                 key={course.enrollment_id}
-                className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-lg"
+                className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span
@@ -2038,7 +2042,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
               return (
                 <article
                 key={documentItem.id}
-                className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-lg"
+                className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span

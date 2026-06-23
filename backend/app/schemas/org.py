@@ -17,6 +17,7 @@ class OrgLearningGroupItem(BaseModel):
 class OrgLearningGroupDetail(OrgLearningGroupItem):
     created_at: datetime
     updated_at: datetime
+    document: OrgEnrollmentDocumentItem | None = None
 
 
 class OrgLearningGroupCreate(BaseModel):
@@ -74,6 +75,20 @@ class OrgLearningGroupMemberCreate(BaseModel):
     user_id: str = Field(min_length=1, max_length=64)
 
 
+
+class OrgEnrollmentDocumentItem(BaseModel):
+    id: str
+    document_number: str
+    verification_code: str
+    document_type: str | None = None
+    title: str
+    status: str
+    file_available: bool = False
+    public_verify_path: str | None = None
+    generated_at: datetime | None = None
+    created_at: datetime
+    revoked_at: datetime | None = None
+    revocation_reason: str | None = None
 
 
 class OrgEnrollmentItem(BaseModel):

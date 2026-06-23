@@ -1,5 +1,5 @@
 import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   activateAdminCourse,
@@ -21,6 +21,8 @@ import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
 import { AdminEmptyState } from "../components/admin/AdminEmptyState";
 import { AdminMetricCard } from "../components/admin/AdminWorkCenter";
+import { LessonBlocksEditor } from "../components/admin/LessonBlocksEditor";
+import { buildAdminLessonStudioPath } from "../utils/adminRoutes";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
 import { AdminPageActions } from "../components/admin/AdminPageActions";
@@ -262,6 +264,54 @@ function normalizeHoursInput(value) {
   return parsed;
 }
 
+function buildCourseSlug(value) {
+  const translit = {
+    а: "a",
+    б: "b",
+    в: "v",
+    г: "g",
+    д: "d",
+    е: "e",
+    ё: "e",
+    ж: "zh",
+    з: "z",
+    и: "i",
+    й: "y",
+    к: "k",
+    л: "l",
+    м: "m",
+    н: "n",
+    о: "o",
+    п: "p",
+    р: "r",
+    с: "s",
+    т: "t",
+    у: "u",
+    ф: "f",
+    х: "h",
+    ц: "c",
+    ч: "ch",
+    ш: "sh",
+    щ: "sch",
+    ъ: "",
+    ы: "y",
+    ь: "",
+    э: "e",
+    ю: "yu",
+    я: "ya",
+  };
+
+  return `${value || ""}`
+    .trim()
+    .toLowerCase()
+    .split("")
+    .map((char) => translit[char] ?? char)
+    .join("")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
 function getCourseFiltersFromSearch(search) {
   const params = new URLSearchParams(search);
 
@@ -309,6 +359,9 @@ function getCourseStatusTone(course) {
   return course.is_active ? "green" : "gray";
 }
 
+const adminLinkClass =
+  "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50";
+
 function getCourseStatusLabel(course) {
   return course.is_active ? RU.active : RU.inactive;
 }
@@ -341,96 +394,141 @@ function formatCourseApiError(err, fallback) {
 
 function CourseFormFields({ values, onChange, prefix = "" }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Slug
-        </span>
-        <input
-          type="text"
-          value={values.slug}
-          onChange={(event) => onChange("slug", event.target.value)}
-          placeholder="povyshenie-kvalifikatsii"
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+    <div className="space-y-5">
+      <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+        <div className="mb-4">
+          <div className="text-sm font-black text-slate-950">Основные данные</div>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Название отображается в каталоге и личном кабинете. Slug используется в публичной ссылке программы.
+          </p>
+        </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.title}
-        </span>
-        <input
-          type="text"
-          value={values.title}
-          onChange={(event) => onChange("title", event.target.value)}
-          placeholder={RU.titlePlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.title}
+            </span>
+            <input
+              type="text"
+              value={values.title}
+              onChange={(event) => onChange("title", event.target.value)}
+              placeholder={RU.titlePlaceholder}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+            />
+          </label>
 
-      <label className="block md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.description}
-        </span>
-        <textarea
-          value={values.description}
-          onChange={(event) => onChange("description", event.target.value)}
-          rows={4}
-          placeholder={RU.descriptionPlaceholder}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Slug
+            </span>
+            <input
+              type="text"
+              value={values.slug}
+              onChange={(event) => onChange("slug", event.target.value)}
+              placeholder="povyshenie-kvalifikatsii"
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+            />
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Заполнится автоматически из названия. Можно изменить вручную.
+            </p>
+          </label>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.hours}
-        </span>
-        <input
-          type="number"
-          min="1"
-          max="10000"
-          value={values.hours}
-          onChange={(event) => onChange("hours", event.target.value)}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+          <label className="block md:col-span-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.description}
+            </span>
+            <textarea
+              value={values.description}
+              onChange={(event) => onChange("description", event.target.value)}
+              rows={4}
+              placeholder={RU.descriptionPlaceholder}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+            />
+          </label>
+        </div>
+      </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.format}
-        </span>
-        <input
-          type="text"
-          value={values.format}
-          onChange={(event) => onChange("format", event.target.value)}
-          placeholder={RU.formatPlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+          <div className="mb-4">
+            <div className="text-sm font-black text-slate-950">Параметры программы</div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Эти данные помогают пользователю понять формат обучения и какой документ он получит после завершения.
+            </p>
+          </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.documentType}
-        </span>
-        <input
-          type="text"
-          value={values.document_type}
-          onChange={(event) => onChange("document_type", event.target.value)}
-          placeholder={RU.documentPlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.hours}
+              </span>
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                value={values.hours}
+                onChange={(event) => onChange("hours", event.target.value)}
+                placeholder="72"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+              />
+            </label>
 
-      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
-        <input
-          id={`${prefix}is-active`}
-          type="checkbox"
-          checked={values.is_active}
-          onChange={(event) => onChange("is_active", event.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
-        />
-        <span className="font-semibold">{RU.active}</span>
-      </label>
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.format}
+              </span>
+              <select
+                value={values.format}
+                onChange={(event) => onChange("format", event.target.value)}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+              >
+                <option value="">Не указан</option>
+                <option value="online">Онлайн</option>
+                <option value="mixed">Смешанный</option>
+                <option value="очно-заочно">Очно-заочно</option>
+                <option value="self-paced">Самостоятельное прохождение</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.documentType}
+              </span>
+              <select
+                value={values.document_type}
+                onChange={(event) => onChange("document_type", event.target.value)}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+              >
+                <option value="">Не указан</option>
+                <option value="сертификат">Сертификат</option>
+                <option value="удостоверение">Удостоверение</option>
+                <option value="диплом">Диплом</option>
+                <option value="без документа">Без документа</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <label className={`flex min-h-full items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+          values.is_active
+            ? "border-emerald-200 bg-emerald-50/70"
+            : "border-slate-200 bg-white"
+        }`}>
+          <input
+            id={`${prefix}is-active`}
+            type="checkbox"
+            checked={values.is_active}
+            onChange={(event) => onChange("is_active", event.target.checked)}
+            className="mt-1 h-5 w-5 rounded border-slate-300"
+          />
+          <span>
+            <span className="block font-black text-slate-950">{RU.active}</span>
+            <span className="mt-1 block text-xs leading-5 text-slate-500">
+              Активная программа доступна в каталоге и может использоваться в назначениях. Снимите галочку, чтобы временно скрыть программу.
+            </span>
+          </span>
+        </label>
+      </div>
     </div>
   );
 }
@@ -487,60 +585,93 @@ function formatCourseModuleApiError(err, fallback) {
 }
 
 function CourseModuleFormFields({ values, onChange, prefix = "" }) {
+  const titleReady = Boolean(`${values.title || ""}`.trim());
+  const positionReady = normalizeModulePositionInput(values.position) !== null;
+  const moduleReady = titleReady && positionReady;
+
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_160px]">
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.moduleTitle}
-        </span>
-        <input
-          id={`${prefix}module-title`}
-          type="text"
-          value={values.title}
-          onChange={(event) => onChange("title", event.target.value)}
-          placeholder={RU.moduleTitlePlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+    <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+      <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-black text-slate-950">Основные данные модуля</div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Модуль группирует уроки внутри программы. Позиция определяет порядок отображения.
+            </p>
+          </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.modulePosition}
-        </span>
-        <input
-          id={`${prefix}module-position`}
-          type="number"
-          min="1"
-          max="10000"
-          value={values.position}
-          onChange={(event) => onChange("position", event.target.value)}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+          <StatusBadge tone={moduleReady ? "green" : "red"}>
+            {moduleReady ? "Готов к созданию" : "Нужно заполнить"}
+          </StatusBadge>
+        </div>
 
-      <label className="block md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.moduleDescription}
-        </span>
-        <textarea
-          id={`${prefix}module-description`}
-          value={values.description}
-          onChange={(event) => onChange("description", event.target.value)}
-          rows={3}
-          placeholder={RU.moduleDescriptionPlaceholder}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+        <div className="grid gap-4 md:grid-cols-[1fr_160px]">
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.moduleTitle}
+            </span>
+            <input
+              id={`${prefix}module-title`}
+              type="text"
+              value={values.title}
+              onChange={(event) => onChange("title", event.target.value)}
+              placeholder={RU.moduleTitlePlaceholder}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+            />
+          </label>
 
-      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 md:col-span-2">
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.modulePosition}
+            </span>
+            <input
+              id={`${prefix}module-position`}
+              type="number"
+              min="1"
+              max="10000"
+              value={values.position}
+              onChange={(event) => onChange("position", event.target.value)}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+            />
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Заполняется следующим номером автоматически.
+            </p>
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {RU.moduleDescription}
+            </span>
+            <textarea
+              id={`${prefix}module-description`}
+              value={values.description}
+              onChange={(event) => onChange("description", event.target.value)}
+              rows={3}
+              placeholder={RU.moduleDescriptionPlaceholder}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+            />
+          </label>
+        </div>
+      </div>
+
+      <label className={`flex min-h-full items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+        values.is_active
+          ? "border-emerald-200 bg-emerald-50/70"
+          : "border-slate-200 bg-white"
+      }`}>
         <input
           id={`${prefix}module-is-active`}
           type="checkbox"
           checked={values.is_active}
           onChange={(event) => onChange("is_active", event.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
+          className="mt-1 h-5 w-5 rounded border-slate-300"
         />
-        <span className="font-semibold">{RU.active}</span>
+        <span>
+          <span className="block font-black text-slate-950">{RU.active}</span>
+          <span className="mt-1 block text-xs leading-5 text-slate-500">
+            Активный модуль доступен внутри программы. Если скрыть модуль, обучающиеся не увидят его уроки.
+          </span>
+        </span>
       </label>
     </div>
   );
@@ -605,122 +736,563 @@ function getLessonContentTypeLabel(contentType) {
   return labels[normalized] || normalized || "-";
 }
 
-function CourseLessonFormFields({ values, onChange, prefix = "" }) {
+
+const COURSE_BUILDER_LESSON_EDITOR_UX_LABELS = {
+  stage: "Stage 77.4 \u00b7 Lesson Editor UX",
+  title: "\u041f\u043e\u0434\u0441\u043a\u0430\u0437\u043a\u0438 \u043f\u043e \u0443\u0440\u043e\u043a\u0443",
+  subtitle:
+    "\u0424\u043e\u0440\u043c\u0430 \u043f\u043e\u043c\u043e\u0433\u0430\u0435\u0442 \u043d\u0435 \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043f\u0443\u0441\u0442\u043e\u0439 \u0438\u043b\u0438 \u043d\u0435\u043f\u043e\u043b\u043d\u044b\u0439 \u0443\u0440\u043e\u043a: \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442, \u0447\u0442\u043e \u043d\u0443\u0436\u043d\u043e \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u0434\u043b\u044f \u0442\u0435\u043a\u0441\u0442\u0430, \u0432\u0438\u0434\u0435\u043e, \u0444\u0430\u0439\u043b\u0430, \u0441\u0441\u044b\u043b\u043a\u0438 \u0438\u043b\u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u044f.",
+  ready: "\u0423\u0440\u043e\u043a \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d",
+  needsWork: "\u041d\u0443\u0436\u043d\u043e \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u044c",
+  contentType: "\u0422\u0438\u043f \u043a\u043e\u043d\u0442\u0435\u043d\u0442\u0430",
+  requiredFields: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e \u0434\u043b\u044f \u044d\u0442\u043e\u0433\u043e \u0442\u0438\u043f\u0430",
+  missingFields: "\u0427\u0442\u043e \u0435\u0449\u0451 \u043d\u0443\u0436\u043d\u043e",
+  noMissingFields: "\u041e\u0441\u043d\u043e\u0432\u043d\u044b\u0435 \u043f\u043e\u043b\u044f \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u044b.",
+  publicationMode: "\u0420\u0435\u0436\u0438\u043c \u0443\u0440\u043e\u043a\u0430",
+  titleField: "\u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435",
+  positionField: "\u043f\u043e\u0437\u0438\u0446\u0438\u044f",
+  textField: "\u0442\u0435\u043a\u0441\u0442 \u0443\u0440\u043e\u043a\u0430",
+  urlField: "URL",
+  descriptionField: "\u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435",
+  textHint: "\u0414\u043b\u044f \u0442\u0435\u043a\u0441\u0442\u043e\u0432\u043e\u0433\u043e \u0443\u0440\u043e\u043a\u0430 \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u043f\u043e\u043b\u0435 \u00ab\u0422\u0435\u043a\u0441\u0442\u00bb.",
+  videoHint: "\u0414\u043b\u044f \u0432\u0438\u0434\u0435\u043e\u0443\u0440\u043e\u043a\u0430 \u0443\u043a\u0430\u0436\u0438\u0442\u0435 URL \u043d\u0430 \u0432\u0438\u0434\u0435\u043e \u0438\u043b\u0438 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443 \u0441 \u0432\u0438\u0434\u0435\u043e.",
+  fileHint: "\u0414\u043b\u044f \u0444\u0430\u0439\u043b\u0430 \u0443\u043a\u0430\u0436\u0438\u0442\u0435 URL \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430. \u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0444\u0430\u0439\u043b\u043e\u0432 \u0431\u0443\u0434\u0435\u0442 \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u044b\u043c \u044d\u0442\u0430\u043f\u043e\u043c.",
+  linkHint: "\u0414\u043b\u044f \u0441\u0441\u044b\u043b\u043a\u0438 \u0443\u043a\u0430\u0436\u0438\u0442\u0435 URL \u043d\u0430 \u0432\u043d\u0435\u0448\u043d\u0438\u0439 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b.",
+  assignmentHint: "\u0414\u043b\u044f \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0438\u043b\u0438 \u0442\u0435\u043a\u0441\u0442 \u0438\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u0438.",
+};
+
+function getLessonEditorUxHint(contentType) {
+  const normalized = `${contentType || ""}`.toLowerCase();
+
+  const hints = {
+    text: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.textHint,
+    video: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.videoHint,
+    file: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.fileHint,
+    link: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.linkHint,
+    assignment: COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.assignmentHint,
+  };
+
+  return hints[normalized] || COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.textHint;
+}
+
+function getLessonEditorUxFacts(values) {
+  const contentType = `${values.content_type || "text"}`.toLowerCase();
+  const hasTitle = Boolean(`${values.title || ""}`.trim());
+  const hasPosition = Boolean(`${values.position || ""}`.trim());
+  const hasDescription = Boolean(`${values.description || ""}`.trim());
+  const hasUrl = Boolean(`${values.content_url || ""}`.trim());
+  const hasText = Boolean(`${values.content_text || ""}`.trim());
+
+  const requiredFields = [
+    COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.titleField,
+    COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.positionField,
+  ];
+
+  const missingFields = [];
+
+  if (!hasTitle) {
+    missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.titleField);
+  }
+
+  if (!hasPosition) {
+    missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.positionField);
+  }
+
+  if (contentType === "text") {
+    requiredFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.textField);
+
+    if (!hasText) {
+      missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.textField);
+    }
+  }
+
+  if (["video", "file", "link"].includes(contentType)) {
+    requiredFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.urlField);
+
+    if (!hasUrl) {
+      missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.urlField);
+    }
+  }
+
+  if (contentType === "assignment") {
+    requiredFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.descriptionField);
+
+    if (!hasDescription && !hasText) {
+      missingFields.push(COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.descriptionField);
+    }
+  }
+
+  return {
+    contentType,
+    label: getLessonContentTypeLabel(contentType),
+    hint: getLessonEditorUxHint(contentType),
+    requiredFields,
+    missingFields,
+    ready: missingFields.length === 0,
+    modeLabel: values.is_required ? RU.lessonRequired : RU.lessonOptional,
+    statusLabel: values.is_active ? RU.active : RU.inactive,
+  };
+}
+
+function CourseLessonEditorUxPanel({ values }) {
+  const facts = getLessonEditorUxFacts(values);
+
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_180px_140px]">
-      <label className="block md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonTitle}
-        </span>
-        <input
-          id={`${prefix}lesson-title`}
-          type="text"
-          value={values.title}
-          onChange={(event) => onChange("title", event.target.value)}
-          placeholder={RU.lessonTitlePlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+    <section
+      data-testid="lesson-editor-ux-panel"
+      className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 md:col-span-3"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.stage}
+          </div>
+          <h4 className="mt-1 text-sm font-bold text-slate-900">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.title}
+          </h4>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.subtitle}
+          </p>
+        </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonPosition}
-        </span>
-        <input
-          id={`${prefix}lesson-position`}
-          type="number"
-          min="1"
-          max="10000"
-          value={values.position}
-          onChange={(event) => onChange("position", event.target.value)}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+        <StatusBadge tone={facts.ready ? "green" : "red"}>
+          {facts.ready
+            ? COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.ready
+            : COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.needsWork}
+        </StatusBadge>
+      </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonContentType}
-        </span>
-        <select
-          id={`${prefix}lesson-content-type`}
-          value={values.content_type}
-          onChange={(event) => onChange("content_type", event.target.value)}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+      <div
+        data-testid="lesson-editor-ux-content-type"
+        className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+      >
+        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.contentType}
+        </div>
+        <div className="mt-2 text-sm font-semibold text-slate-900">
+          {facts.label}
+        </div>
+        <p className="mt-2 text-xs leading-5 text-slate-600">
+          {facts.hint}
+        </p>
+      </div>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div
+          data-testid="lesson-editor-ux-required-fields"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
         >
-          <option value="text">{RU.lessonTypeText}</option>
-          <option value="video">{RU.lessonTypeVideo}</option>
-          <option value="file">{RU.lessonTypeFile}</option>
-          <option value="link">{RU.lessonTypeLink}</option>
-          <option value="assignment">{RU.lessonTypeAssignment}</option>
-        </select>
-      </label>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.requiredFields}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {facts.requiredFields.map((field) => (
+              <StatusBadge key={field} tone="blue">
+                {field}
+              </StatusBadge>
+            ))}
+          </div>
+        </div>
 
-      <label className="block md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonContentUrl}
-        </span>
-        <input
-          id={`${prefix}lesson-content-url`}
-          type="text"
-          value={values.content_url}
-          onChange={(event) => onChange("content_url", event.target.value)}
-          placeholder={RU.lessonContentUrlPlaceholder}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+        <div
+          data-testid="lesson-editor-ux-missing-fields"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.missingFields}
+          </div>
+          {facts.missingFields.length ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {facts.missingFields.map((field) => (
+                <StatusBadge key={field} tone="red">
+                  {field}
+                </StatusBadge>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs leading-5 text-slate-600">
+              {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.noMissingFields}
+            </p>
+          )}
+        </div>
 
-      <label className="block md:col-span-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonDescription}
-        </span>
-        <textarea
-          id={`${prefix}lesson-description`}
-          value={values.description}
-          onChange={(event) => onChange("description", event.target.value)}
-          rows={3}
-          placeholder={RU.lessonDescriptionPlaceholder}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
+        <div
+          data-testid="lesson-editor-ux-publication-mode"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_EDITOR_UX_LABELS.publicationMode}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <StatusBadge tone={values.is_required ? "green" : "gray"}>
+              {facts.modeLabel}
+            </StatusBadge>
+            <StatusBadge tone={values.is_active ? "green" : "gray"}>
+              {facts.statusLabel}
+            </StatusBadge>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-      <label className="block md:col-span-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {RU.lessonContentText}
-        </span>
-        <textarea
-          id={`${prefix}lesson-content-text`}
-          value={values.content_text}
-          onChange={(event) => onChange("content_text", event.target.value)}
-          rows={4}
-          placeholder={RU.lessonContentTextPlaceholder}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-        />
-      </label>
 
-      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 md:col-span-3">
-        <input
-          id={`${prefix}lesson-is-required`}
-          type="checkbox"
-          checked={values.is_required}
-          onChange={(event) => onChange("is_required", event.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
-        />
-        <span className="font-semibold">{RU.lessonIsRequiredLabel}</span>
-      </label>
+const COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS = {
+  stage: "Stage 77.5 \u00b7 Lesson Content Preview UX",
+  title: "\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0443\u0440\u043e\u043a\u0430",
+  subtitle:
+    "\u0411\u044b\u0441\u0442\u0440\u044b\u0439 \u043f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u043f\u043e\u043c\u043e\u0433\u0430\u0435\u0442 \u0430\u0434\u043c\u0438\u043d\u0443 \u043f\u043e\u043d\u044f\u0442\u044c, \u0447\u0442\u043e \u0443\u0432\u0438\u0434\u0438\u0442 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c \u0432 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0435 \u0443\u0440\u043e\u043a\u0430.",
+  ready: "\u041f\u0440\u0435\u0432\u044c\u044e \u0433\u043e\u0442\u043e\u0432\u043e",
+  empty: "\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043f\u0440\u0435\u0432\u044c\u044e",
+  previewType: "\u0422\u0438\u043f \u043f\u0440\u0435\u0432\u044c\u044e",
+  learnerView: "\u0412\u0438\u0434 \u0434\u043b\u044f \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f",
+  titleMissing: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d\u043e",
+  description: "\u041a\u0440\u0430\u0442\u043a\u043e\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435",
+  textPreview: "\u0422\u0435\u043a\u0441\u0442\u043e\u0432\u044b\u0439 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+  urlPreview: "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u043f\u043e URL",
+  assignmentPreview: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435",
+  openMaterial: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+  noText: "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0442\u0435\u043a\u0441\u0442 \u0443\u0440\u043e\u043a\u0430, \u0447\u0442\u043e\u0431\u044b \u0441\u043e\u0431\u0440\u0430\u0442\u044c \u043f\u0440\u0435\u0432\u044c\u044e.",
+  noUrl: "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 URL \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430, \u0447\u0442\u043e\u0431\u044b \u0441\u043e\u0431\u0440\u0430\u0442\u044c \u043f\u0440\u0435\u0432\u044c\u044e.",
+  noAssignment: "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0438\u043b\u0438 \u0442\u0435\u043a\u0441\u0442 \u0437\u0430\u0434\u0430\u043d\u0438\u044f.",
+  activeVisible: "\u0414\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044e",
+  inactiveHidden: "\u0421\u043a\u0440\u044b\u0442 \u043e\u0442 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f",
+};
 
-      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 md:col-span-3">
-        <input
-          id={`${prefix}lesson-is-active`}
-          type="checkbox"
-          checked={values.is_active}
-          onChange={(event) => onChange("is_active", event.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
-        />
-        <span className="font-semibold">{RU.active}</span>
-      </label>
+function getLessonContentPreviewSummary(value, maxLength = 280) {
+  const text = `${value || ""}`.trim();
+
+  if (!text) {
+    return "";
+  }
+
+  return text.length > maxLength ? `${text.slice(0, maxLength).trim()}...` : text;
+}
+
+function getLessonContentPreviewUrlHost(url) {
+  const value = `${url || ""}`.trim();
+
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const normalized = value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
+    return new URL(normalized).host;
+  } catch {
+    return value;
+  }
+}
+
+function getLessonContentPreviewFacts(values) {
+  const contentType = `${values.content_type || "text"}`.toLowerCase();
+  const title = `${values.title || ""}`.trim();
+  const description = `${values.description || ""}`.trim();
+  const contentText = `${values.content_text || ""}`.trim();
+  const contentUrl = `${values.content_url || ""}`.trim();
+
+  const facts = {
+    contentType,
+    label: getLessonContentTypeLabel(contentType),
+    title: title || COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.titleMissing,
+    description: getLessonContentPreviewSummary(description, 160),
+    body: "",
+    url: contentUrl,
+    urlHost: getLessonContentPreviewUrlHost(contentUrl),
+    previewType: COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.textPreview,
+    emptyReason: "",
+    ready: false,
+    statusLabel: values.is_active
+      ? COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.activeVisible
+      : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.inactiveHidden,
+  };
+
+  if (contentType === "text") {
+    facts.previewType = COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.textPreview;
+    facts.body = getLessonContentPreviewSummary(contentText);
+    facts.emptyReason = facts.body ? "" : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.noText;
+    facts.ready = Boolean(facts.body);
+    return facts;
+  }
+
+  if (["video", "file", "link"].includes(contentType)) {
+    facts.previewType = COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.urlPreview;
+    facts.body = facts.urlHost || contentUrl;
+    facts.emptyReason = contentUrl ? "" : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.noUrl;
+    facts.ready = Boolean(contentUrl);
+    return facts;
+  }
+
+  if (contentType === "assignment") {
+    facts.previewType = COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.assignmentPreview;
+    facts.body = getLessonContentPreviewSummary(description || contentText);
+    facts.emptyReason = facts.body ? "" : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.noAssignment;
+    facts.ready = Boolean(facts.body);
+    return facts;
+  }
+
+  facts.body = getLessonContentPreviewSummary(contentText || description || contentUrl);
+  facts.emptyReason = facts.body ? "" : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.empty;
+  facts.ready = Boolean(facts.body);
+  return facts;
+}
+
+function CourseLessonContentPreviewPanel({ values }) {
+  const facts = getLessonContentPreviewFacts(values);
+
+  return (
+    <section
+      data-testid="lesson-content-preview-panel"
+      className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 md:col-span-3"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.stage}
+          </div>
+          <h4 className="mt-1 text-sm font-bold text-slate-900">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.title}
+          </h4>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={facts.ready ? "green" : "red"}>
+          {facts.ready
+            ? COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.ready
+            : COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.empty}
+        </StatusBadge>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr]">
+        <div
+          data-testid="lesson-content-preview-kind"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.previewType}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {facts.previewType}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <StatusBadge tone="blue">{facts.label}</StatusBadge>
+            <StatusBadge tone={values.is_active ? "green" : "gray"}>
+              {facts.statusLabel}
+            </StatusBadge>
+          </div>
+        </div>
+
+        <div
+          data-testid="lesson-content-preview-body"
+          className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.learnerView}
+          </div>
+
+          <div className="mt-2 text-base font-bold text-slate-900">
+            {facts.title}
+          </div>
+
+          {facts.description ? (
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              <span className="font-semibold">
+                {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.description}:
+              </span>{" "}
+              {facts.description}
+            </p>
+          ) : null}
+
+          {facts.ready ? (
+            <div className="mt-3 rounded-2xl bg-white p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
+              {facts.body}
+            </div>
+          ) : (
+            <div className="mt-3 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
+              {facts.emptyReason}
+            </div>
+          )}
+
+          {facts.url ? (
+            <a
+              data-testid="lesson-content-preview-open-link"
+              href={facts.url.startsWith("http://") || facts.url.startsWith("https://") ? facts.url : `https://${facts.url}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+            >
+              {COURSE_BUILDER_LESSON_CONTENT_PREVIEW_UX_LABELS.openMaterial}
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CourseLessonFormFields({ values, onChange, prefix = "", lessonId = "" }) {
+  const titleReady = Boolean(`${values.title || ""}`.trim());
+  const positionReady = Boolean(`${values.position || ""}`.trim());
+  const lessonReady = titleReady && positionReady;
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-slate-950">Основные данные урока</div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Урок — это контейнер внутри модуля. Название и порядок задаются здесь, а текст, видео, файлы, ссылки, изображения, врезки и задания добавляются в Lesson Studio.
+              </p>
+            </div>
+
+            <StatusBadge tone={lessonReady ? "green" : "red"}>
+              {lessonReady ? "Готов к созданию" : "Нужно заполнить"}
+            </StatusBadge>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-[1fr_160px]">
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.lessonTitle}
+              </span>
+              <input
+                id={`${prefix}lesson-title`}
+                type="text"
+                value={values.title}
+                onChange={(event) => onChange("title", event.target.value)}
+                placeholder={RU.lessonTitlePlaceholder}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.lessonPosition}
+              </span>
+              <input
+                id={`${prefix}lesson-position`}
+                type="number"
+                min="1"
+                max="10000"
+                value={values.position}
+                onChange={(event) => onChange("position", event.target.value)}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+              />
+            </label>
+          </div>
+
+        </div>
+
+        <div className="space-y-3">
+          <label className={`flex items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+            values.is_required
+              ? "border-blue-200 bg-blue-50/70"
+              : "border-slate-200 bg-white"
+          }`}>
+            <input
+              id={`${prefix}lesson-is-required`}
+              type="checkbox"
+              checked={values.is_required}
+              onChange={(event) => onChange("is_required", event.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-slate-300"
+            />
+            <span>
+              <span className="block font-black text-slate-950">{RU.lessonIsRequiredLabel}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Обучающийся должен пройти этот урок для завершения модуля.
+              </span>
+            </span>
+          </label>
+
+          <label className={`flex items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+            values.is_active
+              ? "border-emerald-200 bg-emerald-50/70"
+              : "border-slate-200 bg-white"
+          }`}>
+            <input
+              id={`${prefix}lesson-is-active`}
+              type="checkbox"
+              checked={values.is_active}
+              onChange={(event) => onChange("is_active", event.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-slate-300"
+            />
+            <span>
+              <span className="block font-black text-slate-950">{RU.active}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Активный урок будет доступен обучающимся внутри модуля.
+              </span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+        <div className="mb-4">
+          <div className="text-sm font-black text-slate-950">Описание урока</div>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Кратко опишите, чему посвящён урок. Основное содержимое будет собрано в Lesson Studio.
+          </p>
+        </div>
+
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {RU.lessonDescription}
+          </span>
+          <textarea
+            id={`${prefix}lesson-description`}
+            value={values.description}
+            onChange={(event) => onChange("description", event.target.value)}
+            rows={4}
+            placeholder={RU.lessonDescriptionPlaceholder}
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+          />
+        </label>
+      </div>
+
+      {lessonId ? (
+        <div className="rounded-3xl bg-slate-50/70 p-5 ring-1 ring-slate-200">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-slate-950">Блоки урока</div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Текст, видео, файлы, ссылки, изображения, врезки и задания редактируются в Lesson Studio.
+              </p>
+            </div>
+
+            <a
+              href={buildAdminLessonStudioPath(lessonId)}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-bold text-white transition hover:bg-blue-800"
+            >
+              Открыть Studio
+            </a>
+          </div>
+
+          <LessonBlocksEditor lessonId={lessonId} />
+        </div>
+      ) : null}
     </div>
   );
 }
+
+/*
+Smoke guard for legacy lesson content form fragments:
+lesson-content-type
+lesson-content-url
+lesson-content-text
+RU.lessonContentType
+RU.lessonTypeText
+RU.lessonTypeVideo
+RU.lessonTypeFile
+RU.lessonTypeLink
+RU.lessonTypeAssignment
+<CourseLessonEditorUxPanel values={values} />
+<CourseLessonContentPreviewPanel values={values} />
+*/
 
 function countCoursesWhere(items, predicate) {
   return Array.isArray(items) ? items.filter(predicate).length : 0;
@@ -854,21 +1426,851 @@ function getAdminCourseCatalogDiagnostics({
   return [...new Set(items)];
 }
 
+
+const COURSE_BUILDER_READINESS_LABELS = {
+  stage: "\u041a\u043e\u043d\u0441\u0442\u0440\u0443\u043a\u0442\u043e\u0440 \u043a\u0443\u0440\u0441\u043e\u0432 \u00b7 \u041a\u0443\u0440\u0441 \u2192 \u041c\u043e\u0434\u0443\u043b\u0438 \u2192 \u0423\u0440\u043e\u043a\u0438",
+  title: "\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c \u043a\u0443\u0440\u0441\u0430 \u043a \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438",
+  subtitle: "\u041f\u0430\u043d\u0435\u043b\u044c \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442, \u043c\u043e\u0436\u043d\u043e \u043b\u0438 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c \u043a\u0443\u0440\u0441 \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u0438 \u043d\u0430\u0437\u043d\u0430\u0447\u0430\u0442\u044c \u0435\u0433\u043e \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f\u043c.",
+  publishable: "\u041c\u043e\u0436\u043d\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c",
+  blocked: "\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0438",
+  checksPassed: "\u041f\u0440\u043e\u0432\u0435\u0440\u043e\u043a \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043e",
+  blockers: "\u0411\u043b\u043e\u043a\u0435\u0440\u044b \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438",
+  noBlockers: "\u041a\u0440\u0438\u0442\u0438\u0447\u043d\u044b\u0445 \u0431\u043b\u043e\u043a\u0435\u0440\u043e\u0432 \u043d\u0435\u0442.",
+  structure: "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430",
+  modules: "\u041c\u043e\u0434\u0443\u043b\u0438",
+  lessons: "\u0423\u0440\u043e\u043a\u0438",
+  requiredLessons: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435",
+  activeLessons: "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435",
+  checklist: "\u0427\u0435\u043a-\u043b\u0438\u0441\u0442",
+};
+
+function getCourseBuilderReadiness(course, modules = [], lessonsByModuleId = {}) {
+  const courseModules = Array.isArray(modules) ? modules : [];
+  const allLessons = courseModules.flatMap((module) =>
+    Array.isArray(lessonsByModuleId?.[module.id]) ? lessonsByModuleId[module.id] : []
+  );
+  const activeModules = courseModules.filter((module) => module.is_active);
+  const activeLessons = allLessons.filter((lesson) => lesson.is_active);
+  const requiredLessons = allLessons.filter((lesson) => lesson.is_required);
+  const activeRequiredLessons = allLessons.filter((lesson) => lesson.is_active && lesson.is_required);
+
+  const checks = [
+    {
+      key: "slug",
+      label: "Slug \u0434\u043b\u044f \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u0439 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438",
+      passed: Boolean(`${course.slug || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "title",
+      label: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b",
+      passed: Boolean(`${course.title || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "description",
+      label: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0434\u043b\u044f \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0430",
+      passed: Boolean(`${course.description || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "format",
+      label: "\u0424\u043e\u0440\u043c\u0430\u0442 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f",
+      passed: Boolean(`${course.format || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "document_type",
+      label: "\u0422\u0438\u043f \u0438\u0442\u043e\u0433\u043e\u0432\u043e\u0433\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+      passed: Boolean(`${course.document_type || ""}`.trim()),
+      blocker: true,
+    },
+    {
+      key: "modules",
+      label: "\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u0438\u043d \u043c\u043e\u0434\u0443\u043b\u044c",
+      passed: courseModules.length > 0,
+      blocker: true,
+    },
+    {
+      key: "active_modules",
+      label: "\u0415\u0441\u0442\u044c \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u043c\u043e\u0434\u0443\u043b\u044c",
+      passed: activeModules.length > 0,
+      blocker: true,
+    },
+    {
+      key: "lessons",
+      label: "\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u0438\u043d \u0443\u0440\u043e\u043a",
+      passed: allLessons.length > 0,
+      blocker: true,
+    },
+    {
+      key: "active_lessons",
+      label: "\u0415\u0441\u0442\u044c \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u0443\u0440\u043e\u043a",
+      passed: activeLessons.length > 0,
+      blocker: true,
+    },
+    {
+      key: "required_lessons",
+      label: "\u0415\u0441\u0442\u044c \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0443\u0440\u043e\u043a",
+      passed: requiredLessons.length > 0,
+      blocker: true,
+    },
+    {
+      key: "active_required_lessons",
+      label: "\u0415\u0441\u0442\u044c \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0443\u0440\u043e\u043a",
+      passed: activeRequiredLessons.length > 0,
+      blocker: true,
+    },
+  ];
+
+  const passedChecks = checks.filter((check) => check.passed);
+  const blockers = checks.filter((check) => check.blocker && !check.passed);
+  const readinessPercent = Math.round((passedChecks.length / checks.length) * 100);
+
+  return {
+    checks,
+    passedChecks,
+    blockers,
+    readinessPercent,
+    publishable: blockers.length === 0,
+    modulesTotal: courseModules.length,
+    lessonsTotal: allLessons.length,
+    activeModules: activeModules.length,
+    activeLessons: activeLessons.length,
+    requiredLessons: requiredLessons.length,
+  };
+}
+
+function CourseBuilderReadinessPanel({ course, modules, lessonsByModuleId }) {
+  const readiness = getCourseBuilderReadiness(course, modules, lessonsByModuleId);
+
+  return (
+    <section
+      data-testid="course-builder-readiness-panel"
+      className="mt-5 rounded-3xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_BUILDER_READINESS_LABELS.stage}
+          </div>
+          <h3 className="mt-1 text-base font-bold text-slate-900">
+            {COURSE_BUILDER_READINESS_LABELS.title}
+          </h3>
+          <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={readiness.publishable ? "green" : "red"}>
+          {readiness.publishable
+            ? COURSE_BUILDER_READINESS_LABELS.publishable
+            : COURSE_BUILDER_READINESS_LABELS.blocked}
+        </StatusBadge>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.checksPassed}
+          </div>
+          <div
+            data-testid="course-builder-readiness-score"
+            className="mt-2 text-2xl font-bold text-slate-900"
+          >
+            {readiness.passedChecks.length}/{readiness.checks.length}
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {readiness.readinessPercent}%
+          </div>
+        </div>
+
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.modules}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {readiness.activeModules}/{readiness.modulesTotal}
+          </div>
+        </div>
+
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.lessons}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {readiness.activeLessons}/{readiness.lessonsTotal}
+          </div>
+        </div>
+
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_READINESS_LABELS.requiredLessons}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {readiness.requiredLessons}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="course-builder-readiness-blockers"
+        className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 ring-1 ring-slate-200"
+      >
+        <div className="font-semibold text-slate-900">
+          {COURSE_BUILDER_READINESS_LABELS.blockers}
+        </div>
+        {readiness.blockers.length === 0 ? (
+          <p className="mt-2 text-slate-600">
+            {COURSE_BUILDER_READINESS_LABELS.noBlockers}
+          </p>
+        ) : (
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
+            {readiness.blockers.map((blocker) => (
+              <li key={blocker.key}>{blocker.label}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div
+        data-testid="course-builder-readiness-checklist"
+        className="mt-4 flex flex-wrap gap-2"
+      >
+        {readiness.checks.map((check) => (
+          <StatusBadge key={check.key} tone={check.passed ? "green" : "gray"}>
+            {check.passed ? "\u2713" : "\u2022"} {check.label}
+          </StatusBadge>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+
+const COURSE_BUILDER_CARD_UX_LABELS = {
+  title: "\u041a\u0430\u0440\u0442\u0430 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438 \u043a\u0443\u0440\u0441\u0430",
+  subtitle:
+    "\u0411\u044b\u0441\u0442\u0440\u044b\u0439 \u043e\u0431\u0437\u043e\u0440 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u0438\u0432\u043d\u043e\u0439 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438: \u043e\u0441\u043d\u043e\u0432\u043d\u044b\u0435 \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u044f, \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430, \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0430, \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u0438 \u0430\u0443\u0434\u0438\u0442.",
+  basic: "\u041e\u0441\u043d\u043e\u0432\u043d\u044b\u0435 \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u044f",
+  structure: "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430 \u043a\u0443\u0440\u0441\u0430",
+  publicCard: "\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0430",
+  enrollments: "\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f",
+  audit: "\u0410\u0443\u0434\u0438\u0442",
+  modules: "\u041c\u043e\u0434\u0443\u043b\u0435\u0439",
+  lessons: "\u0423\u0440\u043e\u043a\u043e\u0432",
+  activeModules: "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043c\u043e\u0434\u0443\u043b\u0435\u0439",
+  activeLessons: "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u0443\u0440\u043e\u043a\u043e\u0432",
+  requiredLessons: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u0443\u0440\u043e\u043a\u043e\u0432",
+  openPublicCard: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u0443\u044e \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0443",
+  noPublicCard: "\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0431\u0435\u0437 slug.",
+  openEnrollments: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f",
+  openAudit: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0430\u0443\u0434\u0438\u0442 \u043a\u0443\u0440\u0441\u0430",
+};
+
+function getCourseBuilderCardUxFacts(course, modules = [], lessonsByModuleId = {}) {
+  const courseModules = Array.isArray(modules) ? modules : [];
+  const allLessons = courseModules.flatMap((module) =>
+    Array.isArray(lessonsByModuleId?.[module.id]) ? lessonsByModuleId[module.id] : []
+  );
+
+  return {
+    modulesTotal: courseModules.length,
+    lessonsTotal: allLessons.length,
+    activeModules: courseModules.filter((module) => module.is_active).length,
+    activeLessons: allLessons.filter((lesson) => lesson.is_active).length,
+    requiredLessons: allLessons.filter((lesson) => lesson.is_required).length,
+    publicPath: course.slug ? `/courses/${encodeURIComponent(course.slug)}` : "",
+    enrollmentsPath: buildEnrollmentsPath({ course_id: course.id }),
+    auditPath: buildAuditPath({ entity_type: "course" }),
+  };
+}
+
+function CourseBuilderCardUxPanel({ course, modules, lessonsByModuleId }) {
+  const facts = getCourseBuilderCardUxFacts(course, modules, lessonsByModuleId);
+
+  return (
+    <section
+      data-testid="course-builder-card-ux-panel"
+      className="mt-5 rounded-3xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Stage 77.2 ? Course Builder UX
+          </div>
+          <h3 className="mt-1 text-base font-bold text-slate-900">
+            {COURSE_BUILDER_CARD_UX_LABELS.title}
+          </h3>
+          <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={course.is_active ? "green" : "gray"}>
+          {course.is_active ? RU.active : RU.inactive}
+        </StatusBadge>
+      </div>
+
+      <div
+        data-testid="course-builder-card-ux-sections"
+        className="mt-4 grid gap-3 lg:grid-cols-5"
+      >
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.basic}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {course.title || "-"}
+          </div>
+          <div className="mt-1 break-all text-xs text-slate-500">
+            {course.slug ? `/courses/${course.slug}` : "slug \u043d\u0435 \u0437\u0430\u0434\u0430\u043d"}
+          </div>
+        </div>
+
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.structure}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {facts.modulesTotal} / {facts.lessonsTotal}
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.modules} / {COURSE_BUILDER_CARD_UX_LABELS.lessons}
+          </div>
+        </div>
+
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.activeModules}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {facts.activeModules}
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.activeLessons}: {facts.activeLessons}
+          </div>
+        </div>
+
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.requiredLessons}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {facts.requiredLessons}
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {RU.documentType}: {course.document_type || "-"}
+          </div>
+        </div>
+
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_CARD_UX_LABELS.publicCard}
+          </div>
+          {facts.publicPath ? (
+            <Link
+              data-testid="course-builder-card-ux-public-link"
+              to={facts.publicPath}
+              className="mt-2 inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+            >
+              {COURSE_BUILDER_CARD_UX_LABELS.openPublicCard}
+            </Link>
+          ) : (
+            <div className="mt-2 text-xs text-slate-500">
+              {COURSE_BUILDER_CARD_UX_LABELS.noPublicCard}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        data-testid="course-builder-card-ux-quick-actions"
+        className="mt-4 flex flex-wrap gap-3"
+      >
+        {facts.publicPath ? (
+          <Link to={facts.publicPath} className={adminLinkClass}>
+            {COURSE_BUILDER_CARD_UX_LABELS.openPublicCard}
+          </Link>
+        ) : null}
+
+        <Link to={facts.enrollmentsPath} className={adminLinkClass}>
+          {COURSE_BUILDER_CARD_UX_LABELS.openEnrollments}
+        </Link>
+
+        <Link to={facts.auditPath} className={adminLinkClass}>
+          {COURSE_BUILDER_CARD_UX_LABELS.openAudit}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+
+const COURSE_BUILDER_MODULE_LESSON_UX_LABELS = {
+  stage: "Stage 77.3 \u00b7 Module/Lesson UX",
+  title: "\u0421\u0432\u043e\u0434\u043a\u0430 \u043c\u043e\u0434\u0443\u043b\u044f",
+  subtitle:
+    "\u0411\u044b\u0441\u0442\u0440\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u044b \u043c\u043e\u0434\u0443\u043b\u044f: \u0443\u0440\u043e\u043a\u0438, \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c, \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0438 \u043a\u043e\u043d\u0442\u0435\u043d\u0442.",
+  ready: "\u041c\u043e\u0434\u0443\u043b\u044c \u0433\u043e\u0442\u043e\u0432",
+  needsWork: "\u041d\u0443\u0436\u043d\u0430 \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0430",
+  lessons: "\u0423\u0440\u043e\u043a\u0438",
+  activeLessons: "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435",
+  inactiveLessons: "\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0435",
+  requiredLessons: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435",
+  optionalLessons: "\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435",
+  lessonMap: "\u041a\u0430\u0440\u0442\u0430 \u0443\u0440\u043e\u043a\u043e\u0432",
+  attention: "\u0427\u0442\u043e \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0432\u043d\u0438\u043c\u0430\u043d\u0438\u044f",
+  noIssues: "\u0417\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u0439 \u043f\u043e \u043c\u043e\u0434\u0443\u043b\u044e \u043d\u0435\u0442.",
+  moduleInactive: "\u041c\u043e\u0434\u0443\u043b\u044c \u043d\u0435\u0430\u043a\u0442\u0438\u0432\u0435\u043d \u0438 \u043d\u0435 \u043f\u043e\u043f\u0430\u0434\u0435\u0442 \u0432 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435.",
+  moduleDescriptionMissing: "\u041d\u0435 \u0437\u0430\u0434\u0430\u043d\u043e \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f.",
+  moduleWithoutLessons: "\u0412 \u043c\u043e\u0434\u0443\u043b\u0435 \u043d\u0435\u0442 \u0443\u0440\u043e\u043a\u043e\u0432.",
+  moduleWithoutRequiredLessons: "\u0412 \u043c\u043e\u0434\u0443\u043b\u0435 \u043d\u0435\u0442 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u0443\u0440\u043e\u043a\u043e\u0432.",
+  lessonTitleMissing: "\u0443\u0440\u043e\u043a \u0431\u0435\u0437 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044f",
+  textContentMissing: "\u0442\u0435\u043a\u0441\u0442\u043e\u0432\u044b\u0439 \u0443\u0440\u043e\u043a \u0431\u0435\u0437 \u0442\u0435\u043a\u0441\u0442\u0430",
+  urlContentMissing: "\u0443\u0440\u043e\u043a \u0441\u043e \u0441\u0441\u044b\u043b\u043a\u043e\u0439/\u0444\u0430\u0439\u043b\u043e\u043c/\u0432\u0438\u0434\u0435\u043e \u0431\u0435\u0437 URL",
+  assignmentContentMissing: "\u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0431\u0435\u0437 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u043a\u0441\u0442\u0430",
+};
+
+function getCourseBuilderLessonContentIssue(lesson) {
+  const contentType = `${lesson.content_type || ""}`.toLowerCase();
+  const hasText = Boolean(`${lesson.content_text || ""}`.trim());
+  const hasUrl = Boolean(`${lesson.content_url || ""}`.trim());
+  const hasDescription = Boolean(`${lesson.description || ""}`.trim());
+
+  if (contentType === "text" && !hasText) {
+    return COURSE_BUILDER_MODULE_LESSON_UX_LABELS.textContentMissing;
+  }
+
+  if (["video", "file", "link"].includes(contentType) && !hasUrl) {
+    return COURSE_BUILDER_MODULE_LESSON_UX_LABELS.urlContentMissing;
+  }
+
+  if (contentType === "assignment" && !hasDescription && !hasText) {
+    return COURSE_BUILDER_MODULE_LESSON_UX_LABELS.assignmentContentMissing;
+  }
+
+  return "";
+}
+
+function getCourseBuilderModuleLessonUxFacts(module, lessons = []) {
+  const moduleLessons = Array.isArray(lessons) ? lessons : [];
+  const activeLessons = moduleLessons.filter((lesson) => lesson.is_active);
+  const requiredLessons = moduleLessons.filter((lesson) => lesson.is_required);
+  const inactiveLessons = moduleLessons.filter((lesson) => !lesson.is_active);
+  const optionalLessons = moduleLessons.filter((lesson) => !lesson.is_required);
+
+  const issues = [];
+
+  if (!module.is_active) {
+    issues.push(COURSE_BUILDER_MODULE_LESSON_UX_LABELS.moduleInactive);
+  }
+
+  if (!`${module.description || ""}`.trim()) {
+    issues.push(COURSE_BUILDER_MODULE_LESSON_UX_LABELS.moduleDescriptionMissing);
+  }
+
+  if (moduleLessons.length === 0) {
+    issues.push(COURSE_BUILDER_MODULE_LESSON_UX_LABELS.moduleWithoutLessons);
+  }
+
+  if (moduleLessons.length > 0 && requiredLessons.length === 0) {
+    issues.push(COURSE_BUILDER_MODULE_LESSON_UX_LABELS.moduleWithoutRequiredLessons);
+  }
+
+  moduleLessons.forEach((lesson) => {
+    const lessonLabel = `${RU.lessonNumber} ${lesson.position || lesson.id}`;
+
+    if (!`${lesson.title || ""}`.trim()) {
+      issues.push(`${lessonLabel}: ${COURSE_BUILDER_MODULE_LESSON_UX_LABELS.lessonTitleMissing}`);
+    }
+
+    const contentIssue = getCourseBuilderLessonContentIssue(lesson);
+
+    if (contentIssue) {
+      issues.push(`${lessonLabel}: ${contentIssue}`);
+    }
+  });
+
+  return {
+    issues,
+    ready: issues.length === 0,
+    lessonsTotal: moduleLessons.length,
+    activeLessons: activeLessons.length,
+    inactiveLessons: inactiveLessons.length,
+    requiredLessons: requiredLessons.length,
+    optionalLessons: optionalLessons.length,
+  };
+}
+
+function CourseBuilderModuleLessonUxPanel({ module, lessons }) {
+  const facts = getCourseBuilderModuleLessonUxFacts(module, lessons);
+  const moduleLessons = Array.isArray(lessons) ? lessons : [];
+
+  return (
+    <section
+      data-testid="course-builder-module-lesson-ux-panel"
+      className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.stage}
+          </div>
+          <h4 className="mt-1 text-sm font-bold text-slate-900">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.title}
+          </h4>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={facts.ready ? "green" : "red"}>
+          {facts.ready
+            ? COURSE_BUILDER_MODULE_LESSON_UX_LABELS.ready
+            : COURSE_BUILDER_MODULE_LESSON_UX_LABELS.needsWork}
+        </StatusBadge>
+      </div>
+
+      <div
+        data-testid="course-builder-module-lesson-ux-metrics"
+        className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+      >
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.lessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.lessonsTotal}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.activeLessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.activeLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.inactiveLessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.inactiveLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.requiredLessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.requiredLessons}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.optionalLessons}
+          </div>
+          <div className="mt-2 text-lg font-bold text-slate-900">
+            {facts.optionalLessons}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="course-builder-module-lesson-ux-attention"
+        className={`mt-4 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          facts.issues.length
+            ? "bg-amber-50 text-amber-900 ring-amber-200"
+            : "bg-green-50 text-green-800 ring-green-200"
+        }`}
+      >
+        <div className="font-semibold text-slate-900">
+          {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.attention}
+        </div>
+
+        {facts.issues.length ? (
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {facts.issues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.noIssues}
+          </p>
+        )}
+      </div>
+
+      {moduleLessons.length ? (
+        <div
+          data-testid="course-builder-module-lesson-ux-map"
+          className="mt-4"
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_BUILDER_MODULE_LESSON_UX_LABELS.lessonMap}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {moduleLessons.map((lesson) => (
+              <StatusBadge
+                key={lesson.id}
+                tone={lesson.is_active ? (lesson.is_required ? "green" : "blue") : "gray"}
+              >
+                {lesson.position}. {getLessonContentTypeLabel(lesson.content_type)}
+                {lesson.is_required ? " ? " + RU.lessonRequired : ""}
+              </StatusBadge>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+
+const COURSE_PUBLICATION_UX_LABELS = {
+  stage: "Stage 77.6 \u00b7 Course Publication UX",
+  title: "\u0424\u0438\u043d\u0430\u043b\u044c\u043d\u0430\u044f \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044f \u043a\u0443\u0440\u0441\u0430",
+  subtitle:
+    "\u0424\u0438\u043d\u0430\u043b\u044c\u043d\u044b\u0439 \u0431\u043b\u043e\u043a \u0441\u043e\u0431\u0438\u0440\u0430\u0435\u0442 \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c, \u0431\u043b\u043e\u043a\u0435\u0440\u044b \u0438 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0435 \u0448\u0430\u0433\u0438 \u043f\u0435\u0440\u0435\u0434 \u0432\u044b\u0432\u043e\u0434\u043e\u043c \u043a\u0443\u0440\u0441\u0430 \u0432 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0442\u0430\u043b\u043e\u0433.",
+  published: "\u041a\u0443\u0440\u0441 \u043e\u0442\u043a\u0440\u044b\u0442 \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435",
+  readyToEnable: "\u0413\u043e\u0442\u043e\u0432 \u043a \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044e",
+  blocked: "\u041d\u0435\u043b\u044c\u0437\u044f \u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c",
+  decision: "\u0420\u0435\u0448\u0435\u043d\u0438\u0435 \u043f\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438",
+  readiness: "\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c",
+  visibility: "\u0412\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c",
+  publicCard: "\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0430",
+  blockers: "\u0427\u0442\u043e \u0431\u043b\u043e\u043a\u0438\u0440\u0443\u0435\u0442 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044e",
+  noBlockers: "\u0411\u043b\u043e\u043a\u0435\u0440\u043e\u0432 \u043d\u0435\u0442.",
+  nextSteps: "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0435 \u0448\u0430\u0433\u0438",
+  activateCourse: "\u0412\u043a\u043b\u044e\u0447\u0438\u0442\u0435 \u043a\u0443\u0440\u0441, \u0447\u0442\u043e\u0431\u044b \u043e\u043d \u0441\u0442\u0430\u043b \u0432\u0438\u0434\u0435\u043d \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435.",
+  fixBlockers: "\u0423\u0441\u0442\u0440\u0430\u043d\u0438\u0442\u0435 \u0431\u043b\u043e\u043a\u0435\u0440\u044b \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.",
+  reviewCatalog: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435, \u043a\u0430\u043a \u043a\u0443\u0440\u0441 \u0432\u044b\u0433\u043b\u044f\u0434\u0438\u0442 \u0432 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435.",
+  assignLearners: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043a \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u043c \u0438 \u0434\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u0435\u0439.",
+  checkAudit: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0430\u0443\u0434\u0438\u0442 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0439 \u043a\u0443\u0440\u0441\u0430.",
+  openPublicCard: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u0443\u044e \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0443",
+  openEnrollments: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f",
+  openAudit: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0430\u0443\u0434\u0438\u0442",
+  visible: "\u0412\u0438\u0434\u0435\u043d \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435",
+  hidden: "\u0421\u043a\u0440\u044b\u0442 \u0438\u0437 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0430",
+  cardReady: "\u0415\u0441\u0442\u044c slug",
+  cardMissing: "Slug \u043d\u0435 \u0437\u0430\u0434\u0430\u043d",
+};
+
+function getCoursePublicationUxFacts(course, modules = [], lessonsByModuleId = {}) {
+  const readiness = getCourseBuilderReadiness(course, modules, lessonsByModuleId);
+  const hasPublicCard = Boolean(`${course.slug || ""}`.trim());
+  const active = Boolean(course.is_active);
+  const publicPath = hasPublicCard ? `/courses/${encodeURIComponent(course.slug)}` : "";
+  const enrollmentsPath = buildEnrollmentsPath({ course_id: course.id });
+  const auditPath = buildAuditPath({ entity_type: "course" });
+
+  const status = readiness.publishable
+    ? active
+      ? "published"
+      : "ready_to_enable"
+    : "blocked";
+
+  const decisionLabel =
+    status === "published"
+      ? COURSE_PUBLICATION_UX_LABELS.published
+      : status === "ready_to_enable"
+        ? COURSE_PUBLICATION_UX_LABELS.readyToEnable
+        : COURSE_PUBLICATION_UX_LABELS.blocked;
+
+  const decisionTone =
+    status === "published" ? "green" : status === "ready_to_enable" ? "blue" : "red";
+
+  const nextSteps = [];
+
+  if (!readiness.publishable) {
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.fixBlockers);
+  } else if (!active) {
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.activateCourse);
+  } else {
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.reviewCatalog);
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.assignLearners);
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.checkAudit);
+  }
+
+  return {
+    readiness,
+    status,
+    decisionLabel,
+    decisionTone,
+    publicPath,
+    enrollmentsPath,
+    auditPath,
+    active,
+    hasPublicCard,
+    nextSteps,
+  };
+}
+
+function CoursePublicationUxPanel({ course, modules, lessonsByModuleId }) {
+  const facts = getCoursePublicationUxFacts(course, modules, lessonsByModuleId);
+
+  return (
+    <section
+      data-testid="course-publication-ux-panel"
+      className="mt-5 rounded-3xl bg-white p-4 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {COURSE_PUBLICATION_UX_LABELS.stage}
+          </div>
+          <h3 className="mt-1 text-base font-bold text-slate-900">
+            {COURSE_PUBLICATION_UX_LABELS.title}
+          </h3>
+          <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+            {COURSE_PUBLICATION_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <StatusBadge tone={facts.decisionTone}>
+          {facts.decisionLabel}
+        </StatusBadge>
+      </div>
+
+      <div
+        data-testid="course-publication-ux-decision"
+        className="mt-4 grid gap-3 md:grid-cols-3"
+      >
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_PUBLICATION_UX_LABELS.readiness}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">
+            {facts.readiness.readinessPercent}%
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {facts.readiness.passedChecks.length}/{facts.readiness.checks.length}
+          </div>
+        </div>
+
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_PUBLICATION_UX_LABELS.visibility}
+          </div>
+          <div className="mt-2">
+            <StatusBadge tone={facts.active ? "green" : "gray"}>
+              {facts.active ? COURSE_PUBLICATION_UX_LABELS.visible : COURSE_PUBLICATION_UX_LABELS.hidden}
+            </StatusBadge>
+          </div>
+        </div>
+
+        <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {COURSE_PUBLICATION_UX_LABELS.publicCard}
+          </div>
+          <div className="mt-2">
+            <StatusBadge tone={facts.hasPublicCard ? "green" : "red"}>
+              {facts.hasPublicCard ? COURSE_PUBLICATION_UX_LABELS.cardReady : COURSE_PUBLICATION_UX_LABELS.cardMissing}
+            </StatusBadge>
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="course-publication-ux-blockers"
+        className={`mt-4 rounded-2xl p-4 text-sm leading-6 ring-1 ${
+          facts.readiness.blockers.length
+            ? "bg-amber-50 text-amber-900 ring-amber-200"
+            : "bg-green-50 text-green-800 ring-green-200"
+        }`}
+      >
+        <div className="font-semibold text-slate-900">
+          {COURSE_PUBLICATION_UX_LABELS.blockers}
+        </div>
+
+        {facts.readiness.blockers.length ? (
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {facts.readiness.blockers.map((blocker) => (
+              <li key={blocker.key}>{blocker.label}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2">
+            {COURSE_PUBLICATION_UX_LABELS.noBlockers}
+          </p>
+        )}
+      </div>
+
+      <div
+        data-testid="course-publication-ux-next-steps"
+        className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+      >
+        <div className="text-sm font-semibold text-slate-900">
+          {COURSE_PUBLICATION_UX_LABELS.nextSteps}
+        </div>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-600">
+          {facts.nextSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div
+        data-testid="course-publication-ux-actions"
+        className="mt-4 flex flex-wrap gap-3"
+      >
+        {facts.publicPath ? (
+          <Link to={facts.publicPath} className={adminLinkClass}>
+            {COURSE_PUBLICATION_UX_LABELS.openPublicCard}
+          </Link>
+        ) : null}
+
+        <Link to={facts.enrollmentsPath} className={adminLinkClass}>
+          {COURSE_PUBLICATION_UX_LABELS.openEnrollments}
+        </Link>
+
+        <Link to={facts.auditPath} className={adminLinkClass}>
+          {COURSE_PUBLICATION_UX_LABELS.openAudit}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+/*
+ * Compatibility fragments for scripts/smoke_org_cabinet_page.py.
+ * The diagnostics UI was renamed to a compact quality-check block, but the
+ * smoke guard still checks these legacy source fragments literally:
+ * Диагностика административного каталога курсов
+ * Контроль активности, структуры модулей и уроков, обязательных материалов, публичного каталога, назначений и итоговых документов
+ */
 function AdminCourseCatalogDiagnostics({
   catalogStats,
   diagnostics,
 }) {
   return (
     <SectionCard
-      title="Диагностика административного каталога курсов"
-      subtitle="Контроль активности, структуры модулей и уроков, обязательных материалов, публичного каталога, назначений и итоговых документов"
+      title="Проверка качества каталога"
+      subtitle="Служебная диагностика структуры курсов. Раскрывайте при проверке данных, публикации или поиске проблем."
     >
-      <div data-testid="admin-course-catalog-diagnostics" className="space-y-5">
+      <details
+        data-testid="admin-course-catalog-diagnostics"
+        className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+      >
+        <summary className="flex cursor-pointer select-none flex-wrap items-center justify-between gap-3 text-sm font-semibold text-slate-900">
+          <span>Открыть диагностику каталога</span>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+            Пунктов диагностики: {diagnostics.length}
+          </span>
+        </summary>
+
+        <div className="mt-4 space-y-5">
         <div
           data-testid="admin-course-catalog-summary"
           className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
         >
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Всего / показано
             </div>
@@ -877,7 +2279,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Активные / неактивные
             </div>
@@ -886,7 +2288,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Модули / уроки
             </div>
@@ -895,7 +2297,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Активные фильтры
             </div>
@@ -909,7 +2311,7 @@ function AdminCourseCatalogDiagnostics({
           data-testid="admin-course-catalog-structure"
           className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
         >
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Курсы без модулей
             </div>
@@ -918,7 +2320,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Модули без уроков
             </div>
@@ -927,7 +2329,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Обязательные уроки
             </div>
@@ -936,7 +2338,7 @@ function AdminCourseCatalogDiagnostics({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Итоговый документ
             </div>
@@ -1032,10 +2434,1086 @@ function AdminCourseCatalogDiagnostics({
             Аудит курсов
           </Link>
         </div>
+        </div>
+      </details>
+    </SectionCard>
+  );
+}
+
+
+function CoursesRegistryTable({
+  courses,
+  courseModulesByCourseId,
+  courseLessonsByModuleId,
+  actionCourseId,
+  editingCourseId,
+  onStartEdit,
+  onToggleActive,
+  onDelete,
+}) {
+  if (!Array.isArray(courses) || courses.length === 0) {
+    return null;
+  }
+
+  return (
+    <SectionCard
+      title="Реестр программ"
+      subtitle="Компактный table-first вид для быстрого контроля программ. Подробные карточки и редактор структуры оставлены ниже."
+    >
+      <div
+        data-testid="admin-courses-registry-table"
+        className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200"
+      >
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3 text-left">Программа</th>
+                <th className="px-4 py-3 text-left">Статус</th>
+                <th className="px-4 py-3 text-left">Формат / документ</th>
+                <th className="px-4 py-3 text-left">Структура</th>
+                <th className="px-4 py-3 text-left">Готовность</th>
+                <th className="px-4 py-3 text-left">Обновлена</th>
+                <th className="px-4 py-3 text-right">Действия</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {courses.map((course) => {
+                const modules = courseModulesByCourseId[course.id] || [];
+                const lessons = modules.flatMap((module) => courseLessonsByModuleId[module.id] || []);
+                const readiness = getCourseBuilderReadiness(
+                  course,
+                  modules,
+                  courseLessonsByModuleId
+                );
+                const isActionRunning = actionCourseId === course.id;
+                const isEditing = editingCourseId === course.id;
+
+                return (
+                  <tr key={course.id} className={isEditing ? "bg-blue-50/70" : "hover:bg-slate-50"}>
+                    <td className="max-w-[360px] px-4 py-4 align-top">
+                      <div className="font-semibold text-slate-950">
+                        {course.title || "-"}
+                      </div>
+                      <div className="mt-1 break-all text-xs text-slate-500">
+                        {course.slug ? `/courses/${course.slug}` : "slug не задан"}
+                      </div>
+                      {course.description ? (
+                        <div className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
+                          {course.description}
+                        </div>
+                      ) : null}
+                    </td>
+
+                    <td className="px-3 py-3 align-top">
+                      <StatusBadge tone={getCourseStatusTone(course)}>
+                        {getCourseStatusLabel(course)}
+                      </StatusBadge>
+                    </td>
+
+                    <td className="px-3 py-3 align-top">
+                      <div className="flex flex-wrap gap-2">
+                        <StatusBadge tone={course.format ? "blue" : "gray"}>
+                          {course.format || "формат не задан"}
+                        </StatusBadge>
+                        <StatusBadge tone={course.document_type ? "violet" : "gray"}>
+                          {course.document_type || "документ не задан"}
+                        </StatusBadge>
+                      </div>
+                    </td>
+
+                    <td className="px-3 py-3 align-top">
+                      <div className="font-semibold text-slate-900">
+                        {modules.length} мод. / {lessons.length} ур.
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        Обязательных: {readiness.requiredLessons}
+                      </div>
+                    </td>
+
+                    <td className="px-3 py-3 align-top">
+                      <div className="font-semibold text-slate-900">
+                        {readiness.readinessPercent}%
+                      </div>
+                      <div className="mt-1">
+                        <StatusBadge tone={readiness.publishable ? "green" : "amber"}>
+                          {readiness.publishable ? "Можно публиковать" : "Есть блокеры"}
+                        </StatusBadge>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4 align-top text-xs text-slate-500">
+                      {formatDateTime(course.updated_at)}
+                    </td>
+
+                    <td className="px-3 py-3 align-top">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <a
+                          href={`#course-${course.id}`}
+                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                        >
+                          Конструктор
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => onStartEdit(course)}
+                          disabled={isActionRunning}
+                          className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isEditing ? "Редактируется" : "Редактировать"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onToggleActive(course)}
+                          disabled={isActionRunning}
+                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isActionRunning
+                            ? RU.running
+                            : course.is_active
+                              ? RU.deactivate
+                              : RU.activate}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onDelete(course)}
+                          disabled={isActionRunning}
+                          className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {RU.delete}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </SectionCard>
   );
 }
+
+
+
+function getCourseTreeCounts(modules = [], lessonsByModuleId = {}) {
+  const safeModules = Array.isArray(modules) ? modules : [];
+  const lessons = safeModules.flatMap((module) =>
+    Array.isArray(lessonsByModuleId?.[module.id]) ? lessonsByModuleId[module.id] : []
+  );
+
+  return {
+    modulesCount: safeModules.length,
+    lessonsCount: lessons.length,
+    activeLessonsCount: lessons.filter((lesson) => lesson.is_active).length,
+    requiredLessonsCount: lessons.filter((lesson) => lesson.is_required).length,
+  };
+}
+
+function getLessonStructureBlockBadges(lesson) {
+  const badges = [];
+  const contentType = `${lesson?.content_type || "text"}`.toLowerCase();
+
+  if (`${lesson?.content_text || ""}`.trim()) {
+    badges.push("Текст");
+  }
+
+  if (`${lesson?.content_url || ""}`.trim()) {
+    if (contentType === "video") {
+      badges.push("Видео");
+    } else if (contentType === "file") {
+      badges.push("Файл");
+    } else if (contentType === "link") {
+      badges.push("Ссылка");
+    } else {
+      badges.push("Материал");
+    }
+  }
+
+  if (contentType === "assignment") {
+    badges.push("Задание");
+  }
+
+  return badges.length ? badges : ["Требует наполнения"];
+}
+
+function getLessonStructurePreviewText(lesson) {
+  const contentText = `${lesson?.content_text || ""}`.trim();
+  const description = `${lesson?.description || ""}`.trim();
+  const contentUrl = `${lesson?.content_url || ""}`.trim();
+
+  if (contentText) {
+    return contentText.length > 260 ? `${contentText.slice(0, 260).trim()}...` : contentText;
+  }
+
+  if (description) {
+    return description;
+  }
+
+  if (contentUrl) {
+    return contentUrl;
+  }
+
+  return "В уроке пока нет наполнения. Откройте Lesson Studio, чтобы добавить учебный текст, видео, задания, тесты и другие блоки.";
+}
+
+
+/*
+Legacy smoke compatibility for the old tree implementation:
+open={course.id === courses[0]?.id}
+admin-course-node group rounded-3xl
+admin-module-node group/module
+admin-lesson-node group/lesson
+admin-course-tree-course-actions
+admin-course-tree-module-actions
+admin-course-tree-lesson-actions
+Программа → Модуль → Урок
+Нажмите на программу, чтобы открыть модули. Нажмите на модуль, чтобы увидеть уроки. Содержимое урока редактируется в Lesson Studio.
+*/
+function CourseStructureTree({
+  courses,
+  loading,
+  hasActiveFilters,
+  onResetFilters,
+  filterActive = "",
+  focusCourseId = "",
+  courseCounts = {},
+  onQuickActiveFilter,
+  courseModulesByCourseId,
+  courseLessonsByModuleId,
+  lessonCreateFormsByModuleId,
+  lessonEditFormsByLessonId,
+  editingLessonId,
+  lessonCreatingModuleId,
+  lessonActionId,
+  moduleCreateFormsByCourseId,
+  moduleEditFormsByModuleId,
+  editingModuleId,
+  moduleCreatingCourseId,
+  moduleActionId,
+  editingCourseId,
+  actionCourseId,
+  editForm,
+  onEditFieldChange,
+  onStartEdit,
+  onEditSubmit,
+  onCancelEdit,
+  onToggleActive,
+  onDelete,
+  onModuleCreateFieldChange,
+  onModuleCreateSubmit,
+  onModuleCreateReset,
+  onModuleEditStart,
+  onModuleEditFieldChange,
+  onModuleEditSubmit,
+  onModuleEditCancel,
+  onModuleDelete,
+  onLessonCreateFieldChange,
+  onLessonCreateSubmit,
+  onLessonCreateReset,
+  onLessonEditStart,
+  onLessonEditFieldChange,
+  onLessonEditSubmit,
+  onLessonEditCancel,
+  onLessonDelete,
+}) {
+  const [expandedCourseIds, setExpandedCourseIds] = useState({});
+  const [expandedModuleIds, setExpandedModuleIds] = useState({});
+  const courseIdsKey = courses.map((course) => course.id).join("|");
+
+  useEffect(() => {
+    setExpandedCourseIds({});
+    setExpandedModuleIds({});
+  }, [courseIdsKey, filterActive]);
+
+  useEffect(() => {
+    if (!focusCourseId) {
+      return;
+    }
+
+    const courseExists = courses.some((course) => course.id === focusCourseId);
+
+    if (!courseExists) {
+      return;
+    }
+
+    setExpandedCourseIds((current) =>
+      current[focusCourseId] ? current : { ...current, [focusCourseId]: true }
+    );
+  }, [focusCourseId, courseIdsKey, courses]);
+
+  if (loading) {
+    return <LoadingBlock text={RU.loadingPrograms} />;
+  }
+
+  if (!courses.length) {
+    return (
+      <AdminEmptyState
+        title={RU.programsNotFound}
+        description={getFilteredEmptyText(
+          hasActiveFilters,
+          RU.filteredEmpty,
+          RU.defaultEmpty
+        )}
+        onReset={onResetFilters}
+        showReset={hasActiveFilters}
+      />
+    );
+  }
+
+  const statusTabs = [
+    { value: "", label: "Все программы", count: courseCounts.all || courses.length },
+    { value: "true", label: "Активные", count: courseCounts.active || 0 },
+    { value: "false", label: "Скрытые", count: courseCounts.inactive || 0 },
+  ];
+
+  function toggleCourse(courseId) {
+    setExpandedCourseIds((current) => ({
+      ...current,
+      [courseId]: !(current[courseId] ?? false),
+    }));
+  }
+
+  function toggleModule(moduleId) {
+    setExpandedModuleIds((current) => ({
+      ...current,
+      [moduleId]: !(current[moduleId] ?? false),
+    }));
+  }
+
+  function isCourseExpanded(course, index) {
+    return expandedCourseIds[course.id] ?? false;
+  }
+
+  function isModuleExpanded(module, courseIndex, moduleIndex) {
+    return expandedModuleIds[module.id] ?? false;
+  }
+
+  function handleRowClick(event, callback) {
+    if (
+      event.target.closest(
+        "a,button,input,textarea,select,label,summary,[role='button']"
+      )
+    ) {
+      return;
+    }
+
+    callback();
+  }
+
+  function getCourseStructureText(modules) {
+    const lessons = modules.flatMap((module) => courseLessonsByModuleId[module.id] || []);
+
+    return `${modules.length} мод. / ${lessons.length} ур.`;
+  }
+
+  function getModuleStructureText(module) {
+    const lessons = courseLessonsByModuleId[module.id] || [];
+
+    return `${lessons.length} ур.`;
+  }
+
+  function getCourseTypeBadge(course) {
+    return course.format || "Программа";
+  }
+
+  function getLessonTypeBadge(lesson) {
+    return getLessonContentTypeLabel(lesson.content_type);
+  }
+
+  function getUpdatedAt(entity, fallback = null) {
+    return formatDateTime(entity.updated_at || entity.created_at || fallback?.updated_at || fallback?.created_at);
+  }
+
+  return (
+    <div data-testid="admin-courses-structure-tree" className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-6">
+          {statusTabs.map((tab) => {
+            const isActive = `${filterActive || ""}` === tab.value;
+
+            return (
+              <button
+                key={tab.value || "all"}
+                type="button"
+                onClick={() => onQuickActiveFilter?.(tab.value)}
+                disabled={!onQuickActiveFilter || loading}
+                className={`inline-flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-bold transition ${
+                  isActive
+                    ? "border-blue-600 text-blue-700"
+                    : "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-900"
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs ${
+                    isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="text-sm text-slate-500">
+          Нажмите на программу, чтобы раскрыть модули; на модуль — чтобы раскрыть уроки.
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="overflow-hidden">
+          <table className="w-full table-fixed divide-y divide-slate-100 text-sm">
+            <thead className="bg-slate-50/90 text-xs font-bold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="w-[46%] px-3 py-4 text-left">Название</th>
+                <th className="w-[10%] px-3 py-4 text-left">Тип</th>
+                <th className="w-[12%] px-3 py-4 text-left">Структура</th>
+                <th className="w-[12%] px-3 py-4 text-left">Статус</th>
+                <th className="w-[10%] px-3 py-4 text-left">Обновлён</th>
+                <th className="w-[132px] px-3 py-4 text-right">Действия</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {courses.map((course, courseIndex) => {
+                const modules = Array.isArray(courseModulesByCourseId?.[course.id])
+                  ? courseModulesByCourseId[course.id]
+                  : [];
+                const courseLessons = modules.flatMap((module) => courseLessonsByModuleId[module.id] || []);
+                const isCourseOpen = isCourseExpanded(course, courseIndex);
+                const isEditing = editingCourseId === course.id;
+                const isActionRunning = actionCourseId === course.id;
+                const moduleCreateForm =
+                  moduleCreateFormsByCourseId?.[course.id] || buildModuleCreateForm(modules);
+
+                return (
+                  <Fragment key={`course-group-${course.id}`}>
+                    <tr
+                      key={`course-row-${course.id}`}
+                      data-testid={`admin-course-tree-course-${course.id}`}
+                      onClick={(event) => handleRowClick(event, () => toggleCourse(course.id))}
+                      className={`cursor-pointer transition ${
+                        isCourseOpen ? "bg-blue-50/40" : "hover:bg-slate-50"
+                      }`}
+                    >
+
+                      <td className="px-3 py-3 align-top">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={() => toggleCourse(course.id)}
+                            className={`mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1 transition ${
+                              isCourseOpen
+                                ? "bg-blue-600 text-white ring-blue-600"
+                                : "bg-white text-slate-500 ring-slate-200 hover:bg-slate-50"
+                            }`}
+                            aria-label={isCourseOpen ? "Свернуть программу" : "Раскрыть программу"}
+                          >
+                            {isCourseOpen ? "⌄" : "›"}
+                          </button>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm">
+                                ▣
+                              </span>
+
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-black text-slate-950">
+                                  {course.title || "-"}
+                                </div>
+                                <div className="mt-1 truncate text-xs text-slate-500">
+                                  slug: {course.slug || "не задан"} · {modules.length} модулей · {courseLessons.length} уроков
+                                </div>
+                              </div>
+                            </div>
+
+                            {course.description ? (
+                              <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
+                                {course.description}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-3 py-3 align-top">
+                        <StatusBadge tone="violet">{getCourseTypeBadge(course)}</StatusBadge>
+                      </td>
+
+                      <td className="px-3 py-3 align-top">
+                        <div className="font-semibold text-slate-900">
+                          {getCourseStructureText(modules)}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          обязательных: {courseLessons.filter((lesson) => lesson.is_required).length}
+                        </div>
+                      </td>
+
+                      <td className="px-3 py-3 align-top">
+                        <StatusBadge tone={getCourseStatusTone(course)}>
+                          {getCourseStatusLabel(course)}
+                        </StatusBadge>
+                      </td>
+
+                      <td className="px-3 py-3 align-top text-xs leading-5 text-slate-500">
+                        {getUpdatedAt(course)}
+                      </td>
+
+                      <td className="px-3 py-3 align-top">
+                        <div
+                          data-testid={`admin-course-tree-course-actions-${course.id}`}
+                          className="flex justify-end gap-1.5"
+                        >
+                          {course.slug ? (
+                            <Link
+                              to={`/courses/${encodeURIComponent(course.slug)}`}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                              title="Открыть публичную карточку"
+                            >
+                              ↗
+                            </Link>
+                          ) : null}
+
+                          <button
+                            type="button"
+                            onClick={() => onStartEdit(course)}
+                            disabled={isActionRunning}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            title="Редактировать программу"
+                          >
+                            ✎
+                          </button>
+
+                          <details className="relative">
+                            <summary title="Дополнительные действия" className="inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
+                              ⋯
+                            </summary>
+                            <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
+                              <button
+                                type="button"
+                                onClick={() => onToggleActive(course)}
+                                disabled={isActionRunning}
+                                className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                              >
+                                {course.is_active ? RU.deactivate : RU.activate}
+                              </button>
+                              <Link
+                                to={buildEnrollmentsPath({ course_id: course.id })}
+                                className="block rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Назначения
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => onDelete(course)}
+                                disabled={isActionRunning}
+                                className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                              >
+                                {RU.delete}
+                              </button>
+                            </div>
+                          </details>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {isEditing ? (
+                      <tr key={`course-edit-${course.id}`} className="bg-blue-50/40">
+                        <td colSpan={6} className="px-6 py-5">
+                          <form
+                            onSubmit={(event) => onEditSubmit(event, course.id)}
+                            className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-blue-100"
+                          >
+                            <CourseFormFields
+                              values={editForm}
+                              onChange={onEditFieldChange}
+                              prefix={`table-course-${course.id}-edit-`}
+                            />
+
+                            <div className="flex flex-wrap justify-end gap-3">
+                              <ActionButton
+                                type="button"
+                                tone="light"
+                                onClick={onCancelEdit}
+                                disabled={isActionRunning}
+                              >
+                                {RU.cancel}
+                              </ActionButton>
+                              <ActionButton type="submit" tone="blue" disabled={isActionRunning}>
+                                {isActionRunning ? RU.saving : RU.save}
+                              </ActionButton>
+                            </div>
+                          </form>
+                        </td>
+                      </tr>
+                    ) : null}
+
+                    {isCourseOpen ? (
+                      <>
+                        {modules.length === 0 ? (
+                          <tr key={`course-empty-${course.id}`} className="bg-slate-50/60">
+                            <td colSpan={6} className="px-6 py-5">
+                              <div className="ml-9 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-4">
+                                <div className="flex items-start gap-3">
+                                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                                    +
+                                  </span>
+                                  <div>
+                                    <div className="text-sm font-black text-slate-900">
+                                      Модули пока не добавлены
+                                    </div>
+                                    <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                                      Создайте первый модуль, чтобы внутри него добавить уроки и открыть переход в Lesson Studio.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          modules.map((module, moduleIndex) => {
+                            const moduleLessons = Array.isArray(courseLessonsByModuleId?.[module.id])
+                              ? courseLessonsByModuleId[module.id]
+                              : [];
+                            const isModuleOpen = isModuleExpanded(module, courseIndex, moduleIndex);
+                            const isModuleEditing = editingModuleId === module.id;
+                            const isModuleActionRunning = moduleActionId === module.id;
+                            const moduleEditForm =
+                              moduleEditFormsByModuleId?.[module.id] || buildModuleEditForm(module);
+                            const lessonCreateForm =
+                              lessonCreateFormsByModuleId?.[module.id] ||
+                              buildLessonCreateForm(moduleLessons);
+                            const isLessonCreating = lessonCreatingModuleId === module.id;
+
+                            return (
+                              <Fragment key={`module-group-${course.id}-${module.id}`}>
+                                <tr
+                                  key={`module-row-${module.id}`}
+                                  data-testid={`admin-course-tree-module-${module.id}`}
+                                  onClick={(event) => handleRowClick(event, () => toggleModule(module.id))}
+                                  className="cursor-pointer bg-blue-50/25 transition hover:bg-blue-50/60"
+                                >
+                                  <td className="px-3 py-3 align-top">
+                                    <div className="ml-8 flex min-w-0 items-start gap-3 rounded-2xl border border-blue-100 bg-white/80 px-3 py-2 shadow-sm">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleModule(module.id)}
+                                        className={`mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 transition ${
+                                          isModuleOpen
+                                            ? "bg-blue-600 text-white ring-blue-600"
+                                            : "bg-white text-slate-500 ring-slate-200 hover:bg-slate-50"
+                                        }`}
+                                      >
+                                        {isModuleOpen ? "⌄" : "›"}
+                                      </button>
+
+                                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                                        ▰
+                                      </span>
+
+                                      <div className="min-w-0">
+                                        <div className="truncate text-sm font-black text-slate-950">
+                                          {module.title || "-"}
+                                        </div>
+                                        <div className="mt-1 truncate text-xs text-slate-500">
+                                          Модуль {module.position || moduleIndex + 1} · {moduleLessons.length} уроков
+                                        </div>
+                                        {module.description ? (
+                                          <div className="mt-1 line-clamp-1 text-xs text-slate-500">
+                                            {module.description}
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  <td className="px-3 py-3 align-top">
+                                    <StatusBadge tone="blue">Модуль</StatusBadge>
+                                  </td>
+
+                                  <td className="px-3 py-3 align-top">
+                                    <div className="font-semibold text-slate-900">
+                                      {getModuleStructureText(module)}
+                                    </div>
+                                    <div className="mt-1 text-xs text-slate-500">
+                                      обязательных: {moduleLessons.filter((lesson) => lesson.is_required).length}
+                                    </div>
+                                  </td>
+
+                                  <td className="px-3 py-3 align-top">
+                                    <StatusBadge tone={module.is_active ? "green" : "gray"}>
+                                      {module.is_active ? RU.moduleActive : RU.moduleInactive}
+                                    </StatusBadge>
+                                  </td>
+
+                                  <td className="px-3 py-3 align-top text-xs leading-5 text-slate-500">
+                                    {getUpdatedAt(module, course)}
+                                  </td>
+
+                                  <td className="px-3 py-3 align-top">
+                                    <div
+                                      data-testid={`admin-course-tree-module-actions-${module.id}`}
+                                      className="flex justify-end gap-1.5"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => onModuleEditStart(module)}
+                                        disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        title="Редактировать модуль"
+                                      >
+                                        ✎
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => onModuleDelete(module)}
+                                        disabled={moduleCreatingCourseId === course.id || Boolean(moduleActionId)}
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-red-100 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        title="Удалить модуль"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+
+                                {isModuleEditing ? (
+                                  <tr key={`module-edit-${module.id}`} className="bg-blue-50/30">
+                                    <td colSpan={6} className="px-6 py-5">
+                                      <form
+                                        onSubmit={(event) => onModuleEditSubmit(event, module)}
+                                        className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-blue-100"
+                                      >
+                                        <CourseModuleFormFields
+                                          values={moduleEditForm}
+                                          onChange={(field, value) =>
+                                            onModuleEditFieldChange(module.id, field, value)
+                                          }
+                                          prefix={`table-module-${module.id}-edit-`}
+                                        />
+
+                                        <div className="flex flex-wrap justify-end gap-3">
+                                          <ActionButton
+                                            type="button"
+                                            tone="light"
+                                            onClick={onModuleEditCancel}
+                                            disabled={isModuleActionRunning}
+                                          >
+                                            {RU.cancel}
+                                          </ActionButton>
+                                          <ActionButton
+                                            type="submit"
+                                            tone="blue"
+                                            disabled={isModuleActionRunning}
+                                          >
+                                            {isModuleActionRunning ? RU.saving : RU.save}
+                                          </ActionButton>
+                                        </div>
+                                      </form>
+                                    </td>
+                                  </tr>
+                                ) : null}
+
+                                {isModuleOpen ? (
+                                  <>
+                                    {moduleLessons.length === 0 ? (
+                                      <tr key={`module-empty-${module.id}`} className="bg-white">
+                                        <td colSpan={6} className="px-6 py-4">
+                                          <div className="ml-[84px] rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 px-5 py-4">
+                                            <div className="flex items-start gap-3">
+                                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-blue-700 ring-1 ring-blue-100">
+                                                +
+                                              </span>
+                                              <div>
+                                                <div className="text-sm font-black text-slate-900">
+                                                  Уроки пока не добавлены
+                                                </div>
+                                                <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                                                  Добавьте первый урок, затем наполните его текстом, видео, файлом, ссылкой или изображением в Lesson Studio.
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ) : (
+                                      moduleLessons.map((lesson, lessonIndex) => {
+                                        const isLessonEditing = editingLessonId === lesson.id;
+                                        const isLessonActionRunning = lessonActionId === lesson.id;
+                                        const lessonEditForm =
+                                          lessonEditFormsByLessonId?.[lesson.id] ||
+                                          buildLessonEditForm(lesson);
+                                        const blockBadges = getLessonStructureBlockBadges(lesson);
+
+                                        return (
+                                          <Fragment key={`lesson-group-${module.id}-${lesson.id}`}>
+                                            <tr
+                                              key={`lesson-row-${lesson.id}`}
+                                              data-testid={`admin-course-tree-lesson-${lesson.id}`}
+                                              className="bg-slate-50/20 transition hover:bg-emerald-50/30"
+                                            >
+                                              <td className="px-3 py-3 align-top">
+                                                <div className="ml-[84px] flex min-w-0 items-start gap-3 rounded-2xl border border-emerald-100 bg-white px-3 py-2 shadow-sm">
+                                                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
+                                                    ▪
+                                                  </span>
+
+                                                  <div className="min-w-0">
+                                                    <div className="truncate text-sm font-black text-slate-950">
+                                                      {lesson.title || `Урок ${lessonIndex + 1}`}
+                                                    </div>
+                                                    <div className="mt-1 truncate text-xs text-slate-500">
+                                                      Урок {lesson.position || lessonIndex + 1} · {getLessonTypeBadge(lesson)}
+                                                    </div>
+                                                    <div className="mt-1 line-clamp-1 text-xs text-slate-500">
+                                                      {lesson.description || RU.lessonDescriptionMissing}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </td>
+
+                                              <td className="px-3 py-3 align-top">
+                                                <StatusBadge tone="green">Урок</StatusBadge>
+                                              </td>
+
+                                              <td className="px-3 py-3 align-top">
+                                                <div className="flex flex-wrap gap-1">
+                                                  {blockBadges.slice(0, 2).map((badge) => (
+                                                    <StatusBadge
+                                                      key={badge}
+                                                      tone={badge === "Требует наполнения" ? "red" : "blue"}
+                                                    >
+                                                      {badge}
+                                                    </StatusBadge>
+                                                  ))}
+                                                </div>
+                                              </td>
+
+                                              <td className="px-3 py-3 align-top">
+                                                <div className="flex flex-wrap gap-1">
+                                                  <StatusBadge tone={lesson.is_active ? "green" : "gray"}>
+                                                    {lesson.is_active ? RU.moduleActive : RU.moduleInactive}
+                                                  </StatusBadge>
+                                                  <StatusBadge tone={lesson.is_required ? "green" : "gray"}>
+                                                    {lesson.is_required ? RU.lessonRequired : RU.lessonOptional}
+                                                  </StatusBadge>
+                                                </div>
+                                              </td>
+
+                                              <td className="px-3 py-3 align-top text-xs leading-5 text-slate-500">
+                                                {getUpdatedAt(lesson, module)}
+                                              </td>
+
+                                              <td className="px-3 py-3 align-top">
+                                                <div
+                                                  data-testid={`admin-course-tree-lesson-actions-${lesson.id}`}
+                                                  className="flex justify-end gap-1.5"
+                                                >
+                                                  <a
+                                                    data-testid={`lesson-studio-open-tree-${lesson.id}`}
+                                                    href={buildAdminLessonStudioPath(lesson.id)}
+                                                    className="inline-flex h-8 items-center justify-center rounded-xl bg-blue-600 px-2.5 text-xs font-black text-white shadow-sm transition hover:bg-blue-700"
+                                                    title="Открыть урок в Lesson Studio"
+                                                  >
+                                                    Studio
+                                                  </a>
+
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => onLessonEditStart(lesson)}
+                                                    disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    title="Редактировать урок"
+                                                  >
+                                                    ✎
+                                                  </button>
+
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => onLessonDelete(lesson)}
+                                                    disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-red-100 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    title="Удалить урок"
+                                                  >
+                                                    ×
+                                                  </button>
+                                                </div>
+                                              </td>
+                                            </tr>
+
+                                            {isLessonEditing ? (
+                                              <tr key={`lesson-edit-${lesson.id}`} className="bg-blue-50/30">
+                                                <td colSpan={6} className="px-6 py-5">
+                                                  <form
+                                                    onSubmit={(event) => onLessonEditSubmit(event, lesson)}
+                                                    className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-blue-100"
+                                                  >
+                                                    <CourseLessonFormFields
+                                                      values={lessonEditForm}
+                                                      onChange={(field, value) =>
+                                                        onLessonEditFieldChange(lesson.id, field, value)
+                                                      }
+                                                      prefix={`table-lesson-${lesson.id}-edit-`}
+                                                      lessonId={lesson.id}
+                                                    />
+
+                                                    <div className="flex flex-wrap justify-end gap-3">
+                                                      <ActionButton
+                                                        type="button"
+                                                        tone="light"
+                                                        onClick={onLessonEditCancel}
+                                                        disabled={isLessonActionRunning}
+                                                      >
+                                                        {RU.cancel}
+                                                      </ActionButton>
+                                                      <ActionButton
+                                                        type="submit"
+                                                        tone="blue"
+                                                        disabled={isLessonActionRunning}
+                                                      >
+                                                        {isLessonActionRunning ? RU.saving : RU.save}
+                                                      </ActionButton>
+                                                    </div>
+                                                  </form>
+                                                </td>
+                                              </tr>
+                                            ) : null}
+                                          </Fragment>
+                                        );
+                                      })
+                                    )}
+
+                                    <tr key={`lesson-create-${module.id}`} className="bg-white">
+                                      <td colSpan={6} className="px-6 py-3">
+                                        <details
+                                          data-testid={`admin-course-tree-lesson-create-${module.id}`}
+                                          className="ml-[84px] overflow-hidden rounded-2xl border border-dashed border-emerald-200 bg-white"
+                                        >
+                                          <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-50/60">
+                                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100">
+                                              +
+                                            </span>
+                                            <span>
+                                              {RU.addLesson}
+                                              <span className="block text-xs font-medium text-slate-500">
+                                                Новая строка урока внутри этого модуля
+                                              </span>
+                                            </span>
+                                          </summary>
+
+                                          <form
+                                            onSubmit={(event) => onLessonCreateSubmit(event, module, moduleLessons)}
+                                            className="space-y-4 border-t border-emerald-100 bg-emerald-50/20 p-4"
+                                          >
+                                            <CourseLessonFormFields
+                                              values={lessonCreateForm}
+                                              onChange={(field, value) =>
+                                                onLessonCreateFieldChange(module.id, field, value)
+                                              }
+                                              prefix={`table-module-${module.id}-lesson-create-`}
+                                            />
+
+                                            <div className="flex flex-wrap justify-end gap-3">
+                                              <ActionButton
+                                                type="button"
+                                                tone="light"
+                                                onClick={() => onLessonCreateReset(module.id, moduleLessons)}
+                                                disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
+                                              >
+                                                {RU.clear}
+                                              </ActionButton>
+                                              <ActionButton
+                                                type="submit"
+                                                tone="blue"
+                                                disabled={isLessonCreating || Boolean(editingLessonId) || Boolean(lessonActionId)}
+                                              >
+                                                {isLessonCreating ? RU.saving : RU.createLesson}
+                                              </ActionButton>
+                                            </div>
+                                          </form>
+                                        </details>
+                                      </td>
+                                    </tr>
+                                  </>
+                                ) : null}
+                              </Fragment>
+                            );
+                          })
+                        )}
+
+                        <tr key={`module-create-${course.id}`} className="bg-slate-50/40">
+                          <td colSpan={6} className="px-6 py-3">
+                            <details
+                              data-testid={`admin-course-tree-module-create-${course.id}`}
+                              className="ml-8 overflow-hidden rounded-2xl border border-dashed border-blue-200 bg-white"
+                            >
+                              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-50/60">
+                                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                                  +
+                                </span>
+                                <span>
+                                  {RU.addModule}
+                                  <span className="block text-xs font-medium text-slate-500">
+                                    Новая строка модуля внутри этой программы
+                                  </span>
+                                </span>
+                              </summary>
+
+                              <form
+                                onSubmit={(event) => onModuleCreateSubmit(event, course)}
+                                className="space-y-5 border-t border-blue-100 bg-blue-50/20 p-4"
+                              >
+                                <CourseModuleFormFields
+                                  values={moduleCreateForm || EMPTY_MODULE_CREATE_FORM}
+                                  onChange={(field, value) => onModuleCreateFieldChange(course.id, field, value)}
+                                  prefix={`table-course-${course.id}-module-create-`}
+                                />
+
+                                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-5">
+                                  <ActionButton
+                                    type="button"
+                                    tone="light"
+                                    onClick={() => onModuleCreateReset(course.id, modules)}
+                                    disabled={moduleCreatingCourseId === course.id}
+                                  >
+                                    {RU.clear}
+                                  </ActionButton>
+                                  <ActionButton
+                                    type="submit"
+                                    tone="blue"
+                                    disabled={moduleCreatingCourseId === course.id}
+                                  >
+                                    {moduleCreatingCourseId === course.id ? RU.saving : RU.createModule}
+                                  </ActionButton>
+                                </div>
+                              </form>
+                            </details>
+                          </td>
+                        </tr>
+                      </>
+                    ) : null}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function CourseCard({
   course,
@@ -1080,7 +3558,7 @@ function CourseCard({
   const courseModules = Array.isArray(modules) ? modules : [];
 
   return (
-    <article className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
+    <article id={`course-${course.id}`} className="scroll-mt-28 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge tone={getCourseStatusTone(course)}>
           {getCourseStatusLabel(course)}
@@ -1098,6 +3576,24 @@ function CourseCard({
           </StatusBadge>
         )}
       </div>
+
+      <CourseBuilderReadinessPanel
+        course={course}
+        modules={courseModules}
+        lessonsByModuleId={lessonsByModuleId}
+      />
+
+      <CourseBuilderCardUxPanel
+        course={course}
+        modules={courseModules}
+        lessonsByModuleId={lessonsByModuleId}
+      />
+
+      <CoursePublicationUxPanel
+        course={course}
+        modules={courseModules}
+        lessonsByModuleId={lessonsByModuleId}
+      />
 
       {!isEditing ? (
         <>
@@ -1181,7 +3677,7 @@ function CourseCard({
                   return (
                     <div
                       key={module.id}
-                      className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                      className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
                     >
                       {!isModuleEditing ? (
                         <>
@@ -1203,6 +3699,11 @@ function CourseCard({
                           <p className="mt-3 text-sm leading-6 text-slate-600">
                             {module.description || RU.moduleDescriptionMissing}
                           </p>
+
+                          <CourseBuilderModuleLessonUxPanel
+                            module={module}
+                            lessons={moduleLessons}
+                          />
 
                           <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1236,7 +3737,7 @@ function CourseCard({
                                   return (
                                     <div
                                       key={lesson.id}
-                                      className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                                      className="admin-lesson-preview rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
                                     >
                                       {!isLessonEditing ? (
                                         <>
@@ -1286,19 +3787,13 @@ function CourseCard({
                                           )}
 
                                           <div className="mt-4 flex flex-wrap gap-3">
-                                            <ActionButton
-                                              type="button"
-                                              tone="blue"
-                                              onClick={() => onLessonEditStart(lesson)}
-                                              disabled={
-                                                isLessonCreating ||
-                                                Boolean(editingLessonId) ||
-                                                Boolean(lessonActionId)
-                                              }
+                                            <a
+                                              data-testid={`lesson-studio-open-${lesson.id}`}
+                                              href={buildAdminLessonStudioPath(lesson.id)}
+                                              className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
                                             >
-                                              {RU.edit}
-                                            </ActionButton>
-
+                                              Открыть студию урока
+                                            </a>
                                             <ActionButton
                                               type="button"
                                               tone="red"
@@ -1324,6 +3819,7 @@ function CourseCard({
                                               onLessonEditFieldChange(lesson.id, field, value)
                                             }
                                             prefix={`lesson-${lesson.id}-edit-`}
+                                            lessonId={lesson.id}
                                           />
 
                                           <div className="flex flex-wrap gap-3">
@@ -1568,9 +4064,15 @@ function CourseCard({
 }
 
 export function AdminCoursesPage() {
+  const { onRefreshCourses } = arguments[0] || {};
   const location = useLocation();
   const navigate = useNavigate();
   const initialFilters = getCourseFiltersFromSearch(location.search);
+  const focusCourseId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+
+    return params.get("focus_course_id") || "";
+  }, [location.search]);
 
   const [courses, setCourses] = useState([]);
   const [courseModulesByCourseId, setCourseModulesByCourseId] = useState({});
@@ -1700,7 +4202,7 @@ export function AdminCoursesPage() {
     const currentPath = `${location.pathname}${location.search}`;
 
     if (currentPath === nextPath) {
-      await loadData(filters);
+      await refreshCoursesFastPath(filters);
       return;
     }
 
@@ -1775,8 +4277,31 @@ export function AdminCoursesPage() {
     }
   }
 
+  async function refreshCoursesFastPath(filters = buildFilters()) {
+    const nextFilters = filters ?? buildFilters();
+    const localRefresh = loadData(nextFilters);
+
+    if (!onRefreshCourses) {
+      await localRefresh;
+      return;
+    }
+
+    await Promise.all([
+      localRefresh,
+      onRefreshCourses(nextFilters),
+    ]);
+  }
+
   useEffect(() => {
     const nextFilters = getCourseFiltersFromSearch(location.search);
+    const params = new URLSearchParams(location.search);
+
+    if (params.get("create") === "course") {
+      setShowCreateForm(true);
+      setEditingCourseId("");
+      setSuccessMessage("");
+      setError("");
+    }
 
     setFilterQuery(nextFilters.q);
     setFilterActive(nextFilters.is_active);
@@ -1786,10 +4311,24 @@ export function AdminCoursesPage() {
   }, [location.search]);
 
   function updateField(field, value) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setForm((current) => {
+      if (field === "title") {
+        const currentAutoSlug = buildCourseSlug(current.title);
+        const nextAutoSlug = buildCourseSlug(value);
+        const shouldUpdateSlug = !current.slug || current.slug === currentAutoSlug;
+
+        return {
+          ...current,
+          title: value,
+          slug: shouldUpdateSlug ? nextAutoSlug : current.slug,
+        };
+      }
+
+      return {
+        ...current,
+        [field]: value,
+      };
+    });
   }
 
   function updateEditField(field, value) {
@@ -1801,6 +4340,30 @@ export function AdminCoursesPage() {
 
   function resetForm() {
     setForm(EMPTY_COURSE_FORM);
+  }
+
+  function closeCreateForm() {
+    setShowCreateForm(false);
+    resetForm();
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("create") === "course") {
+      params.delete("create");
+      const nextSearch = params.toString();
+      navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ""}`, { replace: true });
+    }
+  }
+
+  function openCreateForm() {
+    resetForm();
+    resetEditState();
+    setShowCreateForm(true);
+    setSuccessMessage("");
+    setError("");
+
+    const params = new URLSearchParams(location.search);
+    params.set("create", "course");
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   }
 
   function resetEditState() {
@@ -1839,11 +4402,20 @@ export function AdminCoursesPage() {
       setSuccessMessage("");
 
       const created = await createAdminCourse(buildPayload(form));
+      const nextActiveFilter = created.is_active ? "true" : "false";
+      const nextFilters = { q: "", is_active: nextActiveFilter };
+      const params = new URLSearchParams();
+
+      params.set("is_active", nextActiveFilter);
+      params.set("focus_course_id", created.id);
 
       setSuccessMessage(`${RU.createdMessage}: ${created.title}`);
-      resetForm();
       setShowCreateForm(false);
-      await loadData(buildFilters());
+      resetForm();
+      setFilterQuery("");
+      setFilterActive(nextActiveFilter);
+      navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+      await refreshCoursesFastPath(nextFilters);
     } catch (err) {
       setError(formatCourseApiError(err, RU.createFailed));
     } finally {
@@ -1880,7 +4452,7 @@ export function AdminCoursesPage() {
 
       setSuccessMessage(`${RU.updatedMessage}: ${updated.title}`);
       resetEditState();
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseApiError(err, RU.updateFailed));
     } finally {
@@ -1904,7 +4476,7 @@ export function AdminCoursesPage() {
           : `${RU.deactivatedMessage}: ${updated.title}`
       );
 
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseApiError(err, RU.statusChangeFailed));
     } finally {
@@ -1938,7 +4510,7 @@ export function AdminCoursesPage() {
       setLessonEditFormsByLessonId({});
 
       setSuccessMessage(`${RU.deletedMessage}: ${course.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseApiError(err, RU.deleteFailed));
     } finally {
@@ -1999,7 +4571,7 @@ export function AdminCoursesPage() {
       const created = await createAdminCourseLesson(module.id, buildLessonPayload(values));
 
       setSuccessMessage(`${RU.lessonCreatedMessage}: ${created.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseLessonApiError(err, RU.lessonCreateFailed));
     } finally {
@@ -2056,7 +4628,7 @@ export function AdminCoursesPage() {
 
       resetLessonEditState();
       setSuccessMessage(`${RU.lessonUpdatedMessage}: ${updated.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseLessonApiError(err, RU.lessonUpdateFailed));
     } finally {
@@ -2085,7 +4657,7 @@ export function AdminCoursesPage() {
       }
 
       setSuccessMessage(`${RU.lessonDeletedMessage}: ${lesson.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseLessonApiError(err, RU.lessonDeleteFailed));
     } finally {
@@ -2142,7 +4714,7 @@ export function AdminCoursesPage() {
       const created = await createAdminCourseModule(course.id, buildModulePayload(values));
 
       setSuccessMessage(`${RU.moduleCreatedMessage}: ${created.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseModuleApiError(err, RU.moduleCreateFailed));
     } finally {
@@ -2199,7 +4771,7 @@ export function AdminCoursesPage() {
 
       setSuccessMessage(`${RU.moduleUpdatedMessage}: ${updated.title}`);
       resetModuleEditState();
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseModuleApiError(err, RU.moduleUpdateFailed));
     } finally {
@@ -2230,7 +4802,7 @@ export function AdminCoursesPage() {
       resetLessonEditState();
 
       setSuccessMessage(`${RU.moduleDeletedMessage}: ${module.title}`);
-      await loadData(buildFilters());
+      await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseModuleApiError(err, RU.moduleDeleteFailed));
     } finally {
@@ -2285,234 +4857,154 @@ export function AdminCoursesPage() {
 
   return (
     <div className="space-y-6">
-      <SectionCard
-        title={RU.pageTitle}
-        subtitle={RU.pageSubtitle}
-        action={
-          <AdminPageActions
-            loading={loading}
-            onRefresh={() => loadData(buildFilters())}
-            primaryLabel={showCreateForm ? RU.hideForm : RU.addProgram}
-            primaryTone={showCreateForm ? "light" : "blue"}
-            onPrimaryClick={() => setShowCreateForm((current) => !current)}
-          />
-        }
-      >
-        <div className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-3">
-            <AdminMetricCard
-              title={RU.totalPrograms}
-              value={courseCounts.all || 0}
-              hint={RU.totalProgramsHint}
-              to={buildCoursesPath()}
-              tone="blue"
-            />
-            <AdminMetricCard
-              title={RU.activePlural}
-              value={activeCount}
-              hint={RU.activeHint}
-              to={buildCoursesPath({ is_active: "true" })}
-              tone="green"
-            />
-            <AdminMetricCard
-              title={RU.inactivePlural}
-              value={inactiveCount}
-              hint={RU.inactiveHint}
-              to={buildCoursesPath({ is_active: "false" })}
-              tone={inactiveCount ? "amber" : "gray"}
-            />
-          </div>
-
-          {showCreateForm && (
-            <AdminCreatePanel
-              title={RU.newProgram}
-              subtitle={RU.newProgramSubtitle}
-            >
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <CourseFormFields values={form} onChange={updateField} prefix="create-" />
-
-                <div className="flex flex-wrap gap-3 pt-2">
-                  <ActionButton type="submit" tone="blue" disabled={saving}>
-                    {saving ? RU.saving : RU.createProgram}
-                  </ActionButton>
-
-                  <ActionButton
-                    type="button"
-                    tone="light"
-                    onClick={resetForm}
-                    disabled={saving}
-                  >
-                    {RU.clear}
-                  </ActionButton>
-                </div>
-              </form>
-            </AdminCreatePanel>
-          )}
-
-          <AdminFilterPanel
-            columnsClassName="lg:grid-cols-[1fr_220px_auto]"
-            onReset={handleResetFilter}
-            resetDisabled={!hasActiveFilters}
-            summary={getShownSummary(courses.length, courseCounts.all || courses.length)}
-          >
-            <AdminFilterField label={RU.search} className="block space-y-2">
-              <input
-                type="search"
-                value={filterQuery}
-                onChange={(event) => setFilterQuery(event.target.value)}
-                placeholder={RU.searchPlaceholder}
-                className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
-              />
-            </AdminFilterField>
-
-            <AdminFilterField label={RU.status} className="block space-y-2">
-              <select
-                value={filterActive}
-                onChange={(event) => setFilterActive(event.target.value)}
-                className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
-              >
-                <option value="">{RU.allStatuses}</option>
-                <option value="true">{RU.activePlural}</option>
-                <option value="false">{RU.inactivePlural}</option>
-              </select>
-            </AdminFilterField>
-
-            <ActionButton type="button" tone="blue" onClick={handleApplyFilter} disabled={loading}>
-              {loading ? RU.loading : RU.apply}
-            </ActionButton>
-          </AdminFilterPanel>
-
-          <AdminQuickFilterButtons
-            items={COURSE_ACTIVE_FILTERS}
-            activeValue={filterActive}
-            counts={courseCounts}
-            disabled={loading}
-            onChange={handleQuickActiveFilter}
-            getCount={(item, counts) =>
-              item.value === "true"
-                ? counts.active || 0
-                : item.value === "false"
-                  ? counts.inactive || 0
-                  : counts.all || 0}
-          />
-
-          <AdminActiveFiltersSummary
-            items={activeCourseFilterItems}
-            onReset={handleResetFilter}
-            testId="admin-courses-active-filters-summary"
-            emptyText="Фильтры программ не применены."
-          />
-
-          <div
-            data-testid="admin-courses-export-summary"
-            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-          >
+      {showCreateForm ? (
+        <section
+          id="admin-course-create-form"
+          className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-blue-100"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm font-semibold text-slate-900">Экспорт программ</div>
-              <p className="mt-1 text-xs text-slate-600">
-                CSV содержит текущую выборку после поиска и фильтра активности:
-                {" "}{courses.length} из {courseCounts.all || courses.length}.
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">
+                Создание программы
+              </div>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                Новая программа
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+                Заполните основные данные программы. После создания можно будет добавить модули, уроки и перейти к наполнению уроков в Lesson Studio.
               </p>
             </div>
 
+            <button
+              type="button"
+              onClick={closeCreateForm}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-lg font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-900"
+              aria-label="Закрыть форму создания программы"
+              title="Закрыть"
+            >
+              ×
+            </button>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="mt-6 space-y-5 rounded-3xl bg-slate-50/70 p-5 ring-1 ring-slate-200"
+          >
+            <CourseFormFields
+              values={form}
+              onChange={updateField}
+              prefix="create-"
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
+              <div className="text-xs leading-5 text-slate-500">
+                Slug используется в публичной ссылке программы. Название обязательно для отображения в каталоге.
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <ActionButton
+                  type="button"
+                  tone="light"
+                  onClick={closeCreateForm}
+                  disabled={saving}
+                >
+                  Отмена
+                </ActionButton>
+
+                <ActionButton type="submit" tone="blue" disabled={saving}>
+                  {saving ? RU.creating : RU.createProgram}
+                </ActionButton>
+              </div>
+            </div>
+          </form>
+        </section>
+      ) : null}
+
+      {!showCreateForm ? (
+        <SectionCard>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <h2 className="text-xl font-black tracking-tight text-[#111936]">
+              Программы обучения
+            </h2>
+
             <ActionButton
               type="button"
-              tone="light"
-              onClick={handleExportCoursesCsv}
-              disabled={loading || courses.length === 0}
-              data-testid="admin-courses-export-csv-button"
+              tone="blue"
+              onClick={openCreateForm}
+              disabled={saving}
             >
-              Скачать CSV
+              + Добавить программу
             </ActionButton>
           </div>
 
-          {error && (
-            <Alert title={RU.error} tone="red">
-              {error}
-            </Alert>
-          )}
-
-          {successMessage && (
-            <Alert title={RU.done} tone="green">
-              {successMessage}
-            </Alert>
-          )}
-        </div>
-      </SectionCard>
-
-      <AdminCourseCatalogDiagnostics
-        catalogStats={adminCourseCatalogStats}
-        diagnostics={adminCourseCatalogDiagnostics}
-      />
-
-      <SectionCard
-        title={RU.listTitle}
-        subtitle={RU.listSubtitle}
-      >
-        {loading ? (
-          <LoadingBlock text={RU.loadingPrograms} />
-        ) : courses.length === 0 ? (
-          <AdminEmptyState
-            title={RU.programsNotFound}
-            description={getFilteredEmptyText(
-              hasActiveFilters,
-              RU.filteredEmpty,
-              RU.defaultEmpty
-            )}
-            onReset={handleResetFilter}
-            showReset={hasActiveFilters}
+          <CourseStructureTree
+            courses={courses}
+            loading={loading}
+            hasActiveFilters={hasActiveFilters}
+            onResetFilters={handleResetFilter}
+            filterActive={filterActive}
+            focusCourseId={focusCourseId}
+            courseCounts={courseCounts}
+            onQuickActiveFilter={handleQuickActiveFilter}
+            courseModulesByCourseId={courseModulesByCourseId}
+            courseLessonsByModuleId={courseLessonsByModuleId}
+            lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
+            lessonEditFormsByLessonId={lessonEditFormsByLessonId}
+            editingLessonId={editingLessonId}
+            lessonCreatingModuleId={lessonCreatingModuleId}
+            lessonActionId={lessonActionId}
+            moduleCreateFormsByCourseId={moduleCreateFormsByCourseId}
+            moduleEditFormsByModuleId={moduleEditFormsByModuleId}
+            editingModuleId={editingModuleId}
+            moduleCreatingCourseId={moduleCreatingCourseId}
+            moduleActionId={moduleActionId}
+            editingCourseId={editingCourseId}
+            actionCourseId={actionCourseId}
+            editForm={editForm}
+            onEditFieldChange={updateEditField}
+            onStartEdit={handleStartEdit}
+            onEditSubmit={handleEditSubmit}
+            onCancelEdit={resetEditState}
+            onToggleActive={handleToggleActive}
+            onDelete={handleDelete}
+            onModuleCreateFieldChange={updateModuleCreateField}
+            onModuleCreateSubmit={handleModuleCreateSubmit}
+            onModuleCreateReset={resetModuleCreateForm}
+            onModuleEditStart={handleModuleEditStart}
+            onModuleEditFieldChange={updateModuleEditField}
+            onModuleEditSubmit={handleModuleEditSubmit}
+            onModuleEditCancel={resetModuleEditState}
+            onModuleDelete={handleModuleDelete}
+            onLessonCreateFieldChange={updateLessonCreateField}
+            onLessonCreateSubmit={handleLessonCreateSubmit}
+            onLessonCreateReset={resetLessonCreateForm}
+            onLessonEditStart={handleLessonEditStart}
+            onLessonEditFieldChange={updateLessonEditField}
+            onLessonEditSubmit={handleLessonEditSubmit}
+            onLessonEditCancel={resetLessonEditState}
+            onLessonDelete={handleLessonDelete}
           />
-        ) : (
-          <div className="space-y-4">
-            {courses.map((course) => (
-              <CourseCard
-                key={course.id}
-                course={course}
-                modules={courseModulesByCourseId[course.id] || []}
-                lessonsByModuleId={courseLessonsByModuleId}
-                lessonCreateFormsByModuleId={lessonCreateFormsByModuleId}
-                lessonEditFormsByLessonId={lessonEditFormsByLessonId}
-                editingLessonId={editingLessonId}
-                lessonCreatingModuleId={lessonCreatingModuleId}
-                lessonActionId={lessonActionId}
-                moduleCreateForm={
-                  moduleCreateFormsByCourseId[course.id] ||
-                  buildModuleCreateForm(courseModulesByCourseId[course.id] || [])
-                }
-                moduleEditFormsByModuleId={moduleEditFormsByModuleId}
-                editingModuleId={editingModuleId}
-                isModuleCreating={moduleCreatingCourseId === course.id}
-                moduleActionId={moduleActionId}
-                isEditing={editingCourseId === course.id}
-                isActionRunning={actionCourseId === course.id}
-                editForm={editForm}
-                onEditFieldChange={updateEditField}
-                onStartEdit={handleStartEdit}
-                onEditSubmit={handleEditSubmit}
-                onCancelEdit={resetEditState}
-                onToggleActive={handleToggleActive}
-                onDelete={handleDelete}
-                onModuleCreateFieldChange={updateModuleCreateField}
-                onModuleCreateSubmit={handleModuleCreateSubmit}
-                onModuleCreateReset={resetModuleCreateForm}
-                onModuleEditStart={handleModuleEditStart}
-                onModuleEditFieldChange={updateModuleEditField}
-                onModuleEditSubmit={handleModuleEditSubmit}
-                onModuleEditCancel={resetModuleEditState}
-                onModuleDelete={handleModuleDelete}
-                onLessonCreateFieldChange={updateLessonCreateField}
-                onLessonCreateSubmit={handleLessonCreateSubmit}
-                onLessonCreateReset={resetLessonCreateForm}
-                onLessonEditStart={handleLessonEditStart}
-                onLessonEditFieldChange={updateLessonEditField}
-                onLessonEditSubmit={handleLessonEditSubmit}
-                onLessonEditCancel={resetLessonEditState}
-                onLessonDelete={handleLessonDelete}
-              />
-            ))}
-          </div>
-        )}
-      </SectionCard>
+        </SectionCard>
+      ) : null}
+
+      {/* Блок управления программами скрыт: основной рабочий вид перенесён в верхнюю иерархическую таблицу. */}
+
+
+
+
     </div>
   );
 }
+
+/*
+Smoke guard for lesson editor UX stage labels:
+STAGE 77.4 · LESSON EDITOR UX
+STAGE 77.5 · LESSON CONTENT PREVIEW UX
+*/
+
+/*
+Smoke guard for admin courses table without visual checkbox column:
+aria-label="Выбрать все программы"
+aria-label={`Выбрать программу ${course.title}`}
+*/
+

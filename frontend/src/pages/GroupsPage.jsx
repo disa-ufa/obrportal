@@ -138,7 +138,7 @@ function getGroupFiltersFromSearch(search) {
 }
 
 const TEXTAREA_CLASS =
-  "min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-500";
+  "min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-500";
 
 function nullableTrim(value) {
   const trimmed = String(value || "").trim();
@@ -1238,6 +1238,7 @@ export function GroupsPage({
   onUpdateGroup,
   onDeleteGroup,
   onRefreshAdminData,
+  onRefreshGroups,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -1362,6 +1363,15 @@ export function GroupsPage({
     navigateToGroupFilters({}, { replace: true });
   }
 
+  function refreshGroupsFastPath() {
+    if (onRefreshGroups) {
+      onRefreshGroups();
+      return;
+    }
+
+    onRefreshAdminData();
+  }
+
   function handleExportGroupsCsv() {
     const rows = filteredGroups.map((group) => ({
       id: group.id,
@@ -1396,7 +1406,7 @@ export function GroupsPage({
           <div className="space-y-5">
             <AdminPageActions
               loading={loading}
-              onRefresh={onRefreshAdminData}
+              onRefresh={refreshGroupsFastPath}
               primaryLabel={showCreateForm ? "Скрыть форму" : "Добавить группу"}
               primaryTone={showCreateForm ? "light" : "blue"}
               onPrimaryClick={() => setShowCreateForm((current) => !current)}

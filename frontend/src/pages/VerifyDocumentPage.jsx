@@ -138,7 +138,7 @@ function getPublicVerificationDiagnostics({
   }
 
   if (loading) {
-    items.push("Проверка: запрос к публичному реестру выполняется.");
+    items.push("Проверка: выполняется запрос к публичному реестру.");
   }
 
   if (error) {
@@ -219,6 +219,228 @@ function getPublicVerificationSourceStats({
 }
 
 
+const LEARNER_DOCUMENT_VERIFICATION_UX_LABELS = {
+  stage: "Stage 79.4 - Learner Document Verification UX Integration",
+  title: "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0438\u0442\u043e\u0433\u043e\u0432\u043e\u0433\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+  subtitle: "\u0421\u0432\u044f\u0437\u043a\u0430 \u043f\u043e\u043c\u043e\u0433\u0430\u0435\u0442 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044e \u043f\u043e\u043d\u044f\u0442\u044c, \u043a\u0430\u043a\u043e\u0439 \u043d\u043e\u043c\u0435\u0440 \u0438\u043b\u0438 \u043a\u043e\u0434 \u0432\u0432\u043e\u0434\u0438\u0442\u044c, \u0447\u0442\u043e \u043e\u0437\u043d\u0430\u0447\u0430\u0435\u0442 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0438 \u043a\u0443\u0434\u0430 \u043f\u0435\u0440\u0435\u0439\u0442\u0438 \u043f\u043e\u0441\u043b\u0435 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438.",
+  queryReady: "\u0417\u0430\u043f\u0440\u043e\u0441 \u0433\u043e\u0442\u043e\u0432",
+  waitingQuery: "\u041e\u0436\u0438\u0434\u0430\u0435\u043c \u043d\u043e\u043c\u0435\u0440 \u0438\u043b\u0438 \u043a\u043e\u0434",
+  checking: "\u0418\u0434\u0451\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430",
+  confirmed: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d",
+  revoked: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d",
+  notFound: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d",
+  error: "\u041e\u0448\u0438\u0431\u043a\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
+  summaryQuery: "\u041f\u0440\u043e\u0432\u0435\u0440\u043e\u0447\u043d\u043e\u0435 \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435",
+  summaryStatus: "\u0421\u0442\u0430\u0442\u0443\u0441 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
+  summaryQr: "QR/\u043a\u043e\u0434",
+  summaryResult: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442",
+  nextStep: "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433",
+  nextWaiting: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0438\u043b\u0438 \u043a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438. \u0415\u0441\u043b\u0438 \u0432\u044b \u043f\u0440\u0438\u0448\u043b\u0438 \u0438\u0437 \u0440\u0430\u0437\u0434\u0435\u043b\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432, \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0443\u0436\u0435 \u043f\u043e\u0434\u0441\u0442\u0430\u0432\u043b\u0435\u043d\u043e \u0432 \u0441\u0441\u044b\u043b\u043a\u0443.",
+  nextChecking: "\u0414\u043e\u0436\u0434\u0438\u0442\u0435\u0441\u044c \u043e\u0442\u0432\u0435\u0442\u0430 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u0433\u043e \u0440\u0435\u0435\u0441\u0442\u0440\u0430. \u041f\u043e\u0441\u043b\u0435 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u043f\u043e\u043a\u0430\u0436\u0435\u0442 \u0441\u0442\u0430\u0442\u0443\u0441 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.",
+  nextConfirmed: "\u0421\u0432\u0435\u0440\u044c\u0442\u0435 \u0432\u043b\u0430\u0434\u0435\u043b\u044c\u0446\u0430, \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443, \u043d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0438 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044e-\u0438\u0437\u0434\u0430\u0442\u0435\u043b\u044f. \u041f\u0440\u0438 \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u043e\u0441\u0442\u0438 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 QR-\u0441\u0441\u044b\u043b\u043a\u0443.",
+  nextRevoked: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043d\u0430\u0439\u0434\u0435\u043d, \u043d\u043e \u0435\u0433\u043e \u0441\u0442\u0430\u0442\u0443\u0441 \u0438\u0437\u043c\u0435\u043d\u0451\u043d \u043d\u0430 \u043e\u0442\u043e\u0437\u0432\u0430\u043d\u043d\u044b\u0439. \u0422\u0430\u043a\u043e\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043d\u0435\u043b\u044c\u0437\u044f \u0441\u0447\u0438\u0442\u0430\u0442\u044c \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044e\u0449\u0438\u043c.",
+  nextNotFound: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u043d\u043e\u043c\u0435\u0440\u0430 \u0438\u043b\u0438 \u043a\u043e\u0434\u0430. \u0415\u0441\u043b\u0438 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d, \u043e\u0431\u0440\u0430\u0442\u0438\u0442\u0435\u0441\u044c \u0432 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044e.",
+  nextError: "\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0443 \u043f\u043e\u0437\u0436\u0435 \u0438\u043b\u0438 \u0443\u0442\u043e\u0447\u043d\u0438\u0442\u0435 \u0441\u0442\u0430\u0442\u0443\u0441 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0443 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438.",
+  openDocuments: "\u041a \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c",
+  openContacts: "\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u044b \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438",
+  openCatalog: "\u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432",
+  yes: "\u0414\u0430",
+  no: "\u041d\u0435\u0442",
+  emptyValue: "-",
+};
+
+function getLearnerDocumentVerificationUXState({
+  normalizedQuery,
+  submittedQuery,
+  result,
+  loading,
+  error,
+  notFound,
+  sourceStats,
+}) {
+  const queryValue = submittedQuery || normalizedQuery || "";
+  const hasQuery = Boolean(queryValue);
+
+  const statusLabel = result
+    ? result.registry_status === "available"
+      ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.confirmed
+      : result.registry_status === "revoked"
+        ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.revoked
+        : RU.needsClarification
+    : notFound
+      ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.notFound
+      : error
+        ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.error
+        : loading
+          ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.checking
+          : hasQuery
+            ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.queryReady
+            : LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.waitingQuery;
+
+  const nextStep = result
+    ? result.registry_status === "available"
+      ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextConfirmed
+      : result.registry_status === "revoked"
+        ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextRevoked
+        : RU.clarificationDescription
+    : notFound
+      ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextNotFound
+      : error
+        ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextError
+        : loading
+          ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextChecking
+          : LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextWaiting;
+
+  return {
+    queryValue,
+    statusLabel,
+    nextStep,
+    hasResult: Boolean(result),
+    qrReady: Boolean(sourceStats?.qrReady),
+    isProblem: Boolean(error || notFound || result?.registry_status === "revoked"),
+    isConfirmed: result?.registry_status === "available",
+  };
+}
+
+function LearnerDocumentVerificationUXPanel({
+  normalizedQuery,
+  submittedQuery,
+  result,
+  loading,
+  error,
+  notFound,
+  sourceStats,
+  onPageChange,
+}) {
+  const state = getLearnerDocumentVerificationUXState({
+    normalizedQuery,
+    submittedQuery,
+    result,
+    loading,
+    error,
+    notFound,
+    sourceStats,
+  });
+
+  const statusTone = state.isProblem
+    ? "bg-amber-50 text-amber-800 ring-amber-200"
+    : state.isConfirmed
+      ? "bg-green-50 text-green-700 ring-green-200"
+      : "bg-blue-50 text-blue-700 ring-blue-200";
+
+  return (
+    <section
+      data-testid="learner-document-verification-ux-panel"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.stage}
+          </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.title}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.subtitle}
+          </p>
+        </div>
+
+        <span
+          data-testid="learner-document-verification-ux-status"
+          className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${statusTone}`}
+        >
+          {state.statusLabel}
+        </span>
+      </div>
+
+      <div
+        data-testid="learner-document-verification-ux-summary"
+        className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+      >
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.summaryQuery}
+          </div>
+          <div className="mt-2 break-all text-sm font-semibold text-slate-900">
+            {state.queryValue || LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.emptyValue}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.summaryStatus}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {state.statusLabel}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.summaryQr}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {state.qrReady ? LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.yes : LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.no}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.summaryResult}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-slate-900">
+            {state.hasResult ? getRegistryStatusLabel(result.registry_status) : LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.emptyValue}
+          </div>
+        </div>
+      </div>
+
+      <div
+        data-testid="learner-document-verification-ux-next-step"
+        className={`mt-5 rounded-2xl p-4 text-sm leading-6 ring-1 ${statusTone}`}
+      >
+        <div className="font-semibold text-slate-900">
+          {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.nextStep}
+        </div>
+        <p className="mt-2">{state.nextStep}</p>
+      </div>
+
+      <div
+        data-testid="learner-document-verification-ux-actions"
+        className="mt-5 flex flex-wrap gap-3"
+      >
+        <button
+          type="button"
+          data-testid="learner-document-verification-documents-action"
+          onClick={() => onPageChange("documents")}
+          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.openDocuments}
+        </button>
+
+        <button
+          type="button"
+          data-testid="learner-document-verification-contacts-action"
+          onClick={() => onPageChange("contacts")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.openContacts}
+        </button>
+
+        <button
+          type="button"
+          data-testid="learner-document-verification-catalog-action"
+          onClick={() => onPageChange("catalog")}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+        >
+          {LEARNER_DOCUMENT_VERIFICATION_UX_LABELS.openCatalog}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+
 function PublicVerificationJourneyHint({
   normalizedQuery,
   submittedQuery,
@@ -276,7 +498,7 @@ function PublicVerificationJourneyHint({
   return (
     <section
       data-testid="public-verification-journey"
-      className="rounded-[2rem] bg-gradient-to-br from-blue-50 via-white to-slate-50 p-6 shadow-sm ring-1 ring-blue-100 md:p-8"
+      className="rounded-shell bg-gradient-to-br from-blue-50 via-white to-slate-50 p-6 shadow-sm ring-1 ring-blue-100 md:p-8"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -287,69 +509,51 @@ function PublicVerificationJourneyHint({
             data-testid="public-verification-journey-title"
             className="mt-2 text-2xl font-bold text-slate-900"
           >
-            Проверка документа → код/номер → результат
+            Понятная публичная проверка документа
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-            Публичная проверка помогает быстро подтвердить статус документа,
-            не открывая личный кабинет и не раскрывая файл документа.
+            Проверка показывает только публичные сведения, необходимые для подтверждения подлинности:
+            статус, номер, владельца, программу и организацию-издателя. Файл документа и личный
+            кабинет не раскрываются.
           </p>
         </div>
 
-        <div
-          data-testid="public-verification-journey-current-state"
-          className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200"
-        >
-          {currentState}
+        <div className="rounded-2xl bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-blue-100">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Текущее состояние
+          </div>
+          <div data-testid="public-verification-current-state" className="mt-1 font-semibold text-slate-900">
+            {currentState}
+          </div>
+          <div data-testid="public-verification-next-action" className="mt-1 max-w-xs text-xs leading-5 text-slate-500">
+            {nextAction}
+          </div>
         </div>
       </div>
 
-      <div
-        data-testid="public-verification-journey-steps"
-        className="mt-6 grid gap-3 md:grid-cols-3"
-      >
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
         {steps.map((step) => (
-          <div
-            key={step.title}
-            className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
-          >
-            <div className="text-sm font-bold text-slate-900">{step.title}</div>
+          <article key={step.title} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+            <h3 className="text-sm font-semibold text-slate-900">{step.title}</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">{step.text}</p>
-          </div>
+          </article>
         ))}
       </div>
 
-      <div
-        data-testid="public-verification-journey-safe-data"
-        className="mt-5 rounded-2xl bg-white p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
-      >
-        <div className="font-semibold text-slate-900">
-          Публичная проверка не открывает файл документа
-        </div>
-        <p className="mt-1">
-          Она показывает только сведения, необходимые для подтверждения
-          подлинности: статус, номер, код проверки, программу, владельца и
-          организацию-издателя.
-        </p>
-        <p className="mt-2 font-semibold text-slate-900">{nextAction}</p>
-      </div>
-
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-wrap gap-3">
         <button
           type="button"
-          data-testid="public-verification-journey-account-action"
-          onClick={() => onPageChange("account")}
-          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          onClick={() => onPageChange?.("catalog")}
+          className="rounded-xl border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
         >
-          Личный кабинет
+          Перейти в каталог
         </button>
-
         <button
           type="button"
-          data-testid="public-verification-journey-catalog-action"
-          onClick={() => onPageChange("catalog")}
-          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          onClick={() => onPageChange?.("home")}
+          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
         >
-          Каталог курсов
+          На главную
         </button>
       </div>
     </section>
@@ -363,7 +567,7 @@ function PublicVerificationQrOperationsPanel({
   return (
     <section
       data-testid="public-verification-qr-operations-panel"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -506,7 +710,7 @@ function PublicVerificationDiagnostics({
   return (
     <section
       data-testid="public-verification-diagnostics"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -622,7 +826,7 @@ function ResultCard({ result, onReset, onPageChange }) {
   return (
     <div
       data-testid="public-verification-result-card"
-      className={`rounded-[2rem] bg-white p-6 shadow-sm ring-1 ${tone.card}`}
+      className={`rounded-shell bg-white p-6 shadow-sm ring-1 ${tone.card}`}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${tone.badge}`}>
@@ -831,7 +1035,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           {RU.publicRegistry}
         </div>
@@ -842,6 +1046,17 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
           {RU.intro}
         </p>
       </section>
+
+      <LearnerDocumentVerificationUXPanel
+        normalizedQuery={normalizedQuery}
+        submittedQuery={submittedQuery}
+        result={result}
+        loading={loading}
+        error={error}
+        notFound={notFound}
+        sourceStats={verificationSourceStats}
+        onPageChange={onPageChange}
+      />
 
       <PublicVerificationJourneyHint
         normalizedQuery={normalizedQuery}
@@ -855,7 +1070,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
 
       <section
         data-testid="public-verification-form-section"
-        className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+        className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200"
       >
         <form
           data-testid="public-verification-form"
@@ -872,7 +1087,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={RU.queryPlaceholder}
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </label>
 
@@ -909,7 +1124,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
           data-testid="public-verification-error-state"
           role="alert"
           aria-live="assertive"
-          className="rounded-[2rem] bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200"
+          className="rounded-shell bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200"
         >
           <div className="font-semibold">{RU.verificationFailed}</div>
           <p className="mt-2 leading-6">{error}</p>
@@ -921,7 +1136,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
           data-testid="public-verification-not-found-state"
           role="status"
           aria-live="polite"
-          className="rounded-[2rem] bg-amber-50 p-6 text-sm text-amber-800 ring-1 ring-amber-200"
+          className="rounded-shell bg-amber-50 p-6 text-sm text-amber-800 ring-1 ring-amber-200"
         >
           <div className="text-lg font-bold">{RU.documentNotFound}</div>
           <p className="mt-2 leading-6">

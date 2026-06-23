@@ -1,0 +1,4571 @@
+{
+  "stage": "79.1",
+  "name": "Learner documents API inventory",
+  "status": "implementation_ready",
+  "source_head": "689ada5",
+  "production_checkpoint": {
+    "last_confirmed_stage": "78.9",
+    "last_confirmed_head": "689ada5"
+  },
+  "inventory_scope": [
+    "backend document routes",
+    "backend document models",
+    "backend document schemas",
+    "backend document services",
+    "PDF generation",
+    "QR/document verification",
+    "frontend documents pages",
+    "frontend API client document functions"
+  ],
+  "keyword_groups": {
+    "document": [
+      "document",
+      "documents",
+      "Document",
+      "Documents",
+      "????????",
+      "????????"
+    ],
+    "certificate": [
+      "certificate",
+      "Certificate",
+      "??????????",
+      "??????????",
+      "?????????????",
+      "?????????????"
+    ],
+    "verification": [
+      "verify",
+      "verification",
+      "Verify",
+      "Verification",
+      "??????",
+      "??????",
+      "qr",
+      "QR"
+    ],
+    "pdf": [
+      "pdf",
+      "PDF",
+      "reportlab",
+      "weasyprint",
+      "template",
+      "Template"
+    ],
+    "account": [
+      "account",
+      "Account",
+      "enrollment",
+      "Enrollment",
+      "course",
+      "Course"
+    ]
+  },
+  "scan_summary": {
+    "total_scanned_text_files": 671,
+    "keyword_group_file_counts": {
+      "document": 80,
+      "certificate": 74,
+      "verification": 80,
+      "pdf": 80,
+      "account": 80
+    },
+    "high_value_file_count": 279
+  },
+  "keyword_index": {
+    "document": [
+      ".github/workflows/ci.yml",
+      "CHANGELOG.md",
+      "README.md",
+      "backend/alembic/versions/0003_courses_enrollments.py",
+      "backend/alembic/versions/0004_document_records.py",
+      "backend/alembic/versions/0005_doc_storage_path.py",
+      "backend/alembic/versions/0006_document_verification_code.py",
+      "backend/alembic/versions/0007_unique_document_enrollment.py",
+      "backend/alembic/versions/0008_learning_group_members.py",
+      "backend/alembic/versions/0009_doc_revocation.py",
+      "backend/alembic/versions/6413_document_generation_metadata.py",
+      "backend/alembic/versions/6414_document_generation_events.py",
+      "backend/alembic/versions/6421_organization_document_profile.py",
+      "backend/app/api/v1/account.py",
+      "backend/app/api/v1/admin.py",
+      "backend/app/api/v1/public.py",
+      "backend/app/core/config.py",
+      "backend/app/db/base.py",
+      "backend/app/db/seed.py",
+      "backend/app/db/seed_demo_learning.py",
+      "backend/app/models/__init__.py",
+      "backend/app/models/course.py",
+      "backend/app/models/document_generation_event.py",
+      "backend/app/models/document_record.py",
+      "backend/app/models/organization.py",
+      "backend/app/schemas/account.py",
+      "backend/app/schemas/admin.py",
+      "backend/app/schemas/public.py",
+      "backend/app/services/completion_documents.py",
+      "backend/app/services/document_pdf.py",
+      "backend/app/services/document_storage.py",
+      "backend/app/services/document_templates.py",
+      "backend/app/tests/test_account_lesson_progress_api.py",
+      "backend/app/tests/test_admin_action_required_filters_api.py",
+      "backend/app/tests/test_admin_dashboard_summary_api.py",
+      "backend/app/tests/test_admin_worklist_summary_api.py",
+      "backend/app/tests/test_auth_rbac_admin_api.py",
+      "backend/app/tests/test_config_document_metadata.py",
+      "backend/app/tests/test_course_lessons_admin_api.py",
+      "backend/app/tests/test_course_modules_admin_api.py",
+      "backend/app/tests/test_document_pdf.py",
+      "backend/app/tests/test_document_storage.py",
+      "backend/app/tests/test_document_templates.py",
+      "docs/STAGE6_CHECKPOINT.md",
+      "docs/development-process-v2.md",
+      "docs/learner-progress-api-inventory.json",
+      "docs/learner-progress-final-qa-summary.md",
+      "docs/local-demo.md",
+      "docs/production-backup-monitoring-checklist.md",
+      "docs/production-backup-verification.md",
+      "docs/production-deployment-plan.md",
+      "docs/production-deployment-runbook.md",
+      "docs/production-domain-dns-verification.md",
+      "docs/production-domain-reverse-proxy-decision.md",
+      "docs/production-environment-template.md",
+      "docs/production-fact-collection-result.md",
+      "docs/production-frontend-static-runbook.md",
+      "docs/production-handover-package.md",
+      "docs/production-incident-runbook.md",
+      "docs/production-initialization-runbook.md",
+      "docs/production-maintenance-update-checklist.md",
+      "docs/production-monitoring-smoke.md",
+      "docs/production-operational-runbook.md",
+      "docs/production-operations-baseline.md",
+      "docs/production-operations-runbook.md",
+      "docs/production-release-runbook.md",
+      "docs/production-restore-drill-runbook.md",
+      "docs/production-reverse-proxy-checklist.md",
+      "docs/production-rollout-inventory.md",
+      "docs/production-server-checklist.md",
+      "docs/production-server-facts.md",
+      "docs/production-server-preflight-execution.md",
+      "docs/production-server-remediation-plan.md",
+      "docs/production-stage9-final-gate.md",
+      "docs/project-roadmap-after-stage9.md",
+      "docs/release-candidate-checklist.md",
+      "docs/release-handoff.md",
+      "docs/release-manifest.json",
+      "docs/release-publication-checklist.md",
+      "docs/stage-12-1-learner-account-workflow.md"
+    ],
+    "certificate": [
+      "README.md",
+      "backend/app/db/seed_demo_learning.py",
+      "backend/app/tests/test_admin_action_required_filters_api.py",
+      "backend/app/tests/test_auth_rbac_admin_api.py",
+      "backend/app/tests/test_course_lessons_admin_api.py",
+      "backend/app/tests/test_course_modules_admin_api.py",
+      "docs/learner-progress-api-inventory.json",
+      "docs/production-backup-monitoring-checklist.md",
+      "docs/production-deployment-runbook.md",
+      "docs/production-domain-reverse-proxy-decision.md",
+      "docs/production-reverse-proxy-checklist.md",
+      "docs/production-server-facts.md",
+      "docs/project-roadmap-after-stage9.md",
+      "docs/release-manifest.json",
+      "docs/stage-14-documents-certificates-verification.md",
+      "docs/stage-15-admin-ux-operator-workflow.md",
+      "docs/stage-16-release-readiness-regression.md",
+      "docs/stage-17-production-deployment-readiness.md",
+      "docs/stage-18-production-runbook-operator-handoff.md",
+      "docs/stage-20-final-release-candidate-launch-checklist.md",
+      "docs/stage-21-production-launch-dry-run-deployment-preparation.md",
+      "docs/stage-22-production-launch-go-no-go-controlled-execution.md",
+      "docs/stage-23-controlled-production-launch-execution-preparation.md",
+      "docs/stage-24-production-launch-final-evidence-package.md",
+      "docs/stage-25-final-project-closure-handoff-package.md",
+      "docs/stage-26-pre-production-operational-rehearsal.md",
+      "docs/stage-27-final-production-launch-command-pack-dry-archive.md",
+      "docs/stage-28-final-release-ledger-tag-registry-archive.md",
+      "docs/stage-29-final-operator-delivery-bundle-archive.md",
+      "docs/stage-30-final-pre-launch-freeze-release-archive-closure.md",
+      "docs/stage49-production-server-facts-refresh-acceptance.md",
+      "docs/stage49-production-server-facts-refresh-audit.md",
+      "docs/stage50-production-server-target-selection-acceptance.md",
+      "docs/stage50-production-server-target-selection-audit.md",
+      "docs/stage50-production-server-target-selection-baseline.md",
+      "docs/stage51-production-target-facts-completion-acceptance.md",
+      "docs/stage51-production-target-facts-completion-audit.md",
+      "docs/stage51-production-target-facts-completion-baseline.md",
+      "docs/stage52-production-target-dns-alignment-acceptance.md",
+      "docs/stage52-production-target-dns-alignment-audit.md",
+      "docs/stage52-production-target-dns-alignment-baseline.md",
+      "docs/stage53-production-server-inventory-preflight-acceptance.md",
+      "docs/stage53-production-server-inventory-preflight-audit.md",
+      "docs/stage78-learner-progress-api-inventory.md",
+      "frontend/src/pages/AdminCoursesPage.jsx",
+      "frontend/src/pages/DashboardPage.jsx",
+      "frontend/src/utils/adminLinks.js",
+      "scripts/check_production_backup_monitoring_checklist.py",
+      "scripts/check_production_deployment_runbook.py",
+      "scripts/check_production_domain_reverse_proxy_decision.py",
+      "scripts/check_production_reverse_proxy_checklist.py",
+      "scripts/check_production_server_facts.py",
+      "scripts/check_project_roadmap_after_stage9.py",
+      "scripts/check_stage14_documents_certificates_verification.py",
+      "scripts/check_stage15_admin_ux_operator_workflow.py",
+      "scripts/check_stage16_release_readiness_regression.py",
+      "scripts/check_stage17_production_deployment_readiness.py",
+      "scripts/check_stage18_production_runbook_operator_handoff.py",
+      "scripts/check_stage20_final_release_candidate_launch_checklist.py",
+      "scripts/check_stage21_production_launch_dry_run_deployment_preparation.py",
+      "scripts/check_stage22_production_launch_go_no_go_controlled_execution.py",
+      "scripts/check_stage23_controlled_production_launch_execution_preparation.py",
+      "scripts/check_stage24_production_launch_final_evidence_package.py",
+      "scripts/check_stage25_final_project_closure_handoff_package.py",
+      "scripts/check_stage26_pre_production_operational_rehearsal.py",
+      "scripts/check_stage27_final_production_launch_command_pack_dry_archive.py",
+      "scripts/check_stage28_final_release_ledger_tag_registry_archive.py",
+      "scripts/check_stage29_final_operator_delivery_bundle_archive.py",
+      "scripts/check_stage30_final_pre_launch_freeze_release_archive_closure.py",
+      "scripts/smoke_auth_rbac.py",
+      "scripts/smoke_frontend_admin_pages.py",
+      "scripts/smoke_frontend_utils_routes.py"
+    ],
+    "verification": [
+      ".github/workflows/ci.yml",
+      "CHANGELOG.md",
+      "README.md",
+      "backend/alembic/versions/0006_document_verification_code.py",
+      "backend/alembic/versions/0007_unique_document_enrollment.py",
+      "backend/app/api/v1/account.py",
+      "backend/app/api/v1/admin.py",
+      "backend/app/api/v1/auth.py",
+      "backend/app/api/v1/public.py",
+      "backend/app/core/security.py",
+      "backend/app/models/document_record.py",
+      "backend/app/schemas/account.py",
+      "backend/app/schemas/admin.py",
+      "backend/app/schemas/public.py",
+      "backend/app/services/completion_documents.py",
+      "backend/app/services/document_pdf.py",
+      "backend/app/services/document_templates.py",
+      "backend/app/tests/test_auth_rbac_admin_api.py",
+      "backend/app/tests/test_document_pdf.py",
+      "backend/app/tests/test_document_templates.py",
+      "backend/app/tests/test_security.py",
+      "docs/STAGE6_CHECKPOINT.md",
+      "docs/learner-progress-api-inventory.json",
+      "docs/learner-progress-final-qa-summary.md",
+      "docs/local-demo.md",
+      "docs/production-backup-monitoring-checklist.md",
+      "docs/production-backup-verification.md",
+      "docs/production-deployment-plan.md",
+      "docs/production-deployment-runbook.md",
+      "docs/production-domain-dns-verification.md",
+      "docs/production-domain-reverse-proxy-decision.md",
+      "docs/production-fact-collection-result.md",
+      "docs/production-frontend-static-runbook.md",
+      "docs/production-handover-package.md",
+      "docs/production-initialization-runbook.md",
+      "docs/production-maintenance-update-checklist.md",
+      "docs/production-operational-runbook.md",
+      "docs/production-operations-baseline.md",
+      "docs/production-release-runbook.md",
+      "docs/production-restore-drill-runbook.md",
+      "docs/production-reverse-proxy-checklist.md",
+      "docs/production-server-checklist.md",
+      "docs/production-server-facts.md",
+      "docs/production-server-remediation-plan.md",
+      "docs/production-stage9-final-gate.md",
+      "docs/project-roadmap-after-stage9.md",
+      "docs/release-candidate-checklist.md",
+      "docs/release-handoff.md",
+      "docs/release-manifest.json",
+      "docs/release-publication-checklist.md",
+      "docs/stage-12-1-learner-account-workflow.md",
+      "docs/stage-12-2-catalog-learner-workflow.md",
+      "docs/stage-12-3-course-detail-learner-workflow.md",
+      "docs/stage-12-4-document-verification-workflow.md",
+      "docs/stage-12-5-admin-moderation-audit-workflow.md",
+      "docs/stage-12-6-ux-ui-navigation-empty-states.md",
+      "docs/stage-12-7-import-export-reporting.md",
+      "docs/stage-12-8-final-stabilization.md",
+      "docs/stage-12-product-roadmap.md",
+      "docs/stage-13-learning-flow.md",
+      "docs/stage-14-documents-certificates-verification.md",
+      "docs/stage-15-admin-ux-operator-workflow.md",
+      "docs/stage-16-release-readiness-regression.md",
+      "docs/stage-17-production-deployment-readiness.md",
+      "docs/stage-18-production-runbook-operator-handoff.md",
+      "docs/stage-20-final-release-candidate-launch-checklist.md",
+      "docs/stage-21-production-launch-dry-run-deployment-preparation.md",
+      "docs/stage-22-production-launch-go-no-go-controlled-execution.md",
+      "docs/stage-23-controlled-production-launch-execution-preparation.md",
+      "docs/stage-24-production-launch-final-evidence-package.md",
+      "docs/stage-25-final-project-closure-handoff-package.md",
+      "docs/stage-26-pre-production-operational-rehearsal.md",
+      "docs/stage-27-final-production-launch-command-pack-dry-archive.md",
+      "docs/stage-28-final-release-ledger-tag-registry-archive.md",
+      "docs/stage-29-final-operator-delivery-bundle-archive.md",
+      "docs/stage-30-final-pre-launch-freeze-release-archive-closure.md",
+      "docs/stage-31-post-freeze-development-cycle-baseline.md",
+      "docs/stage-32-performance-stability-baseline.md",
+      "docs/stage-32-post-optimization-stability-measurement-archive.md"
+    ],
+    "pdf": [
+      ".github/workflows/ci.yml",
+      "README.md",
+      "backend/alembic/versions/6413_document_generation_metadata.py",
+      "backend/alembic/versions/6414_document_generation_events.py",
+      "backend/app/api/v1/admin.py",
+      "backend/app/models/document_generation_event.py",
+      "backend/app/models/document_record.py",
+      "backend/app/schemas/admin.py",
+      "backend/app/services/completion_documents.py",
+      "backend/app/services/document_pdf.py",
+      "backend/app/services/document_storage.py",
+      "backend/app/services/document_templates.py",
+      "backend/app/tests/test_admin_action_required_filters_api.py",
+      "backend/app/tests/test_auth_rbac_admin_api.py",
+      "backend/app/tests/test_document_pdf.py",
+      "backend/app/tests/test_document_storage.py",
+      "backend/app/tests/test_document_templates.py",
+      "docs/STAGE6_CHECKPOINT.md",
+      "docs/learner-progress-api-inventory.json",
+      "docs/production-deployment-runbook.md",
+      "docs/production-domain-reverse-proxy-decision.md",
+      "docs/production-environment-template.md",
+      "docs/production-fact-collection-result.md",
+      "docs/production-frontend-static-runbook.md",
+      "docs/production-rollout-inventory.md",
+      "docs/production-server-checklist.md",
+      "docs/production-server-facts.md",
+      "docs/production-server-preflight-execution.md",
+      "docs/production-server-remediation-plan.md",
+      "docs/production-stage9-final-gate.md",
+      "docs/project-roadmap-after-stage9.md",
+      "docs/release-manifest.json",
+      "docs/stage-12-4-document-verification-workflow.md",
+      "docs/stage-12-7-import-export-reporting.md",
+      "docs/stage-14-documents-certificates-verification.md",
+      "docs/stage-15-admin-ux-operator-workflow.md",
+      "docs/stage42-frontend-bundle-optimization-acceptance.md",
+      "docs/stage43-frontend-route-smoke-hardening-acceptance.md",
+      "docs/stage46-post-ci-stabilization-roadmap-acceptance.md",
+      "docs/stage46-post-ci-stabilization-roadmap-audit.md",
+      "docs/stage47-production-deployment-readiness-audit.md",
+      "docs/stage47-production-deployment-readiness-baseline.md",
+      "docs/stage48-production-deployment-dry-run-baseline.md",
+      "docs/stage68-organization-cabinet-document-profile-polish-acceptance.md",
+      "docs/stage68-organization-cabinet-document-profile-polish-audit.md",
+      "docs/stage68-organization-cabinet-document-profile-polish-baseline.md",
+      "docs/stage69-admin-organization-document-profile-polish-acceptance.md",
+      "docs/stage69-admin-organization-document-profile-polish-audit.md",
+      "docs/stage69-admin-organization-document-profile-polish-baseline.md",
+      "docs/stage70-release-readiness-checkpoint-baseline.md",
+      "docs/stage71-next-product-backlog-selection-acceptance.md",
+      "docs/stage71-next-product-backlog-selection-audit.md",
+      "docs/stage71-next-product-backlog-selection-baseline.md",
+      "docs/stage72-production-preflight-fact-collection-execution-preparation.md",
+      "docs/stage76-public-organization-documents.md",
+      "frontend/src/api/client.js",
+      "frontend/src/components/ObrPortalStage5DesignVariants.jsx",
+      "frontend/src/components/admin/OrganizationDetailPanel.jsx",
+      "frontend/src/components/admin/OrganizationForm.jsx",
+      "frontend/src/components/organization/OrganizationCabinetForms.jsx",
+      "frontend/src/pages/AccountPage.jsx",
+      "frontend/src/pages/AdminEnrollmentsPage.jsx",
+      "frontend/src/pages/AuditPage.jsx",
+      "frontend/src/pages/DashboardPage.jsx",
+      "frontend/src/pages/DocumentsPage.jsx",
+      "frontend/src/pages/OrganizationInfoPage.jsx",
+      "frontend/src/pages/PrivacyPage.jsx",
+      "scripts/check_ci_local_gate.py",
+      "scripts/check_frontend_bundle_encoding.py",
+      "scripts/check_frontend_smoke_coverage.py",
+      "scripts/check_production_deployment_runbook.py",
+      "scripts/check_production_domain_reverse_proxy_decision.py",
+      "scripts/check_production_environment_template.py",
+      "scripts/check_production_fact_collection_result.py",
+      "scripts/check_production_frontend_static_runbook.py",
+      "scripts/check_production_rollout_inventory.py",
+      "scripts/check_production_server_checklist.py",
+      "scripts/check_production_server_preflight_execution.py",
+      "scripts/check_production_server_remediation_plan.py"
+    ],
+    "account": [
+      ".github/workflows/ci.yml",
+      "CHANGELOG.md",
+      "README.md",
+      "backend/alembic/versions/0003_courses_enrollments.py",
+      "backend/alembic/versions/0004_document_records.py",
+      "backend/alembic/versions/0007_unique_document_enrollment.py",
+      "backend/alembic/versions/0008_learning_group_members.py",
+      "backend/alembic/versions/0010_course_modules.py",
+      "backend/alembic/versions/0011_course_lessons.py",
+      "backend/alembic/versions/0012_lesson_progress.py",
+      "backend/app/api/v1/account.py",
+      "backend/app/api/v1/admin.py",
+      "backend/app/api/v1/org.py",
+      "backend/app/api/v1/public.py",
+      "backend/app/api/v1/router.py",
+      "backend/app/db/base.py",
+      "backend/app/db/seed_demo_learning.py",
+      "backend/app/models/__init__.py",
+      "backend/app/models/course.py",
+      "backend/app/models/course_lesson.py",
+      "backend/app/models/course_module.py",
+      "backend/app/models/document_record.py",
+      "backend/app/models/enrollment.py",
+      "backend/app/models/lesson_progress.py",
+      "backend/app/schemas/account.py",
+      "backend/app/schemas/admin.py",
+      "backend/app/schemas/org.py",
+      "backend/app/schemas/public.py",
+      "backend/app/services/completion_documents.py",
+      "backend/app/services/document_pdf.py",
+      "backend/app/services/document_templates.py",
+      "backend/app/tests/test_account_course_detail_api.py",
+      "backend/app/tests/test_account_lesson_progress_api.py",
+      "backend/app/tests/test_admin_action_required_filters_api.py",
+      "backend/app/tests/test_admin_dashboard_summary_api.py",
+      "backend/app/tests/test_admin_worklist_summary_api.py",
+      "backend/app/tests/test_auth_rbac_admin_api.py",
+      "backend/app/tests/test_course_lessons_admin_api.py",
+      "backend/app/tests/test_course_modules_admin_api.py",
+      "backend/app/tests/test_document_pdf.py",
+      "backend/app/tests/test_document_templates.py",
+      "backend/app/tests/test_public_course_outline.py",
+      "docs/STAGE6_CHECKPOINT.md",
+      "docs/course-builder-final-qa-summary.md",
+      "docs/development-process-v2.md",
+      "docs/learner-progress-api-inventory.json",
+      "docs/learner-progress-final-qa-summary.md",
+      "docs/local-demo.md",
+      "docs/production-deployment-plan.md",
+      "docs/production-deployment-runbook.md",
+      "docs/production-domain-dns-verification.md",
+      "docs/production-domain-reverse-proxy-decision.md",
+      "docs/production-restore-drill-runbook.md",
+      "docs/production-reverse-proxy-checklist.md",
+      "docs/production-server-checklist.md",
+      "docs/production-server-facts.md",
+      "docs/project-roadmap-after-stage9.md",
+      "docs/release-candidate-checklist.md",
+      "docs/release-handoff.md",
+      "docs/release-manifest.json",
+      "docs/release-publication-checklist.md",
+      "docs/stage-12-1-learner-account-workflow.md",
+      "docs/stage-12-2-catalog-learner-workflow.md",
+      "docs/stage-12-3-course-detail-learner-workflow.md",
+      "docs/stage-12-4-document-verification-workflow.md",
+      "docs/stage-12-5-admin-moderation-audit-workflow.md",
+      "docs/stage-12-6-ux-ui-navigation-empty-states.md",
+      "docs/stage-12-7-import-export-reporting.md",
+      "docs/stage-12-8-final-stabilization.md",
+      "docs/stage-12-product-roadmap.md",
+      "docs/stage-13-learning-flow.md",
+      "docs/stage-14-documents-certificates-verification.md",
+      "docs/stage-15-admin-ux-operator-workflow.md",
+      "docs/stage-16-release-readiness-regression.md",
+      "docs/stage-17-production-deployment-readiness.md",
+      "docs/stage-18-production-runbook-operator-handoff.md",
+      "docs/stage-20-final-release-candidate-launch-checklist.md",
+      "docs/stage-21-production-launch-dry-run-deployment-preparation.md",
+      "docs/stage-23-controlled-production-launch-execution-preparation.md"
+    ]
+  },
+  "high_value_files": [
+    {
+      "path": "backend/app/api/v1/account.py",
+      "kind": "backend_api",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification"
+      ]
+    },
+    {
+      "path": "backend/app/api/v1/admin.py",
+      "kind": "backend_api",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "pdf",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "backend/app/api/v1/auth.py",
+      "kind": "backend_api",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verify"
+      ]
+    },
+    {
+      "path": "backend/app/api/v1/org.py",
+      "kind": "backend_api",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Enrollment",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "backend/app/api/v1/public.py",
+      "kind": "backend_api",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Enrollment",
+        "Verify",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "backend/app/api/v1/router.py",
+      "kind": "backend_api",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "account"
+      ]
+    },
+    {
+      "path": "backend/app/models/__init__.py",
+      "kind": "backend_model",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Enrollment",
+        "course",
+        "document",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "backend/app/models/course.py",
+      "kind": "backend_model",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course",
+        "document"
+      ]
+    },
+    {
+      "path": "backend/app/models/course_lesson.py",
+      "kind": "backend_model",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course"
+      ]
+    },
+    {
+      "path": "backend/app/models/course_module.py",
+      "kind": "backend_model",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course"
+      ]
+    },
+    {
+      "path": "backend/app/models/document_generation_event.py",
+      "kind": "backend_model",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "Document",
+        "document",
+        "template"
+      ]
+    },
+    {
+      "path": "backend/app/models/document_record.py",
+      "kind": "backend_model",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "course",
+        "document",
+        "enrollment",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "backend/app/models/enrollment.py",
+      "kind": "backend_model",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Enrollment",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "backend/app/models/lesson_progress.py",
+      "kind": "backend_model",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "backend/app/models/organization.py",
+      "kind": "backend_model",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "backend/app/schemas/account.py",
+      "kind": "backend_schema",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "Documents",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification"
+      ]
+    },
+    {
+      "path": "backend/app/schemas/admin.py",
+      "kind": "backend_schema",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "backend/app/schemas/org.py",
+      "kind": "backend_schema",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Enrollment",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "backend/app/schemas/public.py",
+      "kind": "backend_schema",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Verify",
+        "course",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "backend/app/services/completion_documents.py",
+      "kind": "backend_service",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Enrollment",
+        "Template",
+        "course",
+        "document",
+        "enrollment",
+        "pdf",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "backend/app/services/document_pdf.py",
+      "kind": "backend_service",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "PDF",
+        "QR",
+        "Template",
+        "course",
+        "document",
+        "pdf",
+        "qr",
+        "reportlab",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "backend/app/services/document_storage.py",
+      "kind": "backend_service",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "PDF",
+        "document",
+        "pdf"
+      ]
+    },
+    {
+      "path": "backend/app/services/document_templates.py",
+      "kind": "backend_service",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Template",
+        "course",
+        "document",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_account_course_detail_api.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Account",
+        "account",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_account_lesson_progress_api.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_admin_action_required_filters_api.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "PDF",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "pdf"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_admin_dashboard_summary_api.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_admin_worklist_summary_api.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_auth_rbac_admin_api.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "??????",
+        "????????",
+        "??????????",
+        "?????????????",
+        "Account",
+        "Certificate",
+        "Course",
+        "Document",
+        "Enrollment",
+        "PDF",
+        "Verification",
+        "Verify",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "pdf",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_config_document_metadata.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "Document",
+        "document"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_course_lessons_admin_api.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document"
+      ],
+      "matched_keywords": [
+        "Certificate",
+        "Course",
+        "course",
+        "document"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_course_modules_admin_api.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document"
+      ],
+      "matched_keywords": [
+        "Certificate",
+        "Course",
+        "course",
+        "document"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_document_pdf.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "PDF",
+        "Template",
+        "course",
+        "document",
+        "pdf",
+        "qr",
+        "reportlab",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_document_storage.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "PDF",
+        "document",
+        "documents",
+        "pdf"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_document_templates.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Template",
+        "course",
+        "document",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_public_course_outline.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "course"
+      ]
+    },
+    {
+      "path": "backend/app/tests/test_security.py",
+      "kind": "backend_test",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/STAGE6_CHECKPOINT.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "Verification",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "reportlab",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/course-builder-final-qa-summary.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/development-process-v2.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Document",
+        "account",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/learner-progress-api-inventory.json",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "Template",
+        "Verify",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "pdf",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/learner-progress-final-qa-summary.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "course",
+        "document",
+        "enrollment",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/local-demo.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "document",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-backup-monitoring-checklist.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Verify",
+        "certificate",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/production-backup-verification.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-deployment-plan.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Document",
+        "Documents",
+        "Verify",
+        "account",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/production-deployment-runbook.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Document",
+        "account",
+        "certificate",
+        "document",
+        "documents",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-domain-dns-verification.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "account",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/production-domain-reverse-proxy-decision.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "account",
+        "certificate",
+        "document",
+        "documents",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/production-environment-template.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "Template",
+        "document",
+        "documents",
+        "template"
+      ]
+    },
+    {
+      "path": "docs/production-fact-collection-result.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/production-frontend-static-runbook.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-handover-package.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-incident-runbook.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/production-initialization-runbook.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-maintenance-update-checklist.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "document",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-monitoring-smoke.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/production-operational-runbook.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-operations-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-operations-runbook.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/production-release-runbook.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-restore-drill-runbook.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-reverse-proxy-checklist.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Certificate",
+        "Verify",
+        "account",
+        "certificate",
+        "document",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-rollout-inventory.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "document",
+        "template"
+      ]
+    },
+    {
+      "path": "docs/production-server-checklist.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Document",
+        "Documents",
+        "document",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/production-server-facts.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Certificate",
+        "Template",
+        "Verify",
+        "account",
+        "certificate",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/production-server-preflight-execution.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "template"
+      ]
+    },
+    {
+      "path": "docs/production-server-remediation-plan.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/production-stage9-final-gate.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "document",
+        "documents",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/project-roadmap-after-stage9.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "PDF",
+        "QR",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/release-candidate-checklist.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Document",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/release-handoff.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Document",
+        "account",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/release-manifest.json",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "pdf",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/release-publication-checklist.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Document",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage-12-1-learner-account-workflow.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Document",
+        "Enrollment",
+        "QR",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-12-2-catalog-learner-workflow.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Enrollment",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-12-3-course-detail-learner-workflow.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "Enrollment",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-12-4-document-verification-workflow.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Document",
+        "Documents",
+        "QR",
+        "Verification",
+        "Verify",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-12-5-admin-moderation-audit-workflow.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "Verification",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-12-6-ux-ui-navigation-empty-states.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "Verification",
+        "Verify",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-12-7-import-export-reporting.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "Verification",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "pdf",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage-12-8-final-stabilization.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "QR",
+        "Verification",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-12-product-roadmap.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "QR",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage-13-learning-flow.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "Verification",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-14-documents-certificates-verification.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Document",
+        "Documents",
+        "PDF",
+        "QR",
+        "Verification",
+        "Verify",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "pdf",
+        "qr",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-15-admin-ux-operator-workflow.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "Verification",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "template",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-16-release-readiness-regression.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "QR",
+        "Verification",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-17-production-deployment-readiness.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "QR",
+        "Verification",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-18-production-runbook-operator-handoff.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "QR",
+        "Verification",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-20-final-release-candidate-launch-checklist.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-21-production-launch-dry-run-deployment-preparation.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-22-production-launch-go-no-go-controlled-execution.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "certificate",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-23-controlled-production-launch-execution-preparation.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-24-production-launch-final-evidence-package.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage-25-final-project-closure-handoff-package.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "certificate",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-26-pre-production-operational-rehearsal.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "account",
+        "certificate",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage-27-final-production-launch-command-pack-dry-archive.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "account",
+        "certificate",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage-28-final-release-ledger-tag-registry-archive.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Verification",
+        "certificate",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage-29-final-operator-delivery-bundle-archive.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "account",
+        "certificate",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage-30-final-pre-launch-freeze-release-archive-closure.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "certificate",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage-31-post-freeze-development-cycle-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "account",
+        "course",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage-32-performance-stability-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-32-post-optimization-stability-measurement-archive.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-33-admin-users-frontend-fast-path-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "Verify",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-33-final-frontend-fast-path-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-33-frontend-fast-path-measurement-archive.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification"
+      ]
+    },
+    {
+      "path": "docs/stage-34-admin-users-incremental-refresh-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "Verify",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-34-final-admin-users-incremental-refresh-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-34-users-only-refresh-archive.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-35-admin-organizations-incremental-refresh-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "Verify",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-35-final-admin-organizations-incremental-refresh-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-35-organizations-only-refresh-archive.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage-36-admin-groups-incremental-refresh-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "Verify",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage36-admin-groups-incremental-refresh-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage37-admin-courses-incremental-refresh-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage37-admin-courses-incremental-refresh-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course"
+      ]
+    },
+    {
+      "path": "docs/stage38-admin-enrollments-incremental-refresh-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Enrollment",
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage38-admin-enrollments-incremental-refresh-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Enrollment",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage39-admin-documents-incremental-refresh-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage39-admin-documents-incremental-refresh-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Document",
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage40-admin-rbac-audit-incremental-refresh-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage40-admin-rbac-audit-incremental-refresh-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage41-admin-incremental-refresh-final-audit-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage41-admin-incremental-refresh-final-audit-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage41-admin-incremental-refresh-final-audit-findings.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage42-frontend-bundle-optimization-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "document",
+        "reportlab"
+      ]
+    },
+    {
+      "path": "docs/stage42-frontend-bundle-optimization-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "Verify",
+        "document",
+        "qr"
+      ]
+    },
+    {
+      "path": "docs/stage42-frontend-bundle-optimization-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage43-frontend-route-smoke-hardening-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "document",
+        "reportlab"
+      ]
+    },
+    {
+      "path": "docs/stage43-frontend-route-smoke-hardening-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage43-frontend-route-smoke-hardening-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage46-post-ci-stabilization-roadmap-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "document",
+        "template"
+      ]
+    },
+    {
+      "path": "docs/stage46-post-ci-stabilization-roadmap-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Verify",
+        "reportlab",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage46-post-ci-stabilization-roadmap-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage47-production-deployment-readiness-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage47-production-deployment-readiness-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "template"
+      ]
+    },
+    {
+      "path": "docs/stage47-production-deployment-readiness-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "template"
+      ]
+    },
+    {
+      "path": "docs/stage48-production-deployment-dry-run-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage48-production-deployment-dry-run-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage48-production-deployment-dry-run-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage49-production-server-facts-refresh-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "certificate",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage49-production-server-facts-refresh-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate"
+      ],
+      "matched_keywords": [
+        "certificate"
+      ]
+    },
+    {
+      "path": "docs/stage49-production-server-facts-refresh-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage50-production-server-target-selection-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "certificate",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage50-production-server-target-selection-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document"
+      ],
+      "matched_keywords": [
+        "certificate",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage50-production-server-target-selection-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "certificate",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage51-production-target-facts-completion-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage51-production-target-facts-completion-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "account",
+        "certificate"
+      ]
+    },
+    {
+      "path": "docs/stage51-production-target-facts-completion-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage52-production-target-dns-alignment-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "certificate",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage52-production-target-dns-alignment-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "verification"
+      ],
+      "matched_keywords": [
+        "certificate",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage52-production-target-dns-alignment-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "certificate",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage53-production-server-inventory-preflight-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate",
+        "document"
+      ],
+      "matched_keywords": [
+        "certificate",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage53-production-server-inventory-preflight-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "certificate"
+      ],
+      "matched_keywords": [
+        "certificate"
+      ]
+    },
+    {
+      "path": "docs/stage53-production-server-inventory-preflight-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage54-production-repository-state-preflight-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage54-production-repository-state-preflight-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage55-production-override-backup-preservation-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage55-production-override-backup-preservation-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage55-production-override-backup-preservation-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage56-production-deployment-preservation-plan-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage56-production-deployment-preservation-plan-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage56-production-deployment-preservation-plan-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage57-production-protected-backup-execution-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage57-production-protected-backup-execution-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage57-production-protected-backup-execution-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage58-production-deployment-target-release-selection-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage58-production-deployment-target-release-selection-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage58-production-deployment-target-release-selection-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage59-production-pre-deployment-health-check-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage59-production-pre-deployment-health-check-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage59-production-pre-deployment-health-check-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage60-production-deployment-execution-plan-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage60-production-deployment-execution-plan-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Verify",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage60-production-deployment-execution-plan-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage61-production-deployment-execution-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage61-production-deployment-execution-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage61-production-deployment-execution-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage62-post-deployment-monitoring-development-resume-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage62-post-deployment-monitoring-development-resume-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage63-product-development-backlog-selection-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage63-product-development-backlog-selection-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage63-product-development-backlog-selection-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage64-release-metadata-version-alignment-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage64-release-metadata-version-alignment-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage64-release-metadata-version-alignment-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage65-product-development-continuation-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "QR",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage65-product-development-continuation-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "QR",
+        "document",
+        "documents",
+        "enrollment",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage65-product-development-continuation-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "QR",
+        "document",
+        "enrollment",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage66-documents-public-verification-ux-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "QR",
+        "Verification",
+        "Verify",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage66-documents-public-verification-ux-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "QR",
+        "Verification",
+        "Verify",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage66-documents-public-verification-ux-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "QR",
+        "Verification",
+        "Verify",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage67-admin-document-workflow-polish-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "QR",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage67-admin-document-workflow-polish-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "QR",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage67-admin-document-workflow-polish-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "QR",
+        "Verification",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage68-organization-cabinet-document-profile-polish-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "PDF",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage68-organization-cabinet-document-profile-polish-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "PDF",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage68-organization-cabinet-document-profile-polish-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "PDF",
+        "QR",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage69-admin-organization-document-profile-polish-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "PDF",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage69-admin-organization-document-profile-polish-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "PDF",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage69-admin-organization-document-profile-polish-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "PDF",
+        "QR",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage70-release-readiness-checkpoint-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage70-release-readiness-checkpoint-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage70-release-readiness-checkpoint-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "PDF",
+        "QR",
+        "Verification",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage71-next-product-backlog-selection-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "PDF",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage71-next-product-backlog-selection-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "PDF",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage71-next-product-backlog-selection-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Documents",
+        "PDF",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-execution-preparation-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-execution-preparation-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-execution-preparation.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-execution-readiness-checkpoint-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-execution-readiness-checkpoint-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-execution-readiness-checkpoint.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "verification"
+      ],
+      "matched_keywords": [
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-execution-result-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-execution-result-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-execution-result.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-planning-baseline-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-planning-baseline-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-backup-before-deploy-planning-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-deployment-execution-result-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-deployment-execution-result-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-deployment-execution-result.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-deployment-preflight-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-deployment-preflight-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-post-deploy-manual-smoke-result-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-post-deploy-manual-smoke-result-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-post-deploy-manual-smoke-result.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-execution-preparation-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-execution-preparation-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-execution-preparation.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "Template",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-execution-readiness-checkpoint-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-execution-readiness-checkpoint-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-execution-readiness-checkpoint.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-execution-result-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-execution-result-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-plan-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-preflight-fact-collection-plan.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-release-closure-summary-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-release-closure-summary-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-release-closure-summary.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-release-planning-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-release-planning-audit.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-release-planning-baseline-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage72-production-release-planning-baseline.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage73-production-contacts-deploy-result.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "document",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage73-production-contacts-placeholders-replacement-planning-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage73-production-contacts-placeholders-source-inspection-acceptance.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage73-production-polish-planning.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verify",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage74-organization-info-public-page.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Verification",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage75-public-portal-content-polish.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document"
+      ],
+      "matched_keywords": [
+        "Document",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage76-public-organization-documents.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "document",
+        "pdf"
+      ],
+      "matched_keywords": [
+        "PDF",
+        "document",
+        "documents"
+      ]
+    },
+    {
+      "path": "docs/stage77-course-builder-card-ux.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage77-course-builder-final-qa.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage77-course-builder-module-lesson-ux.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course"
+      ]
+    },
+    {
+      "path": "docs/stage77-course-builder-readiness.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course",
+        "document"
+      ]
+    },
+    {
+      "path": "docs/stage77-course-publication-ux.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage77-lesson-content-preview-ux.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course"
+      ]
+    },
+    {
+      "path": "docs/stage77-lesson-editor-ux.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course"
+      ]
+    },
+    {
+      "path": "docs/stage78-learner-completion-action-ux.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course"
+      ]
+    },
+    {
+      "path": "docs/stage78-learner-course-completion-api-integration.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage78-learner-course-progress-foundation.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage78-learner-document-handoff-ux.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification"
+      ]
+    },
+    {
+      "path": "docs/stage78-learner-lesson-access-ux.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage78-learner-lesson-completion-api-integration.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "account",
+        "course",
+        "enrollment"
+      ]
+    },
+    {
+      "path": "docs/stage78-learner-lesson-content-preview-ux.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account"
+      ],
+      "matched_keywords": [
+        "Course",
+        "course"
+      ]
+    },
+    {
+      "path": "docs/stage78-learner-progress-api-inventory.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "certificate",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "account",
+        "certificate",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "docs/stage78-learner-progress-final-qa.md",
+      "kind": "documentation",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "verification"
+      ]
+    },
+    {
+      "path": "frontend/src/api/client.js",
+      "kind": "frontend_api_client",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Account",
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "pdf",
+        "verify"
+      ]
+    },
+    {
+      "path": "frontend/src/components/documents/DocumentVerificationQrBlock.jsx",
+      "kind": "frontend_component",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "QR",
+        "Verification",
+        "document",
+        "qr",
+        "verification"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/DocumentsPage.jsx",
+      "kind": "frontend_page",
+      "keyword_groups": [
+        "account",
+        "document",
+        "pdf",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Course",
+        "Document",
+        "Documents",
+        "Enrollment",
+        "PDF",
+        "QR",
+        "Verification",
+        "course",
+        "document",
+        "documents",
+        "enrollment",
+        "pdf",
+        "qr",
+        "template",
+        "verification"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/VerifyDocumentPage.jsx",
+      "kind": "frontend_page",
+      "keyword_groups": [
+        "account",
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "QR",
+        "Verification",
+        "Verify",
+        "account",
+        "course",
+        "document",
+        "documents",
+        "qr",
+        "verification",
+        "verify"
+      ]
+    },
+    {
+      "path": "frontend/src/utils/documentVerification.js",
+      "kind": "frontend_utility",
+      "keyword_groups": [
+        "document",
+        "verification"
+      ],
+      "matched_keywords": [
+        "Document",
+        "Verification",
+        "document",
+        "verification",
+        "verify"
+      ]
+    }
+  ],
+  "recommendation": {
+    "next_stage": "79.2",
+    "next_stage_name": "Learner documents UX/API connection plan",
+    "runtime_change_allowed_now": false,
+    "database_migration_allowed_now": false,
+    "recommended_scope": [
+      "review existing DocumentsPage and VerifyDocumentPage behavior",
+      "map account course completion state to available learner documents",
+      "identify whether document creation is automatic, manual, or template-driven",
+      "prepare a frontend-safe learner documents UX stage before backend changes"
+    ]
+  },
+  "safety": {
+    "frontend_runtime_changed": false,
+    "backend_runtime_changed": false,
+    "database_changed": false,
+    "migrations_added": false,
+    "auth_rbac_changed": false,
+    "production_config_changed": false
+  }
+}

@@ -189,7 +189,7 @@ function Button({ children, variant = "primary", icon: Icon, className = "", typ
     <button
       type={type}
       className={cx(
-        "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 active:scale-[0.99]",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 active:scale-[0.99]",
         styles[variant],
         className
       )}
@@ -257,7 +257,7 @@ function VariantPicker({ selected, setSelected }) {
             key={item.id}
             onClick={() => setSelected(item.id)}
             className={cx(
-              "min-h-[112px] rounded-3xl border p-4 text-left transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200",
+              "min-h-[112px] rounded-3xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200",
               active ? "bg-[var(--surface)]" : "bg-white/70 hover:bg-white"
             )}
             style={{ borderColor: active ? item.primary : "var(--border)", boxShadow: active ? item.shadow : "none" }}
@@ -288,7 +288,7 @@ function ContextTabs({ selected, setSelected }) {
             key={item.id}
             onClick={() => setSelected(item.id)}
             className={cx(
-              "inline-flex min-h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200",
+              "inline-flex min-h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200",
               active ? "bg-[var(--primary)] text-white" : "text-[var(--muted)] hover:bg-slate-50 hover:text-[var(--text)]"
             )}
             role="tab"
@@ -381,7 +381,7 @@ function SearchForm() {
       </div>
       <div className="grid gap-1">
         <label htmlFor="format" className="px-1 text-sm font-bold text-[var(--text)]">Формат</label>
-        <select id="format" className="min-h-12 rounded-2xl border bg-white px-3 text-sm outline-none focus-visible:ring-4 focus-visible:ring-blue-200" style={{ borderColor: "var(--border)" }}>
+        <select id="format" className="min-h-12 rounded-2xl border bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200" style={{ borderColor: "var(--border)" }}>
           <option>Любой формат</option>
           <option>Дистанционно</option>
           <option>Онлайн + тест</option>
@@ -724,12 +724,12 @@ function UiKitMockup({ theme }) {
           <form className="mt-5 grid gap-4" noValidate>
             <div className="grid gap-2">
               <label htmlFor="email-demo" className="text-sm font-bold">Email</label>
-              <input id="email-demo" type="email" aria-invalid="true" aria-describedby="email-error" autoComplete="email" className="min-h-12 rounded-2xl border border-rose-300 px-4 outline-none focus-visible:ring-4 focus-visible:ring-blue-200" />
+              <input id="email-demo" type="email" aria-invalid="true" aria-describedby="email-error" autoComplete="email" className="min-h-12 rounded-2xl border border-rose-300 px-4 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200" />
               <p id="email-error" className="text-sm font-semibold text-rose-700">Введите корректный email.</p>
             </div>
             <div className="grid gap-2">
               <label htmlFor="program-demo" className="text-sm font-bold">Программа</label>
-              <select id="program-demo" className="min-h-12 rounded-2xl border px-4 outline-none focus-visible:ring-4 focus-visible:ring-blue-200" style={{ borderColor: "var(--border)" }}>
+              <select id="program-demo" className="min-h-12 rounded-2xl border px-4 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200" style={{ borderColor: "var(--border)" }}>
                 <option>Выберите программу</option>
               </select>
             </div>

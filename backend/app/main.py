@@ -6,7 +6,7 @@ from app.core.config import settings
 
 app = FastAPI(
     title="ObrPortal API",
-    version="0.1.0-stage6",
+    version=settings.app_version,
     description="Backend каркас единой образовательной платформы: health, readiness, auth/RBAC skeleton.",
 )
 
@@ -27,5 +27,5 @@ async def health() -> dict:
         "status": "ok",
         "app": settings.app_name,
         "environment": settings.environment,
-        "version": "0.1.0-stage6",
+        "version": settings.app_version,
     }

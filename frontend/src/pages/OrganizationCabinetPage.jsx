@@ -6,6 +6,7 @@ import {
   deleteOrgGroupEnrollment,
   deleteOrgLearningGroup,
   getOrgGroupEnrollments,
+  getOrgEnrollments,
   getOrgLearningGroupMembers,
   getOrgLearningGroups,
   getOrgProfile,
@@ -26,6 +27,7 @@ import { OrganizationCabinetNextSteps } from "../components/organization/Organiz
 import { OrganizationCabinetHeroSection } from "../components/organization/OrganizationCabinetHeroSection";
 import { OrganizationCabinetErrorAlert } from "../components/organization/OrganizationCabinetErrorAlert";
 import { OrganizationCabinetGroupsWorkspace } from "../components/organization/OrganizationCabinetGroupsWorkspace";
+import { OrganizationLearningOverviewPanel } from "../components/organization/OrganizationLearningOverviewPanel";
 import {
   buildEmptyGroupEnrollmentForm,
   buildEmptyGroupForm,
@@ -91,6 +93,10 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const [groupEnrollmentStatusFilter, setGroupEnrollmentStatusFilter] = useState("");
   const [deletingGroupEnrollmentId, setDeletingGroupEnrollmentId] = useState("");
   const [groupEnrollmentDeleteMessage, setGroupEnrollmentDeleteMessage] = useState("");
+  const [organizationEnrollments, setOrganizationEnrollments] = useState([]);
+  const [organizationEnrollmentsLoading, setOrganizationEnrollmentsLoading] = useState(false);
+  const [organizationEnrollmentsError, setOrganizationEnrollmentsError] = useState("");
+  const [organizationEnrollmentsRefreshKey, setOrganizationEnrollmentsRefreshKey] = useState(0);
   const [groupDeleteError, setGroupDeleteError] = useState("");
   const [groupDeleteMessage, setGroupDeleteMessage] = useState("");
   const [deletingGroupId, setDeletingGroupId] = useState("");
@@ -231,6 +237,46 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   });
   const hasGroups = groups.length > 0;
   const heroUserLabel = user?.full_name || user?.email || "Пользователь";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadOrganizationEnrollments() {
+      if (organizations.length === 0) {
+        setOrganizationEnrollments([]);
+        setOrganizationEnrollmentsError("");
+        return;
+      }
+
+      try {
+        setOrganizationEnrollmentsLoading(true);
+        setOrganizationEnrollmentsError("");
+
+        const response = await getOrgEnrollments();
+
+        if (!cancelled) {
+          setOrganizationEnrollments(Array.isArray(response) ? sortEnrollments(response) : []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setOrganizationEnrollments([]);
+          setOrganizationEnrollmentsError(
+            formatApiError(err, "Не удалось загрузить общую сводку обучения.")
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setOrganizationEnrollmentsLoading(false);
+        }
+      }
+    }
+
+    loadOrganizationEnrollments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [organizations, organizationEnrollmentsRefreshKey]);
 
   useEffect(() => {
     if (organizations.length === 0) {
@@ -399,6 +445,9 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       await deleteOrgGroupEnrollment(selectedGroupId, enrollment.id);
 
       setGroupEnrollments((current) =>
+        current.filter((item) => item.id !== enrollment.id)
+      );
+      setOrganizationEnrollments((current) =>
         current.filter((item) => item.id !== enrollment.id)
       );
       setGroupEnrollmentDeleteMessage("Назначение курса снято.");
@@ -656,6 +705,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
       if (Array.isArray(result.created) && result.created.length > 0) {
         setGroupEnrollments((current) => mergeUniqueEnrollments(current, result.created));
+        setOrganizationEnrollments((current) => mergeUniqueEnrollments(current, result.created));
       }
     } catch (err) {
       setGroupEnrollmentError(formatApiError(err, "Не удалось назначить курс группе."));
@@ -870,6 +920,15 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
       <OrganizationCabinetErrorAlert error={error} />
 
       <OrganizationCabinetStats {...cabinetStatsProps} />
+
+      <OrganizationLearningOverviewPanel
+        enrollments={organizationEnrollments}
+        loading={organizationEnrollmentsLoading}
+        error={organizationEnrollmentsError}
+        selectedGroupId={selectedGroupId}
+        onSelectGroup={setSelectedGroupId}
+        onRefresh={() => setOrganizationEnrollmentsRefreshKey((current) => current + 1)}
+      />
 
       <OrganizationProfileSection {...organizationProfileSectionProps} />
 

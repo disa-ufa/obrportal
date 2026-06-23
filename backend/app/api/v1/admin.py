@@ -19,6 +19,7 @@ from app.db.session import get_db
 from app.models.audit_event import AuditEvent
 from app.models.course import Course
 from app.models.course_lesson import CourseLesson
+from app.models.lesson_block import LessonBlock
 from app.models.course_module import CourseModule
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
@@ -41,6 +42,10 @@ from app.services.completion_documents import (
     mark_completion_document_generation_metadata,
     write_completion_document_pdf_to_storage,
 )
+from app.services.lesson_blocks import (
+    build_synthetic_legacy_lesson_blocks,
+    normalize_lesson_block_type,
+)
 from app.schemas.admin import (
     AdminAuditEventItem,
     AdminCourseCreate,
@@ -50,6 +55,11 @@ from app.schemas.admin import (
     AdminCourseLessonDetail,
     AdminCourseLessonItem,
     AdminCourseLessonUpdate,
+    AdminLessonBlockCreate,
+    AdminLessonBlockDetail,
+    AdminLessonBlockItem,
+    AdminLessonBlockReorder,
+    AdminLessonBlockUpdate,
     AdminCourseModuleCreate,
     AdminCourseModuleDetail,
     AdminCourseModuleItem,
@@ -136,6 +146,42 @@ async def get_user_roles(
         )
         for row in roles_result.all()
     ]
+
+async def get_users_roles(
+    user_ids: list,
+    session: AsyncSession,
+) -> dict[str, list[AdminUserRoleItem]]:
+    if not user_ids:
+        return {}
+
+    roles_result = await session.execute(
+        select(
+            UserRole.user_id.label("user_id"),
+            UserRole.id.label("id"),
+            Role.id.label("role_id"),
+            Role.code,
+            Role.name,
+            UserRole.organization_id,
+        )
+        .join(Role, UserRole.role_id == Role.id)
+        .where(UserRole.user_id.in_(user_ids))
+        .order_by(UserRole.user_id, Role.code)
+    )
+
+    roles_by_user_id: dict[str, list[AdminUserRoleItem]] = {}
+
+    for row in roles_result.all():
+        roles_by_user_id.setdefault(str(row.user_id), []).append(
+            AdminUserRoleItem(
+                id=str(row.id),
+                role_id=str(row.role_id),
+                code=row.code,
+                name=row.name,
+                organization_id=str(row.organization_id) if row.organization_id else None,
+            )
+        )
+
+    return roles_by_user_id
 
 
 async def get_role_permissions(
@@ -919,17 +965,50 @@ async def get_admin_dashboard_summary(
 async def list_users(
     _: User = Depends(require_permission("admin.users.read")),
     session: AsyncSession = Depends(get_db),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    q: str | None = Query(default=None, max_length=320),
+    role: str | None = Query(default=None, max_length=64),
+    is_active: bool | None = Query(default=None),
 ) -> list[AdminUserItem]:
-    users_result = await session.execute(select(User).order_by(User.email))
+    query = select(User)
+
+    normalized_q = q.strip() if q else None
+    if normalized_q:
+        search_pattern = f"%{normalized_q}%"
+        query = query.where(
+            or_(
+                User.email.ilike(search_pattern),
+                User.phone.ilike(search_pattern),
+                User.full_name.ilike(search_pattern),
+            )
+        )
+
+    if is_active is not None:
+        query = query.where(User.is_active.is_(is_active))
+
+    normalized_role = role.strip().lower() if role else None
+    if normalized_role:
+        query = (
+            query
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Role, UserRole.role_id == Role.id)
+            .where(Role.code == normalized_role)
+            .distinct()
+        )
+
+    query = query.order_by(User.email)
+    if limit is not None:
+        query = query.limit(limit)
+
+    users_result = await session.execute(query)
     users = users_result.scalars().all()
 
-    response: list[AdminUserItem] = []
+    roles_by_user_id = await get_users_roles([user.id for user in users], session)
 
-    for user in users:
-        roles = await get_user_roles(str(user.id), session)
-        response.append(build_admin_user_item(user, roles))
-
-    return response
+    return [
+        build_admin_user_item(user, roles_by_user_id.get(str(user.id), []))
+        for user in users
+    ]
 
 
 @router.post("/users", response_model=AdminUserDetail, status_code=status.HTTP_201_CREATED)
@@ -3507,6 +3586,17 @@ ADMIN_COURSE_LESSON_CONTENT_TYPES = {
     "assignment",
 }
 
+ADMIN_COURSE_LESSON_EDITOR_MODES = {
+    "legacy",
+    "block",
+}
+
+ADMIN_COURSE_LESSON_STATUSES = {
+    "draft",
+    "published",
+    "archived",
+}
+
 
 def normalize_course_lesson_content_type(value: str) -> str:
     normalized = value.strip().lower()
@@ -3515,6 +3605,30 @@ def normalize_course_lesson_content_type(value: str) -> str:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Unsupported course lesson content type",
+        )
+
+    return normalized
+
+
+def normalize_course_lesson_editor_mode(value: str) -> str:
+    normalized = value.strip().lower()
+
+    if normalized not in ADMIN_COURSE_LESSON_EDITOR_MODES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported course lesson editor mode",
+        )
+
+    return normalized
+
+
+def normalize_course_lesson_status(value: str) -> str:
+    normalized = value.strip().lower()
+
+    if normalized not in ADMIN_COURSE_LESSON_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported course lesson status",
         )
 
     return normalized
@@ -3529,6 +3643,15 @@ def normalize_course_lesson_create_data(data: dict) -> dict:
     )
     normalized["content_url"] = normalize_optional_text(normalized.get("content_url"))
     normalized["content_text"] = normalize_optional_text(normalized.get("content_text"))
+    normalized["editor_mode"] = normalize_course_lesson_editor_mode(
+        normalized.get("editor_mode") or "legacy"
+    )
+    normalized["status"] = normalize_course_lesson_status(
+        normalized.get("status") or "published"
+    )
+    normalized["published_version_id"] = normalize_optional_text(
+        normalized.get("published_version_id")
+    )
 
     if not normalized["title"]:
         raise HTTPException(
@@ -3577,6 +3700,27 @@ def normalize_course_lesson_update_data(data: dict) -> dict:
     if "content_text" in normalized:
         normalized["content_text"] = normalize_optional_text(normalized["content_text"])
 
+    if "editor_mode" in normalized:
+        if normalized["editor_mode"] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Course lesson editor mode is required",
+            )
+        normalized["editor_mode"] = normalize_course_lesson_editor_mode(normalized["editor_mode"])
+
+    if "status" in normalized:
+        if normalized["status"] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Course lesson status is required",
+            )
+        normalized["status"] = normalize_course_lesson_status(normalized["status"])
+
+    if "published_version_id" in normalized:
+        normalized["published_version_id"] = normalize_optional_text(
+            normalized["published_version_id"]
+        )
+
     if "position" in normalized and normalized["position"] is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -3607,6 +3751,9 @@ def build_admin_course_lesson_item(lesson: CourseLesson) -> AdminCourseLessonIte
         content_type=lesson.content_type,
         content_url=lesson.content_url,
         content_text=lesson.content_text,
+        editor_mode=lesson.editor_mode,
+        status=lesson.status,
+        published_version_id=lesson.published_version_id,
         position=lesson.position,
         is_required=lesson.is_required,
         is_active=lesson.is_active,
@@ -3622,6 +3769,9 @@ def build_admin_course_lesson_detail(lesson: CourseLesson) -> AdminCourseLessonD
         content_type=lesson.content_type,
         content_url=lesson.content_url,
         content_text=lesson.content_text,
+        editor_mode=lesson.editor_mode,
+        status=lesson.status,
+        published_version_id=lesson.published_version_id,
         position=lesson.position,
         is_required=lesson.is_required,
         is_active=lesson.is_active,
@@ -3639,6 +3789,9 @@ def course_lesson_snapshot(lesson: CourseLesson) -> dict:
         "content_type": lesson.content_type,
         "content_url": lesson.content_url,
         "content_text": lesson.content_text,
+        "editor_mode": lesson.editor_mode,
+        "status": lesson.status,
+        "published_version_id": lesson.published_version_id,
         "position": lesson.position,
         "is_required": lesson.is_required,
         "is_active": lesson.is_active,
@@ -3834,6 +3987,407 @@ async def delete_admin_course_lesson(
     await session.commit()
 
     return AdminDeleteResult(status="deleted", id=deleted_lesson_id)
+
+
+def build_admin_lesson_block_item(block: LessonBlock) -> AdminLessonBlockItem:
+    return AdminLessonBlockItem(
+        id=str(block.id),
+        lesson_id=str(block.lesson_id),
+        block_type=block.block_type,
+        position=block.position,
+        title=block.title,
+        content_json=block.content_json or {},
+        settings_json=block.settings_json or {},
+        is_required=block.is_required,
+        is_active=block.is_active,
+    )
+
+
+def build_admin_lesson_block_detail(block: LessonBlock) -> AdminLessonBlockDetail:
+    return AdminLessonBlockDetail(
+        id=str(block.id),
+        lesson_id=str(block.lesson_id),
+        block_type=block.block_type,
+        position=block.position,
+        title=block.title,
+        content_json=block.content_json or {},
+        settings_json=block.settings_json or {},
+        is_required=block.is_required,
+        is_active=block.is_active,
+        created_at=block.created_at,
+        updated_at=block.updated_at,
+    )
+
+
+def build_admin_lesson_block_item_from_legacy_dict(block: dict) -> AdminLessonBlockItem:
+    return AdminLessonBlockItem(
+        id=str(block["id"]),
+        lesson_id=str(block["lesson_id"]),
+        block_type=block["block_type"],
+        position=block["position"],
+        title=block.get("title"),
+        content_json=block.get("content_json") or {},
+        settings_json=block.get("settings_json") or {},
+        is_required=bool(block.get("is_required")),
+        is_active=bool(block.get("is_active")),
+    )
+
+
+def lesson_block_snapshot(block: LessonBlock) -> dict:
+    return {
+        "id": str(block.id),
+        "lesson_id": str(block.lesson_id),
+        "block_type": block.block_type,
+        "position": block.position,
+        "title": block.title,
+        "content_json": block.content_json or {},
+        "settings_json": block.settings_json or {},
+        "is_required": block.is_required,
+        "is_active": block.is_active,
+    }
+
+
+def normalize_lesson_block_create_data(data: dict) -> dict:
+    normalized = dict(data)
+    normalized["block_type"] = normalize_lesson_block_type(normalized["block_type"])
+    normalized["title"] = normalize_optional_text(normalized.get("title"))
+    normalized["content_json"] = normalized.get("content_json") or {}
+    normalized["settings_json"] = normalized.get("settings_json") or {}
+
+    if not isinstance(normalized["content_json"], dict):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Lesson block content_json must be an object",
+        )
+
+    if not isinstance(normalized["settings_json"], dict):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Lesson block settings_json must be an object",
+        )
+
+    return normalized
+
+
+def normalize_lesson_block_update_data(data: dict) -> dict:
+    normalized = dict(data)
+
+    if "block_type" in normalized and normalized["block_type"] is not None:
+        normalized["block_type"] = normalize_lesson_block_type(normalized["block_type"])
+
+    if "title" in normalized:
+        normalized["title"] = normalize_optional_text(normalized["title"])
+
+    if "content_json" in normalized:
+        if normalized["content_json"] is None or not isinstance(normalized["content_json"], dict):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Lesson block content_json must be an object",
+            )
+
+    if "settings_json" in normalized:
+        if normalized["settings_json"] is None or not isinstance(normalized["settings_json"], dict):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Lesson block settings_json must be an object",
+            )
+
+    return normalized
+
+
+async def get_admin_lesson_block_or_404(
+    block_id: str,
+    session: AsyncSession,
+) -> LessonBlock:
+    result = await session.execute(
+        select(LessonBlock).where(LessonBlock.id == block_id)
+    )
+    block = result.scalar_one_or_none()
+
+    if block is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson block not found",
+        )
+
+    return block
+
+
+async def list_real_lesson_blocks(
+    lesson_id: str,
+    session: AsyncSession,
+) -> list[LessonBlock]:
+    result = await session.execute(
+        select(LessonBlock)
+        .where(LessonBlock.lesson_id == lesson_id)
+        .order_by(LessonBlock.position.asc(), LessonBlock.created_at.asc())
+    )
+
+    return list(result.scalars().all())
+
+
+@router.get("/course-lessons/{lesson_id}/blocks", response_model=list[AdminLessonBlockItem])
+async def list_admin_lesson_blocks(
+    lesson_id: str,
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminLessonBlockItem]:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    blocks = await list_real_lesson_blocks(str(lesson.id), session)
+
+    if blocks:
+        return [
+            build_admin_lesson_block_item(block)
+            for block in blocks
+        ]
+
+    if lesson.editor_mode == "block":
+        return []
+
+    return [
+        build_admin_lesson_block_item_from_legacy_dict(block)
+        for block in build_synthetic_legacy_lesson_blocks(lesson)
+    ]
+
+
+@router.post(
+    "/course-lessons/{lesson_id}/blocks",
+    response_model=AdminLessonBlockDetail,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_admin_lesson_block(
+    lesson_id: str,
+    payload: AdminLessonBlockCreate,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminLessonBlockDetail:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    data = normalize_lesson_block_create_data(model_to_dict(payload))
+
+    block = LessonBlock(
+        lesson_id=lesson.id,
+        **data,
+    )
+    lesson.editor_mode = "block"
+    session.add(block)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.lesson_block_created",
+            entity_type="lesson_block",
+            entity_id=str(block.id),
+            payload={
+                "course_lesson": course_lesson_snapshot(lesson),
+                "lesson_block": lesson_block_snapshot(block),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(block)
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Lesson block position already exists for this lesson",
+        ) from exc
+
+    return build_admin_lesson_block_detail(block)
+
+
+@router.patch("/lesson-blocks/{block_id}", response_model=AdminLessonBlockDetail)
+async def update_admin_lesson_block(
+    block_id: str,
+    payload: AdminLessonBlockUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminLessonBlockDetail:
+    block = await get_admin_lesson_block_or_404(block_id, session)
+    data = normalize_lesson_block_update_data(model_to_dict(payload, exclude_unset=True))
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+
+    before = lesson_block_snapshot(block)
+
+    for field, value in data.items():
+        setattr(block, field, value)
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.lesson_block_updated",
+            entity_type="lesson_block",
+            entity_id=str(block.id),
+            payload={
+                "before": before,
+                "after": lesson_block_snapshot(block),
+                "changed_fields": sorted(data.keys()),
+            },
+            request=request,
+        )
+
+        await session.commit()
+        await session.refresh(block)
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Lesson block position already exists for this lesson",
+        ) from exc
+
+    return build_admin_lesson_block_detail(block)
+
+
+@router.delete("/lesson-blocks/{block_id}", response_model=AdminDeleteResult)
+async def delete_admin_lesson_block(
+    block_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminDeleteResult:
+    block = await get_admin_lesson_block_or_404(block_id, session)
+    deleted_block_id = str(block.id)
+    before = lesson_block_snapshot(block)
+
+    await session.delete(block)
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.lesson_block_deleted",
+        entity_type="lesson_block",
+        entity_id=deleted_block_id,
+        payload={
+            "before": before,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return AdminDeleteResult(status="deleted", id=deleted_block_id)
+
+
+@router.post("/course-lessons/{lesson_id}/blocks/reorder", response_model=list[AdminLessonBlockItem])
+async def reorder_admin_lesson_blocks(
+    lesson_id: str,
+    payload: AdminLessonBlockReorder,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminLessonBlockItem]:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    block_positions = {
+        item.id: item.position
+        for item in payload.blocks
+    }
+
+    if len(block_positions) != len(payload.blocks):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Lesson block ids must be unique",
+        )
+
+    if len(set(block_positions.values())) != len(block_positions):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Lesson block positions must be unique",
+        )
+
+    result = await session.execute(
+        select(LessonBlock)
+        .where(LessonBlock.lesson_id == lesson.id)
+        .order_by(LessonBlock.position.asc(), LessonBlock.created_at.asc())
+    )
+    all_blocks = list(result.scalars().all())
+    blocks_by_id = {
+        str(block.id): block
+        for block in all_blocks
+    }
+
+    missing_ids = sorted(set(block_positions) - set(blocks_by_id))
+    if missing_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson block not found for this lesson",
+        )
+
+    untouched_positions = {
+        block.position
+        for block in all_blocks
+        if str(block.id) not in block_positions
+    }
+    conflicting_positions = sorted(set(block_positions.values()) & untouched_positions)
+    if conflicting_positions:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Lesson block position conflicts with an existing block",
+        )
+
+    before = [
+        lesson_block_snapshot(blocks_by_id[block_id])
+        for block_id in sorted(block_positions)
+    ]
+
+    # Avoid unique constraint conflicts when swapping positions.
+    for index, block_id in enumerate(sorted(block_positions), start=1):
+        blocks_by_id[block_id].position = -index
+
+    await session.flush()
+
+    for block_id, position in block_positions.items():
+        blocks_by_id[block_id].position = position
+
+    try:
+        await session.flush()
+
+        after = [
+            lesson_block_snapshot(blocks_by_id[block_id])
+            for block_id in sorted(block_positions)
+        ]
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.lesson_blocks_reordered",
+            entity_type="course_lesson",
+            entity_id=str(lesson.id),
+            payload={
+                "course_lesson": course_lesson_snapshot(lesson),
+                "before": before,
+                "after": after,
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Lesson block position already exists for this lesson",
+        ) from exc
+
+    reordered_blocks = await list_real_lesson_blocks(str(lesson.id), session)
+
+    return [
+        build_admin_lesson_block_item(block)
+        for block in reordered_blocks
+    ]
 
 
 ADMIN_ENROLLMENT_STATUSES = {

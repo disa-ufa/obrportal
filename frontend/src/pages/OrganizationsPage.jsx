@@ -132,6 +132,7 @@ export function OrganizationsPage({
   onUpdateOrganization,
   onDeleteOrganization,
   onRefreshAdminData,
+  onRefreshOrganizations,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -222,6 +223,15 @@ export function OrganizationsPage({
     navigateToOrganizationFilters({}, { replace: true });
   }
 
+  function refreshOrganizationsFastPath() {
+    if (onRefreshOrganizations) {
+      onRefreshOrganizations();
+      return;
+    }
+
+    onRefreshAdminData();
+  }
+
   function handleExportOrganizationsCsv() {
     downloadCsvFile(
       buildDatedCsvFilename("obrportal-admin-organizations"),
@@ -244,7 +254,7 @@ export function OrganizationsPage({
           <div className="space-y-5">
             <AdminPageActions
               loading={loading}
-              onRefresh={onRefreshAdminData}
+              onRefresh={refreshOrganizationsFastPath}
               primaryLabel={showCreateForm ? "Скрыть форму" : "Добавить организацию"}
               primaryTone={showCreateForm ? "light" : "blue"}
               onPrimaryClick={() => setShowCreateForm((current) => !current)}

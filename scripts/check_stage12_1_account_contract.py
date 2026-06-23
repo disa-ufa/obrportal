@@ -76,7 +76,7 @@ REQUIRED_MARKERS = {
         'rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white',
         'mt-5 grid gap-3 text-sm text-slate-700 md:grid-cols-2',
         'text-2xl font-bold tracking-tight text-slate-950',
-        'rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-lg',
+        'rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-lg',
     ],
     "frontend_client": [
         'request("/api/v1/account/summary")',
