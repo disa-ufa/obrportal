@@ -75,27 +75,27 @@ summary::-webkit-details-marker {
 
 @layer components {
   .portal-container {
-    @apply mx-auto w-full max-w-[1320px] px-4 md:px-8;
+    @apply mx-auto w-full max-w-[1320px] px-4 sm:px-5 md:px-8;
   }
 
   .portal-surface {
-    @apply rounded-[1.15rem] border border-slate-200/80 bg-white shadow-[0_18px_45px_rgba(17,25,54,0.06)];
+    @apply rounded-card border border-obr-border bg-obr-surface shadow-shell;
   }
 
   .portal-card {
-    @apply rounded-[1.15rem] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(17,25,54,0.055)] transition duration-200;
+    @apply rounded-card border border-obr-border bg-obr-surface shadow-card transition duration-200;
   }
 
   .portal-card-hover {
-    @apply hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_18px_42px_rgba(15,91,232,0.12)];
+    @apply hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-cardHover;
   }
 
   .portal-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.22)] transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-control bg-obr-primary px-5 py-3 text-sm font-bold text-white shadow-primary transition hover:bg-obr-primaryHover focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .portal-btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-blue-700 transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-control border border-obr-border bg-obr-surface px-5 py-3 text-sm font-bold text-obr-primary transition hover:border-blue-200 hover:bg-obr-primarySoft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .portal-icon-tile {
@@ -103,15 +103,15 @@ summary::-webkit-details-marker {
   }
 
   .portal-input {
-    @apply h-12 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100;
+    @apply h-12 w-full rounded-control border border-obr-border bg-obr-surface px-4 text-sm font-medium text-obr-ink transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100;
   }
 
   .portal-chip {
-    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-blue-50 px-3 text-xs font-bold text-blue-700 ring-1 ring-blue-100;
+    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-obr-primarySoft px-3 text-xs font-bold text-obr-primary ring-1 ring-blue-100;
   }
 
   .portal-muted-chip {
-    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-slate-50 px-3 text-xs font-bold text-slate-600 ring-1 ring-slate-200;
+    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-slate-50 px-3 text-xs font-bold text-obr-muted ring-1 ring-slate-200;
   }
 
   .program-art {
