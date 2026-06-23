@@ -348,7 +348,7 @@ def main() -> None:
         [
             "export function OrganizationCabinetNextSteps()",
             "<section",
-            "rounded-[2rem]",
+            "rounded-shell",
         ],
     )
 
