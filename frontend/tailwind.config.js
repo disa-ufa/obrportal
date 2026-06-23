@@ -27,6 +27,7 @@ export default {
       boxShadow: {
         card: "var(--shadow-card)",
         cardHover: "var(--shadow-card-hover)",
+        publicCard: "var(--shadow-public-card)",
         shell: "var(--shadow-shell)",
         primary: "var(--shadow-primary)",
       },
