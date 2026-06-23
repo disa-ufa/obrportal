@@ -331,7 +331,7 @@ function LearnerDocumentVerificationUXPanel({
   return (
     <section
       data-testid="learner-document-verification-ux-panel"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -498,7 +498,7 @@ function PublicVerificationJourneyHint({
   return (
     <section
       data-testid="public-verification-journey"
-      className="rounded-[2rem] bg-gradient-to-br from-blue-50 via-white to-slate-50 p-6 shadow-sm ring-1 ring-blue-100 md:p-8"
+      className="rounded-shell bg-gradient-to-br from-blue-50 via-white to-slate-50 p-6 shadow-sm ring-1 ring-blue-100 md:p-8"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -567,7 +567,7 @@ function PublicVerificationQrOperationsPanel({
   return (
     <section
       data-testid="public-verification-qr-operations-panel"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -710,7 +710,7 @@ function PublicVerificationDiagnostics({
   return (
     <section
       data-testid="public-verification-diagnostics"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -826,7 +826,7 @@ function ResultCard({ result, onReset, onPageChange }) {
   return (
     <div
       data-testid="public-verification-result-card"
-      className={`rounded-[2rem] bg-white p-6 shadow-sm ring-1 ${tone.card}`}
+      className={`rounded-shell bg-white p-6 shadow-sm ring-1 ${tone.card}`}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${tone.badge}`}>
@@ -1035,7 +1035,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           {RU.publicRegistry}
         </div>
@@ -1070,7 +1070,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
 
       <section
         data-testid="public-verification-form-section"
-        className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+        className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200"
       >
         <form
           data-testid="public-verification-form"
@@ -1124,7 +1124,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
           data-testid="public-verification-error-state"
           role="alert"
           aria-live="assertive"
-          className="rounded-[2rem] bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200"
+          className="rounded-shell bg-red-50 p-5 text-sm text-red-800 ring-1 ring-red-200"
         >
           <div className="font-semibold">{RU.verificationFailed}</div>
           <p className="mt-2 leading-6">{error}</p>
@@ -1136,7 +1136,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
           data-testid="public-verification-not-found-state"
           role="status"
           aria-live="polite"
-          className="rounded-[2rem] bg-amber-50 p-6 text-sm text-amber-800 ring-1 ring-amber-200"
+          className="rounded-shell bg-amber-50 p-6 text-sm text-amber-800 ring-1 ring-amber-200"
         >
           <div className="text-lg font-bold">{RU.documentNotFound}</div>
           <p className="mt-2 leading-6">
