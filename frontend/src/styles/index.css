@@ -75,7 +75,7 @@ summary::-webkit-details-marker {
 
 @layer components {
   .portal-container {
-    @apply mx-auto w-full max-w-[1320px] px-4 sm:px-5 md:px-8;
+    @apply mx-auto w-full max-w-[1540px] px-5 md:px-8 lg:px-10 2xl:px-12;
   }
 
   .portal-surface {
@@ -226,12 +226,6 @@ summary::-webkit-details-marker {
 }
 
 /* Stage 3 design pass: wider public pages and mockup-like course structure workspace. */
-@layer components {
-  .portal-container {
-    @apply max-w-[1480px] px-5 md:px-10 2xl:px-12;
-  }
-}
-
 @media (min-width: 1280px) {
   .program-art {
     min-height: 128px;
@@ -404,10 +398,6 @@ summary::-webkit-details-marker {
 
 /* Stage 4 public design scaling: closer to wide EdTech mockups. */
 @layer components {
-  .portal-container {
-    @apply max-w-[1540px] px-5 md:px-8 lg:px-10 2xl:px-12;
-  }
-
   .public-home-page,
   .public-catalog-page {
     @apply mx-auto w-full max-w-[1380px];
