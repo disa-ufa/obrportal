@@ -338,7 +338,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
         {PORTAL_STATS.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className="portal-card flex items-center gap-5 p-6 xl:p-7">
+            <div key={item.label} className="portal-card flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5 p-6 xl:p-7">
               <span className="portal-icon-tile">
                 <Icon className="h-6 w-6" aria-hidden="true" />
               </span>
@@ -412,10 +412,10 @@ export function HomePage({ onPageChange, onOpenCourse }) {
         </div>
       </section>
 
-      <section className="portal-card flex flex-col gap-5 bg-blue-50/80 p-7 md:flex-row md:items-center md:justify-between md:p-9">
-        <div className="flex items-center gap-5">
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-700 text-white shadow-[0_12px_24px_rgba(15,91,232,0.25)]">
-            <Layers3 className="h-8 w-8" aria-hidden="true" />
+      <section className="portal-card flex flex-col gap-5 bg-blue-50/80 p-5 sm:p-7 md:flex-row md:items-center md:justify-between md:p-9">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-700 text-white shadow-[0_12px_24px_rgba(15,91,232,0.25)] sm:h-16 sm:w-16">
+            <Layers3 className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden="true" />
           </span>
           <div>
             <h2 className="text-xl font-black text-[#111936]">Начните обучение уже сегодня</h2>
@@ -425,7 +425,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
           </div>
         </div>
 
-        <button type="button" onClick={() => onPageChange("catalog")} className="portal-btn-primary md:min-w-[220px]">
+        <button type="button" onClick={() => onPageChange("catalog")} className="portal-btn-primary w-full sm:w-auto md:min-w-[220px]">
           Выбрать программу
         </button>
       </section>
