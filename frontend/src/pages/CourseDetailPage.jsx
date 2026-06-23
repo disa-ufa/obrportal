@@ -2951,7 +2951,7 @@ function CourseLearnerDocumentHandoffPanel({
       data-testid="learner-document-handoff-panel"
       data-stage={completionDocumentFocus ? STAGE82_LEARNER_COMPLETION_DOCUMENT_FOCUS : STAGE82_LEARNER_DOCUMENT_AVAILABILITY_HANDOFF}
       data-completion-document-focus={completionDocumentFocus ? "true" : "false"}
-      className={`rounded-[2rem] bg-white p-6 shadow-sm outline-none transition md:p-8 ${
+      className={`rounded-shell bg-white p-6 shadow-sm outline-none transition md:p-8 ${
         completionDocumentFocus ? "ring-2 ring-green-300" : "ring-1 ring-slate-200"
       }`}
     >
