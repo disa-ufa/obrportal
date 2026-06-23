@@ -23,13 +23,13 @@ export function OrganizationGroupEnrollmentsFilters({
       <input
         value={groupEnrollmentSearchQuery}
         onChange={handleSearchQueryChange}
-        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
         placeholder="Поиск по курсу, участнику или email"
       />
       <select
         value={groupEnrollmentStatusFilter}
         onChange={handleStatusFilterChange}
-        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
       >
         <option value="">Все статусы</option>
         <option value="assigned">Назначен</option>

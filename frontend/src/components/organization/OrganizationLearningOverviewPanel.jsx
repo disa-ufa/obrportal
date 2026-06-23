@@ -1573,7 +1573,7 @@ export function OrganizationLearningOverviewPanel({
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder={ORGANIZATION_OVERVIEW_SEARCH_FILTER_LABELS.searchPlaceholder}
               data-testid="organization-learning-overview-search-input"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 pr-32 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 pr-32 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
             <button
               type="button"
@@ -1594,7 +1594,7 @@ export function OrganizationLearningOverviewPanel({
             value={learningStatusFilter}
             onChange={(event) => setLearningStatusFilter(event.target.value)}
             data-testid="organization-learning-overview-learning-filter"
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
           >
             {ORGANIZATION_OVERVIEW_LEARNING_STATUS_FILTERS.map((filter) => (
               <option key={filter.id} value={filter.id}>
@@ -1610,7 +1610,7 @@ export function OrganizationLearningOverviewPanel({
             value={documentStatusFilter}
             onChange={(event) => setDocumentStatusFilter(event.target.value)}
             data-testid="organization-learning-overview-document-filter"
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
           >
             {ORGANIZATION_OVERVIEW_DOCUMENT_STATUS_FILTERS.map((filter) => (
               <option key={filter.id} value={filter.id}>
