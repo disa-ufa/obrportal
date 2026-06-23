@@ -7,7 +7,7 @@ export function AdminEmptyState({
   className = "",
 }) {
   const rootClassName = [
-    "rounded-[2rem] bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200",
+    "rounded-shell bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200",
     className,
   ]
     .filter(Boolean)

@@ -1529,7 +1529,7 @@ export function OrganizationLearningOverviewPanel({
       data-filtered-enrollments={filteredEnrollments.length}
       data-stage-filter-persistence={STAGE82_ORGANIZATION_OVERVIEW_FILTER_PERSISTENCE}
       data-active-filter-count={activeOverviewFilterLabels.length}
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>

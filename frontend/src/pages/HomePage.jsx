@@ -278,11 +278,11 @@ export function HomePage({ onPageChange, onOpenCourse }) {
 
   return (
     <div className="public-home-page space-y-10 md:space-y-12">
-      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-white via-white to-blue-50/90 px-7 py-10 md:px-12 lg:min-h-[430px] lg:px-16 lg:py-14 2xl:px-20">
+      <section className="relative overflow-hidden rounded-shell bg-gradient-to-r from-white via-white to-blue-50/90 px-7 py-10 md:px-12 lg:min-h-[430px] lg:px-16 lg:py-14 2xl:px-20">
         <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[48%] overflow-hidden lg:block">
           <div className="absolute right-10 top-8 h-56 w-56 rounded-full bg-blue-100/80 blur-2xl" />
           <div className="absolute right-28 top-14 h-48 w-72 rounded-[4rem] bg-blue-200/35" />
-          <div className="absolute bottom-8 right-20 h-28 w-80 rounded-[2rem] bg-white/70 shadow-[0_20px_50px_rgba(15,91,232,0.16)]" />
+          <div className="absolute bottom-8 right-20 h-28 w-80 rounded-shell bg-white/70 shadow-[0_20px_50px_rgba(15,91,232,0.16)]" />
           <div className="absolute bottom-16 right-52 h-3 w-40 rounded-full bg-blue-700/80" />
           <div className="absolute bottom-24 right-48 h-3 w-32 rounded-full bg-blue-500/50" />
           <GraduationCap className="absolute right-32 top-16 h-11 w-11 text-blue-600/70" />

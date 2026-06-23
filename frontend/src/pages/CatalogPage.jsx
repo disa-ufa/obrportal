@@ -571,7 +571,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
 
   return (
     <div className="public-catalog-page space-y-7 md:space-y-8">
-      <section className="relative overflow-hidden rounded-[2rem] bg-white px-7 py-9 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 md:px-10 lg:px-12 lg:py-12">
+      <section className="relative overflow-hidden rounded-shell bg-white px-7 py-9 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 md:px-10 lg:px-12 lg:py-12">
         <div className="absolute right-0 top-0 hidden h-full w-[36%] bg-gradient-to-l from-blue-50 to-transparent lg:block" />
         <div className="relative">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">

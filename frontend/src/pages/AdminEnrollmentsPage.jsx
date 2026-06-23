@@ -1718,7 +1718,7 @@ export function AdminEnrollmentsPage() {
 
   return (
     <div data-testid="admin-enrollments-page" className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Администрирование
         </div>
@@ -2224,7 +2224,7 @@ export function AdminEnrollmentsPage() {
                   <article
                     key={enrollment.id}
                     data-testid="admin-enrollment-card"
-                    className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
+                    className="rounded-shell bg-slate-50 p-5 ring-1 ring-slate-200"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getStatusTone(enrollment.status)}`}>
@@ -2470,7 +2470,7 @@ export function AdminEnrollmentsPage() {
                       <form
                         data-testid="admin-enrollment-edit-form"
                         onSubmit={(event) => handleEditSubmit(event, enrollment.id)}
-                        className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
+                        className="mt-5 space-y-4 rounded-shell bg-white p-5 ring-1 ring-blue-100"
                       >
                         <div className="grid gap-4 md:grid-cols-2">
                           <AdminFormField contentClassName="mt-2" label="Организация">

@@ -2610,7 +2610,7 @@ export function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Администрирование
         </div>
@@ -3162,7 +3162,7 @@ export function DocumentsPage() {
                 return (
                   <article
                     key={documentItem.id}
-                    className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
+                    className="rounded-shell bg-slate-50 p-5 ring-1 ring-slate-200"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span
@@ -3890,7 +3890,7 @@ export function DocumentsPage() {
                     ) : (
                       <form
                         onSubmit={(event) => handleEditSubmit(event, documentItem.id)}
-                        className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
+                        className="mt-5 space-y-4 rounded-shell bg-white p-5 ring-1 ring-blue-100"
                       >
                         <div className="grid gap-4 md:grid-cols-2">
                           <label className="block md:col-span-2">
