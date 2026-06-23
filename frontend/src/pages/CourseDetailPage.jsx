@@ -144,7 +144,7 @@ function CourseOutlineSection({ modules = [] }) {
   const courseModules = Array.isArray(modules) ? modules : [];
 
   return (
-    <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+    <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
@@ -419,7 +419,7 @@ function CourseLearnerProgressFoundationPanel({
   return (
     <section
       data-testid="learner-course-progress-foundation-panel"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -688,7 +688,7 @@ function CourseLearnerLessonAccessPanel({
   return (
     <section
       data-testid="learner-lesson-access-panel"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -1001,7 +1001,7 @@ function CourseLearnerLessonContentPreviewPanel({
   return (
     <section
       data-testid="learner-lesson-content-preview-panel"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -1736,7 +1736,7 @@ function CourseLearnerLessonBlockViewerPanel({
     <section
       data-testid="learner-lesson-block-viewer-panel"
       data-stage={STAGE82_LEARNER_LESSON_BLOCK_VIEWER}
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -1987,7 +1987,7 @@ function CourseLearnerCompletionActionPanel({
   const lesson = facts.lesson;
 
   return (
-    <section data-testid="learner-completion-action-panel" className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+    <section data-testid="learner-completion-action-panel" className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">{LEARNER_COMPLETION_ACTION_UX_LABELS.stage}</div>
@@ -2221,7 +2221,7 @@ function CourseLearnerCourseCompletionPanel({
   return (
     <section
       data-testid="learner-course-completion-panel"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -3344,7 +3344,7 @@ function CourseSelfEnrollmentDiagnostics({
   return (
     <section
       data-testid="course-self-enrollment-diagnostics"
-      className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200"
+      className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -3502,7 +3502,7 @@ function CourseDetailServiceState({ variant, error, onPageChange }) {
   return (
     <section
       data-testid={testId}
-      className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10"
+      className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10"
     >
       <div className={isLoading ? "text-sm font-semibold uppercase tracking-wide text-blue-600" : "text-sm font-semibold uppercase tracking-wide text-red-600"}>
         {eyebrow}
@@ -3587,7 +3587,7 @@ function CourseDetailLearnerJourneyHint({
   return (
     <section
       data-testid="course-detail-learner-journey"
-      className="rounded-[2rem] bg-slate-900 p-6 text-white shadow-sm"
+      className="rounded-shell bg-slate-900 p-6 text-white shadow-sm"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -4087,7 +4087,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
 
   return (
     <div className="space-y-8">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="flex flex-wrap gap-2">
           {course.format && (
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
@@ -4322,7 +4322,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       <CourseOutlineSection modules={course.modules} />
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">Что входит в программу</h2>
           <div className="mt-5 grid gap-3">
             {[
@@ -4341,7 +4341,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           </div>
         </div>
 
-        <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">Итоговая аттестация</h2>
           <p className="mt-4 text-sm leading-6 text-slate-600">
             После завершения программы слушатель получает итоговый документ,
@@ -4359,7 +4359,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       </section>
 
       {relatedCourses.length > 0 && (
-        <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">Похожие программы</h2>
           <p className="mt-2 text-sm text-slate-600">
             Быстрый переход к другим доступным программам из каталога.
