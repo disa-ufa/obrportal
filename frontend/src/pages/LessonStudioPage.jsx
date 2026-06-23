@@ -1433,7 +1433,7 @@ function LessonStudioReadinessChecklist({
   return (
     <section
       data-testid="lesson-studio-readiness-checklist"
-      className={`rounded-[1.5rem] p-3 shadow-sm ring-1 ${statusClass}`}
+      className={`rounded-3xl p-3 shadow-sm ring-1 ${statusClass}`}
     >
       <div
         data-testid="lesson-studio-readiness-summary"
@@ -4902,7 +4902,7 @@ function LessonStudioEditorPanelHeader({ lesson, selectedBlock, blocks, blocksLo
   return (
     <div
       data-testid="lesson-studio-editor-panel-header"
-      className="mb-4 rounded-[1.5rem] bg-slate-50/80 p-4 ring-1 ring-slate-200"
+      className="mb-4 rounded-3xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -4976,7 +4976,7 @@ function LessonStudioLivePreviewPanel({ lesson, blocks, selectedBlock }) {
         </div>
       </div>
 
-      <div className="mt-4 rounded-[1.5rem] bg-slate-50 p-4 ring-1 ring-slate-200">
+      <div className="mt-4 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
         <div className="text-xs font-black uppercase tracking-wide text-slate-500">
           {lesson?.title || "Урок"}
         </div>
@@ -5007,7 +5007,7 @@ function LessonStudioLivePreviewPanel({ lesson, blocks, selectedBlock }) {
         )}
       </div>
 
-      <div className="mt-4 rounded-[1.5rem] bg-white p-3 ring-1 ring-slate-200">
+      <div className="mt-4 rounded-3xl bg-white p-3 ring-1 ring-slate-200">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs font-black uppercase tracking-wide text-slate-500">
             Структура предпросмотра
