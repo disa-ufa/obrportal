@@ -4237,7 +4237,7 @@ function LessonStudioInspector({
     : "lesson-studio-inspector";
   const inspectorClassName = inlineMode
     ? "mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-blue-100"
-    : "sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200";
+    : "sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-shell bg-white p-4 shadow-sm ring-1 ring-slate-200";
 
   const lessonFacts = [
     ["ID урока", lesson?.id || "—"],
@@ -4832,7 +4832,7 @@ function LessonStudioPreviewPanel({ lesson, blocks }) {
   return (
     <aside
       data-testid="lesson-studio-preview-panel"
-      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-shell bg-white p-4 shadow-sm ring-1 ring-slate-200"
     >
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         Предпросмотр
@@ -4954,7 +4954,7 @@ function LessonStudioLivePreviewPanel({ lesson, blocks, selectedBlock }) {
   return (
     <aside
       data-testid="lesson-studio-live-preview-panel"
-      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-shell bg-white p-4 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -5779,8 +5779,8 @@ export function LessonStudioPage({ lessonId }) {
           data-testid="lesson-studio-canvas"
           className={
             viewMode === "preview"
-              ? "min-w-0 rounded-[2rem] bg-slate-50/70 p-4 sm:p-6"
-              : "min-w-0 rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+              ? "min-w-0 rounded-shell bg-slate-50/70 p-4 sm:p-6"
+              : "min-w-0 rounded-shell bg-white p-4 shadow-sm ring-1 ring-slate-200"
           }
         >
           {viewMode !== "preview" ? (
