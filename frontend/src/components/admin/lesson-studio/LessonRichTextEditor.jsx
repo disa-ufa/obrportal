@@ -41,7 +41,7 @@ function normalizeEditorDocument(value) {
 
 function getToolbarButtonClass(active = false) {
   return [
-    "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-[11px] font-semibold ring-1 transition focus:outline-none focus:ring-2 focus:ring-blue-100",
+    "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-[11px] font-semibold ring-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-100",
     active
       ? "bg-blue-600 text-white ring-blue-600 shadow-sm"
       : "bg-white text-slate-700 ring-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200",
@@ -406,7 +406,7 @@ function LessonRichTextEditor({
               value={linkInputValue}
               onChange={(event) => setLinkInputValue(event.target.value)}
               placeholder="https://example.ru/material"
-              className="w-full rounded-xl border border-blue-100 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border border-blue-100 bg-white px-3 py-2 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
           </label>
 

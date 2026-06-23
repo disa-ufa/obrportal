@@ -89,7 +89,7 @@ export function OrganizationProfileCard({ organization, onSave }) {
                 value={formData.kpp}
                 onChange={handleChange}
                 maxLength={9}
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
                 placeholder="КПП"
               />
             </label>
@@ -100,7 +100,7 @@ export function OrganizationProfileCard({ organization, onSave }) {
                 value={formData.ogrn}
                 onChange={handleChange}
                 maxLength={15}
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
                 placeholder="ОГРН"
               />
             </label>
@@ -114,7 +114,7 @@ export function OrganizationProfileCard({ organization, onSave }) {
               onChange={handleChange}
               maxLength={1024}
               rows={3}
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
               placeholder="Юридический адрес"
             />
           </label>
@@ -127,7 +127,7 @@ export function OrganizationProfileCard({ organization, onSave }) {
               onChange={handleChange}
               maxLength={1024}
               rows={3}
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
               placeholder="Фактический адрес"
             />
           </label>
@@ -303,7 +303,7 @@ export function LearningGroupEditForm({ group, onSave }) {
               value={formData.name}
               onChange={handleChange}
               maxLength={255}
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
               placeholder="Название группы"
             />
           </label>
@@ -315,7 +315,7 @@ export function LearningGroupEditForm({ group, onSave }) {
               value={formData.code}
               onChange={handleChange}
               maxLength={64}
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
               placeholder="Код группы"
             />
           </label>
@@ -328,7 +328,7 @@ export function LearningGroupEditForm({ group, onSave }) {
               onChange={handleChange}
               maxLength={1024}
               rows={3}
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
               placeholder="Описание группы"
             />
           </label>
@@ -384,7 +384,7 @@ export function EmptyState({ title, text }) {
 
 export function OrganizationCabinetHero({ children }) {
   return (
-    <section className="rounded-[2rem] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-6 text-white shadow-sm md:p-8">
+    <section className="rounded-shell bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-6 text-white shadow-sm md:p-8">
       {children}
     </section>
   );
@@ -487,7 +487,7 @@ export function OrganizationUsersSection({
   return (
     <>
       {organizations.length > 0 && (
-        <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold text-slate-950">Обучающиеся организации</h2>
@@ -510,7 +510,7 @@ export function OrganizationUsersSection({
             <input
               value={organizationUsersQuery}
               onChange={(event) => setOrganizationUsersQuery(event.target.value)}
-              className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
               placeholder="Поиск по email или ФИО"
             />
             <button
@@ -612,7 +612,7 @@ export function OrganizationGroupListSection({
   onSelectGroup,
 }) {
   return (
-    <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-950">Учебные группы</h2>
@@ -689,7 +689,7 @@ export function OrganizationGroupCreateSection({
   }
 
   return (
-    <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-950">Создать учебную группу</h2>
@@ -718,7 +718,7 @@ export function OrganizationGroupCreateSection({
             name="organization_id"
             value={groupForm.organization_id}
             onChange={onGroupFormChange}
-            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
           >
             {organizations.map((organization) => (
               <option key={organization.id} value={organization.id}>
@@ -735,7 +735,7 @@ export function OrganizationGroupCreateSection({
             value={groupForm.name}
             onChange={onGroupFormChange}
             maxLength={255}
-            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
             placeholder="Например: Сотрудники филиала №1"
           />
         </label>
@@ -747,7 +747,7 @@ export function OrganizationGroupCreateSection({
             value={groupForm.code}
             onChange={onGroupFormChange}
             maxLength={64}
-            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
             placeholder="Например: FILIAL-1-2026"
           />
         </label>
@@ -771,7 +771,7 @@ export function OrganizationGroupCreateSection({
             onChange={onGroupFormChange}
             maxLength={1024}
             rows={3}
-            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
             placeholder="Комментарий для внутренней навигации по группе"
           />
         </label>
@@ -800,7 +800,7 @@ export function OrganizationProfileSection({
   }
 
   return (
-    <section className="rounded-[2rem] bg-slate-50 p-1">
+    <section className="rounded-shell bg-slate-50 p-1">
       <div className="rounded-[1.8rem] bg-white/70 p-5 ring-1 ring-slate-200 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

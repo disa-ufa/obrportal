@@ -276,7 +276,7 @@ function FilterCheckbox({ checked, onChange, label }) {
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-100"
+        className="h-4 w-4 rounded border-slate-300 text-blue-700 focus-visible:ring-blue-100"
       />
       {label}
     </label>
@@ -571,7 +571,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
 
   return (
     <div className="public-catalog-page space-y-7 md:space-y-8">
-      <section className="relative overflow-hidden rounded-[2rem] bg-white px-7 py-9 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 md:px-10 lg:px-12 lg:py-12">
+      <section className="relative overflow-hidden rounded-shell bg-white px-7 py-9 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 md:px-10 lg:px-12 lg:py-12">
         <div className="absolute right-0 top-0 hidden h-full w-[36%] bg-gradient-to-l from-blue-50 to-transparent lg:block" />
         <div className="relative">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
@@ -624,7 +624,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
               <button type="button" className="portal-btn-primary !h-12 !rounded-lg !px-7 !py-0">Найти</button>
               <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
                 Сортировать:
-                <select className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100">
+                <select className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100">
                   <option>По популярности</option>
                   <option>По новизне</option>
                   <option>По цене</option>

@@ -345,7 +345,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             value={values.content_url}
             onChange={(event) => onChange("content_url", event.target.value)}
             placeholder="https://..."
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
         <label className="block md:col-span-2">
@@ -358,7 +358,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             onChange={(event) => onChange("content_text", event.target.value)}
             rows={3}
             placeholder="Что увидит обучающийся"
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
       </>
@@ -378,7 +378,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             value={values.content_url}
             onChange={(event) => onChange("content_url", event.target.value)}
             placeholder="https://..."
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
         <label className="block md:col-span-2">
@@ -391,7 +391,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             onChange={(event) => onChange("content_text", event.target.value)}
             rows={3}
             placeholder="Кратко опишите файл или внешний материал"
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
       </>
@@ -411,7 +411,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             value={values.quiz_question}
             onChange={(event) => onChange("quiz_question", event.target.value)}
             placeholder="Введите вопрос"
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
         <label className="block">
@@ -424,7 +424,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             onChange={(event) => onChange("quiz_options", event.target.value)}
             rows={4}
             placeholder={"Один вариант на строку"}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
         <label className="block">
@@ -437,7 +437,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             value={values.quiz_answer}
             onChange={(event) => onChange("quiz_answer", event.target.value)}
             placeholder="Напишите правильный ответ"
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
       </>
@@ -457,7 +457,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             onChange={(event) => onChange("content_text", event.target.value)}
             rows={4}
             placeholder="Что нужно выполнить"
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
         <label className="block">
@@ -470,7 +470,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             value={values.assignment_due}
             onChange={(event) => onChange("assignment_due", event.target.value)}
             placeholder="Например: до конца недели"
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
       </>
@@ -488,7 +488,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             id={`${prefix}-callout-tone`}
             value={values.callout_tone}
             onChange={(event) => onChange("callout_tone", event.target.value)}
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           >
             {Object.entries(CALLOUT_TONE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -505,7 +505,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
             onChange={(event) => onChange("content_text", event.target.value)}
             rows={4}
             placeholder="Важная заметка, предупреждение или подсказка"
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           />
         </label>
       </>
@@ -523,7 +523,7 @@ function TypeSpecificFields({ values, onChange, prefix }) {
         onChange={(event) => onChange("content_text", event.target.value)}
         rows={5}
         placeholder="Основной текст урока"
-        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
       />
     </label>
   );
@@ -707,7 +707,7 @@ function LessonMap({ blocks, onSelect }) {
               key={block.id}
               type="button"
               onClick={() => onSelect(block)}
-              className="group rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              className="group rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -743,7 +743,7 @@ function LessonBlockForm({ values, onChange, prefix }) {
           id={`${prefix}-block-type`}
           value={values.block_type}
           onChange={(event) => onChange("block_type", event.target.value)}
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
         >
           {Object.entries(BLOCK_TYPE_LABELS).map(([value, label]) => (
             <option key={value} value={value}>{label}</option>
@@ -761,7 +761,7 @@ function LessonBlockForm({ values, onChange, prefix }) {
           value={values.title}
           onChange={(event) => onChange("title", event.target.value)}
           placeholder="Название блока"
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
         />
       </label>
 

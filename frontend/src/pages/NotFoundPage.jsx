@@ -1,7 +1,7 @@
 export function NotFoundPage({ onPageChange }) {
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Ошибка навигации
         </div>

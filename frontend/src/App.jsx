@@ -347,7 +347,7 @@ export default function App() {
     if (initializingAuth) {
       return (
         <main className="min-h-screen bg-slate-50 p-6 text-slate-900">
-          <div className="mx-auto max-w-3xl rounded-[2rem] bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
+          <div className="mx-auto max-w-3xl rounded-shell bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
             {"\u0418\u043d\u0438\u0446\u0438\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f \u0441\u0435\u0441\u0441\u0438\u0438..."}
           </div>
         </main>

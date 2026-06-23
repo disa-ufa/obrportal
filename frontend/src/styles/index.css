@@ -3,14 +3,48 @@
 @tailwind utilities;
 
 :root {
-  --obr-blue: #0f5be8;
-  --obr-blue-dark: #0b49bf;
-  --obr-blue-soft: #eef5ff;
-  --obr-teal: #0eaaa7;
-  --obr-ink: #111936;
-  --obr-muted: #64708f;
-  --obr-border: #dfe6f3;
-  --obr-bg: #f7faff;
+  color-scheme: light;
+
+  /* Core palette */
+  --color-bg: #f7faff;
+  --color-surface: #ffffff;
+  --color-ink: #111936;
+  --color-muted: #64708f;
+  --color-border: #dfe6f3;
+
+  /* Brand colors */
+  --color-primary: #0f5be8;
+  --color-primary-hover: #0b49bf;
+  --color-primary-soft: #eef5ff;
+  --color-teal: #0eaaa7;
+
+  /* Shape */
+  --radius-card: 1.15rem;
+  --radius-control: 0.75rem;
+  --radius-shell: 2rem;
+
+  /* Elevation */
+  --shadow-card: 0 10px 30px rgba(17, 25, 54, 0.055);
+  --shadow-card-hover: 0 18px 42px rgba(15, 91, 232, 0.12);
+  --shadow-public-card: 0 14px 36px rgba(17, 25, 54, 0.055);
+  --shadow-admin-card: 0 12px 32px rgba(17, 25, 54, 0.055);
+  --shadow-shell: 0 18px 45px rgba(17, 25, 54, 0.06);
+  --shadow-primary: 0 10px 20px rgba(15, 91, 232, 0.22);
+
+  /* Layout */
+  --header-height-public: 68px;
+  --sidebar-admin-expanded: 260px;
+  --sidebar-admin-collapsed: 88px;
+
+  /* Legacy aliases. Keep while old screens are being migrated. */
+  --obr-blue: var(--color-primary);
+  --obr-blue-dark: var(--color-primary-hover);
+  --obr-blue-soft: var(--color-primary-soft);
+  --obr-teal: var(--color-teal);
+  --obr-ink: var(--color-ink);
+  --obr-muted: var(--color-muted);
+  --obr-border: var(--color-border);
+  --obr-bg: var(--color-bg);
 }
 
 html {
@@ -43,27 +77,27 @@ summary::-webkit-details-marker {
 
 @layer components {
   .portal-container {
-    @apply mx-auto w-full max-w-[1320px] px-4 md:px-8;
+    @apply mx-auto w-full max-w-[1540px] px-5 md:px-8 lg:px-10 2xl:px-12;
   }
 
   .portal-surface {
-    @apply rounded-[1.15rem] border border-slate-200/80 bg-white shadow-[0_18px_45px_rgba(17,25,54,0.06)];
+    @apply rounded-card border border-obr-border bg-obr-surface shadow-shell;
   }
 
   .portal-card {
-    @apply rounded-[1.15rem] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(17,25,54,0.055)] transition duration-200;
+    @apply rounded-card border border-obr-border bg-obr-surface shadow-card transition duration-200;
   }
 
   .portal-card-hover {
-    @apply hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_18px_42px_rgba(15,91,232,0.12)];
+    @apply hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-cardHover;
   }
 
   .portal-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.22)] transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-control bg-obr-primary px-5 py-3 text-sm font-bold text-white shadow-primary transition hover:bg-obr-primaryHover focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .portal-btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-blue-700 transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-control border border-obr-border bg-obr-surface px-5 py-3 text-sm font-bold text-obr-primary transition hover:border-blue-200 hover:bg-obr-primarySoft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .portal-icon-tile {
@@ -71,15 +105,15 @@ summary::-webkit-details-marker {
   }
 
   .portal-input {
-    @apply h-12 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100;
+    @apply h-12 w-full rounded-control border border-obr-border bg-obr-surface px-4 text-sm font-medium text-obr-ink transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100;
   }
 
   .portal-chip {
-    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-blue-50 px-3 text-xs font-bold text-blue-700 ring-1 ring-blue-100;
+    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-obr-primarySoft px-3 text-xs font-bold text-obr-primary ring-1 ring-blue-100;
   }
 
   .portal-muted-chip {
-    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-slate-50 px-3 text-xs font-bold text-slate-600 ring-1 ring-slate-200;
+    @apply inline-flex min-h-8 items-center justify-center rounded-md bg-slate-50 px-3 text-xs font-bold text-obr-muted ring-1 ring-slate-200;
   }
 
   .program-art {
@@ -147,7 +181,7 @@ summary::-webkit-details-marker {
   }
 
   .admin-glass-card {
-    @apply rounded-xl border border-slate-200/80 bg-white shadow-[0_12px_32px_rgba(17,25,54,0.055)];
+    @apply rounded-xl border border-slate-200/80 bg-white shadow-adminCard;
   }
 }
 
@@ -173,6 +207,7 @@ summary::-webkit-details-marker {
   border-radius: 14px !important;
 }
 
+/* Lesson studio overrides. */
 [data-testid="lesson-studio-page"] {
   --studio-border: #dfe6f3;
 }
@@ -194,18 +229,13 @@ summary::-webkit-details-marker {
 }
 
 /* Stage 3 design pass: wider public pages and mockup-like course structure workspace. */
-@layer components {
-  .portal-container {
-    @apply max-w-[1480px] px-5 md:px-10 2xl:px-12;
-  }
-}
-
 @media (min-width: 1280px) {
   .program-art {
     min-height: 128px;
   }
 }
 
+/* Admin course structure overrides. */
 [data-testid="admin-courses-structure-tree"] {
   display: grid;
   gap: 14px;
@@ -372,10 +402,6 @@ summary::-webkit-details-marker {
 
 /* Stage 4 public design scaling: closer to wide EdTech mockups. */
 @layer components {
-  .portal-container {
-    @apply max-w-[1540px] px-5 md:px-8 lg:px-10 2xl:px-12;
-  }
-
   .public-home-page,
   .public-catalog-page {
     @apply mx-auto w-full max-w-[1380px];
@@ -383,7 +409,7 @@ summary::-webkit-details-marker {
 
   .public-home-page .portal-card,
   .public-catalog-page .portal-card {
-    @apply shadow-[0_14px_36px_rgba(17,25,54,0.055)];
+    @apply shadow-publicCard;
   }
 }
 

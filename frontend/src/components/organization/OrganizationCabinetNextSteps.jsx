@@ -1,6 +1,6 @@
 export function OrganizationCabinetNextSteps() {
   return (
-    <section className="rounded-[2rem] bg-blue-50 p-6 ring-1 ring-blue-100">
+    <section className="rounded-shell bg-blue-50 p-6 ring-1 ring-blue-100">
       <div className="text-lg font-bold text-slate-950">
         Следующие разделы кабинета ЮЛ
       </div>

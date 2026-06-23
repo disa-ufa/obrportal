@@ -571,7 +571,7 @@ export function UsersPage({
                     value={searchQuery}
                     onChange={(event) => handleSearchChange(event.target.value)}
                     placeholder="Email, ФИО, телефон или роль"
-                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   />
                 </label>
 
@@ -582,7 +582,7 @@ export function UsersPage({
                   <select
                     value={roleFilter}
                     onChange={(event) => handleRoleChange(event.target.value)}
-                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   >
                     <option value="">Все роли</option>
                     {roles.map((role) => (
@@ -600,7 +600,7 @@ export function UsersPage({
                   <select
                     value={organizationFilter}
                     onChange={(event) => handleOrganizationChange(event.target.value)}
-                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   >
                     <option value="">Все организации</option>
                     <option value="global">Глобальный доступ</option>
@@ -619,7 +619,7 @@ export function UsersPage({
                   <select
                     value={activityFilter}
                     onChange={(event) => handleActivityChange(event.target.value)}
-                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100"
                   >
                     <option value="all">Все статусы</option>
                     <option value="active">Активные</option>

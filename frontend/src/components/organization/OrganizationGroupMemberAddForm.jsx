@@ -37,7 +37,7 @@ export function OrganizationGroupMemberAddForm({
         <input
           value={memberSearchQuery}
           onChange={handleMemberSearchQueryChange}
-          className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+          className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
           placeholder="Email или ФИО пользователя"
         />
         <button

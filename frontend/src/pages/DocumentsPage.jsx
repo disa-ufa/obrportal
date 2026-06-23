@@ -2610,7 +2610,7 @@ export function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Администрирование
         </div>
@@ -2694,7 +2694,7 @@ export function DocumentsPage() {
               <select
                 value={form.user_id}
                 onChange={(event) => updateField("user_id", event.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               >
                 <option value="">Выберите пользователя</option>
                 {users.map((user) => (
@@ -2719,7 +2719,7 @@ export function DocumentsPage() {
                 <select
                   value={form.enrollment_id}
                   onChange={(event) => updateField("enrollment_id", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                 >
                   <option value="">Без привязки к назначению</option>
                   {selectedUserEnrollments.map((enrollment) => (
@@ -2745,7 +2745,7 @@ export function DocumentsPage() {
                   value={form.course_id}
                   onChange={(event) => updateField("course_id", event.target.value)}
                   disabled={Boolean(form.enrollment_id)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                 >
                   <option value="">Без привязки к курсу</option>
                   {courses.map((course) => (
@@ -2771,7 +2771,7 @@ export function DocumentsPage() {
                 value={form.title}
                 onChange={(event) => updateField("title", event.target.value)}
                 placeholder="Например: Сертификат о прохождении программы"
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               />
             </label>
 
@@ -2784,7 +2784,7 @@ export function DocumentsPage() {
                   type="text"
                   value={form.document_type}
                   onChange={(event) => updateField("document_type", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                 />
               </label>
 
@@ -2795,7 +2795,7 @@ export function DocumentsPage() {
                 <select
                   value={form.status}
                   onChange={(event) => updateField("status", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                 >
                   {DOCUMENT_STATUSES.map((statusItem) => (
                     <option key={statusItem.value} value={statusItem.value}>
@@ -2816,7 +2816,7 @@ export function DocumentsPage() {
                   onChange={(event) => updateField("revocation_reason", event.target.value)}
                   rows={3}
                   placeholder={"\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435, \u043f\u043e\u0447\u0435\u043c\u0443 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
-                  className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                 />
                 <span className="mt-2 block text-xs text-slate-500">
                   {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u043d\u0430 \u0432 \u0430\u0434\u043c\u0438\u043d\u0441\u043a\u043e\u043c \u0440\u0435\u0435\u0441\u0442\u0440\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432."}
@@ -2834,7 +2834,7 @@ export function DocumentsPage() {
                 value={form.document_number}
                 onChange={(event) => updateField("document_number", event.target.value)}
                 placeholder="Можно оставить пустым — номер сгенерируется автоматически"
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
               />
             </label>
 
@@ -3004,13 +3004,13 @@ export function DocumentsPage() {
               value={filterQuery}
               onChange={(event) => setFilterQuery(event.target.value)}
               placeholder="Поиск: номер, код, название, e-mail, ФИО"
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
 
             <select
               value={filterUserId}
               onChange={(event) => setFilterUserId(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             >
               <option value="">Все пользователи</option>
               {users.map((user) => (
@@ -3023,7 +3023,7 @@ export function DocumentsPage() {
             <select
               value={filterOrganizationId}
               onChange={(event) => setFilterOrganizationId(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             >
               <option value="">Все организации</option>
               {sortedOrganizations.map((organization) => (
@@ -3036,7 +3036,7 @@ export function DocumentsPage() {
             <select
               value={filterStatus}
               onChange={(event) => setFilterStatus(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             >
               <option value="">Все статусы</option>
               {DOCUMENT_STATUSES.map((statusItem) => (
@@ -3051,7 +3051,7 @@ export function DocumentsPage() {
               value={filterDocumentType}
               onChange={(event) => setFilterDocumentType(event.target.value)}
               placeholder="Тип документа"
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
 
             <button
@@ -3162,7 +3162,7 @@ export function DocumentsPage() {
                 return (
                   <article
                     key={documentItem.id}
-                    className="rounded-[2rem] bg-slate-50 p-5 ring-1 ring-slate-200"
+                    className="rounded-shell bg-slate-50 p-5 ring-1 ring-slate-200"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span
@@ -3861,7 +3861,7 @@ export function DocumentsPage() {
                                 onChange={(event) => setRevocationReason(event.target.value)}
                                 rows={3}
                                 placeholder="Кратко укажите причину отзыва документа"
-                                className="mt-2 min-h-24 w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+                                className="mt-2 min-h-24 w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-red-400 focus-visible:ring-4 focus-visible:ring-red-100"
                               />
                             </label>
 
@@ -3890,7 +3890,7 @@ export function DocumentsPage() {
                     ) : (
                       <form
                         onSubmit={(event) => handleEditSubmit(event, documentItem.id)}
-                        className="mt-5 space-y-4 rounded-[2rem] bg-white p-5 ring-1 ring-blue-100"
+                        className="mt-5 space-y-4 rounded-shell bg-white p-5 ring-1 ring-blue-100"
                       >
                         <div className="grid gap-4 md:grid-cols-2">
                           <label className="block md:col-span-2">
@@ -3901,7 +3901,7 @@ export function DocumentsPage() {
                               type="text"
                               value={editForm.title}
                               onChange={(event) => updateEditField("title", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             />
                           </label>
 
@@ -3913,7 +3913,7 @@ export function DocumentsPage() {
                               type="text"
                               value={editForm.document_type}
                               onChange={(event) => updateEditField("document_type", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             />
                           </label>
 
@@ -3924,7 +3924,7 @@ export function DocumentsPage() {
                             <select
                               value={editForm.status}
                               onChange={(event) => updateEditField("status", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             >
                               {DOCUMENT_STATUSES.map((statusItem) => (
                                 <option key={statusItem.value} value={statusItem.value}>
@@ -3944,7 +3944,7 @@ export function DocumentsPage() {
                                 onChange={(event) => updateEditField("revocation_reason", event.target.value)}
                                 rows={3}
                                 placeholder={"\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435, \u043f\u043e\u0447\u0435\u043c\u0443 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
-                                className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                                className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                               />
                             </label>
                           )}
@@ -3958,7 +3958,7 @@ export function DocumentsPage() {
                               type="text"
                               value={editForm.document_number}
                               onChange={(event) => updateEditField("document_number", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             />
                           </label>
 
@@ -3969,7 +3969,7 @@ export function DocumentsPage() {
                             <select
                               value={editForm.enrollment_id}
                               onChange={(event) => updateEditField("enrollment_id", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
                             >
                               <option value="">Без привязки к назначению</option>
                               {enrollments
@@ -3990,7 +3990,7 @@ export function DocumentsPage() {
                               value={editForm.course_id}
                               onChange={(event) => updateEditField("course_id", event.target.value)}
                               disabled={Boolean(editForm.enrollment_id)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                             >
                               <option value="">Без привязки к курсу</option>
                               {courses.map((course) => (

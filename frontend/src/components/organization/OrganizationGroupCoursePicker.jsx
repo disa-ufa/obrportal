@@ -20,7 +20,7 @@ export function OrganizationGroupCoursePicker({
         <input
           value={courseSearchQuery}
           onChange={handleCourseSearchQueryChange}
-          className="min-w-0 flex-1 rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          className="min-w-0 flex-1 rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
           placeholder="Название, код или описание курса"
         />
         <button

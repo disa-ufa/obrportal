@@ -114,7 +114,7 @@ export function OrganizationSelectedGroupAside({
   };
 
   return (
-    <aside className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <aside className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <OrganizationSelectedGroupPanelHeader {...panelHeaderProps} />
 
       {hasSelectedGroup && (

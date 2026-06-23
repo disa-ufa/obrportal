@@ -76,7 +76,7 @@ function FactCard({ label, value }) {
 
 function PrivacyCard({ title, items }) {
   return (
-    <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <h2 className="text-xl font-bold text-slate-900">{title}</h2>
       <div className="mt-4 space-y-3">
         {items.map((item) => (
@@ -95,7 +95,7 @@ function PrivacyCard({ title, items }) {
 export function PrivacyPage({ onPageChange }) {
   return (
     <div className="space-y-6" data-testid="public-privacy-page">
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+      <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Правовая информация
         </div>
@@ -133,7 +133,7 @@ export function PrivacyPage({ onPageChange }) {
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+      <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Оператор персональных данных
         </div>
@@ -154,7 +154,7 @@ export function PrivacyPage({ onPageChange }) {
         ))}
       </section>
 
-      <section className="rounded-[2rem] bg-amber-50 p-6 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
+      <section className="rounded-shell bg-amber-50 p-6 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
         <div className="font-bold text-amber-950">Важное уточнение</div>
         <p className="mt-2">
           Раздел содержит публичное описание обработки персональных данных на портале.

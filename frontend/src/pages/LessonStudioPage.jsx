@@ -1433,7 +1433,7 @@ function LessonStudioReadinessChecklist({
   return (
     <section
       data-testid="lesson-studio-readiness-checklist"
-      className={`rounded-[1.5rem] p-3 shadow-sm ring-1 ${statusClass}`}
+      className={`rounded-3xl p-3 shadow-sm ring-1 ${statusClass}`}
     >
       <div
         data-testid="lesson-studio-readiness-summary"
@@ -3062,7 +3062,7 @@ function LessonStudioVideoBlockEditor({ form, saving, onFieldChange }) {
                   onChange={(event) => handleVideoUrlChange(event.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
                   disabled={saving}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
                 />
 
                 <button
@@ -3092,7 +3092,7 @@ function LessonStudioVideoBlockEditor({ form, saving, onFieldChange }) {
                 placeholder='<iframe src="https://..." width="560" height="315" allowfullscreen></iframe>'
                 rows={6}
                 disabled={saving}
-                className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm leading-6 text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
               />
             </label>
 
@@ -3189,7 +3189,7 @@ function LessonStudioVideoBlockEditor({ form, saving, onFieldChange }) {
               onChange={(event) => onFieldChange("title", event.target.value)}
               placeholder="Видео"
               disabled={saving}
-              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
           </label>
 
@@ -3320,7 +3320,7 @@ function LessonStudioCalloutBlockEditor({ form, saving, onFieldChange }) {
             placeholder="Например: обратите внимание на важное правило или частую ошибку."
             rows={5}
             disabled={saving}
-            className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
           />
         </label>
 
@@ -3377,7 +3377,7 @@ function LessonStudioCalloutBlockEditor({ form, saving, onFieldChange }) {
               onChange={(event) => onFieldChange("title", event.target.value)}
               placeholder="Важно"
               disabled={saving}
-              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
           </label>
 
@@ -3499,7 +3499,7 @@ function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
               onChange={(event) => handleImageUrlChange(event.target.value)}
               placeholder="https://example.com/image.jpg"
               disabled={saving}
-              className="h-12 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="h-12 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
 
             {ready ? (
@@ -3529,7 +3529,7 @@ function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
               onChange={(event) => onFieldChange("image_caption", event.target.value)}
               placeholder="Например: схема подключения оборудования"
               disabled={saving}
-              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
           </label>
 
@@ -3542,7 +3542,7 @@ function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
               onChange={(event) => onFieldChange("image_alt", event.target.value)}
               placeholder="Кратко опишите, что изображено"
               disabled={saving}
-              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
           </label>
         </div>
@@ -3600,7 +3600,7 @@ function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
               onChange={(event) => onFieldChange("title", event.target.value)}
               placeholder="Изображение"
               disabled={saving}
-              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
           </label>
 
@@ -3758,7 +3758,7 @@ function LessonStudioFileLinkBlockEditor({ form, saving, onFieldChange }) {
                 onChange={(event) => onFieldChange("content_text", event.target.value)}
                 placeholder="https://... или ссылка на PDF/презентацию"
                 disabled={saving}
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
               />
 
               {ready ? (
@@ -3832,7 +3832,7 @@ function LessonStudioFileLinkBlockEditor({ form, saving, onFieldChange }) {
               onChange={(event) => onFieldChange("title", event.target.value)}
               placeholder="Файл или ссылка"
               disabled={saving}
-              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
           </label>
 
@@ -4237,7 +4237,7 @@ function LessonStudioInspector({
     : "lesson-studio-inspector";
   const inspectorClassName = inlineMode
     ? "mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-blue-100"
-    : "sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200";
+    : "sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-shell bg-white p-4 shadow-sm ring-1 ring-slate-200";
 
   const lessonFacts = [
     ["ID урока", lesson?.id || "—"],
@@ -4537,7 +4537,7 @@ function LessonStudioInspector({
                         value={form.title}
                         onChange={(event) => handleFieldChange("title", event.target.value)}
                         placeholder="Название блока"
-                        className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
                       />
                     </label>
 
@@ -4636,7 +4636,7 @@ function LessonStudioInspector({
                       value={form.title}
                       onChange={(event) => handleFieldChange("title", event.target.value)}
                       placeholder="Название блока"
-                      className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
                     />
                   </label>
                 </section>
@@ -4687,7 +4687,7 @@ function LessonStudioInspector({
                           value={form.content_text}
                           onChange={(event) => handleFieldChange("content_text", event.target.value)}
                           placeholder={contentFieldMeta.placeholder}
-                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
                         />
                       ) : (
                         <textarea
@@ -4695,7 +4695,7 @@ function LessonStudioInspector({
                           onChange={(event) => handleFieldChange("content_text", event.target.value)}
                           placeholder={contentFieldMeta.placeholder}
                           rows={contentFieldMeta.rows}
-                          className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                          className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
                         />
                       )}
 
@@ -4724,7 +4724,7 @@ function LessonStudioInspector({
                         type="checkbox"
                         checked={form.is_required}
                         onChange={(event) => handleFieldChange("is_required", event.target.checked)}
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500"
                       />
                       Обязательный блок
                     </label>
@@ -4734,7 +4734,7 @@ function LessonStudioInspector({
                         type="checkbox"
                         checked={form.is_active}
                         onChange={(event) => handleFieldChange("is_active", event.target.checked)}
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500"
                       />
                       Активен
                     </label>
@@ -4832,7 +4832,7 @@ function LessonStudioPreviewPanel({ lesson, blocks }) {
   return (
     <aside
       data-testid="lesson-studio-preview-panel"
-      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-shell bg-white p-4 shadow-sm ring-1 ring-slate-200"
     >
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         Предпросмотр
@@ -4902,7 +4902,7 @@ function LessonStudioEditorPanelHeader({ lesson, selectedBlock, blocks, blocksLo
   return (
     <div
       data-testid="lesson-studio-editor-panel-header"
-      className="mb-4 rounded-[1.5rem] bg-slate-50/80 p-4 ring-1 ring-slate-200"
+      className="mb-4 rounded-3xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -4954,7 +4954,7 @@ function LessonStudioLivePreviewPanel({ lesson, blocks, selectedBlock }) {
   return (
     <aside
       data-testid="lesson-studio-live-preview-panel"
-      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+      className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-shell bg-white p-4 shadow-sm ring-1 ring-slate-200"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -4976,7 +4976,7 @@ function LessonStudioLivePreviewPanel({ lesson, blocks, selectedBlock }) {
         </div>
       </div>
 
-      <div className="mt-4 rounded-[1.5rem] bg-slate-50 p-4 ring-1 ring-slate-200">
+      <div className="mt-4 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
         <div className="text-xs font-black uppercase tracking-wide text-slate-500">
           {lesson?.title || "Урок"}
         </div>
@@ -5007,7 +5007,7 @@ function LessonStudioLivePreviewPanel({ lesson, blocks, selectedBlock }) {
         )}
       </div>
 
-      <div className="mt-4 rounded-[1.5rem] bg-white p-3 ring-1 ring-slate-200">
+      <div className="mt-4 rounded-3xl bg-white p-3 ring-1 ring-slate-200">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs font-black uppercase tracking-wide text-slate-500">
             Структура предпросмотра
@@ -5779,8 +5779,8 @@ export function LessonStudioPage({ lessonId }) {
           data-testid="lesson-studio-canvas"
           className={
             viewMode === "preview"
-              ? "min-w-0 rounded-[2rem] bg-slate-50/70 p-4 sm:p-6"
-              : "min-w-0 rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"
+              ? "min-w-0 rounded-shell bg-slate-50/70 p-4 sm:p-6"
+              : "min-w-0 rounded-shell bg-white p-4 shadow-sm ring-1 ring-slate-200"
           }
         >
           {viewMode !== "preview" ? (
