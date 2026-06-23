@@ -278,7 +278,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
 
   return (
     <div className="public-home-page space-y-10 md:space-y-12">
-      <section className="relative overflow-hidden rounded-shell bg-gradient-to-r from-white via-white to-blue-50/90 px-7 py-10 md:px-12 lg:min-h-[430px] lg:px-16 lg:py-14 2xl:px-20">
+      <section className="relative overflow-hidden rounded-shell bg-gradient-to-r from-white via-white to-blue-50/90 px-5 py-8 sm:px-7 sm:py-10 md:px-12 lg:min-h-[430px] lg:px-16 lg:py-14 2xl:px-20">
         <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[48%] overflow-hidden lg:block">
           <div className="absolute right-10 top-8 h-56 w-56 rounded-full bg-blue-100/80 blur-2xl" />
           <div className="absolute right-28 top-14 h-48 w-72 rounded-[4rem] bg-blue-200/35" />
@@ -291,14 +291,14 @@ export function HomePage({ onPageChange, onOpenCourse }) {
         </div>
 
         <div className="relative max-w-4xl">
-          <h1 className="max-w-3xl text-5xl font-black leading-[1.02] tracking-tight text-[#111936] md:text-6xl xl:text-[4.4rem]">
+          <h1 className="max-w-3xl text-4xl font-black leading-[1.05] tracking-tight text-[#111936] sm:text-5xl md:text-6xl md:leading-[1.02] xl:text-[4.4rem]">
             Образовательный портал РЦДО
           </h1>
           <p className="mt-6 max-w-3xl text-base leading-7 text-slate-600 md:text-xl md:leading-8">
             Современная платформа для дистанционного обучения и эффективного управления образовательными программами.
           </p>
 
-          <form onSubmit={handleSearchSubmit} className="mt-9 flex max-w-3xl gap-3 rounded-xl bg-white p-2.5 shadow-[0_18px_40px_rgba(17,25,54,0.09)] ring-1 ring-slate-200 transition focus-within:ring-4 focus-within:ring-blue-100">
+          <form onSubmit={handleSearchSubmit} className="mt-8 flex max-w-3xl flex-col gap-3 rounded-xl bg-white p-2.5 shadow-[0_18px_40px_rgba(17,25,54,0.09)] ring-1 ring-slate-200 transition focus-within:ring-4 focus-within:ring-blue-100 sm:mt-9 sm:flex-row">
             <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
               <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
               <input
@@ -309,7 +309,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
                 className="h-12 min-w-0 flex-1 border-0 bg-transparent text-base font-semibold text-slate-900 outline-none placeholder:text-slate-400"
               />
             </label>
-            <button type="submit" className="portal-btn-primary !h-12 !rounded-lg !px-9 !py-0">
+            <button type="submit" className="portal-btn-primary !h-12 w-full !rounded-lg !px-9 !py-0 sm:w-auto">
               Найти
             </button>
           </form>
