@@ -571,7 +571,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
 
   return (
     <div className="public-catalog-page space-y-7 md:space-y-8">
-      <section className="relative overflow-hidden rounded-shell bg-white px-7 py-9 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 md:px-10 lg:px-12 lg:py-12">
+      <section className="relative overflow-hidden rounded-shell bg-white px-5 py-8 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 sm:px-7 sm:py-9 md:px-10 lg:px-12 lg:py-12">
         <div className="absolute right-0 top-0 hidden h-full w-[36%] bg-gradient-to-l from-blue-50 to-transparent lg:block" />
         <div className="relative">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
@@ -579,7 +579,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
             <span>›</span>
             <span>Программы</span>
           </div>
-          <h1 className="mt-5 text-5xl font-black tracking-[0.06em] text-[#111936] md:text-6xl">
+          <h1 className="mt-5 text-4xl font-black tracking-[0.04em] text-[#111936] sm:text-5xl sm:tracking-[0.06em] md:text-6xl">
             Каталог программ
           </h1>
           <p className="mt-5 max-w-4xl text-base leading-7 text-slate-600 md:text-lg md:leading-8">
