@@ -1087,7 +1087,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={RU.queryPlaceholder}
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </label>
 
