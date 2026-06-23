@@ -42,7 +42,7 @@ const CONTACT_SCENARIOS = [
 
 function ContactCard({ title, value, hint }) {
   return (
-    <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
         {title}
       </div>
@@ -64,7 +64,7 @@ function ContactScenario({ title, text }) {
 export function ContactsPage({ onPageChange }) {
   return (
     <div className="space-y-6" data-testid="public-contacts-page">
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+      <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Публичные контакты
         </div>
@@ -114,7 +114,7 @@ export function ContactsPage({ onPageChange }) {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">Как получить помощь</h2>
           <div className="mt-5 grid gap-3">
             {CONTACT_SCENARIOS.map((item) => (
@@ -123,7 +123,7 @@ export function ContactsPage({ onPageChange }) {
           </div>
         </div>
 
-        <div className="rounded-[2rem] bg-blue-50 p-6 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">
+        <div className="rounded-shell bg-blue-50 p-6 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">
           <h2 className="text-2xl font-bold text-blue-950">Официальные сведения</h2>
           <p className="mt-4">
             Полные сведения об образовательной организации размещены в отдельном публичном
