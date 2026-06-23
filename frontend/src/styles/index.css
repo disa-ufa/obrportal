@@ -27,6 +27,7 @@
   --shadow-card: 0 10px 30px rgba(17, 25, 54, 0.055);
   --shadow-card-hover: 0 18px 42px rgba(15, 91, 232, 0.12);
   --shadow-public-card: 0 14px 36px rgba(17, 25, 54, 0.055);
+  --shadow-admin-card: 0 12px 32px rgba(17, 25, 54, 0.055);
   --shadow-shell: 0 18px 45px rgba(17, 25, 54, 0.06);
   --shadow-primary: 0 10px 20px rgba(15, 91, 232, 0.22);
 
@@ -180,7 +181,7 @@ summary::-webkit-details-marker {
   }
 
   .admin-glass-card {
-    @apply rounded-xl border border-slate-200/80 bg-white shadow-[0_12px_32px_rgba(17,25,54,0.055)];
+    @apply rounded-xl border border-slate-200/80 bg-white shadow-adminCard;
   }
 }
 

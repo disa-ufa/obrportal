@@ -28,6 +28,7 @@ export default {
         card: "var(--shadow-card)",
         cardHover: "var(--shadow-card-hover)",
         publicCard: "var(--shadow-public-card)",
+        adminCard: "var(--shadow-admin-card)",
         shell: "var(--shadow-shell)",
         primary: "var(--shadow-primary)",
       },
