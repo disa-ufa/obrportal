@@ -298,7 +298,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
             Современная платформа для дистанционного обучения и эффективного управления образовательными программами.
           </p>
 
-          <form onSubmit={handleSearchSubmit} className="mt-9 flex max-w-3xl gap-3 rounded-xl bg-white p-2.5 shadow-[0_18px_40px_rgba(17,25,54,0.09)] ring-1 ring-slate-200">
+          <form onSubmit={handleSearchSubmit} className="mt-9 flex max-w-3xl gap-3 rounded-xl bg-white p-2.5 shadow-[0_18px_40px_rgba(17,25,54,0.09)] ring-1 ring-slate-200 transition focus-within:ring-4 focus-within:ring-blue-100">
             <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
               <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
               <input
