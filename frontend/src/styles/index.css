@@ -207,6 +207,7 @@ summary::-webkit-details-marker {
   border-radius: 14px !important;
 }
 
+/* Lesson studio overrides. */
 [data-testid="lesson-studio-page"] {
   --studio-border: #dfe6f3;
 }
@@ -234,6 +235,7 @@ summary::-webkit-details-marker {
   }
 }
 
+/* Admin course structure overrides. */
 [data-testid="admin-courses-structure-tree"] {
   display: grid;
   gap: 14px;
