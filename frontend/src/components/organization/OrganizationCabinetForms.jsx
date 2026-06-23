@@ -384,7 +384,7 @@ export function EmptyState({ title, text }) {
 
 export function OrganizationCabinetHero({ children }) {
   return (
-    <section className="rounded-[2rem] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-6 text-white shadow-sm md:p-8">
+    <section className="rounded-shell bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-6 text-white shadow-sm md:p-8">
       {children}
     </section>
   );
@@ -487,7 +487,7 @@ export function OrganizationUsersSection({
   return (
     <>
       {organizations.length > 0 && (
-        <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold text-slate-950">Обучающиеся организации</h2>
@@ -612,7 +612,7 @@ export function OrganizationGroupListSection({
   onSelectGroup,
 }) {
   return (
-    <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-950">Учебные группы</h2>
@@ -689,7 +689,7 @@ export function OrganizationGroupCreateSection({
   }
 
   return (
-    <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-950">Создать учебную группу</h2>
@@ -800,7 +800,7 @@ export function OrganizationProfileSection({
   }
 
   return (
-    <section className="rounded-[2rem] bg-slate-50 p-1">
+    <section className="rounded-shell bg-slate-50 p-1">
       <div className="rounded-[1.8rem] bg-white/70 p-5 ring-1 ring-slate-200 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
