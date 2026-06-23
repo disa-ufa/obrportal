@@ -43,7 +43,7 @@ const FAQ_ITEMS = [
 
 function FaqItem({ question, answer }) {
   return (
-    <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <h2 className="text-lg font-bold text-slate-900">{question}</h2>
       <p className="mt-3 text-sm leading-6 text-slate-600">{answer}</p>
     </div>
@@ -53,7 +53,7 @@ function FaqItem({ question, answer }) {
 export function FaqPage({ onPageChange }) {
   return (
     <div className="space-y-6" data-testid="public-faq-page">
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+      <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Публичная поддержка
         </div>
@@ -101,7 +101,7 @@ export function FaqPage({ onPageChange }) {
         ))}
       </section>
 
-      <section className="rounded-[2rem] bg-blue-50 p-6 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">
+      <section className="rounded-shell bg-blue-50 p-6 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">
         <h2 className="text-2xl font-bold text-blue-950">Не нашли ответ?</h2>
         <p className="mt-3">
           Напишите на rcdodist@gmail.com или позвоните по телефону +7 (347) 200 10 17.
