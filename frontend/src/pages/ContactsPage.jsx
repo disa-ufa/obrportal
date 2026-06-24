@@ -113,9 +113,9 @@ export function ContactsPage({ onPageChange }) {
         ))}
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900">Как получить помощь</h2>
+      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
+        <div className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Как получить помощь</h2>
           <div className="mt-5 grid gap-3">
             {CONTACT_SCENARIOS.map((item) => (
               <ContactScenario key={item.title} title={item.title} text={item.text} />
@@ -123,8 +123,8 @@ export function ContactsPage({ onPageChange }) {
           </div>
         </div>
 
-        <div className="rounded-shell bg-blue-50 p-6 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">
-          <h2 className="text-2xl font-bold text-blue-950">Официальные сведения</h2>
+        <div className="rounded-shell bg-blue-50 p-5 text-sm leading-6 text-blue-900 ring-1 ring-blue-200 sm:p-6">
+          <h2 className="text-xl font-bold text-blue-950 sm:text-2xl">Официальные сведения</h2>
           <p className="mt-4">
             Полные сведения об образовательной организации размещены в отдельном публичном
             разделе. Там указаны наименование, учредитель, руководитель, ИНН, адрес,
@@ -133,7 +133,7 @@ export function ContactsPage({ onPageChange }) {
           <button
             type="button"
             onClick={() => onPageChange("organization-info")}
-            className="mt-5 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="mt-5 w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
           >
             Открыть сведения
           </button>
