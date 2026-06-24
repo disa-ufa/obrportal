@@ -1035,11 +1035,11 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-8 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           {RU.publicRegistry}
         </div>
-        <h1 className="mt-2 text-4xl font-bold text-slate-900">
+        <h1 className="mt-2 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
           {RU.verifyDocument}
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
