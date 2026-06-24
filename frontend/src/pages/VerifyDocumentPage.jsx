@@ -895,12 +895,12 @@ function ResultCard({ result, onReset, onPageChange }) {
         />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <button
           type="button"
           data-testid="public-verification-result-reset-action"
           onClick={onReset}
-          className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+          className="w-full rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
         >
           {RU.checkAnother}
         </button>
@@ -909,7 +909,7 @@ function ResultCard({ result, onReset, onPageChange }) {
           type="button"
           data-testid="public-verification-result-catalog-action"
           onClick={() => onPageChange("catalog")}
-          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          className="w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
         >
           {RU.goCatalog}
         </button>
@@ -918,7 +918,7 @@ function ResultCard({ result, onReset, onPageChange }) {
           type="button"
           data-testid="public-verification-result-home-action"
           onClick={() => onPageChange("home")}
-          className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+          className="w-full rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
         >
           {RU.goHome}
         </button>
