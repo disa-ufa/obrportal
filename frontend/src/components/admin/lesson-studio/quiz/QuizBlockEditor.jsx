@@ -74,10 +74,7 @@ const QUIZ_EDITOR_TABS = [
     key: "feedback",
     label: "\u041e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u044f\u0437\u044c",
   },
-  {
-    key: "preview",
-    label: "\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440",
-  },
+
 ];
 
 const QUESTION_FILTERS = [
@@ -442,19 +439,14 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
 
   return (
     <section className="space-y-5">
-      <div className="rounded-3xl border border-amber-200 bg-amber-50/70 p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/40 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
               Конструктор теста
             </p>
-            <h3 className="mt-2 text-xl font-bold text-slate-950">
-              Полноценный блок проверки знаний
-            </h3>
-            <p className="mt-2 max-w-3xl text-sm text-slate-600">
-              Сейчас это отдельный редактор содержимого quiz-блока. Данные сохраняются в
-              content_json существующего LessonBlock.
-            </p>
+
+
           </div>
 
           <div className="rounded-2xl bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-amber-100">
@@ -466,21 +458,69 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
             </div>
           </div>
 
-          <button
-            type="button"
-            data-testid="lesson-studio-quiz-preview-toggle"
-            onClick={() => setPreviewMode((current) => !current)}
-            className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-700"
-          >
-            {previewMode ? "\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u043a \u0440\u0435\u0434\u0430\u043a\u0442\u043e\u0440\u0443" : "\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440"}
-          </button>
+
+        </div>
+      </div>
+
+      <div
+        data-testid="quiz-readiness-top-strip"
+        className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+      >
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-[260px] items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-50 text-lg font-black text-blue-700 ring-8 ring-blue-100">
+              {readinessPercent}%
+            </div>
+
+            <div>
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                {"\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c \u0442\u0435\u0441\u0442\u0430"}
+              </div>
+              <div className="mt-1 text-base font-black text-slate-950">
+                {validation.isValid
+                  ? "\u0422\u0435\u0441\u0442 \u0433\u043e\u0442\u043e\u0432"
+                  : "\u0415\u0441\u0442\u044c \u0437\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u044f"}
+              </div>
+              <div className="mt-1 text-sm text-slate-500">
+                {validation.questionCount} {"\u0432\u043e\u043f\u0440\u043e\u0441(\u043e\u0432)"}, {validation.totalPoints} {"\u0431\u0430\u043b\u043b(\u043e\u0432)"}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid flex-1 gap-2 md:grid-cols-3">
+            <div className="rounded-2xl bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+              {"\u2713 \u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e"}
+            </div>
+
+            <div className="rounded-2xl bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+              {"\u2713 \u041f\u0440\u043e\u0445\u043e\u0434\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b"}
+            </div>
+
+            <div
+              className={`rounded-2xl px-3 py-2 text-sm font-semibold ${
+                problemQuestionCount === 0
+                  ? "bg-green-50 text-green-700"
+                  : "bg-amber-50 text-amber-700"
+              }`}
+            >
+              {problemQuestionCount === 0
+                ? "\u2713 \u0412\u0441\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u0433\u043e\u0442\u043e\u0432\u044b"
+                : `\u26a0 \u0412\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \u0441 \u043e\u0448\u0438\u0431\u043a\u0430\u043c\u0438: ${problemQuestionCount}`}
+            </div>
+          </div>
+
+          {validation.warnings.length > 0 ? (
+            <div className="max-w-[300px] rounded-2xl bg-amber-50 px-3 py-2 text-sm font-semibold leading-5 text-amber-700">
+              {validation.warnings[0]}
+            </div>
+          ) : null}
         </div>
       </div>
 
       {previewMode ? (
         <QuizAttemptPreview value={quiz} disabled={disabled} />
       ) : (
-      <div className="grid gap-5 2xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+      <div className="grid gap-5 2xl:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <h4 className="text-base font-black text-slate-950">
@@ -597,9 +637,6 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                   onClick={() => {
                     setActiveTab(tab.key);
 
-                    if (tab.key === "preview") {
-                      setPreviewMode(true);
-                    }
                   }}
                   className={`rounded-2xl px-4 py-2.5 text-sm font-bold transition ${
                     activeTab === tab.key
@@ -1117,180 +1154,10 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
             </div>
           ) : null}
 
-          <div className={activeTab === "question" ? "rounded-3xl border border-dashed border-slate-300 bg-white p-5" : "hidden"}>
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h4 className="text-base font-bold text-slate-950">Добавить вопрос</h4>
-                <p className="mt-1 text-sm text-slate-500">
-                  Выберите тип вопроса. Его можно будет поменять позже.
-                </p>
-              </div>
 
-              <div className="flex flex-wrap gap-2">
-                {QUIZ_QUESTION_TYPES.map((type) => (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => addQuestion(type.value)}
-                    disabled={disabled}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-40"
-                  >
-                    {type.shortLabel}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
 
-        <aside className="space-y-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h4 className="text-base font-black text-slate-950">
-              {"\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c \u0442\u0435\u0441\u0442\u0430"}
-            </h4>
 
-            <div className="mt-4 flex items-center gap-4">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xl font-black text-blue-700 ring-8 ring-blue-100">
-                {readinessPercent}%
-              </div>
-
-              <div>
-                <div className="font-bold text-slate-900">
-                  {validation.isValid
-                    ? "\u0422\u0435\u0441\u0442 \u0433\u043e\u0442\u043e\u0432"
-                    : "\u0415\u0441\u0442\u044c \u0437\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u044f"}
-                </div>
-                <div className="mt-1 text-sm text-slate-500">
-                  {validation.questionCount} {"\u0432\u043e\u043f\u0440\u043e\u0441(\u043e\u0432)"}, {validation.totalPoints} {"\u0431\u0430\u043b\u043b(\u043e\u0432)"}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-2 text-sm">
-              <div className="rounded-2xl bg-green-50 px-3 py-2 text-green-700">
-                {"\u2713 \u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0442\u0435\u0441\u0442\u0430 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e"}
-              </div>
-              <div className="rounded-2xl bg-green-50 px-3 py-2 text-green-700">
-                {"\u2713 \u041d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u044b \u043f\u0440\u043e\u0445\u043e\u0434\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b"}
-              </div>
-              <div
-                className={`rounded-2xl px-3 py-2 ${
-                  problemQuestionCount === 0
-                    ? "bg-green-50 text-green-700"
-                    : "bg-amber-50 text-amber-700"
-                }`}
-              >
-                {problemQuestionCount === 0
-                  ? "\u2713 \u0412\u0441\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u0433\u043e\u0442\u043e\u0432\u044b"
-                  : `\u26a0 \u0412\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \u0441 \u0437\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u044f\u043c\u0438: ${problemQuestionCount}`}
-              </div>
-            </div>
-
-            {validation.issues.length > 0 ? (
-              <ul className="mt-4 space-y-2 text-sm text-red-700">
-                {validation.issues.slice(0, 5).map((issue) => (
-                  <li key={issue} className="rounded-2xl bg-red-50 px-3 py-2">
-                    {issue}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-
-            {validation.warnings.length > 0 ? (
-              <ul className="mt-3 space-y-2 text-sm text-amber-700">
-                {validation.warnings.map((warning) => (
-                  <li key={warning} className="rounded-2xl bg-amber-50 px-3 py-2">
-                    {warning}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h4 className="text-base font-black text-slate-950">
-              {"\u0422\u0438\u043f\u044b \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432"}
-            </h4>
-
-            <div className="mt-4 space-y-3">
-              {QUIZ_QUESTION_TYPES.map((type) => (
-                <div key={type.value} className="rounded-2xl bg-slate-50 p-3">
-                  <div className="text-sm font-semibold text-slate-900">{type.label}</div>
-                  <div className="mt-1 text-xs text-slate-500">{type.hint}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h4 className="text-base font-black text-slate-950">
-              {"\u0411\u044b\u0441\u0442\u0440\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}
-            </h4>
-
-            <div className="mt-4 grid gap-2">
-              <button
-                type="button"
-                onClick={() => duplicateQuestion(selectedQuestion?.id)}
-                disabled={disabled || !selectedQuestion}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
-              >
-                {"\u0414\u0443\u0431\u043b\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0432\u043e\u043f\u0440\u043e\u0441"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setQuestionSearch("");
-                  setQuestionFilter("all");
-                }}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-              >
-                {"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u0444\u0438\u043b\u044c\u0442\u0440\u044b"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPreviewMode(true)}
-                className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
-              >
-                {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440"}
-              </button>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h4 className="text-base font-black text-slate-950">
-              {"\u0420\u0435\u0436\u0438\u043c \u0443\u0447\u0435\u043d\u0438\u043a\u0430"}
-            </h4>
-
-            <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 text-center">
-              <div className="px-2 py-3">
-                <div className="text-lg font-black text-slate-950">{quiz.questions.length}</div>
-                <div className="text-[11px] text-slate-500">{"\u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432"}</div>
-              </div>
-              <div className="border-x border-slate-200 px-2 py-3">
-                <div className="text-lg font-black text-slate-950">
-                  {calculateQuizTotalPoints(quiz)}
-                </div>
-                <div className="text-[11px] text-slate-500">{"\u0431\u0430\u043b\u043b\u043e\u0432"}</div>
-              </div>
-              <div className="px-2 py-3">
-                <div className="text-lg font-black text-slate-950">
-                  {quiz.grading.pass_score_percent}%
-                </div>
-                <div className="text-[11px] text-slate-500">{"\u043f\u0440\u043e\u0445\u043e\u0434"}</div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setPreviewMode(true)}
-              className="mt-4 w-full rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
-            >
-              {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u043a \u0443\u0447\u0435\u043d\u0438\u043a"}
-            </button>
-          </div>
-        </aside>
       </div>
       )}
     </section>

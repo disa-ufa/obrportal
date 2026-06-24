@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, BarChart3, CheckCircle2, ChevronRight, Clock3, Eye, FileText, GripVertical, Image as ImageIcon, ListChecks, PlayCircle, Save, Send, Star, Type } from "lucide-react";
 import {
   createAdminLessonBlock,
@@ -5124,16 +5124,7 @@ function LessonStudioEditorPanelHeader({ lesson, selectedBlock, blocks, blocksLo
           <div className="text-xs font-black uppercase tracking-wide text-slate-500">
             Редактирование блока
           </div>
-          <h2 className="mt-1 truncate text-lg font-black text-slate-950">
-            {selectedBlock
-              ? getBlockDisplayTitle(selectedBlock, selectedIndex >= 0 ? selectedIndex : 0)
-              : lesson?.title || "Выберите блок урока"}
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            {selectedBlock
-              ? "Редактируйте выбранный блок прямо на полотне. Изменения сохраняются кнопкой внутри формы."
-              : ""}
-          </p>
+
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
