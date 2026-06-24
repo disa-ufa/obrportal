@@ -4321,9 +4321,9 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
 
       <CourseOutlineSection modules={course.modules} />
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900">Что входит в программу</h2>
+      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
+        <div className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Что входит в программу</h2>
           <div className="mt-5 grid gap-3">
             {[
               "Доступ к материалам программы в личном кабинете",
@@ -4341,8 +4341,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           </div>
         </div>
 
-        <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900">Итоговая аттестация</h2>
+        <div className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Итоговая аттестация</h2>
           <p className="mt-4 text-sm leading-6 text-slate-600">
             После завершения программы слушатель получает итоговый документ,
             доступный в личном кабинете и проверяемый через публичный реестр.
@@ -4351,7 +4351,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           <button
             type="button"
             onClick={() => onPageChange("verify-document")}
-            className="mt-6 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className="mt-6 w-full rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
           >
             Проверить документ
           </button>
