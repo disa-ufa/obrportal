@@ -383,7 +383,7 @@ function CourseCard({ course, index, user, enrollment, onOpenCourse, onPageChang
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-between gap-3">
+        <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className={`text-base font-black ${isCourseFree(course) ? "text-teal-700" : "text-[#111936]"}`}>
             {formatCoursePrice(course)}
           </div>
@@ -391,7 +391,7 @@ function CourseCard({ course, index, user, enrollment, onOpenCourse, onPageChang
           <button
             type="button"
             onClick={() => (enrollment ? onPageChange("account") : onOpenCourse(course.slug || course.id))}
-            className={enrollment ? "portal-btn-primary !px-4 !py-2" : "portal-btn-secondary !px-4 !py-2"}
+            className={enrollment ? "portal-btn-primary w-full !px-4 !py-2 sm:w-auto" : "portal-btn-secondary w-full !px-4 !py-2 sm:w-auto"}
           >
             {getCourseActionLabel(enrollment)}
           </button>
