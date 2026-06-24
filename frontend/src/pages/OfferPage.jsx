@@ -51,7 +51,7 @@ const TERMS_SECTIONS = [
 
 function TermsSection({ title, items }) {
   return (
-    <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
       <h2 className="text-xl font-bold text-slate-900">{title}</h2>
       <div className="mt-4 space-y-3">
         {items.map((item) => (
@@ -70,7 +70,7 @@ function TermsSection({ title, items }) {
 export function OfferPage({ onPageChange }) {
   return (
     <div className="space-y-6" data-testid="public-terms-page">
-      <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+      <section className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Правовая информация
         </div>
@@ -83,25 +83,25 @@ export function OfferPage({ onPageChange }) {
           обращения пользователей и ограничения использования.
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={() => onPageChange("home")}
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
           >
             На главную
           </button>
           <button
             type="button"
             onClick={() => onPageChange("privacy")}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="w-full rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
           >
             Политика ПДн
           </button>
           <button
             type="button"
             onClick={() => onPageChange("contacts")}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="w-full rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
           >
             Контакты
           </button>
@@ -118,8 +118,8 @@ export function OfferPage({ onPageChange }) {
         ))}
       </section>
 
-      <section className="rounded-shell bg-blue-50 p-6 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">
-        <h2 className="text-2xl font-bold text-blue-950">Связанные разделы</h2>
+      <section className="rounded-shell bg-blue-50 p-5 text-sm leading-6 text-blue-900 ring-1 ring-blue-200 sm:p-6">
+        <h2 className="text-xl font-bold text-blue-950 sm:text-2xl">Связанные разделы</h2>
         <p className="mt-3">
           Для получения официальных сведений об организации откройте раздел
           «Сведения об организации». Для вопросов о персональных данных используйте

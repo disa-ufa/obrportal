@@ -895,12 +895,12 @@ function ResultCard({ result, onReset, onPageChange }) {
         />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <button
           type="button"
           data-testid="public-verification-result-reset-action"
           onClick={onReset}
-          className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+          className="w-full rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
         >
           {RU.checkAnother}
         </button>
@@ -909,7 +909,7 @@ function ResultCard({ result, onReset, onPageChange }) {
           type="button"
           data-testid="public-verification-result-catalog-action"
           onClick={() => onPageChange("catalog")}
-          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          className="w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
         >
           {RU.goCatalog}
         </button>
@@ -918,7 +918,7 @@ function ResultCard({ result, onReset, onPageChange }) {
           type="button"
           data-testid="public-verification-result-home-action"
           onClick={() => onPageChange("home")}
-          className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+          className="w-full rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
         >
           {RU.goHome}
         </button>
@@ -1035,11 +1035,11 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-8 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           {RU.publicRegistry}
         </div>
-        <h1 className="mt-2 text-4xl font-bold text-slate-900">
+        <h1 className="mt-2 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
           {RU.verifyDocument}
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
@@ -1075,7 +1075,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
         <form
           data-testid="public-verification-form"
           onSubmit={handleSubmit}
-          className="grid gap-3 lg:grid-cols-[1fr_auto]"
+          className="grid gap-4 lg:grid-cols-[1fr_auto] lg:gap-3"
         >
           <label className="block">
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1091,12 +1091,12 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
             />
           </label>
 
-          <div className="flex items-end">
+          <div className="flex items-end lg:justify-end">
             <button
               data-testid="public-verification-submit"
               type="submit"
               disabled={loading || !normalizedQuery}
-              className="h-12 rounded-full bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-12 w-full rounded-full bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
             >
               {loading ? RU.checking : RU.check}
             </button>
@@ -1143,12 +1143,12 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
             {RU.notFoundPrefix}{" "}
             <span className="font-semibold">{submittedQuery}</span>. {RU.notFoundSuffix}
           </p>
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <button
               type="button"
               data-testid="public-verification-not-found-reset-action"
               onClick={handleReset}
-              className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              className="w-full rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
             >
               {RU.checkAnother}
             </button>
@@ -1156,7 +1156,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
               type="button"
               data-testid="public-verification-not-found-contacts-action"
               onClick={() => onPageChange("contacts")}
-              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
+              className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100 sm:w-auto"
             >
               {RU.contacts}
             </button>
