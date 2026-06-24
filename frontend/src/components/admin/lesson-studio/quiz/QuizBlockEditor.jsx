@@ -752,7 +752,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className={activeTab === "question" ? "mt-5 grid gap-4 md:grid-cols-2" : "hidden"}>
                     <div className="md:col-span-2">
                       <FieldLabel>Текст вопроса</FieldLabel>
                       <TextArea
@@ -801,8 +801,9 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                     </div>
                   </div>
 
-                  {(question.type === "single_choice" ||
-                    question.type === "multiple_choice") && (
+                  {activeTab === "question" &&
+                    (question.type === "single_choice" ||
+                      question.type === "multiple_choice") && (
                     <div className="mt-5 space-y-3">
                       <div className="flex items-center justify-between gap-3">
                         <FieldLabel>Варианты ответа</FieldLabel>
@@ -868,7 +869,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                     </div>
                   )}
 
-                  {question.type === "true_false" && (
+                  {activeTab === "question" && question.type === "true_false" && (
                     <div className="mt-5 grid gap-3 md:grid-cols-2">
                       <button
                         type="button"
@@ -897,7 +898,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                     </div>
                   )}
 
-                  {question.type === "short_text" && (
+                  {activeTab === "question" && question.type === "short_text" && (
                     <div className="mt-5 space-y-3">
                       <div className="flex items-center justify-between gap-3">
                         <FieldLabel>Допустимые ответы</FieldLabel>
@@ -954,7 +955,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                     </div>
                   )}
 
-                  {question.type === "number" && (
+                  {activeTab === "question" && question.type === "number" && (
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
                       <div>
                         <FieldLabel>Правильное число</FieldLabel>
@@ -983,7 +984,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                     </div>
                   )}
 
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className={activeTab === "feedback" ? "mt-5 grid gap-4 md:grid-cols-2" : "hidden"}>
                     <div>
                       <FieldLabel>Комментарий при верном ответе</FieldLabel>
                       <TextArea
@@ -1012,7 +1013,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
             })}
           </div>
 
-          {selectedQuestion && activeTab !== "settings" ? (
+          {selectedQuestion && activeTab === "question" ? (
             <div
               data-testid="quiz-inline-preview-strip"
               className="rounded-3xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm"
@@ -1116,7 +1117,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
             </div>
           ) : null}
 
-          <div className={activeTab === "settings" ? "hidden" : "rounded-3xl border border-dashed border-slate-300 bg-white p-5"}>
+          <div className={activeTab === "question" ? "rounded-3xl border border-dashed border-slate-300 bg-white p-5" : "hidden"}>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h4 className="text-base font-bold text-slate-950">Добавить вопрос</h4>
