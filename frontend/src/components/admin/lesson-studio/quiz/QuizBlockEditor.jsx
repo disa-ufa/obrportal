@@ -613,7 +613,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className={activeTab === "settings" ? "rounded-3xl border border-slate-200 bg-white p-5 shadow-sm" : "hidden"}>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <FieldLabel hint="Название будет видно в уроке и в превью блока.">
@@ -695,7 +695,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className={activeTab === "settings" ? "hidden" : "space-y-4"}>
             {(selectedQuestion ? [selectedQuestion] : []).map((question) => {
               const index = selectedQuestionIndex;
               const typeMeta = getQuizQuestionTypeMeta(question.type);
@@ -1012,7 +1012,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
             })}
           </div>
 
-          {selectedQuestion ? (
+          {selectedQuestion && activeTab !== "settings" ? (
             <div
               data-testid="quiz-inline-preview-strip"
               className="rounded-3xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm"
@@ -1116,7 +1116,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
             </div>
           ) : null}
 
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-5">
+          <div className={activeTab === "settings" ? "hidden" : "rounded-3xl border border-dashed border-slate-300 bg-white p-5"}>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h4 className="text-base font-bold text-slate-950">Добавить вопрос</h4>
