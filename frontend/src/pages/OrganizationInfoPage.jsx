@@ -199,7 +199,7 @@ export function OrganizationInfoPage({ onPageChange }) {
       </section>
 
       <section
-        className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+        className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 md:p-8"
         data-testid="organization-info-official-facts"
       >
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -207,7 +207,7 @@ export function OrganizationInfoPage({ onPageChange }) {
             <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
               Основные сведения
             </div>
-            <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">
               ГБОУ РЦДО
             </h2>
           </div>
@@ -224,13 +224,13 @@ export function OrganizationInfoPage({ onPageChange }) {
       </section>
 
       <section
-        className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8"
+        className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 md:p-8"
         data-testid="organization-info-public-contacts"
       >
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Контакты
         </div>
-        <h2 className="mt-2 text-2xl font-bold text-slate-900">
+        <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">
           Каналы связи
         </h2>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
