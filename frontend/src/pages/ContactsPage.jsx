@@ -77,25 +77,25 @@ export function ContactsPage({ onPageChange }) {
           итоговых документов и проверки подлинности.
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={() => onPageChange("home")}
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
           >
             На главную
           </button>
           <button
             type="button"
             onClick={() => onPageChange("organization-info")}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="w-full rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
           >
             Сведения об организации
           </button>
           <button
             type="button"
             onClick={() => onPageChange("verify-document")}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="w-full rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
           >
             Проверить документ
           </button>
