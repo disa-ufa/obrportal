@@ -4087,7 +4087,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
 
   return (
     <div className="space-y-8">
-      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
+      <section className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-8 md:p-10">
         <div className="flex flex-wrap gap-2">
           {course.format && (
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
@@ -4100,7 +4100,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           </span>
         </div>
 
-        <h1 className="mt-5 max-w-4xl text-4xl font-bold text-slate-900">
+        <h1 className="mt-5 max-w-4xl text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
           {course.title}
         </h1>
 
