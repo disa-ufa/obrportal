@@ -1075,7 +1075,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
         <form
           data-testid="public-verification-form"
           onSubmit={handleSubmit}
-          className="grid gap-3 lg:grid-cols-[1fr_auto]"
+          className="grid gap-4 lg:grid-cols-[1fr_auto] lg:gap-3"
         >
           <label className="block">
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1091,12 +1091,12 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
             />
           </label>
 
-          <div className="flex items-end">
+          <div className="flex items-end lg:justify-end">
             <button
               data-testid="public-verification-submit"
               type="submit"
               disabled={loading || !normalizedQuery}
-              className="h-12 rounded-full bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-12 w-full rounded-full bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
             >
               {loading ? RU.checking : RU.check}
             </button>
