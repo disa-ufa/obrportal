@@ -9,6 +9,9 @@ import {
   updateAdminLessonBlock,
 } from "../api/client";
 import LessonRichTextEditor from "../components/admin/lesson-studio/LessonRichTextEditor";
+import QuizBlockEditor from "../components/admin/lesson-studio/quiz/QuizBlockEditor";
+import { createDefaultQuiz, normalizeQuizContent } from "../components/admin/lesson-studio/quiz/quizSchema";
+import { validateQuizContent } from "../components/admin/lesson-studio/quiz/quizValidation";
 import { getApiErrorMessage, getApiErrorStatus } from "../utils/apiErrors";
 
 function formatLessonStudioError(err, fallback) {
@@ -90,7 +93,7 @@ const STUDIO_QUICK_BLOCK_TEMPLATES = [
     values: {
       block_type: "quiz",
       title: "Тест",
-      content_json: { question: "Введите вопрос." },
+      content_json: createDefaultQuiz(),
       is_required: true,
       is_active: true,
     },
@@ -251,6 +254,7 @@ function getBlockTextPreview(block) {
   const settings = safeParseJson(block?.settings_json);
 
   const candidates = [
+    content.title,
     content.text,
     content.content_text,
     content.body,
@@ -1149,6 +1153,188 @@ function LessonVideoCanvasPreview({ block, previewValue, learnerMode = false }) 
 }
 
 
+
+
+
+function getQuizQuestionTypeLabel(type) {
+  const labels = {
+    single_choice: "\u041e\u0434\u0438\u043d \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442",
+    multiple_choice: "\u041d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0445 \u043e\u0442\u0432\u0435\u0442\u043e\u0432",
+    true_false: "\u0412\u0435\u0440\u043d\u043e / \u043d\u0435\u0432\u0435\u0440\u043d\u043e",
+    short_text: "\u041a\u043e\u0440\u043e\u0442\u043a\u0438\u0439 \u0442\u0435\u043a\u0441\u0442\u043e\u0432\u044b\u0439 \u043e\u0442\u0432\u0435\u0442",
+    number: "\u0427\u0438\u0441\u043b\u043e\u0432\u043e\u0439 \u043e\u0442\u0432\u0435\u0442",
+  };
+
+  return labels[type] || "\u0412\u043e\u043f\u0440\u043e\u0441";
+}
+
+function getQuizQuestionPreviewText(question) {
+  const type = `${question?.type || ""}`.toLowerCase();
+
+  if (type === "single_choice" || type === "multiple_choice") {
+    const options = Array.isArray(question?.options) ? question.options : [];
+    const filledOptions = options
+      .map((option) => `${option?.text || ""}`.trim())
+      .filter(Boolean);
+
+    return filledOptions.length
+      ? `\u0412\u0430\u0440\u0438\u0430\u043d\u0442\u044b: ${filledOptions.slice(0, 4).join(", ")}${filledOptions.length > 4 ? "\u2026" : ""}`
+      : "\u0412\u0430\u0440\u0438\u0430\u043d\u0442\u044b \u043e\u0442\u0432\u0435\u0442\u0430 \u0435\u0449\u0451 \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u044b.";
+  }
+
+  if (type === "true_false") {
+    return `\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442: ${question?.correct_value ? "\u0412\u0435\u0440\u043d\u043e" : "\u041d\u0435\u0432\u0435\u0440\u043d\u043e"}.`;
+  }
+
+  if (type === "short_text") {
+    const answers = Array.isArray(question?.accepted_answers)
+      ? question.accepted_answers.map((answer) => `${answer || ""}`.trim()).filter(Boolean)
+      : [];
+
+    return answers.length
+      ? `\u0414\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0435 \u043e\u0442\u0432\u0435\u0442\u044b: ${answers.slice(0, 3).join(", ")}${answers.length > 3 ? "\u2026" : ""}`
+      : "\u0414\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0435 \u043e\u0442\u0432\u0435\u0442\u044b \u0435\u0449\u0451 \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u044b.";
+  }
+
+  if (type === "number") {
+    const numberValue = `${question?.correct_number ?? ""}`.trim();
+    const tolerance = Number(question?.tolerance || 0);
+
+    return numberValue
+      ? `\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e\u0435 \u0447\u0438\u0441\u043b\u043e: ${numberValue}${tolerance > 0 ? `, \u043f\u043e\u0433\u0440\u0435\u0448\u043d\u043e\u0441\u0442\u044c \u00b1${tolerance}` : ""}.`
+      : "\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e\u0435 \u0447\u0438\u0441\u043b\u043e \u0435\u0449\u0451 \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u043e.";
+  }
+
+  return "\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u0442\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b \u0432\u043e\u043f\u0440\u043e\u0441\u0430.";
+}
+
+function LessonQuizCanvasPreview({ block, previewValue, learnerMode = false }) {
+  const quiz = normalizeQuizContent(safeParseJson(block?.content_json));
+  const validation = validateQuizContent(quiz);
+  const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
+  const questionCount = validation.questionCount || questions.length;
+  const totalPoints = validation.totalPoints || 0;
+  const passScore = Number(quiz.grading?.pass_score_percent);
+  const attemptsLabel = quiz.behavior?.allow_retry
+    ? `${quiz.behavior?.max_attempts || 1} \u043f\u043e\u043f\u044b\u0442\u043a.`
+    : "1 \u043f\u043e\u043f\u044b\u0442\u043a\u0430";
+  const visibleQuestions = questions.slice(0, learnerMode ? 5 : 3);
+
+  return (
+    <div
+      data-testid="lesson-studio-quiz-preview"
+      className={
+        learnerMode
+          ? "mt-5 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-100"
+          : "mt-3 rounded-2xl bg-white/85 p-4 ring-1 ring-black/5"
+      }
+    >
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-black text-slate-950"}>
+            {quiz.title || previewValue || "\u041f\u0440\u043e\u0432\u0435\u0440\u043e\u0447\u043d\u044b\u0439 \u0442\u0435\u0441\u0442"}
+          </div>
+
+          {quiz.description ? (
+            <div className={learnerMode ? "mt-2 text-sm leading-6 text-slate-700" : "mt-1 text-xs leading-5 text-slate-600"}>
+              {quiz.description}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            {questionCount} {"\u0432\u043e\u043f\u0440\u043e\u0441(\u043e\u0432)"}
+          </span>
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+            {totalPoints} {"\u0431\u0430\u043b\u043b(\u043e\u0432)"}
+          </span>
+          <span
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${
+              validation.isValid
+                ? "bg-green-50 text-green-700 ring-green-200"
+                : "bg-amber-50 text-amber-800 ring-amber-200"
+            }`}
+          >
+            {validation.isValid ? "\u0413\u043e\u0442\u043e\u0432" : `${validation.issues.length} \u043f\u0440\u043e\u0431\u043b\u0435\u043c`}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 md:grid-cols-3">
+        <div className="rounded-2xl bg-amber-100/60 px-3 py-2">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700">
+            {"\u041f\u0440\u043e\u0445\u043e\u0434\u043d\u043e\u0439 \u0431\u0430\u043b\u043b"}
+          </div>
+          <div className="mt-1 text-sm font-black text-slate-900">
+            {Number.isFinite(passScore) ? `${passScore}%` : "\u2014"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white/80 px-3 py-2 ring-1 ring-amber-100">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            {"\u041f\u043e\u043f\u044b\u0442\u043a\u0438"}
+          </div>
+          <div className="mt-1 text-sm font-black text-slate-900">
+            {attemptsLabel}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white/80 px-3 py-2 ring-1 ring-amber-100">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            {"\u041f\u0435\u0440\u0435\u043c\u0435\u0448\u0438\u0432\u0430\u043d\u0438\u0435"}
+          </div>
+          <div className="mt-1 text-sm font-black text-slate-900">
+            {quiz.behavior?.shuffle_questions || quiz.behavior?.shuffle_answers ? "\u0412\u043a\u043b\u044e\u0447\u0435\u043d\u043e" : "\u0412\u044b\u043a\u043b\u044e\u0447\u0435\u043d\u043e"}
+          </div>
+        </div>
+      </div>
+
+      {visibleQuestions.length ? (
+        <div className="mt-4 space-y-2">
+          {visibleQuestions.map((question, index) => (
+            <div
+              key={question.id || index}
+              className="rounded-2xl bg-white/85 px-3 py-3 ring-1 ring-amber-100"
+            >
+              <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0 text-sm font-bold text-slate-900">
+                  {index + 1}. {question.title || "\u0412\u043e\u043f\u0440\u043e\u0441 \u0431\u0435\u0437 \u0442\u0435\u043a\u0441\u0442\u0430"}
+                </div>
+                <div className="shrink-0 text-xs font-semibold text-slate-500">
+                  {getQuizQuestionTypeLabel(question.type)} ? {question.points || 0} {"\u0431\u0430\u043b\u043b."}
+                </div>
+              </div>
+
+              <div className="mt-1 text-xs leading-5 text-slate-500">
+                {getQuizQuestionPreviewText(question)}
+              </div>
+            </div>
+          ))}
+
+          {questions.length > visibleQuestions.length ? (
+            <div className="rounded-2xl bg-white/60 px-3 py-2 text-xs font-semibold text-slate-500 ring-1 ring-amber-100">
+              {"\u0415\u0449\u0451 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432:"} {questions.length - visibleQuestions.length}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl bg-white/80 px-3 py-3 text-sm font-semibold text-amber-800 ring-1 ring-amber-100">
+          {"\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u0438\u043d \u0432\u043e\u043f\u0440\u043e\u0441."}
+        </div>
+      )}
+
+      {!validation.isValid ? (
+        <div className="mt-4 rounded-2xl bg-amber-100/70 px-3 py-3 text-xs font-semibold text-amber-900">
+          {validation.issues.slice(0, 3).join(" ? ")}
+          {validation.issues.length > 3 ? " ? \u2026" : ""}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
 function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
   const meta = getBlockPreviewMeta(block);
@@ -1204,24 +1390,11 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
           learnerMode={learnerMode}
         />
       ) : type === "quiz" ? (
-        <div
-          data-testid="lesson-studio-quiz-preview"
-          className={
-            learnerMode
-              ? "mt-5 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-100"
-              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
-          }
-        >
-          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-bold"}>
-            Вопрос
-          </div>
-          <div className={learnerMode ? "mt-2 text-base leading-8 text-slate-800" : "mt-1 text-sm"}>
-            {previewValue}
-          </div>
-          <div className="mt-3 rounded-xl bg-amber-100/70 px-3 py-2 text-xs font-semibold">
-            Варианты ответов добавим следующим этапом.
-          </div>
-        </div>
+        <LessonQuizCanvasPreview
+          block={block}
+          previewValue={previewValue}
+          learnerMode={learnerMode}
+        />
       ) : type === "assignment" ? (
         <div
           data-testid="lesson-studio-assignment-preview"
@@ -1287,16 +1460,11 @@ function getBlockValidationIssues(block) {
   }
 
   if (type === "quiz") {
-    if (!`${content.question || content.quiz_question || ""}`.trim()) {
-      issues.push("нет вопроса");
-    }
-    if (!`${content.answer || content.quiz_answer || ""}`.trim()) {
-      issues.push("нет правильного ответа");
-    }
-  }
+    const quizValidation = validateQuizContent(content);
 
-  if (type === "assignment" && !`${content.text || content.content_text || content.assignment_text || ""}`.trim()) {
-    issues.push("нет задания");
+    if (!quizValidation.isValid) {
+      issues.push(...quizValidation.issues);
+    }
   }
 
   return issues;
@@ -3893,6 +4061,7 @@ function getInspectorContentText(block) {
   const settings = safeParseJson(block?.settings_json);
 
   const candidates = [
+    content.title,
     content.text,
     content.content_text,
     content.body,
@@ -3916,6 +4085,12 @@ function isLessonRichTextBlock(block) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
 
   return type === "rich_text" || type === "text";
+}
+
+function isLessonQuizBlock(block) {
+  const type = `${block?.block_type || ""}`.toLowerCase();
+
+  return type === "quiz";
 }
 
 function buildLessonRichTextDocumentFromText(value) {
@@ -4035,6 +4210,7 @@ function buildInspectorBlockForm(block) {
   const videoSourceValue = videoSourceType === "embed" ? videoEmbedCode : videoUrl;
   const imageContent = getImageBlockContent(block);
   const imageUrl = getImageBlockUrl(block);
+  const quizContent = normalizeQuizContent(block?.content_json);
 
   return {
     title: `${block?.title || ""}`,
@@ -4054,6 +4230,7 @@ function buildInspectorBlockForm(block) {
     image_alt: `${imageContent.alt_text || imageContent.alt || ""}`,
     image_full_width: imageContent.full_width !== false,
     image_open_full_size: imageContent.open_full_size !== false,
+    quiz_content: isLessonQuizBlock(block) ? quizContent : null,
     is_required: Boolean(block?.is_required),
     is_active: block?.is_active !== false,
   };
@@ -4101,6 +4278,7 @@ function getInspectorFormSnapshot(values) {
     image_alt: `${values?.image_alt || ""}`.trim(),
     image_full_width: values?.image_full_width !== false,
     image_open_full_size: values?.image_open_full_size !== false,
+    quiz_content: stableStringifyLessonValue(values?.quiz_content || null),
     is_required: Boolean(values?.is_required),
     is_active: Boolean(values?.is_active),
   });
@@ -4144,7 +4322,16 @@ function buildInspectorBlockPayload(block, values) {
     contentJson.text = contentText;
     contentJson.content_text = contentText;
   } else if (type === "quiz") {
-    contentJson.question = contentText;
+    const quizContent = normalizeQuizContent(values.quiz_content || contentJson);
+
+    return {
+      block_type: block?.block_type || "quiz",
+      title: `${quizContent.title || values.title || ""}`.trim() || null,
+      content_json: quizContent,
+      position: block?.position || 1,
+      is_required: Boolean(values.is_required),
+      is_active: Boolean(values.is_active),
+    };
   } else if (type === "assignment") {
     contentJson.description = contentText;
   } else {
@@ -4266,6 +4453,26 @@ function LessonStudioInspector({
             ? nextValue.editor_json
             : buildLessonRichTextDocumentFromText(nextText),
         editor_html: `${nextValue?.editor_html || ""}`,
+      };
+
+      if (getInspectorFormSnapshot(current) === getInspectorFormSnapshot(nextForm)) {
+        return current;
+      }
+
+      return nextForm;
+    });
+
+    setFormError("");
+    setFormSuccess("");
+  };
+
+  const handleQuizContentChange = (nextValue) => {
+    const nextQuizContent = normalizeQuizContent(nextValue);
+
+    setForm((current) => {
+      const nextForm = {
+        ...current,
+        quiz_content: nextQuizContent,
       };
 
       if (getInspectorFormSnapshot(current) === getInspectorFormSnapshot(nextForm)) {
@@ -4674,6 +4881,14 @@ function LessonStudioInspector({
                           {contentFieldMeta.help}
                         </span>
                       ) : null}
+                    </div>
+                  ) : isLessonQuizBlock(selectedBlock) ? (
+                    <div className="mt-3 block" data-testid="lesson-studio-quiz-editor">
+                      <QuizBlockEditor
+                        value={form.quiz_content}
+                        onChange={handleQuizContentChange}
+                        disabled={!selectedBlock || saving}
+                      />
                     </div>
                   ) : (
                     <label className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
