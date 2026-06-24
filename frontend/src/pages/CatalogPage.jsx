@@ -704,7 +704,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
             </div>
           )}
 
-          <div className="mt-7 flex items-center justify-center gap-2">
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
             <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-slate-400 ring-1 ring-slate-200">
               <ChevronLeft className="h-4 w-4" />
             </button>
