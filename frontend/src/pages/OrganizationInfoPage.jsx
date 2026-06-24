@@ -125,7 +125,7 @@ function FactCard({ label, value }) {
 
 function SectionCard({ title, text }) {
   return (
-    <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
       <h2 className="text-xl font-bold text-slate-900">{title}</h2>
       <p className="mt-3 text-sm leading-6 text-slate-600">{text}</p>
     </div>
@@ -134,8 +134,8 @@ function SectionCard({ title, text }) {
 
 function DocumentGroupCard({ title, status, items, note }) {
   return (
-    <article className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <article className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between">
         <h3 className="text-xl font-bold text-slate-900">{title}</h3>
         <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
           {status}
@@ -247,13 +247,13 @@ export function OrganizationInfoPage({ onPageChange }) {
       </section>
 
       <section
-        className="rounded-shell bg-blue-50 p-6 shadow-sm ring-1 ring-blue-200 md:p-8"
+        className="rounded-shell bg-blue-50 p-5 shadow-sm ring-1 ring-blue-200 sm:p-6 md:p-8"
         data-testid="organization-info-documents-section"
       >
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-700">
           Документы организации
         </div>
-        <h2 className="mt-2 text-2xl font-bold text-blue-950">
+        <h2 className="mt-2 text-xl font-bold text-blue-950 sm:text-2xl">
           Официальные документы для публикации
         </h2>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-blue-900">
