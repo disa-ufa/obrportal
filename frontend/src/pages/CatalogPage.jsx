@@ -301,7 +301,7 @@ function CatalogFilterSidebar({
   resetFilters,
 }) {
   return (
-    <aside className="portal-card sticky top-28 h-max p-5 xl:p-6">
+    <aside className="portal-card h-max p-5 lg:sticky lg:top-28 xl:p-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-[#111936]">Фильтры</h2>
         <button
