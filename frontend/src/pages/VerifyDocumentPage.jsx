@@ -1143,12 +1143,12 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
             {RU.notFoundPrefix}{" "}
             <span className="font-semibold">{submittedQuery}</span>. {RU.notFoundSuffix}
           </p>
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <button
               type="button"
               data-testid="public-verification-not-found-reset-action"
               onClick={handleReset}
-              className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              className="w-full rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
             >
               {RU.checkAnother}
             </button>
@@ -1156,7 +1156,7 @@ export function VerifyDocumentPage({ onPageChange, initialCode = "" }) {
               type="button"
               data-testid="public-verification-not-found-contacts-action"
               onClick={() => onPageChange("contacts")}
-              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
+              className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100 sm:w-auto"
             >
               {RU.contacts}
             </button>
