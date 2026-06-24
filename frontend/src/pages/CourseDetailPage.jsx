@@ -5,6 +5,8 @@ import { useMemo } from "react";
 import { completeAccountCourse, completeAccountCourseLesson, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
+import { buildInitialQuizAnswers, gradeQuizAttempt } from "../components/admin/lesson-studio/quiz/quizGrading.js";
+import { getQuizQuestionTypeMeta, normalizeQuizContent } from "../components/admin/lesson-studio/quiz/quizSchema.js";
 
 function formatCourseDocument(course) {
   return course?.document_type || course?.document || "Итоговый документ";
@@ -51,6 +53,35 @@ function mergeCourseWithAccountCourseDetail(course, accountCourseDetail) {
   };
 }
 
+
+
+function getLearnerQuizCompletionGate(quizAttemptStateByLesson, lessonId) {
+  const state = quizAttemptStateByLesson?.[`${lessonId || ""}`];
+
+  if (!state || !state.blocks || typeof state.blocks !== "object") {
+    return {
+      hasQuiz: false,
+      attempted: false,
+      passed: true,
+    };
+  }
+
+  const blocks = Object.values(state.blocks).filter((item) => item?.hasQuiz);
+
+  if (!blocks.length) {
+    return {
+      hasQuiz: false,
+      attempted: false,
+      passed: true,
+    };
+  }
+
+  return {
+    hasQuiz: true,
+    attempted: blocks.some((item) => item.attempted),
+    passed: blocks.every((item) => item.passed),
+  };
+}
 
 function getEnrollmentStatusLabel(status) {
   switch (status) {
@@ -1287,7 +1318,326 @@ function getLearnerLessonBlockViewerActionLabel(blockType) {
   return LEARNER_LESSON_BLOCK_VIEWER_LABELS.openLink;
 }
 
-function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, options }) {
+
+function LearnerQuizAttemptBlock({
+  block,
+  lesson,
+  onCompleteLesson,
+  lessonCompletionLoading = false,
+  onQuizAttemptStateChange,
+}) {
+  const quizSource = JSON.stringify(getLearnerLessonBlockViewerContent(block) || {});
+  const quiz = useMemo(
+    () => normalizeQuizContent(JSON.parse(quizSource || "{}")),
+    [quizSource]
+  );
+  const quizLabels = {
+    interactiveTest: "\u0418\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u0442\u0435\u0441\u0442",
+    questionCount: "\u0432\u043e\u043f\u0440\u043e\u0441(\u043e\u0432)",
+    question: "\u0412\u043e\u043f\u0440\u043e\u0441",
+    noQuestionText: "\u0412\u043e\u043f\u0440\u043e\u0441 \u0431\u0435\u0437 \u0442\u0435\u043a\u0441\u0442\u0430",
+    point: "\u0431\u0430\u043b\u043b.",
+    optionFallback: "\u0412\u0430\u0440\u0438\u0430\u043d\u0442 \u043e\u0442\u0432\u0435\u0442\u0430",
+    trueLabel: "\u0412\u0435\u0440\u043d\u043e",
+    falseLabel: "\u041d\u0435\u0432\u0435\u0440\u043d\u043e",
+    enterAnswer: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043e\u0442\u0432\u0435\u0442",
+    enterNumber: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0447\u0438\u0441\u043b\u043e",
+    correctDefault: "\u0412\u0435\u0440\u043d\u043e.",
+    incorrectDefault: "\u041e\u0442\u0432\u0435\u0442 \u043d\u0435\u0432\u0435\u0440\u043d\u044b\u0439. \u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u0443\u0440\u043e\u043a\u0430.",
+    resetAnswers: "\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442\u044b",
+    checkAnswers: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442\u044b",
+    passed: "\u0422\u0435\u0441\u0442 \u043f\u0440\u043e\u0439\u0434\u0435\u043d",
+    failed: "\u0422\u0435\u0441\u0442 \u043f\u043e\u043a\u0430 \u043d\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d",
+    scorePrefix: "\u041d\u0430\u0431\u0440\u0430\u043d\u043e",
+    of: "\u0438\u0437",
+    pointsLabel: "\u0431\u0430\u043b\u043b(\u043e\u0432)",
+    passScore: "\u041f\u0440\u043e\u0445\u043e\u0434\u043d\u043e\u0439 \u043f\u043e\u0440\u043e\u0433",
+    correctAnswers: "\u0412\u0435\u0440\u043d\u044b\u0445 \u043e\u0442\u0432\u0435\u0442\u043e\u0432",
+    savingProgress: "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441...",
+    markLessonCompleted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439",
+    lessonAlreadyCompleted: "\u0423\u0440\u043e\u043a \u0443\u0436\u0435 \u043e\u0442\u043c\u0435\u0447\u0435\u043d \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439.",
+  };
+  const [answers, setAnswers] = useState(() => buildInitialQuizAnswers(quiz));
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    setAnswers(buildInitialQuizAnswers(quiz));
+    setResult(null);
+  }, [quiz]);
+
+  function updateAnswer(questionId, value) {
+    setAnswers((current) => ({
+      ...current,
+      [questionId]: value,
+    }));
+    setResult(null);
+  }
+
+  function toggleMultipleAnswer(questionId, optionId) {
+    setAnswers((current) => {
+      const currentValue = Array.isArray(current[questionId]) ? current[questionId] : [];
+      const exists = currentValue.includes(optionId);
+      return {
+        ...current,
+        [questionId]: exists
+          ? currentValue.filter((item) => item !== optionId)
+          : [...currentValue, optionId],
+      };
+    });
+    setResult(null);
+  }
+
+  function handleSubmitQuiz() {
+    setResult(gradeQuizAttempt(quiz, answers));
+  }
+
+  function handleResetQuiz() {
+    setAnswers(buildInitialQuizAnswers(quiz));
+    setResult(null);
+  }
+
+  const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
+  const lessonCompleted = getLessonCompleted(lesson);
+  const lessonId = getLearnerLessonBlockViewerLessonId(lesson);
+  const blockKey = `${block?.id || block?.position || "quiz"}`;
+
+  useEffect(() => {
+    if (!lessonId) {
+      return;
+    }
+
+    onQuizAttemptStateChange?.({
+      lessonId,
+      blockKey,
+      hasQuiz: true,
+      attempted: Boolean(result),
+      passed: Boolean(result?.passed),
+      percent: result?.percent ?? 0,
+    });
+  }, [lessonId, blockKey, result]);
+
+
+  return (
+    <div
+      data-testid="learner-lesson-block-viewer-quiz"
+      data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
+      className="mt-4 rounded-2xl bg-violet-50 p-4 text-sm leading-6 text-violet-900 ring-1 ring-violet-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-violet-700">
+            {quizLabels.interactiveTest}
+          </div>
+          <h4 className="mt-1 text-base font-bold text-violet-950">
+            {quiz.title || getLearnerLessonBlockViewerTitle(block, 0)}
+          </h4>
+          {quiz.description ? (
+            <p className="mt-2 text-sm leading-6 text-violet-800">
+              {quiz.description}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-200">
+          {questions.length} {quizLabels.questionCount}
+        </div>
+      </div>
+
+      {questions.length ? (
+        <div className="mt-4 space-y-4">
+          {questions.map((question, questionIndex) => {
+            const type = `${question.type || ""}`.toLowerCase();
+            const answer = answers[question.id];
+            const typeMeta = getQuizQuestionTypeMeta(type);
+
+            return (
+              <div
+                key={question.id || questionIndex}
+                data-testid="learner-quiz-question"
+                className="rounded-2xl bg-white p-4 ring-1 ring-violet-200"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {quizLabels.question} {questionIndex + 1} ? {typeMeta.shortLabel || typeMeta.label}
+                    </div>
+                    <div className="mt-1 text-base font-bold text-slate-950">
+                      {question.title || question.question || quizLabels.noQuestionText}
+                    </div>
+                  </div>
+
+                  <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {Number(question.points) || 0} {quizLabels.point}
+                  </span>
+                </div>
+
+                {question.description ? (
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {question.description}
+                  </p>
+                ) : null}
+
+                {(type === "single_choice" || type === "multiple_choice") ? (
+                  <div className="mt-4 space-y-2">
+                    {(Array.isArray(question.options) ? question.options : []).map((option) => {
+                      const optionId = option.id;
+                      const checked = type === "multiple_choice"
+                        ? Array.isArray(answer) && answer.includes(optionId)
+                        : `${answer || ""}` === `${optionId}`;
+
+                      return (
+                        <label
+                          key={optionId}
+                          className={`flex cursor-pointer gap-3 rounded-2xl border p-3 transition ${
+                            checked
+                              ? "border-violet-300 bg-violet-50"
+                              : "border-slate-200 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type={type === "multiple_choice" ? "checkbox" : "radio"}
+                            name={`quiz-question-${question.id}`}
+                            checked={checked}
+                            onChange={() => {
+                              if (type === "multiple_choice") {
+                                toggleMultipleAnswer(question.id, optionId);
+                              } else {
+                                updateAnswer(question.id, optionId);
+                              }
+                            }}
+                            className="mt-1"
+                          />
+                          <span className="text-sm leading-6 text-slate-800">
+                            {option.text || quizLabels.optionFallback}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                {type === "true_false" ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {[true, false].map((value) => (
+                      <button
+                        key={`${value}`}
+                        type="button"
+                        onClick={() => updateAnswer(question.id, value)}
+                        className={`rounded-2xl px-4 py-2 text-sm font-semibold ring-1 transition ${
+                          answer === value
+                            ? "bg-violet-600 text-white ring-violet-600"
+                            : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {value ? quizLabels.trueLabel : quizLabels.falseLabel}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                {type === "short_text" ? (
+                  <textarea
+                    value={answer || ""}
+                    onChange={(event) => updateAnswer(question.id, event.target.value)}
+                    rows={3}
+                    className="mt-4 min-h-[88px] w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+                    placeholder={quizLabels.enterAnswer}
+                  />
+                ) : null}
+
+                {type === "number" ? (
+                  <input
+                    type="number"
+                    value={answer || ""}
+                    onChange={(event) => updateAnswer(question.id, event.target.value)}
+                    className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+                    placeholder={quizLabels.enterNumber}
+                  />
+                ) : null}
+
+                {result?.question_results?.[questionIndex] ? (
+                  <div
+                    data-testid="learner-quiz-question-result"
+                    className={`mt-4 rounded-2xl p-3 text-sm font-semibold ring-1 ${
+                      result.question_results[questionIndex].correct
+                        ? "bg-green-50 text-green-800 ring-green-200"
+                        : "bg-red-50 text-red-700 ring-red-200"
+                    }`}
+                  >
+                    {result.question_results[questionIndex].correct
+                      ? question.feedback_correct || quizLabels.correctDefault
+                      : question.feedback_incorrect || quizLabels.incorrectDefault}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl bg-white p-4 text-violet-800 ring-1 ring-violet-200">
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.noOptions}
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={handleResetQuiz}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+        >
+          {quizLabels.resetAnswers}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSubmitQuiz}
+          className="rounded-full bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
+        >
+          {quizLabels.checkAnswers}
+        </button>
+      </div>
+
+      {result ? (
+        <div
+          data-testid="learner-quiz-result"
+          className={`mt-4 rounded-2xl p-4 ring-1 ${
+            result.passed
+              ? "bg-green-50 text-green-800 ring-green-200"
+              : "bg-amber-50 text-amber-900 ring-amber-200"
+          }`}
+        >
+          <div className="text-sm font-bold">
+            {result.passed ? quizLabels.passed : quizLabels.failed}
+          </div>
+          <div className="mt-2 text-sm leading-6">
+            {quizLabels.scorePrefix} {result.earned_points} {quizLabels.of} {result.total_points} {quizLabels.pointsLabel}, {result.percent}%.
+            {quizLabels.passScore}: {result.pass_score_percent ?? 0}%.
+            {quizLabels.correctAnswers}: {result.correct_count} {quizLabels.of} {result.question_count}.
+          </div>
+
+          {result.passed && !lessonCompleted ? (
+            <button
+              type="button"
+              onClick={() => onCompleteLesson?.(lesson)}
+              disabled={lessonCompletionLoading}
+              className="mt-4 rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {lessonCompletionLoading ? quizLabels.savingProgress : quizLabels.markLessonCompleted}
+            </button>
+          ) : null}
+
+          {lessonCompleted ? (
+            <div className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-green-700 ring-1 ring-green-200">
+              {quizLabels.lessonAlreadyCompleted}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, options, lesson, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange }) {
   const content = getLearnerLessonBlockViewerContent(block);
   const question = getLearnerLessonBlockViewerQuestion(block);
   const fileName = getLearnerLessonBlockViewerFileName(block);
@@ -1350,33 +1700,13 @@ function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, optio
 
   if (blockType === "quiz") {
     return (
-      <div
-        data-testid="learner-lesson-block-viewer-quiz"
-        data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
-        className="mt-4 rounded-2xl bg-violet-50 p-4 text-sm leading-6 text-violet-900 ring-1 ring-violet-200"
-      >
-        <div className="text-xs font-semibold uppercase tracking-wide text-violet-700">
-          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.question}
-        </div>
-        <div className="mt-2 font-semibold text-violet-950">
-          {question || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
-        </div>
-        <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-violet-700">
-          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.answerOptions}
-        </div>
-        {options.length ? (
-          <ul className="mt-2 list-disc pl-5">
-            {options.map((option) => <li key={option}>{option}</li>)}
-          </ul>
-        ) : (
-          <div className="mt-2 text-violet-800">
-            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.noOptions}
-          </div>
-        )}
-        <div className="mt-3 text-xs font-semibold text-violet-700">
-          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.answerHidden}
-        </div>
-      </div>
+      <LearnerQuizAttemptBlock
+        block={block}
+        lesson={lesson}
+        onCompleteLesson={onCompleteLesson}
+        lessonCompletionLoading={lessonCompletionLoading}
+        onQuizAttemptStateChange={onQuizAttemptStateChange}
+      />
     );
   }
 
@@ -1672,7 +2002,7 @@ function LearnerLessonBlockNavigation({ lessons, selectedLessonId, onSelectLesso
   );
 }
 
-function LearnerLessonBlockViewerBlock({ block, index }) {
+function LearnerLessonBlockViewerBlock({ block, index, lesson, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange }) {
   const blockType = normalizeLearnerLessonBlockType(block.block_type);
   const typeLabel = LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS[blockType] || LEARNER_LESSON_BLOCK_VIEWER_LABELS.richText;
   const text = getLearnerLessonBlockViewerText(block);
@@ -1716,6 +2046,10 @@ function LearnerLessonBlockViewerBlock({ block, index }) {
         url={url}
         href={href}
         options={options}
+        lesson={lesson}
+        onCompleteLesson={onCompleteLesson}
+        lessonCompletionLoading={lessonCompletionLoading}
+        onQuizAttemptStateChange={onQuizAttemptStateChange}
       />
     </article>
   );
@@ -1729,6 +2063,9 @@ function CourseLearnerLessonBlockViewerPanel({
   onPageChange,
   selectedLessonId = "",
   onSelectLesson,
+  onCompleteLesson,
+  lessonCompletionLoading = false,
+  onQuizAttemptStateChange,
 }) {
   const facts = getLearnerLessonBlockViewerFacts(course, existingEnrollment, user, selectedLessonId);
 
@@ -1837,7 +2174,15 @@ function CourseLearnerLessonBlockViewerPanel({
           ) : null}
 
           {facts.blocks.map((block, index) => (
-            <LearnerLessonBlockViewerBlock key={block.id || index} block={block} index={index} />
+            <LearnerLessonBlockViewerBlock
+              key={block.id || index}
+              block={block}
+              index={index}
+              lesson={facts.lesson}
+              onCompleteLesson={onCompleteLesson}
+              lessonCompletionLoading={lessonCompletionLoading}
+              onQuizAttemptStateChange={onQuizAttemptStateChange}
+            />
           ))}
         </div>
       ) : (
@@ -1982,9 +2327,17 @@ function CourseLearnerCompletionActionPanel({
   lessonCompletionError = "",
   lessonCompletionSuccess = "",
   selectedLessonId = "",
+  quizCompletionGate = null,
 }) {
   const facts = getLearnerCompletionActionFacts(course, existingEnrollment, user, selectedLessonId);
   const lesson = facts.lesson;
+  const quizCompletionBlocked = Boolean(
+    quizCompletionGate?.hasQuiz && !quizCompletionGate?.passed && !facts.completed
+  );
+  const quizCompletionBlockedMessage = quizCompletionGate?.attempted
+    ? "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043d\u0443\u0436\u043d\u043e \u043f\u0440\u043e\u0439\u0442\u0438 \u0442\u0435\u0441\u0442 \u043d\u0430 \u043f\u0440\u043e\u0445\u043e\u0434\u043d\u043e\u0439 \u0431\u0430\u043b\u043b."
+    : "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043e\u0442\u0432\u0435\u0442\u044c\u0442\u0435 \u043d\u0430 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u0442\u0435\u0441\u0442\u0430.";
+  const canCompleteLesson = facts.canCompleteLesson && !quizCompletionBlocked;
 
   return (
     <section data-testid="learner-completion-action-panel" className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
@@ -1994,7 +2347,7 @@ function CourseLearnerCompletionActionPanel({
           <h2 className="mt-2 text-2xl font-bold text-slate-900">{LEARNER_COMPLETION_ACTION_UX_LABELS.title}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{LEARNER_COMPLETION_ACTION_UX_LABELS.subtitle}</p>
         </div>
-        <span data-testid="learner-completion-action-status" className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200">{facts.actionStatus}</span>
+        <span data-testid="learner-completion-action-status" className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200">{quizCompletionBlocked ? "\u0422\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u0442\u0435\u0441\u0442" : facts.actionStatus}</span>
       </div>
 
       <div data-testid="learner-completion-action-summary" className="mt-5 grid gap-3 md:grid-cols-3">
@@ -2016,14 +2369,14 @@ function CourseLearnerCompletionActionPanel({
         </div>
       </div>
 
-      <div data-testid="learner-completion-action-note" className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">{facts.completed ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted : facts.canCompleteLesson ? LEARNER_LESSON_PROGRESS_STATE_LABELS.completionReady : LEARNER_LESSON_PROGRESS_STATE_LABELS.completionLocked}</div>
+      <div data-testid="learner-completion-action-note" className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">{facts.completed ? LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted : quizCompletionBlocked ? quizCompletionBlockedMessage : canCompleteLesson ? LEARNER_LESSON_PROGRESS_STATE_LABELS.completionReady : LEARNER_LESSON_PROGRESS_STATE_LABELS.completionLocked}</div>
 
       {lessonCompletionSuccess ? <div data-testid="learner-completion-action-success" data-stage={STAGE82_LEARNER_NEXT_LESSON_AFTER_COMPLETION} className="mt-5 rounded-2xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200">{lessonCompletionSuccess}</div> : null}
       {lessonCompletionError ? <div data-testid="learner-completion-action-error" className="mt-5 rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700 ring-1 ring-red-200">{lessonCompletionError}</div> : null}
 
       <div data-testid="learner-completion-action-actions" className="mt-5 flex flex-wrap gap-3">
         {facts.hasUrl && !facts.locked ? <a data-testid="learner-completion-action-open-link" href={facts.previewFacts.url.startsWith("http://") || facts.previewFacts.url.startsWith("https://") ? facts.previewFacts.url : `https://${facts.previewFacts.url}`} target="_blank" rel="noreferrer" className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700">{LEARNER_COMPLETION_ACTION_UX_LABELS.openMaterial}</a> : <button type="button" onClick={onPrimaryAction} className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700">{facts.locked ? LEARNER_COMPLETION_ACTION_UX_LABELS.enroll : LEARNER_COMPLETION_ACTION_UX_LABELS.openAccount}</button>}
-        {facts.canCompleteLesson ? <button type="button" data-testid="learner-completion-action-complete-button" onClick={() => onCompleteLesson?.(facts.lesson)} disabled={lessonCompletionLoading} className="rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60">{lessonCompletionLoading ? LEARNER_COMPLETION_ACTION_UX_LABELS.savingCompletion : LEARNER_COMPLETION_ACTION_UX_LABELS.markLessonCompleted}</button> : null}
+        {canCompleteLesson ? <button type="button" data-testid="learner-completion-action-complete-button" onClick={() => onCompleteLesson?.(facts.lesson)} disabled={lessonCompletionLoading} className="rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60">{lessonCompletionLoading ? LEARNER_COMPLETION_ACTION_UX_LABELS.savingCompletion : LEARNER_COMPLETION_ACTION_UX_LABELS.markLessonCompleted}</button> : null}
         {facts.completed ? <span data-testid="learner-completion-action-completed-badge" className="inline-flex items-center rounded-full bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 ring-1 ring-green-200">{LEARNER_COMPLETION_ACTION_UX_LABELS.lessonAlreadyCompleted}</span> : null}
         <button type="button" onClick={() => onPageChange("account")} className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100">{LEARNER_COMPLETION_ACTION_UX_LABELS.openAccount}</button>
         <button type="button" onClick={() => onPageChange("catalog")} className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100">{LEARNER_COMPLETION_ACTION_UX_LABELS.openCatalog}</button>
@@ -3695,6 +4048,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [lessonCompletionLoading, setLessonCompletionLoading] = useState(false);
   const [lessonCompletionError, setLessonCompletionError] = useState("");
   const [lessonCompletionSuccess, setLessonCompletionSuccess] = useState("");
+  const [quizAttemptStateByLesson, setQuizAttemptStateByLesson] = useState({});
   const [courseCompletionLoading, setCourseCompletionLoading] = useState(false);
   const [courseCompletionError, setCourseCompletionError] = useState("");
   const [courseCompletionSuccess, setCourseCompletionSuccess] = useState("");
@@ -3827,6 +4181,11 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     [learnerCourse, existingEnrollment, user]
   );
 
+  const selectedLessonQuizCompletionGate = useMemo(
+    () => getLearnerQuizCompletionGate(quizAttemptStateByLesson, selectedLessonId),
+    [quizAttemptStateByLesson, selectedLessonId]
+  );
+
   useEffect(() => {
     const selectedLesson = getLearnerLessonBlockViewerSelectedLesson(learnerLessonAccessFacts, selectedLessonId);
     const nextLessonId = getLearnerLessonBlockViewerLessonId(selectedLesson);
@@ -3866,11 +4225,62 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     [learnerCourse, existingEnrollment, user, enrollLoading, enrollError, enrollSuccess, relatedCourses]
   );
 
+  function handleQuizAttemptStateChange(payload) {
+    if (!payload?.lessonId || !payload?.blockKey) {
+      return;
+    }
+
+    setQuizAttemptStateByLesson((current) => {
+      const previousLessonState = current[payload.lessonId] || { blocks: {} };
+      const previousBlockState = previousLessonState.blocks[payload.blockKey] || null;
+      const nextBlockState = {
+        hasQuiz: true,
+        attempted: Boolean(payload.attempted),
+        passed: Boolean(payload.passed),
+        percent: Number(payload.percent) || 0,
+      };
+
+      if (
+        previousBlockState &&
+        previousBlockState.hasQuiz === nextBlockState.hasQuiz &&
+        previousBlockState.attempted === nextBlockState.attempted &&
+        previousBlockState.passed === nextBlockState.passed &&
+        previousBlockState.percent === nextBlockState.percent
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [payload.lessonId]: {
+          ...previousLessonState,
+          blocks: {
+            ...previousLessonState.blocks,
+            [payload.blockKey]: nextBlockState,
+          },
+        },
+      };
+    });
+  }
+
   async function handleCompleteLesson(lesson) {
     const enrollmentId = getEnrollmentId(existingEnrollment);
 
     if (!enrollmentId || !lesson?.id) {
       setLessonCompletionError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0437\u0430\u043f\u0438\u0441\u044c \u0438\u043b\u0438 \u0443\u0440\u043e\u043a \u0434\u043b\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430.");
+      setLessonCompletionSuccess("");
+      return;
+    }
+
+    const lessonId = getLearnerLessonBlockViewerLessonId(lesson);
+    const quizCompletionGate = getLearnerQuizCompletionGate(quizAttemptStateByLesson, lessonId);
+
+    if (quizCompletionGate.hasQuiz && !quizCompletionGate.passed) {
+      setLessonCompletionError(
+        quizCompletionGate.attempted
+          ? "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043d\u0443\u0436\u043d\u043e \u043f\u0440\u043e\u0439\u0442\u0438 \u0442\u0435\u0441\u0442 \u043d\u0430 \u043f\u0440\u043e\u0445\u043e\u0434\u043d\u043e\u0439 \u0431\u0430\u043b\u043b."
+          : "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043e\u0442\u0432\u0435\u0442\u044c\u0442\u0435 \u043d\u0430 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u0442\u0435\u0441\u0442\u0430."
+      );
       setLessonCompletionSuccess("");
       return;
     }
@@ -4266,6 +4676,9 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         onPageChange={onPageChange}
         selectedLessonId={selectedLessonId}
         onSelectLesson={setSelectedLessonId}
+        onCompleteLesson={handleCompleteLesson}
+        lessonCompletionLoading={lessonCompletionLoading}
+        onQuizAttemptStateChange={handleQuizAttemptStateChange}
       />
 
       <CourseLearnerCompletionActionPanel
@@ -4276,6 +4689,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         onPageChange={onPageChange}
         onCompleteLesson={handleCompleteLesson}
         selectedLessonId={selectedLessonId}
+        quizCompletionGate={selectedLessonQuizCompletionGate}
         lessonCompletionLoading={lessonCompletionLoading}
         lessonCompletionError={lessonCompletionError}
         lessonCompletionSuccess={lessonCompletionSuccess}
