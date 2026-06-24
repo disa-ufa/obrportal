@@ -857,9 +857,9 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                       {question.options.map((option, optionIndex) => (
                         <div
                           key={option.id}
-                          className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-[auto_minmax(0,1fr)_auto]"
+                          className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-start"
                         >
-                          <label className="flex items-center gap-2 text-sm text-slate-700">
+                          <label className="flex items-center gap-2 pt-3 text-sm text-slate-700">
                             <input
                               type={question.type === "single_choice" ? "radio" : "checkbox"}
                               checked={option.is_correct}
@@ -881,7 +881,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                             </span>
                           </label>
 
-                          <input
+                          <textarea
                             value={option.text}
                             onChange={(event) =>
                               updateOption(question.id, option.id, {
@@ -890,8 +890,9 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                             }
                             placeholder={`Вариант ${optionIndex + 1}`}
                             disabled={disabled}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100"
-                          />
+                            rows={3}
+                            className="min-h-[88px] w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100"
+                          ></textarea>
 
                           <button
                             type="button"
@@ -1070,7 +1071,7 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                 </div>
               </div>
 
-              <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="mt-3 space-y-3">
                 <div className="rounded-2xl border border-blue-100 bg-white p-4">
                   <div className="text-base font-black text-slate-950">
                     {selectedQuestion.title || "\u041d\u043e\u0432\u044b\u0439 \u0432\u043e\u043f\u0440\u043e\u0441"}
@@ -1134,18 +1135,18 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                   ) : null}
                 </div>
 
-                <div className="flex flex-col justify-end gap-2 xl:min-w-[190px]">
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => setPreviewMode(true)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                    className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 sm:min-w-[190px]"
                   >
                     {"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setPreviewMode(true)}
-                    className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
+                    className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700 sm:min-w-[190px]"
                   >
                     {"\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442\u044b"}
                   </button>
