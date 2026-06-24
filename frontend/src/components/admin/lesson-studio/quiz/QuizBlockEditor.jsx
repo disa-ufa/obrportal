@@ -60,6 +60,149 @@ function Toggle({ checked, onChange, disabled, label }) {
   );
 }
 
+
+const QUIZ_EDITOR_TABS = [
+  {
+    key: "settings",
+    label: "\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0442\u0435\u0441\u0442\u0430",
+  },
+  {
+    key: "question",
+    label: "\u0412\u043e\u043f\u0440\u043e\u0441",
+  },
+  {
+    key: "feedback",
+    label: "\u041e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u044f\u0437\u044c",
+  },
+  {
+    key: "preview",
+    label: "\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440",
+  },
+];
+
+const QUESTION_FILTERS = [
+  {
+    key: "all",
+    label: "\u0412\u0441\u0435",
+  },
+  {
+    key: "ready",
+    label: "\u0413\u043e\u0442\u043e\u0432\u044b\u0435",
+  },
+  {
+    key: "problems",
+    label: "\u0421 \u043e\u0448\u0438\u0431\u043a\u0430\u043c\u0438",
+  },
+];
+
+function getQuestionDisplayTitle(question, index) {
+  const title = `${question?.title || ""}`.trim();
+
+  return title || `\u0412\u043e\u043f\u0440\u043e\u0441 ${index + 1}`;
+}
+
+function getQuestionStatus(question) {
+  const issues = [];
+
+  if (!`${question?.title || ""}`.trim()) {
+    issues.push("\u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u0442\u0435\u043a\u0441\u0442 \u0432\u043e\u043f\u0440\u043e\u0441\u0430");
+  }
+
+  const type = `${question?.type || ""}`.toLowerCase();
+
+  if (type === "single_choice" || type === "multiple_choice") {
+    const options = Array.isArray(question?.options) ? question.options : [];
+    const filledOptions = options.filter((option) => `${option?.text || ""}`.trim());
+    const correctOptions = options.filter((option) => option?.is_correct);
+
+    if (filledOptions.length < 2) {
+      issues.push("\u0434\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u043c\u0438\u043d\u0438\u043c\u0443\u043c 2 \u0432\u0430\u0440\u0438\u0430\u043d\u0442\u0430");
+    }
+
+    if (type === "single_choice" && correctOptions.length !== 1) {
+      issues.push("\u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043e\u0434\u0438\u043d \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442");
+    }
+
+    if (type === "multiple_choice" && correctOptions.length < 1) {
+      issues.push("\u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0435 \u043e\u0442\u0432\u0435\u0442\u044b");
+    }
+  }
+
+  if (type === "short_text") {
+    const answers = Array.isArray(question?.accepted_answers)
+      ? question.accepted_answers
+      : [];
+
+    if (!answers.some((answer) => `${answer || ""}`.trim())) {
+      issues.push("\u0434\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0439 \u043e\u0442\u0432\u0435\u0442");
+    }
+  }
+
+  if (type === "number" && `${question?.correct_number ?? ""}`.trim() === "") {
+    issues.push("\u0443\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e\u0435 \u0447\u0438\u0441\u043b\u043e");
+  }
+
+  return {
+    ready: issues.length === 0,
+    issues,
+  };
+}
+
+function getQuestionStatusLabel(question) {
+  const status = getQuestionStatus(question);
+
+  return status.ready ? "\u0413\u043e\u0442\u043e\u0432" : "\u0415\u0441\u0442\u044c \u0437\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u044f";
+}
+
+function getQuestionBadgeClass(question) {
+  const status = getQuestionStatus(question);
+
+  return status.ready
+    ? "bg-green-50 text-green-700 ring-green-200"
+    : "bg-amber-50 text-amber-700 ring-amber-200";
+}
+
+function getFilteredQuizQuestions(questions, filter, search) {
+  const normalizedSearch = `${search || ""}`.trim().toLowerCase();
+
+  return questions.filter((question, index) => {
+    const status = getQuestionStatus(question);
+
+    if (filter === "ready" && !status.ready) {
+      return false;
+    }
+
+    if (filter === "problems" && status.ready) {
+      return false;
+    }
+
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    const title = getQuestionDisplayTitle(question, index).toLowerCase();
+    const typeMeta = getQuizQuestionTypeMeta(question.type);
+    const typeLabel = `${typeMeta?.label || typeMeta?.shortLabel || ""}`.toLowerCase();
+
+    return title.includes(normalizedSearch) || typeLabel.includes(normalizedSearch);
+  });
+}
+
+function getQuizReadinessPercent(validation) {
+  const questionCount = Math.max(0, Number(validation?.questionCount) || 0);
+
+  if (questionCount === 0) {
+    return 0;
+  }
+
+  const issueCount = Array.isArray(validation?.issues) ? validation.issues.length : 0;
+  const warningCount = Array.isArray(validation?.warnings) ? validation.warnings.length : 0;
+  const penalty = Math.min(100, issueCount * 18 + warningCount * 8);
+
+  return Math.max(0, Math.min(100, 100 - penalty));
+}
+
+
 function QuestionTypeSelect({ value, onChange, disabled }) {
   return (
     <select
@@ -81,6 +224,26 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
   const quiz = useMemo(() => normalizeQuizContent(value), [value]);
   const validation = useMemo(() => validateQuizContent(quiz), [quiz]);
   const [previewMode, setPreviewMode] = useState(false);
+  const [activeTab, setActiveTab] = useState("question");
+  const [activeQuestionId, setActiveQuestionId] = useState("");
+  const [questionFilter, setQuestionFilter] = useState("all");
+  const [questionSearch, setQuestionSearch] = useState("");
+
+  const selectedQuestion =
+    quiz.questions.find((question) => question.id === activeQuestionId) ||
+    quiz.questions[0] ||
+    null;
+  const selectedQuestionIndex = selectedQuestion
+    ? quiz.questions.findIndex((question) => question.id === selectedQuestion.id)
+    : -1;
+  const filteredQuestions = getFilteredQuizQuestions(
+    quiz.questions,
+    questionFilter,
+    questionSearch
+  );
+  const readyQuestionCount = quiz.questions.filter((question) => getQuestionStatus(question).ready).length;
+  const problemQuestionCount = Math.max(quiz.questions.length - readyQuestionCount, 0);
+  const readinessPercent = getQuizReadinessPercent(validation);
 
   function emit(nextQuiz) {
     onChange?.(normalizeQuizContent(nextQuiz));
@@ -127,10 +290,15 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
   }
 
   function addQuestion(type = "single_choice") {
+    const nextQuestion = createDefaultQuestion(type);
+
     emit({
       ...quiz,
-      questions: [...quiz.questions, createDefaultQuestion(type)],
+      questions: [...quiz.questions, nextQuestion],
     });
+
+    setActiveQuestionId(nextQuestion.id);
+    setActiveTab("question");
   }
 
   function duplicateQuestion(questionId) {
@@ -145,20 +313,31 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
       title: `${question.title || "Вопрос"} — копия`,
     };
 
+    const nextCopy = normalizeQuizContent({ questions: [copy] }).questions[0];
+
     emit({
       ...quiz,
       questions: [
         ...quiz.questions,
-        normalizeQuizContent({ questions: [copy] }).questions[0],
+        nextCopy,
       ],
     });
+
+    setActiveQuestionId(nextCopy.id);
+    setActiveTab("question");
   }
 
   function removeQuestion(questionId) {
+    const nextQuestions = quiz.questions.filter((question) => question.id !== questionId);
+
     emit({
       ...quiz,
-      questions: quiz.questions.filter((question) => question.id !== questionId),
+      questions: nextQuestions,
     });
+
+    if (selectedQuestion?.id === questionId) {
+      setActiveQuestionId(nextQuestions[0]?.id || "");
+    }
   }
 
   function moveQuestion(questionId, direction) {
@@ -301,7 +480,113 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
       {previewMode ? (
         <QuizAttemptPreview value={quiz} disabled={disabled} />
       ) : (
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid gap-5 2xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+        <aside className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <h4 className="text-base font-black text-slate-950">
+              {"\u0412\u043e\u043f\u0440\u043e\u0441\u044b \u0442\u0435\u0441\u0442\u0430"}
+            </h4>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+              {quiz.questions.length}
+            </span>
+          </div>
+
+          <input
+            value={questionSearch}
+            onChange={(event) => setQuestionSearch(event.target.value)}
+            placeholder={"\u041f\u043e\u0438\u0441\u043a \u043f\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u0430\u043c"}
+            disabled={disabled}
+            className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100"
+          />
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {QUESTION_FILTERS.map((filter) => {
+              const count =
+                filter.key === "ready"
+                  ? readyQuestionCount
+                  : filter.key === "problems"
+                    ? problemQuestionCount
+                    : quiz.questions.length;
+
+              return (
+                <button
+                  key={filter.key}
+                  type="button"
+                  onClick={() => setQuestionFilter(filter.key)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition ${
+                    questionFilter === filter.key
+                      ? "bg-blue-600 text-white ring-blue-600"
+                      : "bg-slate-50 text-slate-600 ring-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {filter.label} {count}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
+            {"\u041f\u043e\u0440\u044f\u0434\u043e\u043a: \u043f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e"}
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {filteredQuestions.length ? (
+              filteredQuestions.map((question) => {
+                const originalIndex = quiz.questions.findIndex((item) => item.id === question.id);
+                const typeMeta = getQuizQuestionTypeMeta(question.type);
+                const isActive = selectedQuestion?.id === question.id;
+
+                return (
+                  <button
+                    key={question.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveQuestionId(question.id);
+                      setActiveTab("question");
+                    }}
+                    className={`w-full rounded-2xl border px-3 py-3 text-left transition ${
+                      isActive
+                        ? "border-blue-300 bg-blue-50 shadow-sm"
+                        : "border-slate-200 bg-white hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="text-sm font-black leading-5 text-slate-950">
+                      {originalIndex + 1}. {getQuestionDisplayTitle(question, originalIndex)}
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-blue-700">
+                        {typeMeta.shortLabel}
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-500">
+                        {question.points || 0} {"\u0431\u0430\u043b\u043b."}
+                      </span>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ${getQuestionBadgeClass(question)}`}
+                      >
+                        {getQuestionStatusLabel(question)}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="rounded-2xl bg-slate-50 px-3 py-4 text-sm text-slate-500">
+                {"\u0412\u043e\u043f\u0440\u043e\u0441\u044b \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b."}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => addQuestion("single_choice")}
+            disabled={disabled}
+            className="mt-4 w-full rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-40"
+          >
+            + {"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0432\u043e\u043f\u0440\u043e\u0441"}
+          </button>
+        </aside>
+
         <div className="space-y-5">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="grid gap-4 md:grid-cols-2">
@@ -386,7 +671,8 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
           </div>
 
           <div className="space-y-4">
-            {quiz.questions.map((question, index) => {
+            {(selectedQuestion ? [selectedQuestion] : []).map((question) => {
+              const index = selectedQuestionIndex;
               const typeMeta = getQuizQuestionTypeMeta(question.type);
 
               return (
@@ -701,6 +987,110 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
             })}
           </div>
 
+          {selectedQuestion ? (
+            <div
+              data-testid="quiz-inline-preview-strip"
+              className="rounded-3xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm"
+            >
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                <div>
+                  <div className="text-sm font-black text-blue-800">
+                    {"\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u043a\u0430\u043a \u0443\u0447\u0435\u043d\u0438\u043a"}
+                  </div>
+                  <div className="mt-1 text-xs font-semibold text-blue-600">
+                    {"\u0412\u043e\u043f\u0440\u043e\u0441"} {selectedQuestionIndex + 1} {"\u0438\u0437"} {quiz.questions.length}
+                  </div>
+                </div>
+
+                <div className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-blue-100">
+                  {selectedQuestion.points || 0} {"\u0431\u0430\u043b\u043b."}
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="rounded-2xl border border-blue-100 bg-white p-4">
+                  <div className="text-base font-black text-slate-950">
+                    {selectedQuestion.title || "\u041d\u043e\u0432\u044b\u0439 \u0432\u043e\u043f\u0440\u043e\u0441"}
+                  </div>
+
+                  {(selectedQuestion.type === "single_choice" ||
+                    selectedQuestion.type === "multiple_choice") ? (
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      {selectedQuestion.options.map((option) => (
+                        <label
+                          key={option.id}
+                          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                        >
+                          <input
+                            type={selectedQuestion.type === "single_choice" ? "radio" : "checkbox"}
+                            checked={Boolean(option.is_correct)}
+                            readOnly
+                            disabled
+                            name={`preview-${selectedQuestion.id}`}
+                            className="h-4 w-4 border-slate-300 text-blue-600"
+                          />
+                          <span>{option.text || "\u0412\u0430\u0440\u0438\u0430\u043d\u0442"}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : selectedQuestion.type === "true_false" ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                          selectedQuestion.correct_value
+                            ? "bg-green-50 text-green-700"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {"\u0412\u0435\u0440\u043d\u043e"}
+                      </span>
+                      <span
+                        className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                          !selectedQuestion.correct_value
+                            ? "bg-green-50 text-green-700"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {"\u041d\u0435\u0432\u0435\u0440\u043d\u043e"}
+                      </span>
+                    </div>
+                  ) : selectedQuestion.type === "short_text" ? (
+                    <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                      {"\u041e\u0442\u0432\u0435\u0442: "}
+                      {(selectedQuestion.accepted_answers || []).filter(Boolean).slice(0, 3).join(", ") ||
+                        "\u043a\u043e\u0440\u043e\u0442\u043a\u0438\u0439 \u0442\u0435\u043a\u0441\u0442"}
+                    </div>
+                  ) : selectedQuestion.type === "number" ? (
+                    <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                      {"\u0427\u0438\u0441\u043b\u043e: "}
+                      {selectedQuestion.correct_number || "\u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u043e"}
+                      {Number(selectedQuestion.tolerance) > 0
+                        ? `, \u043f\u043e\u0433\u0440\u0435\u0448\u043d\u043e\u0441\u0442\u044c \u00b1${selectedQuestion.tolerance}`
+                        : ""}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-col justify-end gap-2 xl:min-w-[190px]">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode(true)}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    {"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode(true)}
+                    className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
+                  >
+                    {"\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442\u044b"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-5">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
@@ -729,30 +1119,56 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
 
         <aside className="space-y-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h4 className="text-base font-bold text-slate-950">Готовность теста</h4>
+            <h4 className="text-base font-black text-slate-950">
+              {"\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c \u0442\u0435\u0441\u0442\u0430"}
+            </h4>
 
-            <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm">
-              <div className="font-semibold text-slate-900">
-                {validation.isValid ? "Тест готов" : "Есть замечания"}
+            <div className="mt-4 flex items-center gap-4">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xl font-black text-blue-700 ring-8 ring-blue-100">
+                {readinessPercent}%
               </div>
-              <div className="mt-1 text-slate-500">
-                {validation.questionCount} вопрос(ов), {validation.totalPoints} балл(ов)
+
+              <div>
+                <div className="font-bold text-slate-900">
+                  {validation.isValid
+                    ? "\u0422\u0435\u0441\u0442 \u0433\u043e\u0442\u043e\u0432"
+                    : "\u0415\u0441\u0442\u044c \u0437\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u044f"}
+                </div>
+                <div className="mt-1 text-sm text-slate-500">
+                  {validation.questionCount} {"\u0432\u043e\u043f\u0440\u043e\u0441(\u043e\u0432)"}, {validation.totalPoints} {"\u0431\u0430\u043b\u043b(\u043e\u0432)"}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="rounded-2xl bg-green-50 px-3 py-2 text-green-700">
+                {"\u2713 \u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0442\u0435\u0441\u0442\u0430 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e"}
+              </div>
+              <div className="rounded-2xl bg-green-50 px-3 py-2 text-green-700">
+                {"\u2713 \u041d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u044b \u043f\u0440\u043e\u0445\u043e\u0434\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b"}
+              </div>
+              <div
+                className={`rounded-2xl px-3 py-2 ${
+                  problemQuestionCount === 0
+                    ? "bg-green-50 text-green-700"
+                    : "bg-amber-50 text-amber-700"
+                }`}
+              >
+                {problemQuestionCount === 0
+                  ? "\u2713 \u0412\u0441\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u0433\u043e\u0442\u043e\u0432\u044b"
+                  : `\u26a0 \u0412\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \u0441 \u0437\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u044f\u043c\u0438: ${problemQuestionCount}`}
               </div>
             </div>
 
             {validation.issues.length > 0 ? (
               <ul className="mt-4 space-y-2 text-sm text-red-700">
-                {validation.issues.map((issue) => (
+                {validation.issues.slice(0, 5).map((issue) => (
                   <li key={issue} className="rounded-2xl bg-red-50 px-3 py-2">
                     {issue}
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="mt-4 rounded-2xl bg-green-50 px-3 py-2 text-sm text-green-700">
-                Обязательные параметры заполнены.
-              </p>
-            )}
+            ) : null}
 
             {validation.warnings.length > 0 ? (
               <ul className="mt-3 space-y-2 text-sm text-amber-700">
@@ -766,7 +1182,10 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h4 className="text-base font-bold text-slate-950">Типы вопросов</h4>
+            <h4 className="text-base font-black text-slate-950">
+              {"\u0422\u0438\u043f\u044b \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432"}
+            </h4>
+
             <div className="mt-4 space-y-3">
               {QUIZ_QUESTION_TYPES.map((type) => (
                 <div key={type.value} className="rounded-2xl bg-slate-50 p-3">
@@ -775,6 +1194,75 @@ export function QuizBlockEditor({ value, onChange, disabled = false }) {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h4 className="text-base font-black text-slate-950">
+              {"\u0411\u044b\u0441\u0442\u0440\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}
+            </h4>
+
+            <div className="mt-4 grid gap-2">
+              <button
+                type="button"
+                onClick={() => duplicateQuestion(selectedQuestion?.id)}
+                disabled={disabled || !selectedQuestion}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+              >
+                {"\u0414\u0443\u0431\u043b\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0432\u043e\u043f\u0440\u043e\u0441"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setQuestionSearch("");
+                  setQuestionFilter("all");
+                }}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+              >
+                {"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u0444\u0438\u043b\u044c\u0442\u0440\u044b"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewMode(true)}
+                className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+              >
+                {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440"}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h4 className="text-base font-black text-slate-950">
+              {"\u0420\u0435\u0436\u0438\u043c \u0443\u0447\u0435\u043d\u0438\u043a\u0430"}
+            </h4>
+
+            <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 text-center">
+              <div className="px-2 py-3">
+                <div className="text-lg font-black text-slate-950">{quiz.questions.length}</div>
+                <div className="text-[11px] text-slate-500">{"\u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432"}</div>
+              </div>
+              <div className="border-x border-slate-200 px-2 py-3">
+                <div className="text-lg font-black text-slate-950">
+                  {calculateQuizTotalPoints(quiz)}
+                </div>
+                <div className="text-[11px] text-slate-500">{"\u0431\u0430\u043b\u043b\u043e\u0432"}</div>
+              </div>
+              <div className="px-2 py-3">
+                <div className="text-lg font-black text-slate-950">
+                  {quiz.grading.pass_score_percent}%
+                </div>
+                <div className="text-[11px] text-slate-500">{"\u043f\u0440\u043e\u0445\u043e\u0434"}</div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPreviewMode(true)}
+              className="mt-4 w-full rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+            >
+              {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u043a \u0443\u0447\u0435\u043d\u0438\u043a"}
+            </button>
           </div>
         </aside>
       </div>
