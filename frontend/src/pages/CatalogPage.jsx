@@ -620,11 +620,11 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
               />
             </label>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button type="button" className="portal-btn-primary !h-12 !rounded-lg !px-7 !py-0">Найти</button>
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center xl:w-auto">
+              <button type="button" className="portal-btn-primary !h-12 w-full !rounded-lg !px-7 !py-0 sm:w-auto">Найти</button>
+              <div className="flex w-full flex-col items-start gap-2 text-xs font-bold text-slate-500 sm:w-auto sm:flex-row sm:items-center">
                 Сортировать:
-                <select className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100">
+                <select className="h-12 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 sm:w-auto">
                   <option>По популярности</option>
                   <option>По новизне</option>
                   <option>По цене</option>
@@ -642,12 +642,12 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
             ))}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm font-semibold text-slate-600">
               Найдено программ: <span className="font-black text-[#111936]">{foundLabel}</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 ring-1 ring-blue-100">
                 <Grid2X2 className="h-4 w-4" aria-hidden="true" />
               </button>
