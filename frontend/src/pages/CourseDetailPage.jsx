@@ -4204,12 +4204,12 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={handleEnroll}
             disabled={enrollLoading}
-            className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {enrollLoading ? "Записываем..." : getPrimaryActionLabel(existingEnrollment, user)}
           </button>
@@ -4217,7 +4217,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           <button
             type="button"
             onClick={() => onPageChange("catalog")}
-            className="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="w-full rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
           >
             Назад в каталог
           </button>
