@@ -45,6 +45,41 @@ class AccountLessonBlockResponse(BaseModel):
     is_active: bool = True
 
 
+class AccountQuizAttemptSubmitRequest(BaseModel):
+    answers: dict[str, Any] = Field(default_factory=dict)
+
+
+class AccountQuizQuestionResultResponse(BaseModel):
+    question_id: str | None = None
+    type: str | None = None
+    points: float = 0
+    earned_points: float = 0
+    correct: bool = False
+    correct_answer: Any = None
+    user_answer: Any = None
+
+
+class AccountQuizAttemptResponse(BaseModel):
+    id: str
+    enrollment_id: str
+    lesson_id: str
+    block_id: str
+    attempt_number: int
+    status: str
+    passed: bool
+    earned_points: float = 0
+    total_points: float = 0
+    percent: int = 0
+    correct_count: int = 0
+    question_count: int = 0
+    pass_score_percent: int = 0
+    max_attempts: int | None = None
+    remaining_attempts: int | None = None
+    answers_json: dict[str, Any] = Field(default_factory=dict)
+    question_results: list[AccountQuizQuestionResultResponse] = Field(default_factory=list)
+    submitted_at: datetime | None = None
+
+
 class AccountCourseLessonResponse(BaseModel):
     id: str
     module_id: str
