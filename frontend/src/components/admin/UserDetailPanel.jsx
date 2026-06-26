@@ -126,7 +126,7 @@ function UserPasswordResetForm({ onReset }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+    <form id="user-password-reset-card" data-testid="user-password-reset-card" onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
       <div>
         <div className="text-sm font-semibold text-slate-900">
           Сбросить пароль
@@ -239,8 +239,8 @@ function UserRoleAssignmentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-      <div>
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+      <div data-testid="user-roles-card" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
         <div className="text-sm font-semibold text-slate-900">
           Назначить новую роль
         </div>
@@ -418,31 +418,39 @@ export function UserDetailPanel({
 
       {userDetail && !loading && (
         <div data-testid="admin-user-detail-content" className="space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl bg-slate-50/70 p-4 ring-1 ring-slate-200">
             <div className="flex min-w-0 items-center gap-3">
               <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
                 {(userDetail.full_name || userDetail.email || "U").trim().slice(0, 2).toUpperCase()}
               </span>
 
               <div className="min-w-0">
-                <div className="truncate text-lg font-black text-slate-950">
+                <div className="truncate text-base font-black text-slate-950">
                   {userDetail.full_name || userDetail.email}
                 </div>
-                <div className="mt-0.5 truncate text-sm font-medium text-slate-500">
+                <div className="mt-1 truncate text-xs font-medium text-slate-500">
                   {userDetail.email}
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div
+              data-testid="admin-user-detail-actions"
+              className="flex flex-wrap items-start justify-end gap-3"
+            >
               {!isEditing && (
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
                   disabled={actionLoading || Boolean(removingRoleId)}
-                  className="inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group inline-flex min-w-[72px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+                  title={"\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
+                  aria-label={"\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
                 >
-                  Редактировать
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition group-hover:bg-slate-50">
+                    {"\u270e"}
+                  </span>
+                  <span>{"\u0420\u0435\u0434\u0430\u043a\u0442."}</span>
                 </button>
               )}
 
@@ -451,31 +459,121 @@ export function UserDetailPanel({
                   type="button"
                   onClick={handleDeactivate}
                   disabled={actionLoading || Boolean(removingRoleId)}
-                  className="inline-flex h-9 items-center justify-center rounded-xl bg-red-600 px-3 text-xs font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group inline-flex min-w-[72px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+                  title={"\u0414\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
+                  aria-label={"\u0414\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
                 >
-                  {actionLoading ? "Выполняем..." : "Деактивировать"}
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-red-600 ring-1 ring-red-100 transition group-hover:bg-red-50">
+                    {actionLoading ? "\u2026" : "\u23fb"}
+                  </span>
+                  <span>{"\u041e\u0442\u043a\u043b\u044e\u0447\u0438\u0442\u044c"}</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleActivate}
                   disabled={actionLoading || Boolean(removingRoleId)}
-                  className="inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group inline-flex min-w-[72px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+                  title={"\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
+                  aria-label={"\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
                 >
-                  {actionLoading ? "Выполняем..." : "Активировать"}
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-blue-600 ring-1 ring-blue-100 transition group-hover:bg-blue-50">
+                    {actionLoading ? "\u2026" : "\u23fb"}
+                  </span>
+                  <span>{"\u0412\u043a\u043b\u044e\u0447\u0438\u0442\u044c"}</span>
                 </button>
               )}
 
               <button
                 type="button"
+                onClick={() => document.getElementById("user-password-reset-card")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                disabled={actionLoading || Boolean(removingRoleId)}
+                className="group inline-flex min-w-[82px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+                title={"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u043f\u0430\u0440\u043e\u043b\u044c"}
+                aria-label={"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u043f\u0430\u0440\u043e\u043b\u044c"}
+              >
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition group-hover:bg-slate-50">
+                  {"\u21bb"}
+                </span>
+                <span>{"\u041f\u0430\u0440\u043e\u043b\u044c"}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleClose}
                 disabled={actionLoading || Boolean(removingRoleId)}
-                className="inline-flex h-9 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="group inline-flex min-w-[56px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+                title={"\u0417\u0430\u043a\u0440\u044b\u0442\u044c"}
+                aria-label={"\u0417\u0430\u043a\u0440\u044b\u0442\u044c"}
               >
-                Закрыть
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition group-hover:bg-slate-50">
+                  {"\u00d7"}
+                </span>
+                <span>{"\u0417\u0430\u043a\u0440\u044b\u0442\u044c"}</span>
               </button>
+
+              <details className="relative">
+                <summary
+                  title={"\u0415\u0449\u0451"}
+                  aria-label={"\u0415\u0449\u0451"}
+                  className="inline-flex min-w-[48px] cursor-pointer list-none flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition"
+                >
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
+                    {"\u22ef"}
+                  </span>
+                  <span>{"\u0415\u0449\u0451"}</span>
+                </summary>
+
+                <div className="absolute right-0 z-20 mt-2 w-56 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
+                  {!isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(true)}
+                      disabled={actionLoading || Boolean(removingRoleId)}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      {"\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={userDetail.is_active ? handleDeactivate : handleActivate}
+                    disabled={actionLoading || Boolean(removingRoleId)}
+                    className={`block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold hover:bg-slate-50 disabled:opacity-60 ${
+                      userDetail.is_active ? "text-red-700" : "text-blue-700"
+                    }`}
+                  >
+                    {userDetail.is_active ? "\u0414\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c" : "\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
+                  </button>
+
+                  <Link
+                    to={buildDocumentsPath({ user_id: userDetail.id })}
+                    className="block rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"}
+                  </Link>
+
+                  <Link
+                    to={buildEnrollmentsPath({ user_id: userDetail.id })}
+                    className="block rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    disabled={actionLoading || Boolean(removingRoleId)}
+                    className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    {"\u0417\u0430\u043a\u0440\u044b\u0442\u044c"}
+                  </button>
+                </div>
+              </details>
             </div>
           </div>
+
 
           {actionError && (
             <Alert title="Не удалось выполнить действие" tone="red">
@@ -512,42 +610,55 @@ export function UserDetailPanel({
               {userAttentionItems.length > 0 && (
                 <div
                   data-testid="user-attention-diagnostics"
-                  className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
+                  className="rounded-2xl bg-amber-50/70 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="font-black text-slate-950">
-                      Требует внимания
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-black text-amber-700 ring-1 ring-amber-200">
+                      {"!"}
+                    </span>
+
+                    <span className="font-black text-slate-950">
+                      {"\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u0432\u043d\u0438\u043c\u0430\u043d\u0438\u044f"}
+                    </span>
+
+                    {userAttentionItems.map((item) => (
+                      <span key={item} className="inline-flex min-w-0 items-center gap-2">
+                        <span className="h-1 w-1 shrink-0 rounded-full bg-amber-500" />
+                        <span className="truncate">{item}</span>
+                      </span>
+                    ))}
+
                     <span
                       data-testid="user-attention-count"
-                      className="rounded-full bg-white px-3 py-1 text-xs font-black text-amber-800 ring-1 ring-amber-200"
+                      className="ml-auto rounded-full bg-white px-3 py-1 text-xs font-black text-amber-800 ring-1 ring-amber-200"
                     >
                       {userAttentionItems.length}
                     </span>
                   </div>
 
                   <p data-testid="user-attention-diagnostics-note" className="sr-only">
-                    Диагностика основана на активности, подтверждении email, MFA, телефоне и ролях пользователя.
+                    {"\u0414\u0438\u0430\u0433\u043d\u043e\u0441\u0442\u0438\u043a\u0430 \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0430 \u043d\u0430 \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u0438, \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u0438 email, MFA, \u0442\u0435\u043b\u0435\u0444\u043e\u043d\u0435 \u0438 \u0440\u043e\u043b\u044f\u0445 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f."}
                   </p>
-
-                  <ul className="mt-2 list-disc space-y-1 pl-5 leading-6">
-                    {userAttentionItems.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
                 </div>
               )}
 
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="space-y-4">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <DetailField label="ID" value={userDetail.id} />
-                    <DetailField label="Телефон" value={userDetail.phone} />
-                    <DetailField label="Создан" value={formatDetailDate(userDetail.created_at)} />
-                    <DetailField label="Обновлён" value={formatDetailDate(userDetail.updated_at)} />
+                  <div data-testid="user-profile-card" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                    <div className="mb-3 text-sm font-black text-slate-900">
+                      {"\u041f\u0440\u043e\u0444\u0438\u043b\u044c"}
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <DetailField label="ID" value={userDetail.id} />
+                      <DetailField label={"\u0422\u0435\u043b\u0435\u0444\u043e\u043d"} value={userDetail.phone} />
+                      <DetailField label={"\u0421\u043e\u0437\u0434\u0430\u043d"} value={formatDetailDate(userDetail.created_at)} />
+                      <DetailField label={"\u041e\u0431\u043d\u043e\u0432\u043b\u0451\u043d"} value={formatDetailDate(userDetail.updated_at)} />
+                    </div>
                   </div>
 
-                  <div>
+                  <div data-testid="user-roles-list-card" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                     <div className="mb-2 text-sm font-black text-slate-900">
                       Роли пользователя
                     </div>
@@ -606,6 +717,30 @@ export function UserDetailPanel({
                 </div>
 
                 <div className="space-y-4">
+                  <div data-testid="user-related-records-card" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                    <div className="mb-3 text-sm font-black text-slate-900">
+                      {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0438 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}
+                    </div>
+
+                    <div data-testid="user-related-records-summary" className="grid gap-2">
+                      <Link
+                        to={buildDocumentsPath({ user_id: userDetail.id })}
+                        className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-100 transition hover:bg-slate-100"
+                      >
+                        <span>{"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"}</span>
+                        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-400 ring-1 ring-slate-200">{"\u2192"}</span>
+                      </Link>
+
+                      <Link
+                        to={buildEnrollmentsPath({ user_id: userDetail.id })}
+                        className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-100 transition hover:bg-slate-100"
+                      >
+                        <span>{"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}</span>
+                        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-400 ring-1 ring-slate-200">{"\u2192"}</span>
+                      </Link>
+                    </div>
+                  </div>
+
                   <UserRoleAssignmentForm
                     roles={roles}
                     organizations={organizations}
