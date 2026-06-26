@@ -96,6 +96,13 @@ export async function completeAccountCourseLesson(enrollmentId, lessonId) {
   });
 }
 
+export async function submitAccountCourseLessonQuizAttempt(enrollmentId, lessonId, blockId, answers = {}) {
+  return request(`/api/v1/account/courses/${enrollmentId}/lessons/${lessonId}/quiz-attempts/${blockId}`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
+  });
+}
+
 export async function enrollAccountCourse(courseId) {
   return request(`/api/v1/account/courses/${courseId}/enroll`, {
     method: "POST",

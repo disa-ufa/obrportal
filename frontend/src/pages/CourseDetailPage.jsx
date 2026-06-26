@@ -2,10 +2,10 @@ import { formatApiError } from "../utils/apiErrors";
 // Legacy CI smoke compatibility marker: import { useEffect, useState } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
-import { completeAccountCourse, completeAccountCourseLesson, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses } from "../api/client";
+import { completeAccountCourse, completeAccountCourseLesson, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, submitAccountCourseLessonQuizAttempt } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
-import { buildInitialQuizAnswers, gradeQuizAttempt } from "../components/admin/lesson-studio/quiz/quizGrading.js";
+import { buildInitialQuizAnswers } from "../components/admin/lesson-studio/quiz/quizGrading.js";
 import { getQuizQuestionTypeMeta, normalizeQuizContent } from "../components/admin/lesson-studio/quiz/quizSchema.js";
 
 function formatCourseDocument(course) {
@@ -1319,9 +1319,32 @@ function getLearnerLessonBlockViewerActionLabel(blockType) {
 }
 
 
+function getLearnerQuizQuestionResult(result, question, questionIndex) {
+  const questionResults = Array.isArray(result?.question_results)
+    ? result.question_results
+    : [];
+
+  if (!questionResults.length) {
+    return null;
+  }
+
+  const questionId = `${question?.id || ""}`.trim();
+
+  if (questionId) {
+    return (
+      questionResults.find((item) => `${item?.question_id || ""}`.trim() === questionId) ||
+      questionResults[questionIndex] ||
+      null
+    );
+  }
+
+  return questionResults[questionIndex] || null;
+}
+
 function LearnerQuizAttemptBlock({
   block,
   lesson,
+  enrollmentId = "",
   onCompleteLesson,
   lessonCompletionLoading = false,
   onQuizAttemptStateChange,
@@ -1356,13 +1379,22 @@ function LearnerQuizAttemptBlock({
     savingProgress: "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441...",
     markLessonCompleted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439",
     lessonAlreadyCompleted: "\u0423\u0440\u043e\u043a \u0443\u0436\u0435 \u043e\u0442\u043c\u0435\u0447\u0435\u043d \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439.",
+    attemptNumber: "\u041f\u043e\u043f\u044b\u0442\u043a\u0430",
+    remainingAttempts: "\u041e\u0441\u0442\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u043f\u044b\u0442\u043e\u043a",
+    attemptsUnlimited: "\u0411\u0435\u0437 \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u0438\u044f",
+    noAttemptsLeft: "\u041f\u043e\u043f\u044b\u0442\u043a\u0438 \u0437\u0430\u043a\u043e\u043d\u0447\u0438\u043b\u0438\u0441\u044c",
+    quizAlreadyPassed: "\u0422\u0435\u0441\u0442 \u0443\u0436\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d",
+    backendResult: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d \u0432 \u0441\u0438\u0441\u0442\u0435\u043c\u0435",
   };
   const [answers, setAnswers] = useState(() => buildInitialQuizAnswers(quiz));
   const [result, setResult] = useState(null);
+  const [attemptSubmitting, setAttemptSubmitting] = useState(false);
+  const [attemptError, setAttemptError] = useState("");
 
   useEffect(() => {
     setAnswers(buildInitialQuizAnswers(quiz));
     setResult(null);
+    setAttemptError("");
   }, [quiz]);
 
   function updateAnswer(questionId, value) {
@@ -1371,6 +1403,7 @@ function LearnerQuizAttemptBlock({
       [questionId]: value,
     }));
     setResult(null);
+    setAttemptError("");
   }
 
   function toggleMultipleAnswer(questionId, optionId) {
@@ -1385,21 +1418,63 @@ function LearnerQuizAttemptBlock({
       };
     });
     setResult(null);
+    setAttemptError("");
   }
 
-  function handleSubmitQuiz() {
-    setResult(gradeQuizAttempt(quiz, answers));
+  async function handleSubmitQuiz() {
+    const lessonId = getLearnerLessonBlockViewerLessonId(lesson);
+    const blockId = `${block?.id || ""}`.trim();
+
+    if (result?.passed) {
+      setAttemptError(quizLabels.quizAlreadyPassed);
+      return;
+    }
+
+    if (attemptsLocked) {
+      setAttemptError(quizLabels.noAttemptsLeft);
+      return;
+    }
+
+    if (!enrollmentId || !lessonId || !blockId || block?.legacy) {
+      setAttemptError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u0442\u0435\u0441\u0442: \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u044e\u0442 \u0434\u0430\u043d\u043d\u044b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438, \u0443\u0440\u043e\u043a\u0430 \u0438\u043b\u0438 \u0431\u043b\u043e\u043a\u0430.");
+      return;
+    }
+
+    setAttemptSubmitting(true);
+    setAttemptError("");
+
+    try {
+      const attempt = await submitAccountCourseLessonQuizAttempt(
+        enrollmentId,
+        lessonId,
+        blockId,
+        answers
+      );
+
+      setResult(attempt);
+    } catch (error) {
+      setResult(null);
+      setAttemptError(formatApiError(error, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442\u044b \u0442\u0435\u0441\u0442\u0430."));
+    } finally {
+      setAttemptSubmitting(false);
+    }
   }
 
   function handleResetQuiz() {
     setAnswers(buildInitialQuizAnswers(quiz));
     setResult(null);
+    setAttemptError("");
   }
 
   const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
   const lessonCompleted = getLessonCompleted(lesson);
   const lessonId = getLearnerLessonBlockViewerLessonId(lesson);
   const blockKey = `${block?.id || block?.position || "quiz"}`;
+  const attemptNumber = Number.isFinite(Number(result?.attempt_number)) ? Number(result.attempt_number) : null;
+  const maxAttempts = Number.isFinite(Number(result?.max_attempts)) ? Number(result.max_attempts) : null;
+  const remainingAttempts = Number.isFinite(Number(result?.remaining_attempts)) ? Number(result.remaining_attempts) : null;
+  const attemptsLocked = Boolean(result && !result.passed && remainingAttempts !== null && remainingAttempts <= 0);
+  const quizSubmitLocked = Boolean(result && (result.passed || attemptsLocked));
 
   useEffect(() => {
     if (!lessonId) {
@@ -1449,6 +1524,7 @@ function LearnerQuizAttemptBlock({
             const type = `${question.type || ""}`.toLowerCase();
             const answer = answers[question.id];
             const typeMeta = getQuizQuestionTypeMeta(type);
+            const questionResult = getLearnerQuizQuestionResult(result, question, questionIndex);
 
             return (
               <div
@@ -1555,16 +1631,16 @@ function LearnerQuizAttemptBlock({
                   />
                 ) : null}
 
-                {result?.question_results?.[questionIndex] ? (
+                {questionResult ? (
                   <div
                     data-testid="learner-quiz-question-result"
                     className={`mt-4 rounded-2xl p-3 text-sm font-semibold ring-1 ${
-                      result.question_results[questionIndex].correct
+                      questionResult.correct
                         ? "bg-green-50 text-green-800 ring-green-200"
                         : "bg-red-50 text-red-700 ring-red-200"
                     }`}
                   >
-                    {result.question_results[questionIndex].correct
+                    {questionResult.correct
                       ? question.feedback_correct || quizLabels.correctDefault
                       : question.feedback_incorrect || quizLabels.incorrectDefault}
                   </div>
@@ -1583,7 +1659,8 @@ function LearnerQuizAttemptBlock({
         <button
           type="button"
           onClick={handleResetQuiz}
-          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+          disabled={quizSubmitLocked}
+          className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {quizLabels.resetAnswers}
         </button>
@@ -1591,11 +1668,18 @@ function LearnerQuizAttemptBlock({
         <button
           type="button"
           onClick={handleSubmitQuiz}
-          className="rounded-full bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
+          disabled={attemptSubmitting || quizSubmitLocked}
+          className="rounded-full bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {quizLabels.checkAnswers}
+          {attemptSubmitting ? "\u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u043e\u0442\u0432\u0435\u0442\u044b..." : result?.passed ? quizLabels.quizAlreadyPassed : attemptsLocked ? quizLabels.noAttemptsLeft : quizLabels.checkAnswers}
         </button>
       </div>
+
+      {attemptError ? (
+        <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700 ring-1 ring-red-200">
+          {attemptError}
+        </div>
+      ) : null}
 
       {result ? (
         <div
@@ -1609,6 +1693,21 @@ function LearnerQuizAttemptBlock({
           <div className="text-sm font-bold">
             {result.passed ? quizLabels.passed : quizLabels.failed}
           </div>
+
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            {attemptNumber !== null ? (
+              <div className="rounded-2xl bg-white/70 px-3 py-2 text-xs font-semibold ring-1 ring-white">
+                {quizLabels.attemptNumber} {"\u2116"}{attemptNumber}
+              </div>
+            ) : null}
+            <div className="rounded-2xl bg-white/70 px-3 py-2 text-xs font-semibold ring-1 ring-white">
+              {quizLabels.remainingAttempts}: {maxAttempts === null ? quizLabels.attemptsUnlimited : remainingAttempts ?? 0}
+            </div>
+            <div className="rounded-2xl bg-white/70 px-3 py-2 text-xs font-semibold ring-1 ring-white">
+              {quizLabels.backendResult}
+            </div>
+          </div>
+
           <div className="mt-2 text-sm leading-6">
             {quizLabels.scorePrefix} {result.earned_points} {quizLabels.of} {result.total_points} {quizLabels.pointsLabel}, {result.percent}%.
             {quizLabels.passScore}: {result.pass_score_percent ?? 0}%.
@@ -1637,7 +1736,7 @@ function LearnerQuizAttemptBlock({
   );
 }
 
-function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, options, lesson, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange }) {
+function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, options, lesson, enrollmentId, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange }) {
   const content = getLearnerLessonBlockViewerContent(block);
   const question = getLearnerLessonBlockViewerQuestion(block);
   const fileName = getLearnerLessonBlockViewerFileName(block);
@@ -1703,6 +1802,7 @@ function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, optio
       <LearnerQuizAttemptBlock
         block={block}
         lesson={lesson}
+        enrollmentId={enrollmentId}
         onCompleteLesson={onCompleteLesson}
         lessonCompletionLoading={lessonCompletionLoading}
         onQuizAttemptStateChange={onQuizAttemptStateChange}
@@ -2002,7 +2102,7 @@ function LearnerLessonBlockNavigation({ lessons, selectedLessonId, onSelectLesso
   );
 }
 
-function LearnerLessonBlockViewerBlock({ block, index, lesson, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange }) {
+function LearnerLessonBlockViewerBlock({ block, index, lesson, enrollmentId, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange }) {
   const blockType = normalizeLearnerLessonBlockType(block.block_type);
   const typeLabel = LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS[blockType] || LEARNER_LESSON_BLOCK_VIEWER_LABELS.richText;
   const text = getLearnerLessonBlockViewerText(block);
@@ -2047,6 +2147,7 @@ function LearnerLessonBlockViewerBlock({ block, index, lesson, onCompleteLesson,
         href={href}
         options={options}
         lesson={lesson}
+        enrollmentId={enrollmentId}
         onCompleteLesson={onCompleteLesson}
         lessonCompletionLoading={lessonCompletionLoading}
         onQuizAttemptStateChange={onQuizAttemptStateChange}
@@ -2068,6 +2169,7 @@ function CourseLearnerLessonBlockViewerPanel({
   onQuizAttemptStateChange,
 }) {
   const facts = getLearnerLessonBlockViewerFacts(course, existingEnrollment, user, selectedLessonId);
+  const enrollmentId = getEnrollmentId(existingEnrollment);
 
   return (
     <section
@@ -2179,6 +2281,7 @@ function CourseLearnerLessonBlockViewerPanel({
               block={block}
               index={index}
               lesson={facts.lesson}
+              enrollmentId={enrollmentId}
               onCompleteLesson={onCompleteLesson}
               lessonCompletionLoading={lessonCompletionLoading}
               onQuizAttemptStateChange={onQuizAttemptStateChange}
