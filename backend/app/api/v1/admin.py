@@ -4607,19 +4607,257 @@ def build_admin_enrollment_item(row) -> AdminEnrollmentItem:
     )
 
 
+def admin_quiz_blank_text() -> str:
+    return "\u2014"
+
+
+def admin_quiz_bool_text(value) -> str:
+    if value is True:
+        return "\u0414\u0430"
+    if value is False:
+        return "\u041d\u0435\u0442"
+    return admin_quiz_blank_text()
+
+
+def admin_quiz_plain_text(value) -> str:
+    if value is None:
+        return admin_quiz_blank_text()
+
+    if isinstance(value, bool):
+        return admin_quiz_bool_text(value)
+
+    if isinstance(value, (int, float)):
+        return str(value)
+
+    if isinstance(value, list):
+        items = [admin_quiz_plain_text(item) for item in value]
+        items = [item for item in items if item and item != admin_quiz_blank_text()]
+        return ", ".join(items) if items else admin_quiz_blank_text()
+
+    text_value = str(value).strip()
+    return text_value if text_value else admin_quiz_blank_text()
+
+
+def admin_quiz_question_id(question) -> str:
+    if not isinstance(question, dict):
+        return ""
+
+    return str(question.get("id") or "").strip()
+
+
+def admin_quiz_option_map(question) -> dict[str, str]:
+    if not isinstance(question, dict):
+        return {}
+
+    options = question.get("options") if isinstance(question.get("options"), list) else []
+    result: dict[str, str] = {}
+
+    for index, option in enumerate(options, start=1):
+        if not isinstance(option, dict):
+            continue
+
+        option_id = str(option.get("id") or f"o_{index}").strip()
+        option_text = str(option.get("text") or option.get("label") or option_id).strip()
+
+        if option_id:
+            result[option_id] = option_text or option_id
+
+    return result
+
+
+def admin_quiz_option_answer_text(question, value) -> str:
+    option_map = admin_quiz_option_map(question)
+
+    if isinstance(value, list):
+        values = value
+    elif value is None:
+        values = []
+    else:
+        values = [value]
+
+    labels = []
+
+    for item in values:
+        item_key = str(item).strip()
+        labels.append(option_map.get(item_key) or item_key)
+
+    labels = [label for label in labels if label]
+
+    return ", ".join(labels) if labels else admin_quiz_blank_text()
+
+
+def admin_quiz_question_correct_value(question):
+    if not isinstance(question, dict):
+        return None
+
+    question_type = str(question.get("type") or "").strip()
+
+    if question_type == "single_choice":
+        options = question.get("options") if isinstance(question.get("options"), list) else []
+
+        for option in options:
+            if isinstance(option, dict) and bool(option.get("is_correct")):
+                return option.get("id")
+
+        return None
+
+    if question_type == "multiple_choice":
+        options = question.get("options") if isinstance(question.get("options"), list) else []
+
+        return [
+            option.get("id")
+            for option in options
+            if isinstance(option, dict) and bool(option.get("is_correct"))
+        ]
+
+    if question_type == "true_false":
+        if "correct_value" in question:
+            return bool(question.get("correct_value"))
+        if "correct_boolean" in question:
+            return bool(question.get("correct_boolean"))
+
+        return None
+
+    if question_type == "short_text":
+        accepted_answers = question.get("accepted_answers")
+
+        if isinstance(accepted_answers, list) and accepted_answers:
+            return accepted_answers
+
+        if "correct_text" in question:
+            return question.get("correct_text")
+
+        return None
+
+    if question_type == "number":
+        return question.get("correct_number")
+
+    return None
+
+
+def admin_quiz_answer_text(question, value) -> str:
+    question_type = ""
+
+    if isinstance(question, dict):
+        question_type = str(question.get("type") or "").strip()
+
+    if question_type in ("single_choice", "multiple_choice"):
+        return admin_quiz_option_answer_text(question, value)
+
+    if question_type == "true_false":
+        if isinstance(value, bool):
+            return admin_quiz_bool_text(value)
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in ("true", "1", "yes", "y", "\u0434\u0430"):
+                return admin_quiz_bool_text(True)
+            if normalized in ("false", "0", "no", "n", "\u043d\u0435\u0442"):
+                return admin_quiz_bool_text(False)
+
+    return admin_quiz_plain_text(value)
+
+
+def admin_quiz_points_text(earned_points, points) -> str:
+    earned = admin_quiz_plain_text(earned_points)
+    total = admin_quiz_plain_text(points)
+
+    return f"{earned} \u0438\u0437 {total}"
+
+
+def build_admin_quiz_question_results(result_json, answers_json, block_content_json) -> list[dict]:
+    safe_result_json = result_json if isinstance(result_json, dict) else {}
+    safe_answers_json = answers_json if isinstance(answers_json, dict) else {}
+    safe_content_json = block_content_json if isinstance(block_content_json, dict) else {}
+
+    raw_question_results = safe_result_json.get("question_results") or []
+
+    if not isinstance(raw_question_results, list):
+        raw_question_results = []
+
+    questions = safe_content_json.get("questions") or []
+
+    if not isinstance(questions, list):
+        questions = []
+
+    questions_by_id = {
+        admin_quiz_question_id(question): question
+        for question in questions
+        if admin_quiz_question_id(question)
+    }
+
+    readable_results: list[dict] = []
+
+    for index, raw_item in enumerate(raw_question_results, start=1):
+        if not isinstance(raw_item, dict):
+            continue
+
+        question_id = str(raw_item.get("question_id") or "").strip()
+        question = questions_by_id.get(question_id, {})
+
+        question_type = str(
+            raw_item.get("type")
+            or (question.get("type") if isinstance(question, dict) else "")
+            or ""
+        ).strip()
+
+        if isinstance(question, dict) and question_type and not question.get("type"):
+            question = {**question, "type": question_type}
+
+        question_title = ""
+
+        if isinstance(question, dict):
+            question_title = str(question.get("title") or question.get("text") or "").strip()
+
+        if not question_title:
+            question_title = question_id or f"Question {index}"
+
+        question_description = ""
+
+        if isinstance(question, dict):
+            question_description = str(question.get("description") or "").strip()
+
+        user_answer_value = (
+            raw_item.get("user_answer")
+            if "user_answer" in raw_item
+            else safe_answers_json.get(question_id)
+        )
+
+        correct_answer_value = (
+            raw_item.get("correct_answer")
+            if "correct_answer" in raw_item and raw_item.get("correct_answer") not in (None, "", [])
+            else admin_quiz_question_correct_value(question)
+        )
+
+        enriched = {
+            **raw_item,
+            "question_title": question_title,
+            "question_description": question_description,
+            "question_type": question_type,
+            "student_answer": user_answer_value,
+            "student_answer_text": admin_quiz_answer_text(question, user_answer_value),
+            "correct_answer": correct_answer_value,
+            "correct_answer_text": admin_quiz_answer_text(question, correct_answer_value),
+            "is_correct": bool(raw_item.get("correct")),
+            "points_text": admin_quiz_points_text(
+                raw_item.get("earned_points", 0),
+                raw_item.get("points", raw_item.get("total_points", 0)),
+            ),
+        }
+
+        readable_results.append(enriched)
+
+    return readable_results
+
+
 def build_admin_enrollment_quiz_attempt_item(row) -> AdminEnrollmentQuizAttemptItem:
     result_json = row.result_json or {}
     answers_json = row.answers_json or {}
-    question_results = []
-
-    if isinstance(result_json, dict):
-        raw_question_results = result_json.get("question_results") or []
-        if isinstance(raw_question_results, list):
-            question_results = [
-                item
-                for item in raw_question_results
-                if isinstance(item, dict)
-            ]
+    question_results = build_admin_quiz_question_results(
+        result_json=result_json,
+        answers_json=answers_json,
+        block_content_json=row.block_content_json,
+    )
 
     return AdminEnrollmentQuizAttemptItem(
         id=str(row.id),
@@ -5161,6 +5399,7 @@ async def list_admin_enrollment_quiz_attempts(
             CourseLesson.title.label("lesson_title"),
             CourseLesson.position.label("lesson_position"),
             LessonBlock.title.label("block_title"),
+            LessonBlock.content_json.label("block_content_json"),
             LessonBlock.block_type.label("block_type"),
             LessonBlock.position.label("block_position"),
         )

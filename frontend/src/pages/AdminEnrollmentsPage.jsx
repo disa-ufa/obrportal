@@ -204,6 +204,24 @@ function getQuizAttemptQuestionText(attempt) {
   return `\u0412\u0435\u0440\u043d\u043e: ${correctCount} \u0438\u0437 ${questionCount} \u00B7 \u043f\u043e\u0440\u043e\u0433: ${passScorePercent}%`;
 }
 
+function getQuizQuestionResultIsCorrect(questionResult) {
+  return Boolean(questionResult?.is_correct ?? questionResult?.correct);
+}
+
+function getQuizQuestionResultAnswerText(value) {
+  const text = `${value ?? ""}`.trim();
+
+  return text || "\u2014";
+}
+
+function getQuizQuestionResultPointsText(questionResult) {
+  if (questionResult?.points_text) {
+    return questionResult.points_text;
+  }
+
+  return `${questionResult?.earned_points ?? 0} \u0438\u0437 ${questionResult?.points ?? questionResult?.total_points ?? 0}`;
+}
+
 function getEnrollmentActionRequiredHint(enrollment) {
   if (enrollment?.status === "assigned") {
     return {
@@ -2512,19 +2530,66 @@ export function AdminEnrollmentsPage() {
                                           {attempt.question_results.map((questionResult, index) => (
                                             <div
                                               key={`${attempt.id}-${questionResult.question_id || index}`}
-                                              className="rounded-xl bg-white p-3 ring-1 ring-slate-100"
+                                              data-testid="admin-enrollment-quiz-question-result"
+                                              className={`rounded-xl bg-white p-3 ring-1 ${
+                                                getQuizQuestionResultIsCorrect(questionResult)
+                                                  ? "ring-green-100"
+                                                  : "ring-red-100"
+                                              }`}
                                             >
-                                              <div className="font-semibold text-slate-900">
-                                                {questionResult.question_id || `${index + 1}`}
-                                                {" \u00B7 "}
-                                                {questionResult.correct
-                                                  ? "\u0432\u0435\u0440\u043d\u043e"
-                                                  : "\u043d\u0435\u0432\u0435\u0440\u043d\u043e"}
+                                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                                <div>
+                                                  <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                                    {"\u0412\u043e\u043f\u0440\u043e\u0441 "}
+                                                    {index + 1}
+                                                  </div>
+                                                  <div className="mt-1 font-semibold text-slate-900">
+                                                    {questionResult.question_title || questionResult.question_id || `${index + 1}`}
+                                                  </div>
+                                                </div>
+
+                                                <span
+                                                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ${
+                                                    getQuizQuestionResultIsCorrect(questionResult)
+                                                      ? "bg-green-50 text-green-700 ring-green-200"
+                                                      : "bg-red-50 text-red-700 ring-red-200"
+                                                  }`}
+                                                >
+                                                  {getQuizQuestionResultIsCorrect(questionResult)
+                                                    ? "\u0432\u0435\u0440\u043d\u043e"
+                                                    : "\u043d\u0435\u0432\u0435\u0440\u043d\u043e"}
+                                                </span>
                                               </div>
-                                              <div className="mt-1 text-slate-600">
-                                                {questionResult.earned_points ?? 0}
-                                                {" \u0438\u0437 "}
-                                                {questionResult.points ?? questionResult.total_points ?? 0}
+
+                                              {questionResult.question_description ? (
+                                                <div className="mt-2 text-slate-500">
+                                                  {questionResult.question_description}
+                                                </div>
+                                              ) : null}
+
+                                              <div className="mt-3 grid gap-2 md:grid-cols-2">
+                                                <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+                                                  <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                                    {"\u041e\u0442\u0432\u0435\u0442 \u0443\u0447\u0435\u043d\u0438\u043a\u0430"}
+                                                  </div>
+                                                  <div className="mt-1 font-semibold text-slate-800">
+                                                    {getQuizQuestionResultAnswerText(questionResult.student_answer_text)}
+                                                  </div>
+                                                </div>
+
+                                                <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+                                                  <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                                    {"\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442"}
+                                                  </div>
+                                                  <div className="mt-1 font-semibold text-slate-800">
+                                                    {getQuizQuestionResultAnswerText(questionResult.correct_answer_text)}
+                                                  </div>
+                                                </div>
+                                              </div>
+
+                                              <div className="mt-3 text-xs font-semibold text-slate-600">
+                                                {"\u0411\u0430\u043b\u043b\u044b: "}
+                                                {getQuizQuestionResultPointsText(questionResult)}
                                               </div>
                                             </div>
                                           ))}
