@@ -80,7 +80,7 @@ function buildRoleAssignmentInitialValues(roles, organizations) {
   };
 }
 
-function UserPasswordResetForm({ onReset }) {
+function UserPasswordResetForm({ userDetail, onReset }) {
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
@@ -126,30 +126,64 @@ function UserPasswordResetForm({ onReset }) {
   }
 
   return (
-    <form id="user-password-reset-card" data-testid="user-password-reset-card" onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-      <div>
-        <div className="text-sm font-semibold text-slate-900">
-          Сбросить пароль
+    <form
+      id="user-password-reset-card"
+      data-testid="user-security-card"
+      onSubmit={handleSubmit}
+      className="rounded-2xl bg-white p-3.5 ring-1 ring-slate-200"
+    >
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-black text-slate-900">
+            {"\u0411\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u044c"}
+          </div>
+          <p className="mt-1 text-xs text-slate-600">
+            {"\u0414\u043e\u0441\u0442\u0443\u043f, MFA, email \u0438 \u0441\u0431\u0440\u043e\u0441 \u043f\u0430\u0440\u043e\u043b\u044f."}
+          </p>
         </div>
-        <p className="mt-1 text-xs text-slate-600">
-          Новый пароль не сохраняется в журнале аудита и не возвращается из API.
-        </p>
+
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500 ring-1 ring-slate-200">
+          {"\u26e8"}
+        </span>
+      </div>
+
+      <div className="mb-3 grid gap-2 text-xs">
+        <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+          <span className="font-semibold text-slate-500">{"MFA"}</span>
+          <StatusBadge tone={userDetail?.mfa_enabled ? "green" : "amber"}>
+            {userDetail?.mfa_enabled ? "\u0412\u043a\u043b\u044e\u0447\u0435\u043d\u0430" : "\u041d\u0435 \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430"}
+          </StatusBadge>
+        </div>
+
+        <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+          <span className="font-semibold text-slate-500">{"Email"}</span>
+          <StatusBadge tone={userDetail?.is_email_verified ? "green" : "amber"}>
+            {userDetail?.is_email_verified ? "\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d" : "\u041d\u0435 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d"}
+          </StatusBadge>
+        </div>
+
+        <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+          <span className="font-semibold text-slate-500">{"\u0410\u043a\u043a\u0430\u0443\u043d\u0442"}</span>
+          <StatusBadge tone={userDetail?.is_active ? "green" : "red"}>
+            {userDetail?.is_active ? "\u0410\u043a\u0442\u0438\u0432\u0435\u043d" : "\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u0435\u043d"}
+          </StatusBadge>
+        </div>
       </div>
 
       {error && (
-        <Alert title="Не удалось обновить пароль" tone="red">
+        <Alert title="\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043f\u0430\u0440\u043e\u043b\u044c" tone="red">
           {error}
         </Alert>
       )}
 
       {success && (
-        <Alert title="Готово" tone="blue">
+        <Alert title="\u0413\u043e\u0442\u043e\u0432\u043e" tone="blue">
           {success}
         </Alert>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Новый пароль" hint="Минимум 8 символов.">
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <Field label={"\u041d\u043e\u0432\u044b\u0439 \u043f\u0430\u0440\u043e\u043b\u044c"} hint={"\u041c\u0438\u043d\u0438\u043c\u0443\u043c 8 \u0441\u0438\u043c\u0432\u043e\u043b\u043e\u0432."}>
           <TextInput
             type="password"
             value={password}
@@ -161,7 +195,7 @@ function UserPasswordResetForm({ onReset }) {
           />
         </Field>
 
-        <Field label="Повторите пароль">
+        <Field label={"\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u043f\u0430\u0440\u043e\u043b\u044c"}>
           <TextInput
             type="password"
             value={confirmation}
@@ -174,9 +208,11 @@ function UserPasswordResetForm({ onReset }) {
         </Field>
       </div>
 
-      <ActionButton type="submit" tone="blue" disabled={loading || !canSubmit}>
-        {loading ? "Обновляем..." : "Обновить пароль"}
-      </ActionButton>
+      <div className="mt-3">
+        <ActionButton type="submit" tone="blue" disabled={loading || !canSubmit}>
+          {loading ? "\u041e\u0431\u043d\u043e\u0432\u043b\u044f\u0435\u043c..." : "\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u043f\u0430\u0440\u043e\u043b\u044c"}
+        </ActionButton>
+      </div>
     </form>
   );
 }
@@ -239,30 +275,34 @@ function UserRoleAssignmentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-      <div data-testid="user-roles-card" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-        <div className="text-sm font-semibold text-slate-900">
-          Назначить новую роль
+    <form
+      data-testid="user-role-assignment-card"
+      onSubmit={handleSubmit}
+      className="rounded-2xl bg-white p-3.5 ring-1 ring-slate-200"
+    >
+      <div className="mb-3">
+        <div className="text-sm font-black text-slate-900">
+          {"\u041d\u0430\u0437\u043d\u0430\u0447\u0438\u0442\u044c \u0440\u043e\u043b\u044c"}
         </div>
         <p className="mt-1 text-xs text-slate-600">
-          Роль можно назначить глобально или в рамках конкретной организации.
+          {"\u0420\u043e\u043b\u044c \u043c\u043e\u0436\u043d\u043e \u043d\u0430\u0437\u043d\u0430\u0447\u0438\u0442\u044c \u0433\u043b\u043e\u0431\u0430\u043b\u044c\u043d\u043e \u0438\u043b\u0438 \u0432 \u0440\u0430\u043c\u043a\u0430\u0445 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438."}
         </p>
       </div>
 
       {error && (
-        <Alert title="Не удалось назначить роль" tone="red">
+        <Alert title="\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0438\u0442\u044c \u0440\u043e\u043b\u044c" tone="red">
           {error}
         </Alert>
       )}
 
       {success && (
-        <Alert title="Готово" tone="blue">
+        <Alert title="\u0413\u043e\u0442\u043e\u0432\u043e" tone="blue">
           {success}
         </Alert>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Field label="Роль">
+      <div className="grid gap-2.5">
+        <Field label={"\u0420\u043e\u043b\u044c"}>
           <SelectInput
             value={values.role_id}
             onChange={(event) => updateField("role_id", event.target.value)}
@@ -270,47 +310,46 @@ function UserRoleAssignmentForm({
           >
             {roles.map((role) => (
               <option key={role.id} value={role.id}>
-                {role.code} — {role.name}
+                {role.name} / {role.code}
               </option>
             ))}
           </SelectInput>
         </Field>
 
-        <Field label="Область">
-          <SelectInput
-            value={values.scope}
-            onChange={(event) => updateField("scope", event.target.value)}
-            disabled={loading}
-          >
-            <option value="global">Глобально</option>
-            <option value="organization" disabled={!organizations?.length}>
-              Организация
-            </option>
-          </SelectInput>
-        </Field>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label={"\u041e\u0431\u043b\u0430\u0441\u0442\u044c"}>
+            <SelectInput
+              value={values.scope}
+              onChange={(event) => updateField("scope", event.target.value)}
+              disabled={loading}
+            >
+              <option value="global">{"\u0413\u043b\u043e\u0431\u0430\u043b\u044c\u043d\u043e"}</option>
+              <option value="organization">{"\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f"}</option>
+            </SelectInput>
+          </Field>
 
-        <Field
-          label="Организация"
-          hint={values.scope === "global" ? "Не требуется для глобальной роли." : "Выберите организацию."}
-        >
-          <SelectInput
-            value={values.organization_id}
-            onChange={(event) => updateField("organization_id", event.target.value)}
-            disabled={loading || values.scope === "global" || !organizations?.length}
-          >
-            {!organizations?.length && <option value="">Организаций нет</option>}
-            {organizations.map((organization) => (
-              <option key={organization.id} value={organization.id}>
-                {organization.name} / ИНН {organization.inn}
-              </option>
-            ))}
-          </SelectInput>
-        </Field>
+          <Field label={"\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f"} hint={values.scope === "organization" ? "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044e." : "\u0414\u043b\u044f \u0433\u043b\u043e\u0431\u0430\u043b\u044c\u043d\u043e\u0439 \u0440\u043e\u043b\u0438 \u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f."}>
+            <SelectInput
+              value={values.organization_id}
+              onChange={(event) => updateField("organization_id", event.target.value)}
+              disabled={loading || values.scope === "global"}
+            >
+              {!organizations?.length && <option value="">{"\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0439 \u043d\u0435\u0442"}</option>}
+              {organizations.map((organization) => (
+                <option key={organization.id} value={organization.id}>
+                  {organization.name} / {"\u0418\u041d\u041d"} {organization.inn}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
+        </div>
       </div>
 
-      <ActionButton type="submit" tone="blue" disabled={loading || !canSubmit}>
-        {loading ? "Назначаем..." : "Назначить роль"}
-      </ActionButton>
+      <div className="mt-3">
+        <ActionButton type="submit" tone="blue" disabled={loading || !canSubmit}>
+          {loading ? "\u041d\u0430\u0437\u043d\u0430\u0447\u0430\u0435\u043c..." : "\u041d\u0430\u0437\u043d\u0430\u0447\u0438\u0442\u044c \u0440\u043e\u043b\u044c"}
+        </ActionButton>
+      </div>
     </form>
   );
 }
@@ -418,9 +457,9 @@ export function UserDetailPanel({
 
       {userDetail && !loading && (
         <div data-testid="admin-user-detail-content" className="space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl bg-slate-50/70 p-4 ring-1 ring-slate-200">
+          <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl bg-slate-50/70 p-3.5 ring-1 ring-slate-200">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
                 {(userDetail.full_name || userDetail.email || "U").trim().slice(0, 2).toUpperCase()}
               </span>
 
@@ -436,14 +475,14 @@ export function UserDetailPanel({
 
             <div
               data-testid="admin-user-detail-actions"
-              className="flex flex-wrap items-start justify-end gap-3"
+              className="flex flex-wrap items-start justify-end gap-2.5"
             >
               {!isEditing && (
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
                   disabled={actionLoading || Boolean(removingRoleId)}
-                  className="group inline-flex min-w-[72px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group inline-flex min-w-[66px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
                   title={"\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
                   aria-label={"\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
                 >
@@ -459,7 +498,7 @@ export function UserDetailPanel({
                   type="button"
                   onClick={handleDeactivate}
                   disabled={actionLoading || Boolean(removingRoleId)}
-                  className="group inline-flex min-w-[72px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group inline-flex min-w-[66px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
                   title={"\u0414\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
                   aria-label={"\u0414\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
                 >
@@ -473,7 +512,7 @@ export function UserDetailPanel({
                   type="button"
                   onClick={handleActivate}
                   disabled={actionLoading || Boolean(removingRoleId)}
-                  className="group inline-flex min-w-[72px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group inline-flex min-w-[66px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
                   title={"\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
                   aria-label={"\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
                 >
@@ -488,7 +527,7 @@ export function UserDetailPanel({
                 type="button"
                 onClick={() => document.getElementById("user-password-reset-card")?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 disabled={actionLoading || Boolean(removingRoleId)}
-                className="group inline-flex min-w-[82px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="group inline-flex min-w-[70px] flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 transition disabled:cursor-not-allowed disabled:opacity-60"
                 title={"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u043f\u0430\u0440\u043e\u043b\u044c"}
                 aria-label={"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u043f\u0430\u0440\u043e\u043b\u044c"}
               >
@@ -582,7 +621,7 @@ export function UserDetailPanel({
           )}
 
           {isEditing ? (
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-200">
               <UserForm
                 initialValues={userDetail}
                 submitLabel="Сохранить изменения"
@@ -597,20 +636,20 @@ export function UserDetailPanel({
             <>
               <div className="flex flex-wrap gap-2">
                 <StatusBadge tone={userDetail.is_active ? "green" : "red"}>
-                  {userDetail.is_active ? "Активен" : "Неактивен"}
+                  {userDetail.is_active ? "\u0410\u043a\u0442\u0438\u0432\u0435\u043d" : "\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u0435\u043d"}
                 </StatusBadge>
                 <StatusBadge tone={userDetail.is_email_verified ? "green" : "amber"}>
-                  {userDetail.is_email_verified ? "Email подтверждён" : "Email не подтверждён"}
+                  {userDetail.is_email_verified ? "Email \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d" : "Email \u043d\u0435 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d"}
                 </StatusBadge>
                 <StatusBadge tone={userDetail.mfa_enabled ? "green" : "gray"}>
-                  {userDetail.mfa_enabled ? "MFA включена" : "MFA не включена"}
+                  {userDetail.mfa_enabled ? "MFA \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430" : "MFA \u043d\u0435 \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430"}
                 </StatusBadge>
               </div>
 
               {userAttentionItems.length > 0 && (
                 <div
                   data-testid="user-attention-diagnostics"
-                  className="rounded-2xl bg-amber-50/70 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200"
+                  className="rounded-2xl bg-amber-50/70 px-4 py-2.5 text-sm text-amber-900 ring-1 ring-amber-200"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-black text-amber-700 ring-1 ring-amber-200">
@@ -635,121 +674,180 @@ export function UserDetailPanel({
                       {userAttentionItems.length}
                     </span>
                   </div>
-
-                  <p data-testid="user-attention-diagnostics-note" className="sr-only">
-                    {"\u0414\u0438\u0430\u0433\u043d\u043e\u0441\u0442\u0438\u043a\u0430 \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0430 \u043d\u0430 \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u0438, \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u0438 email, MFA, \u0442\u0435\u043b\u0435\u0444\u043e\u043d\u0435 \u0438 \u0440\u043e\u043b\u044f\u0445 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f."}
-                  </p>
                 </div>
               )}
 
-
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-                <div className="space-y-4">
-                  <div data-testid="user-profile-card" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                    <div className="mb-3 text-sm font-black text-slate-900">
+              <div data-testid="user-dashboard-grid" className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                <div data-testid="user-profile-card" className="rounded-2xl bg-white p-3.5 ring-1 ring-slate-200">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="text-sm font-black text-slate-900">
                       {"\u041f\u0440\u043e\u0444\u0438\u043b\u044c"}
                     </div>
-
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <DetailField label="ID" value={userDetail.id} />
-                      <DetailField label={"\u0422\u0435\u043b\u0435\u0444\u043e\u043d"} value={userDetail.phone} />
-                      <DetailField label={"\u0421\u043e\u0437\u0434\u0430\u043d"} value={formatDetailDate(userDetail.created_at)} />
-                      <DetailField label={"\u041e\u0431\u043d\u043e\u0432\u043b\u0451\u043d"} value={formatDetailDate(userDetail.updated_at)} />
-                    </div>
+                    <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-black text-slate-500 ring-1 ring-slate-200">
+                      {"ID"}
+                    </span>
                   </div>
 
-                  <div data-testid="user-roles-list-card" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                    <div className="mb-2 text-sm font-black text-slate-900">
-                      Роли пользователя
-                    </div>
-
-                    {userDetail.roles?.length ? (
-                      <div className="space-y-2">
-                        {userDetail.roles.map((role) => {
-                          const organization = role.organization_id
-                            ? organizationsById.get(role.organization_id)
-                            : null;
-
-                          return (
-                            <div
-                              key={role.id}
-                              className="rounded-2xl bg-white p-3 ring-1 ring-slate-200"
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div className="min-w-0">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <StatusBadge tone={roleBadgeTone(role.code)}>
-                                      {role.code}
-                                    </StatusBadge>
-                                    <span className="truncate text-sm font-black text-slate-900">
-                                      {role.name}
-                                    </span>
-                                  </div>
-                                  <div className="mt-1 truncate text-xs font-medium text-slate-500">
-                                    {organization?.name || role.organization_id || "Глобальный доступ"}
-                                  </div>
-                                </div>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveRole(role.id)}
-                                  disabled={Boolean(removingRoleId) || actionLoading}
-                                  className="inline-flex h-8 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-red-600 ring-1 ring-red-100 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  {removingRoleId === role.id ? "Снимаем..." : "Снять"}
-                                </button>
-                              </div>
-
-                              <div className="sr-only">
-                                assignment_id: {role.id}
-                                organization: {organization?.name || role.organization_id || "global"}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-                        Роли не назначены.
-                      </p>
-                    )}
+                  <div className="grid gap-2.5 md:grid-cols-2">
+                    <DetailField label="ID" value={userDetail.id} />
+                    <DetailField label={"\u0422\u0435\u043b\u0435\u0444\u043e\u043d"} value={userDetail.phone} />
+                    <DetailField label={"\u0421\u043e\u0437\u0434\u0430\u043d"} value={formatDetailDate(userDetail.created_at)} />
+                    <DetailField label={"\u041e\u0431\u043d\u043e\u0432\u043b\u0451\u043d"} value={formatDetailDate(userDetail.updated_at)} />
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div data-testid="user-related-records-card" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                    <div className="mb-3 text-sm font-black text-slate-900">
-                      {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0438 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}
+                <div data-testid="user-roles-access-card" className="rounded-2xl bg-white p-3.5 ring-1 ring-slate-200">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-black text-slate-900">
+                        {"\u0420\u043e\u043b\u0438 \u0438 \u0434\u043e\u0441\u0442\u0443\u043f"}
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u043d\u044b\u0435 \u0440\u043e\u043b\u0438"}
+                      </p>
                     </div>
-
-                    <div data-testid="user-related-records-summary" className="grid gap-2">
-                      <Link
-                        to={buildDocumentsPath({ user_id: userDetail.id })}
-                        className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-100 transition hover:bg-slate-100"
-                      >
-                        <span>{"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"}</span>
-                        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-400 ring-1 ring-slate-200">{"\u2192"}</span>
-                      </Link>
-
-                      <Link
-                        to={buildEnrollmentsPath({ user_id: userDetail.id })}
-                        className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-100 transition hover:bg-slate-100"
-                      >
-                        <span>{"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}</span>
-                        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-400 ring-1 ring-slate-200">{"\u2192"}</span>
-                      </Link>
-                    </div>
+                    <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-black text-slate-500 ring-1 ring-slate-200">
+                      {userDetail.roles?.length || 0}
+                    </span>
                   </div>
 
-                  <UserRoleAssignmentForm
-                    roles={roles}
-                    organizations={organizations}
-                    onAssign={handleAssignRole}
-                  />
+                  {userDetail.roles?.length ? (
+                    <div className="space-y-2">
+                      {userDetail.roles.map((role) => {
+                        const organization = role.organization_id
+                          ? organizationsById.get(role.organization_id)
+                          : null;
 
-                  <UserPasswordResetForm onReset={handleResetPassword} />
+                        return (
+                          <div
+                            key={role.id}
+                            className="rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-100"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <StatusBadge tone={roleBadgeTone(role.code)}>
+                                    {role.code}
+                                  </StatusBadge>
+                                  <span className="truncate text-sm font-black text-slate-900">
+                                    {role.name}
+                                  </span>
+                                </div>
+                                <div className="mt-1 truncate text-xs font-medium text-slate-500">
+                                  {organization?.name || role.organization_id || "\u0413\u043b\u043e\u0431\u0430\u043b\u044c\u043d\u044b\u0439 \u0434\u043e\u0441\u0442\u0443\u043f"}
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRole(role.id)}
+                                disabled={Boolean(removingRoleId) || actionLoading}
+                                className="inline-flex h-8 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-red-600 ring-1 ring-red-100 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {removingRoleId === role.id ? "\u0421\u043d\u0438\u043c\u0430\u0435\u043c..." : "\u0421\u043d\u044f\u0442\u044c"}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600 ring-1 ring-slate-100">
+                      {"\u0420\u043e\u043b\u0438 \u043d\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u044b."}
+                    </p>
+                  )}
+
+                  <Link
+                    to={buildRolesPath()}
+                    className="mt-3 inline-flex text-xs font-black text-blue-700 hover:text-blue-900"
+                  >
+                    {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0439 \u0440\u043e\u043b\u0435\u0439 \u2192"}
+                  </Link>
+                </div>
+
+                <UserRoleAssignmentForm
+                  roles={roles}
+                  organizations={organizations}
+                  onAssign={handleAssignRole}
+                />
+
+                <div data-testid="user-related-records-card" className="rounded-2xl bg-white p-3.5 ring-1 ring-slate-200">
+                  <div className="mb-3 text-sm font-black text-slate-900">
+                    {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0438 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Link
+                      to={buildDocumentsPath({ user_id: userDetail.id })}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-100 transition hover:bg-slate-100"
+                    >
+                      <span>{"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"}</span>
+                      <span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-400 ring-1 ring-slate-200">{"\u2192"}</span>
+                    </Link>
+
+                    <Link
+                      to={buildEnrollmentsPath({ user_id: userDetail.id })}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-100 transition hover:bg-slate-100"
+                    >
+                      <span>{"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}</span>
+                      <span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-400 ring-1 ring-slate-200">{"\u2192"}</span>
+                    </Link>
+
+                    <Link
+                      to={buildEnrollmentsPath({ user_id: userDetail.id, action_required: "true" })}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-100 transition hover:bg-slate-100"
+                    >
+                      <span>{"\u041f\u0440\u043e\u0431\u043b\u0435\u043c\u043d\u044b\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}</span>
+                      <span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-400 ring-1 ring-slate-200">{"\u2192"}</span>
+                    </Link>
+                  </div>
+                </div>
+
+                <UserPasswordResetForm
+                  userDetail={userDetail}
+                  onReset={handleResetPassword}
+                />
+
+                <div data-testid="user-activity-card" className="rounded-2xl bg-white p-3.5 ring-1 ring-slate-200">
+                  <div className="mb-3 text-sm font-black text-slate-900">
+                    {"\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u044f\u044f \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c"}
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex gap-3">
+                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+                      <div>
+                        <div className="font-black text-slate-900">
+                          {"\u041e\u0431\u043d\u043e\u0432\u043b\u0451\u043d"}
+                        </div>
+                        <div className="text-slate-500">
+                          {formatDetailDate(userDetail.updated_at)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-slate-300" />
+                      <div>
+                        <div className="font-black text-slate-900">
+                          {"\u0421\u043e\u0437\u0434\u0430\u043d"}
+                        </div>
+                        <div className="text-slate-500">
+                          {formatDetailDate(userDetail.created_at)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link
+                      to={buildAuditPath({ entity_type: "user", entity_id: userDetail.id })}
+                      className="inline-flex text-xs font-black text-blue-700 hover:text-blue-900"
+                    >
+                      {"\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0430\u0443\u0434\u0438\u0442 \u2192"}
+                    </Link>
+                  </div>
                 </div>
               </div>
+
 
               <div data-testid="admin-user-moderation-service-states" className="sr-only">
                 Карточка пользователя показывает состояния модерации: активность,
