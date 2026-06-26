@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { OrganizationDetailPanel } from "../components/admin/OrganizationDetailPanel";
 import {
@@ -11,10 +11,8 @@ import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterBut
 import { AdminActiveFiltersSummary } from "../components/admin/AdminActiveFiltersSummary";
 import { AdminFilterField } from "../components/admin/AdminFilterField";
 import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
-import { ActionButton } from "../components/ui/ActionButton";
 import { LoadingBlock } from "../components/ui/LoadingBlock";
 import { SectionCard } from "../components/ui/SectionCard";
-import { SmallTable } from "../components/ui/SmallTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { normalizeSearchValue } from "../utils/search";
 import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
@@ -141,6 +139,7 @@ export function OrganizationsPage({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialFilters.q);
   const [scopeFilter, setScopeFilter] = useState(initialFilters.scope);
+  const [expandedOrganizationId, setExpandedOrganizationId] = useState(selectedOrganization?.id || null);
 
   useEffect(() => {
     const nextFilters = getOrganizationFiltersFromSearch(location.search);
@@ -148,6 +147,12 @@ export function OrganizationsPage({
     setSearchQuery(nextFilters.q);
     setScopeFilter(nextFilters.scope);
   }, [location.search]);
+
+  useEffect(() => {
+    if (selectedOrganization?.id) {
+      setExpandedOrganizationId(selectedOrganization.id);
+    }
+  }, [selectedOrganization?.id]);
 
   const baseFilteredOrganizations = useMemo(
     () => organizations.filter((organization) =>
@@ -230,6 +235,16 @@ export function OrganizationsPage({
     }
 
     onRefreshAdminData();
+  }
+
+  function handleOpenOrganizationRow(organization) {
+    setExpandedOrganizationId(organization.id);
+    onOpenOrganization(organization.id);
+  }
+
+  function handleCloseOrganizationRow() {
+    setExpandedOrganizationId(null);
+    onCloseOrganization();
   }
 
   function handleExportOrganizationsCsv() {
@@ -343,80 +358,222 @@ export function OrganizationsPage({
             {loading ? (
               <LoadingBlock text="Загружаем организации..." />
             ) : (
-              <SmallTable
-                emptyText={getFilteredEmptyText(
-                  hasActiveFilters,
-                  "Организаций по фильтру нет.",
-                  "Организаций нет."
-                )}
-                rows={filteredOrganizations}
-                selectedRowId={selectedOrganization?.id}
-                minWidth="980px"
-                columns={[
-                  { key: "name", title: "Название" },
-                  { key: "inn", title: "ИНН" },
-                  { key: "kpp", title: "КПП" },
-                  { key: "ogrn", title: "ОГРН" },
-                  {
-                    key: "status",
-                    title: "Статус",
-                    render: (row) => (
-                      <div className="flex flex-wrap gap-1">
-                        <StatusBadge tone="blue">organization</StatusBadge>
-                        <StatusBadge tone={row.kpp ? "green" : "gray"}>
-                          КПП
-                        </StatusBadge>
-                        <StatusBadge tone={row.ogrn ? "green" : "gray"}>
-                          ОГРН
-                        </StatusBadge>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "actions",
-                    title: "Действия",
-                    render: (row) => (
-                      <div className="flex flex-wrap gap-2">
-                        <ActionButton
-                          onClick={() => onOpenOrganization(row.id)}
-                          disabled={selectedOrganizationLoading}
-                        >
-                          {selectedOrganization?.id === row.id ? "Открыто" : "Открыть"}
-                        </ActionButton>
+              <div
+                data-testid="admin-organizations-table"
+                className="overflow-x-auto rounded-2xl ring-1 ring-slate-200"
+              >
+                <table className="w-full min-w-[1180px] divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50/90">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                        {"\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f"}
+                      </th>
+                      <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                        {"\u0420\u0435\u043a\u0432\u0438\u0437\u0438\u0442\u044b"}
+                      </th>
+                      <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                        {"\u0410\u0434\u0440\u0435\u0441"}
+                      </th>
+                      <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                        {"\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c"}
+                      </th>
+                      <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                        {"\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e"}
+                      </th>
+                      <th className="px-4 py-3 text-right text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                        {"\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}
+                      </th>
+                    </tr>
+                  </thead>
 
-                        <Link
-                          to={buildGroupsPath({ organization_id: row.id })}
-                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                        >
-                          Группы
-                        </Link>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {filteredOrganizations.map((row) => {
+                      const isExpanded = expandedOrganizationId === row.id;
+                      const isSelected = selectedOrganization?.id === row.id;
+                      const attentionCount = [
+                        !row.kpp,
+                        !row.ogrn,
+                        !row.legal_address,
+                        !row.actual_address,
+                      ].filter(Boolean).length;
+                      const updatedAt = row.updated_at
+                        ? new Date(row.updated_at).toLocaleString("ru-RU", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-";
 
-                        <Link
-                          to={buildEnrollmentsPath({ q: row.name })}
-                          className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                        >
-                          Назначения
-                        </Link>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
+                      return (
+                        <Fragment key={row.id}>
+                          <tr
+                            className={`transition ${
+                              isExpanded ? "bg-blue-50/40" : "hover:bg-slate-50"
+                            }`}
+                          >
+                            <td className="px-4 py-3 align-middle">
+                              <div className="flex min-w-0 items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenOrganizationRow(row)}
+                                  disabled={selectedOrganizationLoading}
+                                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black transition disabled:cursor-wait disabled:opacity-60 ${
+                                    isExpanded
+                                      ? "bg-blue-600 text-white"
+                                      : "bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50"
+                                  }`}
+                                  title={isExpanded ? "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f \u043e\u0442\u043a\u0440\u044b\u0442\u0430" : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044e"}
+                                  aria-label={isExpanded ? "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f \u043e\u0442\u043a\u0440\u044b\u0442\u0430" : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044e"}
+                                >
+                                  {isExpanded ? "-" : "+"}
+                                </button>
+
+                                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-xs font-black text-blue-700 ring-1 ring-blue-100">
+                                  {(row.name || "ORG").trim().slice(0, 2).toUpperCase()}
+                                </span>
+
+                                <div className="min-w-0">
+                                  <div className="truncate font-black text-slate-950">
+                                    {row.name || "\u0411\u0435\u0437 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044f"}
+                                  </div>
+                                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                    <span>{"\u0418\u041d\u041d"} {row.inn || "-"}</span>
+                                    {row.kpp && <span>{"\u041a\u041f\u041f"} {row.kpp}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-4 py-3 align-middle">
+                              <div className="flex flex-wrap gap-1.5">
+                                <StatusBadge tone="blue">organization</StatusBadge>
+                                <StatusBadge tone={row.kpp ? "green" : "gray"}>
+                                  {"\u041a\u041f\u041f"}
+                                </StatusBadge>
+                                <StatusBadge tone={row.ogrn ? "green" : "gray"}>
+                                  {"\u041e\u0413\u0420\u041d"}
+                                </StatusBadge>
+                              </div>
+                            </td>
+
+                            <td className="max-w-[300px] px-4 py-3 align-middle text-xs font-medium text-slate-600">
+                              <div className="truncate">
+                                {row.actual_address || row.legal_address || "\u0410\u0434\u0440\u0435\u0441 \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d"}
+                              </div>
+                            </td>
+
+                            <td className="px-4 py-3 align-middle">
+                              <div className="flex flex-wrap gap-1.5">
+                                <StatusBadge tone={attentionCount === 0 ? "green" : "gray"}>
+                                  {attentionCount === 0 ? "OK" : "PDF"}
+                                </StatusBadge>
+                                {attentionCount > 0 && (
+                                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-800 ring-1 ring-amber-200">
+                                    {attentionCount}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="px-4 py-3 align-middle text-xs font-semibold text-slate-500">
+                              {updatedAt}
+                            </td>
+
+                            <td className="px-4 py-3 align-middle">
+                              <div
+                                data-testid={`admin-organization-row-actions-${row.id}`}
+                                className="flex justify-end gap-1.5 whitespace-nowrap"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenOrganizationRow(row)}
+                                  disabled={selectedOrganizationLoading}
+                                  title={isExpanded || isSelected ? "\u041e\u0442\u043a\u0440\u044b\u0442\u043e" : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c"}
+                                  aria-label={isExpanded || isSelected ? "\u041e\u0442\u043a\u0440\u044b\u0442\u043e" : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c"}
+                                  className={`inline-flex h-8 min-w-[86px] items-center justify-center rounded-xl px-3 text-xs font-black transition disabled:cursor-wait disabled:opacity-60 ${
+                                    isExpanded || isSelected
+                                      ? "bg-blue-600 text-white ring-1 ring-blue-600"
+                                      : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  {isExpanded || isSelected ? "\u041e\u0442\u043a\u0440\u044b\u0442\u043e" : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c"}
+                                </button>
+
+                                <Link
+                                  to={buildGroupsPath({ organization_id: row.id })}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                  title="\u0413\u0440\u0443\u043f\u043f\u044b"
+                                  aria-label="\u0413\u0440\u0443\u043f\u043f\u044b"
+                                >
+                                  {"\u25a6"}
+                                </Link>
+
+                                <details className="relative">
+                                  <summary
+                                    title="\u0415\u0449\u0451"
+                                    aria-label="\u0415\u0449\u0451"
+                                    className="inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                  >
+                                    {"\u22ef"}
+                                  </summary>
+
+                                  <div className="absolute right-0 z-30 mt-2 w-56 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenOrganizationRow(row)}
+                                      disabled={selectedOrganizationLoading}
+                                      className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                                    >
+                                      {isExpanded ? "\u041e\u0442\u043a\u0440\u044b\u0442\u043e" : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c"}
+                                    </button>
+
+                                    <Link
+                                      to={buildGroupsPath({ organization_id: row.id })}
+                                      className="block rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                      {"\u0413\u0440\u0443\u043f\u043f\u044b"}
+                                    </Link>
+
+                                    <Link
+                                      to={buildEnrollmentsPath({ organization_id: row.id })}
+                                      className="block rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                      {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}
+                                    </Link>
+                                  </div>
+                                </details>
+                              </div>
+                            </td>
+                          </tr>
+
+                          {isExpanded && (
+                            <tr className="bg-slate-50/60">
+                              <td colSpan={6} className="px-3 pb-4 pt-0">
+                                <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                                  <OrganizationDetailPanel
+                                    organizationDetail={isSelected ? selectedOrganization : null}
+                                    loading={selectedOrganizationLoading}
+                                    error={selectedOrganizationError}
+                                    onClose={handleCloseOrganizationRow}
+                                    onUpdateOrganization={onUpdateOrganization}
+                                    onDeleteOrganization={onDeleteOrganization}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
       </SectionCard>
-
-      {user && (
-        <OrganizationDetailPanel
-          organizationDetail={selectedOrganization}
-          loading={selectedOrganizationLoading}
-          error={selectedOrganizationError}
-          onClose={onCloseOrganization}
-          onUpdateOrganization={onUpdateOrganization}
-          onDeleteOrganization={onDeleteOrganization}
-        />
-      )}
     </div>
   );
 }
