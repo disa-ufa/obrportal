@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,6 +65,13 @@ def _build_account_document_download_url(
     return f"/api/v1/account/documents/{document_id}/download"
 
 
+def account_document_completion_visibility_condition():
+    return or_(
+        DocumentRecord.enrollment_id.is_(None),
+        (Enrollment.status == "completed") & Enrollment.completed_at.is_not(None),
+    )
+
+
 @router.get("/summary", response_model=AccountSummaryResponse)
 async def get_account_summary(
     current_user: User = Depends(get_current_user),
@@ -82,7 +89,12 @@ async def get_account_summary(
         )
     )
     documents_count = await session.scalar(
-        select(func.count(DocumentRecord.id)).where(DocumentRecord.user_id == current_user.id)
+        select(func.count(DocumentRecord.id))
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
+        .where(
+            DocumentRecord.user_id == current_user.id,
+            account_document_completion_visibility_condition(),
+        )
     )
 
     return AccountSummaryResponse(
@@ -177,7 +189,11 @@ async def get_account_documents(
             Course.title.label("course_title"),
         )
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
-        .where(DocumentRecord.user_id == current_user.id)
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
+        .where(
+            DocumentRecord.user_id == current_user.id,
+            account_document_completion_visibility_condition(),
+        )
         .order_by(DocumentRecord.created_at.desc(), DocumentRecord.title.asc())
     )
 
@@ -243,9 +259,12 @@ async def get_account_document_download(
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("status"),
             DocumentRecord.storage_path.label("storage_path"),
-        ).where(
+        )
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
+        .where(
             DocumentRecord.id == document_id,
             DocumentRecord.user_id == current_user.id,
+            account_document_completion_visibility_condition(),
         )
     )
     row = result.first()

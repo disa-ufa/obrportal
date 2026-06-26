@@ -29,6 +29,15 @@ router = APIRouter(prefix="/public", tags=["public"])
 
 
 
+def public_document_completion_visibility_condition():
+    return or_(
+        DocumentRecord.enrollment_id.is_(None),
+        (Enrollment.status == "completed") & Enrollment.completed_at.is_not(None),
+    )
+
+
+
+
 def build_public_course_item(course: Course) -> PublicCourseItemResponse:
     return PublicCourseItemResponse(
         id=str(course.id),
@@ -282,7 +291,8 @@ async def verify_document(
             or_(
                 func.lower(DocumentRecord.document_number) == normalized_number.lower(),
                 func.lower(DocumentRecord.verification_code) == normalized_number.lower(),
-            )
+            ),
+            public_document_completion_visibility_condition(),
         )
     )
 
