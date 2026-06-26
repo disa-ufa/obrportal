@@ -2091,6 +2091,14 @@ async def ensure_document_enrollment_is_unique(
         )
 
 
+def ensure_document_enrollment_is_completed(enrollment: Enrollment) -> None:
+    if enrollment.status != "completed" or enrollment.completed_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document can be linked only to completed enrollment",
+        )
+
+
 async def get_admin_document_row_or_404(
     document_id: str,
     session: AsyncSession,
@@ -2338,6 +2346,9 @@ async def create_admin_document(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Enrollment course does not match document course",
             )
+
+    if normalized_enrollment_id is not None:
+        ensure_document_enrollment_is_completed(enrollment)
 
     await ensure_document_enrollment_is_unique(
         enrollment_id=normalized_enrollment_id,
@@ -2722,6 +2733,34 @@ async def update_admin_document(
             )
 
     try:
+        if document.enrollment_id is not None:
+            enrollment_result = await session.execute(
+                select(Enrollment).where(Enrollment.id == document.enrollment_id)
+            )
+            enrollment = enrollment_result.scalar_one_or_none()
+
+            if enrollment is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Enrollment not found",
+                )
+
+            if str(enrollment.user_id) != str(document.user_id):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Enrollment user does not match document user",
+                )
+
+            if document.course_id is None:
+                document.course_id = enrollment.course_id
+            elif str(enrollment.course_id) != str(document.course_id):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Enrollment course does not match document course",
+                )
+
+            ensure_document_enrollment_is_completed(enrollment)
+
         if has_file:
             new_storage_path = await save_admin_document_file(str(document.id), file)
             document.storage_path = new_storage_path
@@ -2898,6 +2937,8 @@ async def regenerate_admin_completion_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Enrollment not found",
         )
+
+    ensure_document_enrollment_is_completed(enrollment)
 
     before = document_record_snapshot(document)
     course, learner, organization = await load_completion_document_context(enrollment, session)
