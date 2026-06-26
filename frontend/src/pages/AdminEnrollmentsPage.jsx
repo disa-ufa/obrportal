@@ -7,6 +7,7 @@ import {
   deleteAdminEnrollment,
   getAdminCourses,
   getAdminEnrollments,
+  getAdminEnrollmentQuizAttempts,
   getAdminOrganizations,
   getAdminUsers,
   getAdminWorklistSummary,
@@ -87,6 +88,7 @@ const BUTTON_RED_CLASS =
 
 const ENROLLMENT_API_ERROR_MESSAGES = {
   loadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f.",
+  quizAttemptsLoadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043f\u043e\u043f\u044b\u0442\u043a\u0438 \u0442\u0435\u0441\u0442\u043e\u0432.",
   createFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
   bulkCreateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u043c\u0430\u0441\u0441\u043e\u0432\u043e\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
   updateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
@@ -174,6 +176,32 @@ function getStatusTone(value) {
   }
 
   return "bg-slate-100 text-slate-700 ring-slate-200";
+}
+
+function getQuizAttemptStatusLabel(attempt) {
+  return attempt?.passed ? "\u041f\u0440\u043e\u0439\u0434\u0435\u043d" : "\u041d\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d";
+}
+
+function getQuizAttemptToneClass(attempt) {
+  return attempt?.passed
+    ? "bg-green-50 text-green-800 ring-green-200"
+    : "bg-amber-50 text-amber-900 ring-amber-200";
+}
+
+function getQuizAttemptScoreText(attempt) {
+  const percent = attempt?.percent ?? 0;
+  const earnedPoints = attempt?.earned_points ?? 0;
+  const totalPoints = attempt?.total_points ?? 0;
+
+  return `${percent}% \u00B7 ${earnedPoints} \u0438\u0437 ${totalPoints}`;
+}
+
+function getQuizAttemptQuestionText(attempt) {
+  const correctCount = attempt?.correct_count ?? 0;
+  const questionCount = attempt?.question_count ?? 0;
+  const passScorePercent = attempt?.pass_score_percent ?? 0;
+
+  return `\u0412\u0435\u0440\u043d\u043e: ${correctCount} \u0438\u0437 ${questionCount} \u00B7 \u043f\u043e\u0440\u043e\u0433: ${passScorePercent}%`;
 }
 
 function getEnrollmentActionRequiredHint(enrollment) {
@@ -880,6 +908,8 @@ export function AdminEnrollmentsPage() {
   const [bulkSaving, setBulkSaving] = useState(false);
   const [actionEnrollmentId, setActionEnrollmentId] = useState("");
   const [editingEnrollmentId, setEditingEnrollmentId] = useState("");
+  const [quizAttemptsByEnrollmentId, setQuizAttemptsByEnrollmentId] = useState({});
+  const [quizAttemptsLoadingId, setQuizAttemptsLoadingId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -1564,6 +1594,38 @@ export function AdminEnrollmentsPage() {
   }
 
 
+  async function handleToggleQuizAttempts(enrollment) {
+    if (!enrollment?.id) {
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(quizAttemptsByEnrollmentId, enrollment.id)) {
+      setQuizAttemptsByEnrollmentId((current) => {
+        const next = { ...current };
+        delete next[enrollment.id];
+        return next;
+      });
+      return;
+    }
+
+    try {
+      setQuizAttemptsLoadingId(enrollment.id);
+      setError("");
+      setSuccessMessage("");
+
+      const attempts = await getAdminEnrollmentQuizAttempts(enrollment.id);
+
+      setQuizAttemptsByEnrollmentId((current) => ({
+        ...current,
+        [enrollment.id]: Array.isArray(attempts) ? attempts : [],
+      }));
+    } catch (err) {
+      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.quizAttemptsLoadFailed));
+    } finally {
+      setQuizAttemptsLoadingId("");
+    }
+  }
+
   async function handleCompleteEnrollment(enrollment) {
     if (!enrollment || enrollment.status === "completed") {
       return;
@@ -2219,6 +2281,14 @@ export function AdminEnrollmentsPage() {
                   enrollment,
                   enrollmentOrganization
                 );
+                const quizAttemptsLoaded = Object.prototype.hasOwnProperty.call(
+                  quizAttemptsByEnrollmentId,
+                  enrollment.id
+                );
+                const quizAttempts = quizAttemptsLoaded
+                  ? quizAttemptsByEnrollmentId[enrollment.id] || []
+                  : [];
+                const quizAttemptsLoading = quizAttemptsLoadingId === enrollment.id;
 
                 return (
                   <article
@@ -2372,7 +2442,117 @@ export function AdminEnrollmentsPage() {
                           </div>
                         </div>
 
+                        {quizAttemptsLoaded ? (
+                          <div
+                            data-testid="admin-enrollment-quiz-attempts-panel"
+                            className="mt-5 rounded-2xl bg-white p-4 ring-1 ring-blue-100"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div>
+                                <div className="text-sm font-bold text-slate-900">
+                                  {"\u041f\u043e\u043f\u044b\u0442\u043a\u0438 \u0442\u0435\u0441\u0442\u043e\u0432"}
+                                </div>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">
+                                  {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0441\u0434\u0430\u0447\u0438 \u0442\u0435\u0441\u0442\u043e\u0432 \u043f\u043e \u044d\u0442\u043e\u043c\u0443 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044e."}
+                                </p>
+                              </div>
+                              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+                                {quizAttempts.length}
+                              </span>
+                            </div>
+
+                            {quizAttempts.length === 0 ? (
+                              <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+                                {"\u041f\u043e\u043f\u044b\u0442\u043e\u043a \u0442\u0435\u0441\u0442\u043e\u0432 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442."}
+                              </div>
+                            ) : (
+                              <div className="mt-3 space-y-3">
+                                {quizAttempts.map((attempt) => (
+                                  <div
+                                    key={attempt.id}
+                                    data-testid="admin-enrollment-quiz-attempt-item"
+                                    className={`rounded-2xl p-4 text-sm ring-1 ${getQuizAttemptToneClass(attempt)}`}
+                                  >
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                      <div>
+                                        <div className="font-bold">
+                                          {attempt.lesson_title || "\u0423\u0440\u043e\u043a"}
+                                          {" \u00B7 "}
+                                          {attempt.block_title || "\u0422\u0435\u0441\u0442"}
+                                        </div>
+                                        <div className="mt-1 text-xs font-semibold opacity-80">
+                                          {"\u041f\u043e\u043f\u044b\u0442\u043a\u0430 \u2116"}
+                                          {attempt.attempt_number}
+                                          {" \u00B7 "}
+                                          {getQuizAttemptStatusLabel(attempt)}
+                                        </div>
+                                      </div>
+
+                                      <div className="text-right text-xs font-bold">
+                                        <div>{getQuizAttemptScoreText(attempt)}</div>
+                                        <div className="mt-1 opacity-80">
+                                          {getQuizAttemptQuestionText(attempt)}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {attempt.submitted_at ? (
+                                      <div className="mt-2 text-xs font-semibold opacity-75">
+                                        {"\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e: "}
+                                        {formatDateTime(attempt.submitted_at)}
+                                      </div>
+                                    ) : null}
+
+                                    {Array.isArray(attempt.question_results) && attempt.question_results.length > 0 ? (
+                                      <details className="mt-3 rounded-2xl bg-white/70 p-3 text-xs ring-1 ring-white/70">
+                                        <summary className="cursor-pointer font-bold">
+                                          {"\u041e\u0442\u0432\u0435\u0442\u044b \u043f\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u0430\u043c"}
+                                        </summary>
+                                        <div className="mt-2 space-y-2">
+                                          {attempt.question_results.map((questionResult, index) => (
+                                            <div
+                                              key={`${attempt.id}-${questionResult.question_id || index}`}
+                                              className="rounded-xl bg-white p-3 ring-1 ring-slate-100"
+                                            >
+                                              <div className="font-semibold text-slate-900">
+                                                {questionResult.question_id || `${index + 1}`}
+                                                {" \u00B7 "}
+                                                {questionResult.correct
+                                                  ? "\u0432\u0435\u0440\u043d\u043e"
+                                                  : "\u043d\u0435\u0432\u0435\u0440\u043d\u043e"}
+                                              </div>
+                                              <div className="mt-1 text-slate-600">
+                                                {questionResult.earned_points ?? 0}
+                                                {" \u0438\u0437 "}
+                                                {questionResult.points ?? questionResult.total_points ?? 0}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </details>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+
                         <div className="mt-5 flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            data-testid="admin-enrollment-quiz-attempts-action"
+                            onClick={() => handleToggleQuizAttempts(enrollment)}
+                            disabled={quizAttemptsLoading}
+                            className={BUTTON_LIGHT_CLASS}
+                          >
+                            {quizAttemptsLoading
+                              ? "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c..."
+                              : quizAttemptsLoaded
+                                ? "\u0421\u043a\u0440\u044b\u0442\u044c \u043f\u043e\u043f\u044b\u0442\u043a\u0438"
+                                : "\u041f\u043e\u043f\u044b\u0442\u043a\u0438 \u0442\u0435\u0441\u0442\u043e\u0432"}
+                          </button>
+
                           <Link
                             to={buildDocumentsPath({ enrollment_id: enrollment.id })}
                             className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"

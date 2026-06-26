@@ -24,6 +24,7 @@ from app.models.course_module import CourseModule
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
 from app.models.role import Permission, Role, RolePermission, UserRole
@@ -71,6 +72,7 @@ from app.schemas.admin import (
     AdminEnrollmentCreate,
     AdminEnrollmentGroupCreate,
     AdminEnrollmentItem,
+    AdminEnrollmentQuizAttemptItem,
     AdminEnrollmentUpdate,
     AdminDocumentGenerationEventItem,
     AdminDocumentItem,
@@ -4605,6 +4607,52 @@ def build_admin_enrollment_item(row) -> AdminEnrollmentItem:
     )
 
 
+def build_admin_enrollment_quiz_attempt_item(row) -> AdminEnrollmentQuizAttemptItem:
+    result_json = row.result_json or {}
+    answers_json = row.answers_json or {}
+    question_results = []
+
+    if isinstance(result_json, dict):
+        raw_question_results = result_json.get("question_results") or []
+        if isinstance(raw_question_results, list):
+            question_results = [
+                item
+                for item in raw_question_results
+                if isinstance(item, dict)
+            ]
+
+    return AdminEnrollmentQuizAttemptItem(
+        id=str(row.id),
+        enrollment_id=str(row.enrollment_id),
+        user_id=str(row.user_id),
+        user_email=row.user_email,
+        user_full_name=row.user_full_name,
+        course_id=str(row.course_id),
+        course_slug=row.course_slug,
+        course_title=row.course_title,
+        lesson_id=str(row.lesson_id),
+        lesson_title=row.lesson_title,
+        block_id=str(row.block_id),
+        block_title=row.block_title,
+        block_type=row.block_type,
+        attempt_number=row.attempt_number,
+        status=row.status,
+        passed=row.passed,
+        earned_points=float(row.earned_points or 0),
+        total_points=float(row.total_points or 0),
+        percent=int(row.percent or 0),
+        correct_count=int(row.correct_count or 0),
+        question_count=int(row.question_count or 0),
+        pass_score_percent=int(row.pass_score_percent or 0),
+        answers_json=answers_json if isinstance(answers_json, dict) else {},
+        result_json=result_json if isinstance(result_json, dict) else {},
+        question_results=question_results,
+        submitted_at=row.submitted_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
 def enrollment_snapshot(enrollment: Enrollment) -> dict:
     return {
         "id": str(enrollment.id),
@@ -5071,6 +5119,69 @@ async def get_admin_enrollment_detail(
     row = await get_admin_enrollment_row_or_404(enrollment_id, session)
 
     return build_admin_enrollment_item(row)
+
+
+@router.get(
+    "/enrollments/{enrollment_id}/quiz-attempts",
+    response_model=list[AdminEnrollmentQuizAttemptItem],
+)
+async def list_admin_enrollment_quiz_attempts(
+    enrollment_id: str,
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminEnrollmentQuizAttemptItem]:
+    enrollment = await get_admin_enrollment_or_404(enrollment_id.strip(), session)
+
+    result = await session.execute(
+        select(
+            QuizAttempt.id.label("id"),
+            QuizAttempt.enrollment_id.label("enrollment_id"),
+            QuizAttempt.lesson_id.label("lesson_id"),
+            QuizAttempt.block_id.label("block_id"),
+            QuizAttempt.attempt_number.label("attempt_number"),
+            QuizAttempt.status.label("status"),
+            QuizAttempt.passed.label("passed"),
+            QuizAttempt.earned_points.label("earned_points"),
+            QuizAttempt.total_points.label("total_points"),
+            QuizAttempt.percent.label("percent"),
+            QuizAttempt.correct_count.label("correct_count"),
+            QuizAttempt.question_count.label("question_count"),
+            QuizAttempt.pass_score_percent.label("pass_score_percent"),
+            QuizAttempt.answers_json.label("answers_json"),
+            QuizAttempt.result_json.label("result_json"),
+            QuizAttempt.submitted_at.label("submitted_at"),
+            QuizAttempt.created_at.label("created_at"),
+            QuizAttempt.updated_at.label("updated_at"),
+            Enrollment.user_id.label("user_id"),
+            Enrollment.course_id.label("course_id"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            CourseLesson.title.label("lesson_title"),
+            CourseLesson.position.label("lesson_position"),
+            LessonBlock.title.label("block_title"),
+            LessonBlock.block_type.label("block_type"),
+            LessonBlock.position.label("block_position"),
+        )
+        .select_from(QuizAttempt)
+        .join(Enrollment, Enrollment.id == QuizAttempt.enrollment_id)
+        .join(User, User.id == Enrollment.user_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .join(CourseLesson, CourseLesson.id == QuizAttempt.lesson_id)
+        .join(LessonBlock, LessonBlock.id == QuizAttempt.block_id)
+        .where(QuizAttempt.enrollment_id == enrollment.id)
+        .order_by(
+            CourseLesson.position.asc(),
+            LessonBlock.position.asc(),
+            QuizAttempt.attempt_number.asc(),
+        )
+    )
+
+    return [
+        build_admin_enrollment_quiz_attempt_item(row)
+        for row in result.all()
+    ]
 
 
 @router.patch("/enrollments/{enrollment_id}", response_model=AdminEnrollmentItem)

@@ -897,6 +897,10 @@ export async function getAdminEnrollmentDetail(enrollmentId) {
   return request(`/api/v1/admin/enrollments/${enrollmentId}`);
 }
 
+export async function getAdminEnrollmentQuizAttempts(enrollmentId) {
+  return request(`/api/v1/admin/enrollments/${enrollmentId}/quiz-attempts`);
+}
+
 export async function createAdminEnrollment(payload) {
   return request("/api/v1/admin/enrollments", {
     method: "POST",
