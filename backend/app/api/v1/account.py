@@ -677,6 +677,78 @@ async def get_missing_required_quiz_block_ids(
     ]
 
 
+@router.get(
+    "/courses/{enrollment_id}/lessons/{lesson_id}/quiz-attempts/{block_id}",
+    response_model=list[AccountQuizAttemptResponse],
+)
+async def list_account_course_lesson_quiz_attempts(
+    enrollment_id: str,
+    lesson_id: str,
+    block_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> list[AccountQuizAttemptResponse]:
+    enrollment = await get_account_enrollment_entity_or_404(
+        enrollment_id=enrollment_id,
+        current_user=current_user,
+        session=session,
+    )
+
+    lesson_result = await session.execute(
+        select(CourseLesson)
+        .join(CourseModule, CourseModule.id == CourseLesson.module_id)
+        .where(
+            CourseLesson.id == lesson_id.strip(),
+            CourseLesson.is_active.is_(True),
+            CourseModule.is_active.is_(True),
+            CourseModule.course_id == enrollment.course_id,
+        )
+    )
+    lesson = lesson_result.scalar_one_or_none()
+
+    if lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found in this course",
+        )
+
+    block_result = await session.execute(
+        select(LessonBlock).where(
+            LessonBlock.id == block_id.strip(),
+            LessonBlock.lesson_id == lesson.id,
+            LessonBlock.block_type == "quiz",
+            LessonBlock.is_active.is_(True),
+        )
+    )
+    block = block_result.scalar_one_or_none()
+
+    if block is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz block not found in this lesson",
+        )
+
+    max_attempts = get_quiz_max_attempts(block.content_json or {})
+    attempts_result = await session.execute(
+        select(QuizAttempt)
+        .where(
+            QuizAttempt.enrollment_id == enrollment.id,
+            QuizAttempt.lesson_id == lesson.id,
+            QuizAttempt.block_id == block.id,
+        )
+        .order_by(QuizAttempt.attempt_number.asc())
+    )
+    attempts = attempts_result.scalars().all()
+
+    return [
+        build_account_quiz_attempt_response(
+            attempt,
+            max_attempts=max_attempts,
+        )
+        for attempt in attempts
+    ]
+
+
 @router.post(
     "/courses/{enrollment_id}/lessons/{lesson_id}/quiz-attempts/{block_id}",
     response_model=AccountQuizAttemptResponse,
