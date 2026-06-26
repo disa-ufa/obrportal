@@ -1409,6 +1409,10 @@ function LearnerQuizAttemptBlock({
   }, [quiz]);
 
   function updateAnswer(questionId, value) {
+    if (quizAnswersLocked) {
+      return;
+    }
+
     setAnswers((current) => ({
       ...current,
       [questionId]: value,
@@ -1418,6 +1422,10 @@ function LearnerQuizAttemptBlock({
   }
 
   function toggleMultipleAnswer(questionId, optionId) {
+    if (quizAnswersLocked) {
+      return;
+    }
+
     setAnswers((current) => {
       const currentValue = Array.isArray(current[questionId]) ? current[questionId] : [];
       const exists = currentValue.includes(optionId);
@@ -1495,6 +1503,7 @@ function LearnerQuizAttemptBlock({
   const remainingAttempts = Number.isFinite(Number(result?.remaining_attempts)) ? Number(result.remaining_attempts) : null;
   const attemptsLocked = Boolean(result && !result.passed && remainingAttempts !== null && remainingAttempts <= 0);
   const quizSubmitLocked = Boolean(result && (result.passed || attemptsLocked));
+  const quizAnswersLocked = quizSubmitLocked;
 
   useEffect(() => {
     const normalizedEnrollmentId = `${enrollmentId || ""}`.trim();
@@ -1659,6 +1668,7 @@ function LearnerQuizAttemptBlock({
                                 updateAnswer(question.id, optionId);
                               }
                             }}
+                            disabled={quizAnswersLocked}
                             className="mt-1"
                           />
                           <span className="text-sm leading-6 text-slate-800">
@@ -1677,7 +1687,8 @@ function LearnerQuizAttemptBlock({
                         key={`${value}`}
                         type="button"
                         onClick={() => updateAnswer(question.id, value)}
-                        className={`rounded-2xl px-4 py-2 text-sm font-semibold ring-1 transition ${
+                        disabled={quizAnswersLocked}
+                        className={`rounded-2xl px-4 py-2 text-sm font-semibold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60 ${
                           answer === value
                             ? "bg-violet-600 text-white ring-violet-600"
                             : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
@@ -1693,8 +1704,9 @@ function LearnerQuizAttemptBlock({
                   <textarea
                     value={answer || ""}
                     onChange={(event) => updateAnswer(question.id, event.target.value)}
+                    disabled={quizAnswersLocked}
                     rows={3}
-                    className="mt-4 min-h-[88px] w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+                    className="mt-4 min-h-[88px] w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                     placeholder={quizLabels.enterAnswer}
                   />
                 ) : null}
@@ -1704,7 +1716,8 @@ function LearnerQuizAttemptBlock({
                     type="number"
                     value={answer || ""}
                     onChange={(event) => updateAnswer(question.id, event.target.value)}
-                    className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+                    disabled={quizAnswersLocked}
+                    className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                     placeholder={quizLabels.enterNumber}
                   />
                 ) : null}
