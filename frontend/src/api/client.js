@@ -103,6 +103,10 @@ export async function submitAccountCourseLessonQuizAttempt(enrollmentId, lessonI
   });
 }
 
+export async function getAccountCourseLessonQuizAttempts(enrollmentId, lessonId, blockId) {
+  return request(`/api/v1/account/courses/${enrollmentId}/lessons/${lessonId}/quiz-attempts/${blockId}`);
+}
+
 export async function enrollAccountCourse(courseId) {
   return request(`/api/v1/account/courses/${courseId}/enroll`, {
     method: "POST",

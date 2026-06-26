@@ -2,7 +2,7 @@ import { formatApiError } from "../utils/apiErrors";
 // Legacy CI smoke compatibility marker: import { useEffect, useState } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
-import { completeAccountCourse, completeAccountCourseLesson, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, submitAccountCourseLessonQuizAttempt } from "../api/client";
+import { completeAccountCourse, completeAccountCourseLesson, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 import { buildInitialQuizAnswers } from "../components/admin/lesson-studio/quiz/quizGrading.js";
@@ -1385,16 +1385,27 @@ function LearnerQuizAttemptBlock({
     noAttemptsLeft: "\u041f\u043e\u043f\u044b\u0442\u043a\u0438 \u0437\u0430\u043a\u043e\u043d\u0447\u0438\u043b\u0438\u0441\u044c",
     quizAlreadyPassed: "\u0422\u0435\u0441\u0442 \u0443\u0436\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d",
     backendResult: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d \u0432 \u0441\u0438\u0441\u0442\u0435\u043c\u0435",
+    attemptHistoryTitle: "\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u043e\u043f\u044b\u0442\u043e\u043a",
+    attemptHistoryEmpty: "\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u043e\u043f\u044b\u0442\u043e\u043a \u043f\u043e\u043a\u0430 \u043f\u0443\u0441\u0442\u0430.",
+    loadingHistory: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0438\u0441\u0442\u043e\u0440\u0438\u044e \u043f\u043e\u043f\u044b\u0442\u043e\u043a...",
+    historyLoadError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0438\u0441\u0442\u043e\u0440\u0438\u044e \u043f\u043e\u043f\u044b\u0442\u043e\u043a.",
+    historyPassed: "\u041f\u0440\u043e\u0439\u0434\u0435\u043d",
+    historyFailed: "\u041d\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d",
   };
   const [answers, setAnswers] = useState(() => buildInitialQuizAnswers(quiz));
   const [result, setResult] = useState(null);
   const [attemptSubmitting, setAttemptSubmitting] = useState(false);
   const [attemptError, setAttemptError] = useState("");
+  const [attemptHistory, setAttemptHistory] = useState([]);
+  const [attemptHistoryLoading, setAttemptHistoryLoading] = useState(false);
+  const [attemptHistoryError, setAttemptHistoryError] = useState("");
 
   useEffect(() => {
     setAnswers(buildInitialQuizAnswers(quiz));
     setResult(null);
     setAttemptError("");
+    setAttemptHistory([]);
+    setAttemptHistoryError("");
   }, [quiz]);
 
   function updateAnswer(questionId, value) {
@@ -1452,6 +1463,15 @@ function LearnerQuizAttemptBlock({
       );
 
       setResult(attempt);
+      setAttemptHistory((current) => {
+        const items = Array.isArray(current) ? current : [];
+        const filteredItems = items.filter((item) => `${item?.id || ""}` !== `${attempt?.id || ""}`);
+
+        return [...filteredItems, attempt].sort(
+          (left, right) => (Number(left?.attempt_number) || 0) - (Number(right?.attempt_number) || 0)
+        );
+      });
+      setAttemptHistoryError("");
     } catch (error) {
       setResult(null);
       setAttemptError(formatApiError(error, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442\u044b \u0442\u0435\u0441\u0442\u0430."));
@@ -1475,6 +1495,64 @@ function LearnerQuizAttemptBlock({
   const remainingAttempts = Number.isFinite(Number(result?.remaining_attempts)) ? Number(result.remaining_attempts) : null;
   const attemptsLocked = Boolean(result && !result.passed && remainingAttempts !== null && remainingAttempts <= 0);
   const quizSubmitLocked = Boolean(result && (result.passed || attemptsLocked));
+
+  useEffect(() => {
+    const normalizedEnrollmentId = `${enrollmentId || ""}`.trim();
+    const normalizedLessonId = `${lessonId || ""}`.trim();
+    const normalizedBlockId = `${block?.id || ""}`.trim();
+
+    if (!normalizedEnrollmentId || !normalizedLessonId || !normalizedBlockId || block?.legacy) {
+      setAttemptHistory([]);
+      setAttemptHistoryError("");
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadAttemptHistory() {
+      setAttemptHistoryLoading(true);
+      setAttemptHistoryError("");
+
+      try {
+        const history = await getAccountCourseLessonQuizAttempts(
+          normalizedEnrollmentId,
+          normalizedLessonId,
+          normalizedBlockId
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        const nextHistory = Array.isArray(history) ? history : [];
+        const latestAttempt = nextHistory[nextHistory.length - 1] || null;
+
+        setAttemptHistory(nextHistory);
+        setResult(latestAttempt);
+
+        if (latestAttempt?.answers_json && typeof latestAttempt.answers_json === "object") {
+          setAnswers((current) => ({
+            ...current,
+            ...latestAttempt.answers_json,
+          }));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setAttemptHistoryError(formatApiError(error, quizLabels.historyLoadError));
+        }
+      } finally {
+        if (!cancelled) {
+          setAttemptHistoryLoading(false);
+        }
+      }
+    }
+
+    loadAttemptHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enrollmentId, lessonId, block?.id, block?.legacy]);
 
   useEffect(() => {
     if (!lessonId) {
@@ -1674,6 +1752,58 @@ function LearnerQuizAttemptBlock({
           {attemptSubmitting ? "\u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u043e\u0442\u0432\u0435\u0442\u044b..." : result?.passed ? quizLabels.quizAlreadyPassed : attemptsLocked ? quizLabels.noAttemptsLeft : quizLabels.checkAnswers}
         </button>
       </div>
+
+      {attemptHistoryLoading ? (
+        <div className="mt-4 rounded-2xl bg-white/70 p-4 text-sm font-semibold text-violet-800 ring-1 ring-violet-200">
+          {quizLabels.loadingHistory}
+        </div>
+      ) : null}
+
+      {attemptHistoryError ? (
+        <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700 ring-1 ring-red-200">
+          {attemptHistoryError}
+        </div>
+      ) : null}
+
+      {attemptHistory.length ? (
+        <div
+          data-testid="learner-quiz-attempt-history"
+          className="mt-4 rounded-2xl bg-white/70 p-4 ring-1 ring-violet-200"
+        >
+          <div className="text-sm font-bold text-violet-950">
+            {quizLabels.attemptHistoryTitle}
+          </div>
+
+          <div className="mt-3 grid gap-2">
+            {attemptHistory.map((attempt, attemptIndex) => (
+              <div
+                key={attempt.id || attempt.attempt_number || attemptIndex}
+                className={`rounded-2xl px-3 py-2 text-xs font-semibold ring-1 ${
+                  attempt.passed
+                    ? "bg-green-50 text-green-800 ring-green-200"
+                    : "bg-amber-50 text-amber-900 ring-amber-200"
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span>
+                    {quizLabels.attemptNumber} {"\u2116"}{attempt.attempt_number || attemptIndex + 1}
+                    {" \u00B7 "}
+                    {attempt.passed ? quizLabels.historyPassed : quizLabels.historyFailed}
+                  </span>
+                  <span>
+                    {attempt.percent ?? 0}% {"\u00B7"} {attempt.earned_points ?? 0} {quizLabels.of} {attempt.total_points ?? 0}
+                  </span>
+                </div>
+                {attempt.submitted_at ? (
+                  <div className="mt-1 text-[11px] font-semibold opacity-75">
+                    {formatDateTime(attempt.submitted_at)}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {attemptError ? (
         <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700 ring-1 ring-red-200">
