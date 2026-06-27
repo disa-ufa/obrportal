@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   addOrgLearningGroupMember,
@@ -1180,75 +1180,82 @@ export function GroupsPage() {
                   const kind = getGroupKind(group);
 
                   return (
-                    <tr key={group.id} className={isOpen ? "bg-blue-50/30" : "bg-white"}>
-                      <td className="border-t border-slate-100 px-5 py-4 align-top">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenGroup(group.id)}
-                          className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-black ring-1 transition ${
-                            isOpen ? "bg-blue-600 text-white ring-blue-600" : "bg-white text-blue-700 ring-blue-100 hover:bg-blue-50"
-                          }`}
-                          aria-label={isOpen ? T.close : T.open}
-                        >
-                          {isOpen ? "-" : "\u203a"}
-                        </button>
-                      </td>
-                      <td className="border-t border-slate-100 px-5 py-4 align-top">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
-                            {initials(group.name)}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-black text-slate-950">{group.name || T.noData}</div>
-                            <div className="truncate text-xs font-semibold text-slate-500">{group.code || T.noData}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="border-t border-slate-100 px-5 py-4 align-top">
-                        <StatusPill tone={kind === "service" ? "violet" : kind === "work" ? "green" : "blue"}>{getKindLabel(kind)}</StatusPill>
-                      </td>
-                      <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-bold text-slate-700">
-                        {organization?.name || T.noData}
-                      </td>
-                      <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-black text-slate-800">{members.length}</td>
-                      <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-black text-slate-800">{enrollments.length}</td>
-                      <td className="border-t border-slate-100 px-5 py-4 align-top">
-                        <StatusPill tone={group.is_active ? "green" : "amber"}>{group.is_active ? T.activeStatus : T.draftStatus}</StatusPill>
-                      </td>
-                      <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-semibold text-slate-600">
-                        {formatDate(group.updated_at)}
-                      </td>
-                      <td className="border-t border-slate-100 px-5 py-4 align-top">
-                        <div data-testid={`admin-group-row-actions-${group.id}`} className="flex justify-end gap-2 whitespace-nowrap">
-                          <button type="button" onClick={() => handleOpenGroup(group.id)} className={isOpen ? BUTTON_BLUE : BUTTON_LIGHT}>
-                            {isOpen ? T.close : T.open}
+                    <Fragment key={`group-row-block-${group.id}`}>
+                      <tr className={isOpen ? "bg-blue-50/30" : "bg-white"}>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenGroup(group.id)}
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-black ring-1 transition ${
+                              isOpen ? "bg-blue-600 text-white ring-blue-600" : "bg-white text-blue-700 ring-blue-100 hover:bg-blue-50"
+                            }`}
+                            aria-label={isOpen ? T.close : T.open}
+                          >
+                            {isOpen ? "-" : "\u203a"}
                           </button>
-                          <Link to={buildUsersPath({ learning_group_id: group.id })} className={ICON_BUTTON}>{"\u2637"}</Link>
-                          <button type="button" onClick={() => handleDeleteGroup(group)} disabled={busy} className={ICON_BUTTON}>{"\u22ef"}</button>
-                        </div>
-                      </td>
-                      {isOpen ? (
-                        <td colSpan={9} className="px-5 pb-5">
-                          <GroupDetailDashboard
-                            group={group}
-                            organization={organization}
-                            members={members}
-                            enrollments={enrollments}
-                            users={users}
-                            courses={courses}
-                            busy={busy}
-                            onClose={() => setExpandedGroupId("")}
-                            onToggleActive={handleToggleActive}
-                            onDelete={handleDeleteGroup}
-                            onUpdate={handleUpdateGroup}
-                            onAddMember={handleAddMember}
-                            onRemoveMember={handleRemoveMember}
-                            onAssignCourse={handleAssignCourse}
-                            onDeleteEnrollment={handleDeleteEnrollment}
-                          />
                         </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
+                              {initials(group.name)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-black text-slate-950">{group.name || T.noData}</div>
+                              <div className="truncate text-xs font-semibold text-slate-500">{group.code || T.noData}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <StatusPill tone={kind === "service" ? "violet" : kind === "work" ? "green" : "blue"}>{getKindLabel(kind)}</StatusPill>
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-bold text-slate-700">
+                          {organization?.name || T.noData}
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-black text-slate-800">{members.length}</td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-black text-slate-800">{enrollments.length}</td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <StatusPill tone={group.is_active ? "green" : "amber"}>{group.is_active ? T.activeStatus : T.draftStatus}</StatusPill>
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-semibold text-slate-600">
+                          {formatDate(group.updated_at)}
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <div data-testid={`admin-group-row-actions-${group.id}`} className="flex justify-end gap-2 whitespace-nowrap">
+                            <button type="button" onClick={() => handleOpenGroup(group.id)} className={isOpen ? BUTTON_BLUE : BUTTON_LIGHT}>
+                              {isOpen ? T.close : T.open}
+                            </button>
+                            <Link to={buildUsersPath({ learning_group_id: group.id })} className={ICON_BUTTON}>{"\u2637"}</Link>
+                            <button type="button" onClick={() => handleDeleteGroup(group)} disabled={busy} className={ICON_BUTTON}>{"\u22ef"}</button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {isOpen ? (
+                        <tr key={`group-detail-${group.id}`} className="bg-slate-50/70">
+                          <td colSpan={9} className="px-5 pb-5 pt-0">
+                            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-blue-100">
+                              <GroupDetailDashboard
+                                group={group}
+                                organization={organization}
+                                members={members}
+                                enrollments={enrollments}
+                                users={users}
+                                courses={courses}
+                                busy={busy}
+                                onClose={() => setExpandedGroupId("")}
+                                onToggleActive={handleToggleActive}
+                                onDelete={handleDeleteGroup}
+                                onUpdate={handleUpdateGroup}
+                                onAddMember={handleAddMember}
+                                onRemoveMember={handleRemoveMember}
+                                onAssignCourse={handleAssignCourse}
+                                onDeleteEnrollment={handleDeleteEnrollment}
+                              />
+                            </div>
+                          </td>
+                        </tr>
                       ) : null}
-                    </tr>
+                    </Fragment>
                   );
                 })}
 
