@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { RoleDetailPanel } from "../components/admin/RoleDetailPanel";
 import { RoleForm, ROLE_API_ERROR_MESSAGES } from "../components/admin/RoleForm";
@@ -498,6 +498,128 @@ function RoleSidePanel({
   );
 }
 
+
+function RoleInlineDetail({
+  role,
+  selectedRole,
+  selectedRoleLoading,
+  selectedRoleError,
+  permissions,
+  users,
+  roleDetailsById,
+  onClose,
+  onUpdateRole,
+  onDeleteRole,
+  onAssignRolePermission,
+  onRemoveRolePermission,
+}) {
+  const detail = getRoleDetailFor(role, selectedRole, roleDetailsById) || role;
+  const level = getRoleAccessLevel(role, permissions, selectedRole, roleDetailsById);
+  const assignedCount = getRoleAssignmentCount(role, users);
+  const permissionCount = getRolePermissionCount(role, selectedRole, roleDetailsById);
+
+  return (
+    <div data-testid="admin-role-detail-content" className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex min-w-0 gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-sm font-black text-indigo-700 ring-1 ring-indigo-100">
+            {getInitials(role.name || role.code)}
+          </div>
+          <div className="min-w-0">
+            <div className="text-xl font-black text-slate-950">{role.name}</div>
+            <div className="mt-1 break-all text-xs font-semibold text-slate-500">{role.code}</div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Badge className="bg-emerald-50 text-emerald-700 ring-emerald-200">{T.active}</Badge>
+              <Badge className={getTypeBadgeClass(role)}>{getTypeLabel(role)}</Badge>
+              <Badge className={getAccessBadgeClass(level)}>{getAccessLabel(level)}</Badge>
+            </div>
+          </div>
+        </div>
+
+        <div data-testid="admin-role-detail-actions" className="flex flex-wrap gap-2">
+          <Link to={buildUsersPath({ role_id: role.id })} className={SECONDARY_BUTTON_CLASS}>
+            {T.users}
+          </Link>
+          <Link to={buildPermissionsPath({ q: role.code })} className={SECONDARY_BUTTON_CLASS}>
+            {T.permissionDirectory}
+          </Link>
+          <Link to={buildAuditPath({ entity_type: "role", entity_id: role.id })} className={SECONDARY_BUTTON_CLASS}>
+            {T.roleAudit}
+          </Link>
+          <button type="button" onClick={onClose} className={SECONDARY_BUTTON_CLASS}>
+            {T.close}
+          </button>
+        </div>
+      </div>
+
+      <div data-testid="role-attention-diagnostics" className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.accessLevel}</div>
+          <div className="mt-1 font-bold text-slate-950">{getAccessLabel(level)}</div>
+        </div>
+        <div className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.type}</div>
+          <div className="mt-1 font-bold text-slate-950">{getTypeLabel(role)}</div>
+        </div>
+        <div className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.permissionsAssigned}</div>
+          <div className="mt-1 font-bold text-slate-950">{permissionCount}</div>
+        </div>
+        <div className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.usersAssigned}</div>
+          <div className="mt-1 font-bold text-slate-950">{assignedCount}</div>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-4">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_520px]">
+          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.description}</div>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{role.description || T.notAvailable}</p>
+          </div>
+
+          <div data-testid="role-usage-card" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+            <div className="font-black text-slate-950">{T.usageStats}</div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
+                <div className="text-slate-500">{T.created}</div>
+                <div className="mt-1 font-black text-slate-950">{formatDate(role.created_at)}</div>
+              </div>
+              <div className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
+                <div className="text-slate-500">{T.updated}</div>
+                <div className="mt-1 font-black text-slate-950">{formatDate(role.updated_at)}</div>
+              </div>
+              <div className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
+                <div className="text-slate-500">{T.roleGroups}</div>
+                <div className="mt-1 font-black text-slate-950">{isSystemRole(role) ? T.systemRoles : T.userRoles}</div>
+              </div>
+              <div className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
+                <div className="text-slate-500">{T.lastAssignment}</div>
+                <div className="mt-1 font-black text-slate-950">{T.notAvailable}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div data-testid="role-detail-card-horizontal" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+          <RoleDetailPanel
+            roleDetail={detail}
+            permissions={permissions}
+            loading={selectedRoleLoading}
+            error={selectedRoleError}
+            onClose={onClose}
+            onUpdateRole={onUpdateRole}
+            onDeleteRole={onDeleteRole}
+            onAssignPermission={onAssignRolePermission}
+            onRemovePermission={onRemoveRolePermission}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export function RolesPage({
   roles = [],
   permissions = [],
@@ -638,20 +760,6 @@ export function RolesPage({
     return users.reduce((total, user) => total + (Array.isArray(user.roles) ? user.roles.length : 0), 0);
   }, [users]);
 
-  useEffect(() => {
-    if (selectedRole?.id || selectedRoleLoading || filteredRoles.length === 0) {
-      return;
-    }
-
-    const firstRole = filteredRoles[0];
-    if (!firstRole?.id || localSelectedRoleId === firstRole.id) {
-      return;
-    }
-
-    setLocalSelectedRoleId(firstRole.id);
-    onOpenRole(firstRole.id);
-  }, [filteredRoles, localSelectedRoleId, onOpenRole, selectedRole?.id, selectedRoleLoading]);
-
   function buildRoleFilters(overrides = {}) {
     return {
       q: overrides.q ?? searchQuery,
@@ -704,6 +812,14 @@ export function RolesPage({
   }
 
   function handleOpenRole(role) {
+    const currentSelectedId = selectedRole?.id || localSelectedRoleId;
+
+    if (currentSelectedId === role.id) {
+      setLocalSelectedRoleId("");
+      onCloseRole();
+      return;
+    }
+
     setLocalSelectedRoleId(role.id);
     onOpenRole(role.id);
   }
@@ -869,7 +985,7 @@ export function RolesPage({
         })}
       </div>
 
-      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
+      <section className="grid gap-4">
         <div className="overflow-hidden rounded-3xl bg-white ring-1 ring-slate-200">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 text-sm text-slate-500">
             <div className="flex flex-wrap gap-3">
@@ -906,7 +1022,8 @@ export function RolesPage({
                     const assignedCount = getRoleAssignmentCount(role, users);
 
                     return (
-                      <tr key={role.id} className={cx("border-t border-slate-100 align-middle transition", selected ? "bg-indigo-50/40" : "bg-white hover:bg-slate-50")}>
+                      <Fragment key={`role-row-block-${role.id}`}>
+                        <tr className={cx("border-t border-slate-100 align-middle transition", selected ? "bg-indigo-50/40" : "bg-white hover:bg-slate-50")}>
                         <td className="px-5 py-4">
                           <button type="button" onClick={() => handleOpenRole(role)} className="flex min-w-72 items-center gap-3 text-left">
                             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-xs font-black text-indigo-700 ring-1 ring-indigo-100">
@@ -949,7 +1066,31 @@ export function RolesPage({
                             </Link>
                           </div>
                         </td>
-                      </tr>
+                        </tr>
+                        {selected ? (
+                          <tr key={`role-detail-${role.id}`} className="bg-slate-50/70">
+                            <td colSpan={7} className="px-4 pb-4 pt-0">
+                              <RoleInlineDetail
+                                role={role}
+                                selectedRole={selectedRole}
+                                selectedRoleLoading={selectedRoleLoading}
+                                selectedRoleError={selectedRoleError}
+                                permissions={permissions}
+                                users={users}
+                                roleDetailsById={roleDetailsById}
+                                onClose={() => {
+                                  setLocalSelectedRoleId("");
+                                  onCloseRole();
+                                }}
+                                onUpdateRole={onUpdateRole}
+                                onDeleteRole={onDeleteRole}
+                                onAssignRolePermission={onAssignRolePermission}
+                                onRemoveRolePermission={onRemoveRolePermission}
+                              />
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -958,20 +1099,6 @@ export function RolesPage({
           )}
         </div>
 
-        <RoleSidePanel
-          role={selectedListRole}
-          selectedRole={selectedRole}
-          selectedRoleLoading={selectedRoleLoading}
-          selectedRoleError={selectedRoleError}
-          permissions={permissions}
-          users={users}
-          roleDetailsById={roleDetailsById}
-          onClose={onCloseRole}
-          onUpdateRole={onUpdateRole}
-          onDeleteRole={onDeleteRole}
-          onAssignRolePermission={onAssignRolePermission}
-          onRemoveRolePermission={onRemoveRolePermission}
-        />
       </section>
     </main>
   );
