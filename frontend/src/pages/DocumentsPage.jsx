@@ -1,4054 +1,1506 @@
-import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   createAdminDocument,
   deleteAdminDocument,
   downloadAdminDocument,
   downloadAdminDocumentGenerationEvent,
   getAdminCourses,
-  getAdminOrganizations,
-  getAdminDocuments,
   getAdminDocumentGenerationEvents,
+  getAdminDocuments,
   getAdminEnrollments,
+  getAdminOrganizations,
   getAdminUsers,
-  getAdminWorklistSummary,
   regenerateAdminDocument,
   updateAdminDocument,
 } from "../api/client";
-import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
-import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
-import { SectionCard } from "../components/ui/SectionCard";
-import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
-import { AdminEmptyState } from "../components/admin/AdminEmptyState";
-import { AdminActiveFiltersSummary } from "../components/admin/AdminActiveFiltersSummary";
-import { buildDocumentVerificationPath } from "../utils/documentVerification";
+import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import {
   buildAuditPath,
-  buildCoursesPath,
-  buildDocumentsPath,
   buildEnrollmentsPath,
   buildOrganizationsPath,
 } from "../utils/adminLinks";
-import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
+import { buildDocumentVerificationPath } from "../utils/documentVerification";
 
-const DOCUMENT_STATUSES = [
-  { value: "available", label: "Доступен" },
-  { value: "draft", label: "Черновик" },
-  { value: "revoked", label: "Отозван" },
-];
+const U = (value) => JSON.parse(`"${value}"`);
 
-const DOCUMENT_CSV_STATUS_LABELS = {
-  available: "Доступен",
-  draft: "Черновик",
-  revoked: "Отозван",
+const T = {
+  admin: U("\\u0410\\u0434\\u043c\\u0438\\u043d\\u043a\\u0430"),
+  documents: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b"),
+  subtitle: U("\\u0423\\u043f\\u0440\\u0430\\u0432\\u043b\\u0435\\u043d\\u0438\\u0435 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u0430\\u043c\\u0438, \\u0441\\u0435\\u0440\\u0442\\u0438\\u0444\\u0438\\u043a\\u0430\\u0442\\u0430\\u043c\\u0438 \\u0438 \\u0444\\u0430\\u0439\\u043b\\u0430\\u043c\\u0438 \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u0435\\u0439."),
+  systemOk: U("\\u0421\\u0438\\u0441\\u0442\\u0435\\u043c\\u0430 OK"),
+  importDocuments: U("\\u0418\\u043c\\u043f\\u043e\\u0440\\u0442 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u043e\\u0432"),
+  exportCsv: U("\\u042d\\u043a\\u0441\\u043f\\u043e\\u0440\\u0442 CSV"),
+  uploadDocument: U("\\u0417\\u0430\\u0433\\u0440\\u0443\\u0437\\u0438\\u0442\\u044c \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442"),
+  filters: U("\\u0424\\u0438\\u043b\\u044c\\u0442\\u0440\\u044b"),
+  search: U("\\u041f\\u043e\\u0438\\u0441\\u043a"),
+  searchPlaceholder: U("\\u041d\\u043e\\u043c\\u0435\\u0440, \\u043a\\u043e\\u0434, \\u043d\\u0430\\u0437\\u0432\\u0430\\u043d\\u0438\\u0435, e-mail, \\u0424\\u0418\\u041e"),
+  type: U("\\u0422\\u0438\\u043f"),
+  allTypes: U("\\u0412\\u0441\\u0435 \\u0442\\u0438\\u043f\\u044b"),
+  status: U("\\u0421\\u0442\\u0430\\u0442\\u0443\\u0441"),
+  allStatuses: U("\\u0412\\u0441\\u0435 \\u0441\\u0442\\u0430\\u0442\\u0443\\u0441\\u044b"),
+  organization: U("\\u041e\\u0440\\u0433\\u0430\\u043d\\u0438\\u0437\\u0430\\u0446\\u0438\\u044f"),
+  allOrganizations: U("\\u0412\\u0441\\u0435 \\u043e\\u0440\\u0433\\u0430\\u043d\\u0438\\u0437\\u0430\\u0446\\u0438\\u0438"),
+  apply: U("\\u041f\\u0440\\u0438\\u043c\\u0435\\u043d\\u0438\\u0442\\u044c"),
+  reset: U("\\u0421\\u0431\\u0440\\u043e\\u0441\\u0438\\u0442\\u044c"),
+  allDocuments: U("\\u0412\\u0441\\u0435 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b"),
+  availablePlural: U("\\u0414\\u0435\\u0439\\u0441\\u0442\\u0432\\u0443\\u044e\\u0442"),
+  draftPlural: U("\\u0427\\u0435\\u0440\\u043d\\u043e\\u0432\\u0438\\u043a\\u0438"),
+  revokedPlural: U("\\u041e\\u0442\\u043e\\u0437\\u0432\\u0430\\u043d\\u044b"),
+  attentionRequired: U("\\u0422\\u0440\\u0435\\u0431\\u0443\\u044e\\u0442 \\u0432\\u043d\\u0438\\u043c\\u0430\\u043d\\u0438\\u044f"),
+  shown: U("\\u041f\\u043e\\u043a\\u0430\\u0437\\u0430\\u043d\\u043e"),
+  csvRows: U("CSV: \\u0441\\u0442\\u0440\\u043e\\u043a"),
+  document: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442"),
+  user: U("\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c"),
+  course: U("\\u041a\\u0443\\u0440\\u0441"),
+  enrollment: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435"),
+  created: U("\\u0421\\u043e\\u0437\\u0434\\u0430\\u043d"),
+  updated: U("\\u041e\\u0431\\u043d\\u043e\\u0432\\u043b\\u0435\\u043d\\u043e"),
+  actions: U("\\u0414\\u0435\\u0439\\u0441\\u0442\\u0432\\u0438\\u044f"),
+  open: U("\\u041e\\u0442\\u043a\\u0440\\u044b\\u0442\\u044c"),
+  close: U("\\u0417\\u0430\\u043a\\u0440\\u044b\\u0442\\u044c"),
+  edit: U("\\u0420\\u0435\\u0434\\u0430\\u043a\\u0442\\u0438\\u0440\\u043e\\u0432\\u0430\\u0442\\u044c"),
+  save: U("\\u0421\\u043e\\u0445\\u0440\\u0430\\u043d\\u0438\\u0442\\u044c"),
+  cancel: U("\\u041e\\u0442\\u043c\\u0435\\u043d\\u0430"),
+  delete: U("\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u044c"),
+  download: U("\\u0421\\u043a\\u0430\\u0447\\u0430\\u0442\\u044c"),
+  downloading: U("\\u0421\\u043a\\u0430\\u0447\\u0438\\u0432\\u0430\\u0435\\u043c..."),
+  publish: U("\\u041e\\u043f\\u0443\\u0431\\u043b\\u0438\\u043a\\u043e\\u0432\\u0430\\u0442\\u044c"),
+  toDraft: U("\\u0412 \\u0447\\u0435\\u0440\\u043d\\u043e\\u0432\\u0438\\u043a"),
+  revoke: U("\\u041e\\u0442\\u043e\\u0437\\u0432\\u0430\\u0442\\u044c"),
+  restore: U("\\u0412\\u043e\\u0441\\u0441\\u0442\\u0430\\u043d\\u043e\\u0432\\u0438\\u0442\\u044c"),
+  regenerate: U("\\u041f\\u0435\\u0440\\u0435\\u0441\\u043e\\u0431\\u0440\\u0430\\u0442\\u044c PDF"),
+  showEvents: U("\\u0418\\u0441\\u0442\\u043e\\u0440\\u0438\\u044f PDF"),
+  refreshEvents: U("\\u041e\\u0431\\u043d\\u043e\\u0432\\u0438\\u0442\\u044c \\u0438\\u0441\\u0442\\u043e\\u0440\\u0438\\u044e"),
+  title: U("\\u041d\\u0430\\u0437\\u0432\\u0430\\u043d\\u0438\\u0435"),
+  number: U("\\u041d\\u043e\\u043c\\u0435\\u0440"),
+  verificationCode: U("\\u041a\\u043e\\u0434 \\u043f\\u0440\\u043e\\u0432\\u0435\\u0440\\u043a\\u0438"),
+  file: U("\\u0424\\u0430\\u0439\\u043b"),
+  fileReady: U("\\u0424\\u0430\\u0439\\u043b \\u0435\\u0441\\u0442\\u044c"),
+  fileMissing: U("\\u0424\\u0430\\u0439\\u043b\\u0430 \\u043d\\u0435\\u0442"),
+  publicCheck: U("\\u041f\\u0443\\u0431\\u043b\\u0438\\u0447\\u043d\\u0430\\u044f \\u043f\\u0440\\u043e\\u0432\\u0435\\u0440\\u043a\\u0430"),
+  details: U("\\u0414\\u0435\\u0442\\u0430\\u043b\\u0438 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u0430"),
+  noSelection: U("\\u0412\\u044b\\u0431\\u0435\\u0440\\u0438\\u0442\\u0435 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u0432 \\u0442\\u0430\\u0431\\u043b\\u0438\\u0446\\u0435."),
+  createDocument: U("\\u0421\\u043e\\u0437\\u0434\\u0430\\u0442\\u044c \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442"),
+  editDocument: U("\\u0420\\u0435\\u0434\\u0430\\u043a\\u0442\\u0438\\u0440\\u043e\\u0432\\u0430\\u0442\\u044c \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442"),
+  selectUser: U("\\u0412\\u044b\\u0431\\u0435\\u0440\\u0438\\u0442\\u0435 \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044f"),
+  selectCourse: U("\\u0412\\u044b\\u0431\\u0435\\u0440\\u0438\\u0442\\u0435 \\u043a\\u0443\\u0440\\u0441"),
+  selectEnrollment: U("\\u0412\\u044b\\u0431\\u0435\\u0440\\u0438\\u0442\\u0435 \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435"),
+  optional: U("\\u041d\\u0435 \\u0443\\u043a\\u0430\\u0437\\u0430\\u043d\\u043e"),
+  available: U("\\u0414\\u0435\\u0439\\u0441\\u0442\\u0432\\u0438\\u0442\\u0435\\u043b\\u0435\\u043d"),
+  draft: U("\\u0427\\u0435\\u0440\\u043d\\u043e\\u0432\\u0438\\u043a"),
+  revoked: U("\\u041e\\u0442\\u043e\\u0437\\u0432\\u0430\\u043d"),
+  generated: U("\\u0421\\u0433\\u0435\\u043d\\u0435\\u0440\\u0438\\u0440\\u043e\\u0432\\u0430\\u043d"),
+  manuallyUploaded: U("\\u0417\\u0430\\u0433\\u0440\\u0443\\u0436\\u0435\\u043d \\u0432\\u0440\\u0443\\u0447\\u043d\\u0443\\u044e"),
+  noDocuments: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b \\u043d\\u0435 \\u043d\\u0430\\u0439\\u0434\\u0435\\u043d\\u044b"),
+  loading: U("\\u0417\\u0430\\u0433\\u0440\\u0443\\u0436\\u0430\\u0435\\u043c..."),
+  successSaved: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u0441\\u043e\\u0445\\u0440\\u0430\\u043d\\u0435\\u043d."),
+  successDeleted: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u0443\\u0434\\u0430\\u043b\\u0435\\u043d."),
+  successUpdated: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u043e\\u0431\\u043d\\u043e\\u0432\\u043b\\u0435\\u043d."),
+  deleteConfirm: U("\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u044c \\u044d\\u0442\\u043e\\u0442 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442?"),
+  revokeReasonPrompt: U("\\u0423\\u043a\\u0430\\u0436\\u0438\\u0442\\u0435 \\u043f\\u0440\\u0438\\u0447\\u0438\\u043d\\u0443 \\u043e\\u0442\\u0437\\u044b\\u0432\\u0430"),
+  auditDocument: U("\\u0410\\u0443\\u0434\\u0438\\u0442 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u0430"),
+  enrollmentAudit: U("\\u0410\\u0443\\u0434\\u0438\\u0442 \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044f"),
+  linkedEnrollment: U("\\u0421\\u0432\\u044f\\u0437\\u0430\\u043d\\u043d\\u043e\\u0435 \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435"),
+  linkedOrganization: U("\\u041e\\u0440\\u0433\\u0430\\u043d\\u0438\\u0437\\u0430\\u0446\\u0438\\u044f"),
+  attentionTitle: U("\\u0427\\u0442\\u043e \\u0442\\u0440\\u0435\\u0431\\u0443\\u0435\\u0442 \\u0432\\u043d\\u0438\\u043c\\u0430\\u043d\\u0438\\u044f"),
+  attentionDraft: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u0432 \\u0447\\u0435\\u0440\\u043d\\u043e\\u0432\\u0438\\u043a\\u0435 \\u0438 \\u043d\\u0435 \\u0432\\u0438\\u0434\\u0435\\u043d \\u0441\\u043b\\u0443\\u0448\\u0430\\u0442\\u0435\\u043b\\u044e."),
+  attentionRevoked: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u043e\\u0442\\u043e\\u0437\\u0432\\u0430\\u043d."),
+  attentionFile: U("\\u0423 \\u0434\\u0435\\u0439\\u0441\\u0442\\u0432\\u0443\\u044e\\u0449\\u0435\\u0433\\u043e \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u0430 \\u043d\\u0435\\u0442 \\u0444\\u0430\\u0439\\u043b\\u0430."),
+  attentionEnrollment: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u043d\\u0435 \\u043f\\u0440\\u0438\\u0432\\u044f\\u0437\\u0430\\u043d \\u043a \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044e."),
+  attentionOrg: U("\\u041d\\u0435 \\u0443\\u043a\\u0430\\u0437\\u0430\\u043d\\u0430 \\u043e\\u0440\\u0433\\u0430\\u043d\\u0438\\u0437\\u0430\\u0446\\u0438\\u044f."),
+  stats: U("\\u0421\\u0442\\u0430\\u0442\\u0438\\u0441\\u0442\\u0438\\u043a\\u0430 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u043e\\u0432"),
+  events: U("\\u0418\\u0441\\u0442\\u043e\\u0440\\u0438\\u044f PDF-\\u0432\\u0435\\u0440\\u0441\\u0438\\u0439"),
+  noEvents: U("\\u0418\\u0441\\u0442\\u043e\\u0440\\u0438\\u044f \\u043f\\u0443\\u0441\\u0442\\u0430."),
+  source: U("\\u0418\\u0441\\u0442\\u043e\\u0447\\u043d\\u0438\\u043a"),
+  template: U("\\u0428\\u0430\\u0431\\u043b\\u043e\\u043d"),
+  actor: U("\\u041a\\u0435\\u043c"),
+  date: U("\\u0414\\u0430\\u0442\\u0430"),
+  dash: "-",
 };
 
-const DOCUMENT_CSV_EXPORT_COLUMNS = [
-  { key: "id", title: "ID" },
-  { key: "document_number", title: "Номер документа" },
-  { key: "verification_code", title: "Код проверки" },
-  { key: "title", title: "Название" },
-  { key: "document_type", title: "Тип документа" },
-  { key: "status", title: "Статус" },
-  { key: "status_label", title: "Статус, название" },
-  { key: "file_available", title: "Файл доступен" },
-  { key: "generated_pdf", title: "PDF сформирован" },
-  { key: "generation_source", title: "Источник генерации" },
-  { key: "generation_template_version", title: "Версия шаблона" },
-  { key: "user_id", title: "ID пользователя" },
-  { key: "user_email", title: "Email пользователя" },
-  { key: "user_full_name", title: "ФИО пользователя" },
-  { key: "course_id", title: "ID курса" },
-  { key: "course_title", title: "Курс" },
-  { key: "course_slug", title: "Slug курса" },
-  { key: "enrollment_id", title: "ID назначения" },
-  { key: "enrollment_status", title: "Статус назначения" },
-  { key: "enrollment_status_label", title: "Статус назначения, название" },
-  { key: "organization_id", title: "ID организации" },
-  { key: "organization_name", title: "Организация" },
-  { key: "learning_group_id", title: "ID группы" },
-  { key: "learning_group_name", title: "Учебная группа" },
-  { key: "action_required", title: "Требует действия" },
-  { key: "verification_url", title: "Публичная проверка" },
-  { key: "documents_filter_url", title: "Фильтр документов" },
-  { key: "audit_url", title: "Аудит документа" },
-  { key: "revoked_at", title: "Дата отзыва" },
-  { key: "revocation_reason", title: "Причина отзыва" },
-  { key: "created_at", title: "Создано" },
-  { key: "updated_at", title: "Обновлено" },
+const STATUSES = [
+  { value: "", label: T.allStatuses },
+  { value: "available", label: T.available },
+  { value: "draft", label: T.draft },
+  { value: "revoked", label: T.revoked },
 ];
 
-const DOCUMENT_API_ERROR_MESSAGES = {
-  loadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b.",
-  createFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442.",
-  updateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442.",
-  statusChangeFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0438\u0437\u043c\u0435\u043d\u0438\u0442\u044c \u0441\u0442\u0430\u0442\u0443\u0441 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.",
-  downloadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442.",
-  deleteFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442.",
-  accessDenied: "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432 \u0434\u043b\u044f \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c\u0438.",
-  notFound: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0438\u043b\u0438 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0439 \u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
-  duplicateNumber: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441 \u0442\u0430\u043a\u0438\u043c \u043d\u043e\u043c\u0435\u0440\u043e\u043c \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.",
-  invalidStatus: "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.",
-  invalidRevocationReason: "\u041f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u043c\u043e\u0436\u043d\u043e \u0443\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0434\u043b\u044f \u043e\u0442\u043e\u0437\u0432\u0430\u043d\u043d\u044b\u0445 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432.",
-  revocationReasonRequired: "\u0414\u043b\u044f \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0443\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443.",
-  fileRequiredForPublish: "\u041d\u0435\u043b\u044c\u0437\u044f \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0431\u0435\u0437 \u0444\u0430\u0439\u043b\u0430. \u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0444\u0430\u0439\u043b.",
-  fileNotFound: "\u0424\u0430\u0439\u043b \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d \u0432 \u0445\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435.",
-  fileTypeNotAllowed: "\u041d\u0435\u0434\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0439 \u0442\u0438\u043f \u0444\u0430\u0439\u043b\u0430. \u0420\u0430\u0437\u0440\u0435\u0448\u0435\u043d\u044b PDF, DOC, DOCX, JPG, JPEG \u0438 PNG.",
-  invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.",
+const EMPTY_FORM = {
+  user_id: "",
+  title: "",
+  document_type: "",
+  document_number: "",
+  doc_status: "available",
+  revocation_reason: "",
+  course_id: "",
+  enrollment_id: "",
 };
 
+const CARD_CLASS = "rounded-2xl bg-white p-4 ring-1 ring-slate-200";
+const INPUT_CLASS = "h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100";
+const BUTTON_CLASS = "inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
+const PRIMARY_BUTTON_CLASS = `${BUTTON_CLASS} bg-indigo-600 text-white hover:bg-indigo-700`;
+const SECONDARY_BUTTON_CLASS = `${BUTTON_CLASS} bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50`;
 
-function getDocumentStatusLabel(status) {
-  return DOCUMENT_STATUSES.find((item) => item.value === status)?.label || status || "-";
-}
-function formatDocumentApiError(err, fallback) {
-  const status = getApiErrorStatus(err);
-  const message = getApiErrorMessage(err);
-  const safeMessage = getSafeApiErrorMessage(message, fallback);
-  const normalizedMessage = message.toLowerCase();
-
-  let readableMessage = fallback;
-
-  if (status === "403") {
-    readableMessage = DOCUMENT_API_ERROR_MESSAGES.accessDenied;
-  } else if (status === "404") {
-    readableMessage = normalizedMessage.includes("file")
-      ? DOCUMENT_API_ERROR_MESSAGES.fileNotFound
-      : DOCUMENT_API_ERROR_MESSAGES.notFound;
-  } else if (status === "409" && normalizedMessage.includes("number")) {
-    readableMessage = DOCUMENT_API_ERROR_MESSAGES.duplicateNumber;
-  } else if (status === "422" && normalizedMessage.includes("status")) {
-    readableMessage = DOCUMENT_API_ERROR_MESSAGES.invalidStatus;
-  } else if (
-    normalizedMessage.includes("revocation reason is allowed only for revoked documents")
-  ) {
-    readableMessage = DOCUMENT_API_ERROR_MESSAGES.invalidRevocationReason;
-  } else if (
-    status === "422" &&
-    normalizedMessage.includes("revocation") &&
-    normalizedMessage.includes("reason")
-  ) {
-    readableMessage = DOCUMENT_API_ERROR_MESSAGES.revocationReasonRequired;
-  } else if (
-    normalizedMessage.includes("extension") ||
-    normalizedMessage.includes("file type") ||
-    normalizedMessage.includes("allowed")
-  ) {
-    readableMessage = DOCUMENT_API_ERROR_MESSAGES.fileTypeNotAllowed;
-  } else if (status === "422") {
-    readableMessage = DOCUMENT_API_ERROR_MESSAGES.invalidRequest;
-  } else if (message) {
-    readableMessage = safeMessage;
-  }
-
-  return `${status} ${readableMessage}`.trim();
+function cx(...classes) {
+  return classes.filter(Boolean).join(" ");
 }
 
-function getDocumentStatusTone(status) {
-  switch (status) {
-    case "available":
-      return "bg-green-50 text-green-700 ring-green-200";
-    case "draft":
-      return "bg-amber-50 text-amber-700 ring-amber-200";
-    case "revoked":
-      return "bg-red-50 text-red-700 ring-red-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-slate-200";
+function toList(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
   }
+
+  if (Array.isArray(payload?.items)) {
+    return payload.items;
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+
+  return [];
 }
 
-function isDocumentActionRequired(documentItem) {
-  if (!documentItem) {
-    return false;
+function getInitials(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) {
+    return "D";
   }
 
-  if (documentItem.status === "revoked") {
-    return true;
+  const parts = normalized.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
   }
 
-  if (documentItem.status === "draft") {
-    return true;
-  }
-
-  return documentItem.status === "available" && !documentItem.file_available;
+  return normalized.slice(0, 2).toUpperCase();
 }
 
-function getDocumentActionRequiredHint(documentItem) {
-  if (!isDocumentActionRequired(documentItem)) {
-    return null;
-  }
-
-  if (documentItem.status === "revoked") {
-    return {
-      title: "Требуется проверка отозванного документа",
-      description: "Проверьте причину отзыва, историю изменений и при необходимости восстановите документ после корректировки.",
-      toneClass: "bg-red-50 text-red-800 ring-red-200",
-      actionLabel: "Проверить отзыв",
-    };
-  }
-
-  if (documentItem.status === "draft") {
-    return {
-      title: "Требуется публикация или доработка черновика",
-      description: "Проверьте данные документа, загрузите файл при необходимости и переведите документ в доступные.",
-      toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
-      actionLabel: "Доработать документ",
-    };
-  }
-
-  return {
-    title: "Требуется файл для опубликованного документа",
-    description: "Документ опубликован, но файл не загружен. Слушатель и публичная проверка не смогут получить корректный PDF.",
-    toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
-    actionLabel: "Загрузить файл",
-  };
+function formatDate(value) {
+  return value ? formatDateTime(value) : T.dash;
 }
 
-function getDocumentAttentionItems(documentItem) {
-  const items = [];
-
-  if (!documentItem) {
-    return items;
-  }
-
-  const documentNumber = String(documentItem.document_number || "");
-  const isAutoGeneratedCompletion = Boolean(
-    documentItem.enrollment_id && documentNumber.startsWith("AUTO-")
-  );
-
-  if (documentItem.status === "revoked") {
-    items.push("Отзыв: проверьте причину и возможность восстановления.");
-
-    if (documentItem.revocation_reason) {
-      items.push(`Причина отзыва: ${documentItem.revocation_reason}`);
-    } else {
-      items.push("Причина отзыва: не указана, заполните её для прозрачного аудита.");
-    }
-
-    if (!documentItem.revoked_at) {
-      items.push("Дата отзыва: не зафиксирована, проверьте историю аудита.");
-    }
-  }
-
-  if (documentItem.status === "draft") {
-    items.push("Публикация: черновик нужно доработать или опубликовать.");
-
-    if (documentItem.file_available) {
-      items.push("Файл: черновик уже содержит файл, можно проверить и опубликовать.");
-    } else {
-      items.push("Файл: черновик пока без файла, загрузите PDF/скан перед публикацией.");
-    }
-  }
-
-  if (documentItem.status === "available" && !documentItem.file_available) {
-    items.push("Файл: опубликованный документ недоступен для скачивания.");
-  }
-
-  if (isAutoGeneratedCompletion && !documentItem.generated_at) {
-    items.push("Паспорт генерации: нет даты генерации PDF, пересоберите документ.");
-  }
-
-  if (isAutoGeneratedCompletion && !documentItem.generation_template_version) {
-    items.push("Паспорт генерации: версия шаблона не зафиксирована, пересоберите PDF.");
-  }
-
-  if (documentItem.enrollment_id && !documentItem.organization_id) {
-    items.push("Организация: назначение без организации, PDF использует fallback-настройки.");
-  }
-
-  return [...new Set(items)];
+function getStatusLabel(status) {
+  return STATUSES.find((item) => item.value === status)?.label || status || T.dash;
 }
 
-function getDocumentAttentionTone(documentItem) {
-  if (documentItem.status === "revoked") {
-    return {
-      panelClass: "bg-red-50 text-red-800 ring-red-200",
-      badgeClass: "bg-white text-red-800 ring-red-200",
-    };
+function getStatusClass(status) {
+  if (status === "available") {
+    return "bg-emerald-50 text-emerald-700 ring-emerald-200";
   }
 
-  return {
-    panelClass: "bg-amber-50 text-amber-900 ring-amber-200",
-    badgeClass: "bg-white text-amber-800 ring-amber-200",
-  };
+  if (status === "draft") {
+    return "bg-blue-50 text-blue-700 ring-blue-200";
+  }
+
+  if (status === "revoked") {
+    return "bg-red-50 text-red-700 ring-red-200";
+  }
+
+  return "bg-slate-100 text-slate-700 ring-slate-200";
 }
 
-
-function getLearnerVisibilityLabel(documentItem) {
-  if (documentItem.status === "available" && documentItem.file_available) {
-    return "Слушатель может скачать";
-  }
-
-  if (documentItem.status === "available" && !documentItem.file_available) {
-    return "Нужен файл для скачивания";
-  }
-
-  if (documentItem.file_available) {
-    return "Файл скрыт от слушателя";
-  }
-
-  return "Файл не загружен";
+function isGeneratedCompletionDocument(doc) {
+  return Boolean(doc?.enrollment_id && String(doc?.document_number || "").startsWith("AUTO-"));
 }
 
-function getLearnerVisibilityTone(documentItem) {
-  if (documentItem.status === "available" && documentItem.file_available) {
-    return "bg-green-50 text-green-700 ring-green-200";
-  }
-
-  if (documentItem.file_available) {
-    return "bg-amber-50 text-amber-700 ring-amber-200";
-  }
-
-  return "bg-slate-100 text-slate-600 ring-slate-200";
-}
-
-
-function isGeneratedCompletionDocument(documentItem) {
-  const documentNumber = String(documentItem.document_number || "");
-
+function isActionRequired(doc) {
   return Boolean(
-    documentItem.enrollment_id &&
-      documentItem.file_available &&
-      documentNumber.startsWith("AUTO-")
+    doc?.status === "draft" ||
+      doc?.status === "revoked" ||
+      (doc?.status === "available" && !doc?.file_available)
   );
 }
 
-function canPublishGeneratedCompletionDocument(documentItem) {
-  return documentItem.status === "draft" && isGeneratedCompletionDocument(documentItem);
-}
-
-function getAdminDocumentDownloadLabel(documentItem) {
-  if (isGeneratedCompletionDocument(documentItem)) {
-    return "Скачать PDF";
+function getAttentionItems(doc) {
+  if (!doc) {
+    return [];
   }
 
-  return "Скачать файл";
-}
-
-function getGeneratedCompletionNotice(documentItem) {
-  if (canPublishGeneratedCompletionDocument(documentItem)) {
-    return {
-      title: "Итоговый PDF уже сформирован",
-      text: "Документ создан автоматически после завершения обучения. Его можно опубликовать без повторной загрузки файла.",
-      toneClass: "bg-green-50 text-green-800 ring-green-200",
-    };
-  }
-
-  if (documentItem.status === "available") {
-    return {
-      title: "Итоговый PDF опубликован",
-      text: "Слушатель может скачать документ, а публичная проверка подтверждает его по номеру или коду.",
-      toneClass: "bg-blue-50 text-blue-800 ring-blue-200",
-    };
-  }
-
-  if (documentItem.status === "revoked") {
-    return {
-      title: "Итоговый PDF отозван",
-      text: "Документ остаётся в реестре, но публичная проверка показывает, что он отозван.",
-      toneClass: "bg-red-50 text-red-800 ring-red-200",
-    };
-  }
-
-  return {
-    title: "Итоговый PDF скрыт от слушателя",
-    text: "Файл есть в приватном хранилище, но скачивание и публичное подтверждение станут доступными только после публикации.",
-    toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
-  };
-}
-
-function getEnrollmentOptionLabel(enrollment) {
-  const courseTitle = enrollment.course_title || "Программа без названия";
-  const status = getEnrollmentStatusLabel(enrollment.status);
-  const group = enrollment.learning_group_name ? ` · ${enrollment.learning_group_name}` : "";
-  const organization = enrollment.organization_name ? ` · ${enrollment.organization_name}` : "";
-
-  return `${courseTitle} · ${status}${group}${organization}`;
-}
-
-function getDocumentFiltersFromSearch(search) {
-  const params = new URLSearchParams(search);
-
-  return {
-    user_id: params.get("user_id") || "",
-    enrollment_id: params.get("enrollment_id") || "",
-    organization_id: params.get("organization_id") || "",
-    status: params.get("status") || "",
-    document_type: params.get("document_type") || "",
-    q: params.get("q") || "",
-    action_required: params.get("action_required") === "true" ? "true" : "",
-  };
-}
-
-function getCourseOptionLabel(course) {
-  const title = course.title || "Программа без названия";
-  const hours = course.hours ? ` / ${course.hours} ч.` : "";
-  const format = course.format ? ` / ${course.format}` : "";
-  const documentType = course.document_type ? ` / ${course.document_type}` : "";
-
-  return `${title}${hours}${format}${documentType}`;
-}
-
-function getEnrollmentStatusLabel(status) {
-  const labels = {
-    active: "В процессе",
-    assigned: "Назначен",
-    in_progress: "В процессе",
-    completed: "Завершён",
-    cancelled: "Отменён",
-  };
-
-  return labels[status] || status || "-";
-}
-
-function getDocumentGenerationSourceLabel(source) {
-  const labels = {
-    auto_completion: "Автоматически при завершении обучения",
-    admin_regenerate: "Ручная пересборка администратором",
-    legacy_completion: "Ранее сформированный PDF",
-  };
-
-  return labels[source] || source || "—";
-}
-
-function getDocumentGenerationActorLabel(documentItem) {
-  const name = documentItem.generated_by_user_full_name || "";
-  const email = documentItem.generated_by_user_email || "";
-
-  if (name && email) {
-    return `${name} / ${email}`;
-  }
-
-  return name || email || "Система";
-}
-
-function getDocumentGenerationEventActorLabel(event) {
-  const name = event.generated_by_user_full_name || "";
-  const email = event.generated_by_user_email || "";
-
-  if (name && email) {
-    return `${name} / ${email}`;
-  }
-
-  return name || email || "Система";
-}
-
-function getRevocationActorLabel(documentItem) {
-  const name = documentItem.revoked_by_user_full_name || "";
-  const email = documentItem.revoked_by_user_email || "";
-
-  if (name && email) {
-    return `${name} / ${email}`;
-  }
-
-  return name || email || "-";
-}
-
-function buildEditForm(documentItem) {
-  return {
-    title: documentItem.title || "",
-    document_type: documentItem.document_type || "",
-    document_number: documentItem.document_number || "",
-    status: documentItem.status || "available",
-    revocation_reason: documentItem.revocation_reason || "",
-    course_id: documentItem.course_id || "",
-    enrollment_id: documentItem.enrollment_id || "",
-  };
-}
-
-function countDocumentsWhere(items, predicate) {
-  return Array.isArray(items) ? items.filter(predicate).length : 0;
-}
-
-function getAdminDocumentRegistryStats({
-  documents,
-  documentStatusCounts,
-  documentActionRequiredCount,
-  filters,
-}) {
-  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
-
-  return {
-    total: documentStatusCounts.all || documents.length || 0,
-    displayed: documents.length,
-    available: documentStatusCounts.available || 0,
-    draft: documentStatusCounts.draft || 0,
-    revoked: documentStatusCounts.revoked || 0,
-    actionRequired: documentActionRequiredCount || 0,
-    withFiles: countDocumentsWhere(documents, (documentItem) => documentItem.file_available),
-    withoutFiles: countDocumentsWhere(documents, (documentItem) => !documentItem.file_available),
-    generatedPdf: countDocumentsWhere(documents, isGeneratedCompletionDocument),
-    publishableGeneratedPdf: countDocumentsWhere(documents, canPublishGeneratedCompletionDocument),
-    completionLinked: countDocumentsWhere(documents, (documentItem) => documentItem.enrollment_id),
-    verificationReady: countDocumentsWhere(
-      documents,
-      (documentItem) => documentItem.document_number || documentItem.verification_code
-    ),
-    activeFiltersCount,
-    filters,
-  };
-}
-
-function getAdminDocumentRegistryDiagnostics({
-  documents,
-  registryStats,
-  error,
-  successMessage,
-  loading,
-  saving,
-  editSavingId,
-  downloadSavingId,
-  regenerateSavingId,
-  generationEventsLoadingId,
-  generationEventDownloadSavingId,
-  deleteSavingId,
-  statusSavingKey,
-  revokingDocumentId,
-}) {
   const items = [];
 
-  if (loading) {
-    items.push("Загрузка: реестр документов сейчас обновляется.");
+  if (doc.status === "draft") {
+    items.push(T.attentionDraft);
   }
 
-  if (!loading && registryStats.displayed === 0) {
-    items.push("Реестр: по текущим фильтрам документы не найдены.");
+  if (doc.status === "revoked") {
+    items.push(T.attentionRevoked);
   }
 
-  if (registryStats.activeFiltersCount > 0) {
-    items.push(`Фильтры: включено активных фильтров — ${registryStats.activeFiltersCount}.`);
+  if (doc.status === "available" && !doc.file_available) {
+    items.push(T.attentionFile);
   }
 
-  if (registryStats.draft > 0) {
-    items.push("Публикация: есть черновики документов, требующие проверки или публикации.");
+  if (!doc.enrollment_id) {
+    items.push(T.attentionEnrollment);
   }
 
-  if (registryStats.revoked > 0) {
-    items.push("Отзыв: есть отозванные документы, проверьте причину и аудит.");
+  if (!doc.organization_id) {
+    items.push(T.attentionOrg);
   }
 
-  if (registryStats.actionRequired > 0) {
-    items.push("Контроль: есть документы в режиме action_required.");
-  }
-
-  if (registryStats.withoutFiles > 0) {
-    items.push("Файлы: в текущей выборке есть документы без файла.");
-  }
-
-  if (registryStats.generatedPdf > 0) {
-    items.push("PDF: в текущей выборке есть автоматически сформированные итоговые PDF.");
-  }
-
-  if (registryStats.publishableGeneratedPdf > 0) {
-    items.push("Публикация PDF: есть сформированные итоговые PDF-черновики, готовые к публикации.");
-  }
-
-  if (registryStats.completionLinked > 0) {
-    items.push("Связь с обучением: есть документы, привязанные к назначениям.");
-  }
-
-  if (registryStats.verificationReady < registryStats.displayed) {
-    items.push("Публичная проверка: часть документов не имеет номера или кода проверки.");
-  }
-
-  if (saving) {
-    items.push("Создание: выполняется сохранение нового документа.");
-  }
-
-  if (editSavingId) {
-    items.push("Редактирование: выполняется обновление документа.");
-  }
-
-  if (downloadSavingId || generationEventDownloadSavingId) {
-    items.push("Скачивание: выполняется загрузка файла или версии PDF.");
-  }
-
-  if (regenerateSavingId) {
-    items.push("Регенерация PDF: выполняется пересборка итогового документа.");
-  }
-
-  if (generationEventsLoadingId) {
-    items.push("История PDF: загружается список версий генерации.");
-  }
-
-  if (statusSavingKey) {
-    items.push("Статус: выполняется публикация, перевод в черновик, отзыв или восстановление.");
-  }
-
-  if (revokingDocumentId) {
-    items.push("Отзыв: открыт ввод причины отзыва документа.");
-  }
-
-  if (deleteSavingId) {
-    items.push("Удаление: выполняется удаление документа.");
-  }
-
-  if (error) {
-    items.push("Ошибка: последняя операция с реестром документов завершилась ошибкой.");
-  }
-
-  if (successMessage) {
-    items.push("Готово: последняя операция с документом завершилась успешно.");
-  }
-
-  return [...new Set(items)];
+  return items;
 }
 
-function AdminDocumentRegistryDiagnostics({
-  registryStats,
-  diagnostics,
-  getDocumentFilterPath,
-  getEnrollmentFilterPath,
-}) {
-  return (
-    <SectionCard
-      title="Диагностика административного реестра документов"
-      subtitle="Контроль фильтров, статусов, файлов, PDF, публикации, отзыва, восстановления и action_required"
-    >
-      <div data-testid="admin-document-registry-diagnostics" className="space-y-5">
-        <div
-          data-testid="admin-document-registry-summary"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Всего / показано
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {registryStats.total} / {registryStats.displayed}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Draft / available / revoked
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {registryStats.draft} / {registryStats.available} / {registryStats.revoked}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Требуют действия
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {registryStats.actionRequired}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Активные фильтры
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {registryStats.activeFiltersCount}
-            </div>
-          </div>
-        </div>
-
-        <div
-          data-testid="admin-document-registry-quality"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Файлы / без файла
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {registryStats.withFiles} / {registryStats.withoutFiles}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Авто PDF
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {registryStats.generatedPdf}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              PDF к публикации
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {registryStats.publishableGeneratedPdf}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Номер/код проверки
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {registryStats.verificationReady}
-            </div>
-          </div>
-        </div>
-
-        <div
-          data-testid="admin-document-registry-attention"
-          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
-            diagnostics.length
-              ? "bg-amber-50 text-amber-900 ring-amber-200"
-              : "bg-green-50 text-green-800 ring-green-200"
-          }`}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="font-semibold text-slate-900">
-              Что требует внимания в административном реестре
-            </div>
-            <span
-              data-testid="admin-document-registry-attention-count"
-              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
-            >
-              Пунктов диагностики: {diagnostics.length}
-            </span>
-          </div>
-
-          {diagnostics.length ? (
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              {diagnostics.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2">
-              Критичных замечаний по административному реестру документов не найдено.
-            </p>
-          )}
-        </div>
-
-        <div
-          data-testid="admin-document-registry-links"
-          className="flex flex-wrap gap-3"
-        >
-          <Link
-            to={getDocumentFilterPath({ status: "draft" })}
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Черновики
-          </Link>
-
-          <Link
-            to={getDocumentFilterPath({ status: "available" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Опубликованные
-          </Link>
-
-          <Link
-            to={getDocumentFilterPath({ status: "revoked" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Отозванные
-          </Link>
-
-          <Link
-            to={getDocumentFilterPath({ action_required: "true" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Требуют действия
-          </Link>
-
-          <Link
-            to={getEnrollmentFilterPath({ status: "completed" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Завершённые назначения
-          </Link>
-        </div>
-      </div>
-    </SectionCard>
-  );
+function getDocumentTypeLabel(doc) {
+  return doc?.document_type || T.dash;
 }
 
-
-const LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS = {
-  stage: "Stage 79.3 - Learner Documents UX Foundation",
-  title: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f",
-  subtitle: "\u041f\u043e\u043d\u044f\u0442\u043d\u0430\u044f \u0432\u0438\u0442\u0440\u0438\u043d\u0430 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0445 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432: \u0447\u0442\u043e \u0443\u0436\u0435 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e, \u043a\u0430\u043a\u0438\u0435 \u043a\u0443\u0440\u0441\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b, \u0433\u0434\u0435 \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0438 \u043a\u0430\u043a \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0435\u0433\u043e \u043f\u043e\u0434\u043b\u0438\u043d\u043d\u043e\u0441\u0442\u044c.",
-  availableDocuments: "\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
-  completedCourses: "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u044b",
-  pendingDocuments: "\u041e\u0436\u0438\u0434\u0430\u044e\u0442 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
-  verificationReady: "\u0413\u043e\u0442\u043e\u0432\u044b \u043a \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0435",
-  emptyTitle: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u043f\u043e\u043a\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b",
-  emptyText: "\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0437\u0434\u0435\u0441\u044c \u0438\u043b\u0438 \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u0435\u043d \u0447\u0435\u0440\u0435\u0437 \u0444\u0438\u043b\u044c\u0442\u0440 \u043f\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u043c\u0443 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044e.",
-  completedHandoffTitle: "\u0421\u0432\u044f\u0437\u043a\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u0433\u043e \u043a\u0443\u0440\u0441\u0430 \u0438 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
-  completedHandoffReady: "\u0414\u043b\u044f \u0447\u0430\u0441\u0442\u0438 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0445 \u043a\u0443\u0440\u0441\u043e\u0432 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b. \u0418\u0445 \u043c\u043e\u0436\u043d\u043e \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0438\u043b\u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043f\u043e \u043d\u043e\u043c\u0435\u0440\u0443/\u043a\u043e\u0434\u0443.",
-  completedHandoffWaiting: "\u0415\u0441\u0442\u044c \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u044b \u0431\u0435\u0437 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u043e\u0433\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0444\u0438\u043b\u044c\u0442\u0440 \u043f\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u043c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u043c \u0438\u043b\u0438 \u0434\u043e\u0436\u0434\u0438\u0442\u0435\u0441\u044c \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.",
-  actionDocuments: "\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
-  actionCompleted: "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f",
-  actionVerify: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
-  actionAll: "\u0412\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
-  unknownCourse: "\u041a\u0443\u0440\u0441 \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d",
-  loadingText: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b, \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u0438 \u0441\u0442\u0430\u0442\u0443\u0441\u044b \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.",
-  errorText: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0441\u043e\u0435\u0434\u0438\u043d\u0435\u043d\u0438\u0435 \u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0443.",
-  primaryDocumentTitle: "\u0411\u043b\u0438\u0436\u0430\u0439\u0448\u0438\u0439 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
-  genericDocument: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
-  documentNumber: "\u041d\u043e\u043c\u0435\u0440",
-  verificationCode: "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
-  createdAt: "\u0421\u043e\u0437\u0434\u0430\u043d",
-};
-
-function getLearnerDocumentCourseTitle(documentItem, courses, enrollments) {
-  if (documentItem.course_title) {
-    return documentItem.course_title;
+function getDocumentKind(doc) {
+  if (isGeneratedCompletionDocument(doc)) {
+    return T.generated;
   }
 
-  const enrollment = enrollments.find((item) => item.id === documentItem.enrollment_id) || null;
-  const courseId = documentItem.course_id || enrollment?.course_id || "";
-  const course = courses.find((item) => item.id === courseId) || null;
-
-  return course?.title || LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.unknownCourse;
+  return doc?.file_available ? T.manuallyUploaded : T.fileMissing;
 }
 
-function getLearnerDocumentsUXStats({ documents, enrollments }) {
-  const availableDocuments = documents.filter(
-    (documentItem) => documentItem.status === "available" && documentItem.file_available
-  );
-  const completedEnrollments = enrollments.filter(
-    (enrollment) => enrollment.status === "completed"
-  );
-  const documentEnrollmentIds = new Set(
-    documents.map((documentItem) => documentItem.enrollment_id).filter(Boolean)
-  );
-  const pendingCompletedEnrollments = completedEnrollments.filter(
-    (enrollment) => !documentEnrollmentIds.has(enrollment.id)
-  );
-  const verificationReadyDocuments = availableDocuments.filter(
-    (documentItem) => documentItem.document_number || documentItem.verification_code
-  );
+function getUserLabel(user) {
+  if (!user) {
+    return T.dash;
+  }
 
+  return user.full_name || user.email || user.id || T.dash;
+}
+
+function getDocumentUserLabel(doc) {
+  return doc?.user_full_name || doc?.user_email || doc?.user_id || T.dash;
+}
+
+function getCourseLabel(course) {
+  if (!course) {
+    return T.dash;
+  }
+
+  return course.title || course.name || course.slug || course.id || T.dash;
+}
+
+function getEnrollmentLabel(enrollment) {
+  if (!enrollment) {
+    return T.dash;
+  }
+
+  const user = enrollment.user_full_name || enrollment.user_email || enrollment.user_id || T.dash;
+  const course = enrollment.course_title || enrollment.course_slug || enrollment.course_id || T.dash;
+  return `${user} / ${course}`;
+}
+
+function escapeCsv(value) {
+  return `"${String(value || "").replaceAll('"', '""')}"`;
+}
+
+function downloadTextFile(filename, content, type = "text/csv;charset=utf-8") {
+  const blob = new Blob([content], { type });
+  const objectUrl = window.URL.createObjectURL(blob);
+
+  try {
+    const link = window.document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    window.document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0);
+  }
+}
+
+function buildFormData(form, file, includeUser = true) {
+  const payload = new FormData();
+
+  if (includeUser) {
+    payload.set("user_id", form.user_id);
+  }
+
+  payload.set("title", form.title);
+  payload.set("document_type", form.document_type);
+  payload.set("doc_status", form.doc_status || "available");
+
+  if (form.document_number) {
+    payload.set("document_number", form.document_number);
+  }
+
+  if (form.revocation_reason) {
+    payload.set("revocation_reason", form.revocation_reason);
+  }
+
+  if (form.course_id) {
+    payload.set("course_id", form.course_id);
+  }
+
+  if (form.enrollment_id) {
+    payload.set("enrollment_id", form.enrollment_id);
+  }
+
+  if (file) {
+    payload.set("file", file);
+  }
+
+  return payload;
+}
+
+function buildEditForm(doc) {
   return {
-    availableDocuments,
-    completedEnrollments,
-    pendingCompletedEnrollments,
-    verificationReadyDocuments,
+    user_id: doc?.user_id || "",
+    title: doc?.title || "",
+    document_type: doc?.document_type || "",
+    document_number: doc?.document_number || "",
+    doc_status: doc?.status || "available",
+    revocation_reason: doc?.revocation_reason || "",
+    course_id: doc?.course_id || "",
+    enrollment_id: doc?.enrollment_id || "",
   };
 }
 
-function LearnerDocumentsUXFoundationPanel({
-  documents,
-  courses,
-  enrollments,
-  loading,
-  error,
-  getDocumentFilterPath,
-  getEnrollmentFilterPath,
-}) {
-  const stats = getLearnerDocumentsUXStats({ documents, enrollments });
-  const primaryDocument = stats.availableDocuments[0] || null;
-  const hasAnyLearnerSignal =
-    stats.availableDocuments.length > 0 ||
-    stats.completedEnrollments.length > 0 ||
-    stats.pendingCompletedEnrollments.length > 0;
-
-  const handoffText =
-    stats.pendingCompletedEnrollments.length > 0
-      ? LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedHandoffWaiting
-      : LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedHandoffReady;
-
+function StatCard({ label, value, hint }) {
   return (
-    <SectionCard
-      title={LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.title}
-      subtitle={LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.subtitle}
-    >
-      <div data-testid="learner-documents-ux-foundation-panel" className="space-y-5">
-        <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-          {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.stage}
-        </div>
-
-        <div
-          data-testid="learner-documents-ux-summary"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.availableDocuments}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {stats.availableDocuments.length}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedCourses}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {stats.completedEnrollments.length}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.pendingDocuments}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {stats.pendingCompletedEnrollments.length}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.verificationReady}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {stats.verificationReadyDocuments.length}
-            </div>
-          </div>
-        </div>
-
-        {loading ? (
-          <div
-            data-testid="learner-documents-ux-loading-state"
-            className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100"
-          >
-            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.loadingText}
-          </div>
-        ) : null}
-
-        {error ? (
-          <div
-            data-testid="learner-documents-ux-error-state"
-            className="rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700 ring-1 ring-red-200"
-          >
-            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.errorText}
-          </div>
-        ) : null}
-
-        {!loading && !error && !hasAnyLearnerSignal ? (
-          <div
-            data-testid="learner-documents-ux-empty-state"
-            className="rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
-          >
-            <div className="font-semibold text-slate-900">
-              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.emptyTitle}
-            </div>
-            <p className="mt-2">{LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.emptyText}</p>
-          </div>
-        ) : null}
-
-        {hasAnyLearnerSignal ? (
-          <div
-            data-testid="learner-documents-completed-handoff"
-            className={`rounded-2xl p-5 text-sm leading-6 ring-1 ${
-              stats.pendingCompletedEnrollments.length > 0
-                ? "bg-amber-50 text-amber-900 ring-amber-200"
-                : "bg-green-50 text-green-800 ring-green-200"
-            }`}
-          >
-            <div className="font-semibold text-slate-900">
-              {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.completedHandoffTitle}
-            </div>
-            <p className="mt-2">{handoffText}</p>
-          </div>
-        ) : null}
-
-        {primaryDocument ? (
-          <div
-            data-testid="learner-documents-primary-document-card"
-            className="rounded-2xl bg-white p-5 ring-1 ring-slate-200"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.primaryDocumentTitle}
-                </div>
-                <div className="mt-2 text-lg font-bold text-slate-900">
-                  {primaryDocument.title || primaryDocument.document_type || LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.genericDocument}
-                </div>
-                <div className="mt-1 text-sm text-slate-600">
-                  {getLearnerDocumentCourseTitle(primaryDocument, courses, enrollments)}
-                </div>
-              </div>
-
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getDocumentStatusTone(primaryDocument.status)}`}>
-                {getDocumentStatusLabel(primaryDocument.status)}
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.documentNumber}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {primaryDocument.document_number || "-"}
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.verificationCode}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {primaryDocument.verification_code || "-"}
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.createdAt}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {formatDateTime(primaryDocument.created_at)}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        <div
-          data-testid="learner-documents-ux-actions"
-          className="flex flex-wrap gap-3"
-        >
-          <Link
-            data-testid="learner-documents-available-action"
-            to={getDocumentFilterPath({ status: "available" })}
-            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionDocuments}
-          </Link>
-
-          <Link
-            data-testid="learner-documents-completed-action"
-            to={getEnrollmentFilterPath({ status: "completed" })}
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionCompleted}
-          </Link>
-
-          <Link
-            data-testid="learner-documents-verify-action"
-            to={
-              primaryDocument?.verification_code || primaryDocument?.document_number
-                ? buildDocumentVerificationPath(
-                    primaryDocument.verification_code || primaryDocument.document_number
-                  )
-                : "/verify-document"
-            }
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionVerify}
-          </Link>
-
-          <Link
-            data-testid="learner-documents-all-action"
-            to={getDocumentFilterPath({ status: "", action_required: "" })}
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            {LEARNER_DOCUMENTS_UX_FOUNDATION_LABELS.actionAll}
-          </Link>
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-const LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS = {
-  stage: "Stage 79.5 - Learner Document Download UX Integration",
-  title: "- - -",
-  subtitle: "- -, - - - - - - -, - - - - ? - - -.",
-  ready: "- ? -",
-  available: "- -",
-  waiting: "- -",
-  completed: "- -",
-  verifyReady: "- -",
-  primaryTitle: "- - ? -",
-  noReadyTitle: "- - ?? - ? -",
-  noReadyText: "- - - -, - - - -. - - - - - ? - - -.",
-  downloadAction: "- / - -",
-  availableAction: "- - -",
-  completedAction: "- -",
-  verifyAction: "- -",
-  allAction: "- -",
-  fileStatus: "-",
-  fileReady: "-",
-  fileWaiting: "-",
-  documentNumber: "-",
-  verificationCode: "- -",
-  createdAt: "-",
-  course: "-",
-  genericDocument: "-",
-  emptyValue: "-",
-};
-
-function getLearnerDocumentDownloadUrl(documentItem) {
-  return (
-    documentItem.download_url ||
-    documentItem.file_url ||
-    documentItem.public_url ||
-    documentItem.url ||
-    ""
-  );
-}
-
-function isLearnerDocumentDownloadReady(documentItem) {
-  return documentItem.status === "available" && Boolean(documentItem.file_available);
-}
-
-function getLearnerDocumentDownloadStats({ documents, enrollments }) {
-  const availableDocuments = documents.filter(
-    (documentItem) => documentItem.status === "available"
-  );
-  const downloadableDocuments = availableDocuments.filter(isLearnerDocumentDownloadReady);
-  const completedEnrollments = enrollments.filter(
-    (enrollment) => enrollment.status === "completed"
-  );
-
-  const documentEnrollmentIds = new Set(
-    documents.map((documentItem) => documentItem.enrollment_id).filter(Boolean)
-  );
-  const waitingCompletedEnrollments = completedEnrollments.filter(
-    (enrollment) => !documentEnrollmentIds.has(enrollment.id)
-  );
-
-  const verificationReadyDocuments = availableDocuments.filter(
-    (documentItem) => documentItem.document_number || documentItem.verification_code
-  );
-
-  return {
-    availableDocuments,
-    downloadableDocuments,
-    completedEnrollments,
-    waitingCompletedEnrollments,
-    verificationReadyDocuments,
-  };
-}
-
-function LearnerDocumentDownloadUXPanel({
-  documents,
-  courses,
-  enrollments,
-  getDocumentFilterPath,
-  getEnrollmentFilterPath,
-}) {
-  const stats = getLearnerDocumentDownloadStats({ documents, enrollments });
-  const primaryDocument = stats.downloadableDocuments[0] || stats.availableDocuments[0] || null;
-  const primaryDownloadUrl = primaryDocument ? getLearnerDocumentDownloadUrl(primaryDocument) : "";
-  const primaryVerificationValue =
-    primaryDocument?.verification_code || primaryDocument?.document_number || "";
-  const primaryTone = primaryDocument
-    ? getDocumentStatusTone(primaryDocument.status)
-    : "bg-slate-50 text-slate-700 ring-slate-200";
-
-  return (
-    <SectionCard
-      title={LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.title}
-      subtitle={LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.subtitle}
-    >
-      <div data-testid="learner-document-download-ux-panel" className="space-y-5">
-        <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-          {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.stage}
-        </div>
-
-        <div
-          data-testid="learner-document-download-ux-summary"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <div
-            data-testid="learner-document-download-ready-count"
-            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-          >
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.ready}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {stats.downloadableDocuments.length}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.available}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {stats.availableDocuments.length}
-            </div>
-          </div>
-
-          <div
-            data-testid="learner-document-download-pending-count"
-            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-          >
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.waiting}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {stats.waitingCompletedEnrollments.length}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.verifyReady}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {stats.verificationReadyDocuments.length}
-            </div>
-          </div>
-        </div>
-
-        {primaryDocument ? (
-          <div
-            data-testid="learner-document-download-primary-card"
-            className="rounded-2xl bg-white p-5 ring-1 ring-slate-200"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.primaryTitle}
-                </div>
-                <div className="mt-2 text-lg font-bold text-slate-900">
-                  {primaryDocument.title || primaryDocument.document_type || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.genericDocument}
-                </div>
-                <div className="mt-1 text-sm text-slate-600">
-                  {getLearnerDocumentCourseTitle(primaryDocument, courses, enrollments)}
-                </div>
-              </div>
-
-              <span className={"rounded-full px-3 py-1 text-xs font-semibold ring-1 " + primaryTone}>
-                {getDocumentStatusLabel(primaryDocument.status)}
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-4">
-              <div className="rounded-2xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.fileStatus}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {primaryDocument.file_available
-                    ? LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.fileReady
-                    : LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.fileWaiting}
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.documentNumber}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {primaryDocument.document_number || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.emptyValue}
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.verificationCode}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {primaryDocument.verification_code || LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.emptyValue}
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.createdAt}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {formatDateTime(primaryDocument.created_at)}
-                </div>
-              </div>
-            </div>
-
-            <div
-              data-testid="learner-document-download-actions"
-              className="mt-5 flex flex-wrap gap-3"
-            >
-              {primaryDownloadUrl ? (
-                <a
-                  data-testid="learner-document-download-open-action"
-                  href={primaryDownloadUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-                >
-                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.downloadAction}
-                </a>
-              ) : (
-                <Link
-                  data-testid="learner-document-download-open-action"
-                  to={getDocumentFilterPath({ status: "available" })}
-                  className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-                >
-                  {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.availableAction}
-                </Link>
-              )}
-
-              <Link
-                data-testid="learner-document-download-verify-action"
-                to={
-                  primaryVerificationValue
-                    ? buildDocumentVerificationPath(primaryVerificationValue)
-                    : "/verify-document"
-                }
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-              >
-                {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.verifyAction}
-              </Link>
-
-              <Link
-                data-testid="learner-document-download-documents-action"
-                to={getDocumentFilterPath({ status: "available" })}
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-              >
-                {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.availableAction}
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div
-            data-testid="learner-document-download-empty-state"
-            className="rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
-          >
-            <div className="font-semibold text-slate-900">
-              {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.noReadyTitle}
-            </div>
-            <p className="mt-2">{LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.noReadyText}</p>
-          </div>
-        )}
-
-        <div className="flex flex-wrap gap-3">
-          <Link
-            data-testid="learner-document-download-completed-action"
-            to={getEnrollmentFilterPath({ status: "completed" })}
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.completedAction}
-          </Link>
-
-          <Link
-            data-testid="learner-document-download-all-action"
-            to={getDocumentFilterPath({ status: "", action_required: "" })}
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            {LEARNER_DOCUMENT_DOWNLOAD_UX_LABELS.allAction}
-          </Link>
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-
-
-const STAGE82_ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW =
-  "stage82_18_admin_generated_document_publication_workflow";
-
-const ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS = {
-  stage: "Stage 82.18 · Generated Document Publication Workflow",
-  title: "Очередь публикации автоматически сформированных документов",
-  subtitle:
-    "Быстрый рабочий блок для итоговых PDF, которые уже сформированы после завершения курса и ждут публикации.",
-  readyTitle: "Готовы к публикации",
-  readyHint: "Черновики с уже сформированным PDF. Их можно опубликовать без загрузки файла.",
-  waitingTitle: "Ждут проверки",
-  waitingHint: "Документ есть, но пока не готов к публикации. Проверьте файл, статус или пересоберите PDF.",
-  publishedTitle: "Опубликованы",
-  publishedHint: "Документы уже доступны слушателям для скачивания и публичной проверки.",
-  revokedTitle: "Отозваны",
-  revokedHint: "Документы нельзя использовать как действующие.",
-  emptyTitle: "Нет автоматически сформированных документов в текущей выборке",
-  emptyText:
-    "Когда слушатель завершит курс, итоговый PDF появится здесь как черновик и попадёт в очередь публикации.",
-  publishAction: "Опубликовать PDF",
-  publishingAction: "Публикуем...",
-  showReadyAction: "Показать готовые черновики",
-  showAllGeneratedAction: "Показать авто PDF",
-  showPublishedAction: "Показать опубликованные",
-  documentAuditAction: "Аудит документа",
-  enrollmentAction: "Назначение",
-  userDocumentsAction: "Документы слушателя",
-};
-
-function getGeneratedDocumentPublicationWorkflowStats(documents = []) {
-  const generatedDocuments = documents.filter(isGeneratedCompletionDocument);
-  const readyDrafts = generatedDocuments.filter(canPublishGeneratedCompletionDocument);
-  const waitingDrafts = generatedDocuments.filter(
-    (documentItem) =>
-      documentItem.status === "draft" && !canPublishGeneratedCompletionDocument(documentItem)
-  );
-  const publishedDocuments = generatedDocuments.filter(
-    (documentItem) => documentItem.status === "available"
-  );
-  const revokedDocuments = generatedDocuments.filter(
-    (documentItem) => documentItem.status === "revoked"
-  );
-
-  return {
-    generatedDocuments,
-    readyDrafts,
-    waitingDrafts,
-    publishedDocuments,
-    revokedDocuments,
-    total: generatedDocuments.length,
-    readyCount: readyDrafts.length,
-    waitingCount: waitingDrafts.length,
-    publishedCount: publishedDocuments.length,
-    revokedCount: revokedDocuments.length,
-  };
-}
-
-function getGeneratedDocumentPublicationWorkflowTone(stats) {
-  if (stats.readyCount > 0) {
-    return "bg-amber-50 text-amber-900 ring-amber-200";
-  }
-
-  if (stats.waitingCount > 0 || stats.revokedCount > 0) {
-    return "bg-slate-50 text-slate-700 ring-slate-200";
-  }
-
-  if (stats.publishedCount > 0) {
-    return "bg-green-50 text-green-800 ring-green-200";
-  }
-
-  return "bg-slate-50 text-slate-600 ring-slate-200";
-}
-
-function getGeneratedDocumentPublicationWorkflowFocusText(stats) {
-  if (stats.readyCount > 0) {
-    return `${stats.readyCount} автоматически сформированных PDF готовы к публикации.`;
-  }
-
-  if (stats.waitingCount > 0) {
-    return `${stats.waitingCount} автоматически сформированных PDF требуют проверки перед публикацией.`;
-  }
-
-  if (stats.publishedCount > 0) {
-    return `${stats.publishedCount} автоматически сформированных PDF уже опубликованы.`;
-  }
-
-  return ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.emptyText;
-}
-
-function GeneratedDocumentPublicationWorkflowPanel({
-  documents,
-  loading,
-  getDocumentFilterPath,
-  getEnrollmentFilterPath,
-  onPublishDocument,
-  statusSavingKey,
-  deleteSavingId,
-}) {
-  const stats = getGeneratedDocumentPublicationWorkflowStats(documents);
-  const readyPreviewItems = stats.readyDrafts.slice(0, 3);
-  const panelTone = getGeneratedDocumentPublicationWorkflowTone(stats);
-
-  return (
-    <SectionCard
-      title={ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.title}
-      subtitle={ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.subtitle}
-    >
-      <div
-        data-testid="admin-generated-document-publication-workflow"
-        data-stage={STAGE82_ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW}
-        data-generated-publication-total={stats.total}
-        data-generated-publication-ready={stats.readyCount}
-        data-generated-publication-waiting={stats.waitingCount}
-        data-generated-publication-published={stats.publishedCount}
-        className="space-y-5"
-      >
-        <div
-          data-testid="admin-generated-document-publication-workflow-focus"
-          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${panelTone}`}
-        >
-          <div className="text-xs font-semibold uppercase tracking-wide">
-            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.stage}
-          </div>
-          <div className="mt-1 font-semibold text-slate-900">
-            {loading
-              ? "Обновляем очередь публикации..."
-              : getGeneratedDocumentPublicationWorkflowFocusText(stats)}
-          </div>
-        </div>
-
-        <div
-          data-testid="admin-generated-document-publication-workflow-summary"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <div className="rounded-2xl bg-amber-50 p-4 text-amber-900 ring-1 ring-amber-200">
-            <div className="text-xs font-semibold uppercase tracking-wide">
-              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.readyTitle}
-            </div>
-            <div className="mt-2 text-2xl font-bold">{stats.readyCount}</div>
-            <p className="mt-1 text-sm leading-6">
-              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.readyHint}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 text-slate-700 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide">
-              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.waitingTitle}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">{stats.waitingCount}</div>
-            <p className="mt-1 text-sm leading-6">
-              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.waitingHint}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-green-50 p-4 text-green-800 ring-1 ring-green-200">
-            <div className="text-xs font-semibold uppercase tracking-wide">
-              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishedTitle}
-            </div>
-            <div className="mt-2 text-2xl font-bold">{stats.publishedCount}</div>
-            <p className="mt-1 text-sm leading-6">
-              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishedHint}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-red-50 p-4 text-red-800 ring-1 ring-red-200">
-            <div className="text-xs font-semibold uppercase tracking-wide">
-              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.revokedTitle}
-            </div>
-            <div className="mt-2 text-2xl font-bold">{stats.revokedCount}</div>
-            <p className="mt-1 text-sm leading-6">
-              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.revokedHint}
-            </p>
-          </div>
-        </div>
-
-        <div
-          data-testid="admin-generated-document-publication-workflow-actions"
-          className="flex flex-wrap gap-3"
-        >
-          <Link
-            to={getDocumentFilterPath({ status: "draft", action_required: "true", q: "AUTO-" })}
-            className="rounded-full bg-amber-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700"
-          >
-            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.showReadyAction}
-          </Link>
-
-          <Link
-            to={getDocumentFilterPath({ status: "", action_required: "", q: "AUTO-" })}
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.showAllGeneratedAction}
-          </Link>
-
-          <Link
-            to={getDocumentFilterPath({ status: "available", action_required: "", q: "AUTO-" })}
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.showPublishedAction}
-          </Link>
-        </div>
-
-        {readyPreviewItems.length > 0 ? (
-          <div
-            data-testid="admin-generated-document-publication-ready-list"
-            className="space-y-3"
-          >
-            {readyPreviewItems.map((documentItem) => {
-              const isPublishing = statusSavingKey === `${documentItem.id}:available`;
-              const isDeleteSaving = deleteSavingId === documentItem.id;
-
-              return (
-                <div
-                  key={documentItem.id}
-                  data-testid="admin-generated-document-publication-ready-item"
-                  className="rounded-2xl bg-white p-4 ring-1 ring-amber-200"
-                >
-                  <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getDocumentStatusTone(documentItem.status)}`}>
-                          {getDocumentStatusLabel(documentItem.status)}
-                        </span>
-                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700 ring-1 ring-indigo-200">
-                          PDF сформирован
-                        </span>
-                      </div>
-
-                      <div className="mt-3 text-lg font-bold text-slate-900">
-                        {documentItem.title}
-                      </div>
-                      <div className="mt-1 text-sm text-slate-500">
-                        {documentItem.document_number}
-                      </div>
-                      <div className="mt-1 text-sm text-slate-600">
-                        {documentItem.course_title || "Курс не указан"}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        Сформирован: {formatDateTime(documentItem.generated_at)}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        data-testid="admin-generated-document-publication-publish-action"
-                        onClick={() => onPublishDocument(documentItem)}
-                        disabled={isPublishing || isDeleteSaving}
-                        className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isPublishing
-                          ? ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishingAction
-                          : ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.publishAction}
-                      </button>
-
-                      {documentItem.enrollment_id && (
-                        <Link
-                          to={getEnrollmentFilterPath({
-                            status: "completed",
-                            user_id: documentItem.user_id || "",
-                          })}
-                          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                        >
-                          {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.enrollmentAction}
-                        </Link>
-                      )}
-
-                      {documentItem.user_id && (
-                        <Link
-                          to={getDocumentFilterPath({
-                            user_id: documentItem.user_id,
-                            status: "",
-                            action_required: "",
-                            q: "",
-                          })}
-                          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                        >
-                          {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.userDocumentsAction}
-                        </Link>
-                      )}
-
-                      <Link
-                        to={buildAuditPath({ entity_type: "document", entity_id: documentItem.id })}
-                        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                      >
-                        {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.documentAuditAction}
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div
-            data-testid="admin-generated-document-publication-empty"
-            className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200"
-          >
-            <div className="font-semibold text-slate-900">
-              {ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.emptyTitle}
-            </div>
-            <p className="mt-1">{ADMIN_GENERATED_DOCUMENT_PUBLICATION_WORKFLOW_LABELS.emptyText}</p>
-          </div>
-        )}
-      </div>
-    </SectionCard>
-  );
-}
-
-function DocumentsSummaryCards({ documentStatusCounts, documents, courses, enrollments }) {
-  const filesCount = documents.filter((documentItem) => documentItem.file_available).length;
-  const completedEnrollmentsCount = enrollments.filter(
-    (enrollment) => enrollment.status === "completed"
-  ).length;
-  const activeCoursesCount = courses.filter((course) => course.is_active).length;
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <AdminSummaryCard
-        title="Всего документов"
-        value={documentStatusCounts.all || 0}
-        hint="По текущему набору фильтров без учёта статуса."
-        to={buildDocumentsPath()}
-      />
-      <AdminSummaryCard
-        title="Доступные"
-        value={documentStatusCounts.available || 0}
-        hint="Опубликованы для слушателей."
-        to={buildDocumentsPath({ status: "available" })}
-      />
-      <AdminSummaryCard
-        title="Черновики"
-        value={documentStatusCounts.draft || 0}
-        hint="Требуют проверки или публикации."
-        to={buildDocumentsPath({ status: "draft" })}
-      />
-      <AdminSummaryCard
-        title="Файлы / курсы / завершения"
-        value={`${filesCount}/${activeCoursesCount}/${completedEnrollmentsCount}`}
-        hint="Видимые файлы / активные курсы / completed назначения."
-      />
+    <div className={CARD_CLASS}>
+      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{label}</div>
+      <div className="mt-3 text-2xl font-black text-slate-950">{value}</div>
+      {hint ? <div className="mt-2 text-xs text-slate-500">{hint}</div> : null}
     </div>
   );
 }
 
-function DocumentsWorkflowPanel({ documentStatusCounts, courses, enrollments }) {
-  const firstActiveCourse = courses.find((course) => course.is_active) || courses[0];
-  const firstCompletedEnrollment = enrollments.find(
-    (enrollment) => enrollment.status === "completed"
-  );
-
+function Badge({ children, className }) {
   return (
-    <SectionCard
-      title="Рабочие сценарии"
-      subtitle="Быстрые переходы для публикации, проверки и выпуска документов."
-    >
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <AdminWorkflowLink
-          title="Опубликовать черновики"
-          description={`Открыть draft документы: ${documentStatusCounts.draft || 0}.`}
-          to={buildDocumentsPath({ status: "draft" })}
-        />
-        <AdminWorkflowLink
-          title="Проверить доступные"
-          description={`Открыть документы, видимые слушателям: ${documentStatusCounts.available || 0}.`}
-          to={buildDocumentsPath({ status: "available" })}
-        />
-        <AdminWorkflowLink
-          title="Разобрать отозванные"
-          description={`Открыть revoked документы: ${documentStatusCounts.revoked || 0}.`}
-          to={buildDocumentsPath({ status: "revoked" })}
-        />
-        <AdminWorkflowLink
-          title="Завершённые назначения"
-          description="Перейти к назначениям, из которых выпускаются итоговые документы."
-          to={
-            firstCompletedEnrollment
-              ? buildEnrollmentsPath({
-                  status: "completed",
-                  course_id: firstCompletedEnrollment.course_id,
-                })
-              : buildCoursesPath(firstActiveCourse ? { q: firstActiveCourse.slug || firstActiveCourse.title } : {})
-          }
-        />
-      </div>
-    </SectionCard>
+    <span className={cx("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1", className)}>
+      {children}
+    </span>
   );
 }
 
+function DocumentForm({
+  mode,
+  form,
+  setForm,
+  users,
+  courses,
+  enrollments,
+  file,
+  setFile,
+  saving,
+  onSubmit,
+  onCancel,
+}) {
+  const availableEnrollments = useMemo(() => {
+    return enrollments.filter((enrollment) => {
+      if (form.user_id && enrollment.user_id !== form.user_id) {
+        return false;
+      }
+
+      if (form.course_id && enrollment.course_id !== form.course_id) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [enrollments, form.course_id, form.user_id]);
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div>
+        <div className="text-lg font-black text-slate-950">
+          {mode === "create" ? T.createDocument : T.editDocument}
+        </div>
+        <p className="mt-1 text-sm text-slate-500">
+          {mode === "create" ? T.uploadDocument : T.editDocument}
+        </p>
+      </div>
+
+      {mode === "create" ? (
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.user}</span>
+          <select
+            value={form.user_id}
+            onChange={(event) => setForm((current) => ({ ...current, user_id: event.target.value }))}
+            required
+            className={cx(INPUT_CLASS, "mt-1")}
+          >
+            <option value="">{T.selectUser}</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {getUserLabel(user)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.title}</span>
+        <input
+          value={form.title}
+          onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+          required
+          className={cx(INPUT_CLASS, "mt-1")}
+        />
+      </label>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.type}</span>
+          <input
+            value={form.document_type}
+            onChange={(event) => setForm((current) => ({ ...current, document_type: event.target.value }))}
+            required
+            className={cx(INPUT_CLASS, "mt-1")}
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.number}</span>
+          <input
+            value={form.document_number}
+            onChange={(event) => setForm((current) => ({ ...current, document_number: event.target.value }))}
+            className={cx(INPUT_CLASS, "mt-1")}
+          />
+        </label>
+      </div>
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.status}</span>
+        <select
+          value={form.doc_status}
+          onChange={(event) => setForm((current) => ({ ...current, doc_status: event.target.value }))}
+          className={cx(INPUT_CLASS, "mt-1")}
+        >
+          {STATUSES.filter((item) => item.value).map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {form.doc_status === "revoked" ? (
+        <label className="block">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.revoke}</span>
+          <textarea
+            value={form.revocation_reason}
+            onChange={(event) => setForm((current) => ({ ...current, revocation_reason: event.target.value }))}
+            rows={3}
+            className={cx(INPUT_CLASS, "mt-1 h-auto min-h-24 py-3")}
+          />
+        </label>
+      ) : null}
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.course}</span>
+        <select
+          value={form.course_id}
+          onChange={(event) => setForm((current) => ({ ...current, course_id: event.target.value }))}
+          className={cx(INPUT_CLASS, "mt-1")}
+        >
+          <option value="">{T.selectCourse}</option>
+          {courses.map((course) => (
+            <option key={course.id} value={course.id}>
+              {getCourseLabel(course)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.enrollment}</span>
+        <select
+          value={form.enrollment_id}
+          onChange={(event) => setForm((current) => ({ ...current, enrollment_id: event.target.value }))}
+          className={cx(INPUT_CLASS, "mt-1")}
+        >
+          <option value="">{T.selectEnrollment}</option>
+          {availableEnrollments.map((enrollment) => (
+            <option key={enrollment.id} value={enrollment.id}>
+              {getEnrollmentLabel(enrollment)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.file}</span>
+        <input
+          type="file"
+          onChange={(event) => setFile(event.target.files?.[0] || null)}
+          className="mt-1 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-sm text-slate-700"
+        />
+        {file ? <div className="mt-1 text-xs font-semibold text-slate-500">{file.name}</div> : null}
+      </label>
+
+      <div className="flex flex-wrap gap-2">
+        <button type="submit" disabled={saving} className={PRIMARY_BUTTON_CLASS}>
+          {saving ? T.loading : T.save}
+        </button>
+        <button type="button" onClick={onCancel} disabled={saving} className={SECONDARY_BUTTON_CLASS}>
+          {T.cancel}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function DocumentDetailPanel({
+  doc,
+  events,
+  eventsLoaded,
+  eventsLoading,
+  eventsDownloadingId,
+  actionSavingId,
+  onEdit,
+  onClose,
+  onDownload,
+  onRegenerate,
+  onLoadEvents,
+  onDownloadEvent,
+  onStatus,
+  onDelete,
+}) {
+  const attentionItems = getAttentionItems(doc);
+  const verificationTarget = doc?.verification_code || doc?.document_number || "";
+  const verificationPath = verificationTarget ? buildDocumentVerificationPath(verificationTarget) : "";
+
+  if (!doc) {
+    return (
+      <aside className={cx(CARD_CLASS, "min-h-[360px]")}>
+        <div className="text-lg font-black text-slate-950">{T.details}</div>
+        <p className="mt-2 text-sm leading-6 text-slate-500">{T.noSelection}</p>
+      </aside>
+    );
+  }
+
+  const generated = isGeneratedCompletionDocument(doc);
+  const isSaving = Boolean(actionSavingId);
+  const isDownloading = actionSavingId === `download:${doc.id}`;
+  const isRegenerating = actionSavingId === `regenerate:${doc.id}`;
+
+  return (
+    <aside data-testid="admin-document-detail-panel" className={cx(CARD_CLASS, "sticky top-4 self-start")}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-sm font-black text-indigo-700 ring-1 ring-slate-200">
+            {getInitials(doc.document_type)}
+          </div>
+          <div className="min-w-0">
+            <div className="text-lg font-black text-slate-950">{doc.title}</div>
+            <div className="mt-1 break-all text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {doc.document_number}
+            </div>
+          </div>
+        </div>
+        <button type="button" onClick={onClose} className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+          {T.close}
+        </button>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Badge className={getStatusClass(doc.status)}>{getStatusLabel(doc.status)}</Badge>
+        <Badge className="bg-blue-50 text-blue-700 ring-blue-200">{getDocumentTypeLabel(doc)}</Badge>
+        <Badge className={doc.file_available ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-amber-50 text-amber-700 ring-amber-200"}>
+          {doc.file_available ? T.fileReady : T.fileMissing}
+        </Badge>
+      </div>
+
+      {attentionItems.length > 0 ? (
+        <div data-testid="document-attention-diagnostics" className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
+          <div className="flex items-center justify-between gap-3">
+            <div className="font-bold">{T.attentionTitle}</div>
+            <Badge className="bg-white text-amber-800 ring-amber-200">{attentionItems.length}</Badge>
+          </div>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {attentionItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="mt-4 grid gap-3 text-sm">
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.user}</div>
+          <div className="mt-1 font-bold text-slate-950">{getDocumentUserLabel(doc)}</div>
+          <div className="mt-1 break-all text-xs text-slate-500">{doc.user_email || T.dash}</div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.organization}</div>
+          <div className="mt-1 font-bold text-slate-950">{doc.organization_name || T.optional}</div>
+          {doc.organization_id ? (
+            <Link to={buildOrganizationsPath({ organization_id: doc.organization_id })} className="mt-1 inline-flex text-xs font-bold text-indigo-700">
+              {T.linkedOrganization}
+            </Link>
+          ) : null}
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.course}</div>
+          <div className="mt-1 font-bold text-slate-950">{doc.course_title || T.optional}</div>
+          {doc.enrollment_id ? (
+            <Link to={buildEnrollmentsPath({ enrollment_id: doc.enrollment_id })} className="mt-1 inline-flex text-xs font-bold text-indigo-700">
+              {T.linkedEnrollment}
+            </Link>
+          ) : null}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl bg-slate-50 p-3">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.created}</div>
+            <div className="mt-1 font-bold text-slate-950">{formatDate(doc.created_at)}</div>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-3">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.updated}</div>
+            <div className="mt-1 font-bold text-slate-950">{formatDate(doc.updated_at)}</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.verificationCode}</div>
+          <div className="mt-1 break-all font-bold text-slate-950">{doc.verification_code || T.dash}</div>
+          {doc.status === "available" && verificationPath ? (
+            <Link to={verificationPath} className="mt-2 inline-flex text-xs font-bold text-indigo-700">
+              {T.publicCheck}
+            </Link>
+          ) : null}
+        </div>
+      </div>
+
+      {doc.status === "available" && verificationTarget ? (
+        <DocumentVerificationQrBlock
+          code={doc.verification_code}
+          documentNumber={doc.document_number}
+          containerId={`admin-document-qr-${doc.id}`}
+          title={T.publicCheck}
+          description={T.verificationCode}
+          showPublicLink
+          showCopyLink
+          publicLinkLabel={T.publicCheck}
+          className="mt-4"
+        />
+      ) : null}
+
+      <div data-testid="admin-document-detail-actions" className="mt-4 grid gap-2">
+        <button type="button" onClick={onEdit} disabled={isSaving} className={PRIMARY_BUTTON_CLASS}>
+          {T.edit}
+        </button>
+        <button type="button" onClick={onDownload} disabled={!doc.file_available || isSaving} className={SECONDARY_BUTTON_CLASS}>
+          {isDownloading ? T.downloading : T.download}
+        </button>
+        {generated ? (
+          <button type="button" onClick={onRegenerate} disabled={isSaving} className={SECONDARY_BUTTON_CLASS}>
+            {isRegenerating ? T.loading : T.regenerate}
+          </button>
+        ) : null}
+        {doc.status !== "available" ? (
+          <button type="button" onClick={() => onStatus("available")} disabled={!doc.file_available || isSaving} className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
+            {doc.status === "revoked" ? T.restore : T.publish}
+          </button>
+        ) : null}
+        {doc.status !== "draft" ? (
+          <button type="button" onClick={() => onStatus("draft")} disabled={isSaving} className={SECONDARY_BUTTON_CLASS}>
+            {T.toDraft}
+          </button>
+        ) : null}
+        {doc.status !== "revoked" ? (
+          <button type="button" onClick={() => onStatus("revoked")} disabled={isSaving} className="inline-flex h-10 items-center justify-center rounded-xl bg-red-50 px-4 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60">
+            {T.revoke}
+          </button>
+        ) : null}
+        <Link to={buildAuditPath({ entity_type: "document", entity_id: doc.id })} className={SECONDARY_BUTTON_CLASS}>
+          {T.auditDocument}
+        </Link>
+        {doc.enrollment_id ? (
+          <Link to={buildAuditPath({ entity_type: "enrollment", entity_id: doc.enrollment_id })} className={SECONDARY_BUTTON_CLASS}>
+            {T.enrollmentAudit}
+          </Link>
+        ) : null}
+        <button type="button" onClick={onDelete} disabled={isSaving} className="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60">
+          {T.delete}
+        </button>
+      </div>
+
+      {generated ? (
+        <div data-testid="document-events-card" className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="font-bold text-slate-950">{T.events}</div>
+              <div className="mt-1 text-xs text-slate-500">{T.generated}</div>
+            </div>
+            <button type="button" onClick={onLoadEvents} disabled={eventsLoading || isSaving} className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+              {eventsLoaded ? T.refreshEvents : T.showEvents}
+            </button>
+          </div>
+
+          {eventsLoading ? <div className="mt-3 text-sm text-slate-500">{T.loading}</div> : null}
+          {eventsLoaded && events.length === 0 ? <div className="mt-3 text-sm text-slate-500">{T.noEvents}</div> : null}
+
+          {events.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              {events.map((event) => (
+                <div key={event.id} className="rounded-xl bg-white p-3 text-xs ring-1 ring-slate-200">
+                  <div className="font-bold text-slate-950">{formatDate(event.generated_at)}</div>
+                  <div className="mt-1 text-slate-500">{event.source || T.source} / {event.template_version || T.template}</div>
+                  <button
+                    type="button"
+                    onClick={() => onDownloadEvent(event)}
+                    disabled={eventsDownloadingId === event.id || isSaving}
+                    className="mt-2 rounded-lg bg-slate-100 px-3 py-1.5 font-bold text-slate-700 ring-1 ring-slate-200"
+                  >
+                    {eventsDownloadingId === event.id ? T.downloading : T.download}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </aside>
+  );
+}
 
 export function DocumentsPage() {
-  const { onRefreshDocuments } = arguments[0] || {};
-  const location = useLocation();
-  const navigate = useNavigate();
-  const initialFilters = getDocumentFiltersFromSearch(location.search);
   const [documents, setDocuments] = useState([]);
-  const [documentStatusCounts, setDocumentStatusCounts] = useState({
-    all: 0,
-    available: 0,
-    draft: 0,
-    revoked: 0,
-  });
-  const [documentActionRequiredCount, setDocumentActionRequiredCount] = useState(0);
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
 
-  const [filterUserId, setFilterUserId] = useState(initialFilters.user_id);
-  const [filterEnrollmentId, setFilterEnrollmentId] = useState(initialFilters.enrollment_id);
-  const [filterOrganizationId, setFilterOrganizationId] = useState(initialFilters.organization_id);
-  const [filterStatus, setFilterStatus] = useState(initialFilters.status);
-  const [filterDocumentType, setFilterDocumentType] = useState(initialFilters.document_type);
-  const [filterQuery, setFilterQuery] = useState(initialFilters.q);
-  const [filterActionRequired, setFilterActionRequired] = useState(initialFilters.action_required);
+  const [filters, setFilters] = useState({
+    q: "",
+    status: "",
+    document_type: "",
+    organization_id: "",
+    action_required: "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState(filters);
+
+  const [selectedDocumentId, setSelectedDocumentId] = useState("");
+  const [panelMode, setPanelMode] = useState("detail");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [file, setFile] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [editSavingId, setEditSavingId] = useState("");
-  const [downloadSavingId, setDownloadSavingId] = useState("");
-  const [regenerateSavingId, setRegenerateSavingId] = useState("");
-  const [generationEventsLoadingId, setGenerationEventsLoadingId] = useState("");
-  const [generationEventsByDocumentId, setGenerationEventsByDocumentId] = useState({});
-  const [generationEventDownloadSavingId, setGenerationEventDownloadSavingId] = useState("");
-  const [deleteSavingId, setDeleteSavingId] = useState("");
-  const [statusSavingKey, setStatusSavingKey] = useState("");
-  const [revokingDocumentId, setRevokingDocumentId] = useState("");
-  const [revocationReason, setRevocationReason] = useState("");
-
+  const [actionSavingId, setActionSavingId] = useState("");
+  const [eventsLoadingId, setEventsLoadingId] = useState("");
+  const [eventsByDocumentId, setEventsByDocumentId] = useState({});
+  const [eventsDownloadingId, setEventsDownloadingId] = useState("");
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const [form, setForm] = useState({
-    user_id: "",
-    title: "",
-    document_type: "Сертификат",
-    document_number: "",
-    status: "available",
-    revocation_reason: "",
-    course_id: "",
-    enrollment_id: "",
-  });
-  const [file, setFile] = useState(null);
-
-  const [editingDocumentId, setEditingDocumentId] = useState("");
-  const [editForm, setEditForm] = useState({
-    title: "",
-    document_type: "",
-    document_number: "",
-    status: "available",
-    revocation_reason: "",
-    course_id: "",
-    enrollment_id: "",
-  });
-  const [editFile, setEditFile] = useState(null);
-
-  const selectedUser = useMemo(
-    () => users.find((user) => user.id === form.user_id) || null,
-    [form.user_id, users]
-  );
-  const selectedUserEnrollments = useMemo(
-    () => enrollments.filter((enrollment) => enrollment.user_id === form.user_id),
-    [enrollments, form.user_id]
+  const selectedDocument = useMemo(
+    () => documents.find((doc) => doc.id === selectedDocumentId) || null,
+    [documents, selectedDocumentId]
   );
 
-  const selectedEnrollment = useMemo(
-    () => enrollments.find((enrollment) => enrollment.id === form.enrollment_id) || null,
-    [enrollments, form.enrollment_id]
-  );
+  const documentTypes = useMemo(() => {
+    return Array.from(new Set(documents.map((doc) => doc.document_type).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b)
+    );
+  }, [documents]);
 
-  const selectedCourse = useMemo(() => {
-    const selectedCourseId = selectedEnrollment?.course_id || form.course_id;
+  const counts = useMemo(() => {
+    const available = documents.filter((doc) => doc.status === "available").length;
+    const draft = documents.filter((doc) => doc.status === "draft").length;
+    const revoked = documents.filter((doc) => doc.status === "revoked").length;
+    const attention = documents.filter(isActionRequired).length;
+    const withFile = documents.filter((doc) => doc.file_available).length;
+    const generated = documents.filter(isGeneratedCompletionDocument).length;
 
-    return courses.find((course) => course.id === selectedCourseId) || null;
-  }, [courses, form.course_id, selectedEnrollment]);
+    return {
+      all: documents.length,
+      available,
+      draft,
+      revoked,
+      attention,
+      withFile,
+      generated,
+    };
+  }, [documents]);
 
+  function buildRequestFilters(nextFilters = appliedFilters) {
+    const requestFilters = { limit: 200 };
 
-  const selectedFilterEnrollment = useMemo(
-    () => enrollments.find((enrollment) => enrollment.id === filterEnrollmentId) || null,
-    [enrollments, filterEnrollmentId]
-  );
-
-  const sortedOrganizations = useMemo(
-    () => [...organizations].sort((left, right) => left.name.localeCompare(right.name, "ru")),
-    [organizations]
-  );
-
-  const showActionRequiredOnly = filterActionRequired === "true";
-  const displayedDocuments = documents;
-
-  const adminDocumentRegistryFilters = useMemo(
-    () => ({
-      user_id: filterUserId,
-      enrollment_id: filterEnrollmentId,
-      organization_id: filterOrganizationId,
-      status: filterStatus,
-      document_type: filterDocumentType,
-      q: filterQuery,
-      action_required: filterActionRequired,
-    }),
-    [
-      filterUserId,
-      filterEnrollmentId,
-      filterOrganizationId,
-      filterStatus,
-      filterDocumentType,
-      filterQuery,
-      filterActionRequired,
-    ]
-  );
-
-  const adminDocumentRegistryStats = useMemo(
-    () =>
-      getAdminDocumentRegistryStats({
-        documents,
-        documentStatusCounts,
-        documentActionRequiredCount,
-        filters: adminDocumentRegistryFilters,
-      }),
-    [documents, documentStatusCounts, documentActionRequiredCount, adminDocumentRegistryFilters]
-  );
-
-  const adminDocumentRegistryDiagnostics = useMemo(
-    () =>
-      getAdminDocumentRegistryDiagnostics({
-        documents,
-        registryStats: adminDocumentRegistryStats,
-        error,
-        successMessage,
-        loading,
-        saving,
-        editSavingId,
-        downloadSavingId,
-        regenerateSavingId,
-        generationEventsLoadingId,
-        generationEventDownloadSavingId,
-        deleteSavingId,
-        statusSavingKey,
-        revokingDocumentId,
-      }),
-    [
-      documents,
-      adminDocumentRegistryStats,
-      error,
-      successMessage,
-      loading,
-      saving,
-      editSavingId,
-      downloadSavingId,
-      regenerateSavingId,
-      generationEventsLoadingId,
-      generationEventDownloadSavingId,
-      deleteSavingId,
-      statusSavingKey,
-      revokingDocumentId,
-    ]
-  );
-
-  useEffect(() => {
-    if (!filterEnrollmentId || !selectedFilterEnrollment) {
-      return;
+    if (nextFilters.q) {
+      requestFilters.q = nextFilters.q;
     }
 
-    setForm((current) => {
-      const hasManualDocumentData =
-        Boolean(current.title.trim()) ||
-        Boolean(current.document_number.trim()) ||
-        Boolean(file);
+    if (nextFilters.status) {
+      requestFilters.status = nextFilters.status;
+    }
 
-      if (hasManualDocumentData && current.enrollment_id !== filterEnrollmentId) {
-        return current;
+    if (nextFilters.document_type) {
+      requestFilters.document_type = nextFilters.document_type;
+    }
+
+    if (nextFilters.organization_id) {
+      requestFilters.organization_id = nextFilters.organization_id;
+    }
+
+    if (nextFilters.action_required) {
+      requestFilters.action_required = "true";
+    }
+
+    return requestFilters;
+  }
+
+  async function loadData(nextFilters = appliedFilters) {
+    setLoading(true);
+    setError("");
+
+    try {
+      const [documentsPayload, usersPayload, coursesPayload, organizationsPayload, enrollmentsPayload] =
+        await Promise.all([
+          getAdminDocuments(buildRequestFilters(nextFilters)),
+          getAdminUsers({ limit: 200 }),
+          getAdminCourses({ limit: 200 }),
+          getAdminOrganizations(),
+          getAdminEnrollments({ limit: 200 }),
+        ]);
+
+      const nextDocuments = toList(documentsPayload);
+      setDocuments(nextDocuments);
+      setUsers(toList(usersPayload));
+      setCourses(toList(coursesPayload));
+      setOrganizations(toList(organizationsPayload));
+      setEnrollments(toList(enrollmentsPayload));
+
+      if (!selectedDocumentId && nextDocuments.length > 0) {
+        setSelectedDocumentId(nextDocuments[0].id);
       }
 
-      return {
-        ...current,
-        user_id: selectedFilterEnrollment.user_id || current.user_id,
-        enrollment_id: selectedFilterEnrollment.id,
-        course_id: selectedFilterEnrollment.course_id || current.course_id,
-      };
-    });
-  }, [filterEnrollmentId, selectedFilterEnrollment, file]);
-
-  const activeDocumentFilterItems = useMemo(() => {
-    const items = [];
-
-    if (filterQuery) {
-      items.push({ key: "q", label: "Поиск", value: filterQuery });
-    }
-
-    if (filterUserId) {
-      const user = users.find((item) => item.id === filterUserId);
-      items.push({
-        key: "user_id",
-        label: "Пользователь",
-        value: user
-          ? `${user.email}${user.full_name ? ` — ${user.full_name}` : ""}`
-          : filterUserId,
-      });
-    }
-
-    if (filterEnrollmentId) {
-      const enrollment = enrollments.find((item) => item.id === filterEnrollmentId);
-      items.push({
-        key: "enrollment_id",
-        label: "Назначение",
-        value: enrollment ? getEnrollmentOptionLabel(enrollment) : filterEnrollmentId,
-      });
-    }
-
-    if (filterOrganizationId) {
-      const organization = sortedOrganizations.find((item) => item.id === filterOrganizationId);
-      items.push({
-        key: "organization_id",
-        label: "Организация",
-        value: organization?.name || filterOrganizationId,
-      });
-    }
-
-    if (filterStatus) {
-      items.push({
-        key: "status",
-        label: "Статус",
-        value: getDocumentStatusLabel(filterStatus),
-      });
-    }
-
-    if (filterDocumentType) {
-      items.push({
-        key: "document_type",
-        label: "Тип документа",
-        value: filterDocumentType,
-      });
-    }
-
-    if (filterActionRequired === "true") {
-      items.push({
-        key: "action_required",
-        label: "Требуют действия",
-        value: "Да",
-      });
-    }
-
-    return items;
-  }, [
-    filterQuery,
-    filterUserId,
-    filterEnrollmentId,
-    filterOrganizationId,
-    filterStatus,
-    filterDocumentType,
-    filterActionRequired,
-    users,
-    enrollments,
-    sortedOrganizations,
-  ]);
-
-  function buildDocumentFilters(overrides = {}) {
-    return {
-      user_id: overrides.user_id ?? filterUserId,
-      enrollment_id: overrides.enrollment_id ?? filterEnrollmentId,
-      organization_id: overrides.organization_id ?? filterOrganizationId,
-      status: overrides.status ?? filterStatus,
-      document_type: overrides.document_type ?? filterDocumentType,
-      q: overrides.q ?? filterQuery,
-      action_required: overrides.action_required ?? filterActionRequired,
-    };
-  }
-
-  function getDocumentFilterPath(overrides = {}) {
-    return buildDocumentsPath({
-      ...buildDocumentFilters(),
-      ...overrides,
-    });
-  }
-
-  function getEnrollmentFilterPath(filters = {}) {
-    return buildEnrollmentsPath(filters);
-  }
-
-  async function navigateToDocumentFilters(filters, options = {}) {
-    const nextPath = buildDocumentsPath(filters);
-    const currentPath = `${location.pathname}${location.search}`;
-
-    if (currentPath === nextPath) {
-      await refreshDocumentsFastPath(filters);
-      return;
-    }
-
-    navigate(nextPath, options);
-  }
-
-  async function loadData(nextFilters = null) {
-    try {
-      setLoading(true);
-      setError("");
-
-      const filters = nextFilters ?? buildDocumentFilters();
-      const activeFilters = { limit: 300, ...filters };
-
-      const [
-        documentsResponse,
-        usersResponse,
-        coursesResponse,
-        organizationsResponse,
-        enrollmentsResponse,
-        worklistSummaryResponse,
-      ] = await Promise.all([
-        getAdminDocuments(activeFilters),
-        getAdminUsers(),
-        getAdminCourses({ limit: 300 }),
-        getAdminOrganizations(),
-        getAdminEnrollments({ limit: 300 }),
-        getAdminWorklistSummary({
-          documents_user_id: filters.user_id,
-          documents_enrollment_id: filters.enrollment_id,
-          documents_organization_id: filters.organization_id,
-          documents_document_type: filters.document_type,
-          documents_q: filters.q,
-        }),
-      ]);
-
-      const documentsSummary = worklistSummaryResponse?.documents || {};
-
-      setDocuments(Array.isArray(documentsResponse) ? documentsResponse : []);
-      setDocumentStatusCounts({
-        all: documentsSummary.total || 0,
-        available: documentsSummary.available || 0,
-        draft: documentsSummary.draft || 0,
-        revoked: documentsSummary.revoked || 0,
-      });
-      setDocumentActionRequiredCount(documentsSummary.action_required || 0);
-      setGenerationEventsByDocumentId({});
-      setUsers(Array.isArray(usersResponse) ? usersResponse : []);
-      setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
-      setOrganizations(Array.isArray(organizationsResponse) ? organizationsResponse : []);
-      setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
+      if (selectedDocumentId && !nextDocuments.some((doc) => doc.id === selectedDocumentId)) {
+        setSelectedDocumentId(nextDocuments[0]?.id || "");
+      }
     } catch (err) {
-      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.loadFailed));
+      setError(err?.message || String(err));
     } finally {
       setLoading(false);
     }
   }
 
-  async function refreshDocumentsFastPath(filters = buildDocumentFilters()) {
-    const nextFilters = filters ?? buildDocumentFilters();
-    const localRefresh = loadData(nextFilters);
-
-    if (!onRefreshDocuments) {
-      await localRefresh;
-      return;
-    }
-
-    await Promise.all([
-      localRefresh,
-      onRefreshDocuments(nextFilters),
-    ]);
-  }
-
   useEffect(() => {
-    const nextFilters = getDocumentFiltersFromSearch(location.search);
+    loadData(appliedFilters);
+  }, []);
 
-    setFilterUserId(nextFilters.user_id);
-    setFilterEnrollmentId(nextFilters.enrollment_id);
-    setFilterOrganizationId(nextFilters.organization_id);
-    setFilterStatus(nextFilters.status);
-    setFilterDocumentType(nextFilters.document_type);
-    setFilterQuery(nextFilters.q);
-    setFilterActionRequired(nextFilters.action_required);
-
-    loadData(nextFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
-
-  function updateField(field, value) {
-    setForm((current) => {
-      const next = {
-        ...current,
-        [field]: value,
-      };
-
-      if (field === "user_id") {
-        next.course_id = "";
-        next.enrollment_id = "";
-      }
-
-      if (field === "enrollment_id" && value) {
-        const enrollment = enrollments.find((item) => item.id === value);
-
-        if (enrollment?.course_id) {
-          next.course_id = enrollment.course_id;
-        }
-      }
-
-      if (field === "status" && value !== "revoked") {
-        next.revocation_reason = "";
-      }
-
-      return next;
-    });
+  function updateDocumentInState(updated) {
+    setDocuments((current) => current.map((doc) => (doc.id === updated.id ? updated : doc)));
+    setSelectedDocumentId(updated.id);
   }
 
-  function updateEditField(field, value) {
-    setEditForm((current) => {
-      const next = {
-        ...current,
-        [field]: value,
-      };
-
-      if (field === "enrollment_id" && value) {
-        const enrollment = enrollments.find((item) => item.id === value);
-
-        if (enrollment?.course_id) {
-          next.course_id = enrollment.course_id;
-        }
-      }
-
-      if (field === "status" && value !== "revoked") {
-        next.revocation_reason = "";
-      }
-
-      return next;
-    });
-  }
-
-  function resetForm() {
-    setForm({
-      user_id: "",
-      title: "",
-      document_type: "Сертификат",
-      document_number: "",
-      status: "available",
-      revocation_reason: "",
-      course_id: "",
-      enrollment_id: "",
-    });
-    setFile(null);
-
-    const input = document.getElementById("admin-document-file");
-    if (input) {
-      input.value = "";
-    }
-  }
-
-  function resetEditState() {
-    setEditingDocumentId("");
-    setEditForm({
-      title: "",
-      document_type: "",
-      document_number: "",
-      status: "available",
-      revocation_reason: "",
-      course_id: "",
-      enrollment_id: "",
-    });
-    setEditFile(null);
-
-    const input = document.getElementById("admin-document-edit-file");
-    if (input) {
-      input.value = "";
-    }
-  }
-
-  async function handleSubmit(event) {
+  function handleApplyFilters(event) {
     event.preventDefault();
+    setAppliedFilters(filters);
+    loadData(filters);
+  }
 
-    if (!form.user_id) {
-      setError("Выберите пользователя для документа.");
-      return;
+  function handleResetFilters() {
+    const nextFilters = {
+      q: "",
+      status: "",
+      document_type: "",
+      organization_id: "",
+      action_required: "",
+    };
+    setFilters(nextFilters);
+    setAppliedFilters(nextFilters);
+    loadData(nextFilters);
+  }
+
+  function handleQuickFilter(key) {
+    const nextFilters = {
+      ...filters,
+      status: "",
+      action_required: "",
+    };
+
+    if (key === "available" || key === "draft" || key === "revoked") {
+      nextFilters.status = key;
     }
 
-    if (!form.title.trim()) {
-      setError("Введите название документа.");
-      return;
+    if (key === "attention") {
+      nextFilters.action_required = "true";
     }
 
-    if (!form.document_type.trim()) {
-      setError("Введите тип документа.");
-      return;
-    }
+    setFilters(nextFilters);
+    setAppliedFilters(nextFilters);
+    loadData(nextFilters);
+  }
 
-    if (form.status === "revoked" && !form.revocation_reason.trim()) {
-      setError("\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.");
-      return;
-    }
+  function handleStartCreate() {
+    setPanelMode("create");
+    setForm(EMPTY_FORM);
+    setFile(null);
+    setSelectedDocumentId("");
+    setError("");
+    setSuccess("");
+  }
+
+  function handleStartEdit(doc) {
+    setPanelMode("edit");
+    setForm(buildEditForm(doc));
+    setFile(null);
+    setError("");
+    setSuccess("");
+  }
+
+  function handleClosePanel() {
+    setPanelMode("detail");
+    setForm(EMPTY_FORM);
+    setFile(null);
+  }
+
+  async function handleCreate(event) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setSuccess("");
 
     try {
-      setSaving(true);
-      setError("");
-      setSuccessMessage("");
-
-      const payload = new FormData();
-      payload.append("user_id", form.user_id);
-      payload.append("title", form.title.trim());
-      payload.append("document_type", form.document_type.trim());
-      payload.append("status", form.status);
-
-      if (form.status === "revoked" && form.revocation_reason.trim()) {
-        payload.append("revocation_reason", form.revocation_reason.trim());
-      }
-
-      if (form.course_id) {
-        payload.append("course_id", form.course_id);
-      }
-
-      if (form.enrollment_id) {
-        payload.append("enrollment_id", form.enrollment_id);
-      }
-
-      if (form.document_number.trim()) {
-        payload.append("document_number", form.document_number.trim());
-      }
-
-      if (file) {
-        payload.append("file", file);
-      }
-
-      const created = await createAdminDocument(payload);
-
-      setSuccessMessage(`Документ создан: ${created.document_number}`);
-      resetForm();
-      await refreshDocumentsFastPath(buildDocumentFilters());
+      const created = await createAdminDocument(buildFormData(form, file, true));
+      setDocuments((current) => [created, ...current]);
+      setSelectedDocumentId(created.id);
+      setPanelMode("detail");
+      setForm(EMPTY_FORM);
+      setFile(null);
+      setSuccess(T.successSaved);
     } catch (err) {
-      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.createFailed));
+      setError(err?.message || String(err));
     } finally {
       setSaving(false);
     }
   }
 
-  function handleStartEdit(documentItem) {
-    setError("");
-    setSuccessMessage("");
-    setEditingDocumentId(documentItem.id);
-    setEditForm(buildEditForm(documentItem));
-    setEditFile(null);
-
-    const input = document.getElementById("admin-document-edit-file");
-    if (input) {
-      input.value = "";
-    }
-  }
-
-  async function handleEditSubmit(event, documentId) {
+  async function handleEdit(event) {
     event.preventDefault();
 
-    if (!editForm.title.trim()) {
-      setError("Введите название документа.");
+    if (!selectedDocument) {
       return;
     }
 
-    if (!editForm.document_type.trim()) {
-      setError("Введите тип документа.");
-      return;
-    }
-
-    if (editForm.status === "revoked" && !editForm.revocation_reason.trim()) {
-      setError("\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u0437\u044b\u0432\u0430 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.");
-      return;
-    }
+    setSaving(true);
+    setError("");
+    setSuccess("");
 
     try {
-      setEditSavingId(documentId);
-      setError("");
-      setSuccessMessage("");
-
-      const payload = new FormData();
-      payload.append("title", editForm.title.trim());
-      payload.append("document_type", editForm.document_type.trim());
-      payload.append("document_number", editForm.document_number.trim());
-      payload.append("status", editForm.status);
-
-      if (editForm.status === "revoked" && editForm.revocation_reason.trim()) {
-        payload.append("revocation_reason", editForm.revocation_reason.trim());
-      }
-      payload.append("course_id", editForm.course_id);
-      payload.append("enrollment_id", editForm.enrollment_id);
-
-      if (editFile) {
-        payload.append("file", editFile);
-      }
-
-      const updated = await updateAdminDocument(documentId, payload);
-
-      setSuccessMessage(`Документ обновлён: ${updated.document_number}`);
-      resetEditState();
-      await refreshDocumentsFastPath(buildDocumentFilters());
+      const updated = await updateAdminDocument(selectedDocument.id, buildFormData(form, file, false));
+      updateDocumentInState(updated);
+      setPanelMode("detail");
+      setForm(EMPTY_FORM);
+      setFile(null);
+      setSuccess(T.successUpdated);
     } catch (err) {
-      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.updateFailed));
+      setError(err?.message || String(err));
     } finally {
-      setEditSavingId("");
+      setSaving(false);
     }
   }
 
-  function handleStartRevoke(documentItem) {
+  async function handleDownload(doc) {
+    if (!doc) {
+      return;
+    }
+
+    setActionSavingId(`download:${doc.id}`);
     setError("");
-    setSuccessMessage("");
-    setRevokingDocumentId(documentItem.id);
-    setRevocationReason(documentItem.revocation_reason || "");
+
+    try {
+      await downloadAdminDocument(doc.id);
+    } catch (err) {
+      setError(err?.message || String(err));
+    } finally {
+      setActionSavingId("");
+    }
   }
 
-  function handleCancelRevoke() {
-    setRevokingDocumentId("");
-    setRevocationReason("");
-  }
-
-  async function handleConfirmRevoke(documentItem) {
-    if (!revocationReason.trim()) {
-      setError("\u041e\u0442\u0437\u044b\u0432 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043f\u0440\u0438\u0447\u0438\u043d\u0443.");
+  async function handleRegenerate(doc) {
+    if (!doc) {
       return;
     }
 
-    await handleQuickStatusUpdate(documentItem, "revoked", revocationReason);
-    handleCancelRevoke();
+    setActionSavingId(`regenerate:${doc.id}`);
+    setError("");
+    setSuccess("");
+
+    try {
+      const updated = await regenerateAdminDocument(doc.id);
+      updateDocumentInState(updated);
+      setSuccess(T.successUpdated);
+    } catch (err) {
+      setError(err?.message || String(err));
+    } finally {
+      setActionSavingId("");
+    }
   }
 
-  async function handleQuickStatusUpdate(documentItem, nextStatus, revocationReasonOverride = null) {
-    if (nextStatus === "available" && !documentItem.file_available) {
-      setError("Нельзя опубликовать документ без файла. Сначала загрузите файл в режиме редактирования.");
+  async function handleStatus(doc, nextStatus) {
+    if (!doc) {
       return;
     }
 
-    let revocationReason = "";
+    let reason = "";
 
     if (nextStatus === "revoked") {
-      revocationReason = (revocationReasonOverride || "").trim();
-
-      if (!revocationReason) {
-        setError("\u041e\u0442\u0437\u044b\u0432 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043f\u0440\u0438\u0447\u0438\u043d\u0443.");
+      reason = window.prompt(T.revokeReasonPrompt, doc.revocation_reason || "") || "";
+      if (!reason.trim()) {
         return;
       }
     }
 
+    const payload = new FormData();
+    payload.set("doc_status", nextStatus);
+
+    if (reason) {
+      payload.set("revocation_reason", reason);
+    }
+
+    setActionSavingId(`status:${doc.id}`);
+    setError("");
+    setSuccess("");
+
     try {
-      setStatusSavingKey(`${documentItem.id}:${nextStatus}`);
-      setError("");
-      setSuccessMessage("");
-
-      const payload = new FormData();
-      payload.append("status", nextStatus);
-
-      if (nextStatus === "revoked") {
-        payload.append("revocation_reason", revocationReason);
-      }
-
-      const updated = await updateAdminDocument(documentItem.id, payload);
-
-      setSuccessMessage(
-        `Статус документа ${updated.document_number} изменён: ${getDocumentStatusLabel(updated.status)}`
-      );
-      await refreshDocumentsFastPath(buildDocumentFilters());
+      const updated = await updateAdminDocument(doc.id, payload);
+      updateDocumentInState(updated);
+      setSuccess(T.successUpdated);
     } catch (err) {
-      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.statusChangeFailed));
+      setError(err?.message || String(err));
     } finally {
-      setStatusSavingKey("");
+      setActionSavingId("");
     }
   }
 
-  async function handleAdminDownload(documentItem) {
-    if (!documentItem.file_available) {
-      setError("Файл документа недоступен для скачивания.");
+  async function handleDelete(doc) {
+    if (!doc || !window.confirm(T.deleteConfirm)) {
       return;
     }
 
-    try {
-      setDownloadSavingId(documentItem.id);
-      setError("");
-      setSuccessMessage("");
+    setActionSavingId(`delete:${doc.id}`);
+    setError("");
+    setSuccess("");
 
-      await downloadAdminDocument(documentItem.id);
+    try {
+      await deleteAdminDocument(doc.id);
+      setDocuments((current) => current.filter((item) => item.id !== doc.id));
+      setSelectedDocumentId("");
+      setSuccess(T.successDeleted);
     } catch (err) {
-      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.downloadFailed));
+      setError(err?.message || String(err));
     } finally {
-      setDownloadSavingId("");
+      setActionSavingId("");
     }
   }
 
-  async function handleRegenerateCompletionDocument(documentItem) {
-    if (!isGeneratedCompletionDocument(documentItem)) {
-      setError("Пересборка доступна только для автоматически сформированных итоговых PDF.");
+  async function handleLoadEvents(doc) {
+    if (!doc) {
       return;
     }
 
+    setEventsLoadingId(doc.id);
+    setError("");
+
     try {
-      setRegenerateSavingId(documentItem.id);
-      setError("");
-      setSuccessMessage("");
-
-      const regenerated = await regenerateAdminDocument(documentItem.id);
-
-      setSuccessMessage(`PDF пересобран: ${regenerated.document_number}`);
-      await refreshDocumentsFastPath(buildDocumentFilters());
+      const events = await getAdminDocumentGenerationEvents(doc.id, { limit: 20 });
+      setEventsByDocumentId((current) => ({ ...current, [doc.id]: toList(events) }));
     } catch (err) {
-      setError(formatDocumentApiError(err, "Не удалось пересобрать итоговый PDF."));
+      setError(err?.message || String(err));
     } finally {
-      setRegenerateSavingId("");
+      setEventsLoadingId("");
     }
   }
 
-  async function handleLoadGenerationEvents(documentItem) {
-    if (!isGeneratedCompletionDocument(documentItem)) {
-      setError("История генерации доступна только для автоматически сформированных итоговых PDF.");
+  async function handleDownloadEvent(doc, event) {
+    if (!doc || !event) {
       return;
     }
 
-    try {
-      setGenerationEventsLoadingId(documentItem.id);
-      setError("");
-
-      const events = await getAdminDocumentGenerationEvents(documentItem.id, { limit: 20 });
-
-      setGenerationEventsByDocumentId((current) => ({
-        ...current,
-        [documentItem.id]: Array.isArray(events) ? events : [],
-      }));
-    } catch (err) {
-      setError(formatDocumentApiError(err, "Не удалось загрузить историю PDF-артефактов."));
-    } finally {
-      setGenerationEventsLoadingId("");
-    }
-  }
-
-  async function handleDownloadGenerationEvent(documentItem, event) {
-    try {
-      setGenerationEventDownloadSavingId(`${documentItem.id}:${event.id}`);
-      setError("");
-
-      await downloadAdminDocumentGenerationEvent(documentItem.id, event.id);
-    } catch (err) {
-      setError(formatDocumentApiError(err, "Не удалось скачать выбранную версию PDF."));
-    } finally {
-      setGenerationEventDownloadSavingId("");
-    }
-  }
-
-  async function handleDelete(documentItem) {
-    const confirmed = window.confirm(
-      `Удалить документ ${documentItem.document_number}? Действие нельзя отменить.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
+    setEventsDownloadingId(event.id);
+    setError("");
 
     try {
-      setDeleteSavingId(documentItem.id);
-      setError("");
-      setSuccessMessage("");
-
-      await deleteAdminDocument(documentItem.id);
-
-      if (editingDocumentId === documentItem.id) {
-        resetEditState();
-      }
-
-      setSuccessMessage(`Документ удалён: ${documentItem.document_number}`);
-      await refreshDocumentsFastPath(buildDocumentFilters());
+      await downloadAdminDocumentGenerationEvent(doc.id, event.id);
     } catch (err) {
-      setError(formatDocumentApiError(err, DOCUMENT_API_ERROR_MESSAGES.deleteFailed));
+      setError(err?.message || String(err));
     } finally {
-      setDeleteSavingId("");
+      setEventsDownloadingId("");
     }
   }
 
-  async function handleApplyFilter(event) {
-    event.preventDefault();
-    await navigateToDocumentFilters(buildDocumentFilters());
+  function handleExportCsv() {
+    const header = [
+      T.number,
+      T.verificationCode,
+      T.title,
+      T.type,
+      T.status,
+      T.user,
+      T.course,
+      T.organization,
+      T.file,
+      T.created,
+      T.updated,
+    ];
+
+    const rows = documents.map((doc) => [
+      doc.document_number,
+      doc.verification_code,
+      doc.title,
+      doc.document_type,
+      getStatusLabel(doc.status),
+      getDocumentUserLabel(doc),
+      doc.course_title,
+      doc.organization_name,
+      doc.file_available ? T.fileReady : T.fileMissing,
+      formatDate(doc.created_at),
+      formatDate(doc.updated_at),
+    ]);
+
+    const content = [header, ...rows].map((row) => row.map(escapeCsv).join(";")).join("\n");
+    downloadTextFile(`admin-documents-${new Date().toISOString().slice(0, 10)}.csv`, `\ufeff${content}`);
   }
 
-  async function handleQuickStatusFilter(nextStatus) {
-    setFilterStatus(nextStatus);
-    await navigateToDocumentFilters(buildDocumentFilters({ status: nextStatus }));
-  }
+  const quickTabs = [
+    { key: "all", label: T.allDocuments, count: counts.all },
+    { key: "available", label: T.availablePlural, count: counts.available },
+    { key: "draft", label: T.draftPlural, count: counts.draft },
+    { key: "revoked", label: T.revokedPlural, count: counts.revoked },
+    { key: "attention", label: T.attentionRequired, count: counts.attention },
+  ];
 
-  async function handleClearEnrollmentFilter() {
-    setFilterEnrollmentId("");
-    await navigateToDocumentFilters(buildDocumentFilters({ enrollment_id: "" }), { replace: true });
-  }
-
-  async function handleClearActionRequiredFilter() {
-    setFilterActionRequired("");
-    await navigateToDocumentFilters(buildDocumentFilters({ action_required: "" }), { replace: true });
-  }
-
-  async function handleToggleActionRequiredFilter() {
-    const nextActionRequired = showActionRequiredOnly ? "" : "true";
-    setFilterActionRequired(nextActionRequired);
-    await navigateToDocumentFilters(buildDocumentFilters({ action_required: nextActionRequired }));
-  }
-
-  async function handleResetFilter() {
-    setFilterUserId("");
-    setFilterEnrollmentId("");
-    setFilterOrganizationId("");
-    setFilterStatus("");
-    setFilterDocumentType("");
-    setFilterQuery("");
-    setFilterActionRequired("");
-    await navigateToDocumentFilters({}, { replace: true });
-  }
-
-  function handleExportDocumentsCsv() {
-    const rows = displayedDocuments.map((documentItem) => {
-      const enrollment =
-        enrollments.find((item) => item.id === documentItem.enrollment_id) || null;
-      const course =
-        courses.find((item) => item.id === (documentItem.course_id || enrollment?.course_id)) ||
-        null;
-      const organization =
-        organizations.find(
-          (item) => item.id === (documentItem.organization_id || enrollment?.organization_id)
-        ) || null;
-      const enrollmentStatus = documentItem.enrollment_status || enrollment?.status || "";
-      const verificationTarget =
-        documentItem.verification_code || documentItem.document_number || "";
-      const verificationUrl = verificationTarget
-        ? buildDocumentVerificationPath(verificationTarget)
-        : "";
-      const documentsFilterUrl = documentItem.enrollment_id
-        ? buildDocumentsPath({ enrollment_id: documentItem.enrollment_id })
-        : documentItem.user_id
-          ? buildDocumentsPath({ user_id: documentItem.user_id })
-          : "";
-
-      return {
-        id: documentItem.id,
-        document_number: documentItem.document_number || "",
-        verification_code: documentItem.verification_code || "",
-        title: documentItem.title || "",
-        document_type: documentItem.document_type || "",
-        status: documentItem.status || "",
-        status_label:
-          DOCUMENT_CSV_STATUS_LABELS[documentItem.status] ||
-          getDocumentStatusLabel(documentItem.status),
-        file_available: documentItem.file_available ? "yes" : "no",
-        generated_pdf: isGeneratedCompletionDocument(documentItem) ? "yes" : "no",
-        generation_source: documentItem.generation_source || "",
-        generation_template_version: documentItem.generation_template_version || "",
-        user_id: documentItem.user_id || "",
-        user_email: documentItem.user_email || "",
-        user_full_name: documentItem.user_full_name || "",
-        course_id: documentItem.course_id || enrollment?.course_id || "",
-        course_title: documentItem.course_title || course?.title || "",
-        course_slug: course?.slug || "",
-        enrollment_id: documentItem.enrollment_id || "",
-        enrollment_status: enrollmentStatus,
-        enrollment_status_label: getEnrollmentStatusLabel(enrollmentStatus),
-        organization_id: documentItem.organization_id || enrollment?.organization_id || "",
-        organization_name: documentItem.organization_name || organization?.name || "",
-        learning_group_id: documentItem.learning_group_id || enrollment?.learning_group_id || "",
-        learning_group_name:
-          documentItem.learning_group_name || enrollment?.learning_group_name || "",
-        action_required: isDocumentActionRequired(documentItem) ? "yes" : "no",
-        verification_url: verificationUrl,
-        documents_filter_url: documentsFilterUrl,
-        audit_url: documentItem.id
-          ? buildAuditPath({ entity_type: "document", entity_id: documentItem.id })
-          : "",
-        revoked_at: documentItem.revoked_at || "",
-        revocation_reason: documentItem.revocation_reason || "",
-        created_at: documentItem.created_at || "",
-        updated_at: documentItem.updated_at || "",
-      };
-    });
-
-    downloadCsvFile(
-      buildDatedCsvFilename("obrportal-admin-documents"),
-      DOCUMENT_CSV_EXPORT_COLUMNS,
-      rows
-    );
-  }
+  const currentEvents = selectedDocument ? eventsByDocumentId[selectedDocument.id] || [] : [];
+  const currentEventsLoaded = selectedDocument ? Object.prototype.hasOwnProperty.call(eventsByDocumentId, selectedDocument.id) : false;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
-        <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-          Администрирование
+    <main className="space-y-6">
+      <section className="rounded-3xl bg-white p-6 ring-1 ring-slate-200">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="text-xs font-semibold text-indigo-700">
+              {T.admin} / {T.documents}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-black tracking-tight text-slate-950">{T.documents}</h1>
+              <Badge className="bg-emerald-50 text-emerald-700 ring-emerald-200">{T.systemOk}</Badge>
+            </div>
+            <p className="mt-2 text-sm text-slate-500">{T.subtitle}</p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button type="button" disabled className={SECONDARY_BUTTON_CLASS}>
+              {T.importDocuments}
+            </button>
+            <button type="button" onClick={handleExportCsv} disabled={documents.length === 0} className={SECONDARY_BUTTON_CLASS}>
+              {T.exportCsv}
+            </button>
+            <button type="button" data-testid="document-create-action" onClick={handleStartCreate} className={PRIMARY_BUTTON_CLASS}>
+              + {T.uploadDocument}
+            </button>
+          </div>
         </div>
-        <h1 className="mt-2 text-4xl font-bold text-slate-900">
-          Документы пользователей
-        </h1>
-        <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-          Загрузка, редактирование и публикация сертификатов, удостоверений и других файлов.
-          Черновик виден в личном кабинете слушателя, но скачать файл можно только после публикации документа
-          со статусом «Доступен».
-        </p>
       </section>
 
-      {error && (
-        <Alert title="Ошибка" tone="red">
-          {error}
-        </Alert>
-      )}
+      {error ? (
+        <div className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700 ring-1 ring-red-200">{error}</div>
+      ) : null}
 
-      {successMessage && (
-        <Alert title="Готово" tone="green">
-          {successMessage}
-        </Alert>
-      )}
+      {success ? (
+        <div className="rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200">{success}</div>
+      ) : null}
 
-      <DocumentsSummaryCards
-        documentStatusCounts={documentStatusCounts}
-        documents={documents}
-        courses={courses}
-        enrollments={enrollments}
-      />
-
-      <DocumentsWorkflowPanel
-        documentStatusCounts={documentStatusCounts}
-        courses={courses}
-        enrollments={enrollments}
-      />
-
-      <GeneratedDocumentPublicationWorkflowPanel
-        documents={documents}
-        loading={loading}
-        getDocumentFilterPath={getDocumentFilterPath}
-        getEnrollmentFilterPath={getEnrollmentFilterPath}
-        onPublishDocument={(documentItem) => handleQuickStatusUpdate(documentItem, "available")}
-        statusSavingKey={statusSavingKey}
-        deleteSavingId={deleteSavingId}
-      />
-
-      <LearnerDocumentsUXFoundationPanel
-        documents={documents}
-        courses={courses}
-        enrollments={enrollments}
-        loading={loading}
-        error={error}
-        getDocumentFilterPath={getDocumentFilterPath}
-        getEnrollmentFilterPath={getEnrollmentFilterPath}
-      />
-
-      <LearnerDocumentDownloadUXPanel
-        documents={documents}
-        courses={courses}
-        enrollments={enrollments}
-        getDocumentFilterPath={getDocumentFilterPath}
-        getEnrollmentFilterPath={getEnrollmentFilterPath}
-      />
-
-      <AdminDocumentRegistryDiagnostics
-        registryStats={adminDocumentRegistryStats}
-        diagnostics={adminDocumentRegistryDiagnostics}
-        getDocumentFilterPath={getDocumentFilterPath}
-        getEnrollmentFilterPath={getEnrollmentFilterPath}
-      />
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)]">
-        <SectionCard title="Загрузить документ" subtitle="Файл будет сохранён в приватное хранилище">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Пользователь
-              </span>
-              <select
-                value={form.user_id}
-                onChange={(event) => updateField("user_id", event.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-              >
-                <option value="">Выберите пользователя</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.email}{user.full_name ? ` — ${user.full_name}` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {selectedUser && (
-              <div className="rounded-2xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-100">
-                Документ будет назначен пользователю:{" "}
-                <span className="font-semibold">{selectedUser.email}</span>
-              </div>
-            )}
-            {selectedUser && (
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Назначенная программа
-                </span>
-                <select
-                  value={form.enrollment_id}
-                  onChange={(event) => updateField("enrollment_id", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                >
-                  <option value="">Без привязки к назначению</option>
-                  {selectedUserEnrollments.map((enrollment) => (
-                    <option key={enrollment.id} value={enrollment.id}>
-                      {getEnrollmentOptionLabel(enrollment)}
-                    </option>
-                  ))}
-                </select>
-                {selectedUserEnrollments.length === 0 && (
-                  <span className="mt-2 block text-xs text-amber-700">
-                    У выбранного пользователя пока нет назначенных программ.
-                  </span>
-                )}
-              </label>
-            )}
-
-            {selectedUser && (
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Программа / курс
-                </span>
-                <select
-                  value={form.course_id}
-                  onChange={(event) => updateField("course_id", event.target.value)}
-                  disabled={Boolean(form.enrollment_id)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                >
-                  <option value="">Без привязки к курсу</option>
-                  {courses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {getCourseOptionLabel(course)}
-                    </option>
-                  ))}
-                </select>
-                {form.enrollment_id && selectedCourse && (
-                  <span className="mt-2 block text-xs text-slate-500">
-                    Курс выбран автоматически по назначенной программе: {selectedCourse.title}
-                  </span>
-                )}
-              </label>
-            )}
-
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Название документа
-              </span>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(event) => updateField("title", event.target.value)}
-                placeholder="Например: Сертификат о прохождении программы"
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-              />
-            </label>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Тип документа
-                </span>
-                <input
-                  type="text"
-                  value={form.document_type}
-                  onChange={(event) => updateField("document_type", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Статус
-                </span>
-                <select
-                  value={form.status}
-                  onChange={(event) => updateField("status", event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                >
-                  {DOCUMENT_STATUSES.map((statusItem) => (
-                    <option key={statusItem.value} value={statusItem.value}>
-                      {statusItem.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            {form.status === "revoked" && (
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u043e\u0442\u0437\u044b\u0432\u0430"}
-                </span>
-                <textarea
-                  value={form.revocation_reason}
-                  onChange={(event) => updateField("revocation_reason", event.target.value)}
-                  rows={3}
-                  placeholder={"\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435, \u043f\u043e\u0447\u0435\u043c\u0443 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
-                  className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                />
-                <span className="mt-2 block text-xs text-slate-500">
-                  {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u043d\u0430 \u0432 \u0430\u0434\u043c\u0438\u043d\u0441\u043a\u043e\u043c \u0440\u0435\u0435\u0441\u0442\u0440\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432."}
-                </span>
-              </label>
-            )}
-
-
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Номер документа
-              </span>
-              <input
-                type="text"
-                value={form.document_number}
-                onChange={(event) => updateField("document_number", event.target.value)}
-                placeholder="Можно оставить пустым — номер сгенерируется автоматически"
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Файл
-              </span>
-              <input
-                id="admin-document-file"
-                type="file"
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                onChange={(event) => setFile(event.target.files?.[0] || null)}
-                className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
-              />
-              <span className="mt-2 block text-xs text-slate-500">
-                Допустимые форматы: PDF, DOC, DOCX, JPG, PNG.
-              </span>
-            </label>
-
-            <div className="flex flex-wrap gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving ? "Сохраняем..." : "Создать документ"}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                disabled={saving}
-                className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Очистить
-              </button>
-            </div>
-          </form>
-        </SectionCard>
-
-        <SectionCard title="Список документов" subtitle="Документы из /api/v1/admin/documents">
-          {filterEnrollmentId && (
-            <div className="mb-5 rounded-2xl bg-blue-50 p-4 text-sm text-blue-900 ring-1 ring-blue-100">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="font-semibold">
-                    Включён фильтр по назначению
-                  </div>
-                  <div className="mt-1 text-blue-800">
-                    {selectedFilterEnrollment
-                      ? `${selectedFilterEnrollment.user_email} → ${selectedFilterEnrollment.course_title}`
-                      : `ID назначения: ${filterEnrollmentId}`}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleClearEnrollmentFilter}
-                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
-                >
-                  Показать все документы
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="mb-5 flex flex-wrap gap-2">
-            {[
-              { value: "", label: "Все", count: documentStatusCounts.all },
-              ...DOCUMENT_STATUSES.map((statusItem) => ({
-                ...statusItem,
-                count: documentStatusCounts[statusItem.value] || 0,
-              })),
-            ].map((item) => {
-              const isActive = filterStatus === item.value;
-
-              return (
-                <button
-                  key={item.value || "all"}
-                  type="button"
-                  onClick={() => handleQuickStatusFilter(item.value)}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
-                    isActive
-                      ? "bg-slate-900 text-white ring-slate-900"
-                      : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  <span>{item.label}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {item.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div
-            data-testid="documents-worklist-summary-note"
-            className="mb-5 text-xs text-slate-500"
-          >
-            Счётчики быстрых фильтров рассчитаны по текущим фильтрам страницы.
-          </div>
-
-          <div className="mb-5">
-            <AdminActiveFiltersSummary
-              items={activeDocumentFilterItems}
-              onReset={handleResetFilter}
-              testId="admin-documents-active-filters-summary"
-              emptyText="Фильтры документов не применены."
-            />
-          </div>
-
-          <div className="mb-5">
-            <button
-              type="button"
-              data-testid="documents-action-required-filter"
-              onClick={handleToggleActionRequiredFilter}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
-                showActionRequiredOnly
-                  ? "bg-amber-600 text-white ring-amber-600"
-                  : "bg-amber-50 text-amber-800 ring-amber-200 hover:bg-amber-100"
-              }`}
-            >
-              <span>{"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}</span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs ${
-                  showActionRequiredOnly ? "bg-white/20 text-white" : "bg-white text-amber-800"
-                }`}
-              >
-                {documentActionRequiredCount}
-              </span>
-            </button>
-          </div>
-
-          {showActionRequiredOnly && (
-            <div
-              data-testid="documents-action-required-banner"
-              className="mb-5 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
-            >
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="font-semibold">
-                    Включён режим контроля документов
-                  </div>
-                  <p className="mt-1 leading-6 text-amber-800">
-                    Показаны только черновики, отозванные документы и опубликованные записи без файла.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleClearActionRequiredFilter}
-                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
-                >
-                  Показать все документы
-                </button>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto_auto]">
+      <section className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+        <form onSubmit={handleApplyFilters} className="grid gap-3 xl:grid-cols-[1.4fr_0.8fr_0.8fr_0.9fr_auto_auto]">
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.search}</span>
             <input
               type="search"
-              value={filterQuery}
-              onChange={(event) => setFilterQuery(event.target.value)}
-              placeholder="Поиск: номер, код, название, e-mail, ФИО"
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+              value={filters.q}
+              onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))}
+              placeholder={T.searchPlaceholder}
+              className={cx(INPUT_CLASS, "mt-1")}
             />
+          </label>
 
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.type}</span>
             <select
-              value={filterUserId}
-              onChange={(event) => setFilterUserId(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+              value={filters.document_type}
+              onChange={(event) => setFilters((current) => ({ ...current, document_type: event.target.value }))}
+              className={cx(INPUT_CLASS, "mt-1")}
             >
-              <option value="">Все пользователи</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.email}{user.full_name ? ` — ${user.full_name}` : ""}
-                </option>
+              <option value="">{T.allTypes}</option>
+              {documentTypes.map((type) => (
+                <option key={type} value={type}>{type}</option>
               ))}
             </select>
+          </label>
 
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.status}</span>
             <select
-              value={filterOrganizationId}
-              onChange={(event) => setFilterOrganizationId(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+              value={filters.status}
+              onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value, action_required: "" }))}
+              className={cx(INPUT_CLASS, "mt-1")}
             >
-              <option value="">Все организации</option>
-              {sortedOrganizations.map((organization) => (
+              {STATUSES.map((item) => (
+                <option key={item.value || "all"} value={item.value}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.organization}</span>
+            <select
+              value={filters.organization_id}
+              onChange={(event) => setFilters((current) => ({ ...current, organization_id: event.target.value }))}
+              className={cx(INPUT_CLASS, "mt-1")}
+            >
+              <option value="">{T.allOrganizations}</option>
+              {organizations.map((organization) => (
                 <option key={organization.id} value={organization.id}>
-                  {organization.name}
+                  {organization.name || organization.short_name || organization.id}
                 </option>
               ))}
             </select>
+          </label>
 
-            <select
-              value={filterStatus}
-              onChange={(event) => setFilterStatus(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-            >
-              <option value="">Все статусы</option>
-              {DOCUMENT_STATUSES.map((statusItem) => (
-                <option key={statusItem.value} value={statusItem.value}>
-                  {statusItem.label}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="text"
-              value={filterDocumentType}
-              onChange={(event) => setFilterDocumentType(event.target.value)}
-              placeholder="Тип документа"
-              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-            />
-
-            <button
-              type="submit"
-              className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Применить
-            </button>
-
-            <button
-              type="button"
-              onClick={handleResetFilter}
-              className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-            >
-              Сбросить
-            </button>
-          </form>
-
-          <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
-            <span>Показано документов: {displayedDocuments.length}</span>
-            <span>Всего по текущим фильтрам: {documentStatusCounts.all || 0}</span>
-            <span>Требуют действия: {documentActionRequiredCount}</span>
+          <div className="flex items-end">
+            <button type="submit" className={PRIMARY_BUTTON_CLASS}>{T.apply}</button>
           </div>
 
-          <div
-            data-testid="admin-documents-export-summary"
-            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-          >
-            <div>
-              <div className="text-sm font-semibold text-slate-900">Экспорт документов</div>
-              <p className="mt-1 text-xs text-slate-600">
-                CSV содержит текущую выборку после фильтров по пользователю, назначению,
-                организации, статусу, типу документа, поиску и признаку действия:
-                {" "}{displayedDocuments.length} из {documentStatusCounts.all || displayedDocuments.length}.
-              </p>
-            </div>
+          <div className="flex items-end">
+            <button type="button" onClick={handleResetFilters} className={SECONDARY_BUTTON_CLASS}>{T.reset}</button>
+          </div>
+        </form>
+      </section>
 
+      <div className="flex flex-wrap gap-2">
+        {quickTabs.map((tab) => {
+          const active =
+            (tab.key === "all" && !appliedFilters.status && !appliedFilters.action_required) ||
+            appliedFilters.status === tab.key ||
+            (tab.key === "attention" && appliedFilters.action_required);
+
+          return (
             <button
+              key={tab.key}
               type="button"
-              data-testid="admin-documents-export-csv-button"
-              onClick={handleExportDocumentsCsv}
-              disabled={loading || displayedDocuments.length === 0}
-              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => handleQuickFilter(tab.key)}
+              className={cx(
+                "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ring-1 transition",
+                active
+                  ? "bg-slate-950 text-white ring-slate-950"
+                  : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+              )}
             >
-              Скачать CSV
+              {tab.label}
+              <span className={cx("rounded-full px-2 py-0.5 text-xs", active ? "bg-white/15" : "bg-slate-100")}>
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="overflow-hidden rounded-3xl bg-white ring-1 ring-slate-200">
+          <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4 text-sm text-slate-500">
+            <span>{T.shown} {documents.length}</span>
+            <span>-</span>
+            <span>{T.csvRows}: {documents.length}</span>
+            <button type="button" data-testid="admin-documents-export-csv-button" onClick={handleExportCsv} disabled={documents.length === 0} className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+              {T.exportCsv}
             </button>
           </div>
 
           {loading ? (
-            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-              Загружаем документы...
-            </div>
-          ) : displayedDocuments.length === 0 ? (
-            <AdminEmptyState
-              title={
-                showActionRequiredOnly
-                  ? "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b, \u0442\u0440\u0435\u0431\u0443\u044e\u0449\u0438\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f, \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b"
-                  : "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b"
-              }
-              description={
-                showActionRequiredOnly
-                  ? "\u0412\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0432 \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0432\u044b\u0431\u043e\u0440\u043a\u0435 \u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u044e\u0442 \u0441\u0440\u043e\u0447\u043d\u043e\u0433\u043e \u0432\u043d\u0438\u043c\u0430\u043d\u0438\u044f."
-                  : "\u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0441\u043d\u044f\u0442\u044c \u0444\u0438\u043b\u044c\u0442\u0440 \u043f\u043e \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044e, \u0441\u0442\u0430\u0442\u0443\u0441\u0443, \u0442\u0438\u043f\u0443 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0438\u043b\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u043f\u0435\u0440\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442."
-              }
-              resetLabel={
-                showActionRequiredOnly
-                  ? "\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0432\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"
-                  : "\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u0444\u0438\u043b\u044c\u0442\u0440"
-              }
-              onReset={showActionRequiredOnly ? handleClearActionRequiredFilter : handleResetFilter}
-            />
+            <div className="p-6 text-sm text-slate-500">{T.loading}</div>
+          ) : documents.length === 0 ? (
+            <div className="p-6 text-sm text-slate-500">{T.noDocuments}</div>
           ) : (
-            <div className="space-y-4">
-              {displayedDocuments.map((documentItem) => {
-                const isEditing = editingDocumentId === documentItem.id;
-                const isEditSaving = editSavingId === documentItem.id;
-                const isDownloadSaving = downloadSavingId === documentItem.id;
-                const isRegenerating = regenerateSavingId === documentItem.id;
-                const isGenerationEventsLoading = generationEventsLoadingId === documentItem.id;
-                const generationEvents = generationEventsByDocumentId[documentItem.id] || [];
-                const hasLoadedGenerationEvents = Object.prototype.hasOwnProperty.call(
-                  generationEventsByDocumentId,
-                  documentItem.id
-                );
-                const isDeleteSaving = deleteSavingId === documentItem.id;
-                const isPublishing = statusSavingKey === `${documentItem.id}:available`;
-                const isDrafting = statusSavingKey === `${documentItem.id}:draft`;
-                const isRevoking = statusSavingKey === `${documentItem.id}:revoked`;
-                const isRevokingFormOpen = revokingDocumentId === documentItem.id;
-                const showMissingFileActionHint =
-                  !documentItem.file_available && documentItem.status !== "available";
-                const isGeneratedCompletion = isGeneratedCompletionDocument(documentItem);
-                const canPublishGeneratedCompletion = canPublishGeneratedCompletionDocument(documentItem);
-                const generatedCompletionNotice = isGeneratedCompletion
-                  ? getGeneratedCompletionNotice(documentItem)
-                  : null;
-                const verificationTarget =
-                  documentItem.verification_code || documentItem.document_number || "";
-                const verificationPath = verificationTarget
-                  ? buildDocumentVerificationPath(verificationTarget)
-                  : "";
-                const documentCourse =
-                  courses.find((course) => course.id === documentItem.course_id) || null;
-                const documentActionHint = getDocumentActionRequiredHint(documentItem);
-                const documentAttentionItems = getDocumentAttentionItems(documentItem);
-                const documentAttentionTone = getDocumentAttentionTone(documentItem);
+            <div className="overflow-x-auto">
+              <table data-testid="admin-documents-table" className="min-w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  <tr>
+                    <th className="px-5 py-4">{T.document}</th>
+                    <th className="px-5 py-4">{T.type}</th>
+                    <th className="px-5 py-4">{T.user}</th>
+                    <th className="px-5 py-4">{T.organization}</th>
+                    <th className="px-5 py-4">{T.status}</th>
+                    <th className="px-5 py-4">{T.created}</th>
+                    <th className="px-5 py-4 text-right">{T.actions}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {documents.map((doc) => {
+                    const selected = selectedDocumentId === doc.id;
+                    const attention = isActionRequired(doc);
 
-                return (
-                  <article
-                    key={documentItem.id}
-                    className="rounded-shell bg-slate-50 p-5 ring-1 ring-slate-200"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getDocumentStatusTone(
-                          documentItem.status
-                        )}`}
+                    return (
+                      <tr
+                        key={doc.id}
+                        className={cx("border-t border-slate-100 align-middle transition", selected ? "bg-indigo-50/40" : "bg-white hover:bg-slate-50")}
                       >
-                        {getDocumentStatusLabel(documentItem.status)}
-                      </span>
-
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
-                        {documentItem.document_type}
-                      </span>
-
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200">
-                        {isGeneratedCompletion ? "PDF сформирован" : documentItem.file_available ? "Файл загружен" : "Без файла"}
-                      </span>
-
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getLearnerVisibilityTone(
-                          documentItem
-                        )}`}
-                      >
-                        {getLearnerVisibilityLabel(documentItem)}
-                      </span>
-                    </div>
-
-                    {!isEditing ? (
-                      <>
-                        <div className="mt-4">
-                          <h2 className="text-xl font-bold text-slate-900">
-                            {documentItem.title}
-                          </h2>
-                          <div className="mt-1 text-sm text-slate-500">
-                            {documentItem.document_number}
-                          </div>
-                          <div className="mt-1 break-all text-xs font-semibold text-blue-700">
-                            Код проверки: {documentItem.verification_code || "—"}
-                          </div>
-                        </div>
-
-                        <div
-                          data-testid="document-state-panel"
-                          className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm ring-1 ring-slate-200 md:grid-cols-4"
-                        >
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              {"\u0421\u0442\u0430\u0442\u0443\u0441"}
-                            </div>
-                            <div className="mt-1 font-semibold text-slate-900">
-                              {getDocumentStatusLabel(documentItem.status)}
-                            </div>
-                          </div>
-
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              {"\u0412\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c"}
-                            </div>
-                            <div className="mt-1 font-semibold text-slate-900">
-                              {getLearnerVisibilityLabel(documentItem)}
-                            </div>
-                          </div>
-
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              {"\u0424\u0430\u0439\u043b / PDF"}
-                            </div>
-                            <div className="mt-1 font-semibold text-slate-900">
-                              {isGeneratedCompletion
-                                ? "\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 PDF \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d"
-                                : documentItem.file_available
-                                  ? "\u0424\u0430\u0439\u043b \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d"
-                                  : "\u0424\u0430\u0439\u043b \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d"}
-                            </div>
-                          </div>
-
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              {"\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430"}
-                            </div>
-                            <div className="mt-1 font-semibold text-slate-900">
-                              {documentItem.status === "available"
-                                ? "\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u0430"
-                                : documentItem.status === "revoked"
-                                  ? "\u0421\u043a\u0440\u044b\u0442\u0430: \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"
-                                  : "\u0421\u043a\u0440\u044b\u0442\u0430 \u0434\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {isGeneratedCompletion && (
-                          <div
-                            data-testid="document-generation-metadata"
-                            className="mt-4 rounded-2xl bg-indigo-50 p-4 text-sm text-indigo-900 ring-1 ring-indigo-200"
-                          >
-                            <div className="font-semibold">
-                              Паспорт генерации PDF
-                            </div>
-                            <div className="mt-3 grid gap-3 md:grid-cols-4">
-                              <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
-                                  Сформирован
-                                </div>
-                                <div className="mt-1 font-semibold">
-                                  {formatDateTime(documentItem.generated_at)}
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
-                                  Источник
-                                </div>
-                                <div className="mt-1 font-semibold">
-                                  {getDocumentGenerationSourceLabel(documentItem.generation_source)}
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
-                                  Шаблон
-                                </div>
-                                <div className="mt-1 font-semibold">
-                                  {documentItem.generation_template_version || "—"}
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
-                                  Кем
-                                </div>
-                                <div className="mt-1 font-semibold">
-                                  {getDocumentGenerationActorLabel(documentItem)}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {isGeneratedCompletion && (
-                          <div
-                            data-testid="document-generation-events"
-                            className="mt-4 rounded-2xl bg-white p-4 text-sm ring-1 ring-indigo-100"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div>
-                                <div className="font-semibold text-slate-900">
-                                  История PDF-артефактов
-                                </div>
-                                <div className="mt-1 text-slate-500">
-                                  Отдельные файлы, созданные при первичной генерации и ручных пересборках.
-                                </div>
-                              </div>
-
-                              <button
-                                type="button"
-                                data-testid="document-generation-events-load-action"
-                                onClick={() => handleLoadGenerationEvents(documentItem)}
-                                disabled={isGenerationEventsLoading || isDeleteSaving}
-                                className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                {isGenerationEventsLoading
-                                  ? "Загружаем..."
-                                  : hasLoadedGenerationEvents
-                                    ? "Обновить историю"
-                                    : "Показать историю PDF"}
-                              </button>
-                            </div>
-
-                            {hasLoadedGenerationEvents && generationEvents.length === 0 && (
-                              <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-slate-600 ring-1 ring-slate-200">
-                                История генерации пока пуста.
-                              </div>
-                            )}
-
-                            {generationEvents.length > 0 && (
-                              <div className="mt-3 overflow-hidden rounded-2xl ring-1 ring-slate-200">
-                                <div className="grid grid-cols-12 gap-2 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                  <div className="col-span-2">Дата</div>
-                                  <div className="col-span-3">Источник</div>
-                                  <div className="col-span-2">Шаблон</div>
-                                  <div className="col-span-3">Кем</div>
-                                  <div className="col-span-2">Файл</div>
-                                </div>
-
-                                {generationEvents.map((event) => {
-                                  const generationEventDownloadKey = `${documentItem.id}:${event.id}`;
-                                  const isGenerationEventDownloading =
-                                    generationEventDownloadSavingId === generationEventDownloadKey;
-
-                                  return (
-                                    <div
-                                      key={event.id}
-                                      className="grid grid-cols-12 gap-2 border-t border-slate-100 px-4 py-3 text-sm text-slate-700"
-                                    >
-                                      <div className="col-span-2 font-semibold text-slate-900">
-                                        {formatDateTime(event.generated_at)}
-                                      </div>
-                                      <div className="col-span-3">
-                                        {getDocumentGenerationSourceLabel(event.source)}
-                                      </div>
-                                      <div className="col-span-2">
-                                        {event.template_version || "—"}
-                                      </div>
-                                      <div className="col-span-3">
-                                        {getDocumentGenerationEventActorLabel(event)}
-                                      </div>
-                                      <div className="col-span-2">
-                                        <button
-                                          type="button"
-                                          data-testid="document-generation-event-download-action"
-                                          onClick={() => handleDownloadGenerationEvent(documentItem, event)}
-                                          disabled={isGenerationEventDownloading || isDeleteSaving}
-                                          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                          {isGenerationEventDownloading ? "Скачиваем..." : "Скачать версию"}
-                                        </button>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {documentAttentionItems.length > 0 && (
-                          <div
-                            data-testid="document-attention-fields"
-                            className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${documentAttentionTone.panelClass}`}
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div className="font-semibold text-slate-900">
-                                Что требует внимания
-                              </div>
-                              <span
-                                data-testid="document-attention-count"
-                                className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${documentAttentionTone.badgeClass}`}
-                              >
-                                Пунктов внимания: {documentAttentionItems.length}
-                              </span>
-                            </div>
-                            <p
-                              data-testid="document-attention-diagnostics-note"
-                              className="mt-2 leading-6"
-                            >
-                              Диагностика основана на статусе, файле, причине отзыва, назначении, организации и паспорте генерации PDF.
-                            </p>
-
-                            <ul className="mt-2 list-disc space-y-1 pl-5">
-                              {documentAttentionItems.map((item) => (
-                                <li key={item}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {documentActionHint && (
-                          <div
-                            data-testid="document-action-required-hint"
-                            className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${documentActionHint.toneClass}`}
-                          >
-                            <div className="font-semibold">
-                              {documentActionHint.title}
-                            </div>
-                            <p className="mt-1 leading-6">
-                              {documentActionHint.description}
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                data-testid="document-action-required-primary-action"
-                                onClick={() => handleStartEdit(documentItem)}
-                                disabled={isEditSaving || isDeleteSaving}
-                                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                {documentActionHint.actionLabel}
-                              </button>
-
-                              {documentItem.enrollment_id && (
-                                <>
-                                  <Link
-                                    to={buildDocumentsPath({
-                                      enrollment_id: documentItem.enrollment_id,
-                                      action_required: "true",
-                                    })}
-                                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
-                                  >
-                                    Документы назначения
-                                  </Link>
-
-                                  <Link
-                                    to={buildEnrollmentsPath({
-                                      action_required: "true",
-                                      user_id: documentItem.user_id || "",
-                                      course_id: documentItem.course_id || "",
-                                    })}
-                                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
-                                  >
-                                    Связанное назначение
-                                  </Link>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {generatedCompletionNotice && (
-                          <div className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${generatedCompletionNotice.toneClass}`}>
-                            <div className="font-semibold">
-                              {generatedCompletionNotice.title}
-                            </div>
-                            <p className="mt-1 leading-6">
-                              {generatedCompletionNotice.text}
-                            </p>
-
-                            {(canPublishGeneratedCompletion ||
-                              (documentItem.status === "available" && verificationPath)) && (
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {canPublishGeneratedCompletion && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleQuickStatusUpdate(documentItem, "available")}
-                                    disabled={isPublishing || isDeleteSaving}
-                                    className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                  >
-                                    {isPublishing ? "Публикуем..." : "Опубликовать без загрузки файла"}
-                                  </button>
-                                )}
-
-                                {documentItem.status === "available" && verificationPath && (
-                                  <a
-                                    href={verificationPath}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
-                                  >
-                                    Проверить публичную ссылку
-                                  </a>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {documentItem.status === "revoked" && (
-                          <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
-                            <div className="font-semibold">
-                              {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
-                            </div>
-                            <div className="mt-3 grid gap-3 md:grid-cols-3">
-                              <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-red-600">
-                                  {"\u0414\u0430\u0442\u0430 \u043e\u0442\u0437\u044b\u0432\u0430"}
-                                </div>
-                                <div className="mt-1 font-semibold">
-                                  {formatDateTime(documentItem.revoked_at)}
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-red-600">
-                                  {"\u041a\u0442\u043e \u043e\u0442\u043e\u0437\u0432\u0430\u043b"}
-                                </div>
-                                <div className="mt-1 font-semibold">
-                                  {getRevocationActorLabel(documentItem)}
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-red-600">
-                                  {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430"}
-                                </div>
-                                <div className="mt-1 font-semibold">
-                                  {documentItem.revocation_reason || "-"}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-
-
-                        <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Пользователь
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {documentItem.user_email}
-                            </div>
-                            {documentItem.user_full_name && (
-                              <div className="mt-1 text-slate-600">
-                                {documentItem.user_full_name}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Курс
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {documentItem.course_title || "-"}
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Назначение
-                            </div>
-                            {documentItem.enrollment_id ? (
-                              <div className="mt-2 space-y-1">
-                                <div className="font-semibold text-slate-900">
-                                  {getEnrollmentStatusLabel(documentItem.enrollment_status)}
-                                </div>
-                                {documentItem.organization_id ? (
-                                  <Link
-                                    data-testid="document-organization-link"
-                                    to={buildOrganizationsPath({ organization_id: documentItem.organization_id })}
-                                    className="inline-flex font-semibold text-blue-700 transition hover:text-blue-900"
-                                  >
-                                    {documentItem.organization_name || "Открыть организацию"}
-                                  </Link>
-                                ) : (
-                                  <div className="text-slate-600">
-                                    Организация не указана
-                                  </div>
-                                )}
-                                <div className="text-slate-500">
-                                  {documentItem.learning_group_name || "Группа не указана"}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="mt-2 font-semibold text-slate-900">
-                                Без привязки к назначению
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Создан
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {formatDateTime(documentItem.created_at)}
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Обновлён
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {formatDateTime(documentItem.updated_at)}
-                            </div>
-                          </div>
-                        </div>
-
-                        {documentItem.status === "available" ? (
-                          <DocumentVerificationQrBlock
-                            code={documentItem.verification_code}
-                            documentNumber={documentItem.document_number}
-                            containerId={`admin-document-qr-${documentItem.id}`}
-                            title="QR-код публичной проверки документа"
-                            description="QR-код ведёт на публичную страницу проверки по номеру или коду документа. Файл документа и личный кабинет не раскрываются."
-                            showPublicLink
-                            showCopyLink
-                            publicLinkLabel="Открыть публичную проверку"
-                            className="mt-5"
-                          />
-                        ) : (
-                          <div
-                            data-testid="document-verification-hidden-note"
-                            className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200"
-                          >
-                            <div className="font-semibold text-slate-800">
-                              {documentItem.status === "revoked"
-                                ? "Публичная проверка недоступна: документ отозван"
-                                : "Публичная проверка появится после публикации"}
-                            </div>
-                            <div className="mt-1">
-                              {documentItem.status === "revoked"
-                                ? "QR-код и публичная ссылка скрыты, чтобы отозванный документ не использовали как действующий."
-                                : "После публикации появятся QR-код, публичная ссылка и кнопка проверки."}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="mt-5 flex flex-wrap gap-3">
-                          <Link
-                            data-testid="document-audit-link"
-                            to={buildAuditPath({ entity_type: "document", entity_id: documentItem.id })}
-                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                          >
-                            Аудит документа
-                          </Link>
-
-                          {documentItem.enrollment_id && (
-                            <Link
-                              data-testid="document-enrollment-audit-link"
-                              to={buildAuditPath({ entity_type: "enrollment", entity_id: documentItem.enrollment_id })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Аудит назначения
-                            </Link>
-                          )}
-
-                          {documentItem.organization_id && (
-                            <Link
-                              data-testid="document-organization-audit-link"
-                              to={buildAuditPath({ entity_type: "organization", entity_id: documentItem.organization_id })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Аудит организации
-                            </Link>
-                          )}
-
+                        <td className="px-5 py-4">
                           <button
                             type="button"
-                            onClick={() => handleStartEdit(documentItem)}
-                            disabled={isDeleteSaving}
-                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            onClick={() => {
+                              setSelectedDocumentId(doc.id);
+                              setPanelMode("detail");
+                            }}
+                            className="flex min-w-80 items-center gap-3 text-left"
                           >
-                            Редактировать
+                            <span className={cx("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xs font-black ring-1", attention ? "bg-amber-50 text-amber-700 ring-amber-200" : "bg-slate-100 text-indigo-700 ring-slate-200")}>
+                              {getInitials(doc.document_type)}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block font-black text-slate-950">{doc.title}</span>
+                              <span className="mt-1 block break-all text-xs text-slate-500">{doc.document_number}</span>
+                              <span className="mt-1 block break-all text-xs text-indigo-700">{doc.verification_code}</span>
+                            </span>
                           </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleAdminDownload(documentItem)}
-                            disabled={!documentItem.file_available || isDownloadSaving || isDeleteSaving}
-                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isDownloadSaving ? "Скачиваем..." : getAdminDocumentDownloadLabel(documentItem)}
-                          </button>
-
-                          {isGeneratedCompletion && (
+                        </td>
+                        <td className="px-5 py-4">
+                          <Badge className="bg-blue-50 text-blue-700 ring-blue-200">{getDocumentTypeLabel(doc)}</Badge>
+                          <div className="mt-2 text-xs text-slate-500">{getDocumentKind(doc)}</div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="font-bold text-slate-950">{getDocumentUserLabel(doc)}</div>
+                          <div className="mt-1 text-xs text-slate-500">{doc.user_email || T.dash}</div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="font-bold text-slate-950">{doc.organization_name || T.optional}</div>
+                          <div className="mt-1 text-xs text-slate-500">{doc.learning_group_name || doc.course_title || T.dash}</div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <Badge className={getStatusClass(doc.status)}>{getStatusLabel(doc.status)}</Badge>
+                          <div className="mt-2 text-xs text-slate-500">{doc.file_available ? T.fileReady : T.fileMissing}</div>
+                        </td>
+                        <td className="px-5 py-4 text-slate-600">{formatDate(doc.created_at)}</td>
+                        <td className="px-5 py-4">
+                          <div data-testid={`admin-document-row-actions-${doc.id}`} className="flex justify-end gap-2">
                             <button
                               type="button"
-                              data-testid="document-regenerate-pdf-action"
-                              onClick={() => handleRegenerateCompletionDocument(documentItem)}
-                              disabled={isRegenerating || isDeleteSaving}
-                              className="rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 ring-1 ring-indigo-200 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              onClick={() => {
+                                setSelectedDocumentId(doc.id);
+                                setPanelMode("detail");
+                              }}
+                              className={SECONDARY_BUTTON_CLASS}
                             >
-                              {isRegenerating ? "Пересобираем..." : "Пересобрать PDF"}
+                              {T.open}
                             </button>
-                          )}
-
-                          {documentItem.user_id && (
-                            <Link
-                              to={getDocumentFilterPath({
-                                user_id: documentItem.user_id,
-                                enrollment_id: "",
-                                status: "",
-                                document_type: "",
-                                q: "",
-                              })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Документы слушателя
-                            </Link>
-                          )}
-
-                          {documentItem.enrollment_id && (
-                            <Link
-                              to={getDocumentFilterPath({
-                                user_id: "",
-                                enrollment_id: documentItem.enrollment_id,
-                                status: "",
-                                document_type: "",
-                                q: "",
-                              })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Документы назначения
-                            </Link>
-                          )}
-
-                          {documentItem.user_id && (
-                            <Link
-                              to={getEnrollmentFilterPath({
-                                user_id: documentItem.user_id,
-                              })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Назначения слушателя
-                            </Link>
-                          )}
-
-                          {documentItem.organization_id && (
-                            <Link
-                              data-testid="document-organization-record-link"
-                              to={buildOrganizationsPath({ organization_id: documentItem.organization_id })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Организация
-                            </Link>
-                          )}
-
-                          {documentItem.course_id && (
-                            <Link
-                              to={getEnrollmentFilterPath({
-                                course_id: documentItem.course_id,
-                              })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Назначения курса
-                            </Link>
-                          )}
-
-                          {documentCourse?.slug && (
-                            <Link
-                              to={`/courses/${encodeURIComponent(documentCourse.slug)}`}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Курс
-                            </Link>
-                          )}
-
-                          {documentItem.status === "revoked" && (
                             <button
                               type="button"
-                              onClick={() => handleQuickStatusUpdate(documentItem, "available")}
-                              disabled={!documentItem.file_available || isPublishing || isDeleteSaving}
-                              className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              onClick={() => {
+                                setSelectedDocumentId(doc.id);
+                                handleStartEdit(doc);
+                              }}
+                              className={SECONDARY_BUTTON_CLASS}
                             >
-                              {isPublishing ? "\u0412\u043e\u0441\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u043c..." : "\u0412\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c"}
+                              {T.edit}
                             </button>
-                          )}
-
-                          {documentItem.status !== "available" && documentItem.status !== "revoked" && (
-                            <button
-                              type="button"
-                              onClick={() => handleQuickStatusUpdate(documentItem, "available")}
-                              disabled={!documentItem.file_available || isPublishing || isDeleteSaving}
-                              className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {isPublishing ? "Публикуем..." : "Опубликовать"}
-                            </button>
-                          )}
-
-                          {documentItem.status === "available" && (
-                            <button
-                              type="button"
-                              onClick={() => handleQuickStatusUpdate(documentItem, "draft")}
-                              disabled={isDrafting || isDeleteSaving}
-                              className="rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {isDrafting ? "Снимаем..." : "В черновик"}
-                            </button>
-                          )}
-
-                          {documentItem.status !== "revoked" && (
-                            <button
-                              type="button"
-                              onClick={() => handleStartRevoke(documentItem)}
-                              disabled={isRevoking || isDeleteSaving}
-                              className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {isRevoking ? "Отзываем..." : "Отозвать"}
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(documentItem)}
-                            disabled={isDeleteSaving}
-                            className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isDeleteSaving ? "Удаляем..." : "Удалить"}
-                          </button>
-                        </div>
-
-                        {showMissingFileActionHint && (
-                          <div
-                            data-testid="document-missing-file-action-hint"
-                            className="mt-3 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200"
-                          >
-                            <div className="font-semibold">
-                              {"\u041f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430: \u0444\u0430\u0439\u043b \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d"}
-                            </div>
-                            <div className="mt-1">
-                              {"\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0440\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435, \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0444\u0430\u0439\u043b \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430, \u0437\u0430\u0442\u0435\u043c \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u0443\u0439\u0442\u0435 \u0438\u043b\u0438 \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442."}
-                            </div>
                           </div>
-                        )}
-
-
-                        {isRevokingFormOpen && (
-                          <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
-                            <label className="block">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-red-600">
-                                Причина отзыва
-                              </span>
-                              <textarea
-                                value={revocationReason}
-                                onChange={(event) => setRevocationReason(event.target.value)}
-                                rows={3}
-                                placeholder="Кратко укажите причину отзыва документа"
-                                className="mt-2 min-h-24 w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-red-400 focus-visible:ring-4 focus-visible:ring-red-100"
-                              />
-                            </label>
-
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleConfirmRevoke(documentItem)}
-                                disabled={isRevoking || isDeleteSaving}
-                                className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                {isRevoking ? "Отзываем..." : "Подтвердить отзыв"}
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={handleCancelRevoke}
-                                disabled={isRevoking}
-                                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                Отмена
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <form
-                        onSubmit={(event) => handleEditSubmit(event, documentItem.id)}
-                        className="mt-5 space-y-4 rounded-shell bg-white p-5 ring-1 ring-blue-100"
-                      >
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <label className="block md:col-span-2">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Название
-                            </span>
-                            <input
-                              type="text"
-                              value={editForm.title}
-                              onChange={(event) => updateEditField("title", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                            />
-                          </label>
-
-                          <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Тип документа
-                            </span>
-                            <input
-                              type="text"
-                              value={editForm.document_type}
-                              onChange={(event) => updateEditField("document_type", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                            />
-                          </label>
-
-                          <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Статус
-                            </span>
-                            <select
-                              value={editForm.status}
-                              onChange={(event) => updateEditField("status", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                            >
-                              {DOCUMENT_STATUSES.map((statusItem) => (
-                                <option key={statusItem.value} value={statusItem.value}>
-                                  {statusItem.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-
-                          {editForm.status === "revoked" && (
-                            <label className="block md:col-span-2">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                {"\u041f\u0440\u0438\u0447\u0438\u043d\u0430 \u043e\u0442\u0437\u044b\u0432\u0430"}
-                              </span>
-                              <textarea
-                                value={editForm.revocation_reason}
-                                onChange={(event) => updateEditField("revocation_reason", event.target.value)}
-                                rows={3}
-                                placeholder={"\u041a\u0440\u0430\u0442\u043a\u043e \u0443\u043a\u0430\u0436\u0438\u0442\u0435, \u043f\u043e\u0447\u0435\u043c\u0443 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"}
-                                className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                              />
-                            </label>
-                          )}
-
-
-                          <label className="block md:col-span-2">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Номер документа
-                            </span>
-                            <input
-                              type="text"
-                              value={editForm.document_number}
-                              onChange={(event) => updateEditField("document_number", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                            />
-                          </label>
-
-                          <label className="block md:col-span-2">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Назначенная программа
-                            </span>
-                            <select
-                              value={editForm.enrollment_id}
-                              onChange={(event) => updateEditField("enrollment_id", event.target.value)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
-                            >
-                              <option value="">Без привязки к назначению</option>
-                              {enrollments
-                                .filter((enrollment) => enrollment.user_id === documentItem.user_id)
-                                .map((enrollment) => (
-                                  <option key={enrollment.id} value={enrollment.id}>
-                                    {getEnrollmentOptionLabel(enrollment)}
-                                  </option>
-                                ))}
-                            </select>
-                          </label>
-
-                          <label className="block md:col-span-2">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Программа / курс
-                            </span>
-                            <select
-                              value={editForm.course_id}
-                              onChange={(event) => updateEditField("course_id", event.target.value)}
-                              disabled={Boolean(editForm.enrollment_id)}
-                              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                            >
-                              <option value="">Без привязки к курсу</option>
-                              {courses.map((course) => (
-                                <option key={course.id} value={course.id}>
-                                  {getCourseOptionLabel(course)}
-                                </option>
-                              ))}
-                            </select>
-                            {editForm.enrollment_id && (
-                              <span className="mt-2 block text-xs text-slate-500">
-                                Курс синхронизируется с выбранной назначенной программой.
-                              </span>
-                            )}
-                          </label>
-
-                          <label className="block md:col-span-2">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Заменить файл
-                            </span>
-                            <input
-                              id="admin-document-edit-file"
-                              type="file"
-                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                              onChange={(event) => setEditFile(event.target.files?.[0] || null)}
-                              className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
-                            />
-                            <span className="mt-2 block text-xs text-slate-500">
-                              Чтобы слушатель мог скачать документ, загрузите файл и установите статус «Доступен».
-                            </span>
-                          </label>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            type="submit"
-                            disabled={isEditSaving}
-                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isEditSaving ? "Сохраняем..." : "Сохранить"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={resetEditState}
-                            disabled={isEditSaving}
-                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </article>
-                );
-              })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
-        </SectionCard>
-      </div>
-    </div>
+        </div>
+
+        {panelMode === "create" ? (
+          <aside data-testid="document-upload-card" className={cx(CARD_CLASS, "sticky top-4 self-start")}>
+            <DocumentForm
+              mode="create"
+              form={form}
+              setForm={setForm}
+              users={users}
+              courses={courses}
+              enrollments={enrollments}
+              file={file}
+              setFile={setFile}
+              saving={saving}
+              onSubmit={handleCreate}
+              onCancel={handleClosePanel}
+            />
+          </aside>
+        ) : panelMode === "edit" ? (
+          <aside data-testid="document-upload-card" className={cx(CARD_CLASS, "sticky top-4 self-start")}>
+            <DocumentForm
+              mode="edit"
+              form={form}
+              setForm={setForm}
+              users={users}
+              courses={courses}
+              enrollments={enrollments}
+              file={file}
+              setFile={setFile}
+              saving={saving}
+              onSubmit={handleEdit}
+              onCancel={handleClosePanel}
+            />
+          </aside>
+        ) : (
+          <DocumentDetailPanel
+            doc={selectedDocument}
+            events={currentEvents}
+            eventsLoaded={currentEventsLoaded}
+            eventsLoading={eventsLoadingId === selectedDocument?.id}
+            eventsDownloadingId={eventsDownloadingId}
+            actionSavingId={actionSavingId}
+            onEdit={() => selectedDocument && handleStartEdit(selectedDocument)}
+            onClose={() => setSelectedDocumentId("")}
+            onDownload={() => handleDownload(selectedDocument)}
+            onRegenerate={() => handleRegenerate(selectedDocument)}
+            onLoadEvents={() => handleLoadEvents(selectedDocument)}
+            onDownloadEvent={(event) => handleDownloadEvent(selectedDocument, event)}
+            onStatus={(nextStatus) => handleStatus(selectedDocument, nextStatus)}
+            onDelete={() => handleDelete(selectedDocument)}
+          />
+        )}
+      </section>
+
+      <section data-testid="document-dashboard-grid" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label={T.allDocuments} value={counts.all} hint={T.documents} />
+        <StatCard label={T.availablePlural} value={counts.available} hint={T.publicCheck} />
+        <StatCard label={T.attentionRequired} value={counts.attention} hint={T.attentionTitle} />
+        <StatCard label={T.generated} value={counts.generated} hint="PDF" />
+      </section>
+
+      <section data-testid="document-statistics-grid" className="grid gap-4 lg:grid-cols-3">
+        <div className={CARD_CLASS}>
+          <div className="text-lg font-black text-slate-950">{T.stats}</div>
+          <div className="mt-4 space-y-3">
+            {[
+              [T.availablePlural, counts.available],
+              [T.draftPlural, counts.draft],
+              [T.revokedPlural, counts.revoked],
+              [T.fileReady, counts.withFile],
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm">
+                <span className="font-semibold text-slate-600">{label}</span>
+                <span className="font-black text-slate-950">{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={cx(CARD_CLASS, "lg:col-span-2")}>
+          <div className="text-lg font-black text-slate-950">{T.attentionRequired}</div>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            {T.attentionTitle}: {counts.attention}. {T.attentionDraft} {T.attentionFile}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button type="button" onClick={() => handleQuickFilter("attention")} className={PRIMARY_BUTTON_CLASS}>
+              {T.attentionRequired}
+            </button>
+            <button type="button" onClick={() => handleQuickFilter("all")} className={SECONDARY_BUTTON_CLASS}>
+              {T.allDocuments}
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
+
+export default DocumentsPage;
