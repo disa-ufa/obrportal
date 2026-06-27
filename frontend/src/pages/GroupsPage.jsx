@@ -402,8 +402,8 @@ function GroupDetailDashboard({
   }
 
   return (
-    <div data-testid="admin-group-detail-content" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+    <div data-testid="admin-group-detail-content" className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-blue-100">
+      <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-100">
         <div className="flex min-w-0 items-center gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-blue-700 ring-1 ring-blue-100">
             {initials(group.name)}
@@ -493,7 +493,7 @@ function GroupDetailDashboard({
         </form>
       ) : null}
 
-      <div data-testid="group-dashboard-grid" className="mt-4 grid gap-4 xl:grid-cols-3">
+      <div data-testid="group-dashboard-grid" className="mt-4 grid gap-3 xl:grid-cols-3">
         <GroupCard testId="group-profile-card" title={T.profile} hint={T.profileHint}>
           <div className="grid gap-3 md:grid-cols-2">
             <DetailTile label="ID" value={group.id} />
@@ -1232,9 +1232,8 @@ export function GroupsPage() {
 
                       {isOpen ? (
                         <tr key={`group-detail-${group.id}`} className="bg-slate-50/70">
-                          <td colSpan={9} className="px-5 pb-5 pt-0">
-                            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-blue-100">
-                              <GroupDetailDashboard
+                          <td colSpan={9} className="px-3 pb-4 pt-0">
+                            <GroupDetailDashboard
                                 group={group}
                                 organization={organization}
                                 members={members}
@@ -1251,7 +1250,6 @@ export function GroupsPage() {
                                 onAssignCourse={handleAssignCourse}
                                 onDeleteEnrollment={handleDeleteEnrollment}
                               />
-                            </div>
                           </td>
                         </tr>
                       ) : null}
