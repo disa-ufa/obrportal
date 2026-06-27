@@ -56,11 +56,11 @@ const T = {
   updated: "\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e",
   actions: "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044f",
   open: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c",
-  edit: "\u0420\u0435\u0434\u0430\u043a\u0442.",
-  deactivate: "\u0414\u0435\u0430\u043a\u0442.",
-  activate: "\u0410\u043a\u0442.",
-  users: "\u041f\u043e\u043b\u044c\u0437.",
-  documents: "\u0414\u043e\u043a.",
+  edit: "\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
+  deactivate: "\u0414\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
+  activate: "\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
+  users: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438",
+  documents: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
   close: "\u0417\u0430\u043a\u0440\u044b\u0442\u044c",
   more: "\u0415\u0449\u0451",
   attention: "\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u0432\u043d\u0438\u043c\u0430\u043d\u0438\u044f",
@@ -115,8 +115,8 @@ const ICON_BUTTON =
   "inline-flex h-9 min-w-9 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
 const INPUT_CLASS =
   "h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100";
-const CARD_CLASS = "rounded-2xl bg-white p-4 ring-1 ring-slate-200";
-const FIELD_CLASS = "rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100";
+const CARD_CLASS = "rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200";
+const FIELD_CLASS = "rounded-xl bg-slate-50 px-3 py-3 ring-1 ring-slate-100";
 
 function toArray(value) {
   if (Array.isArray(value)) {
@@ -279,7 +279,7 @@ function StatusPill({ tone = "slate", children }) {
 function DetailTile({ label, value }) {
   return (
     <div className={FIELD_CLASS}>
-      <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</div>
+      <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
       <div className="mt-2 break-words text-sm font-black text-slate-950">{value || T.noData}</div>
     </div>
   );
@@ -402,14 +402,14 @@ function GroupDetailDashboard({
   }
 
   return (
-    <div data-testid="admin-group-detail-content" className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-blue-100">
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-100">
+    <div data-testid="admin-group-detail-content" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-slate-50/80 px-4 py-3 ring-1 ring-slate-100">
         <div className="flex min-w-0 items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-blue-700 ring-1 ring-blue-100">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-base font-black text-blue-700 ring-1 ring-blue-100">
             {initials(group.name)}
           </div>
           <div className="min-w-0">
-            <h2 className="truncate text-xl font-black text-slate-950">{group.name || T.noData}</h2>
+            <h2 className="truncate text-lg font-black text-slate-950">{group.name || T.noData}</h2>
             <p className="mt-1 text-sm font-semibold text-slate-500">
               {group.code || T.noData} <span className="mx-2 text-slate-300">{"\u2022"}</span> {organization?.name || T.noData}
             </p>
@@ -493,7 +493,7 @@ function GroupDetailDashboard({
         </form>
       ) : null}
 
-      <div data-testid="group-dashboard-grid" className="mt-4 grid gap-3 xl:grid-cols-3">
+      <div data-testid="group-dashboard-grid" className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(360px,0.9fr)]">
         <GroupCard testId="group-profile-card" title={T.profile} hint={T.profileHint}>
           <div className="grid gap-3 md:grid-cols-2">
             <DetailTile label="ID" value={group.id} />
@@ -1232,7 +1232,7 @@ export function GroupsPage() {
 
                       {isOpen ? (
                         <tr key={`group-detail-${group.id}`} className="bg-slate-50/70">
-                          <td colSpan={9} className="px-3 pb-4 pt-0">
+                          <td colSpan={9} className="px-4 pb-4 pt-0">
                             <GroupDetailDashboard
                                 group={group}
                                 organization={organization}
