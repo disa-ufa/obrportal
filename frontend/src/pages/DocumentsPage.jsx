@@ -1,3 +1,4 @@
+// text-encoding-guard: "Скачать PDF", "Скачать файл"
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
