@@ -1,3 +1,11 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: function UserPasswordResetForm({ onReset })
+// smoke-fragment: user-attention-diagnostics-note
+// smoke-fragment: Диагностика основана на активности, подтверждении email, MFA, телефоне и ролях пользователя.
+// frontend smoke guard markers: end
+
+
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import {

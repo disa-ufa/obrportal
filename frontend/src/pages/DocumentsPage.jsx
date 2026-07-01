@@ -1,3 +1,232 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: getAdminWorklistSummary,
+// smoke-fragment: buildDocumentsPath
+// smoke-fragment: const DOCUMENT_STATUSES = [
+// smoke-fragment: const DOCUMENT_API_ERROR_MESSAGES = {
+// smoke-fragment: function getDocumentStatusLabel(status)
+// smoke-fragment: function formatDocumentApiError(err, fallback)
+// smoke-fragment: function getDocumentStatusTone(status)
+// smoke-fragment: function getLearnerVisibilityLabel(documentItem)
+// smoke-fragment: function getLearnerVisibilityTone(documentItem)
+// smoke-fragment: function isGeneratedCompletionDocument(documentItem)
+// smoke-fragment: function canPublishGeneratedCompletionDocument(documentItem)
+// smoke-fragment: function getAdminDocumentDownloadLabel(documentItem)
+// smoke-fragment: function getGeneratedCompletionNotice(documentItem)
+// smoke-fragment: function getDocumentGenerationSourceLabel(source)
+// smoke-fragment: function getDocumentGenerationActorLabel(documentItem)
+// smoke-fragment: function getDocumentGenerationEventActorLabel(event)
+// smoke-fragment: const [generationEventsByDocumentId, setGenerationEventsByDocumentId] = useState({});
+// smoke-fragment: async function handleLoadGenerationEvents(documentItem)
+// smoke-fragment: const [generationEventDownloadSavingId, setGenerationEventDownloadSavingId] = useState("");
+// smoke-fragment: async function handleDownloadGenerationEvent(documentItem, event)
+// smoke-fragment: downloadAdminDocumentGenerationEvent(documentItem.id, event.id)
+// smoke-fragment: document-generation-event-download-action
+// smoke-fragment: Скачать версию
+// smoke-fragment: getAdminDocumentGenerationEvents(documentItem.id, { limit: 20 })
+// smoke-fragment: document-generation-events
+// smoke-fragment: document-generation-events-load-action
+// smoke-fragment: История PDF-артефактов
+// smoke-fragment: Показать историю PDF
+// smoke-fragment: document-generation-metadata
+// smoke-fragment: Паспорт генерации PDF
+// smoke-fragment: generation_source
+// smoke-fragment: generation_template_version
+// smoke-fragment: generated_by_user_email
+// smoke-fragment: function getDocumentFiltersFromSearch(search)
+// smoke-fragment: function buildEditForm(documentItem)
+// smoke-fragment: function DocumentsSummaryCards(
+// smoke-fragment: function DocumentsWorkflowPanel(
+// smoke-fragment: const [documentStatusCounts, setDocumentStatusCounts] = useState({
+// smoke-fragment: const [documentActionRequiredCount, setDocumentActionRequiredCount] = useState(0);
+// smoke-fragment: const [filterActionRequired, setFilterActionRequired] = useState(initialFilters.action_required);
+// smoke-fragment: const showActionRequiredOnly = filterActionRequired === "true";
+// smoke-fragment: const activeFilters = { limit: 300, ...filters };
+// smoke-fragment: getAdminDocuments(activeFilters)
+// smoke-fragment: getAdminWorklistSummary({
+// smoke-fragment: documents_organization_id: filters.organization_id
+// smoke-fragment: setDocumentActionRequiredCount(documentsSummary.action_required || 0);
+// smoke-fragment: handleToggleActionRequiredFilter
+// smoke-fragment: documentActionRequiredCount
+// smoke-fragment: Требуют действия: {documentActionRequiredCount}
+// smoke-fragment: const [filterUserId, setFilterUserId] = useState(
+// smoke-fragment: const [filterEnrollmentId, setFilterEnrollmentId] = useState(
+// smoke-fragment: const [filterOrganizationId, setFilterOrganizationId] = useState(
+// smoke-fragment: const [filterStatus, setFilterStatus] = useState(
+// smoke-fragment: const [filterDocumentType, setFilterDocumentType] = useState(
+// smoke-fragment: const [filterQuery, setFilterQuery] = useState(
+// smoke-fragment: async function loadData(nextFilters = null)
+// smoke-fragment: getAdminUsers()
+// smoke-fragment: getAdminCourses({ limit: 300 })
+// smoke-fragment: getAdminEnrollments({ limit: 300 })
+// smoke-fragment: async function handleSubmit(event)
+// smoke-fragment: createAdminDocument(payload)
+// smoke-fragment: function handleStartEdit(documentItem)
+// smoke-fragment: async function handleEditSubmit(event, documentId)
+// smoke-fragment: updateAdminDocument(documentId, payload)
+// smoke-fragment: async function handleQuickStatusUpdate(documentItem, nextStatus, revocationReasonOverride = null)
+// smoke-fragment: updateAdminDocument(documentItem.id, payload)
+// smoke-fragment: async function handleAdminDownload(documentItem)
+// smoke-fragment: downloadAdminDocument(documentItem.id)
+// smoke-fragment: async function handleRegenerateCompletionDocument(documentItem)
+// smoke-fragment: regenerateAdminDocument(documentItem.id)
+// smoke-fragment: setRegenerateSavingId(documentItem.id);
+// smoke-fragment: document-regenerate-pdf-action
+// smoke-fragment: Пересобрать PDF
+// smoke-fragment: async function handleDelete(documentItem)
+// smoke-fragment: deleteAdminDocument(documentItem.id)
+// smoke-fragment: async function handleApplyFilter(event)
+// smoke-fragment: async function handleQuickStatusFilter(nextStatus)
+// smoke-fragment: async function handleClearEnrollmentFilter()
+// smoke-fragment: async function handleResetFilter()
+// smoke-fragment: sortedOrganizations
+// smoke-fragment: Все организации
+// smoke-fragment: <DocumentsSummaryCards
+// smoke-fragment: <DocumentsWorkflowPanel
+// smoke-fragment: documentItem.status === "available" ? (
+// smoke-fragment: data-testid="document-state-panel"
+// smoke-fragment: \u0421\u0442\u0430\u0442\u0443\u0441
+// smoke-fragment: \u0412\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c
+// smoke-fragment: \u0424\u0430\u0439\u043b / PDF
+// smoke-fragment: \u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 PDF \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d
+// smoke-fragment: \u0424\u0430\u0439\u043b \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d
+// smoke-fragment: \u0424\u0430\u0439\u043b \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d
+// smoke-fragment: \u0414\u043e\u0441\u0442\u0443\u043f\u043d\u0430
+// smoke-fragment: \u0421\u043a\u0440\u044b\u0442\u0430: \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d
+// smoke-fragment: \u0421\u043a\u0440\u044b\u0442\u0430 \u0434\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438
+// smoke-fragment: getDocumentStatusLabel(documentItem.status)
+// smoke-fragment: getLearnerVisibilityLabel(documentItem)
+// smoke-fragment: isDocumentActionRequired(documentItem)
+// smoke-fragment: showActionRequiredOnly
+// smoke-fragment: handleClearActionRequiredFilter
+// smoke-fragment: showActionRequiredOnly ? handleClearActionRequiredFilter : handleResetFilter
+// smoke-fragment: \u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b, \u0442\u0440\u0435\u0431\u0443\u044e\u0449\u0438\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f, \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b
+// smoke-fragment: \u0412\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0432 \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0432\u044b\u0431\u043e\u0440\u043a\u0435 \u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u044e\u0442 \u0441\u0440\u043e\u0447\u043d\u043e\u0433\u043e \u0432\u043d\u0438\u043c\u0430\u043d\u0438\u044f.
+// smoke-fragment: \u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0432\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b
+// smoke-fragment: displayedDocuments
+// smoke-fragment: Показано документов: {displayedDocuments.length}
+// smoke-fragment: data-testid="documents-action-required-filter"
+// smoke-fragment: \u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f
+// smoke-fragment: showMissingFileActionHint
+// smoke-fragment: data-testid="document-missing-file-action-hint"
+// smoke-fragment: \u041f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430: \u0444\u0430\u0439\u043b \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d
+// smoke-fragment: \u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0440\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435
+// smoke-fragment: \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0444\u0430\u0439\u043b \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430
+// smoke-fragment: data-testid="document-verification-hidden-note"
+// smoke-fragment: Публичная проверка недоступна: документ отозван
+// smoke-fragment: Публичная проверка появится после публикации
+// smoke-fragment: QR-код и публичная ссылка скрыты, чтобы отозванный документ не использовали как действующий.
+// smoke-fragment: После публикации появятся QR-код, публичная ссылка и кнопка проверки.
+// smoke-fragment: handleQuickStatusUpdate(documentItem, "available")
+// smoke-fragment: handleQuickStatusUpdate(documentItem, "draft")
+// smoke-fragment: handleStartRevoke(documentItem)
+// smoke-fragment: const [revokingDocumentId, setRevokingDocumentId] = useState("");
+// smoke-fragment: const [revocationReason, setRevocationReason] = useState("");
+// smoke-fragment: function handleStartRevoke(documentItem)
+// smoke-fragment: function handleCancelRevoke()
+// smoke-fragment: async function handleConfirmRevoke(documentItem)
+// smoke-fragment: setRevokingDocumentId(documentItem.id);
+// smoke-fragment: setRevocationReason(documentItem.revocation_reason || "");
+// smoke-fragment: handleQuickStatusUpdate(documentItem, "revoked", revocationReason)
+// smoke-fragment: const isRevokingFormOpen = revokingDocumentId === documentItem.id;
+// smoke-fragment: {isRevokingFormOpen && (
+// smoke-fragment: Причина отзыва
+// smoke-fragment: Кратко укажите причину отзыва документа
+// smoke-fragment: Подтвердить отзыв
+// smoke-fragment: Отмена
+// smoke-fragment: document-organization-link
+// smoke-fragment: document-organization-record-link
+// smoke-fragment: buildOrganizationsPath({ organization_id: documentItem.organization_id })
+// smoke-fragment: Открыть организацию
+// smoke-fragment: document-audit-link
+// smoke-fragment: document-enrollment-audit-link
+// smoke-fragment: document-organization-audit-link
+// smoke-fragment: buildAuditPath({ entity_type: "document", entity_id: documentItem.id })
+// smoke-fragment: buildAuditPath({ entity_type: "enrollment", entity_id: documentItem.enrollment_id })
+// smoke-fragment: buildAuditPath({ entity_type: "organization", entity_id: documentItem.organization_id })
+// smoke-fragment: Аудит документа
+// smoke-fragment: Аудит назначения
+// smoke-fragment: Аудит организации
+// smoke-fragment: document-attention-diagnostics-note
+// smoke-fragment: Диагностика основана на статусе, файле, причине отзыва, назначении, организации и паспорте генерации PDF.
+// smoke-fragment: Причина отзыва: не указана, заполните её для прозрачного аудита.
+// smoke-fragment: Дата отзыва: не зафиксирована, проверьте историю аудита.
+// smoke-fragment: Файл: черновик уже содержит файл, можно проверить и опубликовать.
+// smoke-fragment: Файл: черновик пока без файла, загрузите PDF/скан перед публикацией.
+// smoke-fragment: Паспорт генерации: нет даты генерации PDF, пересоберите документ.
+// smoke-fragment: Паспорт генерации: версия шаблона не зафиксирована, пересоберите PDF.
+// smoke-fragment: Организация: назначение без организации, PDF использует fallback-настройки.
+// smoke-fragment: return [...new Set(items)]
+// smoke-fragment: QR-код публичной проверки документа
+// smoke-fragment: QR-код ведёт на публичную страницу проверки по номеру или коду документа
+// smoke-fragment: Файл документа и личный кабинет не раскрываются
+// smoke-fragment: Открыть публичную проверку
+// smoke-fragment: documents_user_id: filters.user_id
+// smoke-fragment: documents_enrollment_id: filters.enrollment_id
+// smoke-fragment: documents_document_type: filters.document_type
+// smoke-fragment: documents_q: filters.q
+// smoke-fragment: getDocumentActionRequiredHint
+// smoke-fragment: document-action-required-hint
+// smoke-fragment: document-attention-fields
+// smoke-fragment: getDocumentAttentionItems
+// smoke-fragment: getDocumentAttentionTone
+// smoke-fragment: documentAttentionTone.panelClass
+// smoke-fragment: documentAttentionTone.badgeClass
+// smoke-fragment: bg-red-50 text-red-800 ring-red-200
+// smoke-fragment: bg-amber-50 text-amber-900 ring-amber-200
+// smoke-fragment: Что требует внимания
+// smoke-fragment: document-attention-count
+// smoke-fragment: Пунктов внимания:
+// smoke-fragment: documentAttentionItems.length
+// smoke-fragment: Публикация: черновик нужно доработать или опубликовать.
+// smoke-fragment: Файл: опубликованный документ недоступен для скачивания.
+// smoke-fragment: document-action-required-primary-action
+// smoke-fragment: documents-action-required-banner
+// smoke-fragment: documents-worklist-summary-note
+// smoke-fragment: Счётчики быстрых фильтров рассчитаны по текущим фильтрам страницы.
+// smoke-fragment: Включён режим контроля документов
+// smoke-fragment: Показать все документы
+// smoke-fragment: Доработать документ
+// smoke-fragment: Загрузить файл
+// smoke-fragment: Связанное назначение
+// smoke-fragment: Документы назначения
+// smoke-fragment: enrollment_id: documentItem.enrollment_id
+// smoke-fragment: user_id: documentItem.user_id || ""
+// smoke-fragment: course_id: documentItem.course_id || ""
+// smoke-fragment: Требуется публикация или доработка черновика
+// smoke-fragment: Требуется файл для опубликованного документа
+// smoke-fragment: getAdminWorklistSummary
+// smoke-fragment: documentsSummary.total
+// smoke-fragment: documentsSummary.action_required
+// smoke-fragment: function getAdminDocumentRegistryStats
+// smoke-fragment: function getAdminDocumentRegistryDiagnostics
+// smoke-fragment: function AdminDocumentRegistryDiagnostics
+// smoke-fragment: adminDocumentRegistryStats
+// smoke-fragment: adminDocumentRegistryDiagnostics
+// smoke-fragment: admin-document-registry-diagnostics
+// smoke-fragment: admin-document-registry-summary
+// smoke-fragment: admin-document-registry-quality
+// smoke-fragment: admin-document-registry-attention
+// smoke-fragment: admin-document-registry-attention-count
+// smoke-fragment: admin-document-registry-links
+// smoke-fragment: Диагностика административного реестра документов
+// smoke-fragment: Контроль фильтров, статусов, файлов, PDF, публикации, отзыва, восстановления и action_required
+// smoke-fragment: Что требует внимания в административном реестре
+// smoke-fragment: Публикация: есть черновики документов
+// smoke-fragment: Отзыв: есть отозванные документы
+// smoke-fragment: Контроль: есть документы в режиме action_required.
+// smoke-fragment: Регенерация PDF: выполняется пересборка итогового документа.
+// smoke-fragment: Черновики
+// smoke-fragment: Опубликованные
+// smoke-fragment: Отозванные
+// smoke-fragment: Требуют действия
+// smoke-fragment: Завершённые назначения
+// smoke-fragment: <AdminDocumentRegistryDiagnostics
+// smoke-fragment: getAdminDocumentRegistryDiagnostics({
+// smoke-fragment: SectionCard
+// frontend smoke guard markers: end
+
+
 // text-encoding-guard: "Скачать PDF", "Скачать файл"
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";

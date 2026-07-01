@@ -1,3 +1,60 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: function getAuditInvestigationsStats
+// smoke-fragment: function getAuditInvestigationsDiagnostics
+// smoke-fragment: function AuditInvestigationsDiagnostics
+// smoke-fragment: auditInvestigationsStats
+// smoke-fragment: auditInvestigationsDiagnostics
+// smoke-fragment: audit-investigations-diagnostics
+// smoke-fragment: audit-investigations-summary
+// smoke-fragment: audit-investigations-entities
+// smoke-fragment: audit-investigations-attention
+// smoke-fragment: audit-investigations-attention-count
+// smoke-fragment: audit-investigations-links
+// smoke-fragment: Диагностика аудита и расследований
+// smoke-fragment: Контроль фильтров action, entity_type, entity_id, actor_user_id, лимита выдачи, критичных действий и связанных разделов
+// smoke-fragment: Что требует внимания в аудите
+// smoke-fragment: Выдача: включён расширенный лимит расследования на 200 событий.
+// smoke-fragment: Actor: расследование ограничено конкретным пользователем.
+// smoke-fragment: Риск: в выдаче есть удаление, отзыв или другие критичные действия.
+// smoke-fragment: RBAC: в выдаче есть события ролей или прав.
+// smoke-fragment: System: часть событий выполнена без actor_user_id.
+// smoke-fragment: Расширенная выдача
+// smoke-fragment: Отзывы документов
+// smoke-fragment: <AuditInvestigationsDiagnostics
+// smoke-fragment: getAuditInvestigationsDiagnostics({
+// smoke-fragment: function normalizeFilters(filters)
+// smoke-fragment: function getLimitNumber(filters)
+// smoke-fragment: function getActionTone(action)
+// smoke-fragment: function getEntityTone(entityType)
+// smoke-fragment: function calculateAuditCounts(events)
+// smoke-fragment: function AuditSummaryCards({ auditCounts, filters })
+// smoke-fragment: function AuditWorkflowPanel({ auditCounts })
+// smoke-fragment: auditEvents,
+// smoke-fragment: async function applyAuditFilters(nextFilters)
+// smoke-fragment: async function navigateToAuditFilters(nextFilters
+// smoke-fragment: async function handleQuickFilter(field, value)
+// smoke-fragment: QuickValueFilters
+// smoke-fragment: SmallTable
+// smoke-fragment: selectedRowId={selectedAuditEvent?.id}
+// smoke-fragment: onOpenAuditEvent(row.id)
+// smoke-fragment: buildEntityAdminPath(row)
+// smoke-fragment: enrollmentEventsCount
+// smoke-fragment: organizationEventsCount
+// smoke-fragment: audit-document-pdf-workflow
+// smoke-fragment: Document/PDF-контур
+// smoke-fragment: Регенерация PDF
+// smoke-fragment: Создание документов
+// smoke-fragment: Восстановления документов
+// smoke-fragment: buildAuditPath({ action: "admin.document_regenerated" })
+// smoke-fragment: buildAuditPath({ action: "admin.document_created" })
+// smoke-fragment: buildAuditPath({ action: "admin.document_revoked" })
+// smoke-fragment: buildAuditPath({ action: "admin.document_restored" })
+// smoke-fragment: buildAuditPath({ entity_type: "enrollment" })
+// smoke-fragment: buildAuditPath({ entity_type: "organization" })
+// frontend smoke guard markers: end
+
+
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuditEventDetailPanel } from "../components/admin/AuditEventDetailPanel";

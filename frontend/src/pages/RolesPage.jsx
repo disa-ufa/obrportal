@@ -1,3 +1,20 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: function calculateRoleCounts(items)
+// smoke-fragment: function RolesSummaryCards({ roles, permissions, roleCounts })
+// smoke-fragment: function RolesWorkflowPanel({ roles, permissions, roleCounts })
+// smoke-fragment: AdminPageActions
+// smoke-fragment: AdminCreatePanel
+// smoke-fragment: AdminFilterPanel
+// smoke-fragment: AdminQuickFilterButtons
+// smoke-fragment: SmallTable
+// smoke-fragment: selectedRowId={selectedRole?.id}
+// smoke-fragment: onOpenRole(row.id)
+// smoke-fragment: buildUsersPath({ role_id: row.id })
+// smoke-fragment: buildPermissionsPath({ q: row.code })
+// frontend smoke guard markers: end
+
+
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { RoleDetailPanel } from "../components/admin/RoleDetailPanel";

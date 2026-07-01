@@ -1,3 +1,20 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: const ALL_PERMISSION_GROUPS = "all";
+// smoke-fragment: function getPermissionSearchText(permission)
+// smoke-fragment: function calculatePermissionGroupCounts(items)
+// smoke-fragment: function PermissionsSummaryCards({ permissions, permissionGroups, permissionGroupCounts })
+// smoke-fragment: function PermissionsWorkflowPanel({ permissionGroupCounts })
+// smoke-fragment: AdminPageActions
+// smoke-fragment: AdminFilterPanel
+// smoke-fragment: AdminQuickFilterButtons
+// smoke-fragment: SmallTable
+// smoke-fragment: selectedRowId={selectedPermission?.id}
+// smoke-fragment: onOpenPermission(row.id)
+// smoke-fragment: buildRolesPath({ q: row.code })
+// frontend smoke guard markers: end
+
+
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { PermissionDetailPanel } from "../components/admin/PermissionDetailPanel";

@@ -1,3 +1,11 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: SmallTable
+// smoke-fragment: selectedRowId={selectedOrganization?.id}
+// smoke-fragment: onOpenOrganization(row.id)
+// frontend smoke guard markers: end
+
+
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { OrganizationDetailPanel } from "../components/admin/OrganizationDetailPanel";

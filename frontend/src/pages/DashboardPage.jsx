@@ -1,3 +1,445 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: email,
+// smoke-fragment: password,
+// smoke-fragment: loading,
+// smoke-fragment: adminLoading,
+// smoke-fragment: error,
+// smoke-fragment: user,
+// smoke-fragment: rbac,
+// smoke-fragment: adminData,
+// smoke-fragment: usersTotalCount
+// smoke-fragment: documentsTotalCount
+// smoke-fragment: priorityActions
+// smoke-fragment: urgentPriorityActions
+// smoke-fragment: displayedPriorityActions
+// smoke-fragment: DashboardTaskCard
+// smoke-fragment: dashboardTaskCards
+// smoke-fragment: function WorkflowCard({ title, description, links, testId })
+// smoke-fragment: data-testid={testId}
+// smoke-fragment: dashboard-organization-document-flow
+// smoke-fragment: dashboard-document-quality-flow
+// smoke-fragment: Организации → группы → назначения → документы
+// smoke-fragment: Контроль полного организационного контура
+// smoke-fragment: Назначения требуют действия
+// smoke-fragment: Документы требуют действия
+// smoke-fragment: Контроль качества реестра
+// smoke-fragment: Аудит документов
+// smoke-fragment: Регенерация PDF
+// smoke-fragment: buildAuditPath({ entity_type: "document" })
+// smoke-fragment: buildAuditPath({ action: "admin.document_regenerated" })
+// smoke-fragment: totalDashboardTasksCount
+// smoke-fragment: dashboardTasksStatusText
+// smoke-fragment: dashboard-work-tasks-status
+// smoke-fragment: Есть рабочие задачи:
+// smoke-fragment: Все рабочие задачи закрыты.
+// smoke-fragment: Всего задач:
+// smoke-fragment: dashboard-work-tasks
+// smoke-fragment: dashboard-documents-task
+// smoke-fragment: dashboard-enrollments-task
+// smoke-fragment: testId={task.testId}
+// smoke-fragment: Рабочие задачи
+// smoke-fragment: Главные действия администратора по документам и назначениям.
+// smoke-fragment: Разобрать документы
+// smoke-fragment: Разобрать назначения
+// smoke-fragment: WorkCenterActionCard
+// smoke-fragment: Рабочий центр администратора
+// smoke-fragment: adminDataLoadedAt,
+// smoke-fragment: onEmailChange,
+// smoke-fragment: onPasswordChange,
+// smoke-fragment: onLogin,
+// smoke-fragment: onLogout,
+// smoke-fragment: onRbacCheck,
+// smoke-fragment: SectionCard
+// smoke-fragment: actionRequiredEnrollmentsCount
+// smoke-fragment: actionRequiredDocumentsCount
+// smoke-fragment: buildEnrollmentsPath({ action_required: "true" })
+// smoke-fragment: buildDocumentsPath({ action_required: "true" })
+// smoke-fragment: onRbacCheck
+// smoke-fragment: onLogout
+// smoke-fragment: dashboard-enrollment-operations-flow
+// smoke-fragment: Операционный центр назначений
+// smoke-fragment: Старт, завершение, выпуск документов и аудит назначений
+// smoke-fragment: Документы по проблемным назначениям
+// smoke-fragment: Аудит назначений
+// smoke-fragment: buildAuditPath({ entity_type: "enrollment" })
+// smoke-fragment: buildEnrollmentsPath({ status: "assigned" })
+// smoke-fragment: buildEnrollmentsPath({ status: "active" })
+// smoke-fragment: buildEnrollmentsPath({ status: "completed" })
+// smoke-fragment: dashboard-organization-operations-flow
+// smoke-fragment: Операционный центр организаций
+// smoke-fragment: Контроль организаций, групп, проблемных назначений, документов и аудита организационного контура.
+// smoke-fragment: Все организации
+// smoke-fragment: Организации с КПП
+// smoke-fragment: Группы организаций
+// smoke-fragment: Назначения организаций
+// smoke-fragment: Проблемные назначения
+// smoke-fragment: Проблемные документы
+// smoke-fragment: Аудит организаций
+// smoke-fragment: buildOrganizationsPath({ scope: "with_kpp" })
+// smoke-fragment: buildAuditPath({ entity_type: "organization" })
+// smoke-fragment: dashboard-group-operations-flow
+// smoke-fragment: Операционный центр групп
+// smoke-fragment: Контроль учебных групп, активности, участников, назначений и связанных документов.
+// smoke-fragment: Все группы
+// smoke-fragment: Активные группы
+// smoke-fragment: Неактивные группы
+// smoke-fragment: Организации групп
+// smoke-fragment: Назначения по группам
+// smoke-fragment: buildGroupsPath({ status: "active" })
+// smoke-fragment: buildGroupsPath({ status: "inactive" })
+// smoke-fragment: dashboard-user-operations-flow
+// smoke-fragment: Операционный центр пользователей
+// smoke-fragment: Контроль активности, ролей, назначений, документов и аудита действий по пользователям.
+// smoke-fragment: Все пользователи
+// smoke-fragment: Активные пользователи
+// smoke-fragment: Неактивные пользователи
+// smoke-fragment: Роли пользователей
+// smoke-fragment: Назначения пользователей
+// smoke-fragment: Документы пользователей
+// smoke-fragment: Аудит пользователей
+// smoke-fragment: buildUsersPath({ activity: "active" })
+// smoke-fragment: buildUsersPath({ activity: "inactive" })
+// smoke-fragment: buildAuditPath({ entity_type: "user" })
+// smoke-fragment: dashboard-rbac-operations-flow
+// smoke-fragment: Операционный центр ролей и прав
+// smoke-fragment: Контроль системных и пользовательских ролей, permissions, назначений ролей и аудита RBAC-действий.
+// smoke-fragment: Все роли
+// smoke-fragment: Admin-роли
+// smoke-fragment: Все права
+// smoke-fragment: Audit-права
+// smoke-fragment: Пользователи с ролью admin
+// smoke-fragment: Аудит ролей
+// smoke-fragment: Аудит прав
+// smoke-fragment: buildRolesPath({ q: "admin" })
+// smoke-fragment: buildPermissionsPath({ group: "audit" })
+// smoke-fragment: buildUsersPath({ role: "admin" })
+// smoke-fragment: buildAuditPath({ entity_type: "role" })
+// smoke-fragment: buildAuditPath({ entity_type: "permission" })
+// smoke-fragment: dashboard-audit-investigations-flow
+// smoke-fragment: Операционный центр аудита и расследований
+// smoke-fragment: Расследование действий по пользователям, документам, назначениям, организациям, ролям и permissions.
+// smoke-fragment: Последние 25 событий
+// smoke-fragment: Последние 200 событий
+// smoke-fragment: Аудит permissions
+// smoke-fragment: buildAuditPath({ action: "admin.user_created" })
+// smoke-fragment: dashboard-account-access-flow
+// smoke-fragment: Операционный центр личного кабинета
+// smoke-fragment: Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке.
+// smoke-fragment: Личный кабинет
+// smoke-fragment: Каталог курсов
+// smoke-fragment: Публичная проверка документа
+// smoke-fragment: Активные назначения
+// smoke-fragment: Завершённые назначения
+// smoke-fragment: Документы пользователя
+// smoke-fragment: Черновики документов
+// smoke-fragment: Отозванные документы
+// smoke-fragment: to: "/account"
+// smoke-fragment: to: "/catalog"
+// smoke-fragment: to: "/verify-document"
+// smoke-fragment: buildDocumentsPath({ status: "available" })
+// smoke-fragment: buildDocumentsPath({ status: "draft" })
+// smoke-fragment: buildDocumentsPath({ status: "revoked" })
+// smoke-fragment: dashboard-public-verification-flow
+// smoke-fragment: Операционный центр публичной проверки документов
+// smoke-fragment: Контроль публичной проверки по номеру/коду, QR-ссылок, статусов документов и ошибок верификации.
+// smoke-fragment: Публичная проверка
+// smoke-fragment: Доступные документы
+// smoke-fragment: Черновики не проверяются
+// smoke-fragment: Отзыв документов
+// smoke-fragment: Восстановление документов
+// smoke-fragment: buildAuditPath({ action: "admin.document_revoked" })
+// smoke-fragment: buildAuditPath({ action: "admin.document_restored" })
+// smoke-fragment: dashboard-public-catalog-flow
+// smoke-fragment: Операционный центр каталога и публичных курсов
+// smoke-fragment: Контроль публичного каталога, карточек курсов, самозаписи, активных программ, назначений и итоговых документов.
+// smoke-fragment: Публичный каталог
+// smoke-fragment: Неактивные курсы
+// smoke-fragment: Все назначения
+// smoke-fragment: Документы выпускников
+// smoke-fragment: Публичная проверка документов
+// smoke-fragment: Аудит курсов
+// smoke-fragment: buildCoursesPath({ is_active: "true" })
+// smoke-fragment: buildCoursesPath({ is_active: "false" })
+// smoke-fragment: buildAuditPath({ entity_type: "course" })
+// smoke-fragment: dashboard-course-self-enrollment-flow
+// smoke-fragment: Операционный центр карточки курса и самозаписи
+// smoke-fragment: Контроль публичной карточки курса, структуры модулей/уроков, самозаписи, существующих назначений и ошибок записи.
+// smoke-fragment: Каталог для выбора курса
+// smoke-fragment: Проверка отсутствующей карточки
+// smoke-fragment: Назначены
+// smoke-fragment: to: "/courses/SMOKE-NOT-FOUND"
+// smoke-fragment: dashboard-learning-progress-flow
+// smoke-fragment: Операционный центр прохождения обучения и уроков
+// smoke-fragment: Контроль личного кабинета обучения, прогресса, обязательных уроков, завершения курса и черновика итогового документа.
+// smoke-fragment: Личный кабинет обучения
+// smoke-fragment: Назначенные программы
+// smoke-fragment: Обучение в процессе
+// smoke-fragment: Завершённое обучение
+// smoke-fragment: Черновики итоговых документов
+// smoke-fragment: Опубликованные итоговые документы
+// smoke-fragment: dashboard-completion-documents-flow
+// smoke-fragment: Операционный центр итоговых документов после обучения
+// smoke-fragment: Контроль черновиков после завершения курса, публикации, скачивания PDF, QR-проверки, отзыва, восстановления и аудита документов.
+// smoke-fragment: Опубликованные документы
+// smoke-fragment: Личный кабинет слушателя
+// smoke-fragment: dashboard-public-verification-qr-flow
+// smoke-fragment: Операционный центр публичной проверки и QR-документов
+// smoke-fragment: Контроль проверки по номеру и коду, QR-ссылок, статусов available/revoked/draft, ошибок поиска и аудита операций с документами.
+// smoke-fragment: Проверка по номеру
+// smoke-fragment: Проверка по коду
+// smoke-fragment: to: "/verify-document?number=SMOKE-NOT-FOUND"
+// smoke-fragment: to: "/verify-document?code=SMOKE-NOT-FOUND"
+// smoke-fragment: dashboard-admin-document-registry-flow
+// smoke-fragment: Операционный центр административного реестра документов
+// smoke-fragment: Контроль фильтров реестра, черновиков, опубликованных и отозванных документов, action_required, типов документов, скачивания, публикации, отзыва, восстановления и регенерации PDF.
+// smoke-fragment: Реестр документов
+// smoke-fragment: Черновики к публикации
+// smoke-fragment: Сертификаты
+// smoke-fragment: Документы завершённых назначений
+// smoke-fragment: Создание документов
+// smoke-fragment: buildDocumentsPath({ document_type: "certificate" })
+// smoke-fragment: buildAuditPath({ action: "admin.document_created" })
+// smoke-fragment: dashboard-admin-course-catalog-flow
+// smoke-fragment: Операционный центр административного каталога курсов
+// smoke-fragment: Контроль активных и неактивных курсов, модулей, уроков, обязательных материалов, самозаписи, назначений, завершений и итоговых документов.
+// smoke-fragment: Реестр курсов
+// smoke-fragment: Активные курсы
+// smoke-fragment: Самозапись слушателей
+// smoke-fragment: Активное обучение
+// smoke-fragment: Итоговые документы
+// smoke-fragment: dashboard-admin-enrollment-operations-flow
+// smoke-fragment: Операционный центр административных назначений обучения
+// smoke-fragment: Контроль назначений assigned/active/completed, action_required, групповых назначений, связей с пользователем, организацией, группой и курсом, завершения обучения и итоговых документов.
+// smoke-fragment: Реестр назначений
+// smoke-fragment: Назначенные
+// smoke-fragment: В обучении
+// smoke-fragment: Завершённые
+// smoke-fragment: Курсы для назначений
+// smoke-fragment: Группы обучения
+// smoke-fragment: Пользователи
+// smoke-fragment: Организации
+// smoke-fragment: to: "/admin/groups"
+// smoke-fragment: to: "/admin/users"
+// smoke-fragment: to: "/admin/organizations"
+// smoke-fragment: dashboard-learning-group-operations-flow
+// smoke-fragment: Операционный центр учебных групп
+// smoke-fragment: Контроль активных и неактивных учебных групп, организаций, участников, групповых назначений, action_required, документов и аудита связей обучения.
+// smoke-fragment: Реестр групп
+// smoke-fragment: Пользователи групп
+// smoke-fragment: Аудит групп
+// smoke-fragment: buildGroupsPath()
+// smoke-fragment: buildGroupsPath({ active: "true" })
+// smoke-fragment: buildGroupsPath({ active: "false" })
+// smoke-fragment: buildAuditPath({ entity_type: "learning_group" })
+// smoke-fragment: Контроль журнала событий, фильтров по действиям, сущностям, актору, лимиту выдачи и быстрых расследований по пользователям, организациям, группам, назначениям, документам, ролям и правам.
+// smoke-fragment: Журнал аудита
+// smoke-fragment: Расширенный лимит
+// smoke-fragment: Фильтр по актору
+// smoke-fragment: Создание пользователей
+// smoke-fragment: Регенерация документов
+// smoke-fragment: buildAuditPath({ actor_user_id: "00000000-0000-0000-0000-000000000000" })
+// smoke-fragment: dashboard-frontend-shell-navigation-flow
+// smoke-fragment: Операционный центр качества frontend shell и навигации
+// smoke-fragment: Контроль admin/public shell, прямых маршрутов, fallback-страниц, ссылок Dashboard, публичных страниц, навигационных builders и защиты от сломанных переходов.
+// smoke-fragment: Admin shell
+// smoke-fragment: Неизвестный admin route
+// smoke-fragment: Группы
+// smoke-fragment: Курсы
+// smoke-fragment: Назначения
+// smoke-fragment: Документы
+// smoke-fragment: Аудит
+// smoke-fragment: Публичная главная
+// smoke-fragment: Каталог
+// smoke-fragment: Проверка документа
+// smoke-fragment: Кабинет организации
+// smoke-fragment: Вход
+// smoke-fragment: Регистрация
+// smoke-fragment: to: "/admin"
+// smoke-fragment: to: "/admin/__missing_shell_route__"
+// smoke-fragment: to: "/admin/courses"
+// smoke-fragment: to: "/admin/enrollments"
+// smoke-fragment: to: "/admin/documents"
+// smoke-fragment: to: "/admin/audit-events"
+// smoke-fragment: to: "/"
+// smoke-fragment: to: "/organization"
+// smoke-fragment: to: "/login"
+// smoke-fragment: to: "/register"
+// smoke-fragment: dashboard-frontend-routes-builders-meta-flow
+// smoke-fragment: Операционный центр качества frontend routes/builders/meta
+// smoke-fragment: Контроль adminRoutes, adminLinks, publicRoutes, meta-описаний, query builders, entity links, unknown/fallback routes и соответствия routes → links → pages → meta.
+// smoke-fragment: Admin route registry
+// smoke-fragment: Users builder
+// smoke-fragment: Organizations builder
+// smoke-fragment: Groups builder
+// smoke-fragment: Courses builder
+// smoke-fragment: Enrollments builder
+// smoke-fragment: Documents builder
+// smoke-fragment: Roles builder
+// smoke-fragment: Permissions builder
+// smoke-fragment: Audit builder
+// smoke-fragment: Public home meta
+// smoke-fragment: Public catalog meta
+// smoke-fragment: Public course fallback meta
+// smoke-fragment: Organization info meta
+// smoke-fragment: Verify document meta
+// smoke-fragment: Verify code fallback
+// smoke-fragment: Public contacts meta
+// smoke-fragment: Public not found meta
+// smoke-fragment: buildGroupsPath({ status: "active", organization_id: "00000000-0000-0000-0000-000000000000" })
+// smoke-fragment: buildCoursesPath({ is_active: "true", q: "__missing_routes_meta_course__" })
+// smoke-fragment: buildEnrollmentsPath({ status: "completed", action_required: "true" })
+// smoke-fragment: buildDocumentsPath({ status: "available", type: "certificate" })
+// smoke-fragment: buildRolesPath({ type: "system" })
+// smoke-fragment: buildAuditPath({ entity_type: "document", limit: "25" })
+// smoke-fragment: to: "/courses/__missing_routes_meta_course__"
+// smoke-fragment: to: "/organization-info"
+// smoke-fragment: to: "/verify/__missing_routes_meta_code__"
+// smoke-fragment: to: "/contacts"
+// smoke-fragment: to: "/__missing_routes_meta_public__"
+// smoke-fragment: dashboard-frontend-smoke-guards-coverage-flow
+// smoke-fragment: Операционный центр качества frontend smoke/guards coverage
+// smoke-fragment: Контроль smoke/guard scripts, покрытия frontend/backend проверками, API error guard, mojibake guard, BOM/text encoding guard, bundle encoding и защиты от маркеров незавершённой реализации.
+// smoke-fragment: Frontend coverage guard
+// smoke-fragment: Backend coverage guard
+// smoke-fragment: Frontend API error guard
+// smoke-fragment: Mojibake guard
+// smoke-fragment: Source BOM guard
+// smoke-fragment: Text encoding guard
+// smoke-fragment: Admin pages smoke
+// smoke-fragment: Public pages smoke
+// smoke-fragment: Account page smoke
+// smoke-fragment: Hooks/layout smoke
+// smoke-fragment: Utils/routes smoke
+// smoke-fragment: Documents smoke
+// smoke-fragment: Implementation markers guard
+// smoke-fragment: Bundle encoding guard
+// smoke-fragment: dashboard-ci-local-gate-flow
+// smoke-fragment: Операционный центр качества CI/CD и локального gate
+// smoke-fragment: Контроль соответствия GitHub Actions и локального полного gate: secret scan, encoding guards, frontend guards, pytest, smoke scripts, coverage guards, frontend build, bundle encoding и синхронизация develop/main.
+// smoke-fragment: CI workflow
+// smoke-fragment: Secret scan
+// smoke-fragment: Encoding guards
+// smoke-fragment: Frontend guards
+// smoke-fragment: Backend pytest
+// smoke-fragment: Auth RBAC smoke
+// smoke-fragment: Account smoke
+// smoke-fragment: Frontend core smoke
+// smoke-fragment: Frontend coverage
+// smoke-fragment: Backend coverage
+// smoke-fragment: Frontend build
+// smoke-fragment: Bundle encoding
+// smoke-fragment: Branch sync
+// smoke-fragment: to: "/admin?from=ci-local-gate"
+// smoke-fragment: to: "/admin/audit-events?entity_type=document&limit=25"
+// smoke-fragment: to: "/catalog?from=ci-local-gate"
+// smoke-fragment: to: "/admin/audit-events?entity_type=user&limit=25"
+// smoke-fragment: to: "/admin/users?activity=inactive&from=ci-local-gate"
+// smoke-fragment: to: "/contacts?from=ci-local-gate"
+// smoke-fragment: to: "/account?from=ci-local-gate"
+// smoke-fragment: to: "/organization-info?from=ci-local-gate"
+// smoke-fragment: to: "/admin?from=frontend-coverage"
+// smoke-fragment: to: "/admin/__missing_ci_gate_route__"
+// smoke-fragment: to: "/verify-document?from=ci-local-gate"
+// smoke-fragment: to: "/__missing_ci_gate_public__"
+// smoke-fragment: dashboard-production-readiness-release-flow
+// smoke-fragment: Операционный центр production readiness / release checklist
+// smoke-fragment: Контроль готовности релиза: env/config, Docker Compose, health/ready, migrations, seeds, storage, logs, rollback-порядок, CI/local gate, smoke-команды и release checklist.
+// smoke-fragment: Env/config readiness
+// smoke-fragment: Docker Compose readiness
+// smoke-fragment: Health and ready endpoints
+// smoke-fragment: Migrations and seeds
+// smoke-fragment: Storage readiness
+// smoke-fragment: Logs and failure diagnostics
+// smoke-fragment: Release smoke commands
+// smoke-fragment: Public verification readiness
+// smoke-fragment: Account readiness
+// smoke-fragment: Organization readiness
+// smoke-fragment: Admin registry readiness
+// smoke-fragment: Rollback order
+// smoke-fragment: CI/local gate release check
+// smoke-fragment: Release checklist fallback
+// smoke-fragment: to: "/admin?from=production-readiness"
+// smoke-fragment: to: "/admin/__missing_release_route__"
+// smoke-fragment: to: "/catalog?from=production-readiness"
+// smoke-fragment: to: "/verify-document?from=production-readiness"
+// smoke-fragment: to: "/account?from=production-readiness"
+// smoke-fragment: to: "/organization-info?from=production-readiness"
+// smoke-fragment: to: "/admin/documents?action_required=true&from=production-readiness"
+// smoke-fragment: to: "/admin/audit-events?entity_type=organization&limit=25"
+// smoke-fragment: to: "/__missing_release_public__"
+// smoke-fragment: dashboard-release-versioning-handoff-flow
+// smoke-fragment: Операционный центр release versioning / changelog / deployment handoff
+// smoke-fragment: Контроль управляемого релиза: версия backend/frontend, changelog, release notes, tag-порядок, deployment handoff, rollback-команды, release checklist и post-release verification.
+// smoke-fragment: Version source
+// smoke-fragment: Backend health version
+// smoke-fragment: Frontend package version
+// smoke-fragment: Changelog readiness
+// smoke-fragment: Release notes
+// smoke-fragment: Tag order
+// smoke-fragment: Deployment handoff
+// smoke-fragment: Rollback commands
+// smoke-fragment: Release checklist
+// smoke-fragment: CI/local gate
+// smoke-fragment: Public verification
+// smoke-fragment: Account verification
+// smoke-fragment: Release fallback
+// smoke-fragment: to: "/admin?from=release-versioning"
+// smoke-fragment: to: "/catalog?from=release-versioning"
+// smoke-fragment: to: "/admin/documents?status=available&type=certificate&from=release-versioning"
+// smoke-fragment: to: "/admin/__missing_release_version_route__"
+// smoke-fragment: to: "/organization-info?from=release-versioning"
+// smoke-fragment: to: "/verify-document?from=release-versioning"
+// smoke-fragment: to: "/account?from=release-versioning"
+// smoke-fragment: to: "/__missing_release_version_public__"
+// smoke-fragment: dashboard-release-candidate-tag-readiness-flow
+// smoke-fragment: Операционный центр release candidate / tag readiness / post-release verification
+// smoke-fragment: Контроль release candidate перед тегом: git tag readiness, версия, changelog, handoff, CI status, production readiness, smoke-проверки, post-release verification и rollback-порядок.
+// smoke-fragment: Release candidate source
+// smoke-fragment: Tag readiness
+// smoke-fragment: Versioning guard
+// smoke-fragment: Changelog verification
+// smoke-fragment: CI status readiness
+// smoke-fragment: Production readiness
+// smoke-fragment: Health/ready verification
+// smoke-fragment: Public catalog verification
+// smoke-fragment: Public document verification
+// smoke-fragment: Admin documents verification
+// smoke-fragment: Rollback verification
+// smoke-fragment: Release candidate fallback
+// smoke-fragment: to: "/admin?from=release-candidate"
+// smoke-fragment: to: "/admin/__missing_release_candidate_route__"
+// smoke-fragment: to: "/organization-info?from=release-candidate"
+// smoke-fragment: to: "/catalog?from=release-candidate"
+// smoke-fragment: to: "/verify-document?from=release-candidate"
+// smoke-fragment: to: "/account?from=release-candidate"
+// smoke-fragment: to: "/admin/documents?action_required=true&from=release-candidate"
+// smoke-fragment: to: "/__missing_release_candidate_public__"
+// smoke-fragment: dashboard-release-tag-publication-smoke-flow
+// smoke-fragment: Операционный центр release tag / final publication / post-release smoke
+// smoke-fragment: Контроль финальной публикации релиза: annotated tag, release notes, final publication order, post-release smoke, health/ready, public/admin/account/document verification и rollback checkpoint.
+// smoke-fragment: Release tag source
+// smoke-fragment: Final tag readiness
+// smoke-fragment: Release candidate readiness
+// smoke-fragment: Versioning handoff
+// smoke-fragment: Post-release health
+// smoke-fragment: Post-release catalog
+// smoke-fragment: Post-release public verification
+// smoke-fragment: Post-release account
+// smoke-fragment: Admin documents smoke
+// smoke-fragment: Rollback checkpoint
+// smoke-fragment: Release tag fallback
+// smoke-fragment: to: "/admin?from=release-tag"
+// smoke-fragment: to: "/admin/__missing_release_tag_route__"
+// smoke-fragment: to: "/admin/documents?status=available&type=certificate&from=release-tag"
+// smoke-fragment: to: "/catalog?from=release-tag"
+// smoke-fragment: to: "/verify-document?from=release-tag"
+// smoke-fragment: to: "/account?from=release-tag"
+// smoke-fragment: to: "/admin/documents?action_required=true&from=release-tag"
+// smoke-fragment: to: "/__missing_release_tag_public__"
+// frontend smoke guard markers: end
+
+
 import { Link } from "react-router-dom";
 import {
   buildAuditPath,

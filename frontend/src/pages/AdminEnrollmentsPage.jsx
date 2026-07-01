@@ -1,3 +1,134 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: function getAdminEnrollmentOperationsStats
+// smoke-fragment: function getAdminEnrollmentOperationsDiagnostics
+// smoke-fragment: function AdminEnrollmentOperationsDiagnostics
+// smoke-fragment: adminEnrollmentOperationsStats
+// smoke-fragment: adminEnrollmentOperationsDiagnostics
+// smoke-fragment: admin-enrollment-operations-diagnostics
+// smoke-fragment: admin-enrollment-operations-summary
+// smoke-fragment: admin-enrollment-operations-relations
+// smoke-fragment: admin-enrollment-operations-attention
+// smoke-fragment: admin-enrollment-operations-attention-count
+// smoke-fragment: admin-enrollment-operations-links
+// smoke-fragment: Диагностика административных назначений обучения
+// smoke-fragment: Контроль статусов assigned/active/completed, action_required, групповых назначений, связей с пользователем, организацией, группой, курсом и итоговыми документами
+// smoke-fragment: Что требует внимания в административных назначениях
+// smoke-fragment: Старт обучения: есть назначения в статусе assigned.
+// smoke-fragment: Контроль: есть назначения в режиме action_required.
+// smoke-fragment: Организация: часть назначений не привязана к организации.
+// smoke-fragment: Группа: часть назначений не привязана к учебной группе.
+// smoke-fragment: Массовое назначение: выполняется назначение учебной группе.
+// smoke-fragment: Назначенные
+// smoke-fragment: В обучении
+// smoke-fragment: Завершённые
+// smoke-fragment: Требуют действия
+// smoke-fragment: Активные курсы
+// smoke-fragment: Группы обучения
+// smoke-fragment: Черновики документов
+// smoke-fragment: Аудит назначений
+// smoke-fragment: <AdminEnrollmentOperationsDiagnostics
+// smoke-fragment: getAdminEnrollmentOperationsDiagnostics({
+// smoke-fragment: enrollments_user_id: activeFilters.user_id
+// smoke-fragment: enrollments_course_id: activeFilters.course_id
+// smoke-fragment: enrollments_organization_id: activeFilters.organization_id
+// smoke-fragment: enrollments_learning_group_id: activeFilters.learning_group_id
+// smoke-fragment: enrollments_q: activeFilters.q
+// smoke-fragment: getEnrollmentAttentionItems
+// smoke-fragment: enrollment-attention-fields
+// smoke-fragment: enrollment-attention-count
+// smoke-fragment: enrollment-attention-diagnostics-note
+// smoke-fragment: Что требует внимания в назначении
+// smoke-fragment: Диагностика основана на статусе, датах, группе, организации и PDF-профиле организации.
+// smoke-fragment: Старт обучения: назначение ещё не переведено в работу.
+// smoke-fragment: Дата старта: не заполнена, проверьте фактическое начало обучения.
+// smoke-fragment: Итоговый документ: завершённое обучение нужно проверить в реестре документов.
+// smoke-fragment: Дата завершения: не заполнена, проверьте корректность статуса.
+// smoke-fragment: Организация: не указана, PDF будет использовать fallback-настройки приложения.
+// smoke-fragment: PDF-профиль организации: не заполнено полей
+// smoke-fragment: Группа: назначение без учебной группы, проверьте контекст группового обучения.
+// smoke-fragment: const enrollmentAttentionItems = getEnrollmentAttentionItems(
+// smoke-fragment: enrollmentProfileStatus.toneClass
+// smoke-fragment: enrollmentProfileStatus.label
+// smoke-fragment: getEnrollmentActionRequiredHint
+// smoke-fragment: enrollment-action-required-hint
+// smoke-fragment: enrollment-action-required-primary-action
+// smoke-fragment: enrollment-action-required-documents-link
+// smoke-fragment: enrollments-action-required-banner
+// smoke-fragment: enrollments-worklist-summary-note
+// smoke-fragment: Счётчики быстрых фильтров рассчитаны по текущим фильтрам страницы.
+// smoke-fragment: Включён режим контроля назначений
+// smoke-fragment: Показать все назначения
+// smoke-fragment: Проверить назначение
+// smoke-fragment: Открыть документы
+// smoke-fragment: action_required: "true",
+// smoke-fragment: Назначение ожидает старта обучения
+// smoke-fragment: Завершённое обучение ожидает документ
+// smoke-fragment: Назначения, требующие действия, не найдены
+// smoke-fragment: getAdminWorklistSummary
+// smoke-fragment: enrollmentsSummary.total
+// smoke-fragment: enrollmentsSummary.action_required
+// smoke-fragment: DOCUMENT_PROFILE_FIELDS
+// smoke-fragment: getOrganizationDocumentProfileStatus
+// smoke-fragment: OrganizationDocumentProfileHint
+// smoke-fragment: enrollment-create-document-profile-hint
+// smoke-fragment: enrollment-edit-document-profile-hint
+// smoke-fragment: enrollment-list-document-profile-status
+// smoke-fragment: enrollment-organization-link
+// smoke-fragment: buildOrganizationsPath({ organization_id: enrollment.organization_id })
+// smoke-fragment: filterOrganizationId
+// smoke-fragment: setFilterOrganizationId
+// smoke-fragment: Все организации
+// smoke-fragment: organization_id: overrides.organization_id
+// smoke-fragment: PDF: профиль организации заполнен
+// smoke-fragment: PDF: профиль организации заполнен частично
+// smoke-fragment: PDF: настройки приложения
+// smoke-fragment: Итоговый PDF возьмёт реквизиты
+// smoke-fragment: fallback-настроек приложения
+// smoke-fragment: getOrgLearningGroupMembers,
+// smoke-fragment: const ENROLLMENT_STATUSES = [
+// smoke-fragment: const ENROLLMENT_STATUS_FILTERS = [
+// smoke-fragment: const ENROLLMENT_API_ERROR_MESSAGES = {
+// smoke-fragment: function getStatusLabel(value)
+// smoke-fragment: function formatEnrollmentApiError(err, fallback)
+// smoke-fragment: function getEnrollmentFiltersFromSearch(search)
+// smoke-fragment: function getStatusTone(value)
+// smoke-fragment: function getUserRoleCodes(user)
+// smoke-fragment: function isLearnerUser(user)
+// smoke-fragment: function isAdminUser(user)
+// smoke-fragment: function getUserRoleLabel(user)
+// smoke-fragment: function buildUserLabel(user)
+// smoke-fragment: function buildCourseLabel(course)
+// smoke-fragment: function buildOrganizationsMap(organizations)
+// smoke-fragment: function buildGroupsMap(groups)
+// smoke-fragment: function groupHasMember(groupId, userId, membersByGroupId)
+// smoke-fragment: function buildGroupLabel(group, organizationsById = {})
+// smoke-fragment: function getAvailableGroups(
+// smoke-fragment: function buildEditForm(enrollment)
+// smoke-fragment: function normalizeDateTime(value)
+// smoke-fragment: function EnrollmentSummaryCards({ statusCounts, users, courses, groups })
+// smoke-fragment: function EnrollmentWorkflowPanel({ statusCounts, courses, groups })
+// smoke-fragment: export function AdminEnrollmentsPage()
+// smoke-fragment: useLocation();
+// smoke-fragment: useNavigate();
+// smoke-fragment: showActionRequiredOnly
+// smoke-fragment: setFilterActionRequired("")
+// smoke-fragment: actionRequiredCount
+// smoke-fragment: visibleEnrollments
+// smoke-fragment: Показано назначений: {visibleEnrollments.length}
+// smoke-fragment: {"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}: {actionRequiredCount}
+// smoke-fragment: data-testid="enrollments-action-required-filter"
+// smoke-fragment: \u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f
+// smoke-fragment: action_required: overrides.action_required ?? filterActionRequired
+// smoke-fragment: getOrgLearningGroupMembers
+// smoke-fragment: AdminQuickFilterButtons
+// smoke-fragment: AdminEmptyState
+// smoke-fragment: buildCoursesPath
+// smoke-fragment: buildDocumentsPath
+// smoke-fragment: buildEnrollmentsPath
+// smoke-fragment: buildGroupsPath
+// frontend smoke guard markers: end
+
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";

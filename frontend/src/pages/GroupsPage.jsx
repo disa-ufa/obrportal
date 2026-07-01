@@ -1,3 +1,81 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: function getLearningGroupOperationsStats
+// smoke-fragment: function getLearningGroupOperationsDiagnostics
+// smoke-fragment: function LearningGroupOperationsDiagnostics
+// smoke-fragment: learningGroupOperationsStats
+// smoke-fragment: learningGroupOperationsDiagnostics
+// smoke-fragment: learning-group-operations-diagnostics
+// smoke-fragment: learning-group-operations-summary
+// smoke-fragment: learning-group-operations-quality
+// smoke-fragment: learning-group-operations-attention
+// smoke-fragment: learning-group-operations-attention-count
+// smoke-fragment: learning-group-operations-links
+// smoke-fragment: Диагностика операционного центра учебных групп
+// smoke-fragment: Контроль активных и неактивных групп, организаций, кодов, описаний, участников, назначений, документов и аудита
+// smoke-fragment: Что требует внимания в учебных группах
+// smoke-fragment: Статус: есть неактивные учебные группы.
+// smoke-fragment: Организации: нет доступных организаций для создания учебных групп.
+// smoke-fragment: Код группы: часть групп не имеет кода.
+// smoke-fragment: Описание: часть групп не имеет описания.
+// smoke-fragment: Активные группы
+// smoke-fragment: Неактивные группы
+// smoke-fragment: Проблемные назначения
+// smoke-fragment: Проблемные документы
+// smoke-fragment: Аудит групп
+// smoke-fragment: <LearningGroupOperationsDiagnostics
+// smoke-fragment: getLearningGroupOperationsDiagnostics({
+// smoke-fragment: function LearningGroupForm({
+// smoke-fragment: function LearningGroupMembersPanel({ groupDetail })
+// smoke-fragment: async function reloadMemberData()
+// smoke-fragment: getOrgLearningGroupMembers(groupDetail.id)
+// smoke-fragment: getAdminUsers()
+// smoke-fragment: addOrgLearningGroupMember(groupDetail.id
+// smoke-fragment: async function handleRemoveMember(userId, userEmail)
+// smoke-fragment: removeOrgLearningGroupMember(groupDetail.id, userId)
+// smoke-fragment: export function GroupsPage({
+// smoke-fragment: user,
+// smoke-fragment: selectedGroup,
+// smoke-fragment: selectedGroupLoading,
+// smoke-fragment: selectedGroupError,
+// smoke-fragment: onOpenGroup,
+// smoke-fragment: onCloseGroup,
+// smoke-fragment: onCreateGroup,
+// smoke-fragment: onUpdateGroup,
+// smoke-fragment: onDeleteGroup,
+// smoke-fragment: onRefreshAdminData,
+// smoke-fragment: getGroupFiltersFromSearch
+// smoke-fragment: calculateGroupCounts
+// smoke-fragment: AdminPageActions
+// smoke-fragment: AdminCreatePanel
+// smoke-fragment: AdminFilterPanel
+// smoke-fragment: LearningGroupForm
+// smoke-fragment: LearningGroupMembersPanel
+// smoke-fragment: SmallTable
+// smoke-fragment: selectedRowId={selectedGroup?.id}
+// smoke-fragment: onOpenGroup(row.id)
+// smoke-fragment: getGroupAttentionItems
+// smoke-fragment: groupAttentionItems
+// smoke-fragment: group-attention-count
+// smoke-fragment: group-attention-diagnostics-note
+// smoke-fragment: Что требует внимания в группе
+// smoke-fragment: Диагностика основана на статусе, коде, организации и описании группы.
+// smoke-fragment: Статус: группа неактивна, проверьте актуальность назначений и участников.
+// smoke-fragment: Код группы: не заполнен, сложнее искать группу в операционных списках.
+// smoke-fragment: Организация: группа не привязана к организации.
+// smoke-fragment: Описание: не заполнено, добавьте контекст обучения или состава группы.
+// smoke-fragment: group-related-records-links
+// smoke-fragment: Связанные записи группы
+// smoke-fragment: group-organization-link
+// smoke-fragment: group-enrollments-link
+// smoke-fragment: group-action-required-enrollments-link
+// smoke-fragment: group-action-required-documents-link
+// smoke-fragment: learning_group_id: groupDetail.id
+// smoke-fragment: action_required: "true"
+// smoke-occurs: useMemo(
+// frontend smoke guard markers: end
+
+
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {

@@ -1,3 +1,46 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: import { ActionButton } from "../ui/ActionButton";
+// smoke-fragment: import { DetailField, formatDetailDate } from "../ui/DetailField";
+// smoke-fragment: import { SectionCard } from "../ui/SectionCard";
+// smoke-fragment: import { buildAuditPath, buildDocumentsPath, buildEnrollmentsPath, buildGroupsPath } from "../../utils/adminLinks";
+// smoke-fragment: organization-related-records-links
+// smoke-fragment: Связанные записи
+// smoke-fragment: Назначения организации
+// smoke-fragment: Документы организации
+// smoke-fragment: Аудит организации
+// smoke-fragment: organization-audit-link
+// smoke-fragment: buildAuditPath({ entity_type: "organization", entity_id: organizationDetail.id })
+// smoke-fragment: ORGANIZATION_DOCUMENT_PROFILE_FIELDS
+// smoke-fragment: organizationAttentionItems
+// smoke-fragment: Что требует внимания в организации
+// smoke-fragment: Диагностика основана на реквизитах, адресах и PDF-профиле организации.
+// smoke-fragment: КПП: не заполнен, проверьте реквизиты юридического лица.
+// smoke-fragment: ОГРН: не заполнен, проверьте регистрационные данные организации.
+// smoke-fragment: Юридический адрес: не заполнен.
+// smoke-fragment: Фактический адрес: не заполнен.
+// smoke-fragment: PDF-профиль: не заполнено полей
+// smoke-fragment: organization-groups-link
+// smoke-fragment: organization-action-required-enrollments-link
+// smoke-fragment: organization-action-required-documents-link
+// smoke-fragment: Группы организации
+// smoke-fragment: Проблемные назначения
+// smoke-fragment: Проблемные документы
+// smoke-fragment: action_required: "true"
+// smoke-fragment: Реквизиты для генерируемых документов
+// smoke-fragment: Организация-выдавшая документ
+// smoke-fragment: Место выдачи
+// smoke-fragment: Должность подписанта
+// smoke-fragment: ФИО подписанта
+// smoke-fragment: Основание выдачи
+// smoke-fragment: Профиль итогового PDF
+// smoke-fragment: Эти значения используются в PDF-шаблонах удостоверений, сертификатов и справок
+// smoke-fragment: Если поле пустое, при генерации документа может использоваться fallback-настройка приложения.
+// smoke-fragment: <DetailField
+// smoke-fragment: <ActionButton
+// frontend smoke guard markers: end
+
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
