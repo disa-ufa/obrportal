@@ -101,6 +101,7 @@ const T = {
   successUpdated: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u043e\\u0431\\u043d\\u043e\\u0432\\u043b\\u0435\\u043d."),
   deleteConfirm: U("\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u044c \\u044d\\u0442\\u043e\\u0442 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442?"),
   revokeReasonPrompt: U("\\u0423\\u043a\\u0430\\u0436\\u0438\\u0442\\u0435 \\u043f\\u0440\\u0438\\u0447\\u0438\\u043d\\u0443 \\u043e\\u0442\\u0437\\u044b\\u0432\\u0430"),
+  revokeReasonDefault: U("\\u041e\\u0442\\u043e\\u0437\\u0432\\u0430\\u043d\\u043e \\u0430\\u0434\\u043c\\u0438\\u043d\\u0438\\u0441\\u0442\\u0440\\u0430\\u0442\\u043e\\u0440\\u043e\\u043c"),
   auditDocument: U("\\u0410\\u0443\\u0434\\u0438\\u0442 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u0430"),
   enrollmentAudit: U("\\u0410\\u0443\\u0434\\u0438\\u0442 \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044f"),
   linkedEnrollment: U("\\u0421\\u0432\\u044f\\u0437\\u0430\\u043d\\u043d\\u043e\\u0435 \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435"),
@@ -1041,10 +1042,7 @@ export function DocumentsPage() {
     let reason = "";
 
     if (nextStatus === "revoked") {
-      reason = window.prompt(T.revokeReasonPrompt, doc.revocation_reason || "") || "";
-      if (!reason.trim()) {
-        return;
-      }
+      reason = doc.revocation_reason || T.revokeReasonDefault;
     }
 
     const payload = new FormData();
