@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import FileResponse
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
@@ -14,6 +15,7 @@ from app.models.lesson_block import LessonBlock
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.user import User
+from app.services.document_storage import resolve_private_storage_path
 from app.schemas.public import (
     PublicCourseDetailResponse,
     PublicCourseItemResponse,
@@ -27,6 +29,64 @@ from app.schemas.public import (
 router = APIRouter(prefix="/public", tags=["public"])
 
 
+
+
+def resolve_public_lesson_presentation_path(
+    *,
+    lesson_id: str,
+    asset_id: str,
+):
+    return resolve_private_storage_path(
+        f"lesson-presentations/{lesson_id}/{asset_id}.pdf"
+    )
+
+
+@router.get("/lesson-presentations/{lesson_id}/{asset_id}/view")
+async def view_public_lesson_presentation(
+    lesson_id: str,
+    asset_id: str,
+):
+    resolved_path = resolve_public_lesson_presentation_path(
+        lesson_id=lesson_id,
+        asset_id=asset_id,
+    )
+
+    if not resolved_path or not resolved_path.exists() or not resolved_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Presentation file not found",
+        )
+
+    return FileResponse(
+        path=resolved_path,
+        media_type="application/pdf",
+        filename="presentation.pdf",
+        content_disposition_type="inline",
+    )
+
+
+@router.get("/lesson-presentations/{lesson_id}/{asset_id}/download")
+async def download_public_lesson_presentation(
+    lesson_id: str,
+    asset_id: str,
+):
+    resolved_path = resolve_public_lesson_presentation_path(
+        lesson_id=lesson_id,
+        asset_id=asset_id,
+    )
+
+    if not resolved_path or not resolved_path.exists() or not resolved_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Presentation file not found",
+        )
+
+    return FileResponse(
+        path=resolved_path,
+        media_type="application/pdf",
+        filename="presentation.pdf",
+        content_disposition_type="attachment",
+    )
 
 
 def public_document_completion_visibility_condition():

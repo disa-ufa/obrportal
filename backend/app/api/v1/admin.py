@@ -120,6 +120,9 @@ SYSTEM_ROLE_CODES = {
 
 ROLE_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,63}$")
 
+LESSON_PRESENTATION_ALLOWED_EXTENSIONS = {".pdf"}
+LESSON_PRESENTATION_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
 
 async def get_user_roles(
     user_id: str,
@@ -4167,6 +4170,123 @@ async def list_real_lesson_blocks(
     )
 
     return list(result.scalars().all())
+
+
+def normalize_lesson_presentation_extension(filename: str | None) -> str:
+    suffix = Path(filename or "").suffix.lower()
+
+    if not suffix:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Presentation file extension is required",
+        )
+
+    if suffix not in LESSON_PRESENTATION_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Only PDF presentation files are supported at this stage",
+        )
+
+    return suffix
+
+
+async def save_admin_lesson_presentation_file(
+    *,
+    lesson_id: str,
+    asset_id: str,
+    upload_file: UploadFile,
+) -> tuple[str, int]:
+    content = await upload_file.read()
+
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Uploaded presentation file is empty",
+        )
+
+    if len(content) > LESSON_PRESENTATION_MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Presentation file is too large",
+        )
+
+    extension = normalize_lesson_presentation_extension(upload_file.filename)
+
+    if extension == ".pdf" and not content.startswith(b"%PDF"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Uploaded file is not a valid PDF document",
+        )
+
+    relative_path = Path("lesson-presentations") / lesson_id / f"{asset_id}{extension}"
+
+    try:
+        storage_path = write_private_storage_file(relative_path, content)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid presentation storage path",
+        )
+
+    return storage_path, len(content)
+
+
+def build_lesson_presentation_public_urls(
+    *,
+    request: Request,
+    lesson_id: str,
+    asset_id: str,
+) -> dict[str, str]:
+    base_url = str(request.base_url).rstrip("/")
+    public_path = f"/api/v1/public/lesson-presentations/{lesson_id}/{asset_id}"
+
+    return {
+        "viewer_url": f"{base_url}{public_path}/view",
+        "download_url": f"{base_url}{public_path}/download",
+    }
+
+
+@router.post(
+    "/course-lessons/{lesson_id}/presentation-assets",
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_admin_lesson_presentation_asset(
+    lesson_id: str,
+    request: Request,
+    file: UploadFile = File(...),
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    asset_id = str(uuid4())
+
+    storage_path, size_bytes = await save_admin_lesson_presentation_file(
+        lesson_id=str(lesson.id),
+        asset_id=asset_id,
+        upload_file=file,
+    )
+
+    urls = build_lesson_presentation_public_urls(
+        request=request,
+        lesson_id=str(lesson.id),
+        asset_id=asset_id,
+    )
+
+    return {
+        "asset_id": asset_id,
+        "lesson_id": str(lesson.id),
+        "material_kind": "presentation",
+        "original_filename": file.filename or "presentation.pdf",
+        "mime_type": "application/pdf",
+        "size_bytes": size_bytes,
+        "storage_path": storage_path,
+        "viewer_url": urls["viewer_url"],
+        "original_url": urls["download_url"],
+        "download_url": urls["download_url"],
+        "render_mode": "pdf",
+        "conversion_status": "ready",
+        "show_download": True,
+    }
 
 
 @router.get("/course-lessons/{lesson_id}/blocks", response_model=list[AdminLessonBlockItem])

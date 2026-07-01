@@ -875,6 +875,16 @@ export async function reorderAdminLessonBlocks(lessonId, blocks) {
   });
 }
 
+export async function uploadAdminLessonPresentationAsset(lessonId, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return request(`/api/v1/admin/course-lessons/${lessonId}/presentation-assets`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
 
 
 export async function getAdminEnrollments(filters = {}) {
