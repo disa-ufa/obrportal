@@ -247,10 +247,6 @@ async def ensure_completion_document_for_enrollment(
             )
             document_changed = True
 
-        if existing_document.status == "draft" and existing_document.storage_path:
-            existing_document.status = "available"
-            document_changed = True
-
         if document_changed:
             await session.flush()
 
@@ -291,7 +287,6 @@ async def ensure_completion_document_for_enrollment(
         learner=learner,
         organization=organization,
     )
-    document.status = "available"
     mark_completion_document_generation_metadata(
         document,
         source="auto_completion",
