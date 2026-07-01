@@ -1,4 +1,4 @@
-﻿# Stage 51 - Production target facts completion audit
+# Stage 51 - Production target facts completion audit
 
 Status: draft
 Branch: stage51-production-target-facts-completion-audit

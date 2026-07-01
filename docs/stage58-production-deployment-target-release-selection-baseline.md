@@ -1,4 +1,4 @@
-﻿# Stage 58 - Production deployment target release selection baseline
+# Stage 58 - Production deployment target release selection baseline
 
 Status: planned
 Base branch: develop

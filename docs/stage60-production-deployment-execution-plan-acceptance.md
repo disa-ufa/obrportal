@@ -1,4 +1,4 @@
-﻿# Stage 60 - Production deployment execution plan acceptance
+# Stage 60 - Production deployment execution plan acceptance
 
 Status: accepted
 Branch: stage60-production-deployment-execution-plan-audit

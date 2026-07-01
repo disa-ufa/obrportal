@@ -1,4 +1,4 @@
-﻿# Stage 57 - Production protected backup execution acceptance
+# Stage 57 - Production protected backup execution acceptance
 
 Status: accepted
 Branch: stage57-production-protected-backup-execution-audit

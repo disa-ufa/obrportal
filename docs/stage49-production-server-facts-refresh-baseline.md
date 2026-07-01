@@ -1,4 +1,4 @@
-﻿# Stage 49 - Production server facts refresh baseline
+# Stage 49 - Production server facts refresh baseline
 
 Status: planned
 Base branch: develop

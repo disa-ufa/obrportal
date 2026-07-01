@@ -1,4 +1,4 @@
-﻿# Stage 37 — Admin courses incremental refresh baseline
+# Stage 37 — Admin courses incremental refresh baseline
 
 Status: planned
 Base branch: develop

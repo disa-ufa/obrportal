@@ -1,4 +1,4 @@
-﻿# Stage 52 - Production target DNS alignment baseline
+# Stage 52 - Production target DNS alignment baseline
 
 Status: planned
 Base branch: develop

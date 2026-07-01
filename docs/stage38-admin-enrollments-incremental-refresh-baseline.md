@@ -1,4 +1,4 @@
-﻿# Stage 38 — Admin enrollments incremental refresh baseline
+# Stage 38 — Admin enrollments incremental refresh baseline
 
 Status: planned
 Base branch: develop

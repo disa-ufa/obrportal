@@ -1,4 +1,4 @@
-﻿"""add quiz attempts
+"""add quiz attempts
 
 Revision ID: 6423_quiz_attempts
 Revises: 6422_lesson_blocks_schema

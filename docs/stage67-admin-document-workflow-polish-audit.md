@@ -1,4 +1,4 @@
-﻿# Stage 67 - Admin document workflow polish audit
+# Stage 67 - Admin document workflow polish audit
 
 Status: draft
 Branch: stage67-admin-document-workflow-polish-audit

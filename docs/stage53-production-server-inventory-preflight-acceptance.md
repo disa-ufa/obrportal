@@ -1,4 +1,4 @@
-﻿# Stage 53 - Production server inventory preflight acceptance
+# Stage 53 - Production server inventory preflight acceptance
 
 Status: accepted
 Branch: stage53-production-server-inventory-preflight-audit

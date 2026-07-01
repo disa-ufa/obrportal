@@ -1,4 +1,4 @@
-﻿# Stage 67 - Admin document workflow polish baseline
+# Stage 67 - Admin document workflow polish baseline
 
 Status: planned
 Base branch: develop

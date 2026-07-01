@@ -1,4 +1,4 @@
-﻿# Stage 65 - Product development continuation after metadata alignment audit
+# Stage 65 - Product development continuation after metadata alignment audit
 
 Status: draft
 Branch: stage65-product-development-continuation-audit

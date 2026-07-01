@@ -1,4 +1,4 @@
-﻿# Stage 59 - Production pre-deployment health check acceptance
+# Stage 59 - Production pre-deployment health check acceptance
 
 Status: accepted
 Branch: stage59-production-pre-deployment-health-check-audit

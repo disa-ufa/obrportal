@@ -1,4 +1,4 @@
-﻿# Production Manual Admin UI Content Fill Runbook
+# Production Manual Admin UI Content Fill Runbook
 
 production_manual_admin_content_fill_runbook=ready
 manual_admin_ui_content_fill=yes

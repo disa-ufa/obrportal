@@ -1,4 +1,4 @@
-﻿# Stage 40 — Admin RBAC and audit incremental refresh acceptance
+# Stage 40 — Admin RBAC and audit incremental refresh acceptance
 
 Status: accepted
 Branch: stage40-admin-rbac-audit-only-refresh-path

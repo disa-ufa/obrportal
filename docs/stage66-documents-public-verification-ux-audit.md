@@ -1,4 +1,4 @@
-﻿# Stage 66 - Documents and public verification UX improvement audit
+# Stage 66 - Documents and public verification UX improvement audit
 
 Status: draft
 Branch: stage66-documents-public-verification-ux-audit

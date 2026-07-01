@@ -1,4 +1,4 @@
-﻿# Stage 63 - Product development backlog selection acceptance
+# Stage 63 - Product development backlog selection acceptance
 
 Status: accepted
 Branch: stage63-product-development-backlog-selection-audit

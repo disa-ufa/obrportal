@@ -1,4 +1,4 @@
-﻿# Stage 51 - Production target facts completion baseline
+# Stage 51 - Production target facts completion baseline
 
 Status: planned
 Base branch: develop

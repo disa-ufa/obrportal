@@ -1,4 +1,4 @@
-﻿# Stage 68 - Organization cabinet document profile polish audit
+# Stage 68 - Organization cabinet document profile polish audit
 
 Status: draft
 Branch: stage68-organization-cabinet-document-profile-polish-audit

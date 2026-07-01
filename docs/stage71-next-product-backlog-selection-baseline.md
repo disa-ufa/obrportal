@@ -1,4 +1,4 @@
-﻿# Stage 71 - Next product backlog selection baseline
+# Stage 71 - Next product backlog selection baseline
 
 Status: planned
 Base branch: develop

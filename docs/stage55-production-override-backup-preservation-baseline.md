@@ -1,4 +1,4 @@
-﻿# Stage 55 - Production override and backup preservation preflight baseline
+# Stage 55 - Production override and backup preservation preflight baseline
 
 Status: planned
 Base branch: develop

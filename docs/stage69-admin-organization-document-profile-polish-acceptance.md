@@ -1,4 +1,4 @@
-﻿# Stage 69 - Admin organization document profile polish acceptance
+# Stage 69 - Admin organization document profile polish acceptance
 
 Status: accepted
 Branch: stage69-admin-organization-document-profile-polish-audit

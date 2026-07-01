@@ -1,4 +1,4 @@
-﻿# Stage 48 - Production deployment dry-run audit
+# Stage 48 - Production deployment dry-run audit
 
 Status: draft
 Branch: stage48-production-deployment-dry-run-audit

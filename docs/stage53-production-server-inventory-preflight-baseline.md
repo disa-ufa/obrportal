@@ -1,4 +1,4 @@
-﻿# Stage 53 - Production server inventory preflight baseline
+# Stage 53 - Production server inventory preflight baseline
 
 Status: planned
 Base branch: develop

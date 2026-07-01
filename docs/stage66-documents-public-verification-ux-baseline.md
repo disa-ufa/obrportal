@@ -1,4 +1,4 @@
-﻿# Stage 66 - Documents and public verification UX improvement baseline
+# Stage 66 - Documents and public verification UX improvement baseline
 
 Status: planned
 Base branch: develop

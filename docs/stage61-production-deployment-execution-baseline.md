@@ -1,4 +1,4 @@
-﻿# Stage 61 - Production deployment execution baseline
+# Stage 61 - Production deployment execution baseline
 
 Status: planned
 Base branch: develop

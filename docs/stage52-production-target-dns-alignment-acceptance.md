@@ -1,4 +1,4 @@
-﻿# Stage 52 - Production target DNS alignment acceptance
+# Stage 52 - Production target DNS alignment acceptance
 
 Status: accepted
 Branch: stage52-production-target-dns-alignment-audit

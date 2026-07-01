@@ -1,4 +1,4 @@
-﻿export const QUIZ_SCHEMA_VERSION = 1;
+export const QUIZ_SCHEMA_VERSION = 1;
 
 export const QUIZ_QUESTION_TYPES = [
   {

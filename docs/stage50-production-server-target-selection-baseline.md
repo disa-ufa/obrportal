@@ -1,4 +1,4 @@
-﻿# Stage 50 - Production server target selection baseline
+# Stage 50 - Production server target selection baseline
 
 Status: planned
 Base branch: develop

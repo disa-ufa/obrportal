@@ -1,4 +1,4 @@
-﻿# Stage 38 — Admin enrollments incremental refresh acceptance
+# Stage 38 — Admin enrollments incremental refresh acceptance
 
 Status: accepted
 Branch: stage38-admin-enrollments-only-refresh-path

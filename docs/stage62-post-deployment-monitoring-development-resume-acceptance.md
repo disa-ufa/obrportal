@@ -1,4 +1,4 @@
-﻿# Stage 62 - Post-deployment monitoring and product development resume acceptance
+# Stage 62 - Post-deployment monitoring and product development resume acceptance
 
 Status: accepted
 Branch: stage62-post-deployment-monitoring-development-resume-audit

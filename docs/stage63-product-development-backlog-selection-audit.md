@@ -1,4 +1,4 @@
-﻿# Stage 63 - Product development backlog selection audit
+# Stage 63 - Product development backlog selection audit
 
 Status: draft
 Branch: stage63-product-development-backlog-selection-audit

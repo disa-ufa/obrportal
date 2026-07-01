@@ -1,4 +1,4 @@
-﻿# Stage 81.2 - Production-safe data initialization plan
+# Stage 81.2 - Production-safe data initialization plan
 
 stage81_2_production_data_initialization_plan_status=implementation_ready
 stage81_2_release_manifest_required=yes

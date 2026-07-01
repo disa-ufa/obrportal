@@ -1,4 +1,4 @@
-﻿# Stage 48 - Production deployment dry-run acceptance
+# Stage 48 - Production deployment dry-run acceptance
 
 Status: accepted
 Branch: stage48-production-deployment-dry-run-audit

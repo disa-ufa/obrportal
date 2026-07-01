@@ -1,4 +1,4 @@
-﻿# Stage 70 - Release readiness checkpoint audit
+# Stage 70 - Release readiness checkpoint audit
 
 Status: draft
 Branch: stage70-release-readiness-checkpoint-audit

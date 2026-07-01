@@ -1,4 +1,4 @@
-﻿"""create learning group members
+"""create learning group members
 
 Revision ID: 0008_learning_group_members
 Revises: 0007_unique_document_enrollment

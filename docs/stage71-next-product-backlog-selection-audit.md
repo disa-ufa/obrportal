@@ -1,4 +1,4 @@
-﻿# Stage 71 - Next product backlog selection audit
+# Stage 71 - Next product backlog selection audit
 
 Status: draft
 Branch: stage71-next-product-backlog-selection-audit

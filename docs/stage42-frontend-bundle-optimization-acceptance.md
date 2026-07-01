@@ -1,4 +1,4 @@
-﻿# Stage 42 - Frontend bundle optimization acceptance
+# Stage 42 - Frontend bundle optimization acceptance
 
 Status: accepted
 Branch: stage42-frontend-bundle-optimization-audit

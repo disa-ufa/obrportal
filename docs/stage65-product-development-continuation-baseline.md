@@ -1,4 +1,4 @@
-﻿# Stage 65 - Product development continuation after metadata alignment baseline
+# Stage 65 - Product development continuation after metadata alignment baseline
 
 Status: planned
 Base branch: develop

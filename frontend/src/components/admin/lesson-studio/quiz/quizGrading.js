@@ -1,4 +1,4 @@
-﻿import { normalizeQuizContent } from "./quizSchema.js";
+import { normalizeQuizContent } from "./quizSchema.js";
 
 function toComparableText(value, question) {
   let text = `${value ?? ""}`;

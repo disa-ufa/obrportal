@@ -1,4 +1,4 @@
-﻿# Stage 51 - Production target facts completion acceptance
+# Stage 51 - Production target facts completion acceptance
 
 Status: accepted with blockers
 Branch: stage51-production-target-facts-completion-audit

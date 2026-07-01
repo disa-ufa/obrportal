@@ -1,4 +1,4 @@
-﻿# Stage 40 — Admin RBAC and audit incremental refresh baseline
+# Stage 40 — Admin RBAC and audit incremental refresh baseline
 
 Status: planned
 Base branch: develop

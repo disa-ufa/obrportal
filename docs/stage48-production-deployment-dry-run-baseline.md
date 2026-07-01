@@ -1,4 +1,4 @@
-﻿# Stage 48 - Production deployment dry-run planning baseline
+# Stage 48 - Production deployment dry-run planning baseline
 
 Status: planned
 Base branch: develop

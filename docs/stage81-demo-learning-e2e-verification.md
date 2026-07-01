@@ -1,4 +1,4 @@
-﻿# Stage 81.1 - Demo learning e2e recovery verification
+# Stage 81.1 - Demo learning e2e recovery verification
 
 stage81_1_demo_learning_e2e_verification_status=implementation_ready
 stage81_1_release_manifest_required=yes

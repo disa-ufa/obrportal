@@ -1,4 +1,4 @@
-﻿# Stage 56 - Production deployment preservation plan baseline
+# Stage 56 - Production deployment preservation plan baseline
 
 Status: planned
 Base branch: develop

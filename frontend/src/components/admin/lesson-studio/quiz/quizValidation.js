@@ -1,4 +1,4 @@
-﻿import {
+import {
   QUIZ_QUESTION_TYPES,
   calculateQuizTotalPoints,
   normalizeQuizContent,

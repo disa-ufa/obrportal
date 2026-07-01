@@ -1,4 +1,4 @@
-﻿# Stage 39 — Admin documents incremental refresh acceptance
+# Stage 39 — Admin documents incremental refresh acceptance
 
 Status: accepted
 Branch: stage39-admin-documents-only-refresh-path

@@ -1,4 +1,4 @@
-﻿# Stage 69 - Admin organization document profile polish baseline
+# Stage 69 - Admin organization document profile polish baseline
 
 Status: planned
 Base branch: develop
