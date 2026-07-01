@@ -4044,10 +4044,10 @@ function LessonStudioPresentationBlockEditor({ lesson, form, saving, onFieldChan
   const labels = {
     presentation: "\u041f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044f",
     editorHelp: "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 PDF-\u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044e. \u041e\u043d\u0430 \u0431\u0443\u0434\u0435\u0442 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0442\u044c\u0441\u044f \u043f\u0440\u044f\u043c\u043e \u0432\u043d\u0443\u0442\u0440\u0438 \u0443\u0440\u043e\u043a\u0430.",
-    uploadTitle: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c PDF",
-    uploadHelp: "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 PDF-\u0444\u0430\u0439\u043b. \u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0441\u0441\u044b\u043b\u043a\u0430 \u043f\u043e\u0434\u0441\u0442\u0430\u0432\u0438\u0442\u0441\u044f \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438.",
+    uploadTitle: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c PDF/PPTX",
+    uploadHelp: "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 PDF \u0438\u043b\u0438 PPTX. PPTX \u0431\u0443\u0434\u0435\u0442 \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438 \u043f\u0440\u0435\u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d \u0432 PDF \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u0432 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435.",
     uploading: "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...",
-    choosePdf: "\u0412\u044b\u0431\u0440\u0430\u0442\u044c PDF",
+    choosePdf: "\u0412\u044b\u0431\u0440\u0430\u0442\u044c \u0444\u0430\u0439\u043b",
     uploadedFile: "\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043d \u0444\u0430\u0439\u043b:",
     urlLabel: "\u0421\u0441\u044b\u043b\u043a\u0430 \u043d\u0430 PDF-\u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044e",
     check: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c",
@@ -4063,9 +4063,9 @@ function LessonStudioPresentationBlockEditor({ lesson, form, saving, onFieldChan
     active: "\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0432 \u0443\u0440\u043e\u043a\u0435",
     activeHelp: "\u0411\u043b\u043e\u043a \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u0435\u043d \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u043c\u0441\u044f.",
     noLessonError: "\u041d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d ID \u0443\u0440\u043e\u043a\u0430 \u0434\u043b\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u0438.",
-    onlyPdfError: "\u0421\u0435\u0439\u0447\u0430\u0441 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0442\u043e\u043b\u044c\u043a\u043e PDF-\u0444\u0430\u0439\u043b\u043e\u0432.",
+    onlyPdfError: "\u0421\u0435\u0439\u0447\u0430\u0441 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0430 PDF \u0438 PPTX-\u0444\u0430\u0439\u043b\u043e\u0432.",
     noViewerError: "\u0421\u0435\u0440\u0432\u0435\u0440 \u043d\u0435 \u0432\u0435\u0440\u043d\u0443\u043b \u0441\u0441\u044b\u043b\u043a\u0443 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u0438.",
-    uploadSuccess: "PDF \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c\u00bb, \u0447\u0442\u043e\u0431\u044b \u0437\u0430\u043a\u0440\u0435\u043f\u0438\u0442\u044c \u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044e \u0432 \u0431\u043b\u043e\u043a\u0435.",
+    uploadSuccess: "\u041f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044f \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d\u0430. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c\u00bb, \u0447\u0442\u043e\u0431\u044b \u0437\u0430\u043a\u0440\u0435\u043f\u0438\u0442\u044c \u0435\u0435 \u0432 \u0431\u043b\u043e\u043a\u0435.",
     uploadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044e.",
   };
 
@@ -4084,6 +4084,7 @@ function LessonStudioPresentationBlockEditor({ lesson, form, saving, onFieldChan
       material_kind: "presentation",
       asset_id: presentationAsset.asset_id || "",
       original_filename: presentationAsset.original_filename || "",
+      source_extension: presentationAsset.source_extension || "",
       mime_type: presentationAsset.mime_type || "application/pdf",
       size_bytes: presentationAsset.size_bytes || null,
       url: presentationViewerUrl,
@@ -4128,7 +4129,7 @@ function LessonStudioPresentationBlockEditor({ lesson, form, saving, onFieldChan
 
     const filename = `${file.name || ""}`.toLowerCase();
 
-    if (!filename.endsWith(".pdf")) {
+    if (!filename.endsWith(".pdf") && !filename.endsWith(".pptx")) {
       setPresentationUploadError(labels.onlyPdfError);
       return;
     }
@@ -4194,7 +4195,7 @@ function LessonStudioPresentationBlockEditor({ lesson, form, saving, onFieldChan
               {uploadingPresentation ? labels.uploading : labels.choosePdf}
               <input
                 type="file"
-                accept="application/pdf,.pdf"
+                accept="application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pdf,.pptx"
                 disabled={uploadingPresentation || saving}
                 onChange={handlePresentationUpload}
                 className="sr-only"
@@ -4815,10 +4816,17 @@ function buildInspectorBlockPayload(block, values) {
         : {};
     const viewerUrl = `${uploadedPresentationAsset.viewer_url || contentText || ""}`.trim();
     const downloadUrl = `${uploadedPresentationAsset.original_url || uploadedPresentationAsset.download_url || contentJson.original_url || contentJson.download_url || viewerUrl}`.trim();
+  const sourceFilename = `${uploadedPresentationAsset.original_filename || contentJson.original_filename || ""}`.trim().toLowerCase();
+  const inferredSourceExtension = sourceFilename.endsWith(".pptx")
+    ? ".pptx"
+    : sourceFilename.endsWith(".pdf")
+      ? ".pdf"
+      : "";
 
     contentJson.material_kind = "presentation";
     contentJson.asset_id = uploadedPresentationAsset.asset_id || contentJson.asset_id || "";
     contentJson.original_filename = uploadedPresentationAsset.original_filename || contentJson.original_filename || "";
+  contentJson.source_extension = uploadedPresentationAsset.source_extension || contentJson.source_extension || inferredSourceExtension;
     contentJson.mime_type = uploadedPresentationAsset.mime_type || contentJson.mime_type || "application/pdf";
     contentJson.size_bytes = uploadedPresentationAsset.size_bytes || contentJson.size_bytes || null;
     contentJson.url = viewerUrl;
@@ -4829,7 +4837,8 @@ function buildInspectorBlockPayload(block, values) {
     contentJson.render_mode = "pdf";
     contentJson.conversion_status = uploadedPresentationAsset.conversion_status || contentJson.conversion_status || (viewerUrl ? "ready" : "empty");
     contentJson.show_download = contentJson.show_download !== false;
-  } else if (type === "file_link" || type === "file" || type === "link") {
+
+} else if (type === "file_link" || type === "file" || type === "link") {
     contentJson.url = contentText;
     contentJson.content_url = contentText;
   } else if (type === "callout") {

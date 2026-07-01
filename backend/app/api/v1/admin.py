@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -120,7 +123,7 @@ SYSTEM_ROLE_CODES = {
 
 ROLE_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,63}$")
 
-LESSON_PRESENTATION_ALLOWED_EXTENSIONS = {".pdf"}
+LESSON_PRESENTATION_ALLOWED_EXTENSIONS = {".pdf", ".pptx"}
 LESSON_PRESENTATION_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 
@@ -4184,10 +4187,97 @@ def normalize_lesson_presentation_extension(filename: str | None) -> str:
     if suffix not in LESSON_PRESENTATION_ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Only PDF presentation files are supported at this stage",
+            detail="Only PDF and PPTX presentation files are supported at this stage",
         )
 
     return suffix
+
+
+def get_lesson_presentation_converter_command() -> str:
+    return shutil.which("soffice") or shutil.which("libreoffice") or ""
+
+
+def convert_pptx_presentation_to_pdf(
+    *,
+    content: bytes,
+    asset_id: str,
+) -> bytes:
+    converter = get_lesson_presentation_converter_command()
+
+    if not converter:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Presentation converter is not installed",
+        )
+
+    with tempfile.TemporaryDirectory(prefix="obrportal-presentation-") as temp_dir:
+        temp_path = Path(temp_dir)
+        input_path = temp_path / f"{asset_id}.pptx"
+        output_dir = temp_path / "out"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        input_path.write_bytes(content)
+
+        command = [
+            converter,
+            "--headless",
+            "--nologo",
+            "--nodefault",
+            "--nofirststartwizard",
+            "--convert-to",
+            "pdf",
+            "--outdir",
+            str(output_dir),
+            str(input_path),
+        ]
+
+        try:
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                check=False,
+                text=True,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail="Presentation conversion timed out",
+            )
+
+        if completed.returncode != 0:
+            converter_output = " ".join(
+                item.strip()
+                for item in [completed.stderr, completed.stdout]
+                if item and item.strip()
+            )
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Presentation conversion failed: {converter_output[:500]}",
+            )
+
+        output_path = output_dir / f"{asset_id}.pdf"
+
+        if not output_path.exists():
+            pdf_candidates = list(output_dir.glob("*.pdf"))
+
+            if pdf_candidates:
+                output_path = pdf_candidates[0]
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Presentation conversion did not produce a PDF file",
+                )
+
+        pdf_content = output_path.read_bytes()
+
+        if not pdf_content.startswith(b"%PDF"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Converted presentation is not a valid PDF document",
+            )
+
+        return pdf_content
 
 
 async def save_admin_lesson_presentation_file(
@@ -4195,7 +4285,7 @@ async def save_admin_lesson_presentation_file(
     lesson_id: str,
     asset_id: str,
     upload_file: UploadFile,
-) -> tuple[str, int]:
+) -> tuple[str, int, str]:
     content = await upload_file.read()
 
     if not content:
@@ -4212,23 +4302,36 @@ async def save_admin_lesson_presentation_file(
 
     extension = normalize_lesson_presentation_extension(upload_file.filename)
 
-    if extension == ".pdf" and not content.startswith(b"%PDF"):
+    if extension == ".pdf":
+        if not content.startswith(b"%PDF"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Uploaded file is not a valid PDF document",
+            )
+
+        pdf_content = content
+    elif extension == ".pptx":
+        pdf_content = convert_pptx_presentation_to_pdf(
+            content=content,
+            asset_id=asset_id,
+        )
+    else:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Uploaded file is not a valid PDF document",
+            detail="Unsupported presentation file extension",
         )
 
-    relative_path = Path("lesson-presentations") / lesson_id / f"{asset_id}{extension}"
+    relative_path = Path("lesson-presentations") / lesson_id / f"{asset_id}.pdf"
 
     try:
-        storage_path = write_private_storage_file(relative_path, content)
+        storage_path = write_private_storage_file(relative_path, pdf_content)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid presentation storage path",
         )
 
-    return storage_path, len(content)
+    return storage_path, len(pdf_content), extension
 
 
 def build_lesson_presentation_public_urls(
@@ -4260,7 +4363,7 @@ async def upload_admin_lesson_presentation_asset(
     lesson = await get_admin_course_lesson_or_404(lesson_id, session)
     asset_id = str(uuid4())
 
-    storage_path, size_bytes = await save_admin_lesson_presentation_file(
+    storage_path, size_bytes, source_extension = await save_admin_lesson_presentation_file(
         lesson_id=str(lesson.id),
         asset_id=asset_id,
         upload_file=file,
@@ -4278,6 +4381,7 @@ async def upload_admin_lesson_presentation_asset(
         "material_kind": "presentation",
         "original_filename": file.filename or "presentation.pdf",
         "mime_type": "application/pdf",
+        "source_extension": source_extension,
         "size_bytes": size_bytes,
         "storage_path": storage_path,
         "viewer_url": urls["viewer_url"],
