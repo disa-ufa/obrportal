@@ -1,4 +1,4 @@
-﻿# Stage 37 — Admin courses incremental refresh acceptance
+# Stage 37 — Admin courses incremental refresh acceptance
 
 Status: accepted
 Branch: stage37-admin-courses-only-refresh-path

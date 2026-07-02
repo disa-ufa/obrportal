@@ -7,8 +7,12 @@ import {
   getAdminLessonBlocks,
   reorderAdminLessonBlocks,
   updateAdminLessonBlock,
+  uploadAdminLessonPresentationAsset,
 } from "../api/client";
 import LessonRichTextEditor from "../components/admin/lesson-studio/LessonRichTextEditor";
+import QuizBlockEditor from "../components/admin/lesson-studio/quiz/QuizBlockEditor";
+import { createDefaultQuiz, normalizeQuizContent } from "../components/admin/lesson-studio/quiz/quizSchema";
+import { validateQuizContent } from "../components/admin/lesson-studio/quiz/quizValidation";
 import { getApiErrorMessage, getApiErrorStatus } from "../utils/apiErrors";
 
 function formatLessonStudioError(err, fallback) {
@@ -59,6 +63,26 @@ const STUDIO_QUICK_BLOCK_TEMPLATES = [
     },
   },
   {
+    key: "presentation",
+    label: "Презентация",
+    hint: "PDF в браузере",
+    tone: "amber",
+    values: {
+      block_type: "presentation",
+      title: "Презентация",
+      content_json: {
+        material_kind: "presentation",
+        url: "",
+        content_url: "",
+        viewer_url: "",
+        render_mode: "pdf",
+        show_download: true,
+      },
+      is_required: true,
+      is_active: true,
+    },
+  },
+  {
     key: "image",
     label: "Изображение",
     hint: "Картинка по ссылке",
@@ -90,7 +114,7 @@ const STUDIO_QUICK_BLOCK_TEMPLATES = [
     values: {
       block_type: "quiz",
       title: "Тест",
-      content_json: { question: "Введите вопрос." },
+      content_json: createDefaultQuiz(),
       is_required: true,
       is_active: true,
     },
@@ -202,6 +226,7 @@ function getLessonBlockTypeLabel(type) {
     text: "Текст",
     video: "Видео",
     file_link: "Файл/ссылка",
+    presentation: "Презентация",
     file: "Файл",
     link: "Ссылка",
     quiz: "Тест",
@@ -251,6 +276,7 @@ function getBlockTextPreview(block) {
   const settings = safeParseJson(block?.settings_json);
 
   const candidates = [
+    content.title,
     content.text,
     content.content_text,
     content.body,
@@ -305,6 +331,12 @@ function getBlockPreviewMeta(block) {
       kicker: "Материал для перехода",
       description: "Ссылка на файл, презентацию, документ или внешний ресурс.",
       surfaceClass: "bg-blue-50 text-blue-900 ring-blue-200",
+    },
+    presentation: {
+      icon: "PPT",
+      kicker: "Презентация",
+      description: "PDF-презентация с просмотром прямо внутри урока.",
+      surfaceClass: "bg-amber-50 text-amber-900 ring-amber-200",
     },
     file: {
       icon: "↗",
@@ -856,6 +888,28 @@ function getFileLinkBlockUrl(block) {
   return `${content.url || content.content_url || content.file_url || content.href || content.link || ""}`.trim();
 }
 
+function isLessonPresentationBlock(block) {
+  const type = `${block?.block_type || ""}`.toLowerCase();
+
+  return type === "presentation";
+}
+
+function getPresentationBlockContent(block) {
+  return safeParseJson(block?.content_json);
+}
+
+function getPresentationBlockUrl(block) {
+  const content = getPresentationBlockContent(block);
+
+  return `${content.viewer_url || content.url || content.content_url || content.file_url || content.href || ""}`.trim();
+}
+
+function getPresentationOriginalUrl(block) {
+  const content = getPresentationBlockContent(block);
+
+  return `${content.original_url || content.download_url || content.url || content.content_url || ""}`.trim();
+}
+
 function getFileLinkHostLabel(value) {
   const source = `${value || ""}`.trim();
 
@@ -964,6 +1018,107 @@ function getFileLinkKindToneClass(tone) {
 
   return classes[tone] || classes.blue;
 }
+
+function LessonPresentationCanvasPreview({ block, previewValue, learnerMode = false }) {
+  const content = getPresentationBlockContent(block);
+  const sourceValue = getPresentationBlockUrl(block) || `${previewValue || ""}`.trim();
+  const safeHref = getSafeLessonRichTextHref(sourceValue);
+  const originalUrl = getPresentationOriginalUrl(block);
+  const safeOriginalHref = getSafeLessonRichTextHref(originalUrl);
+  const ready = Boolean(safeHref);
+  const title = `${block?.title || content.title || content.original_filename || "Презентация"}`.trim() || "Презентация";
+  const filename = `${content.original_filename || ""}`.trim();
+  const hostLabel = getFileLinkHostLabel(sourceValue);
+  const showDownload = content.show_download !== false;
+  const frameHeightClass = learnerMode ? "h-[760px]" : "h-[620px]";
+
+  return (
+    <div
+      data-testid="lesson-studio-presentation-preview"
+      className={
+        learnerMode
+          ? "mt-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+          : "mt-4 rounded-2xl bg-white/90 p-4 shadow-sm ring-1 ring-black/5"
+      }
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-base font-black text-slate-950">{title}</div>
+          <div className="mt-1 text-sm font-semibold text-slate-600">
+            {ready ? "Презентация для просмотра в браузере" : "Презентация не настроена"}
+          </div>
+          <div className="mt-1 max-w-3xl break-words text-xs leading-5 text-slate-500">
+            {ready ? sourceValue : "Добавьте прямую ссылку на PDF-файл презентации."}
+          </div>
+        </div>
+
+        {ready ? (
+          <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+            ✓ Готово
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            Требуется PDF
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200">
+        {ready ? (
+          <iframe
+            title={title}
+            src={safeHref}
+            className={`${frameHeightClass} w-full bg-white`}
+          />
+        ) : (
+          <div className="flex min-h-[320px] flex-col items-center justify-center bg-gradient-to-br from-amber-50 via-white to-slate-50 p-8 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-sm font-black text-amber-800 ring-1 ring-amber-200">
+              PPT
+            </div>
+            <div className="mt-4 text-base font-black text-slate-950">
+              Добавьте презентацию
+            </div>
+            <div className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+              На первом этапе укажите ссылку на PDF. После этого обучающийся увидит презентацию прямо в уроке.
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-xs leading-5 text-slate-500">
+          Источник: {ready ? hostLabel : "—"}{filename ? `. Файл: ${filename}` : ""}.
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {ready ? (
+            <a
+              href={safeHref}
+              target={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "_blank"}
+              rel={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "noreferrer"}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
+            >
+              Открыть на весь экран
+            </a>
+          ) : null}
+
+          {ready && showDownload && safeOriginalHref ? (
+            <a
+              href={safeOriginalHref}
+              target={safeOriginalHref.startsWith("/") || safeOriginalHref.startsWith("#") ? undefined : "_blank"}
+              rel={safeOriginalHref.startsWith("/") || safeOriginalHref.startsWith("#") ? undefined : "noreferrer"}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-white px-5 text-sm font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+            >
+              Скачать
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function LessonFileLinkCanvasPreview({ block, previewValue, learnerMode = false }) {
   const sourceValue = getFileLinkBlockUrl(block) || `${previewValue || ""}`.trim();
@@ -1149,6 +1304,188 @@ function LessonVideoCanvasPreview({ block, previewValue, learnerMode = false }) 
 }
 
 
+
+
+
+function getQuizQuestionTypeLabel(type) {
+  const labels = {
+    single_choice: "\u041e\u0434\u0438\u043d \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442",
+    multiple_choice: "\u041d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0445 \u043e\u0442\u0432\u0435\u0442\u043e\u0432",
+    true_false: "\u0412\u0435\u0440\u043d\u043e / \u043d\u0435\u0432\u0435\u0440\u043d\u043e",
+    short_text: "\u041a\u043e\u0440\u043e\u0442\u043a\u0438\u0439 \u0442\u0435\u043a\u0441\u0442\u043e\u0432\u044b\u0439 \u043e\u0442\u0432\u0435\u0442",
+    number: "\u0427\u0438\u0441\u043b\u043e\u0432\u043e\u0439 \u043e\u0442\u0432\u0435\u0442",
+  };
+
+  return labels[type] || "\u0412\u043e\u043f\u0440\u043e\u0441";
+}
+
+function getQuizQuestionPreviewText(question) {
+  const type = `${question?.type || ""}`.toLowerCase();
+
+  if (type === "single_choice" || type === "multiple_choice") {
+    const options = Array.isArray(question?.options) ? question.options : [];
+    const filledOptions = options
+      .map((option) => `${option?.text || ""}`.trim())
+      .filter(Boolean);
+
+    return filledOptions.length
+      ? `\u0412\u0430\u0440\u0438\u0430\u043d\u0442\u044b: ${filledOptions.slice(0, 4).join(", ")}${filledOptions.length > 4 ? "\u2026" : ""}`
+      : "\u0412\u0430\u0440\u0438\u0430\u043d\u0442\u044b \u043e\u0442\u0432\u0435\u0442\u0430 \u0435\u0449\u0451 \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u044b.";
+  }
+
+  if (type === "true_false") {
+    return `\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442: ${question?.correct_value ? "\u0412\u0435\u0440\u043d\u043e" : "\u041d\u0435\u0432\u0435\u0440\u043d\u043e"}.`;
+  }
+
+  if (type === "short_text") {
+    const answers = Array.isArray(question?.accepted_answers)
+      ? question.accepted_answers.map((answer) => `${answer || ""}`.trim()).filter(Boolean)
+      : [];
+
+    return answers.length
+      ? `\u0414\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0435 \u043e\u0442\u0432\u0435\u0442\u044b: ${answers.slice(0, 3).join(", ")}${answers.length > 3 ? "\u2026" : ""}`
+      : "\u0414\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b\u0435 \u043e\u0442\u0432\u0435\u0442\u044b \u0435\u0449\u0451 \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u044b.";
+  }
+
+  if (type === "number") {
+    const numberValue = `${question?.correct_number ?? ""}`.trim();
+    const tolerance = Number(question?.tolerance || 0);
+
+    return numberValue
+      ? `\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e\u0435 \u0447\u0438\u0441\u043b\u043e: ${numberValue}${tolerance > 0 ? `, \u043f\u043e\u0433\u0440\u0435\u0448\u043d\u043e\u0441\u0442\u044c \u00b1${tolerance}` : ""}.`
+      : "\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e\u0435 \u0447\u0438\u0441\u043b\u043e \u0435\u0449\u0451 \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u043e.";
+  }
+
+  return "\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u0442\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b \u0432\u043e\u043f\u0440\u043e\u0441\u0430.";
+}
+
+function LessonQuizCanvasPreview({ block, previewValue, learnerMode = false }) {
+  const quiz = normalizeQuizContent(safeParseJson(block?.content_json));
+  const validation = validateQuizContent(quiz);
+  const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
+  const questionCount = validation.questionCount || questions.length;
+  const totalPoints = validation.totalPoints || 0;
+  const passScore = Number(quiz.grading?.pass_score_percent);
+  const attemptsLabel = quiz.behavior?.allow_retry
+    ? `${quiz.behavior?.max_attempts || 1} \u043f\u043e\u043f\u044b\u0442\u043a.`
+    : "1 \u043f\u043e\u043f\u044b\u0442\u043a\u0430";
+  const visibleQuestions = questions.slice(0, learnerMode ? 5 : 3);
+
+  return (
+    <div
+      data-testid="lesson-studio-quiz-preview"
+      className={
+        learnerMode
+          ? "mt-5 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-100"
+          : "mt-3 rounded-2xl bg-white/85 p-4 ring-1 ring-black/5"
+      }
+    >
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-black text-slate-950"}>
+            {quiz.title || previewValue || "\u041f\u0440\u043e\u0432\u0435\u0440\u043e\u0447\u043d\u044b\u0439 \u0442\u0435\u0441\u0442"}
+          </div>
+
+          {quiz.description ? (
+            <div className={learnerMode ? "mt-2 text-sm leading-6 text-slate-700" : "mt-1 text-xs leading-5 text-slate-600"}>
+              {quiz.description}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            {questionCount} {"\u0432\u043e\u043f\u0440\u043e\u0441(\u043e\u0432)"}
+          </span>
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+            {totalPoints} {"\u0431\u0430\u043b\u043b(\u043e\u0432)"}
+          </span>
+          <span
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${
+              validation.isValid
+                ? "bg-green-50 text-green-700 ring-green-200"
+                : "bg-amber-50 text-amber-800 ring-amber-200"
+            }`}
+          >
+            {validation.isValid ? "\u0413\u043e\u0442\u043e\u0432" : `${validation.issues.length} \u043f\u0440\u043e\u0431\u043b\u0435\u043c`}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 md:grid-cols-3">
+        <div className="rounded-2xl bg-amber-100/60 px-3 py-2">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700">
+            {"\u041f\u0440\u043e\u0445\u043e\u0434\u043d\u043e\u0439 \u0431\u0430\u043b\u043b"}
+          </div>
+          <div className="mt-1 text-sm font-black text-slate-900">
+            {Number.isFinite(passScore) ? `${passScore}%` : "\u2014"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white/80 px-3 py-2 ring-1 ring-amber-100">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            {"\u041f\u043e\u043f\u044b\u0442\u043a\u0438"}
+          </div>
+          <div className="mt-1 text-sm font-black text-slate-900">
+            {attemptsLabel}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white/80 px-3 py-2 ring-1 ring-amber-100">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            {"\u041f\u0435\u0440\u0435\u043c\u0435\u0448\u0438\u0432\u0430\u043d\u0438\u0435"}
+          </div>
+          <div className="mt-1 text-sm font-black text-slate-900">
+            {quiz.behavior?.shuffle_questions || quiz.behavior?.shuffle_answers ? "\u0412\u043a\u043b\u044e\u0447\u0435\u043d\u043e" : "\u0412\u044b\u043a\u043b\u044e\u0447\u0435\u043d\u043e"}
+          </div>
+        </div>
+      </div>
+
+      {visibleQuestions.length ? (
+        <div className="mt-4 space-y-2">
+          {visibleQuestions.map((question, index) => (
+            <div
+              key={question.id || index}
+              className="rounded-2xl bg-white/85 px-3 py-3 ring-1 ring-amber-100"
+            >
+              <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0 text-sm font-bold text-slate-900">
+                  {index + 1}. {question.title || "\u0412\u043e\u043f\u0440\u043e\u0441 \u0431\u0435\u0437 \u0442\u0435\u043a\u0441\u0442\u0430"}
+                </div>
+                <div className="shrink-0 text-xs font-semibold text-slate-500">
+                  {getQuizQuestionTypeLabel(question.type)} ? {question.points || 0} {"\u0431\u0430\u043b\u043b."}
+                </div>
+              </div>
+
+              <div className="mt-1 text-xs leading-5 text-slate-500">
+                {getQuizQuestionPreviewText(question)}
+              </div>
+            </div>
+          ))}
+
+          {questions.length > visibleQuestions.length ? (
+            <div className="rounded-2xl bg-white/60 px-3 py-2 text-xs font-semibold text-slate-500 ring-1 ring-amber-100">
+              {"\u0415\u0449\u0451 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432:"} {questions.length - visibleQuestions.length}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl bg-white/80 px-3 py-3 text-sm font-semibold text-amber-800 ring-1 ring-amber-100">
+          {"\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u0438\u043d \u0432\u043e\u043f\u0440\u043e\u0441."}
+        </div>
+      )}
+
+      {!validation.isValid ? (
+        <div className="mt-4 rounded-2xl bg-amber-100/70 px-3 py-3 text-xs font-semibold text-amber-900">
+          {validation.issues.slice(0, 3).join(" ? ")}
+          {validation.issues.length > 3 ? " ? \u2026" : ""}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
 function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
   const meta = getBlockPreviewMeta(block);
@@ -1191,6 +1528,12 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
           previewValue={previewValue}
           learnerMode={learnerMode}
         />
+      ) : type === "presentation" ? (
+        <LessonPresentationCanvasPreview
+          block={block}
+          previewValue={previewValue}
+          learnerMode={learnerMode}
+        />
       ) : isLessonImageBlock(block) ? (
         <LessonImageCanvasPreview
           block={block}
@@ -1204,24 +1547,11 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
           learnerMode={learnerMode}
         />
       ) : type === "quiz" ? (
-        <div
-          data-testid="lesson-studio-quiz-preview"
-          className={
-            learnerMode
-              ? "mt-5 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-100"
-              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
-          }
-        >
-          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-bold"}>
-            Вопрос
-          </div>
-          <div className={learnerMode ? "mt-2 text-base leading-8 text-slate-800" : "mt-1 text-sm"}>
-            {previewValue}
-          </div>
-          <div className="mt-3 rounded-xl bg-amber-100/70 px-3 py-2 text-xs font-semibold">
-            Варианты ответов добавим следующим этапом.
-          </div>
-        </div>
+        <LessonQuizCanvasPreview
+          block={block}
+          previewValue={previewValue}
+          learnerMode={learnerMode}
+        />
       ) : type === "assignment" ? (
         <div
           data-testid="lesson-studio-assignment-preview"
@@ -1278,6 +1608,10 @@ function getBlockValidationIssues(block) {
     issues.push("нет источника видео");
   }
 
+  if (type === "presentation" && !getPresentationBlockUrl({ content_json: content })) {
+    issues.push("нет ссылки на презентацию");
+  }
+
   if ((type === "file_link" || type === "file" || type === "link") && !isLessonImageBlock({ ...block, content_json: content }) && !`${content.url || content.content_url || ""}`.trim()) {
     issues.push("нет ссылки");
   }
@@ -1287,16 +1621,11 @@ function getBlockValidationIssues(block) {
   }
 
   if (type === "quiz") {
-    if (!`${content.question || content.quiz_question || ""}`.trim()) {
-      issues.push("нет вопроса");
-    }
-    if (!`${content.answer || content.quiz_answer || ""}`.trim()) {
-      issues.push("нет правильного ответа");
-    }
-  }
+    const quizValidation = validateQuizContent(content);
 
-  if (type === "assignment" && !`${content.text || content.content_text || content.assignment_text || ""}`.trim()) {
-    issues.push("нет задания");
+    if (!quizValidation.isValid) {
+      issues.push(...quizValidation.issues);
+    }
   }
 
   return issues;
@@ -2251,6 +2580,7 @@ function LessonCanvasBlock({
   const blockTypeLabel = isLessonImageBlock(block) ? "Изображение" : getLessonBlockTypeLabel(block.block_type);
   const compactBlockType = `${block?.block_type || "rich_text"}`.toLowerCase();
   const isCompactVideo = compactBlockType === "video";
+  const isCompactPresentation = compactBlockType === "presentation";
   const isCompactImage = isLessonImageBlock(block);
   const isCompactFileLink =
     !isCompactImage &&
@@ -2397,11 +2727,17 @@ function LessonCanvasBlock({
 
       {compact ? (
         <div
-          className={isCompactVideo || isCompactFileLink || isCompactImage || isCompactCallout ? "mt-5 w-full" : "mt-5 max-w-4xl"}
+          className={isCompactVideo || isCompactPresentation || isCompactFileLink || isCompactImage || isCompactCallout ? "mt-5 w-full" : "mt-5 max-w-4xl"}
           data-testid="lesson-studio-block-compact-summary"
         >
           {isCompactVideo ? (
             <LessonVideoCanvasPreview
+              block={block}
+              previewValue={compactSummary}
+              learnerMode={false}
+            />
+          ) : isCompactPresentation ? (
+            <LessonPresentationCanvasPreview
               block={block}
               previewValue={compactSummary}
               learnerMode={false}
@@ -3704,6 +4040,323 @@ function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
 }
 
 
+function LessonStudioPresentationBlockEditor({ lesson, form, saving, onFieldChange }) {
+  const labels = {
+    presentation: "\u041f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044f",
+    editorHelp: "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 PDF-\u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044e. \u041e\u043d\u0430 \u0431\u0443\u0434\u0435\u0442 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0442\u044c\u0441\u044f \u043f\u0440\u044f\u043c\u043e \u0432\u043d\u0443\u0442\u0440\u0438 \u0443\u0440\u043e\u043a\u0430.",
+    uploadTitle: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c PDF/PPTX",
+    uploadHelp: "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 PDF \u0438\u043b\u0438 PPTX. PPTX \u0431\u0443\u0434\u0435\u0442 \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438 \u043f\u0440\u0435\u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d \u0432 PDF \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u0432 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435.",
+    uploading: "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...",
+    choosePdf: "\u0412\u044b\u0431\u0440\u0430\u0442\u044c \u0444\u0430\u0439\u043b",
+    uploadedFile: "\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043d \u0444\u0430\u0439\u043b:",
+    urlLabel: "\u0421\u0441\u044b\u043b\u043a\u0430 \u043d\u0430 PDF-\u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044e",
+    check: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c",
+    urlHelp: "\u041c\u043e\u0436\u043d\u043e \u0432\u0441\u0442\u0430\u0432\u0438\u0442\u044c \u0441\u0441\u044b\u043b\u043a\u0443 \u0432\u0440\u0443\u0447\u043d\u0443\u044e \u0438\u043b\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c PDF-\u0444\u0430\u0439\u043b \u0432\u044b\u0448\u0435.",
+    preview: "\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440",
+    previewHelp: "\u0422\u0430\u043a \u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044f \u0431\u0443\u0434\u0435\u0442 \u0432\u044b\u0433\u043b\u044f\u0434\u0435\u0442\u044c \u0434\u043b\u044f \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0435\u0433\u043e\u0441\u044f.",
+    ready: "\u0413\u043e\u0442\u043e\u0432\u043e",
+    settings: "\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0431\u043b\u043e\u043a\u0430",
+    settingsHelp: "\u0417\u0430\u0433\u043e\u043b\u043e\u0432\u043e\u043a, \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0438 \u0432\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430.",
+    blockTitle: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0431\u043b\u043e\u043a\u0430",
+    required: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439",
+    requiredHelp: "\u041e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u0439\u0441\u044f \u0434\u043e\u043b\u0436\u0435\u043d \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u044d\u0442\u043e\u0442 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b.",
+    active: "\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0432 \u0443\u0440\u043e\u043a\u0435",
+    activeHelp: "\u0411\u043b\u043e\u043a \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u0435\u043d \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u043c\u0441\u044f.",
+    noLessonError: "\u041d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d ID \u0443\u0440\u043e\u043a\u0430 \u0434\u043b\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u0438.",
+    onlyPdfError: "\u0421\u0435\u0439\u0447\u0430\u0441 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0430 PDF \u0438 PPTX-\u0444\u0430\u0439\u043b\u043e\u0432.",
+    noViewerError: "\u0421\u0435\u0440\u0432\u0435\u0440 \u043d\u0435 \u0432\u0435\u0440\u043d\u0443\u043b \u0441\u0441\u044b\u043b\u043a\u0443 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u0438.",
+    uploadSuccess: "\u041f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044f \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d\u0430. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c\u00bb, \u0447\u0442\u043e\u0431\u044b \u0437\u0430\u043a\u0440\u0435\u043f\u0438\u0442\u044c \u0435\u0435 \u0432 \u0431\u043b\u043e\u043a\u0435.",
+    uploadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043f\u0440\u0435\u0437\u0435\u043d\u0442\u0430\u0446\u0438\u044e.",
+  };
+
+  const presentationUrl = `${form.content_text || ""}`.trim();
+  const presentationAsset =
+    form.presentation_asset && typeof form.presentation_asset === "object"
+      ? form.presentation_asset
+      : {};
+  const presentationViewerUrl = `${presentationAsset.viewer_url || presentationUrl || ""}`.trim();
+  const presentationDownloadUrl = `${presentationAsset.original_url || presentationAsset.download_url || presentationViewerUrl}`.trim();
+
+  const draftBlock = {
+    block_type: "presentation",
+    title: form.title || labels.presentation,
+    content_json: {
+      material_kind: "presentation",
+      asset_id: presentationAsset.asset_id || "",
+      original_filename: presentationAsset.original_filename || "",
+      source_extension: presentationAsset.source_extension || "",
+      mime_type: presentationAsset.mime_type || "application/pdf",
+      size_bytes: presentationAsset.size_bytes || null,
+      url: presentationViewerUrl,
+      content_url: presentationViewerUrl,
+      viewer_url: presentationViewerUrl,
+      original_url: presentationDownloadUrl,
+      download_url: presentationDownloadUrl,
+      render_mode: "pdf",
+      conversion_status: presentationAsset.conversion_status || (presentationViewerUrl ? "ready" : "empty"),
+      show_download: true,
+    },
+    is_required: form.is_required,
+    is_active: form.is_active,
+  };
+
+  const safeHref = getSafeLessonRichTextHref(presentationViewerUrl);
+  const ready = Boolean(safeHref);
+  const lessonIdFromUrl =
+    typeof window !== "undefined"
+      ? window.location.pathname.match(/\/admin\/lessons\/([^/]+)\/studio/)?.[1] || ""
+      : "";
+  const lessonIdForUpload = `${lesson?.id || lessonIdFromUrl || ""}`.trim();
+  const [uploadingPresentation, setUploadingPresentation] = useState(false);
+  const [presentationUploadError, setPresentationUploadError] = useState("");
+  const [presentationUploadSuccess, setPresentationUploadSuccess] = useState("");
+
+  const handlePresentationUpload = async (event) => {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+
+    setPresentationUploadError("");
+    setPresentationUploadSuccess("");
+
+    if (!file) {
+      return;
+    }
+
+    if (!lessonIdForUpload) {
+      setPresentationUploadError(labels.noLessonError);
+      return;
+    }
+
+    const filename = `${file.name || ""}`.toLowerCase();
+
+    if (!filename.endsWith(".pdf") && !filename.endsWith(".pptx")) {
+      setPresentationUploadError(labels.onlyPdfError);
+      return;
+    }
+
+    setUploadingPresentation(true);
+
+    try {
+      const asset = await uploadAdminLessonPresentationAsset(lessonIdForUpload, file);
+      const viewerUrl = `${asset?.viewer_url || ""}`.trim();
+
+      if (!viewerUrl) {
+        throw new Error(labels.noViewerError);
+      }
+
+      onFieldChange("content_text", viewerUrl);
+      onFieldChange("presentation_asset", asset);
+      setPresentationUploadSuccess(labels.uploadSuccess);
+    } catch (err) {
+      setPresentationUploadError(formatLessonStudioError(err, labels.uploadFailed));
+    } finally {
+      setUploadingPresentation(false);
+    }
+  };
+
+  return (
+    <>
+      <section
+        data-testid="lesson-studio-presentation-editor"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">{labels.presentation}</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">{labels.editorHelp}</p>
+          </div>
+
+          {ready ? (
+            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+              {labels.ready}
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
+              PDF
+            </span>
+          )}
+        </div>
+
+        <div
+          data-testid="lesson-studio-presentation-upload"
+          className="mt-4 rounded-2xl bg-amber-50/70 p-4 ring-1 ring-amber-200"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="text-sm font-black text-amber-950">{labels.uploadTitle}</div>
+              <p className="mt-1 text-xs leading-5 text-amber-900">{labels.uploadHelp}</p>
+            </div>
+
+            <label className={`inline-flex h-11 cursor-pointer items-center justify-center rounded-xl px-5 text-sm font-bold shadow-sm transition ${
+              uploadingPresentation || saving
+                ? "bg-slate-200 text-slate-500"
+                : "bg-amber-600 text-white hover:bg-amber-700"
+            }`}>
+              {uploadingPresentation ? labels.uploading : labels.choosePdf}
+              <input
+                type="file"
+                accept="application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pdf,.pptx"
+                disabled={uploadingPresentation || saving}
+                onChange={handlePresentationUpload}
+                className="sr-only"
+              />
+            </label>
+          </div>
+
+          {presentationUploadError ? (
+            <div className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-800 ring-1 ring-red-200">
+              {presentationUploadError}
+            </div>
+          ) : null}
+
+          {presentationUploadSuccess ? (
+            <div className="mt-3 rounded-xl bg-green-50 px-3 py-2 text-xs font-semibold text-green-800 ring-1 ring-green-200">
+              {presentationUploadSuccess}
+            </div>
+          ) : null}
+
+          {presentationAsset.original_filename ? (
+            <div className="mt-3 text-xs leading-5 text-amber-900">
+              {labels.uploadedFile} <span className="font-bold">{presentationAsset.original_filename}</span>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-4" data-testid="lesson-studio-inspector-content-field">
+          <label className="block">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {labels.urlLabel}
+            </span>
+
+            <div className="mt-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_11rem]">
+              <input
+                type="url"
+                value={presentationViewerUrl}
+                onChange={(event) => {
+                  onFieldChange("content_text", event.target.value);
+                  onFieldChange("presentation_asset", null);
+                  setPresentationUploadSuccess("");
+                }}
+                placeholder="https://.../presentation.pdf"
+                disabled={saving}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+              />
+
+              {ready ? (
+                <a
+                  href={safeHref}
+                  target={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "_blank"}
+                  rel={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "noreferrer"}
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+                >
+                  {labels.check}
+                </a>
+              ) : (
+                <span className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-50 px-4 text-sm font-bold text-slate-400 ring-1 ring-slate-200">
+                  {labels.check}
+                </span>
+              )}
+            </div>
+          </label>
+
+          <p className="mt-2 text-xs leading-5 text-slate-500">{labels.urlHelp}</p>
+        </div>
+      </section>
+
+      <section
+        data-testid="lesson-studio-presentation-preview-editor"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">{labels.preview}</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">{labels.previewHelp}</p>
+          </div>
+        </div>
+
+        <LessonPresentationCanvasPreview
+          block={draftBlock}
+          previewValue={presentationViewerUrl}
+          learnerMode={false}
+        />
+      </section>
+
+      <section
+        data-testid="lesson-studio-inspector-section-publication"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="text-lg font-black text-slate-950">{labels.settings}</div>
+        <p className="mt-1 text-sm leading-6 text-slate-500">{labels.settingsHelp}</p>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_17rem_17rem]">
+          <label
+            className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+            data-testid="lesson-studio-inspector-title-field"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {labels.blockTitle}
+            </span>
+            <input
+              value={form.title}
+              onChange={(event) => onFieldChange("title", event.target.value)}
+              placeholder={labels.presentation}
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+            />
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_required
+              ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">{labels.required}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                {labels.requiredHelp}
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+              <input
+                type="checkbox"
+                checked={form.is_required}
+                onChange={(event) => onFieldChange("is_required", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_active
+              ? "bg-emerald-50/70 text-emerald-900 ring-emerald-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">{labels.active}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                {labels.activeHelp}
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-emerald-600">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(event) => onFieldChange("is_active", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+        </div>
+      </section>
+    </>
+  );
+}
+
+
 function LessonStudioFileLinkBlockEditor({ form, saving, onFieldChange }) {
   const materialUrl = `${form.content_text || ""}`;
   const draftBlock = {
@@ -3893,6 +4546,7 @@ function getInspectorContentText(block) {
   const settings = safeParseJson(block?.settings_json);
 
   const candidates = [
+    content.title,
     content.text,
     content.content_text,
     content.body,
@@ -3916,6 +4570,12 @@ function isLessonRichTextBlock(block) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
 
   return type === "rich_text" || type === "text";
+}
+
+function isLessonQuizBlock(block) {
+  const type = `${block?.block_type || ""}`.toLowerCase();
+
+  return type === "quiz";
 }
 
 function buildLessonRichTextDocumentFromText(value) {
@@ -3993,6 +4653,13 @@ function getInspectorContentFieldMeta(block) {
       rows: 1,
       inputType: "url",
     },
+    presentation: {
+      label: "Ссылка на PDF-презентацию",
+      placeholder: "https://.../presentation.pdf",
+      help: "На первом этапе укажите прямую ссылку на PDF. PPTX-загрузку добавим следующим пунктом.",
+      rows: 1,
+      inputType: "url",
+    },
     file: {
       label: "Ссылка на файл",
       placeholder: "https://... или ссылка на файл",
@@ -4035,6 +4702,7 @@ function buildInspectorBlockForm(block) {
   const videoSourceValue = videoSourceType === "embed" ? videoEmbedCode : videoUrl;
   const imageContent = getImageBlockContent(block);
   const imageUrl = getImageBlockUrl(block);
+  const quizContent = normalizeQuizContent(block?.content_json);
 
   return {
     title: `${block?.title || ""}`,
@@ -4054,6 +4722,8 @@ function buildInspectorBlockForm(block) {
     image_alt: `${imageContent.alt_text || imageContent.alt || ""}`,
     image_full_width: imageContent.full_width !== false,
     image_open_full_size: imageContent.open_full_size !== false,
+    quiz_content: isLessonQuizBlock(block) ? quizContent : null,
+    presentation_asset: isLessonPresentationBlock(block) ? getPresentationBlockContent(block) : null,
     is_required: Boolean(block?.is_required),
     is_active: block?.is_active !== false,
   };
@@ -4101,6 +4771,8 @@ function getInspectorFormSnapshot(values) {
     image_alt: `${values?.image_alt || ""}`.trim(),
     image_full_width: values?.image_full_width !== false,
     image_open_full_size: values?.image_open_full_size !== false,
+    quiz_content: stableStringifyLessonValue(values?.quiz_content || null),
+    presentation_asset: stableStringifyLessonValue(values?.presentation_asset || null),
     is_required: Boolean(values?.is_required),
     is_active: Boolean(values?.is_active),
   });
@@ -4137,14 +4809,52 @@ function buildInspectorBlockPayload(block, values) {
     contentJson.embed_code = sourceType === "embed" ? embedCode : "";
     contentJson.video_embed_code = sourceType === "embed" ? embedCode : "";
     contentJson.allow_fullscreen = values.allow_fullscreen !== false;
-  } else if (type === "file_link" || type === "file" || type === "link") {
+  } else if (type === "presentation") {
+    const uploadedPresentationAsset =
+      values.presentation_asset && typeof values.presentation_asset === "object"
+        ? values.presentation_asset
+        : {};
+    const viewerUrl = `${uploadedPresentationAsset.viewer_url || contentText || ""}`.trim();
+    const downloadUrl = `${uploadedPresentationAsset.original_url || uploadedPresentationAsset.download_url || contentJson.original_url || contentJson.download_url || viewerUrl}`.trim();
+  const sourceFilename = `${uploadedPresentationAsset.original_filename || contentJson.original_filename || ""}`.trim().toLowerCase();
+  const inferredSourceExtension = sourceFilename.endsWith(".pptx")
+    ? ".pptx"
+    : sourceFilename.endsWith(".pdf")
+      ? ".pdf"
+      : "";
+
+    contentJson.material_kind = "presentation";
+    contentJson.asset_id = uploadedPresentationAsset.asset_id || contentJson.asset_id || "";
+    contentJson.original_filename = uploadedPresentationAsset.original_filename || contentJson.original_filename || "";
+  contentJson.source_extension = uploadedPresentationAsset.source_extension || contentJson.source_extension || inferredSourceExtension;
+    contentJson.mime_type = uploadedPresentationAsset.mime_type || contentJson.mime_type || "application/pdf";
+    contentJson.size_bytes = uploadedPresentationAsset.size_bytes || contentJson.size_bytes || null;
+    contentJson.url = viewerUrl;
+    contentJson.content_url = viewerUrl;
+    contentJson.viewer_url = viewerUrl;
+    contentJson.original_url = downloadUrl;
+    contentJson.download_url = downloadUrl;
+    contentJson.render_mode = "pdf";
+    contentJson.conversion_status = uploadedPresentationAsset.conversion_status || contentJson.conversion_status || (viewerUrl ? "ready" : "empty");
+    contentJson.show_download = contentJson.show_download !== false;
+
+} else if (type === "file_link" || type === "file" || type === "link") {
     contentJson.url = contentText;
     contentJson.content_url = contentText;
   } else if (type === "callout") {
     contentJson.text = contentText;
     contentJson.content_text = contentText;
   } else if (type === "quiz") {
-    contentJson.question = contentText;
+    const quizContent = normalizeQuizContent(values.quiz_content || contentJson);
+
+    return {
+      block_type: block?.block_type || "quiz",
+      title: `${quizContent.title || values.title || ""}`.trim() || null,
+      content_json: quizContent,
+      position: block?.position || 1,
+      is_required: Boolean(values.is_required),
+      is_active: Boolean(values.is_active),
+    };
   } else if (type === "assignment") {
     contentJson.description = contentText;
   } else {
@@ -4266,6 +4976,26 @@ function LessonStudioInspector({
             ? nextValue.editor_json
             : buildLessonRichTextDocumentFromText(nextText),
         editor_html: `${nextValue?.editor_html || ""}`,
+      };
+
+      if (getInspectorFormSnapshot(current) === getInspectorFormSnapshot(nextForm)) {
+        return current;
+      }
+
+      return nextForm;
+    });
+
+    setFormError("");
+    setFormSuccess("");
+  };
+
+  const handleQuizContentChange = (nextValue) => {
+    const nextQuizContent = normalizeQuizContent(nextValue);
+
+    setForm((current) => {
+      const nextForm = {
+        ...current,
+        quiz_content: nextQuizContent,
       };
 
       if (getInspectorFormSnapshot(current) === getInspectorFormSnapshot(nextForm)) {
@@ -4604,6 +5334,12 @@ function LessonStudioInspector({
                 saving={saving}
                 onFieldChange={handleFieldChange}
               />
+            ) : isLessonPresentationBlock(selectedBlock) ? (
+              <LessonStudioPresentationBlockEditor
+                form={form}
+                saving={saving}
+                onFieldChange={handleFieldChange}
+              />
             ) : isLessonFileLinkBlock(selectedBlock) ? (
               <LessonStudioFileLinkBlockEditor
                 form={form}
@@ -4674,6 +5410,14 @@ function LessonStudioInspector({
                           {contentFieldMeta.help}
                         </span>
                       ) : null}
+                    </div>
+                  ) : isLessonQuizBlock(selectedBlock) ? (
+                    <div className="mt-3 block" data-testid="lesson-studio-quiz-editor">
+                      <QuizBlockEditor
+                        value={form.quiz_content}
+                        onChange={handleQuizContentChange}
+                        disabled={!selectedBlock || saving}
+                      />
                     </div>
                   ) : (
                     <label className="mt-3 block" data-testid="lesson-studio-inspector-content-field">
@@ -4909,16 +5653,7 @@ function LessonStudioEditorPanelHeader({ lesson, selectedBlock, blocks, blocksLo
           <div className="text-xs font-black uppercase tracking-wide text-slate-500">
             Редактирование блока
           </div>
-          <h2 className="mt-1 truncate text-lg font-black text-slate-950">
-            {selectedBlock
-              ? getBlockDisplayTitle(selectedBlock, selectedIndex >= 0 ? selectedIndex : 0)
-              : lesson?.title || "Выберите блок урока"}
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            {selectedBlock
-              ? "Редактируйте выбранный блок прямо на полотне. Изменения сохраняются кнопкой внутри формы."
-              : ""}
-          </p>
+
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">

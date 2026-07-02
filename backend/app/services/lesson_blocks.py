@@ -18,6 +18,7 @@ LESSON_BLOCK_TYPES = {
     "rich_text",
     "video",
     "file_link",
+    "presentation",
     "quiz",
     "assignment",
     "callout",

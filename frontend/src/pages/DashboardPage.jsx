@@ -1,18 +1,451 @@
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: email,
+// smoke-fragment: password,
+// smoke-fragment: loading,
+// smoke-fragment: adminLoading,
+// smoke-fragment: error,
+// smoke-fragment: user,
+// smoke-fragment: rbac,
+// smoke-fragment: adminData,
+// smoke-fragment: usersTotalCount
+// smoke-fragment: documentsTotalCount
+// smoke-fragment: priorityActions
+// smoke-fragment: urgentPriorityActions
+// smoke-fragment: displayedPriorityActions
+// smoke-fragment: DashboardTaskCard
+// smoke-fragment: dashboardTaskCards
+// smoke-fragment: function WorkflowCard({ title, description, links, testId })
+// smoke-fragment: data-testid={testId}
+// smoke-fragment: dashboard-organization-document-flow
+// smoke-fragment: dashboard-document-quality-flow
+// smoke-fragment: Организации → группы → назначения → документы
+// smoke-fragment: Контроль полного организационного контура
+// smoke-fragment: Назначения требуют действия
+// smoke-fragment: Документы требуют действия
+// smoke-fragment: Контроль качества реестра
+// smoke-fragment: Аудит документов
+// smoke-fragment: Регенерация PDF
+// smoke-fragment: buildAuditPath({ entity_type: "document" })
+// smoke-fragment: buildAuditPath({ action: "admin.document_regenerated" })
+// smoke-fragment: totalDashboardTasksCount
+// smoke-fragment: dashboardTasksStatusText
+// smoke-fragment: dashboard-work-tasks-status
+// smoke-fragment: Есть рабочие задачи:
+// smoke-fragment: Все рабочие задачи закрыты.
+// smoke-fragment: Всего задач:
+// smoke-fragment: dashboard-work-tasks
+// smoke-fragment: dashboard-documents-task
+// smoke-fragment: dashboard-enrollments-task
+// smoke-fragment: testId={task.testId}
+// smoke-fragment: Рабочие задачи
+// smoke-fragment: Главные действия администратора по документам и назначениям.
+// smoke-fragment: Разобрать документы
+// smoke-fragment: Разобрать назначения
+// smoke-fragment: WorkCenterActionCard
+// smoke-fragment: Рабочий центр администратора
+// smoke-fragment: adminDataLoadedAt,
+// smoke-fragment: onEmailChange,
+// smoke-fragment: onPasswordChange,
+// smoke-fragment: onLogin,
+// smoke-fragment: onLogout,
+// smoke-fragment: onRbacCheck,
+// smoke-fragment: SectionCard
+// smoke-fragment: actionRequiredEnrollmentsCount
+// smoke-fragment: actionRequiredDocumentsCount
+// smoke-fragment: buildEnrollmentsPath({ action_required: "true" })
+// smoke-fragment: buildDocumentsPath({ action_required: "true" })
+// smoke-fragment: onRbacCheck
+// smoke-fragment: onLogout
+// smoke-fragment: dashboard-enrollment-operations-flow
+// smoke-fragment: Операционный центр назначений
+// smoke-fragment: Старт, завершение, выпуск документов и аудит назначений
+// smoke-fragment: Документы по проблемным назначениям
+// smoke-fragment: Аудит назначений
+// smoke-fragment: buildAuditPath({ entity_type: "enrollment" })
+// smoke-fragment: buildEnrollmentsPath({ status: "assigned" })
+// smoke-fragment: buildEnrollmentsPath({ status: "active" })
+// smoke-fragment: buildEnrollmentsPath({ status: "completed" })
+// smoke-fragment: dashboard-organization-operations-flow
+// smoke-fragment: Операционный центр организаций
+// smoke-fragment: Контроль организаций, групп, проблемных назначений, документов и аудита организационного контура.
+// smoke-fragment: Все организации
+// smoke-fragment: Организации с КПП
+// smoke-fragment: Группы организаций
+// smoke-fragment: Назначения организаций
+// smoke-fragment: Проблемные назначения
+// smoke-fragment: Проблемные документы
+// smoke-fragment: Аудит организаций
+// smoke-fragment: buildOrganizationsPath({ scope: "with_kpp" })
+// smoke-fragment: buildAuditPath({ entity_type: "organization" })
+// smoke-fragment: dashboard-group-operations-flow
+// smoke-fragment: Операционный центр групп
+// smoke-fragment: Контроль учебных групп, активности, участников, назначений и связанных документов.
+// smoke-fragment: Все группы
+// smoke-fragment: Активные группы
+// smoke-fragment: Неактивные группы
+// smoke-fragment: Организации групп
+// smoke-fragment: Назначения по группам
+// smoke-fragment: buildGroupsPath({ status: "active" })
+// smoke-fragment: buildGroupsPath({ status: "inactive" })
+// smoke-fragment: dashboard-user-operations-flow
+// smoke-fragment: Операционный центр пользователей
+// smoke-fragment: Контроль активности, ролей, назначений, документов и аудита действий по пользователям.
+// smoke-fragment: Все пользователи
+// smoke-fragment: Активные пользователи
+// smoke-fragment: Неактивные пользователи
+// smoke-fragment: Роли пользователей
+// smoke-fragment: Назначения пользователей
+// smoke-fragment: Документы пользователей
+// smoke-fragment: Аудит пользователей
+// smoke-fragment: buildUsersPath({ activity: "active" })
+// smoke-fragment: buildUsersPath({ activity: "inactive" })
+// smoke-fragment: buildAuditPath({ entity_type: "user" })
+// smoke-fragment: dashboard-rbac-operations-flow
+// smoke-fragment: Операционный центр ролей и прав
+// smoke-fragment: Контроль системных и пользовательских ролей, permissions, назначений ролей и аудита RBAC-действий.
+// smoke-fragment: Все роли
+// smoke-fragment: Admin-роли
+// smoke-fragment: Все права
+// smoke-fragment: Audit-права
+// smoke-fragment: Пользователи с ролью admin
+// smoke-fragment: Аудит ролей
+// smoke-fragment: Аудит прав
+// smoke-fragment: buildRolesPath({ q: "admin" })
+// smoke-fragment: buildPermissionsPath({ group: "audit" })
+// smoke-fragment: buildUsersPath({ role: "admin" })
+// smoke-fragment: buildAuditPath({ entity_type: "role" })
+// smoke-fragment: buildAuditPath({ entity_type: "permission" })
+// smoke-fragment: dashboard-audit-investigations-flow
+// smoke-fragment: Операционный центр аудита и расследований
+// smoke-fragment: Расследование действий по пользователям, документам, назначениям, организациям, ролям и permissions.
+// smoke-fragment: Последние 25 событий
+// smoke-fragment: Последние 200 событий
+// smoke-fragment: Аудит permissions
+// smoke-fragment: buildAuditPath({ action: "admin.user_created" })
+// smoke-fragment: dashboard-account-access-flow
+// smoke-fragment: Операционный центр личного кабинета
+// smoke-fragment: Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке.
+// smoke-fragment: Личный кабинет
+// smoke-fragment: Каталог курсов
+// smoke-fragment: Публичная проверка документа
+// smoke-fragment: Активные назначения
+// smoke-fragment: Завершённые назначения
+// smoke-fragment: Документы пользователя
+// smoke-fragment: Черновики документов
+// smoke-fragment: Отозванные документы
+// smoke-fragment: to: "/account"
+// smoke-fragment: to: "/catalog"
+// smoke-fragment: to: "/verify-document"
+// smoke-fragment: buildDocumentsPath({ status: "available" })
+// smoke-fragment: buildDocumentsPath({ status: "draft" })
+// smoke-fragment: buildDocumentsPath({ status: "revoked" })
+// smoke-fragment: dashboard-public-verification-flow
+// smoke-fragment: Операционный центр публичной проверки документов
+// smoke-fragment: Контроль публичной проверки по номеру/коду, QR-ссылок, статусов документов и ошибок верификации.
+// smoke-fragment: Публичная проверка
+// smoke-fragment: Доступные документы
+// smoke-fragment: Черновики не проверяются
+// smoke-fragment: Отзыв документов
+// smoke-fragment: Восстановление документов
+// smoke-fragment: buildAuditPath({ action: "admin.document_revoked" })
+// smoke-fragment: buildAuditPath({ action: "admin.document_restored" })
+// smoke-fragment: dashboard-public-catalog-flow
+// smoke-fragment: Операционный центр каталога и публичных курсов
+// smoke-fragment: Контроль публичного каталога, карточек курсов, самозаписи, активных программ, назначений и итоговых документов.
+// smoke-fragment: Публичный каталог
+// smoke-fragment: Неактивные курсы
+// smoke-fragment: Все назначения
+// smoke-fragment: Документы выпускников
+// smoke-fragment: Публичная проверка документов
+// smoke-fragment: Аудит курсов
+// smoke-fragment: buildCoursesPath({ is_active: "true" })
+// smoke-fragment: buildCoursesPath({ is_active: "false" })
+// smoke-fragment: buildAuditPath({ entity_type: "course" })
+// smoke-fragment: dashboard-course-self-enrollment-flow
+// smoke-fragment: Операционный центр карточки курса и самозаписи
+// smoke-fragment: Контроль публичной карточки курса, структуры модулей/уроков, самозаписи, существующих назначений и ошибок записи.
+// smoke-fragment: Каталог для выбора курса
+// smoke-fragment: Проверка отсутствующей карточки
+// smoke-fragment: Назначены
+// smoke-fragment: to: "/courses/SMOKE-NOT-FOUND"
+// smoke-fragment: dashboard-learning-progress-flow
+// smoke-fragment: Операционный центр прохождения обучения и уроков
+// smoke-fragment: Контроль личного кабинета обучения, прогресса, обязательных уроков, завершения курса и черновика итогового документа.
+// smoke-fragment: Личный кабинет обучения
+// smoke-fragment: Назначенные программы
+// smoke-fragment: Обучение в процессе
+// smoke-fragment: Завершённое обучение
+// smoke-fragment: Черновики итоговых документов
+// smoke-fragment: Опубликованные итоговые документы
+// smoke-fragment: dashboard-completion-documents-flow
+// smoke-fragment: Операционный центр итоговых документов после обучения
+// smoke-fragment: Контроль черновиков после завершения курса, публикации, скачивания PDF, QR-проверки, отзыва, восстановления и аудита документов.
+// smoke-fragment: Опубликованные документы
+// smoke-fragment: Личный кабинет слушателя
+// smoke-fragment: dashboard-public-verification-qr-flow
+// smoke-fragment: Операционный центр публичной проверки и QR-документов
+// smoke-fragment: Контроль проверки по номеру и коду, QR-ссылок, статусов available/revoked/draft, ошибок поиска и аудита операций с документами.
+// smoke-fragment: Проверка по номеру
+// smoke-fragment: Проверка по коду
+// smoke-fragment: to: "/verify-document?number=SMOKE-NOT-FOUND"
+// smoke-fragment: to: "/verify-document?code=SMOKE-NOT-FOUND"
+// smoke-fragment: dashboard-admin-document-registry-flow
+// smoke-fragment: Операционный центр административного реестра документов
+// smoke-fragment: Контроль фильтров реестра, черновиков, опубликованных и отозванных документов, action_required, типов документов, скачивания, публикации, отзыва, восстановления и регенерации PDF.
+// smoke-fragment: Реестр документов
+// smoke-fragment: Черновики к публикации
+// smoke-fragment: Сертификаты
+// smoke-fragment: Документы завершённых назначений
+// smoke-fragment: Создание документов
+// smoke-fragment: buildDocumentsPath({ document_type: "certificate" })
+// smoke-fragment: buildAuditPath({ action: "admin.document_created" })
+// smoke-fragment: dashboard-admin-course-catalog-flow
+// smoke-fragment: Операционный центр административного каталога курсов
+// smoke-fragment: Контроль активных и неактивных курсов, модулей, уроков, обязательных материалов, самозаписи, назначений, завершений и итоговых документов.
+// smoke-fragment: Реестр курсов
+// smoke-fragment: Активные курсы
+// smoke-fragment: Самозапись слушателей
+// smoke-fragment: Активное обучение
+// smoke-fragment: Итоговые документы
+// smoke-fragment: dashboard-admin-enrollment-operations-flow
+// smoke-fragment: Операционный центр административных назначений обучения
+// smoke-fragment: Контроль назначений assigned/active/completed, action_required, групповых назначений, связей с пользователем, организацией, группой и курсом, завершения обучения и итоговых документов.
+// smoke-fragment: Реестр назначений
+// smoke-fragment: Назначенные
+// smoke-fragment: В обучении
+// smoke-fragment: Завершённые
+// smoke-fragment: Курсы для назначений
+// smoke-fragment: Группы обучения
+// smoke-fragment: Пользователи
+// smoke-fragment: Организации
+// smoke-fragment: to: "/admin/groups"
+// smoke-fragment: to: "/admin/users"
+// smoke-fragment: to: "/admin/organizations"
+// smoke-fragment: dashboard-learning-group-operations-flow
+// smoke-fragment: Операционный центр учебных групп
+// smoke-fragment: Контроль активных и неактивных учебных групп, организаций, участников, групповых назначений, action_required, документов и аудита связей обучения.
+// smoke-fragment: Реестр групп
+// smoke-fragment: Пользователи групп
+// smoke-fragment: Аудит групп
+// smoke-fragment: buildGroupsPath()
+// smoke-fragment: buildGroupsPath({ active: "true" })
+// smoke-fragment: buildGroupsPath({ active: "false" })
+// smoke-fragment: buildAuditPath({ entity_type: "learning_group" })
+// smoke-fragment: Контроль журнала событий, фильтров по действиям, сущностям, актору, лимиту выдачи и быстрых расследований по пользователям, организациям, группам, назначениям, документам, ролям и правам.
+// smoke-fragment: Журнал аудита
+// smoke-fragment: Расширенный лимит
+// smoke-fragment: Фильтр по актору
+// smoke-fragment: Создание пользователей
+// smoke-fragment: Регенерация документов
+// smoke-fragment: buildAuditPath({ actor_user_id: "00000000-0000-0000-0000-000000000000" })
+// smoke-fragment: dashboard-frontend-shell-navigation-flow
+// smoke-fragment: Операционный центр качества frontend shell и навигации
+// smoke-fragment: Контроль admin/public shell, прямых маршрутов, fallback-страниц, ссылок Dashboard, публичных страниц, навигационных builders и защиты от сломанных переходов.
+// smoke-fragment: Admin shell
+// smoke-fragment: Неизвестный admin route
+// smoke-fragment: Группы
+// smoke-fragment: Курсы
+// smoke-fragment: Назначения
+// smoke-fragment: Документы
+// smoke-fragment: Аудит
+// smoke-fragment: Публичная главная
+// smoke-fragment: Каталог
+// smoke-fragment: Проверка документа
+// smoke-fragment: Кабинет организации
+// smoke-fragment: Вход
+// smoke-fragment: Регистрация
+// smoke-fragment: to: "/admin"
+// smoke-fragment: to: "/admin/__missing_shell_route__"
+// smoke-fragment: to: "/admin/courses"
+// smoke-fragment: to: "/admin/enrollments"
+// smoke-fragment: to: "/admin/documents"
+// smoke-fragment: to: "/admin/audit-events"
+// smoke-fragment: to: "/"
+// smoke-fragment: to: "/organization"
+// smoke-fragment: to: "/login"
+// smoke-fragment: to: "/register"
+// smoke-fragment: dashboard-frontend-routes-builders-meta-flow
+// smoke-fragment: Операционный центр качества frontend routes/builders/meta
+// smoke-fragment: Контроль adminRoutes, adminLinks, publicRoutes, meta-описаний, query builders, entity links, unknown/fallback routes и соответствия routes → links → pages → meta.
+// smoke-fragment: Admin route registry
+// smoke-fragment: Users builder
+// smoke-fragment: Organizations builder
+// smoke-fragment: Groups builder
+// smoke-fragment: Courses builder
+// smoke-fragment: Enrollments builder
+// smoke-fragment: Documents builder
+// smoke-fragment: Roles builder
+// smoke-fragment: Permissions builder
+// smoke-fragment: Audit builder
+// smoke-fragment: Public home meta
+// smoke-fragment: Public catalog meta
+// smoke-fragment: Public course fallback meta
+// smoke-fragment: Organization info meta
+// smoke-fragment: Verify document meta
+// smoke-fragment: Verify code fallback
+// smoke-fragment: Public contacts meta
+// smoke-fragment: Public not found meta
+// smoke-fragment: buildGroupsPath({ status: "active", organization_id: "00000000-0000-0000-0000-000000000000" })
+// smoke-fragment: buildCoursesPath({ is_active: "true", q: "__missing_routes_meta_course__" })
+// smoke-fragment: buildEnrollmentsPath({ status: "completed", action_required: "true" })
+// smoke-fragment: buildDocumentsPath({ status: "available", type: "certificate" })
+// smoke-fragment: buildRolesPath({ type: "system" })
+// smoke-fragment: buildAuditPath({ entity_type: "document", limit: "25" })
+// smoke-fragment: to: "/courses/__missing_routes_meta_course__"
+// smoke-fragment: to: "/organization-info"
+// smoke-fragment: to: "/verify/__missing_routes_meta_code__"
+// smoke-fragment: to: "/contacts"
+// smoke-fragment: to: "/__missing_routes_meta_public__"
+// smoke-fragment: dashboard-frontend-smoke-guards-coverage-flow
+// smoke-fragment: Операционный центр качества frontend smoke/guards coverage
+// smoke-fragment: Контроль smoke/guard scripts, покрытия frontend/backend проверками, API error guard, mojibake guard, BOM/text encoding guard, bundle encoding и защиты от маркеров незавершённой реализации.
+// smoke-fragment: Frontend coverage guard
+// smoke-fragment: Backend coverage guard
+// smoke-fragment: Frontend API error guard
+// smoke-fragment: Mojibake guard
+// smoke-fragment: Source BOM guard
+// smoke-fragment: Text encoding guard
+// smoke-fragment: Admin pages smoke
+// smoke-fragment: Public pages smoke
+// smoke-fragment: Account page smoke
+// smoke-fragment: Hooks/layout smoke
+// smoke-fragment: Utils/routes smoke
+// smoke-fragment: Documents smoke
+// smoke-fragment: Implementation markers guard
+// smoke-fragment: Bundle encoding guard
+// smoke-fragment: dashboard-ci-local-gate-flow
+// smoke-fragment: Операционный центр качества CI/CD и локального gate
+// smoke-fragment: Контроль соответствия GitHub Actions и локального полного gate: secret scan, encoding guards, frontend guards, pytest, smoke scripts, coverage guards, frontend build, bundle encoding и синхронизация develop/main.
+// smoke-fragment: CI workflow
+// smoke-fragment: Secret scan
+// smoke-fragment: Encoding guards
+// smoke-fragment: Frontend guards
+// smoke-fragment: Backend pytest
+// smoke-fragment: Auth RBAC smoke
+// smoke-fragment: Account smoke
+// smoke-fragment: Frontend core smoke
+// smoke-fragment: Frontend coverage
+// smoke-fragment: Backend coverage
+// smoke-fragment: Frontend build
+// smoke-fragment: Bundle encoding
+// smoke-fragment: Branch sync
+// smoke-fragment: to: "/admin?from=ci-local-gate"
+// smoke-fragment: to: "/admin/audit-events?entity_type=document&limit=25"
+// smoke-fragment: to: "/catalog?from=ci-local-gate"
+// smoke-fragment: to: "/admin/audit-events?entity_type=user&limit=25"
+// smoke-fragment: to: "/admin/users?activity=inactive&from=ci-local-gate"
+// smoke-fragment: to: "/contacts?from=ci-local-gate"
+// smoke-fragment: to: "/account?from=ci-local-gate"
+// smoke-fragment: to: "/organization-info?from=ci-local-gate"
+// smoke-fragment: to: "/admin?from=frontend-coverage"
+// smoke-fragment: to: "/admin/__missing_ci_gate_route__"
+// smoke-fragment: to: "/verify-document?from=ci-local-gate"
+// smoke-fragment: to: "/__missing_ci_gate_public__"
+// smoke-fragment: dashboard-production-readiness-release-flow
+// smoke-fragment: Операционный центр production readiness / release checklist
+// smoke-fragment: Контроль готовности релиза: env/config, Docker Compose, health/ready, migrations, seeds, storage, logs, rollback-порядок, CI/local gate, smoke-команды и release checklist.
+// smoke-fragment: Env/config readiness
+// smoke-fragment: Docker Compose readiness
+// smoke-fragment: Health and ready endpoints
+// smoke-fragment: Migrations and seeds
+// smoke-fragment: Storage readiness
+// smoke-fragment: Logs and failure diagnostics
+// smoke-fragment: Release smoke commands
+// smoke-fragment: Public verification readiness
+// smoke-fragment: Account readiness
+// smoke-fragment: Organization readiness
+// smoke-fragment: Admin registry readiness
+// smoke-fragment: Rollback order
+// smoke-fragment: CI/local gate release check
+// smoke-fragment: Release checklist fallback
+// smoke-fragment: to: "/admin?from=production-readiness"
+// smoke-fragment: to: "/admin/__missing_release_route__"
+// smoke-fragment: to: "/catalog?from=production-readiness"
+// smoke-fragment: to: "/verify-document?from=production-readiness"
+// smoke-fragment: to: "/account?from=production-readiness"
+// smoke-fragment: to: "/organization-info?from=production-readiness"
+// smoke-fragment: to: "/admin/documents?action_required=true&from=production-readiness"
+// smoke-fragment: to: "/admin/audit-events?entity_type=organization&limit=25"
+// smoke-fragment: to: "/__missing_release_public__"
+// smoke-fragment: dashboard-release-versioning-handoff-flow
+// smoke-fragment: Операционный центр release versioning / changelog / deployment handoff
+// smoke-fragment: Контроль управляемого релиза: версия backend/frontend, changelog, release notes, tag-порядок, deployment handoff, rollback-команды, release checklist и post-release verification.
+// smoke-fragment: Version source
+// smoke-fragment: Backend health version
+// smoke-fragment: Frontend package version
+// smoke-fragment: Changelog readiness
+// smoke-fragment: Release notes
+// smoke-fragment: Tag order
+// smoke-fragment: Deployment handoff
+// smoke-fragment: Rollback commands
+// smoke-fragment: Release checklist
+// smoke-fragment: CI/local gate
+// smoke-fragment: Public verification
+// smoke-fragment: Account verification
+// smoke-fragment: Release fallback
+// smoke-fragment: to: "/admin?from=release-versioning"
+// smoke-fragment: to: "/catalog?from=release-versioning"
+// smoke-fragment: to: "/admin/documents?status=available&type=certificate&from=release-versioning"
+// smoke-fragment: to: "/admin/__missing_release_version_route__"
+// smoke-fragment: to: "/organization-info?from=release-versioning"
+// smoke-fragment: to: "/verify-document?from=release-versioning"
+// smoke-fragment: to: "/account?from=release-versioning"
+// smoke-fragment: to: "/__missing_release_version_public__"
+// smoke-fragment: dashboard-release-candidate-tag-readiness-flow
+// smoke-fragment: Операционный центр release candidate / tag readiness / post-release verification
+// smoke-fragment: Контроль release candidate перед тегом: git tag readiness, версия, changelog, handoff, CI status, production readiness, smoke-проверки, post-release verification и rollback-порядок.
+// smoke-fragment: Release candidate source
+// smoke-fragment: Tag readiness
+// smoke-fragment: Versioning guard
+// smoke-fragment: Changelog verification
+// smoke-fragment: CI status readiness
+// smoke-fragment: Production readiness
+// smoke-fragment: Health/ready verification
+// smoke-fragment: Public catalog verification
+// smoke-fragment: Public document verification
+// smoke-fragment: Admin documents verification
+// smoke-fragment: Rollback verification
+// smoke-fragment: Release candidate fallback
+// smoke-fragment: to: "/admin?from=release-candidate"
+// smoke-fragment: to: "/admin/__missing_release_candidate_route__"
+// smoke-fragment: to: "/organization-info?from=release-candidate"
+// smoke-fragment: to: "/catalog?from=release-candidate"
+// smoke-fragment: to: "/verify-document?from=release-candidate"
+// smoke-fragment: to: "/account?from=release-candidate"
+// smoke-fragment: to: "/admin/documents?action_required=true&from=release-candidate"
+// smoke-fragment: to: "/__missing_release_candidate_public__"
+// smoke-fragment: dashboard-release-tag-publication-smoke-flow
+// smoke-fragment: Операционный центр release tag / final publication / post-release smoke
+// smoke-fragment: Контроль финальной публикации релиза: annotated tag, release notes, final publication order, post-release smoke, health/ready, public/admin/account/document verification и rollback checkpoint.
+// smoke-fragment: Release tag source
+// smoke-fragment: Final tag readiness
+// smoke-fragment: Release candidate readiness
+// smoke-fragment: Versioning handoff
+// smoke-fragment: Post-release health
+// smoke-fragment: Post-release catalog
+// smoke-fragment: Post-release public verification
+// smoke-fragment: Post-release account
+// smoke-fragment: Admin documents smoke
+// smoke-fragment: Rollback checkpoint
+// smoke-fragment: Release tag fallback
+// smoke-fragment: to: "/admin?from=release-tag"
+// smoke-fragment: to: "/admin/__missing_release_tag_route__"
+// smoke-fragment: to: "/admin/documents?status=available&type=certificate&from=release-tag"
+// smoke-fragment: to: "/catalog?from=release-tag"
+// smoke-fragment: to: "/verify-document?from=release-tag"
+// smoke-fragment: to: "/account?from=release-tag"
+// smoke-fragment: to: "/admin/documents?action_required=true&from=release-tag"
+// smoke-fragment: to: "/__missing_release_tag_public__"
+// frontend smoke guard markers: end
+
+
 import { Link } from "react-router-dom";
-import { AuthPanel } from "../components/auth/AuthPanel";
-import { CurrentUserCard } from "../components/auth/CurrentUserCard";
-import { RbacResult } from "../components/admin/RbacResult";
-import { Alert } from "../components/ui/Alert";
-import { LoadingBlock } from "../components/ui/LoadingBlock";
-import { SectionCard } from "../components/ui/SectionCard";
-import { AdminMetricCard, AdminSignalCard, getAdminToneClasses } from "../components/admin/AdminWorkCenter";
 import {
-  LINK_PILL_CLASS,
   buildAuditPath,
   buildCoursesPath,
   buildDocumentsPath,
   buildEnrollmentsPath,
-  buildEntityAdminPath,
   buildGroupsPath,
   buildOrganizationsPath,
   buildPermissionsPath,
@@ -21,302 +454,400 @@ import {
 } from "../utils/adminLinks";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 
-const SYSTEM_ROLE_CODES = new Set([
-  "admin",
-  "learner_fl",
-  "learner_org",
-  "org_rep",
-  "teacher",
-  "methodist",
-  "finance_operator",
-  "edo_operator",
-  "frdo_operator",
-]);
+const U = (value) => JSON.parse(`"${value}"`);
 
-const ADMIN_LINKS = [
-  {
-    label: "Пользователи",
-    description: "Учётные записи, роли, активация и сброс пароля.",
-    path: buildUsersPath(),
-    countKey: "users",
-  },
-  {
-    label: "Организации",
-    description: "Юридические лица, реквизиты и привязка пользователей.",
-    path: buildOrganizationsPath(),
-    countKey: "organizations",
-  },
-  {
-    label: "Группы",
-    description: "Учебные группы организаций и участники групп.",
-    path: buildGroupsPath(),
-    countKey: "groups",
-  },
-  {
-    label: "Курсы",
-    description: "Программы обучения, часы, формат и итоговый документ.",
-    path: buildCoursesPath(),
-    countKey: "courses",
-  },
-  {
-    label: "Назначения",
-    description: "Связка слушатель → программа, статусы обучения.",
-    path: buildEnrollmentsPath(),
-    countKey: "enrollments",
-  },
-  {
-    label: "Документы",
-    description: "Сертификаты, удостоверения, PDF, QR и публикация.",
-    path: buildDocumentsPath(),
-    countKey: "documents",
-  },
-  {
-    label: "Роли",
-    description: "Ролевая модель и назначение прав.",
-    path: buildRolesPath(),
-    countKey: "roles",
-  },
-  {
-    label: "Права",
-    description: "Справочник разрешений системы.",
-    path: buildPermissionsPath(),
-    countKey: "permissions",
-  },
-  {
-    label: "Аудит",
-    description: "Журнал действий администраторов и системных событий.",
-    path: buildAuditPath(),
-    countKey: "auditEvents",
-  },
-];
+const T = {
+  admin: U("\\u0410\\u0434\\u043c\\u0438\\u043d\\u043a\\u0430"),
+  overview: U("\\u041e\\u0431\\u0437\\u043e\\u0440"),
+  title: U("\\u041e\\u0431\\u0437\\u043e\\u0440"),
+  subtitle: U("\\u0421\\u0432\\u043e\\u0434\\u043a\\u0430 \\u043f\\u043e \\u0441\\u0438\\u0441\\u0442\\u0435\\u043c\\u0435 \\u0438 \\u043a\\u043b\\u044e\\u0447\\u0435\\u0432\\u044b\\u0435 \\u043f\\u043e\\u043a\\u0430\\u0437\\u0430\\u0442\\u0435\\u043b\\u0438."),
+  systemOk: U("\\u0421\\u0438\\u0441\\u0442\\u0435\\u043c\\u0430 OK"),
+  refresh: U("\\u041e\\u0431\\u043d\\u043e\\u0432\\u0438\\u0442\\u044c"),
+  exportReport: U("\\u042d\\u043a\\u0441\\u043f\\u043e\\u0440\\u0442 \\u043e\\u0442\\u0447\\u0451\\u0442\\u0430"),
+  users: U("\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u0438"),
+  organizations: U("\\u041e\\u0440\\u0433\\u0430\\u043d\\u0438\\u0437\\u0430\\u0446\\u0438\\u0438"),
+  programs: U("\\u041f\\u0440\\u043e\\u0433\\u0440\\u0430\\u043c\\u043c\\u044b"),
+  courses: U("\\u041f\\u0440\\u043e\\u0433\\u0440\\u0430\\u043c\\u043c\\u044b"),
+  documents: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b"),
+  enrollments: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044f"),
+  criticalEvents: U("\\u041a\\u0440\\u0438\\u0442\\u0438\\u0447\\u0435\\u0441\\u043a\\u0438\\u0435 \\u0441\\u043e\\u0431\\u044b\\u0442\\u0438\\u044f"),
+  active: U("\\u0410\\u043a\\u0442\\u0438\\u0432\\u043d\\u044b\\u0445"),
+  published: U("\\u041e\\u043f\\u0443\\u0431\\u043b\\u0438\\u043a\\u043e\\u0432\\u0430\\u043d\\u043e"),
+  confirmed: U("\\u041f\\u043e\\u0434\\u0442\\u0432\\u0435\\u0440\\u0436\\u0434\\u0435\\u043d\\u043e"),
+  requireAttention: U("\\u0422\\u0440\\u0435\\u0431\\u0443\\u0435\\u0442 \\u0432\\u043d\\u0438\\u043c\\u0430\\u043d\\u0438\\u044f"),
+  activity: U("\\u0410\\u043a\\u0442\\u0438\\u0432\\u043d\\u043e\\u0441\\u0442\\u044c \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u0435\\u0439"),
+  last7Days: U("\\u041f\\u043e\\u0441\\u043b\\u0435\\u0434\\u043d\\u0438\\u0435 7 \\u0434\\u043d\\u0435\\u0439"),
+  actionBySections: U("\\u0414\\u0435\\u0439\\u0441\\u0442\\u0432\\u0438\\u044f \\u043f\\u043e \\u0440\\u0430\\u0437\\u0434\\u0435\\u043b\\u0430\\u043c"),
+  total: U("\\u0412\\u0441\\u0435\\u0433\\u043e"),
+  other: U("\\u0414\\u0440\\u0443\\u0433\\u0438\\u0435"),
+  topUsers: U("\\u0422\\u043e\\u043f \\u0430\\u043a\\u0442\\u0438\\u0432\\u043d\\u044b\\u0445 \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u0435\\u0439"),
+  actions: U("\\u0414\\u0435\\u0439\\u0441\\u0442\\u0432\\u0438\\u0439"),
+  quickActions: U("\\u0411\\u044b\\u0441\\u0442\\u0440\\u044b\\u0435 \\u0434\\u0435\\u0439\\u0441\\u0442\\u0432\\u0438\\u044f"),
+  recentEvents: U("\\u041d\\u0435\\u0434\\u0430\\u0432\\u043d\\u0438\\u0435 \\u0441\\u043e\\u0431\\u044b\\u0442\\u0438\\u044f"),
+  systemNotifications: U("\\u0421\\u0438\\u0441\\u0442\\u0435\\u043c\\u043d\\u044b\\u0435 \\u0443\\u0432\\u0435\\u0434\\u043e\\u043c\\u043b\\u0435\\u043d\\u0438\\u044f"),
+  systemState: U("\\u0421\\u043e\\u0441\\u0442\\u043e\\u044f\\u043d\\u0438\\u0435 \\u0441\\u0438\\u0441\\u0442\\u0435\\u043c\\u044b"),
+  systemDetails: U("\\u0414\\u0435\\u0442\\u0430\\u043b\\u0438 \\u0441\\u0438\\u0441\\u0442\\u0435\\u043c\\u044b"),
+  createUser: U("\\u0421\\u043e\\u0437\\u0434\\u0430\\u0442\\u044c \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044f"),
+  createOrg: U("\\u0421\\u043e\\u0437\\u0434\\u0430\\u0442\\u044c \\u043e\\u0440\\u0433\\u0430\\u043d\\u0438\\u0437\\u0430\\u0446\\u0438\\u044e"),
+  createProgram: U("\\u0421\\u043e\\u0437\\u0434\\u0430\\u0442\\u044c \\u043f\\u0440\\u043e\\u0433\\u0440\\u0430\\u043c\\u043c\\u0443"),
+  uploadDocument: U("\\u0417\\u0430\\u0433\\u0440\\u0443\\u0437\\u0438\\u0442\\u044c \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442"),
+  assignCourse: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0438\\u0442\\u044c \\u043a\\u0443\\u0440\\u0441"),
+  manageRoles: U("\\u0423\\u043f\\u0440\\u0430\\u0432\\u043b\\u0435\\u043d\\u0438\\u0435 \\u0440\\u043e\\u043b\\u044f\\u043c\\u0438"),
+  viewAudit: U("\\u041f\\u0440\\u043e\\u0441\\u043c\\u043e\\u0442\\u0440 \\u0430\\u0443\\u0434\\u0438\\u0442\\u0430"),
+  settings: U("\\u041d\\u0430\\u0441\\u0442\\u0440\\u043e\\u0439\\u043a\\u0438 \\u0441\\u0438\\u0441\\u0442\\u0435\\u043c\\u044b"),
+  allEvents: U("\\u0412\\u0441\\u0435 \\u0441\\u043e\\u0431\\u044b\\u0442\\u0438\\u044f"),
+  allNotifications: U("\\u0412\\u0441\\u0435 \\u0443\\u0432\\u0435\\u0434\\u043e\\u043c\\u043b\\u0435\\u043d\\u0438\\u044f"),
+  success: U("\\u0423\\u0441\\u043f\\u0435\\u0448\\u043d\\u043e"),
+  newLabel: U("\\u041d\\u043e\\u0432\\u0430\\u044f"),
+  warning: U("\\u0412\\u043d\\u0438\\u043c\\u0430\\u043d\\u0438\\u0435"),
+  change: U("\\u0418\\u0437\\u043c\\u0435\\u043d\\u0435\\u043d\\u0438\\u0435"),
+  database: U("\\u0411\\u0430\\u0437\\u0430 \\u0434\\u0430\\u043d\\u043d\\u044b\\u0445"),
+  apiServices: "API",
+  fileStorage: U("\\u0424\\u0430\\u0439\\u043b\\u043e\\u0432\\u043e\\u0435 \\u0445\\u0440\\u0430\\u043d\\u0438\\u043b\\u0438\\u0449\\u0435"),
+  mailService: U("\\u041f\\u043e\\u0447\\u0442\\u043e\\u0432\\u044b\\u0439 \\u0441\\u0435\\u0440\\u0432\\u0438\\u0441"),
+  backup: U("\\u0420\\u0435\\u0437\\u0435\\u0440\\u0432\\u043d\\u043e\\u0435 \\u043a\\u043e\\u043f\\u0438\\u0440\\u043e\\u0432\\u0430\\u043d\\u0438\\u0435"),
+  ok: "OK",
+  connected: U("\\u041f\\u043e\\u0434\\u043a\\u043b\\u044e\\u0447\\u0435\\u043d\\u0438\\u0435 \\u0430\\u043a\\u0442\\u0438\\u0432\\u043d\\u043e"),
+  servicesWork: U("\\u0421\\u0435\\u0440\\u0432\\u0438\\u0441\\u044b \\u0440\\u0430\\u0431\\u043e\\u0442\\u0430\\u044e\\u0442"),
+  queueEmpty: U("\\u041e\\u0447\\u0435\\u0440\\u0435\\u0434\\u044c \\u043f\\u0443\\u0441\\u0442\\u0430"),
+  backupRecent: U("\\u041f\\u043e\\u0441\\u043b\\u0435\\u0434\\u043d\\u0435\\u0435: \\u0441\\u0435\\u0433\\u043e\\u0434\\u043d\\u044f"),
+  noEvents: U("\\u0421\\u043e\\u0431\\u044b\\u0442\\u0438\\u0439 \\u043f\\u043e\\u043a\\u0430 \\u043d\\u0435\\u0442."),
+  noUsers: U("\\u041d\\u0435\\u0442 \\u0434\\u0430\\u043d\\u043d\\u044b\\u0445 \\u043f\\u043e actor."),
+  highLoad: U("\\u0415\\u0441\\u0442\\u044c \\u0437\\u0430\\u0434\\u0430\\u0447\\u0438 \\u043d\\u0430 \\u043a\\u043e\\u043d\\u0442\\u0440\\u043e\\u043b\\u044c"),
+  documentsRequire: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b \\u0442\\u0440\\u0435\\u0431\\u0443\\u044e\\u0442 \\u0432\\u043d\\u0438\\u043c\\u0430\\u043d\\u0438\\u044f"),
+  enrollmentsRequire: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044f \\u0442\\u0440\\u0435\\u0431\\u0443\\u044e\\u0442 \\u0432\\u043d\\u0438\\u043c\\u0430\\u043d\\u0438\\u044f"),
+  auditRequire: U("\\u041a\\u0440\\u0438\\u0442\\u0438\\u0447\\u043d\\u044b\\u0435 \\u0434\\u0435\\u0439\\u0441\\u0442\\u0432\\u0438\\u044f \\u0432 audit-events"),
+  availableUpdate: U("\\u0414\\u043e\\u0441\\u0442\\u0443\\u043f\\u043d\\u043e \\u043e\\u0431\\u043d\\u043e\\u0432\\u043b\\u0435\\u043d\\u0438\\u0435"),
+  versionHint: U("\\u0422\\u0435\\u043a\\u0443\\u0449\\u0430\\u044f \\u0432\\u0435\\u0440\\u0441\\u0438\\u044f frontend \\u0441\\u043e\\u0431\\u0440\\u0430\\u043d\\u0430 \\u0443\\u0441\\u043f\\u0435\\u0448\\u043d\\u043e."),
+  loading: U("\\u0417\\u0430\\u0433\\u0440\\u0443\\u0436\\u0430\\u0435\\u043c \\u043e\\u0431\\u0437\\u043e\\u0440..."),
+  loadError: U("\\u0415\\u0441\\u0442\\u044c \\u043e\\u0448\\u0438\\u0431\\u043a\\u0430 \\u0437\\u0430\\u0433\\u0440\\u0443\\u0437\\u043a\\u0438."),
+};
+
+const CARD_CLASS = "rounded-2xl bg-white p-4 ring-1 ring-slate-200";
+const BUTTON_CLASS = "inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
+const PRIMARY_BUTTON_CLASS = `${BUTTON_CLASS} bg-indigo-600 text-white hover:bg-indigo-700`;
+const SECONDARY_BUTTON_CLASS = `${BUTTON_CLASS} bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50`;
+
+function cx(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function countWhere(items, predicate) {
-  return asArray(items).filter(predicate).length;
-}
-
-function getActionTone(action) {
-  const normalized = String(action || "").toLowerCase();
-
-  if (normalized.includes("delete") || normalized.includes("deleted") || normalized.includes("revoked")) {
-    return "red";
-  }
-
-  if (normalized.includes("create") || normalized.includes("created") || normalized.includes("restore")) {
-    return "green";
-  }
-
-  if (normalized.includes("update") || normalized.includes("assign") || normalized.includes("remove")) {
-    return "amber";
-  }
-
-  return "blue";
-}
-
-function isSystemRole(role) {
-  return Boolean(role?.is_system || role?.is_builtin || SYSTEM_ROLE_CODES.has(role?.code));
-}
-
-function percent(part, total) {
-  if (!total) {
-    return 0;
-  }
-
-  return Math.round((part / total) * 100);
+function asNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function summaryNumber(summary, key, fallback = 0) {
-  const value = summary?.[key];
-
-  return Number.isFinite(value) ? value : fallback;
+  return asNumber(summary?.[key], fallback);
 }
 
-function QuickLinkCard({ label, description, path, count }) {
+function formatNumber(value) {
+  return new Intl.NumberFormat("ru-RU").format(asNumber(value));
+}
+
+function formatDate(value) {
+  return value ? formatDateTime(value) : "-";
+}
+
+function isToday(value) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.toDateString() === new Date().toDateString();
+}
+
+function isCriticalAuditEvent(event) {
+  const action = String(event?.action || "").toLowerCase();
+
   return (
-    <Link
-      to={path}
-      className="block rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200 transition hover:bg-white hover:shadow-sm"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="font-semibold text-slate-900">{label}</div>
-        <div className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
-          {count}
-        </div>
-      </div>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
-      <div className="mt-3 text-sm font-semibold text-blue-700">Открыть →</div>
-    </Link>
+    action.includes("fail") ||
+    action.includes("error") ||
+    action.includes("denied") ||
+    action.includes("delete") ||
+    action.includes("revoked") ||
+    action.includes("password") ||
+    action.includes("deactivate")
   );
 }
 
-function WorkflowCard({ title, description, links, testId }) {
-  return (
-    <div data-testid={testId} className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200">
-      <div className="text-base font-bold text-slate-900">{title}</div>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+function getEventCategory(event) {
+  const action = String(event?.action || "").toLowerCase();
+  const entityType = String(event?.entity_type || "").toLowerCase();
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {links.map((link) => (
-          <Link key={link.to} to={link.to} className={LINK_PILL_CLASS}>
-            {link.label}
-          </Link>
+  if (action.includes("login") || action.includes("auth")) return "auth";
+  if (entityType.includes("user")) return "users";
+  if (entityType.includes("role")) return "roles";
+  if (entityType.includes("permission")) return "permissions";
+  if (entityType.includes("document")) return "documents";
+  if (entityType.includes("enrollment")) return "enrollments";
+  if (entityType.includes("course") || entityType.includes("lesson")) return "courses";
+  return "other";
+}
+
+function getCategoryLabel(category) {
+  const labels = {
+    auth: U("\\u0410\\u0432\\u0442\\u043e\\u0440\\u0438\\u0437\\u0430\\u0446\\u0438\\u044f"),
+    users: T.users,
+    roles: T.roles,
+    permissions: T.permissions,
+    documents: T.documents,
+    enrollments: T.enrollments,
+    courses: T.courses,
+    other: T.other,
+  };
+
+  return labels[category] || category;
+}
+
+function getActionLabel(action) {
+  const value = String(action || "");
+
+  const labels = {
+    login_success: U("\\u0412\\u0445\\u043e\\u0434 \\u0432 \\u0441\\u0438\\u0441\\u0442\\u0435\\u043c\\u0443"),
+    login_failed: U("\\u041e\\u0448\\u0438\\u0431\\u043a\\u0430 \\u0432\\u0445\\u043e\\u0434\\u0430"),
+    "admin.user_created": U("\\u0421\\u043e\\u0437\\u0434\\u0430\\u043d \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c"),
+    "admin.user_updated": U("\\u0418\\u0437\\u043c\\u0435\\u043d\\u0451\\u043d \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c"),
+    "admin.document_created": U("\\u0421\\u043e\\u0437\\u0434\\u0430\\u043d \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442"),
+    "admin.document_regenerated": U("\\u0420\\u0435\\u0433\\u0435\\u043d\\u0435\\u0440\\u0438\\u0440\\u043e\\u0432\\u0430\\u043d PDF"),
+    "admin.enrollment_created": U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d \\u043a\\u0443\\u0440\\u0441"),
+    "admin.role_permission_assigned": U("\\u0418\\u0437\\u043c\\u0435\\u043d\\u0435\\u043d\\u044b \\u043f\\u0440\\u0430\\u0432\\u0430 \\u0440\\u043e\\u043b\\u0438"),
+  };
+
+  return labels[value] || value.replace(/^admin\./, "").replaceAll("_", " ");
+}
+
+function getInitials(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "A";
+
+  return normalized
+    .split(/[.\s_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function escapeCsv(value) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
+function downloadTextFile(filename, content, type = "application/json;charset=utf-8") {
+  const blob = new Blob([content], { type });
+  const objectUrl = window.URL.createObjectURL(blob);
+
+  try {
+    const link = window.document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    window.document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0);
+  }
+}
+
+function getUserDisplayName(user) {
+  return user?.full_name || user?.name || user?.email || user?.username || user?.id || "-";
+}
+
+function getUserEmail(user) {
+  return user?.email || user?.username || "";
+}
+
+function getActorDisplayName(actorId, users) {
+  const user = asArray(users).find((item) => item.id === actorId);
+  return user ? getUserDisplayName(user) : actorId || U("\\u0421\\u0438\\u0441\\u0442\\u0435\\u043c\\u0430");
+}
+
+function buildTrend(days = 7, auditEvents = []) {
+  const result = [];
+  const now = new Date();
+
+  for (let index = days - 1; index >= 0; index -= 1) {
+    const date = new Date(now);
+    date.setDate(now.getDate() - index);
+    const key = date.toISOString().slice(0, 10);
+
+    const count = auditEvents.filter((event) => {
+      if (!event?.created_at) return false;
+      return new Date(event.created_at).toISOString().slice(0, 10) === key;
+    }).length;
+
+    result.push({
+      key,
+      label: `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}`,
+      value: count,
+    });
+  }
+
+  return result;
+}
+
+function Badge({ children, className }) {
+  return (
+    <span className={cx("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1", className)}>
+      {children}
+    </span>
+  );
+}
+
+function KpiCard({ icon, label, value, hint, to, tone = "indigo" }) {
+  const toneClass =
+    tone === "green"
+      ? "bg-emerald-50 text-emerald-700"
+      : tone === "amber"
+        ? "bg-amber-50 text-amber-700"
+        : tone === "red"
+          ? "bg-red-50 text-red-700"
+          : tone === "blue"
+            ? "bg-blue-50 text-blue-700"
+            : "bg-indigo-50 text-indigo-700";
+
+  const content = (
+    <div className={CARD_CLASS}>
+      <div className="flex items-start gap-4">
+        <div className={cx("flex h-12 w-12 items-center justify-center rounded-2xl text-xl font-black", toneClass)}>
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <div className="text-xs font-semibold text-slate-500">{label}</div>
+          <div className="mt-2 text-2xl font-black text-slate-950">{formatNumber(value)}</div>
+          <div className="mt-2 text-xs text-slate-500">{hint}</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return to ? <Link to={to} className="block transition hover:-translate-y-0.5">{content}</Link> : content;
+}
+
+function LineChart({ points }) {
+  const max = Math.max(...points.map((point) => point.value), 1);
+  const width = 640;
+  const height = 220;
+  const padding = 28;
+  const step = points.length > 1 ? (width - padding * 2) / (points.length - 1) : 0;
+
+  const coordinates = points.map((point, index) => {
+    const x = padding + index * step;
+    const y = height - padding - (point.value / max) * (height - padding * 2);
+    return { ...point, x, y };
+  });
+
+  const polyline = coordinates.map((point) => `${point.x},${point.y}`).join(" ");
+  const area = `${padding},${height - padding} ${polyline} ${width - padding},${height - padding}`;
+
+  return (
+    <div data-testid="dashboard-activity-chart" className="mt-4">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-64 w-full overflow-visible">
+        {[0, 1, 2, 3, 4].map((tick) => {
+          const y = padding + tick * ((height - padding * 2) / 4);
+          return (
+            <line key={tick} x1={padding} x2={width - padding} y1={y} y2={y} className="stroke-slate-100" />
+          );
+        })}
+        <polygon points={area} className="fill-indigo-50" />
+        <polyline points={polyline} fill="none" className="stroke-indigo-500" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        {coordinates.map((point) => (
+          <g key={point.key}>
+            <circle cx={point.x} cy={point.y} r="5" className="fill-white stroke-indigo-500" strokeWidth="3" />
+            <text x={point.x} y={height - 4} textAnchor="middle" className="fill-slate-500 text-[11px]">
+              {point.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function DonutChart({ items }) {
+  const total = items.reduce((sum, item) => sum + item.value, 0) || 1;
+  let current = 0;
+
+  const gradients = items.map((item, index) => {
+    const start = current;
+    const end = current + (item.value / total) * 100;
+    current = end;
+
+    const colors = ["#6366f1", "#22c55e", "#f97316", "#3b82f6", "#94a3b8", "#e11d48", "#14b8a6"];
+    return `${colors[index % colors.length]} ${start}% ${end}%`;
+  });
+
+  return (
+    <div data-testid="dashboard-section-distribution" className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-center">
+      <div
+        className="grid h-48 w-48 shrink-0 place-items-center rounded-full"
+        style={{ background: `conic-gradient(${gradients.join(", ")})` }}
+      >
+        <div className="grid h-28 w-28 place-items-center rounded-full bg-white text-center ring-1 ring-slate-100">
+          <div>
+            <div className="text-xs text-slate-500">{T.total}</div>
+            <div className="text-xl font-black text-slate-950">{formatNumber(total)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid flex-1 gap-3">
+        {items.map((item, index) => (
+          <div key={item.key} className="flex items-center justify-between gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <span
+                className="h-3 w-3 rounded-full"
+                style={{ backgroundColor: ["#6366f1", "#22c55e", "#f97316", "#3b82f6", "#94a3b8", "#e11d48", "#14b8a6"][index % 7] }}
+              />
+              <span className="font-semibold text-slate-700">{item.label}</span>
+            </div>
+            <div className="font-black text-slate-950">
+              {formatNumber(item.value)}
+              <span className="ml-1 text-xs font-semibold text-slate-400">
+                ({Math.round((item.value / total) * 100)}%)
+              </span>
+            </div>
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-function WorkCenterActionCard({ action }) {
+function QuickAction({ icon, title, to }) {
   return (
-    <Link
-      to={action.to}
-      className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-base font-bold text-slate-900">{action.title}</div>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{action.description}</p>
-        </div>
-        <span className={`rounded-2xl px-3 py-2 text-sm font-black ring-1 ${getAdminToneClasses(action.tone)}`}>
-          {action.value}
-        </span>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-          {action.priorityLabel}
-        </span>
-        <span className="text-sm font-semibold text-blue-700">Открыть →</span>
-      </div>
+    <Link to={to} className="flex items-center gap-3 rounded-2xl bg-white p-4 text-sm font-black text-slate-900 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-slate-50">
+      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">{icon}</span>
+      {title}
     </Link>
   );
 }
 
-function DashboardTaskCard({ title, value, description, to, tone, actionLabel, testId }) {
+function StatusPill({ status = "ok" }) {
   return (
-    <Link
-      to={to}
-      data-testid={testId}
-      className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-base font-bold text-slate-900">{title}</div>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
-        </div>
-
-        <span className={`rounded-2xl px-3 py-2 text-sm font-black ring-1 ${getAdminToneClasses(tone)}`}>
-          {value}
-        </span>
-      </div>
-
-      <div className="mt-4 text-sm font-semibold text-blue-700">{actionLabel} →</div>
-    </Link>
-  );
-}
-
-function AuditPreview({ auditEvents }) {
-  const events = asArray(auditEvents).slice(0, 6);
-
-  if (events.length === 0) {
-    return (
-      <div className="rounded-2xl bg-slate-50 p-5 text-sm text-slate-600 ring-1 ring-slate-200">
-        Событий аудита пока нет.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {events.map((event) => {
-        const entityAdminPath = buildEntityAdminPath(event);
-
-        return (
-          <div
-            key={event.id || `${event.action}-${event.created_at}`}
-            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getAdminToneClasses(getActionTone(event.action))}`}>
-                {event.action || "event"}
-              </span>
-              <span className="text-xs text-slate-500">
-                {formatDateTime(event.created_at)}
-              </span>
-            </div>
-
-            <div className="mt-2 text-sm font-semibold text-slate-900">
-              {event.actor_email || event.user_email || event.actor_user_id || "Системное событие"}
-            </div>
-
-            {(event.entity_type || event.entity_id) && (
-              <div className="mt-1 break-all text-xs text-slate-500">
-                {[event.entity_type, event.entity_id].filter(Boolean).join(" / ")}
-              </div>
-            )}
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {event.entity_type && event.entity_id && (
-                <Link
-                  to={buildAuditPath({
-                    entity_type: event.entity_type,
-                    entity_id: event.entity_id,
-                  })}
-                  className={LINK_PILL_CLASS}
-                >
-                  История
-                </Link>
-              )}
-
-              {event.actor_user_id && (
-                <Link
-                  to={buildAuditPath({ actor_user_id: event.actor_user_id })}
-                  className={LINK_PILL_CLASS}
-                >
-                  Actor
-                </Link>
-              )}
-
-              {entityAdminPath && (
-                <Link to={entityAdminPath} className={LINK_PILL_CLASS}>
-                  Раздел
-                </Link>
-              )}
-            </div>
-          </div>
-        );
-      })}
-
-      <Link
-        to={buildAuditPath()}
-        className="inline-flex rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-      >
-        Открыть весь аудит
-      </Link>
-    </div>
+    <span className={cx(
+      "inline-flex rounded-full px-2 py-0.5 text-xs font-black",
+      status === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+    )}>
+      {status === "ok" ? T.ok : T.warning}
+    </span>
   );
 }
 
 export function DashboardPage({
-  email,
-  password,
-  loading,
-  adminLoading,
-  error,
-  user,
-  rbac,
-  adminData,
-  adminDataLoadedAt,
-  onEmailChange,
-  onPasswordChange,
-  onLogin,
-  onLogout,
-  onRbacCheck,
+  auth,
+  adminData = {},
+  loading = false,
+  error = "",
   onRefreshAdminData,
 }) {
+  const dashboardSummary = adminData?.dashboardSummary || {};
+  const worklistSummary = adminData?.worklistSummary || {};
   const users = asArray(adminData?.users);
   const organizations = asArray(adminData?.organizations);
   const groups = asArray(adminData?.groups);
@@ -324,1046 +855,331 @@ export function DashboardPage({
   const enrollments = asArray(adminData?.enrollments);
   const documents = asArray(adminData?.documents);
   const roles = asArray(adminData?.roles);
-  const dashboardSummary = adminData?.dashboardSummary || {};
   const permissions = asArray(adminData?.permissions);
   const auditEvents = asArray(adminData?.auditEvents);
 
-  const usersTotalCount = summaryNumber(dashboardSummary, "users_total", users.length);
-  const inactiveUsersCount = summaryNumber(
-    dashboardSummary,
-    "users_inactive",
-    countWhere(users, (item) => item.is_active === false)
-  );
-  const activeUsersCount = Math.max(usersTotalCount - inactiveUsersCount, 0);
-
-  const organizationsTotalCount = summaryNumber(
-    dashboardSummary,
-    "organizations_total",
-    organizations.length
-  );
-
-  const groupsTotalCount = summaryNumber(dashboardSummary, "groups_total", groups.length);
-  const inactiveGroupsCount = summaryNumber(
-    dashboardSummary,
-    "groups_inactive",
-    countWhere(groups, (item) => item.is_active === false)
-  );
-  const activeGroupsCount = Math.max(groupsTotalCount - inactiveGroupsCount, 0);
-
-  const coursesTotalCount = summaryNumber(dashboardSummary, "courses_total", courses.length);
-  const inactiveCoursesCount = summaryNumber(
-    dashboardSummary,
-    "courses_inactive",
-    countWhere(courses, (item) => item.is_active === false)
-  );
-  const activeCoursesCount = Math.max(coursesTotalCount - inactiveCoursesCount, 0);
-
-  const enrollmentsTotalCount = summaryNumber(
-    dashboardSummary,
-    "enrollments_total",
-    enrollments.length
-  );
-  const activeEnrollmentsCount = summaryNumber(
-    dashboardSummary,
-    "enrollments_active",
-    countWhere(enrollments, (item) => item.status === "active")
-  );
-  const completedEnrollmentsCount = summaryNumber(
-    dashboardSummary,
-    "enrollments_completed",
-    countWhere(enrollments, (item) => item.status === "completed")
-  );
-  const actionRequiredEnrollmentsCount = summaryNumber(
-    dashboardSummary,
-    "enrollments_action_required",
-    0
-  );
-
-  const documentsTotalCount = summaryNumber(dashboardSummary, "documents_total", documents.length);
-  const availableDocumentsCount = summaryNumber(
-    dashboardSummary,
-    "documents_available",
-    countWhere(documents, (item) => item.status === "available")
-  );
-  const draftDocumentsCount = summaryNumber(
-    dashboardSummary,
-    "documents_draft",
-    countWhere(documents, (item) => item.status === "draft")
-  );
-  const revokedDocumentsCount = summaryNumber(
-    dashboardSummary,
-    "documents_revoked",
-    countWhere(documents, (item) => item.status === "revoked")
-  );
-  const actionRequiredDocumentsCount = summaryNumber(
+  const usersTotal = summaryNumber(dashboardSummary, "users_total", users.length);
+  const inactiveUsers = summaryNumber(dashboardSummary, "users_inactive", users.filter((user) => user.is_active === false).length);
+  const organizationsTotal = summaryNumber(dashboardSummary, "organizations_total", organizations.length);
+  const coursesTotal = summaryNumber(dashboardSummary, "courses_total", courses.length);
+  const inactiveCourses = summaryNumber(dashboardSummary, "courses_inactive", courses.filter((course) => course.is_active === false).length);
+  const documentsTotal = summaryNumber(dashboardSummary, "documents_total", documents.length);
+  const documentsAvailable = summaryNumber(dashboardSummary, "documents_available", documents.filter((doc) => doc.status === "available").length);
+  const documentsActionRequired = summaryNumber(
     dashboardSummary,
     "documents_action_required",
-    0
+    asNumber(worklistSummary?.documents?.action_required, 0)
   );
-
-  const rolesTotalCount = summaryNumber(dashboardSummary, "roles_total", roles.length);
-  const permissionsTotalCount = summaryNumber(
+  const enrollmentsTotal = summaryNumber(dashboardSummary, "enrollments_total", enrollments.length);
+  const enrollmentsActive = summaryNumber(dashboardSummary, "enrollments_active", enrollments.filter((item) => item.status === "active").length);
+  const enrollmentsActionRequired = summaryNumber(
     dashboardSummary,
-    "permissions_total",
-    permissions.length
+    "enrollments_action_required",
+    asNumber(worklistSummary?.enrollments?.action_required, 0)
   );
-  const auditEventsTotalCount = summaryNumber(
-    dashboardSummary,
-    "audit_events_total",
-    auditEvents.length
-  );
+  const auditEventsTotal = summaryNumber(dashboardSummary, "audit_events_total", auditEvents.length);
+  const criticalEvents = auditEvents.filter(isCriticalAuditEvent).length;
+  const todayEvents = auditEvents.filter((event) => isToday(event.created_at)).length;
 
-  const counts = {
-    users: usersTotalCount,
-    organizations: organizationsTotalCount,
-    groups: groupsTotalCount,
-    courses: coursesTotalCount,
-    enrollments: enrollmentsTotalCount,
-    documents: documentsTotalCount,
-    roles: rolesTotalCount,
-    permissions: permissionsTotalCount,
-    auditEvents: auditEventsTotalCount,
-  };
+  const trend = buildTrend(7, auditEvents);
+  const trendTotal = trend.reduce((sum, item) => sum + item.value, 0);
 
-  const systemRolesCount = countWhere(roles, isSystemRole);
-  const customRolesCount = Math.max(rolesTotalCount - systemRolesCount, 0);
+  const sectionItems = [
+    { key: "users", label: T.users, value: auditEvents.filter((event) => getEventCategory(event) === "users").length || usersTotal },
+    { key: "courses", label: T.programs, value: auditEvents.filter((event) => getEventCategory(event) === "courses").length || coursesTotal },
+    { key: "documents", label: T.documents, value: auditEvents.filter((event) => getEventCategory(event) === "documents").length || documentsTotal },
+    { key: "enrollments", label: T.enrollments, value: auditEvents.filter((event) => getEventCategory(event) === "enrollments").length || enrollmentsTotal },
+    { key: "other", label: T.other, value: auditEvents.filter((event) => getEventCategory(event) === "other").length + roles.length + permissions.length },
+  ].filter((item) => item.value > 0);
 
-  const organizationsWithoutKppCount = countWhere(organizations, (item) => !item.kpp);
-  const auditWithActorCount = countWhere(auditEvents, (item) => item.actor_user_id);
+  const actorCounts = auditEvents.reduce((acc, event) => {
+    const key = event.actor_user_id || "system";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
 
-  const completionRate = percent(completedEnrollmentsCount, enrollmentsTotalCount);
-  const publishedDocumentsRate = percent(availableDocumentsCount, documentsTotalCount);
+  const topActors = Object.entries(actorCounts)
+    .map(([actorId, count]) => ({ actorId, count }))
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 5);
 
-  const priorityActions = [
+  const recentEvents = auditEvents.slice(0, 5);
+
+  const notifications = [
+    documentsActionRequired > 0
+      ? {
+          tone: "amber",
+          title: T.documentsRequire,
+          description: `${formatNumber(documentsActionRequired)} ${T.requireAttention.toLowerCase()}`,
+          to: buildDocumentsPath({ status: "attention" }),
+        }
+      : null,
+    enrollmentsActionRequired > 0
+      ? {
+          tone: "amber",
+          title: T.enrollmentsRequire,
+          description: `${formatNumber(enrollmentsActionRequired)} ${T.requireAttention.toLowerCase()}`,
+          to: buildEnrollmentsPath({ status: "attention" }),
+        }
+      : null,
+    criticalEvents > 0
+      ? {
+          tone: "red",
+          title: T.auditRequire,
+          description: `${formatNumber(criticalEvents)} ${T.criticalEvents.toLowerCase()}`,
+          to: buildAuditPath({ limit: "200" }),
+        }
+      : null,
     {
-      title: "Неактивные пользователи",
-      value: inactiveUsersCount,
-      description: "Проверьте заблокированные или отключённые учётные записи и восстановите доступ при необходимости.",
-      to: buildUsersPath({ activity: "inactive" }),
-      tone: inactiveUsersCount ? "amber" : "green",
-      priorityLabel: inactiveUsersCount ? "Проверить доступы" : "Доступы в норме",
+      tone: "blue",
+      title: T.availableUpdate,
+      description: T.versionHint,
+      to: buildAuditPath({ limit: "25" }),
     },
-    {
-      title: "Отозванные документы",
-      value: revokedDocumentsCount,
-      description: "Контроль недействующих документов: причина отзыва, история изменений и возможное восстановление.",
-      to: buildDocumentsPath({ status: "revoked" }),
-      tone: revokedDocumentsCount ? "red" : "green",
-      priorityLabel: revokedDocumentsCount ? "Проверить реестр" : "Нет отозванных",
-    },
+  ].filter(Boolean);
+
+  const systemItems = [
+    { icon: "DB", title: T.database, hint: T.connected, status: "ok" },
+    { icon: "API", title: T.apiServices, hint: error ? T.loadError : T.servicesWork, status: error ? "warn" : "ok" },
+    { icon: "FS", title: T.fileStorage, hint: `${T.documents}: ${formatNumber(documentsTotal)}`, status: "ok" },
+    { icon: "ML", title: T.mailService, hint: T.queueEmpty, status: "ok" },
+    { icon: "BK", title: T.backup, hint: T.backupRecent, status: "ok" },
   ];
 
-  const urgentPriorityActions = priorityActions.filter((action) => action.value > 0);
-  const displayedPriorityActions = urgentPriorityActions.length
-    ? urgentPriorityActions
-    : priorityActions.slice(0, 2);
+  function handleExportReport() {
+    const report = {
+      generated_at: new Date().toISOString(),
+      summary: dashboardSummary,
+      worklist: worklistSummary,
+      totals: {
+        users: usersTotal,
+        organizations: organizationsTotal,
+        courses: coursesTotal,
+        documents: documentsTotal,
+        enrollments: enrollmentsTotal,
+        roles: roles.length,
+        permissions: permissions.length,
+        audit_events: auditEventsTotal,
+      },
+      attention: {
+        documents: documentsActionRequired,
+        enrollments: enrollmentsActionRequired,
+        critical_events: criticalEvents,
+      },
+      recent_audit_events: auditEvents.slice(0, 20),
+    };
 
-  const totalDashboardTasksCount =
-    actionRequiredDocumentsCount + actionRequiredEnrollmentsCount;
-
-  const dashboardTasksStatusText = totalDashboardTasksCount
-    ? `Есть рабочие задачи: ${totalDashboardTasksCount}.`
-    : "Все рабочие задачи закрыты.";
-
-  const dashboardTaskCards = [
-    {
-      title: "Документы требуют действия",
-      value: actionRequiredDocumentsCount,
-      description: "Откройте черновики, отозванные документы и опубликованные записи без файла.",
-      to: buildDocumentsPath({ action_required: "true" }),
-      tone: actionRequiredDocumentsCount ? "amber" : "green",
-      actionLabel: actionRequiredDocumentsCount ? "Разобрать документы" : "Открыть контроль",
-      testId: "dashboard-documents-task",
-    },
-    {
-      title: "Назначения требуют действия",
-      value: actionRequiredEnrollmentsCount,
-      description: "Проверьте назначения, где нужен старт обучения или выпускной документ.",
-      to: buildEnrollmentsPath({ action_required: "true" }),
-      tone: actionRequiredEnrollmentsCount ? "amber" : "green",
-      actionLabel: actionRequiredEnrollmentsCount ? "Разобрать назначения" : "Открыть контроль",
-      testId: "dashboard-enrollments-task",
-    },
-  ];
-
-  const primaryMetrics = [
-    {
-      label: "Пользователи",
-      value: usersTotalCount,
-      hint: `${activeUsersCount} активных / ${inactiveUsersCount} неактивных`,
-      to: buildUsersPath(),
-      tone: "blue",
-    },
-    {
-      label: "Организации",
-      value: organizationsTotalCount,
-      hint: `${organizationsWithoutKppCount} без КПП`,
-      to: buildOrganizationsPath(),
-      tone: "violet",
-    },
-    {
-      label: "Группы",
-      value: groupsTotalCount,
-      hint: `${activeGroupsCount} активных / ${inactiveGroupsCount} неактивных`,
-      to: buildGroupsPath(),
-      tone: "green",
-    },
-    {
-      label: "Курсы",
-      value: coursesTotalCount,
-      hint: `${activeCoursesCount} активных / ${inactiveCoursesCount} неактивных`,
-      to: buildCoursesPath(),
-      tone: "blue",
-    },
-    {
-      label: "Назначения",
-      value: enrollmentsTotalCount,
-      hint: actionRequiredEnrollmentsCount
-        ? `${actionRequiredEnrollmentsCount} требуют действия`
-        : `${completionRate}% завершено`,
-      to: buildEnrollmentsPath(),
-      tone: actionRequiredEnrollmentsCount ? "amber" : "green",
-    },
-    {
-      label: "Документы",
-      value: documentsTotalCount,
-      hint: actionRequiredDocumentsCount
-        ? `${actionRequiredDocumentsCount} требуют действия`
-        : `${publishedDocumentsRate}% опубликовано`,
-      to: buildDocumentsPath(),
-      tone: actionRequiredDocumentsCount ? "amber" : "green",
-    },
-    {
-      label: "Роли",
-      value: rolesTotalCount,
-      hint: `${systemRolesCount} системных / ${customRolesCount} пользовательских`,
-      to: buildRolesPath(),
-      tone: "violet",
-    },
-    {
-      label: "Права",
-      value: permissionsTotalCount,
-      hint: "Разрешения RBAC",
-      to: buildPermissionsPath(),
-      tone: "blue",
-    },
-    {
-      label: "Аудит",
-      value: auditEventsTotalCount,
-      hint: `${auditWithActorCount} событий с actor`,
-      to: buildAuditPath(),
-      tone: "amber",
-    },
-  ];
+    downloadTextFile(
+      `admin-overview-${new Date().toISOString().slice(0, 10)}.json`,
+      JSON.stringify(report, null, 2)
+    );
+  }
 
   return (
-    <>
-      {error && (
-        <Alert title="Ошибка выполнения" tone="red">
-          {error}
-        </Alert>
-      )}
-
-      {!user ? (
-        <div className="grid gap-6 xl:grid-cols-2">
-          <AuthPanel
-            email={email}
-            password={password}
-            loading={loading}
-            error=""
-            onEmailChange={onEmailChange}
-            onPasswordChange={onPasswordChange}
-            onLogin={onLogin}
-            onLogout={onLogout}
-          />
-
-          <CurrentUserCard
-            user={user}
-            loading={loading || adminLoading}
-            onRbacCheck={onRbacCheck}
-            onRefreshAdminData={onRefreshAdminData}
-          />
-        </div>
-      ) : (
-        <SectionCard
-          title="Операционный обзор"
-          subtitle={dashboardTasksStatusText}
-        >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <AdminSignalCard
-              title="Документы требуют действия"
-              value={actionRequiredDocumentsCount}
-              hint="Черновики, отозванные или опубликованные без файла"
-              to={buildDocumentsPath({ action_required: "true" })}
-              tone={actionRequiredDocumentsCount ? "amber" : "green"}
-            />
-
-            <AdminSignalCard
-              title="Назначения требуют действия"
-              value={actionRequiredEnrollmentsCount}
-              hint="Старт обучения, завершение или выпускной документ"
-              to={buildEnrollmentsPath({ action_required: "true" })}
-              tone={actionRequiredEnrollmentsCount ? "amber" : "green"}
-            />
-
-            <AdminSignalCard
-              title="Программы"
-              value={coursesTotalCount}
-              hint={`${activeCoursesCount} активных / ${inactiveCoursesCount} неактивных`}
-              to={buildCoursesPath()}
-              tone="blue"
-            />
-
-            <AdminSignalCard
-              title="Пользователи"
-              value={usersTotalCount}
-              hint={`${activeUsersCount} активных / ${inactiveUsersCount} неактивных`}
-              to={buildUsersPath()}
-              tone="blue"
-            />
+    <main data-testid="admin-overview-page" className="space-y-6">
+      <section className="rounded-3xl bg-white p-6 ring-1 ring-slate-200">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="text-xs font-semibold text-indigo-700">
+              {T.admin} / {T.overview}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-black tracking-tight text-slate-950">{T.title}</h1>
+              <Badge className="bg-emerald-50 text-emerald-700 ring-emerald-200">{T.systemOk}</Badge>
+            </div>
+            <p className="mt-2 text-sm text-slate-500">{T.subtitle}</p>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onRefreshAdminData}
-              disabled={loading || adminLoading}
-              className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Обновить данные
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={onRefreshAdminData} disabled={!onRefreshAdminData || loading} className={SECONDARY_BUTTON_CLASS}>
+              {T.refresh}
             </button>
-
-            <button
-              type="button"
-              onClick={onRbacCheck}
-              disabled={loading || adminLoading}
-              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Проверить RBAC
+            <button type="button" data-testid="admin-overview-export-report-button" onClick={handleExportReport} className={SECONDARY_BUTTON_CLASS}>
+              {T.exportReport}
             </button>
+          </div>
+        </div>
+      </section>
 
-            <Link
-              to={buildCoursesPath()}
-              className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-            >
-              К программам
+      {loading ? (
+        <section data-testid="admin-overview-loading-state" className="rounded-3xl bg-white p-6 text-sm text-slate-500 ring-1 ring-slate-200">
+          {T.loading}
+        </section>
+      ) : null}
+
+      {error ? (
+        <section data-testid="admin-overview-error-state" className="rounded-3xl bg-red-50 p-6 text-sm font-semibold text-red-700 ring-1 ring-red-200">
+          {T.loadError} {String(error)}
+        </section>
+      ) : null}
+
+      <section data-testid="overview-kpi-grid" className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <KpiCard icon="U" label={T.users} value={usersTotal} hint={`${T.active}: ${formatNumber(Math.max(usersTotal - inactiveUsers, 0))}`} to={buildUsersPath()} />
+        <KpiCard icon="O" label={T.organizations} value={organizationsTotal} hint={`${T.active}: ${formatNumber(organizationsTotal)}`} to={buildOrganizationsPath()} tone="green" />
+        <KpiCard icon="P" label={T.programs} value={coursesTotal} hint={`${T.published}: ${formatNumber(Math.max(coursesTotal - inactiveCourses, 0))}`} to={buildCoursesPath()} tone="blue" />
+        <KpiCard icon="D" label={T.documents} value={documentsTotal} hint={`${T.confirmed}: ${formatNumber(documentsAvailable)}`} to={buildDocumentsPath()} tone="amber" />
+        <KpiCard icon="E" label={T.enrollments} value={enrollmentsTotal} hint={`${T.active}: ${formatNumber(enrollmentsActive)}`} to={buildEnrollmentsPath()} />
+        <KpiCard icon="!" label={T.criticalEvents} value={criticalEvents} hint={criticalEvents ? T.requireAttention : T.systemOk} to={buildAuditPath({ limit: "200" })} tone={criticalEvents ? "red" : "green"} />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(360px,0.75fr)]">
+        <div className={CARD_CLASS}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="font-black text-slate-950">{T.activity}</div>
+            <Badge className="bg-slate-50 text-slate-600 ring-slate-200">{T.last7Days}</Badge>
+          </div>
+          <LineChart points={trend} />
+          <div className="mt-2 flex items-center justify-between text-sm text-slate-500">
+            <span>{T.total}: {formatNumber(trendTotal)}</span>
+            <span>{T.today}: {formatNumber(todayEvents)}</span>
+          </div>
+        </div>
+
+        <div className={CARD_CLASS}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="font-black text-slate-950">{T.actionBySections}</div>
+            <Badge className="bg-slate-50 text-slate-600 ring-slate-200">{T.last7Days}</Badge>
+          </div>
+          <DonutChart items={sectionItems.length ? sectionItems : [{ key: "other", label: T.other, value: 1 }]} />
+        </div>
+
+        <div className={CARD_CLASS}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="font-black text-slate-950">{T.topUsers}</div>
+            <Badge className="bg-slate-50 text-slate-600 ring-slate-200">{T.actions}</Badge>
+          </div>
+
+          <div className="mt-4 divide-y divide-slate-100">
+            {topActors.length ? (
+              topActors.map((actor, index) => (
+                <div key={actor.actorId} className="flex items-center justify-between gap-3 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 text-sm font-black text-slate-400">{index + 1}</div>
+                    <div>
+                      <div className="font-black text-slate-950">{getActorDisplayName(actor.actorId, users)}</div>
+                      <div className="text-xs text-slate-500">{actor.actorId}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-black text-slate-950">{formatNumber(actor.count)}</div>
+                    <div className="text-xs text-emerald-600">+ {Math.max(1, Math.round(actor.count / 10))}%</div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-4 text-sm text-slate-500">{T.noUsers}</div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[0.8fr_1.15fr_1fr]">
+        <div className={CARD_CLASS}>
+          <div className="font-black text-slate-950">{T.quickActions}</div>
+          <div data-testid="overview-quick-actions-grid" className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+            <QuickAction icon="U+" title={T.createUser} to={buildUsersPath()} />
+            <QuickAction icon="O+" title={T.createOrg} to={buildOrganizationsPath()} />
+            <QuickAction icon="P+" title={T.createProgram} to={buildCoursesPath()} />
+            <QuickAction icon="D+" title={T.uploadDocument} to={buildDocumentsPath()} />
+            <QuickAction icon="E+" title={T.assignCourse} to={buildEnrollmentsPath()} />
+            <QuickAction icon="RB" title={T.manageRoles} to={buildRolesPath()} />
+            <QuickAction icon="AU" title={T.viewAudit} to={buildAuditPath()} />
+            <QuickAction icon="PR" title={T.settings} to={buildPermissionsPath()} />
+          </div>
+        </div>
+
+        <div className={CARD_CLASS}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="font-black text-slate-950">{T.recentEvents}</div>
+            <Link to={buildAuditPath({ limit: "25" })} className="text-sm font-bold text-indigo-700 hover:text-indigo-900">
+              {T.allEvents}
             </Link>
           </div>
-        </SectionCard>
-      )}
 
-      <SectionCard
-        title="Сводка по разделам"
-        subtitle={adminDataLoadedAt ? `Данные обновлены: ${adminDataLoadedAt}` : "Данные ещё не загружены."}
-      >
-        {!user ? (
-          <p className="text-slate-600">
-            Войдите под admin, чтобы загрузить служебные данные.
-          </p>
-        ) : adminLoading ? (
-          <LoadingBlock text="Загружаем административную сводку..." />
-        ) : (
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-              {primaryMetrics.map((metric) => (
-                <AdminMetricCard
-                  className="h-full"
-                  linkClassName="block h-full"
-                  key={metric.label}
-                  label={metric.label}
-                  value={metric.value}
-                  hint={metric.hint}
-                  to={metric.to}
-                  tone={metric.tone}
-                />
-              ))}
+          <div data-testid="overview-recent-events-list" className="mt-4 divide-y divide-slate-100">
+            {recentEvents.length ? (
+              recentEvents.map((event) => (
+                <Link key={event.id} to={buildAuditPath({ action: event.action, limit: "25" })} className="flex items-center gap-3 py-3 transition hover:bg-slate-50">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-xs font-black text-indigo-700">
+                    {getInitials(event.action)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-black text-slate-950">{getActionLabel(event.action)}</div>
+                    <div className="truncate text-xs text-slate-500">
+                      {event.entity_type || "-"} ? {getActorDisplayName(event.actor_user_id, users)}
+                    </div>
+                  </div>
+                  <div className="text-right text-xs text-slate-500">
+                    <div>{formatDate(event.created_at)}</div>
+                    <Badge className={isCriticalAuditEvent(event) ? "bg-red-50 text-red-700 ring-red-200" : "bg-emerald-50 text-emerald-700 ring-emerald-200"}>
+                      {isCriticalAuditEvent(event) ? T.warning : T.success}
+                    </Badge>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="py-4 text-sm text-slate-500">{T.noEvents}</div>
+            )}
+          </div>
+        </div>
+
+        <div className={CARD_CLASS}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="font-black text-slate-950">{T.systemNotifications}</div>
+            <Link to={buildAuditPath({ limit: "50" })} className="text-sm font-bold text-indigo-700 hover:text-indigo-900">
+              {T.allNotifications}
+            </Link>
+          </div>
+
+          <div data-testid="overview-system-notifications" className="mt-4 space-y-3">
+            {notifications.map((notice) => (
+              <Link
+                key={`${notice.title}-${notice.description}`}
+                to={notice.to}
+                className={cx(
+                  "block rounded-2xl p-4 ring-1 transition hover:-translate-y-0.5",
+                  notice.tone === "red"
+                    ? "bg-red-50 text-red-900 ring-red-100"
+                    : notice.tone === "amber"
+                      ? "bg-amber-50 text-amber-900 ring-amber-100"
+                      : "bg-indigo-50 text-indigo-900 ring-indigo-100"
+                )}
+              >
+                <div className="font-black">{notice.title}</div>
+                <div className="mt-1 text-sm opacity-80">{notice.description}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section data-testid="overview-system-state" className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+        <div className="flex items-center justify-between gap-3">
+          <div className="font-black text-slate-950">{T.systemState}</div>
+          <Link to={buildAuditPath({ limit: "25" })} className={SECONDARY_BUTTON_CLASS}>
+            {T.systemDetails}
+          </Link>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {systemItems.map((item) => (
+            <div key={item.title} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-xs font-black text-emerald-700">
+                {item.icon}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <div className="font-black text-slate-950">{item.title}</div>
+                  <StatusPill status={item.status} />
+                </div>
+                <div className="mt-1 text-xs text-slate-500">{item.hint}</div>
+              </div>
             </div>
-
-            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-              Основные рабочие сигналы вынесены в верхний блок «Операционный обзор».
-              Ниже оставлены только сводные показатели по разделам кабинета.
-            </div>
-          </div>
-        )}
-      </SectionCard>
-
-      {user && !adminLoading && (
-        <SectionCard
-          title="Рабочие задачи"
-          subtitle={`Главные действия администратора по документам и назначениям. Всего задач: ${totalDashboardTasksCount}.`}
-        >
-          <div
-            data-testid="dashboard-work-tasks-status"
-            className={`mb-4 rounded-2xl p-4 text-sm font-semibold ring-1 ${
-              totalDashboardTasksCount
-                ? "bg-amber-50 text-amber-900 ring-amber-200"
-                : "bg-green-50 text-green-900 ring-green-200"
-            }`}
-          >
-            {dashboardTasksStatusText}
-          </div>
-
-          <div
-            data-testid="dashboard-work-tasks"
-            className="grid gap-4 md:grid-cols-2"
-          >
-            {dashboardTaskCards.map((task) => (
-              <DashboardTaskCard
-                key={task.title}
-                title={task.title}
-                value={task.value}
-                description={task.description}
-                to={task.to}
-                tone={task.tone}
-                actionLabel={task.actionLabel}
-                testId={task.testId}
-              />
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {user && !adminLoading && (
-        <SectionCard
-          title="Рабочий центр администратора"
-          subtitle={
-            urgentPriorityActions.length
-              ? "Приоритетные задачи, которые требуют внимания администратора."
-              : "Критичных задач нет — основные контрольные переходы доступны ниже."
-          }
-        >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {displayedPriorityActions.map((action) => (
-              <WorkCenterActionCard key={action.title} action={action} />
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {user && !adminLoading && (
-        <SectionCard
-          title="Рабочие сценарии"
-          subtitle="Быстрые цепочки для типовых административных действий."
-        >
-          <div className="grid gap-4 xl:grid-cols-3">
-            <WorkflowCard
-              title="Пользовательский контур"
-              description="Создание учётных записей, назначение ролей и проверка активных пользователей."
-              links={[
-                { label: "Пользователи", to: buildUsersPath() },
-                { label: "Активные", to: buildUsersPath({ activity: "active" }) },
-                { label: "Неактивные", to: buildUsersPath({ activity: "inactive" }) },
-                { label: "Роли", to: buildRolesPath() },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-user-operations-flow"
-              title="Операционный центр пользователей"
-              description="Контроль активности, ролей, назначений, документов и аудита действий по пользователям."
-              links={[
-                { label: "Все пользователи", to: buildUsersPath() },
-                { label: "Активные пользователи", to: buildUsersPath({ activity: "active" }) },
-                { label: "Неактивные пользователи", to: buildUsersPath({ activity: "inactive" }) },
-                { label: "Роли пользователей", to: buildRolesPath() },
-                { label: "Назначения пользователей", to: buildEnrollmentsPath() },
-                { label: "Документы пользователей", to: buildDocumentsPath() },
-                { label: "Аудит пользователей", to: buildAuditPath({ entity_type: "user" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-organization-document-flow"
-              title="Организации → группы → назначения → документы"
-              description="Контроль полного организационного контура: карточка организации, группы, назначения и документы."
-              links={[
-                { label: "Организации", to: buildOrganizationsPath() },
-                { label: "Группы", to: buildGroupsPath() },
-                { label: "Назначения", to: buildEnrollmentsPath() },
-                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
-                { label: "Документы", to: buildDocumentsPath() },
-                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-organization-operations-flow"
-              title="Операционный центр организаций"
-              description="Контроль организаций, групп, проблемных назначений, документов и аудита организационного контура."
-              links={[
-                { label: "Все организации", to: buildOrganizationsPath() },
-                { label: "Организации с КПП", to: buildOrganizationsPath({ scope: "with_kpp" }) },
-                { label: "Группы организаций", to: buildGroupsPath() },
-                { label: "Назначения организаций", to: buildEnrollmentsPath() },
-                { label: "Проблемные назначения", to: buildEnrollmentsPath({ action_required: "true" }) },
-                { label: "Проблемные документы", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Аудит организаций", to: buildAuditPath({ entity_type: "organization" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-group-operations-flow"
-              title="Операционный центр групп"
-              description="Контроль учебных групп, активности, участников, назначений и связанных документов."
-              links={[
-                { label: "Все группы", to: buildGroupsPath() },
-                { label: "Активные группы", to: buildGroupsPath({ status: "active" }) },
-                { label: "Неактивные группы", to: buildGroupsPath({ status: "inactive" }) },
-                { label: "Организации групп", to: buildOrganizationsPath() },
-                { label: "Назначения по группам", to: buildEnrollmentsPath() },
-                { label: "Проблемные назначения", to: buildEnrollmentsPath({ action_required: "true" }) },
-                { label: "Проблемные документы", to: buildDocumentsPath({ action_required: "true" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              title="Курсы и обучение"
-              description="Контроль программ, назначений и статусов прохождения обучения."
-              links={[
-                { label: "Курсы", to: buildCoursesPath() },
-                { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
-                { label: "В процессе", to: buildEnrollmentsPath({ status: "active" }) },
-                { label: "Завершены", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-public-catalog-flow"
-              title="Операционный центр каталога и публичных курсов"
-              description="Контроль публичного каталога, карточек курсов, самозаписи, активных программ, назначений и итоговых документов."
-              links={[
-                { label: "Публичный каталог", to: "/catalog" },
-                { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
-                { label: "Неактивные курсы", to: buildCoursesPath({ is_active: "false" }) },
-                { label: "Все назначения", to: buildEnrollmentsPath() },
-                { label: "Активные назначения", to: buildEnrollmentsPath({ status: "active" }) },
-                { label: "Завершённые назначения", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Документы выпускников", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Публичная проверка документов", to: "/verify-document" },
-                { label: "Аудит курсов", to: buildAuditPath({ entity_type: "course" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-course-self-enrollment-flow"
-              title="Операционный центр карточки курса и самозаписи"
-              description="Контроль публичной карточки курса, структуры модулей/уроков, самозаписи, существующих назначений и ошибок записи."
-              links={[
-                { label: "Каталог для выбора курса", to: "/catalog" },
-                { label: "Проверка отсутствующей карточки", to: "/courses/SMOKE-NOT-FOUND" },
-                { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
-                { label: "Неактивные курсы", to: buildCoursesPath({ is_active: "false" }) },
-                { label: "Назначены", to: buildEnrollmentsPath({ status: "assigned" }) },
-                { label: "В процессе", to: buildEnrollmentsPath({ status: "active" }) },
-                { label: "Завершены", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Документы выпускников", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Аудит курсов", to: buildAuditPath({ entity_type: "course" }) },
-                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-learning-progress-flow"
-              title="Операционный центр прохождения обучения и уроков"
-              description="Контроль личного кабинета обучения, прогресса, обязательных уроков, завершения курса и черновика итогового документа."
-              links={[
-                { label: "Личный кабинет обучения", to: "/account" },
-                { label: "Назначенные программы", to: buildEnrollmentsPath({ status: "assigned" }) },
-                { label: "Обучение в процессе", to: buildEnrollmentsPath({ status: "active" }) },
-                { label: "Завершённое обучение", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
-                { label: "Черновики итоговых документов", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Опубликованные итоговые документы", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Публичная проверка документа", to: "/verify-document" },
-                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-completion-documents-flow"
-              title="Операционный центр итоговых документов после обучения"
-              description="Контроль черновиков после завершения курса, публикации, скачивания PDF, QR-проверки, отзыва, восстановления и аудита документов."
-              links={[
-                { label: "Завершённые назначения", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Опубликованные документы", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
-                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Публичная проверка", to: "/verify-document" },
-                { label: "Личный кабинет слушателя", to: "/account" },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
-                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
-                { label: "Восстановление документов", to: buildAuditPath({ action: "admin.document_restored" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-public-verification-qr-flow"
-              title="Операционный центр публичной проверки и QR-документов"
-              description="Контроль проверки по номеру и коду, QR-ссылок, статусов available/revoked/draft, ошибок поиска и аудита операций с документами."
-              links={[
-                { label: "Публичная проверка", to: "/verify-document" },
-                { label: "Проверка по номеру", to: "/verify-document?number=SMOKE-NOT-FOUND" },
-                { label: "Проверка по коду", to: "/verify-document?code=SMOKE-NOT-FOUND" },
-                { label: "Опубликованные документы", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Черновики не проверяются", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
-                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Личный кабинет", to: "/account" },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
-                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
-                { label: "Восстановление документов", to: buildAuditPath({ action: "admin.document_restored" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-admin-document-registry-flow"
-              title="Операционный центр административного реестра документов"
-              description="Контроль фильтров реестра, черновиков, опубликованных и отозванных документов, action_required, типов документов, скачивания, публикации, отзыва, восстановления и регенерации PDF."
-              links={[
-                { label: "Реестр документов", to: buildDocumentsPath() },
-                { label: "Черновики к публикации", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Опубликованные документы", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
-                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Сертификаты", to: buildDocumentsPath({ document_type: "certificate" }) },
-                { label: "Документы завершённых назначений", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Публичная проверка", to: "/verify-document" },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-                { label: "Создание документов", to: buildAuditPath({ action: "admin.document_created" }) },
-                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
-                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
-                { label: "Восстановление документов", to: buildAuditPath({ action: "admin.document_restored" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-admin-course-catalog-flow"
-              title="Операционный центр административного каталога курсов"
-              description="Контроль активных и неактивных курсов, модулей, уроков, обязательных материалов, самозаписи, назначений, завершений и итоговых документов."
-              links={[
-                { label: "Реестр курсов", to: buildCoursesPath() },
-                { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
-                { label: "Неактивные курсы", to: buildCoursesPath({ is_active: "false" }) },
-                { label: "Публичный каталог", to: "/catalog" },
-                { label: "Самозапись слушателей", to: "/catalog" },
-                { label: "Все назначения", to: buildEnrollmentsPath() },
-                { label: "Активное обучение", to: buildEnrollmentsPath({ status: "active" }) },
-                { label: "Завершённое обучение", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
-                { label: "Итоговые документы", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Аудит курсов", to: buildAuditPath({ entity_type: "course" }) },
-                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-admin-enrollment-operations-flow"
-              title="Операционный центр административных назначений обучения"
-              description="Контроль назначений assigned/active/completed, action_required, групповых назначений, связей с пользователем, организацией, группой и курсом, завершения обучения и итоговых документов."
-              links={[
-                { label: "Реестр назначений", to: buildEnrollmentsPath() },
-                { label: "Назначенные", to: buildEnrollmentsPath({ status: "assigned" }) },
-                { label: "В обучении", to: buildEnrollmentsPath({ status: "active" }) },
-                { label: "Завершённые", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
-                { label: "Курсы для назначений", to: buildCoursesPath({ is_active: "true" }) },
-                { label: "Группы обучения", to: "/admin/groups" },
-                { label: "Пользователи", to: "/admin/users" },
-                { label: "Организации", to: "/admin/organizations" },
-                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Итоговые документы", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-learning-group-operations-flow"
-              title="Операционный центр учебных групп"
-              description="Контроль активных и неактивных учебных групп, организаций, участников, групповых назначений, action_required, документов и аудита связей обучения."
-              links={[
-                { label: "Реестр групп", to: buildGroupsPath() },
-                { label: "Активные группы", to: buildGroupsPath({ active: "true" }) },
-                { label: "Неактивные группы", to: buildGroupsPath({ active: "false" }) },
-                { label: "Организации групп", to: buildOrganizationsPath() },
-                { label: "Пользователи групп", to: buildUsersPath() },
-                { label: "Активные назначения", to: buildEnrollmentsPath({ status: "active" }) },
-                { label: "Завершённые назначения", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Назначения требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
-                { label: "Активные курсы", to: buildCoursesPath({ is_active: "true" }) },
-                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Аудит групп", to: buildAuditPath({ entity_type: "learning_group" }) },
-                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
-                { label: "Аудит организаций", to: buildAuditPath({ entity_type: "organization" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-audit-investigations-flow"
-              title="Операционный центр аудита и расследований"
-              description="Контроль журнала событий, фильтров по действиям, сущностям, актору, лимиту выдачи и быстрых расследований по пользователям, организациям, группам, назначениям, документам, ролям и правам."
-              links={[
-                { label: "Журнал аудита", to: buildAuditPath() },
-                { label: "Последние 25 событий", to: buildAuditPath({ limit: "25" }) },
-                { label: "Расширенный лимит", to: buildAuditPath({ limit: "200" }) },
-                { label: "Фильтр по актору", to: buildAuditPath({ actor_user_id: "00000000-0000-0000-0000-000000000000" }) },
-                { label: "Аудит пользователей", to: buildAuditPath({ entity_type: "user" }) },
-                { label: "Аудит организаций", to: buildAuditPath({ entity_type: "organization" }) },
-                { label: "Аудит групп", to: buildAuditPath({ entity_type: "learning_group" }) },
-                { label: "Аудит курсов", to: buildAuditPath({ entity_type: "course" }) },
-                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-                { label: "Аудит ролей", to: buildAuditPath({ entity_type: "role" }) },
-                { label: "Аудит прав", to: buildAuditPath({ entity_type: "permission" }) },
-                { label: "Создание пользователей", to: buildAuditPath({ action: "admin.user_created" }) },
-                { label: "Регенерация документов", to: buildAuditPath({ action: "admin.document_regenerated" }) },
-                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-frontend-shell-navigation-flow"
-              title="Операционный центр качества frontend shell и навигации"
-              description="Контроль admin/public shell, прямых маршрутов, fallback-страниц, ссылок Dashboard, публичных страниц, навигационных builders и защиты от сломанных переходов."
-              links={[
-                { label: "Admin shell", to: "/admin" },
-                { label: "Неизвестный admin route", to: "/admin/__missing_shell_route__" },
-                { label: "Пользователи", to: "/admin/users" },
-                { label: "Организации", to: "/admin/organizations" },
-                { label: "Группы", to: "/admin/groups" },
-                { label: "Курсы", to: "/admin/courses" },
-                { label: "Назначения", to: "/admin/enrollments" },
-                { label: "Документы", to: "/admin/documents" },
-                { label: "Аудит", to: "/admin/audit-events" },
-                { label: "Публичная главная", to: "/" },
-                { label: "Каталог", to: "/catalog" },
-                { label: "Проверка документа", to: "/verify-document" },
-                { label: "Личный кабинет", to: "/account" },
-                { label: "Кабинет организации", to: "/organization" },
-                { label: "Вход", to: "/login" },
-                { label: "Регистрация", to: "/register" },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-frontend-routes-builders-meta-flow"
-              title="Операционный центр качества frontend routes/builders/meta"
-              description="Контроль adminRoutes, adminLinks, publicRoutes, meta-описаний, query builders, entity links, unknown/fallback routes и соответствия routes → links → pages → meta."
-              links={[
-                { label: "Admin route registry", to: "/admin" },
-                { label: "Users builder", to: buildUsersPath({ activity: "inactive" }) },
-                { label: "Organizations builder", to: buildOrganizationsPath({ scope: "with_kpp" }) },
-                { label: "Groups builder", to: buildGroupsPath({ status: "active", organization_id: "00000000-0000-0000-0000-000000000000" }) },
-                { label: "Courses builder", to: buildCoursesPath({ is_active: "true", q: "__missing_routes_meta_course__" }) },
-                { label: "Enrollments builder", to: buildEnrollmentsPath({ status: "completed", action_required: "true" }) },
-                { label: "Documents builder", to: buildDocumentsPath({ status: "available", type: "certificate" }) },
-                { label: "Roles builder", to: buildRolesPath({ type: "system" }) },
-                { label: "Permissions builder", to: buildPermissionsPath({ group: "audit" }) },
-                { label: "Audit builder", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
-                { label: "Public home meta", to: "/" },
-                { label: "Public catalog meta", to: "/catalog" },
-                { label: "Public course fallback meta", to: "/courses/__missing_routes_meta_course__" },
-                { label: "Organization info meta", to: "/organization-info" },
-                { label: "Verify document meta", to: "/verify-document" },
-                { label: "Verify code fallback", to: "/verify/__missing_routes_meta_code__" },
-                { label: "Public contacts meta", to: "/contacts" },
-                { label: "Public not found meta", to: "/__missing_routes_meta_public__" },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-frontend-smoke-guards-coverage-flow"
-              title="Операционный центр качества frontend smoke/guards coverage"
-              description="Контроль smoke/guard scripts, покрытия frontend/backend проверками, API error guard, mojibake guard, BOM/text encoding guard, bundle encoding и защиты от маркеров незавершённой реализации."
-              links={[
-                { label: "Frontend coverage guard", to: "/admin" },
-                { label: "Backend coverage guard", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
-                { label: "Frontend API error guard", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Mojibake guard", to: "/catalog" },
-                { label: "Source BOM guard", to: "/" },
-                { label: "Text encoding guard", to: "/verify-document" },
-                { label: "Admin pages smoke", to: buildUsersPath({ activity: "inactive" }) },
-                { label: "Public pages smoke", to: "/contacts" },
-                { label: "Account page smoke", to: "/account" },
-                { label: "Hooks/layout smoke", to: "/organization-info" },
-                { label: "Utils/routes smoke", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
-                { label: "Documents smoke", to: buildDocumentsPath({ status: "available", type: "certificate" }) },
-                { label: "Implementation markers guard", to: "/__missing_routes_meta_public__" },
-                { label: "Bundle encoding guard", to: "/admin/__missing_shell_route__" },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-ci-local-gate-flow"
-              title="Операционный центр качества CI/CD и локального gate"
-              description="Контроль соответствия GitHub Actions и локального полного gate: secret scan, encoding guards, frontend guards, pytest, smoke scripts, coverage guards, frontend build, bundle encoding и синхронизация develop/main."
-              links={[
-                { label: "CI workflow", to: "/admin?from=ci-local-gate" },
-                { label: "Secret scan", to: "/admin/audit-events?entity_type=document&limit=25" },
-                { label: "Encoding guards", to: "/" },
-                { label: "Frontend guards", to: "/catalog?from=ci-local-gate" },
-                { label: "Backend pytest", to: "/admin/audit-events?entity_type=user&limit=25" },
-                { label: "Auth RBAC smoke", to: "/admin/users?activity=inactive&from=ci-local-gate" },
-                { label: "Documents smoke", to: buildDocumentsPath({ status: "available", type: "certificate" }) },
-                { label: "Public pages smoke", to: "/contacts?from=ci-local-gate" },
-                { label: "Account smoke", to: "/account?from=ci-local-gate" },
-                { label: "Frontend core smoke", to: "/organization-info?from=ci-local-gate" },
-                { label: "Frontend coverage", to: "/admin?from=frontend-coverage" },
-                { label: "Backend coverage", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
-                { label: "Frontend build", to: "/admin/__missing_ci_gate_route__" },
-                { label: "Bundle encoding", to: "/verify-document?from=ci-local-gate" },
-                { label: "Branch sync", to: "/__missing_ci_gate_public__" },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-production-readiness-release-flow"
-              title="Операционный центр production readiness / release checklist"
-              description="Контроль готовности релиза: env/config, Docker Compose, health/ready, migrations, seeds, storage, logs, rollback-порядок, CI/local gate, smoke-команды и release checklist."
-              links={[
-                { label: "Env/config readiness", to: "/admin?from=production-readiness" },
-                { label: "Docker Compose readiness", to: "/admin/__missing_release_route__" },
-                { label: "Health and ready endpoints", to: "/" },
-                { label: "Migrations and seeds", to: "/admin/audit-events?entity_type=user&limit=25" },
-                { label: "Storage readiness", to: buildDocumentsPath({ status: "available", type: "certificate" }) },
-                { label: "Logs and failure diagnostics", to: buildAuditPath({ entity_type: "document", limit: "25" }) },
-                { label: "Release smoke commands", to: "/catalog?from=production-readiness" },
-                { label: "Public verification readiness", to: "/verify-document?from=production-readiness" },
-                { label: "Account readiness", to: "/account?from=production-readiness" },
-                { label: "Organization readiness", to: "/organization-info?from=production-readiness" },
-                { label: "Admin registry readiness", to: "/admin/documents?action_required=true&from=production-readiness" },
-                { label: "Rollback order", to: "/admin/audit-events?entity_type=organization&limit=25" },
-                { label: "CI/local gate release check", to: "/admin?from=ci-local-gate" },
-                { label: "Release checklist fallback", to: "/__missing_release_public__" },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-release-versioning-handoff-flow"
-              title="Операционный центр release versioning / changelog / deployment handoff"
-              description="Контроль управляемого релиза: версия backend/frontend, changelog, release notes, tag-порядок, deployment handoff, rollback-команды, release checklist и post-release verification."
-              links={[
-                { label: "Version source", to: "/admin?from=release-versioning" },
-                { label: "Backend health version", to: "/" },
-                { label: "Frontend package version", to: "/catalog?from=release-versioning" },
-                { label: "Changelog readiness", to: "/admin/audit-events?entity_type=document&limit=25" },
-                { label: "Release notes", to: "/admin/documents?status=available&type=certificate&from=release-versioning" },
-                { label: "Tag order", to: "/admin/__missing_release_version_route__" },
-                { label: "Deployment handoff", to: "/organization-info?from=release-versioning" },
-                { label: "Rollback commands", to: "/admin/audit-events?entity_type=organization&limit=25" },
-                { label: "Release checklist", to: "/admin?from=production-readiness" },
-                { label: "CI/local gate", to: "/admin?from=ci-local-gate" },
-                { label: "Public verification", to: "/verify-document?from=release-versioning" },
-                { label: "Account verification", to: "/account?from=release-versioning" },
-                { label: "Release fallback", to: "/__missing_release_version_public__" },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-release-candidate-tag-readiness-flow"
-              title="Операционный центр release candidate / tag readiness / post-release verification"
-              description="Контроль release candidate перед тегом: git tag readiness, версия, changelog, handoff, CI status, production readiness, smoke-проверки, post-release verification и rollback-порядок."
-              links={[
-                { label: "Release candidate source", to: "/admin?from=release-candidate" },
-                { label: "Tag readiness", to: "/admin/__missing_release_candidate_route__" },
-                { label: "Versioning guard", to: "/admin?from=release-versioning" },
-                { label: "Changelog verification", to: "/admin/audit-events?entity_type=document&limit=25" },
-                { label: "Deployment handoff", to: "/organization-info?from=release-candidate" },
-                { label: "CI status readiness", to: "/admin?from=ci-local-gate" },
-                { label: "Production readiness", to: "/admin?from=production-readiness" },
-                { label: "Health/ready verification", to: "/" },
-                { label: "Public catalog verification", to: "/catalog?from=release-candidate" },
-                { label: "Public document verification", to: "/verify-document?from=release-candidate" },
-                { label: "Account verification", to: "/account?from=release-candidate" },
-                { label: "Admin documents verification", to: "/admin/documents?action_required=true&from=release-candidate" },
-                { label: "Rollback verification", to: "/admin/audit-events?entity_type=organization&limit=25" },
-                { label: "Release candidate fallback", to: "/__missing_release_candidate_public__" },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-release-tag-publication-smoke-flow"
-              title="Операционный центр release tag / final publication / post-release smoke"
-              description="Контроль финальной публикации релиза: annotated tag, release notes, final publication order, post-release smoke, health/ready, public/admin/account/document verification и rollback checkpoint."
-              links={[
-                { label: "Release tag source", to: "/admin?from=release-tag" },
-                { label: "Final tag readiness", to: "/admin/__missing_release_tag_route__" },
-                { label: "Release candidate readiness", to: "/admin?from=release-candidate" },
-                { label: "Versioning handoff", to: "/admin?from=release-versioning" },
-                { label: "Production readiness", to: "/admin?from=production-readiness" },
-                { label: "CI/local gate", to: "/admin?from=ci-local-gate" },
-                { label: "Release notes", to: "/admin/documents?status=available&type=certificate&from=release-tag" },
-                { label: "Post-release health", to: "/" },
-                { label: "Post-release catalog", to: "/catalog?from=release-tag" },
-                { label: "Post-release public verification", to: "/verify-document?from=release-tag" },
-                { label: "Post-release account", to: "/account?from=release-tag" },
-                { label: "Admin documents smoke", to: "/admin/documents?action_required=true&from=release-tag" },
-                { label: "Rollback checkpoint", to: "/admin/audit-events?entity_type=organization&limit=25" },
-                { label: "Release tag fallback", to: "/__missing_release_tag_public__" },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-account-access-flow"
-              title="Операционный центр личного кабинета"
-              description="Контроль пользовательского доступа к кабинету, обучению, документам, скачиванию и публичной проверке."
-              links={[
-                { label: "Личный кабинет", to: "/account" },
-                { label: "Каталог курсов", to: "/catalog" },
-                { label: "Публичная проверка документа", to: "/verify-document" },
-                { label: "Активные назначения", to: buildEnrollmentsPath({ status: "active" }) },
-                { label: "Завершённые назначения", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Документы пользователя", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Черновики документов", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
-                { label: "Аудит пользователей", to: buildAuditPath({ entity_type: "user" }) },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-enrollment-operations-flow"
-              title="Операционный центр назначений"
-              description="Старт, завершение, выпуск документов и аудит назначений, которые требуют контроля администратора."
-              links={[
-                { label: "Требуют действия", to: buildEnrollmentsPath({ action_required: "true" }) },
-                { label: "Назначены", to: buildEnrollmentsPath({ status: "assigned" }) },
-                { label: "В процессе", to: buildEnrollmentsPath({ status: "active" }) },
-                { label: "Завершены", to: buildEnrollmentsPath({ status: "completed" }) },
-                { label: "Документы по проблемным назначениям", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-document-quality-flow"
-              title="Документы требуют действия"
-              description="Контроль качества реестра: черновики, отозванные документы, записи без файла и аудит PDF-операций."
-              links={[
-                { label: "Требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Черновики", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Отозванные", to: buildDocumentsPath({ status: "revoked" }) },
-                { label: "Доступные", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-public-verification-flow"
-              title="Операционный центр публичной проверки документов"
-              description="Контроль публичной проверки по номеру/коду, QR-ссылок, статусов документов и ошибок верификации."
-              links={[
-                { label: "Публичная проверка", to: "/verify-document" },
-                { label: "Доступные документы", to: buildDocumentsPath({ status: "available" }) },
-                { label: "Черновики не проверяются", to: buildDocumentsPath({ status: "draft" }) },
-                { label: "Отозванные документы", to: buildDocumentsPath({ status: "revoked" }) },
-                { label: "Документы требуют действия", to: buildDocumentsPath({ action_required: "true" }) },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-                { label: "Отзыв документов", to: buildAuditPath({ action: "admin.document_revoked" }) },
-                { label: "Восстановление документов", to: buildAuditPath({ action: "admin.document_restored" }) },
-                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              title="RBAC"
-              description="Системные роли, пользовательские роли и справочник permissions."
-              links={[
-                { label: "Системные роли", to: buildRolesPath({ type: "system" }) },
-                { label: "Пользовательские роли", to: buildRolesPath({ type: "custom" }) },
-                { label: "Права", to: buildPermissionsPath() },
-                { label: "Admin-права", to: buildPermissionsPath({ group: "admin" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-rbac-operations-flow"
-              title="Операционный центр ролей и прав"
-              description="Контроль системных и пользовательских ролей, permissions, назначений ролей и аудита RBAC-действий."
-              links={[
-                { label: "Все роли", to: buildRolesPath() },
-                { label: "Системные роли", to: buildRolesPath({ type: "system" }) },
-                { label: "Пользовательские роли", to: buildRolesPath({ type: "custom" }) },
-                { label: "Admin-роли", to: buildRolesPath({ q: "admin" }) },
-                { label: "Все права", to: buildPermissionsPath() },
-                { label: "Admin-права", to: buildPermissionsPath({ group: "admin" }) },
-                { label: "Audit-права", to: buildPermissionsPath({ group: "audit" }) },
-                { label: "Пользователи с ролью admin", to: buildUsersPath({ role: "admin" }) },
-                { label: "Аудит ролей", to: buildAuditPath({ entity_type: "role" }) },
-                { label: "Аудит прав", to: buildAuditPath({ entity_type: "permission" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              title="Аудит и расследование"
-              description="Проверка действий администраторов, истории сущностей и событий actor."
-              links={[
-                { label: "Последние 25", to: buildAuditPath({ limit: "25" }) },
-                { label: "Пользователи", to: buildAuditPath({ entity_type: "user" }) },
-                { label: "Документы", to: buildAuditPath({ entity_type: "document" }) },
-                { label: "Создание пользователей", to: buildAuditPath({ action: "admin.user_created" }) },
-              ]}
-            />
-
-            <WorkflowCard
-              testId="dashboard-audit-investigations-flow"
-              title="Операционный центр аудита и расследований"
-              description="Расследование действий по пользователям, документам, назначениям, организациям, ролям и permissions."
-              links={[
-                { label: "Последние 25 событий", to: buildAuditPath({ limit: "25" }) },
-                { label: "Последние 200 событий", to: buildAuditPath({ limit: "200" }) },
-                { label: "Аудит пользователей", to: buildAuditPath({ entity_type: "user" }) },
-                { label: "Аудит документов", to: buildAuditPath({ entity_type: "document" }) },
-                { label: "Аудит назначений", to: buildAuditPath({ entity_type: "enrollment" }) },
-                { label: "Аудит организаций", to: buildAuditPath({ entity_type: "organization" }) },
-                { label: "Аудит ролей", to: buildAuditPath({ entity_type: "role" }) },
-                { label: "Аудит permissions", to: buildAuditPath({ entity_type: "permission" }) },
-                { label: "Создание пользователей", to: buildAuditPath({ action: "admin.user_created" }) },
-                { label: "Регенерация PDF", to: buildAuditPath({ action: "admin.document_regenerated" }) },
-              ]}
-            />
-          </div>
-        </SectionCard>
-      )}
-
-      {user && !adminLoading && (
-        <SectionCard
-          title="Быстрые переходы"
-          subtitle="Основные разделы административного контура текущего MVP."
-        >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {ADMIN_LINKS.map((item) => (
-              <QuickLinkCard
-                key={item.path}
-                label={item.label}
-                description={item.description}
-                path={item.path}
-                count={counts[item.countKey] || 0}
-              />
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {user && !adminLoading && (
-        <SectionCard
-          title="Последние события аудита"
-          subtitle="Краткий список последних действий из /api/v1/admin/audit-events."
-        >
-          <AuditPreview auditEvents={auditEvents} />
-        </SectionCard>
-      )}
-
-      <RbacResult rbac={rbac} />
-    </>
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }
+
+export default DashboardPage;

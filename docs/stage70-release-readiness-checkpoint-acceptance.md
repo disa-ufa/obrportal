@@ -1,4 +1,4 @@
-﻿# Stage 70 - Release readiness checkpoint acceptance
+# Stage 70 - Release readiness checkpoint acceptance
 
 Status: accepted
 Branch: stage70-release-readiness-checkpoint-audit

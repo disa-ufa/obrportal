@@ -1,4 +1,4 @@
-﻿# Stage 41 — Admin incremental refresh final audit baseline
+# Stage 41 — Admin incremental refresh final audit baseline
 
 Status: planned
 Base branch: develop

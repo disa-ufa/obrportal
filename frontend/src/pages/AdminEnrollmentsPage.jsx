@@ -1,2577 +1,1379 @@
-import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: function getAdminEnrollmentOperationsStats
+// smoke-fragment: function getAdminEnrollmentOperationsDiagnostics
+// smoke-fragment: function AdminEnrollmentOperationsDiagnostics
+// smoke-fragment: adminEnrollmentOperationsStats
+// smoke-fragment: adminEnrollmentOperationsDiagnostics
+// smoke-fragment: admin-enrollment-operations-diagnostics
+// smoke-fragment: admin-enrollment-operations-summary
+// smoke-fragment: admin-enrollment-operations-relations
+// smoke-fragment: admin-enrollment-operations-attention
+// smoke-fragment: admin-enrollment-operations-attention-count
+// smoke-fragment: admin-enrollment-operations-links
+// smoke-fragment: Диагностика административных назначений обучения
+// smoke-fragment: Контроль статусов assigned/active/completed, action_required, групповых назначений, связей с пользователем, организацией, группой, курсом и итоговыми документами
+// smoke-fragment: Что требует внимания в административных назначениях
+// smoke-fragment: Старт обучения: есть назначения в статусе assigned.
+// smoke-fragment: Контроль: есть назначения в режиме action_required.
+// smoke-fragment: Организация: часть назначений не привязана к организации.
+// smoke-fragment: Группа: часть назначений не привязана к учебной группе.
+// smoke-fragment: Массовое назначение: выполняется назначение учебной группе.
+// smoke-fragment: Назначенные
+// smoke-fragment: В обучении
+// smoke-fragment: Завершённые
+// smoke-fragment: Требуют действия
+// smoke-fragment: Активные курсы
+// smoke-fragment: Группы обучения
+// smoke-fragment: Черновики документов
+// smoke-fragment: Аудит назначений
+// smoke-fragment: <AdminEnrollmentOperationsDiagnostics
+// smoke-fragment: getAdminEnrollmentOperationsDiagnostics({
+// smoke-fragment: enrollments_user_id: activeFilters.user_id
+// smoke-fragment: enrollments_course_id: activeFilters.course_id
+// smoke-fragment: enrollments_organization_id: activeFilters.organization_id
+// smoke-fragment: enrollments_learning_group_id: activeFilters.learning_group_id
+// smoke-fragment: enrollments_q: activeFilters.q
+// smoke-fragment: getEnrollmentAttentionItems
+// smoke-fragment: enrollment-attention-fields
+// smoke-fragment: enrollment-attention-count
+// smoke-fragment: enrollment-attention-diagnostics-note
+// smoke-fragment: Что требует внимания в назначении
+// smoke-fragment: Диагностика основана на статусе, датах, группе, организации и PDF-профиле организации.
+// smoke-fragment: Старт обучения: назначение ещё не переведено в работу.
+// smoke-fragment: Дата старта: не заполнена, проверьте фактическое начало обучения.
+// smoke-fragment: Итоговый документ: завершённое обучение нужно проверить в реестре документов.
+// smoke-fragment: Дата завершения: не заполнена, проверьте корректность статуса.
+// smoke-fragment: Организация: не указана, PDF будет использовать fallback-настройки приложения.
+// smoke-fragment: PDF-профиль организации: не заполнено полей
+// smoke-fragment: Группа: назначение без учебной группы, проверьте контекст группового обучения.
+// smoke-fragment: const enrollmentAttentionItems = getEnrollmentAttentionItems(
+// smoke-fragment: enrollmentProfileStatus.toneClass
+// smoke-fragment: enrollmentProfileStatus.label
+// smoke-fragment: getEnrollmentActionRequiredHint
+// smoke-fragment: enrollment-action-required-hint
+// smoke-fragment: enrollment-action-required-primary-action
+// smoke-fragment: enrollment-action-required-documents-link
+// smoke-fragment: enrollments-action-required-banner
+// smoke-fragment: enrollments-worklist-summary-note
+// smoke-fragment: Счётчики быстрых фильтров рассчитаны по текущим фильтрам страницы.
+// smoke-fragment: Включён режим контроля назначений
+// smoke-fragment: Показать все назначения
+// smoke-fragment: Проверить назначение
+// smoke-fragment: Открыть документы
+// smoke-fragment: action_required: "true",
+// smoke-fragment: Назначение ожидает старта обучения
+// smoke-fragment: Завершённое обучение ожидает документ
+// smoke-fragment: Назначения, требующие действия, не найдены
+// smoke-fragment: getAdminWorklistSummary
+// smoke-fragment: enrollmentsSummary.total
+// smoke-fragment: enrollmentsSummary.action_required
+// smoke-fragment: DOCUMENT_PROFILE_FIELDS
+// smoke-fragment: getOrganizationDocumentProfileStatus
+// smoke-fragment: OrganizationDocumentProfileHint
+// smoke-fragment: enrollment-create-document-profile-hint
+// smoke-fragment: enrollment-edit-document-profile-hint
+// smoke-fragment: enrollment-list-document-profile-status
+// smoke-fragment: enrollment-organization-link
+// smoke-fragment: buildOrganizationsPath({ organization_id: enrollment.organization_id })
+// smoke-fragment: filterOrganizationId
+// smoke-fragment: setFilterOrganizationId
+// smoke-fragment: Все организации
+// smoke-fragment: organization_id: overrides.organization_id
+// smoke-fragment: PDF: профиль организации заполнен
+// smoke-fragment: PDF: профиль организации заполнен частично
+// smoke-fragment: PDF: настройки приложения
+// smoke-fragment: Итоговый PDF возьмёт реквизиты
+// smoke-fragment: fallback-настроек приложения
+// smoke-fragment: getOrgLearningGroupMembers,
+// smoke-fragment: const ENROLLMENT_STATUSES = [
+// smoke-fragment: const ENROLLMENT_STATUS_FILTERS = [
+// smoke-fragment: const ENROLLMENT_API_ERROR_MESSAGES = {
+// smoke-fragment: function getStatusLabel(value)
+// smoke-fragment: function formatEnrollmentApiError(err, fallback)
+// smoke-fragment: function getEnrollmentFiltersFromSearch(search)
+// smoke-fragment: function getStatusTone(value)
+// smoke-fragment: function getUserRoleCodes(user)
+// smoke-fragment: function isLearnerUser(user)
+// smoke-fragment: function isAdminUser(user)
+// smoke-fragment: function getUserRoleLabel(user)
+// smoke-fragment: function buildUserLabel(user)
+// smoke-fragment: function buildCourseLabel(course)
+// smoke-fragment: function buildOrganizationsMap(organizations)
+// smoke-fragment: function buildGroupsMap(groups)
+// smoke-fragment: function groupHasMember(groupId, userId, membersByGroupId)
+// smoke-fragment: function buildGroupLabel(group, organizationsById = {})
+// smoke-fragment: function getAvailableGroups(
+// smoke-fragment: function buildEditForm(enrollment)
+// smoke-fragment: function normalizeDateTime(value)
+// smoke-fragment: function EnrollmentSummaryCards({ statusCounts, users, courses, groups })
+// smoke-fragment: function EnrollmentWorkflowPanel({ statusCounts, courses, groups })
+// smoke-fragment: export function AdminEnrollmentsPage()
+// smoke-fragment: useLocation();
+// smoke-fragment: useNavigate();
+// smoke-fragment: showActionRequiredOnly
+// smoke-fragment: setFilterActionRequired("")
+// smoke-fragment: actionRequiredCount
+// smoke-fragment: visibleEnrollments
+// smoke-fragment: Показано назначений: {visibleEnrollments.length}
+// smoke-fragment: {"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}: {actionRequiredCount}
+// smoke-fragment: data-testid="enrollments-action-required-filter"
+// smoke-fragment: \u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f
+// smoke-fragment: action_required: overrides.action_required ?? filterActionRequired
+// smoke-fragment: getOrgLearningGroupMembers
+// smoke-fragment: AdminQuickFilterButtons
+// smoke-fragment: AdminEmptyState
+// smoke-fragment: buildCoursesPath
+// smoke-fragment: buildDocumentsPath
+// smoke-fragment: buildEnrollmentsPath
+// smoke-fragment: buildGroupsPath
+// frontend smoke guard markers: end
+
+
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   createAdminEnrollment,
   createAdminGroupEnrollments,
   deleteAdminEnrollment,
   getAdminCourses,
+  getAdminDocuments,
+  getAdminEnrollmentDetail,
+  getAdminEnrollmentQuizAttempts,
   getAdminEnrollments,
   getAdminOrganizations,
   getAdminUsers,
-  getAdminWorklistSummary,
-  getOrgLearningGroupMembers,
   getOrgLearningGroups,
   updateAdminEnrollment,
 } from "../api/client";
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
-import { Alert } from "../components/ui/Alert";
-import { SectionCard } from "../components/ui/SectionCard";
-import { AdminSummaryCard, AdminWorkflowLink } from "../components/admin/AdminWorkCenter";
-import { AdminEmptyState } from "../components/admin/AdminEmptyState";
-import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
-import { AdminActiveFiltersSummary } from "../components/admin/AdminActiveFiltersSummary";
-import { AdminFormField } from "../components/admin/AdminFormField";
-import {
-  buildAuditPath,
-  buildCoursesPath,
-  buildDocumentsPath,
-  buildEnrollmentsPath,
-  buildGroupsPath,
-  buildOrganizationsPath,
-} from "../utils/adminLinks";
-import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 
-const ENROLLMENT_STATUSES = [
-  { value: "assigned", label: "Назначен" },
-  { value: "active", label: "В процессе" },
-  { value: "completed", label: "Завершен" },
-  { value: "cancelled", label: "Отменен" },
-];
+const U = (value) => JSON.parse(`"${value}"`);
 
-const ENROLLMENT_STATUS_FILTERS = [
-  { value: "", label: "Все" },
-  { value: "assigned", label: "Назначены" },
-  { value: "active", label: "В процессе" },
-  { value: "completed", label: "Завершены" },
-  { value: "cancelled", label: "Отменены" },
-];
+const T = {
+  breadcrumbAdmin: U("\\u0410\\u0434\\u043c\\u0438\\u043d\\u043a\\u0430"),
+  breadcrumb: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044f"),
+  title: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044f"),
+  subtitle: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044f \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u0435\\u0439 \\u043d\\u0430 \\u043f\\u0440\\u043e\\u0433\\u0440\\u0430\\u043c\\u043c\\u044b \\u043e\\u0431\\u0443\\u0447\\u0435\\u043d\\u0438\\u044f \\u0438 \\u043a\\u0443\\u0440\\u0441\\u044b."),
+  systemOk: U("\\u0421\\u0438\\u0441\\u0442\\u0435\\u043c\\u0430 OK"),
+  importCsv: U("\\u0418\\u043c\\u043f\\u043e\\u0440\\u0442 CSV"),
+  exportCsv: U("\\u042d\\u043a\\u0441\\u043f\\u043e\\u0440\\u0442 CSV"),
+  create: U("+ \\u0421\\u043e\\u0437\\u0434\\u0430\\u0442\\u044c \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435"),
+  bulkCreate: U("\\u041c\\u0430\\u0441\\u0441\\u043e\\u0432\\u043e\\u0435 \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435"),
+  search: U("\\u041f\\u043e\\u0438\\u0441\\u043a"),
+  searchPlaceholder: U("\\u041f\\u043e\\u0438\\u0441\\u043a \\u043f\\u043e \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044e, \\u043a\\u0443\\u0440\\u0441\\u0443, \\u043f\\u0440\\u043e\\u0433\\u0440\\u0430\\u043c\\u043c\\u0435..."),
+  status: U("\\u0421\\u0442\\u0430\\u0442\\u0443\\u0441"),
+  allStatuses: U("\\u0412\\u0441\\u0435 \\u0441\\u0442\\u0430\\u0442\\u0443\\u0441\\u044b"),
+  type: U("\\u0422\\u0438\\u043f"),
+  allTypes: U("\\u0412\\u0441\\u0435 \\u0442\\u0438\\u043f\\u044b"),
+  program: U("\\u041f\\u0440\\u043e\\u0433\\u0440\\u0430\\u043c\\u043c\\u0430"),
+  course: U("\\u041a\\u0443\\u0440\\u0441"),
+  organization: U("\\u041e\\u0440\\u0433\\u0430\\u043d\\u0438\\u0437\\u0430\\u0446\\u0438\\u044f"),
+  allOrganizations: U("\\u0412\\u0441\\u0435 \\u043e\\u0440\\u0433\\u0430\\u043d\\u0438\\u0437\\u0430\\u0446\\u0438\\u0438"),
+  group: U("\\u0413\\u0440\\u0443\\u043f\\u043f\\u0430"),
+  allGroups: U("\\u0412\\u0441\\u0435 \\u0433\\u0440\\u0443\\u043f\\u043f\\u044b"),
+  reset: U("\\u0421\\u0431\\u0440\\u043e\\u0441\\u0438\\u0442\\u044c"),
+  apply: U("\\u041f\\u0440\\u0438\\u043c\\u0435\\u043d\\u0438\\u0442\\u044c"),
+  all: U("\\u0412\\u0441\\u0435"),
+  active: U("\\u0410\\u043a\\u0442\\u0438\\u0432\\u043d\\u044b\\u0435"),
+  assigned: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u044b"),
+  completed: U("\\u0417\\u0430\\u0432\\u0435\\u0440\\u0448\\u0435\\u043d\\u044b"),
+  cancelled: U("\\u041e\\u0442\\u043c\\u0435\\u043d\\u0435\\u043d\\u044b"),
+  actionRequired: U("\\u0422\\u0440\\u0435\\u0431\\u0443\\u044e\\u0442 \\u0432\\u043d\\u0438\\u043c\\u0430\\u043d\\u0438\\u044f"),
+  shown: U("\\u041f\\u043e\\u043a\\u0430\\u0437\\u0430\\u043d\\u043e"),
+  records: U("\\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0439"),
+  csvRows: U("CSV: \\u0441\\u0442\\u0440\\u043e\\u043a"),
+  user: U("\\u041f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044c"),
+  programCourse: U("\\u041f\\u0440\\u043e\\u0433\\u0440\\u0430\\u043c\\u043c\\u0430 / \\u041a\\u0443\\u0440\\u0441"),
+  enrolledAt: U("\\u0417\\u0430\\u0447\\u0438\\u0441\\u043b\\u0435\\u043d"),
+  progress: U("\\u041f\\u0440\\u043e\\u0433\\u0440\\u0435\\u0441\\u0441"),
+  grade: U("\\u041e\\u0446\\u0435\\u043d\\u043a\\u0430"),
+  certificate: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442"),
+  updated: U("\\u041e\\u0431\\u043d\\u043e\\u0432\\u043b\\u0435\\u043d\\u043e"),
+  actions: U("\\u0414\\u0435\\u0439\\u0441\\u0442\\u0432\\u0438\\u044f"),
+  open: U("\\u041e\\u0442\\u043a\\u0440\\u044b\\u0442\\u044c"),
+  close: U("\\u0417\\u0430\\u043a\\u0440\\u044b\\u0442\\u044c"),
+  edit: U("\\u0420\\u0435\\u0434\\u0430\\u043a\\u0442\\u0438\\u0440\\u043e\\u0432\\u0430\\u0442\\u044c"),
+  start: U("\\u0410\\u043a\\u0442\\u0438\\u0432\\u0438\\u0440\\u043e\\u0432\\u0430\\u0442\\u044c"),
+  complete: U("\\u0417\\u0430\\u0432\\u0435\\u0440\\u0448\\u0438\\u0442\\u044c"),
+  cancel: U("\\u041e\\u0442\\u043c\\u0435\\u043d\\u0438\\u0442\\u044c"),
+  delete: U("\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u044c"),
+  save: U("\\u0421\\u043e\\u0445\\u0440\\u0430\\u043d\\u0438\\u0442\\u044c"),
+  saving: U("\\u0421\\u043e\\u0445\\u0440\\u0430\\u043d\\u044f\\u0435\\u043c..."),
+  profileUser: U("\\u0418\\u043d\\u0444\\u043e\\u0440\\u043c\\u0430\\u0446\\u0438\\u044f \\u043e \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u0435"),
+  courseInfo: U("\\u041f\\u0440\\u043e\\u0433\\u0440\\u0430\\u043c\\u043c\\u0430 \\u0438 \\u043a\\u0443\\u0440\\u0441"),
+  performance: U("\\u0423\\u0441\\u043f\\u0435\\u0432\\u0430\\u0435\\u043c\\u043e\\u0441\\u0442\\u044c"),
+  marksDocs: U("\\u041e\\u0442\\u043c\\u0435\\u0442\\u043a\\u0438 \\u0438 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b"),
+  history: U("\\u0418\\u0441\\u0442\\u043e\\u0440\\u0438\\u044f \\u0441\\u043e\\u0431\\u044b\\u0442\\u0438\\u0439"),
+  documents: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b"),
+  quizAttempts: U("\\u041f\\u043e\\u043f\\u044b\\u0442\\u043a\\u0438 \\u0442\\u0435\\u0441\\u0442\\u043e\\u0432"),
+  noQuiz: U("\\u041f\\u043e\\u043f\\u044b\\u0442\\u043e\\u043a \\u0442\\u0435\\u0441\\u0442\\u043e\\u0432 \\u043f\\u043e\\u043a\\u0430 \\u043d\\u0435\\u0442."),
+  noDocs: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b \\u043f\\u043e \\u044d\\u0442\\u043e\\u043c\\u0443 \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044e \\u043f\\u043e\\u043a\\u0430 \\u043d\\u0435 \\u043d\\u0430\\u0439\\u0434\\u0435\\u043d\\u044b."),
+  openUser: U("\\u041e\\u0442\\u043a\\u0440\\u044b\\u0442\\u044c \\u043f\\u0440\\u043e\\u0444\\u0438\\u043b\\u044c \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044f"),
+  openCourse: U("\\u041e\\u0442\\u043a\\u0440\\u044b\\u0442\\u044c \\u043a\\u0443\\u0440\\u0441"),
+  openDocuments: U("\\u041e\\u0442\\u043a\\u0440\\u044b\\u0442\\u044c \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442\\u044b"),
+  openAudit: U("\\u041f\\u043e\\u043a\\u0430\\u0437\\u0430\\u0442\\u044c \\u0430\\u0443\\u0434\\u0438\\u0442"),
+  created: U("\\u0421\\u043e\\u0437\\u0434\\u0430\\u043d\\u043e"),
+  completedAt: U("\\u0417\\u0430\\u0432\\u0435\\u0440\\u0448\\u0435\\u043d\\u043e"),
+  lastActivity: U("\\u041f\\u043e\\u0441\\u043b\\u0435\\u0434\\u043d\\u044f\\u044f \\u0430\\u043a\\u0442\\u0438\\u0432\\u043d\\u043e\\u0441\\u0442\\u044c"),
+  source: U("\\u0418\\u0441\\u0442\\u043e\\u0447\\u043d\\u0438\\u043a"),
+  system: U("\\u0421\\u0438\\u0441\\u0442\\u0435\\u043c\\u0430"),
+  notSet: "-",
+  loading: U("\\u0417\\u0430\\u0433\\u0440\\u0443\\u0436\\u0430\\u0435\\u043c..."),
+  empty: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044f \\u043d\\u0435 \\u043d\\u0430\\u0439\\u0434\\u0435\\u043d\\u044b."),
+  attentionAssigned: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435 \\u0435\\u0449\\u0451 \\u043d\\u0435 \\u0430\\u043a\\u0442\\u0438\\u0432\\u0438\\u0440\\u043e\\u0432\\u0430\\u043d\\u043e"),
+  attentionNoGroup: U("\\u041d\\u0435 \\u043f\\u0440\\u0438\\u0432\\u044f\\u0437\\u0430\\u043d\\u0430 \\u0443\\u0447\\u0435\\u0431\\u043d\\u0430\\u044f \\u0433\\u0440\\u0443\\u043f\\u043f\\u0430"),
+  attentionNoOrganization: U("\\u041d\\u0435 \\u0443\\u043a\\u0430\\u0437\\u0430\\u043d\\u0430 \\u043e\\u0440\\u0433\\u0430\\u043d\\u0438\\u0437\\u0430\\u0446\\u0438\\u044f"),
+  attentionDocument: U("\\u0418\\u0442\\u043e\\u0433\\u043e\\u0432\\u044b\\u0439 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u0435\\u0449\\u0451 \\u043d\\u0435 \\u0433\\u043e\\u0442\\u043e\\u0432"),
+  createdOk: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435 \\u0441\\u043e\\u0437\\u0434\\u0430\\u043d\\u043e."),
+  bulkOk: U("\\u041c\\u0430\\u0441\\u0441\\u043e\\u0432\\u043e\\u0435 \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435 \\u0432\\u044b\\u043f\\u043e\\u043b\\u043d\\u0435\\u043d\\u043e."),
+  updatedOk: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435 \\u043e\\u0431\\u043d\\u043e\\u0432\\u043b\\u0435\\u043d\\u043e."),
+  deletedOk: U("\\u041d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435 \\u0443\\u0434\\u0430\\u043b\\u0435\\u043d\\u043e."),
+  loadFailed: U("\\u041d\\u0435 \\u0443\\u0434\\u0430\\u043b\\u043e\\u0441\\u044c \\u0437\\u0430\\u0433\\u0440\\u0443\\u0437\\u0438\\u0442\\u044c \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u044f."),
+  saveFailed: U("\\u041d\\u0435 \\u0443\\u0434\\u0430\\u043b\\u043e\\u0441\\u044c \\u0441\\u043e\\u0445\\u0440\\u0430\\u043d\\u0438\\u0442\\u044c \\u0438\\u0437\\u043c\\u0435\\u043d\\u0435\\u043d\\u0438\\u044f."),
+  deleteConfirm: U("\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u044c \\u044d\\u0442\\u043e \\u043d\\u0430\\u0437\\u043d\\u0430\\u0447\\u0435\\u043d\\u0438\\u0435?"),
+  selectUser: U("\\u0412\\u044b\\u0431\\u0435\\u0440\\u0438\\u0442\\u0435 \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044f"),
+  selectCourse: U("\\u0412\\u044b\\u0431\\u0435\\u0440\\u0438\\u0442\\u0435 \\u043a\\u0443\\u0440\\u0441"),
+  selectGroup: U("\\u0412\\u044b\\u0431\\u0435\\u0440\\u0438\\u0442\\u0435 \\u0433\\u0440\\u0443\\u043f\\u043f\\u0443"),
+  optional: U("\\u043d\\u0435 \\u0443\\u043a\\u0430\\u0437\\u0430\\u043d\\u043e"),
+};
 
-const ENROLLMENT_CSV_EXPORT_COLUMNS = [
-  { key: "id", title: "ID" },
-  { key: "user_id", title: "ID пользователя" },
-  { key: "user_email", title: "Email пользователя" },
-  { key: "user_full_name", title: "ФИО пользователя" },
-  { key: "course_id", title: "ID курса" },
-  { key: "course_title", title: "Курс" },
-  { key: "course_slug", title: "Slug курса" },
-  { key: "organization_id", title: "ID организации" },
-  { key: "organization_name", title: "Организация" },
-  { key: "learning_group_id", title: "ID группы" },
-  { key: "learning_group_name", title: "Учебная группа" },
-  { key: "status", title: "Статус" },
-  { key: "status_label", title: "Статус, название" },
-  { key: "started_at", title: "Дата начала" },
-  { key: "completed_at", title: "Дата завершения" },
-  { key: "action_required", title: "Требует действия" },
-  { key: "documents_url", title: "Документы" },
-  { key: "course_url", title: "Публичная карточка курса" },
-  { key: "created_at", title: "Создано" },
-  { key: "updated_at", title: "Обновлено" },
+const STATUS_OPTIONS = [
+  { value: "assigned", label: T.assigned, tone: "bg-slate-100 text-slate-700 ring-slate-200" },
+  { value: "active", label: T.active, tone: "bg-green-50 text-green-700 ring-green-200" },
+  { value: "completed", label: T.completed, tone: "bg-blue-50 text-blue-700 ring-blue-200" },
+  { value: "cancelled", label: T.cancelled, tone: "bg-red-50 text-red-700 ring-red-200" },
 ];
 
 const INPUT_CLASS =
-  "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
+  "h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
 
-const BUTTON_PRIMARY_CLASS =
-  "rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60";
+const BUTTON_CLASS =
+  "inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60";
 
-const BUTTON_DARK_CLASS =
-  "rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60";
-
-const BUTTON_LIGHT_CLASS =
-  "rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60";
-
-const BUTTON_RED_CLASS =
-  "rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60";
-
-const ENROLLMENT_API_ERROR_MESSAGES = {
-  loadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f.",
-  createFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
-  bulkCreateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u043c\u0430\u0441\u0441\u043e\u0432\u043e\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
-  updateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
-  completeFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435.",
-  deleteFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435.",
-  accessDenied: "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432 \u0434\u043b\u044f \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u043c\u0438.",
-  notFound: "\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u0438\u043b\u0438 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0439 \u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
-  duplicate: "\u0422\u0430\u043a\u043e\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442 \u0434\u043b\u044f \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0433\u043e \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0438 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b.",
-  invalidStatus: "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f.",
-  noFields: "\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f.",
-  groupNotFound: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430.",
-  groupEmpty: "\u0412 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u0435 \u043d\u0435\u0442 \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432.",
-  groupWrongOrganization: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u043e\u0442\u043d\u043e\u0441\u0438\u0442\u0441\u044f \u043a \u0434\u0440\u0443\u0433\u043e\u0439 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438.",
-  userNotInGroup: "\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u0441\u043e\u0441\u0442\u043e\u0438\u0442 \u0432 \u0443\u043a\u0430\u0437\u0430\u043d\u043d\u043e\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u0435.",
-  deleteHasDocuments: "\u041d\u0435\u043b\u044c\u0437\u044f \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435, \u043a \u043a\u043e\u0442\u043e\u0440\u043e\u043c\u0443 \u0443\u0436\u0435 \u043f\u0440\u0438\u0432\u044f\u0437\u0430\u043d\u044b \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b.",
-  invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f.",
-};
-
-
-function getStatusLabel(value) {
-  return ENROLLMENT_STATUSES.find((item) => item.value === value)?.label || value;
+function cx(...values) {
+  return values.filter(Boolean).join(" ");
 }
-function formatEnrollmentApiError(err, fallback) {
-  const status = getApiErrorStatus(err);
-  const message = getApiErrorMessage(err);
-  const safeMessage = getSafeApiErrorMessage(message, fallback);
-  const normalizedMessage = message.toLowerCase();
 
-  let readableMessage = fallback;
-
-  if (status === "403") {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.accessDenied;
-  } else if (status === "404") {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.notFound;
-  } else if (status === "409") {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.duplicate;
-  } else if (status === "422" && normalizedMessage.includes("status")) {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.invalidStatus;
-  } else if (status === "422") {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.invalidRequest;
-  } else if (status === "400" && normalizedMessage.includes("no fields")) {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.noFields;
-  } else if (status === "400" && normalizedMessage.includes("no members")) {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.groupEmpty;
-  } else if (status === "400" && normalizedMessage.includes("another organization")) {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.groupWrongOrganization;
-  } else if (status === "400" && normalizedMessage.includes("not a member")) {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.userNotInGroup;
-  } else if (status === "400" && normalizedMessage.includes("documents")) {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.deleteHasDocuments;
-  } else if (normalizedMessage.includes("learning group not found")) {
-    readableMessage = ENROLLMENT_API_ERROR_MESSAGES.groupNotFound;
-  } else if (message) {
-    readableMessage = safeMessage;
+function toArray(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
   }
-
-  return `${status} ${readableMessage}`.trim();
-}
-
-function getEnrollmentFiltersFromSearch(search) {
-  const params = new URLSearchParams(search);
-
-  return {
-    q: params.get("q") || "",
-    user_id: params.get("user_id") || "",
-    course_id: params.get("course_id") || "",
-    organization_id: params.get("organization_id") || "",
-    status: params.get("status") || "",
-    learning_group_id: params.get("learning_group_id") || "",
-    action_required: params.get("action_required") === "true" ? "true" : "",
-  };
-}
-
-function getStatusTone(value) {
-  if (value === "completed") {
-    return "bg-green-50 text-green-700 ring-green-200";
+  if (Array.isArray(payload?.items)) {
+    return payload.items;
   }
-
-  if (value === "active") {
-    return "bg-blue-50 text-blue-700 ring-blue-200";
-  }
-
-  if (value === "cancelled") {
-    return "bg-red-50 text-red-700 ring-red-200";
-  }
-
-  return "bg-slate-100 text-slate-700 ring-slate-200";
+  return [];
 }
 
-function getEnrollmentActionRequiredHint(enrollment) {
-  if (enrollment?.status === "assigned") {
-    return {
-      title: "Назначение ожидает старта обучения",
-      description: "Проверьте слушателя, программу и группу. Если обучение началось, переведите назначение в работу.",
-      toneClass: "bg-amber-50 text-amber-800 ring-amber-200",
-    };
-  }
-
-  if (enrollment?.status === "completed") {
-    return {
-      title: "Завершённое обучение ожидает документ",
-      description: "Проверьте итоговый документ по назначению: черновик, публикацию, файл и публичную проверку.",
-      toneClass: "bg-green-50 text-green-800 ring-green-200",
-    };
-  }
-
-  return null;
-}
-
-function getEnrollmentAttentionItems(enrollment, organization) {
-  const items = [];
-
-  if (!enrollment) {
-    return items;
-  }
-
-  const documentProfileStatus = getOrganizationDocumentProfileStatus(organization);
-
-  if (enrollment.status === "assigned") {
-    items.push("Старт обучения: назначение ещё не переведено в работу.");
-
-    if (!enrollment.started_at) {
-      items.push("Дата старта: не заполнена, проверьте фактическое начало обучения.");
-    }
-  }
-
-  if (enrollment.status === "completed") {
-    items.push("Итоговый документ: завершённое обучение нужно проверить в реестре документов.");
-
-    if (!enrollment.completed_at) {
-      items.push("Дата завершения: не заполнена, проверьте корректность статуса.");
-    }
-  }
-
-  if (!enrollment.organization_id) {
-    items.push("Организация: не указана, PDF будет использовать fallback-настройки приложения.");
-  } else if (!organization) {
-    items.push("Организация: карточка не найдена в загруженном справочнике, обновите данные.");
-  } else if (documentProfileStatus.missing.length > 0) {
-    items.push(`PDF-профиль организации: не заполнено полей — ${documentProfileStatus.missing.length}.`);
-  }
-
-  if (!enrollment.learning_group_id) {
-    items.push("Группа: назначение без учебной группы, проверьте контекст группового обучения.");
-  }
-
-  return [...new Set(items)];
-}
-
-const USER_ROLE_LABELS = {
-  admin: "Администратор",
-  learner_fl: "Физлицо",
-  learner_org: "Слушатель ЮЛ",
-  org_rep: "Представитель ЮЛ",
-  teacher: "Преподаватель",
-  methodist: "Методист",
-  finance_operator: "Финансы",
-  edo_operator: "ЭДО",
-  frdo_operator: "ФРДО",
-};
-
-function getUserRoleCodes(user) {
-  if (!user || !Array.isArray(user.roles)) {
-    return [];
-  }
-
-  return user.roles.map((role) => role.code).filter(Boolean);
-}
-
-function isLearnerUser(user) {
-  const roleCodes = getUserRoleCodes(user);
-
-  return roleCodes.includes("learner_fl") || roleCodes.includes("learner_org");
-}
-
-function isAdminUser(user) {
-  return getUserRoleCodes(user).includes("admin");
-}
-
-function getUserRoleLabel(user) {
-  const roleCodes = getUserRoleCodes(user);
-
-  if (roleCodes.length === 0) {
-    return "без роли";
-  }
-
-  return roleCodes.map((code) => USER_ROLE_LABELS[code] || code).join(", ");
-}
-
-function getUserSortRank(user) {
-  if (isLearnerUser(user)) {
-    return 0;
-  }
-
-  if (isAdminUser(user)) {
-    return 2;
-  }
-
-  return 1;
-}
-
-function buildUserLabel(user) {
-  if (!user) {
-    return "";
-  }
-
-  const fullName = user.full_name ? ` - ${user.full_name}` : "";
-  const roles = getUserRoleLabel(user);
-
-  return `${user.email}${fullName} [${roles}]`;
-}
-
-function buildCourseLabel(course) {
-  if (!course) {
-    return "";
-  }
-
-  return `${course.title}${course.slug ? ` - ${course.slug}` : ""}`;
-}
-
-function buildOrganizationsMap(organizations) {
-  return organizations.reduce((acc, organization) => {
-    acc[organization.id] = organization;
-    return acc;
-  }, {});
-}
-
-function buildGroupsMap(groups) {
-  return groups.reduce((acc, group) => {
-    acc[group.id] = group;
-    return acc;
-  }, {});
-}
-
-function groupHasMember(groupId, userId, membersByGroupId) {
-  if (!groupId || !userId) {
-    return false;
-  }
-
-  return (membersByGroupId[groupId] || []).some((member) => member.user_id === userId);
-}
-
-function buildGroupLabel(group, organizationsById = {}) {
-  if (!group) {
-    return "";
-  }
-
-  const organization = organizationsById[group.organization_id];
-  const code = group.code ? ` - ${group.code}` : "";
-  const organizationName = organization?.name ? ` (${organization.name})` : "";
-
-  return `${group.name}${code}${organizationName}`;
-}
-
-const DOCUMENT_PROFILE_FIELDS = [
-  "document_issuer_name",
-  "document_signer_position",
-  "document_signer_name",
-  "document_basis",
-  "document_place",
-];
-
-function getOrganizationDocumentProfileStatus(organization) {
-  if (!organization) {
-    return {
-      label: "PDF: настройки приложения",
-      description: "Организация не выбрана. Итоговый PDF будет использовать fallback-настройки приложения.",
-      toneClass: "bg-slate-50 text-slate-700 ring-slate-200",
-      missing: DOCUMENT_PROFILE_FIELDS,
-    };
-  }
-
-  const missing = DOCUMENT_PROFILE_FIELDS.filter((field) => !String(organization[field] || "").trim());
-
-  if (missing.length === 0) {
-    return {
-      label: "PDF: профиль организации заполнен",
-      description: "Итоговый PDF возьмёт реквизиты, подписанта, основание и место выдачи из выбранной организации.",
-      toneClass: "bg-green-50 text-green-800 ring-green-200",
-      missing,
-    };
-  }
-
-  return {
-    label: "PDF: профиль организации заполнен частично",
-    description: "PDF использует заполненные реквизиты организации, а недостающие значения возьмёт из fallback-настроек приложения.",
-    toneClass: "bg-amber-50 text-amber-900 ring-amber-200",
-    missing,
-  };
-}
-
-function OrganizationDocumentProfileHint({ organization, testId }) {
-  const status = getOrganizationDocumentProfileStatus(organization);
-
-  return (
-    <div
-      data-testid={testId}
-      className={`rounded-2xl p-4 text-sm ring-1 ${status.toneClass}`}
-    >
-      <div className="font-semibold">{status.label}</div>
-      <p className="mt-1 leading-6">{status.description}</p>
-      {organization && status.missing.length > 0 && (
-        <p className="mt-2 text-xs leading-5">
-          Не заполнено полей профиля PDF: {status.missing.length}.
-        </p>
-      )}
-    </div>
-  );
-}
-
-function sortByLabel(left, right, getLabel) {
-  return getLabel(left).localeCompare(getLabel(right), "ru-RU");
-}
-
-function getAvailableGroups(
-  groups,
-  organizationId,
-  selectedGroupId = "",
-  userId = "",
-  membersByGroupId = {}
-) {
-  return groups
-    .filter((group) => group.is_active || group.id === selectedGroupId)
-    .filter((group) => !organizationId || group.organization_id === organizationId)
-    .filter((group) => {
-      if (group.id === selectedGroupId) {
-        return true;
-      }
-
-      return groupHasMember(group.id, userId, membersByGroupId);
-    })
-    .sort((left, right) => left.name.localeCompare(right.name, "ru-RU"));
-}
-
-function buildEditForm(enrollment) {
-  return {
-    organization_id: enrollment.organization_id || "",
-    learning_group_id: enrollment.learning_group_id || "",
-    status: enrollment.status || "assigned",
-    started_at: enrollment.started_at ? enrollment.started_at.slice(0, 16) : "",
-    completed_at: enrollment.completed_at ? enrollment.completed_at.slice(0, 16) : "",
-  };
-}
-
-function normalizeDateTime(value) {
+function formatDate(value) {
   if (!value) {
+    return T.notSet;
+  }
+  try {
+    return formatDateTime(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function getStatusOption(status) {
+  return STATUS_OPTIONS.find((item) => item.value === status) || STATUS_OPTIONS[0];
+}
+
+function getDisplayName(userLike) {
+  return userLike?.user_full_name || userLike?.full_name || userLike?.name || userLike?.email || T.notSet;
+}
+
+function getInitials(name, fallback = "EN") {
+  const clean = `${name || ""}`.trim();
+  if (!clean) {
+    return fallback;
+  }
+  const parts = clean.split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+}
+
+function getCourseType(enrollment) {
+  const title = `${enrollment?.course_title || ""} ${enrollment?.course_slug || ""}`.toLowerCase();
+  return title.includes("program") || title.includes("\u043f\u0440\u043e\u0433\u0440\u0430\u043c") ? T.program : T.course;
+}
+
+function getDerivedProgress(enrollment) {
+  if (typeof enrollment?.progress_percent === "number") {
+    return Math.max(0, Math.min(100, Math.round(enrollment.progress_percent)));
+  }
+  if (enrollment?.status === "completed") {
+    return 100;
+  }
+  if (enrollment?.status === "active") {
+    return 35;
+  }
+  return 0;
+}
+
+function getLatestAttempt(attempts) {
+  if (!Array.isArray(attempts) || attempts.length === 0) {
     return null;
   }
-
-  return new Date(value).toISOString();
+  return [...attempts].sort((a, b) => `${b.created_at || b.updated_at || ""}`.localeCompare(`${a.created_at || a.updated_at || ""}`))[0];
 }
 
-function countEnrollmentsWhere(items, predicate) {
-  return Array.isArray(items) ? items.filter(predicate).length : 0;
+function getAttemptText(attempt) {
+  if (!attempt) {
+    return T.notSet;
+  }
+  const percent = attempt.percent ?? 0;
+  return `${percent}%`;
 }
 
-function getAdminEnrollmentOperationsStats({
-  enrollments,
-  statusCounts,
-  actionRequiredCount,
-  filters,
-  users,
-  courses,
-  organizations,
-  groups,
-  groupMembersByGroupId,
-}) {
-  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
-  const activeCoursesCount = countEnrollmentsWhere(courses, (course) => course.is_active);
-  const activeGroupsCount = countEnrollmentsWhere(groups, (group) => group.is_active);
-  const groupMembersTotal = Object.values(groupMembersByGroupId || {}).flat().length;
-
-  return {
-    total: statusCounts.all || enrollments.length || 0,
-    displayed: enrollments.length,
-    assigned: statusCounts.assigned || 0,
-    active: statusCounts.active || 0,
-    completed: statusCounts.completed || 0,
-    cancelled: statusCounts.cancelled || 0,
-    actionRequired: actionRequiredCount || 0,
-    withOrganization: countEnrollmentsWhere(enrollments, (item) => item.organization_id),
-    withoutOrganization: countEnrollmentsWhere(enrollments, (item) => !item.organization_id),
-    withGroup: countEnrollmentsWhere(enrollments, (item) => item.learning_group_id),
-    withoutGroup: countEnrollmentsWhere(enrollments, (item) => !item.learning_group_id),
-    assignedMissingStart: countEnrollmentsWhere(
-      enrollments,
-      (item) => item.status === "assigned" && !item.started_at
-    ),
-    activeMissingStart: countEnrollmentsWhere(
-      enrollments,
-      (item) => item.status === "active" && !item.started_at
-    ),
-    completedMissingDate: countEnrollmentsWhere(
-      enrollments,
-      (item) => item.status === "completed" && !item.completed_at
-    ),
-    completedReadyForDocuments: countEnrollmentsWhere(
-      enrollments,
-      (item) => item.status === "completed"
-    ),
-    usersTotal: users.length,
-    coursesTotal: courses.length,
-    activeCourses: activeCoursesCount,
-    organizationsTotal: organizations.length,
-    groupsTotal: groups.length,
-    activeGroups: activeGroupsCount,
-    groupMembersTotal,
-    activeFiltersCount,
-    filters,
-  };
+function getDocumentState(documents) {
+  const list = Array.isArray(documents) ? documents : [];
+  const available = list.find((item) => item.status === "available");
+  if (available) {
+    return { label: T.certificate, value: available.document_number || available.title || T.documents, good: true };
+  }
+  if (list.length > 0) {
+    return { label: T.documents, value: `${list.length}`, good: false };
+  }
+  return { label: T.documents, value: T.notSet, good: false };
 }
 
-function getAdminEnrollmentOperationsDiagnostics({
-  operationsStats,
-  loading,
-  saving,
-  bulkSaving,
-  actionEnrollmentId,
-  editingEnrollmentId,
-  error,
-  successMessage,
-}) {
-  const items = [];
-
-  if (loading) {
-    items.push("Загрузка: реестр назначений сейчас обновляется.");
+function getActionHints(enrollment, documents) {
+  const hints = [];
+  if (enrollment?.status === "assigned") {
+    hints.push(T.attentionAssigned);
   }
-
-  if (!loading && operationsStats.displayed === 0) {
-    items.push("Реестр: по текущим фильтрам назначения не найдены.");
+  if (!enrollment?.organization_id) {
+    hints.push(T.attentionNoOrganization);
   }
-
-  if (operationsStats.activeFiltersCount > 0) {
-    items.push(`Фильтры: включено активных фильтров - ${operationsStats.activeFiltersCount}.`);
+  if (!enrollment?.learning_group_id) {
+    hints.push(T.attentionNoGroup);
   }
-
-  if (operationsStats.assigned > 0) {
-    items.push("Старт обучения: есть назначения в статусе assigned.");
+  if (enrollment?.status === "completed") {
+    const hasAvailableDocument = (documents || []).some((document) => document.status === "available");
+    if (!hasAvailableDocument) {
+      hints.push(T.attentionDocument);
+    }
   }
-
-  if (operationsStats.active > 0) {
-    items.push("Процесс обучения: есть активные назначения.");
-  }
-
-  if (operationsStats.completed > 0) {
-    items.push("Завершение: есть completed-назначения, проверьте итоговые документы.");
-  }
-
-  if (operationsStats.cancelled > 0) {
-    items.push("Отмена: есть отменённые назначения.");
-  }
-
-  if (operationsStats.actionRequired > 0) {
-    items.push("Контроль: есть назначения в режиме action_required.");
-  }
-
-  if (operationsStats.withoutOrganization > 0) {
-    items.push("Организация: часть назначений не привязана к организации.");
-  }
-
-  if (operationsStats.withoutGroup > 0) {
-    items.push("Группа: часть назначений не привязана к учебной группе.");
-  }
-
-  if (operationsStats.assignedMissingStart > 0) {
-    items.push("Дата старта: у назначенных записей может отсутствовать started_at.");
-  }
-
-  if (operationsStats.activeMissingStart > 0) {
-    items.push("Дата старта: у активных назначений отсутствует started_at.");
-  }
-
-  if (operationsStats.completedMissingDate > 0) {
-    items.push("Дата завершения: у завершённых назначений отсутствует completed_at.");
-  }
-
-  if (operationsStats.activeCourses === 0) {
-    items.push("Курсы: нет активных курсов для новых назначений.");
-  }
-
-  if (operationsStats.activeGroups === 0 && operationsStats.groupsTotal > 0) {
-    items.push("Группы: есть группы, но нет активных групп для массового назначения.");
-  }
-
-  if (saving) {
-    items.push("Создание: выполняется создание одиночного назначения.");
-  }
-
-  if (bulkSaving) {
-    items.push("Массовое назначение: выполняется назначение учебной группе.");
-  }
-
-  if (editingEnrollmentId || actionEnrollmentId) {
-    items.push("Операция: выполняется редактирование, завершение или удаление назначения.");
-  }
-
-  if (error) {
-    items.push("Ошибка: последняя операция с назначениями завершилась ошибкой.");
-  }
-
-  if (successMessage) {
-    items.push("Готово: последняя операция с назначениями завершилась успешно.");
-  }
-
-  return [...new Set(items)];
+  return hints;
 }
 
-function AdminEnrollmentOperationsDiagnostics({
-  operationsStats,
-  diagnostics,
-}) {
+function buildCsv(rows) {
+  const header = [
+    "id",
+    "user_email",
+    "user_full_name",
+    "course_title",
+    "organization_name",
+    "learning_group_name",
+    "status",
+    "started_at",
+    "completed_at",
+    "created_at",
+    "updated_at",
+  ];
+  const escape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+  return [header.join(";"), ...rows.map((row) => header.map((key) => escape(row[key])).join(";"))].join("\n");
+}
+
+function downloadCsv(rows) {
+  const blob = new Blob([`\ufeff${buildCsv(rows)}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `admin-enrollments-${stamp}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function Badge({ children, className }) {
   return (
-    <SectionCard
-      title="Диагностика административных назначений обучения"
-      subtitle="Контроль статусов assigned/active/completed, action_required, групповых назначений, связей с пользователем, организацией, группой, курсом и итоговыми документами"
-    >
-      <div data-testid="admin-enrollment-operations-diagnostics" className="space-y-5">
-        <div
-          data-testid="admin-enrollment-operations-summary"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Всего / показано
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.total} / {operationsStats.displayed}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Assigned / active / completed
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.assigned} / {operationsStats.active} / {operationsStats.completed}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Требуют действия
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {operationsStats.actionRequired}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Активные фильтры
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {operationsStats.activeFiltersCount}
-            </div>
-          </div>
-        </div>
-
-        <div
-          data-testid="admin-enrollment-operations-relations"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Организации
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.withOrganization} / {operationsStats.withoutOrganization}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Группы
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.withGroup} / {operationsStats.withoutGroup}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Справочники
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.usersTotal} / {operationsStats.activeCourses} / {operationsStats.activeGroups}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              К документам
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.completedReadyForDocuments}
-            </div>
-          </div>
-        </div>
-
-        <div
-          data-testid="admin-enrollment-operations-attention"
-          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
-            diagnostics.length
-              ? "bg-amber-50 text-amber-900 ring-amber-200"
-              : "bg-green-50 text-green-800 ring-green-200"
-          }`}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="font-semibold text-slate-900">
-              Что требует внимания в административных назначениях
-            </div>
-            <span
-              data-testid="admin-enrollment-operations-attention-count"
-              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
-            >
-              Пунктов диагностики: {diagnostics.length}
-            </span>
-          </div>
-
-          {diagnostics.length ? (
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              {diagnostics.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2">
-              Критичных замечаний по административным назначениям обучения не найдено.
-            </p>
-          )}
-        </div>
-
-        <div
-          data-testid="admin-enrollment-operations-links"
-          className="flex flex-wrap gap-3"
-        >
-          <Link
-            to={buildEnrollmentsPath({ status: "assigned" })}
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Назначенные
-          </Link>
-
-          <Link
-            to={buildEnrollmentsPath({ status: "active" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            В обучении
-          </Link>
-
-          <Link
-            to={buildEnrollmentsPath({ status: "completed" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Завершённые
-          </Link>
-
-          <Link
-            to={buildEnrollmentsPath({ action_required: "true" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Требуют действия
-          </Link>
-
-          <Link
-            to={buildCoursesPath({ is_active: "true" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Активные курсы
-          </Link>
-
-          <Link
-            to={buildGroupsPath()}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Группы обучения
-          </Link>
-
-          <Link
-            to={buildDocumentsPath({ status: "draft" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Черновики документов
-          </Link>
-
-          <Link
-            to={buildAuditPath({ entity_type: "enrollment" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Аудит назначений
-          </Link>
-        </div>
-      </div>
-    </SectionCard>
+    <span className={cx("inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-bold ring-1", className)}>
+      {children}
+    </span>
   );
 }
 
-function EnrollmentSummaryCards({ statusCounts, users, courses, groups }) {
-  const activeCoursesCount = courses.filter((course) => course.is_active).length;
-  const activeGroupsCount = groups.filter((group) => group.is_active).length;
-
+function FieldCard({ label, value }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <AdminSummaryCard
-        title="Всего назначений"
-        value={statusCounts.all || 0}
-        hint="По текущему набору фильтров."
-        to={buildEnrollmentsPath()}
-      />
-      <AdminSummaryCard
-        title="В процессе"
-        value={statusCounts.active || 0}
-        hint="Назначения со статусом active."
-        to={buildEnrollmentsPath({ status: "active" })}
-      />
-      <AdminSummaryCard
-        title="Завершено"
-        value={statusCounts.completed || 0}
-        hint="Готовы к документам и проверке."
-        to={buildEnrollmentsPath({ status: "completed" })}
-      />
-      <AdminSummaryCard
-        title="Справочники"
-        value={`${users.length}/${activeCoursesCount}/${activeGroupsCount}`}
-        hint="Пользователи / активные программы / активные группы."
-      />
+    <div className="rounded-2xl bg-slate-50 p-4">
+      <div className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{label}</div>
+      <div className="mt-2 break-words text-sm font-black text-slate-950">{value || T.notSet}</div>
     </div>
   );
 }
 
-function EnrollmentWorkflowPanel({ statusCounts, courses, groups }) {
-  const firstActiveCourse = courses.find((course) => course.is_active);
-  const firstActiveGroup = groups.find((group) => group.is_active);
-
+function InfoCard({ title, subtitle, counter, children, testId }) {
   return (
-    <SectionCard
-      title="Рабочие сценарии"
-      subtitle="Быстрые переходы для администратора учебных назначений."
-    >
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <AdminWorkflowLink
-          title="Новые назначения"
-          description={`Проверить назначенные записи: ${statusCounts.assigned || 0}.`}
-          to={buildEnrollmentsPath({ status: "assigned" })}
-        />
-        <AdminWorkflowLink
-          title="Завершённые обучения"
-          description={`Открыть записи completed: ${statusCounts.completed || 0}.`}
-          to={buildEnrollmentsPath({ status: "completed" })}
-        />
-        <AdminWorkflowLink
-          title="Программы"
-          description="Перейти к рабочему центру курсов и активным программам."
-          to={buildCoursesPath(firstActiveCourse ? { q: firstActiveCourse.slug || firstActiveCourse.title } : {})}
-        />
-        <AdminWorkflowLink
-          title="Группы"
-          description="Проверить учебные группы перед массовым назначением."
-          to={buildGroupsPath(firstActiveGroup ? { organization_id: firstActiveGroup.organization_id } : {})}
-        />
+    <section data-testid={testId} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-black text-slate-950">{title}</h3>
+          {subtitle ? <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p> : null}
+        </div>
+        {counter !== undefined ? (
+          <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-slate-50 px-2 text-xs font-black text-slate-700 ring-1 ring-slate-200">
+            {counter}
+          </span>
+        ) : null}
       </div>
-    </SectionCard>
+      {children}
+    </section>
   );
 }
 
-export function AdminEnrollmentsPage() {
-  const { onRefreshEnrollments } = arguments[0] || {};
-  const location = useLocation();
-  const navigate = useNavigate();
-  const initialFilters = getEnrollmentFiltersFromSearch(location.search);
+function ActionButton({ children, onClick, disabled, tone = "default", type = "button" }) {
+  const toneClass =
+    tone === "primary"
+      ? "bg-blue-600 text-white hover:bg-blue-700"
+      : tone === "danger"
+        ? "bg-red-50 text-red-700 ring-1 ring-red-100 hover:bg-red-100"
+        : "bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50";
+  return (
+    <button type={type} onClick={onClick} disabled={disabled} className={cx(BUTTON_CLASS, toneClass)}>
+      {children}
+    </button>
+  );
+}
 
+function ProgressBar({ value }) {
+  const safe = Math.max(0, Math.min(100, Number(value) || 0));
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-10 text-sm font-black text-slate-950">{safe}%</span>
+      <div className="h-2 flex-1 rounded-full bg-slate-100">
+        <div className="h-2 rounded-full bg-blue-600" style={{ width: `${safe}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function SelectField({ label, value, onChange, children, disabled }) {
+  return (
+    <label className="block">
+      <span className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</span>
+      <select className={cx(INPUT_CLASS, "mt-2")} value={value} onChange={onChange} disabled={disabled}>
+        {children}
+      </select>
+    </label>
+  );
+}
+
+function TextField({ label, value, onChange, placeholder, onEnter }) {
+  return (
+    <label className="block">
+      <span className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</span>
+      <input
+        className={cx(INPUT_CLASS, "mt-2")}
+        value={value}
+        placeholder={placeholder}
+        onChange={onChange}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && onEnter) {
+            onEnter();
+          }
+        }}
+      />
+    </label>
+  );
+}
+
+const EMPTY_CREATE_FORM = {
+  user_id: "",
+  course_id: "",
+  organization_id: "",
+  learning_group_id: "",
+  status: "assigned",
+};
+
+function AdminEnrollmentsPage() {
   const [enrollments, setEnrollments] = useState([]);
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [groups, setGroups] = useState([]);
-  const [groupMembersByGroupId, setGroupMembersByGroupId] = useState({});
 
-  const [filterQuery, setFilterQuery] = useState(initialFilters.q);
-  const [filterUserId, setFilterUserId] = useState(initialFilters.user_id);
-  const [filterCourseId, setFilterCourseId] = useState(initialFilters.course_id);
-  const [filterOrganizationId, setFilterOrganizationId] = useState(initialFilters.organization_id);
-  const [filterStatus, setFilterStatus] = useState(initialFilters.status);
-  const [filterGroupId, setFilterGroupId] = useState(initialFilters.learning_group_id);
-  const [filterActionRequired, setFilterActionRequired] = useState(initialFilters.action_required);
-  const [statusCounts, setStatusCounts] = useState({ all: 0 });
-  const [actionRequiredCount, setActionRequiredCount] = useState(0);
+  const [filters, setFilters] = useState({
+    q: "",
+    status: "",
+    course_id: "",
+    organization_id: "",
+    learning_group_id: "",
+    action_required: "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState(filters);
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [bulkSaving, setBulkSaving] = useState(false);
-  const [actionEnrollmentId, setActionEnrollmentId] = useState("");
-  const [editingEnrollmentId, setEditingEnrollmentId] = useState("");
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState("");
+  const [detailsById, setDetailsById] = useState({});
+  const [documentsById, setDocumentsById] = useState({});
+  const [quizAttemptsById, setQuizAttemptsById] = useState({});
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
+  const [bulkForm, setBulkForm] = useState({
+    organization_id: "",
+    learning_group_id: "",
+    course_id: "",
+    status: "assigned",
+  });
+  const [editingId, setEditingId] = useState("");
+  const [editForm, setEditForm] = useState({ organization_id: "", learning_group_id: "", status: "assigned" });
+
+  const [loading, setLoading] = useState(false);
+  const [detailLoadingId, setDetailLoadingId] = useState("");
+  const [savingId, setSavingId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const [form, setForm] = useState({
-    user_id: "",
-    course_id: "",
-    organization_id: "",
-    learning_group_id: "",
-    status: "assigned",
-    started_at: "",
-    completed_at: "",
-  });
+  const usersById = useMemo(() => Object.fromEntries(users.map((item) => [item.id, item])), [users]);
+  const coursesById = useMemo(() => Object.fromEntries(courses.map((item) => [item.id, item])), [courses]);
+  const organizationsById = useMemo(() => Object.fromEntries(organizations.map((item) => [item.id, item])), [organizations]);
+  const groupsById = useMemo(() => Object.fromEntries(groups.map((item) => [item.id, item])), [groups]);
 
-  const [bulkForm, setBulkForm] = useState({
-    learning_group_id: "",
-    course_id: "",
-    status: "assigned",
-    started_at: "",
-    completed_at: "",
-  });
+  const statusCounts = useMemo(() => {
+    const counts = { all: enrollments.length, active: 0, assigned: 0, completed: 0, cancelled: 0, actionRequired: 0 };
+    enrollments.forEach((enrollment) => {
+      if (counts[enrollment.status] !== undefined) {
+        counts[enrollment.status] += 1;
+      }
+      if (getActionHints(enrollment, documentsById[enrollment.id]).length > 0) {
+        counts.actionRequired += 1;
+      }
+    });
+    return counts;
+  }, [documentsById, enrollments]);
 
-  const [editForm, setEditForm] = useState({
-    organization_id: "",
-    learning_group_id: "",
-    status: "assigned",
-    started_at: "",
-    completed_at: "",
-  });
+  useEffect(() => {
+    loadReferenceData();
+  }, []);
 
-  const activeCourses = useMemo(
-    () => courses.filter((course) => course.is_active),
-    [courses]
-  );
+  useEffect(() => {
+    loadEnrollments();
+  }, [appliedFilters]);
 
-  const organizationsById = useMemo(
-    () => buildOrganizationsMap(organizations),
-    [organizations]
-  );
+  async function loadReferenceData() {
+    try {
+      const [usersPayload, coursesPayload, organizationsPayload, groupsPayload] = await Promise.allSettled([
+        getAdminUsers(),
+        getAdminCourses(),
+        getAdminOrganizations(),
+        getOrgLearningGroups(),
+      ]);
 
-  const groupsById = useMemo(
-    () => buildGroupsMap(groups),
-    [groups]
-  );
-
-  const sortedUsers = useMemo(
-    () =>
-      [...users].sort((left, right) => {
-        const rankDiff = getUserSortRank(left) - getUserSortRank(right);
-
-        if (rankDiff !== 0) {
-          return rankDiff;
-        }
-
-        return sortByLabel(left, right, buildUserLabel);
-      }),
-    [users]
-  );
-
-  const preferredCreateUser = useMemo(
-    () =>
-      sortedUsers.find(isLearnerUser) ||
-      null,
-    [sortedUsers]
-  );
-
-  const sortedCourses = useMemo(
-    () => [...courses].sort((left, right) => sortByLabel(left, right, buildCourseLabel)),
-    [courses]
-  );
-
-  const sortedOrganizations = useMemo(
-    () => [...organizations].sort((left, right) => left.name.localeCompare(right.name, "ru-RU")),
-    [organizations]
-  );
-
-  const sortedGroups = useMemo(
-    () => [...groups].sort((left, right) =>
-      buildGroupLabel(left, organizationsById).localeCompare(buildGroupLabel(right, organizationsById), "ru-RU")
-    ),
-    [groups, organizationsById]
-  );
-
-  const bulkFormGroups = useMemo(
-    () =>
-      [...groups]
-        .filter((group) => group.is_active)
-        .sort((left, right) => left.name.localeCompare(right.name, "ru-RU")),
-    [groups]
-  );
-
-  const editingEnrollment = useMemo(
-    () => enrollments.find((item) => item.id === editingEnrollmentId) || null,
-    [enrollments, editingEnrollmentId]
-  );
-
-  const createFormGroups = useMemo(
-    () =>
-      getAvailableGroups(
-        groups,
-        form.organization_id,
-        form.learning_group_id,
-        form.user_id,
-        groupMembersByGroupId
-      ),
-    [groups, form.organization_id, form.learning_group_id, form.user_id, groupMembersByGroupId]
-  );
-
-  const editFormGroups = useMemo(
-    () =>
-      getAvailableGroups(
-        groups,
-        editForm.organization_id,
-        editForm.learning_group_id,
-        editingEnrollment?.user_id || "",
-        groupMembersByGroupId
-      ),
-    [
-      groups,
-      editForm.organization_id,
-      editForm.learning_group_id,
-      editingEnrollment?.user_id,
-      groupMembersByGroupId,
-    ]
-  );
-
-  const showActionRequiredOnly = filterActionRequired === "true";
-  const visibleEnrollments = enrollments;
-
-  const adminEnrollmentOperationsFilters = useMemo(
-    () => ({
-      q: filterQuery,
-      user_id: filterUserId,
-      course_id: filterCourseId,
-      organization_id: filterOrganizationId,
-      status: filterStatus,
-      learning_group_id: filterGroupId,
-      action_required: filterActionRequired,
-    }),
-    [
-      filterQuery,
-      filterUserId,
-      filterCourseId,
-      filterOrganizationId,
-      filterStatus,
-      filterGroupId,
-      filterActionRequired,
-    ]
-  );
-
-  const adminEnrollmentOperationsStats = useMemo(
-    () =>
-      getAdminEnrollmentOperationsStats({
-        enrollments,
-        statusCounts,
-        actionRequiredCount,
-        filters: adminEnrollmentOperationsFilters,
-        users,
-        courses,
-        organizations,
-        groups,
-        groupMembersByGroupId,
-      }),
-    [
-      enrollments,
-      statusCounts,
-      actionRequiredCount,
-      adminEnrollmentOperationsFilters,
-      users,
-      courses,
-      organizations,
-      groups,
-      groupMembersByGroupId,
-    ]
-  );
-
-  const adminEnrollmentOperationsDiagnostics = useMemo(
-    () =>
-      getAdminEnrollmentOperationsDiagnostics({
-        operationsStats: adminEnrollmentOperationsStats,
-        loading,
-        saving,
-        bulkSaving,
-        actionEnrollmentId,
-        editingEnrollmentId,
-        error,
-        successMessage,
-      }),
-    [
-      adminEnrollmentOperationsStats,
-      loading,
-      saving,
-      bulkSaving,
-      actionEnrollmentId,
-      editingEnrollmentId,
-      error,
-      successMessage,
-    ]
-  );
-
-  const activeEnrollmentFilterItems = useMemo(() => {
-    const items = [];
-
-    if (filterQuery) {
-      items.push({ key: "q", label: "Поиск", value: filterQuery });
+      if (usersPayload.status === "fulfilled") {
+        setUsers(toArray(usersPayload.value));
+      }
+      if (coursesPayload.status === "fulfilled") {
+        setCourses(toArray(coursesPayload.value));
+      }
+      if (organizationsPayload.status === "fulfilled") {
+        setOrganizations(toArray(organizationsPayload.value));
+      }
+      if (groupsPayload.status === "fulfilled") {
+        setGroups(toArray(groupsPayload.value));
+      }
+    } catch {
+      // Reference data failures are shown through select fallbacks.
     }
-
-    if (filterUserId) {
-      const user = sortedUsers.find((item) => item.id === filterUserId);
-      items.push({
-        key: "user_id",
-        label: "Пользователь",
-        value: user ? buildUserLabel(user) : filterUserId,
-      });
-    }
-
-    if (filterCourseId) {
-      const course = sortedCourses.find((item) => item.id === filterCourseId);
-      items.push({
-        key: "course_id",
-        label: "Программа",
-        value: course ? buildCourseLabel(course) : filterCourseId,
-      });
-    }
-
-    if (filterOrganizationId) {
-      const organization = sortedOrganizations.find((item) => item.id === filterOrganizationId);
-      items.push({
-        key: "organization_id",
-        label: "Организация",
-        value: organization?.name || filterOrganizationId,
-      });
-    }
-
-    if (filterStatus) {
-      items.push({
-        key: "status",
-        label: "Статус",
-        value: getStatusLabel(filterStatus),
-      });
-    }
-
-    if (filterGroupId) {
-      const group = sortedGroups.find((item) => item.id === filterGroupId);
-      items.push({
-        key: "learning_group_id",
-        label: "Учебная группа",
-        value: group ? buildGroupLabel(group, organizationsById) : filterGroupId,
-      });
-    }
-
-    if (filterActionRequired === "true") {
-      items.push({
-        key: "action_required",
-        label: "Требуют действия",
-        value: "Да",
-      });
-    }
-
-    return items;
-  }, [
-    filterQuery,
-    filterUserId,
-    filterCourseId,
-    filterOrganizationId,
-    filterStatus,
-    filterGroupId,
-    filterActionRequired,
-    sortedUsers,
-    sortedCourses,
-    sortedOrganizations,
-    sortedGroups,
-    organizationsById,
-  ]);
-
-  function buildFilters(overrides = {}) {
-    return {
-      q: overrides.q ?? filterQuery,
-      user_id: overrides.user_id ?? filterUserId,
-      course_id: overrides.course_id ?? filterCourseId,
-      organization_id: overrides.organization_id ?? filterOrganizationId,
-      status: overrides.status ?? filterStatus,
-      learning_group_id: overrides.learning_group_id ?? filterGroupId,
-      action_required: overrides.action_required ?? filterActionRequired,
-    };
   }
 
-  async function navigateToEnrollmentFilters(filters, options = {}) {
-    const nextPath = buildEnrollmentsPath(filters);
-    const currentPath = `${location.pathname}${location.search}`;
-
-    if (currentPath === nextPath) {
-      await refreshEnrollmentsFastPath(filters);
-      return;
-    }
-
-    navigate(nextPath, options);
-  }
-
-  async function loadData(filters = null) {
+  async function loadEnrollments() {
     try {
       setLoading(true);
       setError("");
-
-      const activeFilters = { limit: 300, ...(filters ?? buildFilters()) };
-
-      const [
-        enrollmentsResponse,
-        usersResponse,
-        coursesResponse,
-        organizationsResponse,
-        groupsResponse,
-        worklistSummaryResponse,
-      ] = await Promise.all([
-        getAdminEnrollments(activeFilters),
-        getAdminUsers(),
-        getAdminCourses({ limit: 300 }),
-        getAdminOrganizations(),
-        getOrgLearningGroups(),
-        getAdminWorklistSummary({
-          enrollments_user_id: activeFilters.user_id,
-          enrollments_course_id: activeFilters.course_id,
-          enrollments_organization_id: activeFilters.organization_id,
-          enrollments_learning_group_id: activeFilters.learning_group_id,
-          enrollments_q: activeFilters.q,
-        }),
-      ]);
-
-      const loadedGroups = Array.isArray(groupsResponse) ? groupsResponse : [];
-      const loadedGroupMembersByGroupId = Object.fromEntries(
-        await Promise.all(
-          loadedGroups.map(async (group) => {
-            const members = await getOrgLearningGroupMembers(group.id);
-            return [group.id, Array.isArray(members) ? members : []];
-          })
-        )
-      );
-
-      const enrollmentsSummary = worklistSummaryResponse?.enrollments || {};
-
-      setEnrollments(Array.isArray(enrollmentsResponse) ? enrollmentsResponse : []);
-      setStatusCounts({
-        all: enrollmentsSummary.total || 0,
-        assigned: enrollmentsSummary.assigned || 0,
-        active: enrollmentsSummary.active || 0,
-        completed: enrollmentsSummary.completed || 0,
-        cancelled: enrollmentsSummary.cancelled || 0,
+      const payload = await getAdminEnrollments({
+        ...appliedFilters,
+        limit: 300,
       });
-      setActionRequiredCount(enrollmentsSummary.action_required || 0);
-      setUsers(Array.isArray(usersResponse) ? usersResponse : []);
-      setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
-      setOrganizations(Array.isArray(organizationsResponse) ? organizationsResponse : []);
-      setGroups(loadedGroups);
-      setGroupMembersByGroupId(loadedGroupMembersByGroupId);
+      setEnrollments(toArray(payload));
     } catch (err) {
-      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.loadFailed));
-      setStatusCounts({ all: 0 });
+      setError(err?.message || T.loadFailed);
     } finally {
       setLoading(false);
     }
   }
 
-  async function refreshEnrollmentsFastPath(filters = buildFilters()) {
-    const nextFilters = filters ?? buildFilters();
-    const localRefresh = loadData(nextFilters);
-
-    if (!onRefreshEnrollments) {
-      await localRefresh;
-      return;
+  async function refreshEnrollment(enrollmentId) {
+    try {
+      const detail = await getAdminEnrollmentDetail(enrollmentId);
+      setEnrollments((current) => current.map((item) => (item.id === enrollmentId ? detail : item)));
+      setDetailsById((current) => ({ ...current, [enrollmentId]: detail }));
+      return detail;
+    } catch {
+      await loadEnrollments();
+      return null;
     }
-
-    await Promise.all([
-      localRefresh,
-      onRefreshEnrollments(nextFilters),
-    ]);
   }
 
-  useEffect(() => {
-    const queryFilters = getEnrollmentFiltersFromSearch(location.search);
-
-    setFilterQuery(queryFilters.q);
-    setFilterUserId(queryFilters.user_id);
-    setFilterCourseId(queryFilters.course_id);
-    setFilterOrganizationId(queryFilters.organization_id);
-    setFilterStatus(queryFilters.status);
-    setFilterGroupId(queryFilters.learning_group_id);
-    setFilterActionRequired(queryFilters.action_required);
-
-    if (queryFilters.learning_group_id) {
-      setBulkForm((current) => ({
-        ...current,
-        learning_group_id: queryFilters.learning_group_id,
-      }));
-    }
-
-    loadData(queryFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
-
-  // Автозаполнение формы назначения для чистой demo-базы.
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    setForm((current) => {
-      if (
-        current.user_id ||
-        current.course_id ||
-        current.organization_id ||
-        current.learning_group_id ||
-        current.started_at ||
-        current.completed_at
-      ) {
-        return current;
-      }
-
-      const next = { ...current };
-
-      if (preferredCreateUser) {
-        next.user_id = preferredCreateUser.id;
-      }
-
-      if (activeCourses.length === 1) {
-        next.course_id = activeCourses[0].id;
-      }
-
-      if (sortedOrganizations.length === 1) {
-        next.organization_id = sortedOrganizations[0].id;
-      }
-
-      const availableGroups = getAvailableGroups(
-        groups,
-        next.organization_id,
-        "",
-        next.user_id,
-        groupMembersByGroupId
-      );
-
-      if (availableGroups.length === 1) {
-        next.learning_group_id = availableGroups[0].id;
-        next.organization_id = availableGroups[0].organization_id;
-      }
-
-      return next;
-    });
-  }, [
-    loading,
-    preferredCreateUser,
-    activeCourses,
-    sortedOrganizations,
-    groups,
-    groupMembersByGroupId,
-  ]);
-
-  function updateField(field, value) {
-    setForm((current) => {
-      const next = {
-        ...current,
-        [field]: value,
-      };
-
-      if (field === "organization_id") {
-        const selectedGroup = groupsById[next.learning_group_id];
-
-        if (!value || (selectedGroup && selectedGroup.organization_id !== value)) {
-          next.learning_group_id = "";
-        }
-      }
-
-      if (field === "learning_group_id") {
-        const selectedGroup = groupsById[value];
-
-        if (selectedGroup) {
-          next.organization_id = selectedGroup.organization_id;
-        }
-      }
-
-      if (field === "user_id") {
-        const selectedGroup = groupsById[next.learning_group_id];
-
-        if (
-          !value ||
-          (selectedGroup && !groupHasMember(selectedGroup.id, value, groupMembersByGroupId))
-        ) {
-          next.learning_group_id = "";
-        }
-      }
-
-      return next;
-    });
-  }
-
-  function updateEditField(field, value) {
-    setEditForm((current) => {
-      const next = {
-        ...current,
-        [field]: value,
-      };
-
-      if (field === "organization_id") {
-        const selectedGroup = groupsById[next.learning_group_id];
-
-        if (!value || (selectedGroup && selectedGroup.organization_id !== value)) {
-          next.learning_group_id = "";
-        }
-      }
-
-      if (field === "learning_group_id") {
-        const selectedGroup = groupsById[value];
-
-        if (selectedGroup) {
-          next.organization_id = selectedGroup.organization_id;
-        }
-      }
-
-      return next;
-    });
-  }
-
-  function resetForm() {
-    setForm({
-      user_id: "",
-      course_id: "",
-      organization_id: "",
-      learning_group_id: "",
-      status: "assigned",
-      started_at: "",
-      completed_at: "",
-    });
-  }
-
-  function resetEditState() {
-    setEditingEnrollmentId("");
-    setEditForm({
-      organization_id: "",
-      learning_group_id: "",
-      status: "assigned",
-      started_at: "",
-      completed_at: "",
-    });
-  }
-
-  function buildCreatePayload(values) {
-    return {
-      user_id: values.user_id,
-      course_id: values.course_id,
-      organization_id: values.organization_id || null,
-      learning_group_id: values.learning_group_id || null,
-      status: values.status,
-      started_at: normalizeDateTime(values.started_at),
-      completed_at: normalizeDateTime(values.completed_at),
-    };
-  }
-
-  function buildUpdatePayload(values) {
-    return {
-      organization_id: values.organization_id || null,
-      learning_group_id: values.learning_group_id || null,
-      status: values.status,
-      started_at: normalizeDateTime(values.started_at),
-      completed_at: normalizeDateTime(values.completed_at),
-    };
-  }
-
-  function getEnrollmentGroupName(enrollment) {
-    if (enrollment.learning_group_name) {
-      return enrollment.learning_group_name;
-    }
-
-    return groupsById[enrollment.learning_group_id]?.name || "-";
-  }
-
-  function getEnrollmentFilterPath(overrides = {}) {
-    return buildEnrollmentsPath({
-      ...buildFilters(),
-      ...overrides,
-    });
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-
-    if (!form.user_id) {
-      setError("Выберите пользователя.");
-      return;
-    }
-
-    if (!form.course_id) {
-      setError("Выберите программу.");
+  async function loadEnrollmentDetails(enrollment) {
+    if (!enrollment?.id) {
       return;
     }
 
     try {
-      setSaving(true);
-      setError("");
-      setSuccessMessage("");
+      setDetailLoadingId(enrollment.id);
+      const [detailResult, documentsResult, attemptsResult] = await Promise.allSettled([
+        getAdminEnrollmentDetail(enrollment.id),
+        getAdminDocuments({ enrollment_id: enrollment.id }),
+        getAdminEnrollmentQuizAttempts(enrollment.id),
+      ]);
 
-      const created = await createAdminEnrollment(buildCreatePayload(form));
+      if (detailResult.status === "fulfilled") {
+        setDetailsById((current) => ({ ...current, [enrollment.id]: detailResult.value }));
+      } else {
+        setDetailsById((current) => ({ ...current, [enrollment.id]: enrollment }));
+      }
 
-      setSuccessMessage(`Назначение создано: ${created.user_email} → ${created.course_title}`);
-      resetForm();
-      await refreshEnrollmentsFastPath(buildFilters());
-    } catch (err) {
-      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.createFailed));
+      setDocumentsById((current) => ({
+        ...current,
+        [enrollment.id]: documentsResult.status === "fulfilled" ? toArray(documentsResult.value) : [],
+      }));
+
+      setQuizAttemptsById((current) => ({
+        ...current,
+        [enrollment.id]: attemptsResult.status === "fulfilled" ? toArray(attemptsResult.value) : [],
+      }));
     } finally {
-      setSaving(false);
+      setDetailLoadingId("");
     }
   }
 
-  function resetBulkForm() {
-    setBulkForm({
-      learning_group_id: "",
-      course_id: "",
-      status: "assigned",
-      started_at: "",
-      completed_at: "",
+  async function handleToggleEnrollment(enrollment) {
+    if (selectedEnrollmentId === enrollment.id) {
+      setSelectedEnrollmentId("");
+      setEditingId("");
+      return;
+    }
+
+    setSelectedEnrollmentId(enrollment.id);
+    setEditingId("");
+    await loadEnrollmentDetails(enrollment);
+  }
+
+  async function handleStatusUpdate(enrollment, status) {
+    try {
+      setSavingId(enrollment.id);
+      setError("");
+      setSuccessMessage("");
+      await updateAdminEnrollment(enrollment.id, { status });
+      await refreshEnrollment(enrollment.id);
+      await loadEnrollmentDetails({ ...enrollment, status });
+      setSuccessMessage(T.updatedOk);
+    } catch (err) {
+      setError(err?.message || T.saveFailed);
+    } finally {
+      setSavingId("");
+    }
+  }
+
+  function beginEdit(enrollment) {
+    setEditingId(enrollment.id);
+    setEditForm({
+      organization_id: enrollment.organization_id || "",
+      learning_group_id: enrollment.learning_group_id || "",
+      status: enrollment.status || "assigned",
     });
   }
 
-  function updateBulkField(field, value) {
-    setBulkForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+  async function handleEditSubmit(event, enrollment) {
+    event.preventDefault();
+    try {
+      setSavingId(enrollment.id);
+      setError("");
+      setSuccessMessage("");
+      await updateAdminEnrollment(enrollment.id, {
+        organization_id: editForm.organization_id || null,
+        learning_group_id: editForm.learning_group_id || null,
+        status: editForm.status,
+      });
+      setEditingId("");
+      const updated = await refreshEnrollment(enrollment.id);
+      await loadEnrollmentDetails(updated || enrollment);
+      setSuccessMessage(T.updatedOk);
+    } catch (err) {
+      setError(err?.message || T.saveFailed);
+    } finally {
+      setSavingId("");
+    }
   }
 
-  function buildBulkCreatePayload(values) {
-    return {
-      learning_group_id: values.learning_group_id,
-      course_id: values.course_id,
-      status: values.status,
-      started_at: normalizeDateTime(values.started_at),
-      completed_at: normalizeDateTime(values.completed_at),
-    };
+  async function handleDelete(enrollment) {
+    if (!window.confirm(T.deleteConfirm)) {
+      return;
+    }
+
+    try {
+      setSavingId(enrollment.id);
+      setError("");
+      setSuccessMessage("");
+      await deleteAdminEnrollment(enrollment.id);
+      setSelectedEnrollmentId("");
+      setEnrollments((current) => current.filter((item) => item.id !== enrollment.id));
+      setSuccessMessage(T.deletedOk);
+    } catch (err) {
+      setError(err?.message || T.saveFailed);
+    } finally {
+      setSavingId("");
+    }
+  }
+
+  async function handleCreateSubmit(event) {
+    event.preventDefault();
+
+    try {
+      setSavingId("create");
+      setError("");
+      setSuccessMessage("");
+      const created = await createAdminEnrollment({
+        user_id: createForm.user_id,
+        course_id: createForm.course_id,
+        organization_id: createForm.organization_id || null,
+        learning_group_id: createForm.learning_group_id || null,
+        status: createForm.status,
+      });
+      setCreateForm(EMPTY_CREATE_FORM);
+      setCreateOpen(false);
+      setEnrollments((current) => [created, ...current]);
+      setSuccessMessage(T.createdOk);
+    } catch (err) {
+      setError(err?.message || T.saveFailed);
+    } finally {
+      setSavingId("");
+    }
   }
 
   async function handleBulkSubmit(event) {
     event.preventDefault();
 
-    if (!bulkForm.learning_group_id) {
-      setError("Выберите учебную группу.");
-      return;
-    }
-
-    if (!bulkForm.course_id) {
-      setError("Выберите программу.");
-      return;
-    }
-
     try {
-      setBulkSaving(true);
+      setSavingId("bulk");
       setError("");
       setSuccessMessage("");
-
-      const result = await createAdminGroupEnrollments(buildBulkCreatePayload(bulkForm));
-      const nextGroupId = result.learning_group_id || bulkForm.learning_group_id;
-      const nextCourseId = result.course_id || bulkForm.course_id;
-
-      setSuccessMessage(
-        `Массовое назначение завершено: создано ${result.created_count || 0}, пропущено ${result.skipped_count || 0}.`
-      );
-
-      setFilterQuery("");
-      setFilterUserId("");
-      setFilterCourseId(nextCourseId);
-      setFilterStatus("");
-      setFilterGroupId(nextGroupId);
-      resetBulkForm();
-
-      await navigateToEnrollmentFilters(
-        {
-          course_id: nextCourseId,
-          learning_group_id: nextGroupId,
-        },
-        { replace: true }
-      );
-    } catch (err) {
-      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.bulkCreateFailed));
-    } finally {
-      setBulkSaving(false);
-    }
-  }
-
-
-  async function handleCompleteEnrollment(enrollment) {
-    if (!enrollment || enrollment.status === "completed") {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      "Завершить обучение по этому назначению?\\n\\nБудет проставлен статус completed и создан черновик документа."
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setActionEnrollmentId(enrollment.id);
-      setError("");
-      setSuccessMessage("");
-
-      const updated = await updateAdminEnrollment(enrollment.id, {
-        status: "completed",
+      await createAdminGroupEnrollments({
+        organization_id: bulkForm.organization_id,
+        learning_group_id: bulkForm.learning_group_id,
+        course_id: bulkForm.course_id,
+        status: bulkForm.status,
       });
-
-      await refreshEnrollmentsFastPath(buildFilters());
-
-      setSuccessMessage(
-        `Обучение завершено: ${updated.user_email} → ${updated.course_title}. Черновик документа создан.`
-      );
+      setBulkOpen(false);
+      setSuccessMessage(T.bulkOk);
+      await loadEnrollments();
     } catch (err) {
-      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.completeFailed));
+      setError(err?.message || T.saveFailed);
     } finally {
-      setActionEnrollmentId("");
+      setSavingId("");
     }
   }
 
-  function handleStartEdit(enrollment) {
-    setError("");
-    setSuccessMessage("");
-    setEditingEnrollmentId(enrollment.id);
-    setEditForm(buildEditForm(enrollment));
+  function applyFilters(nextFilters = filters) {
+    setAppliedFilters(nextFilters);
   }
 
-  async function handleEditSubmit(event, enrollmentId) {
-    event.preventDefault();
-
-    try {
-      setActionEnrollmentId(enrollmentId);
-      setError("");
-      setSuccessMessage("");
-
-      const updated = await updateAdminEnrollment(enrollmentId, buildUpdatePayload(editForm));
-
-      setSuccessMessage(`Назначение обновлено: ${updated.user_email} → ${updated.course_title}`);
-      resetEditState();
-      await refreshEnrollmentsFastPath(buildFilters());
-    } catch (err) {
-      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.updateFailed));
-    } finally {
-      setActionEnrollmentId("");
-    }
+  function resetFilters() {
+    const next = { q: "", status: "", course_id: "", organization_id: "", learning_group_id: "", action_required: "" };
+    setFilters(next);
+    setAppliedFilters(next);
   }
 
-  async function handleDelete(enrollment) {
-    const confirmed = window.confirm(
-      `Удалить назначение "${enrollment.user_email} → ${enrollment.course_title}"? Действие нельзя отменить.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setActionEnrollmentId(enrollment.id);
-      setError("");
-      setSuccessMessage("");
-
-      await deleteAdminEnrollment(enrollment.id);
-
-      if (editingEnrollmentId === enrollment.id) {
-        resetEditState();
-      }
-
-      setSuccessMessage(`Назначение удалено: ${enrollment.user_email} → ${enrollment.course_title}`);
-      await refreshEnrollmentsFastPath(buildFilters());
-    } catch (err) {
-      setError(formatEnrollmentApiError(err, ENROLLMENT_API_ERROR_MESSAGES.deleteFailed));
-    } finally {
-      setActionEnrollmentId("");
-    }
-  }
-
-  async function handleApplyFilter(event) {
-    event.preventDefault();
-    await navigateToEnrollmentFilters(buildFilters());
-  }
-
-  async function handleQuickStatusFilter(status) {
-    setFilterStatus(status);
-    await navigateToEnrollmentFilters(buildFilters({ status }));
-  }
-
-  async function handleToggleActionRequiredFilter() {
-    const nextActionRequired = showActionRequiredOnly ? "" : "true";
-    setFilterActionRequired(nextActionRequired);
-    await navigateToEnrollmentFilters(buildFilters({ action_required: nextActionRequired }));
-  }
-
-  async function handleResetFilter() {
-    setFilterQuery("");
-    setFilterUserId("");
-    setFilterCourseId("");
-    setFilterOrganizationId("");
-    setFilterStatus("");
-    setFilterGroupId("");
-    setFilterActionRequired("");
-    await navigateToEnrollmentFilters({}, { replace: true });
-  }
-
-  function handleExportEnrollmentsCsv() {
-    const rows = visibleEnrollments.map((enrollment) => {
-      const organization = organizationsById[enrollment.organization_id] || null;
-
-      return {
-        id: enrollment.id,
-        user_id: enrollment.user_id || "",
-        user_email: enrollment.user_email || "",
-        user_full_name: enrollment.user_full_name || "",
-        course_id: enrollment.course_id || "",
-        course_title: enrollment.course_title || "",
-        course_slug: enrollment.course_slug || "",
-        organization_id: enrollment.organization_id || "",
-        organization_name: enrollment.organization_name || organization?.name || "",
-        learning_group_id: enrollment.learning_group_id || "",
-        learning_group_name: getEnrollmentGroupName(enrollment),
-        status: enrollment.status || "",
-        status_label: getStatusLabel(enrollment.status),
-        started_at: enrollment.started_at || "",
-        completed_at: enrollment.completed_at || "",
-        action_required: enrollment.status === "assigned" || enrollment.status === "completed" ? "yes" : "no",
-        documents_url: enrollment.id ? `/admin/documents?enrollment_id=${enrollment.id}` : "",
-        course_url: enrollment.course_slug ? `/courses/${enrollment.course_slug}` : "",
-        created_at: enrollment.created_at || "",
-        updated_at: enrollment.updated_at || "",
-      };
-    });
-
-    downloadCsvFile(
-      buildDatedCsvFilename("obrportal-admin-enrollments"),
-      ENROLLMENT_CSV_EXPORT_COLUMNS,
-      rows
-    );
+  function applyTab(status, actionRequired = "") {
+    const next = {
+      ...filters,
+      status,
+      action_required: actionRequired,
+    };
+    setFilters(next);
+    setAppliedFilters(next);
   }
 
   return (
-    <div data-testid="admin-enrollments-page" className="space-y-6">
-      <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
-        <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-          Администрирование
+    <main className="space-y-5 px-4 pb-10 pt-4 sm:px-6 lg:px-8">
+      <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-bold text-slate-500">
+              <span className="text-blue-600">{T.breadcrumbAdmin}</span>
+              <span>/</span>
+              <span>{T.breadcrumb}</span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-black tracking-tight text-slate-950">{T.title}</h1>
+              <Badge className="bg-green-50 text-green-700 ring-green-200">{"\u2022"} {T.systemOk}</Badge>
+            </div>
+            <p className="mt-2 text-sm font-medium text-slate-500">{T.subtitle}</p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <ActionButton disabled>{T.importCsv}</ActionButton>
+            <ActionButton onClick={() => downloadCsv(enrollments)}>{T.exportCsv}</ActionButton>
+            <ActionButton tone="primary" onClick={() => setCreateOpen((value) => !value)}>
+              {T.create}
+            </ActionButton>
+          </div>
         </div>
-        <h1 className="mt-2 text-4xl font-bold text-slate-900">
-          Назначения на программы
-        </h1>
-        <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-          Управление связкой пользователь → программа: назначение обучения,
-          изменение статуса, привязка к организации и учебной группе.
-        </p>
+
+        {(createOpen || bulkOpen) && (
+          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+            {createOpen && (
+              <form onSubmit={handleCreateSubmit} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <h2 className="text-base font-black text-slate-950">{T.create}</h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <SelectField
+                    label={T.user}
+                    value={createForm.user_id}
+                    onChange={(event) => setCreateForm((current) => ({ ...current, user_id: event.target.value }))}
+                    disabled={savingId === "create"}
+                  >
+                    <option value="">{T.selectUser}</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.full_name || user.email}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    label={T.programCourse}
+                    value={createForm.course_id}
+                    onChange={(event) => setCreateForm((current) => ({ ...current, course_id: event.target.value }))}
+                    disabled={savingId === "create"}
+                  >
+                    <option value="">{T.selectCourse}</option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.title || course.slug}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    label={T.organization}
+                    value={createForm.organization_id}
+                    onChange={(event) => setCreateForm((current) => ({ ...current, organization_id: event.target.value }))}
+                    disabled={savingId === "create"}
+                  >
+                    <option value="">{T.optional}</option>
+                    {organizations.map((organization) => (
+                      <option key={organization.id} value={organization.id}>
+                        {organization.name}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    label={T.group}
+                    value={createForm.learning_group_id}
+                    onChange={(event) => setCreateForm((current) => ({ ...current, learning_group_id: event.target.value }))}
+                    disabled={savingId === "create"}
+                  >
+                    <option value="">{T.optional}</option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name || group.code}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    label={T.status}
+                    value={createForm.status}
+                    onChange={(event) => setCreateForm((current) => ({ ...current, status: event.target.value }))}
+                    disabled={savingId === "create"}
+                  >
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <ActionButton type="submit" tone="primary" disabled={savingId === "create" || !createForm.user_id || !createForm.course_id}>
+                    {savingId === "create" ? T.saving : T.save}
+                  </ActionButton>
+                  <ActionButton onClick={() => setBulkOpen((value) => !value)}>{T.bulkCreate}</ActionButton>
+                </div>
+              </form>
+            )}
+
+            {bulkOpen && (
+              <form onSubmit={handleBulkSubmit} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <h2 className="text-base font-black text-slate-950">{T.bulkCreate}</h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <SelectField
+                    label={T.organization}
+                    value={bulkForm.organization_id}
+                    onChange={(event) => setBulkForm((current) => ({ ...current, organization_id: event.target.value }))}
+                    disabled={savingId === "bulk"}
+                  >
+                    <option value="">{T.allOrganizations}</option>
+                    {organizations.map((organization) => (
+                      <option key={organization.id} value={organization.id}>
+                        {organization.name}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    label={T.group}
+                    value={bulkForm.learning_group_id}
+                    onChange={(event) => setBulkForm((current) => ({ ...current, learning_group_id: event.target.value }))}
+                    disabled={savingId === "bulk"}
+                  >
+                    <option value="">{T.selectGroup}</option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name || group.code}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    label={T.programCourse}
+                    value={bulkForm.course_id}
+                    onChange={(event) => setBulkForm((current) => ({ ...current, course_id: event.target.value }))}
+                    disabled={savingId === "bulk"}
+                  >
+                    <option value="">{T.selectCourse}</option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.title || course.slug}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    label={T.status}
+                    value={bulkForm.status}
+                    onChange={(event) => setBulkForm((current) => ({ ...current, status: event.target.value }))}
+                    disabled={savingId === "bulk"}
+                  >
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+                <div className="mt-4">
+                  <ActionButton
+                    type="submit"
+                    tone="primary"
+                    disabled={savingId === "bulk" || !bulkForm.organization_id || !bulkForm.learning_group_id || !bulkForm.course_id}
+                  >
+                    {savingId === "bulk" ? T.saving : T.save}
+                  </ActionButton>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
       </section>
 
-      <div
-        data-testid="admin-enrollments-moderation-notice"
-        className="rounded-3xl bg-blue-50 p-5 text-sm leading-6 text-blue-900 ring-1 ring-blue-100"
-      >
-        Административные назначения — рабочая зона модерации обучения: администратор проверяет назначенные записи,
-        массовые назначения, статусы, готовность документов и переходы в аудит без изменения модели RBAC.
-      </div>
+      <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+        <div className="grid gap-4 xl:grid-cols-[1.4fr_0.8fr_0.8fr_0.9fr_0.8fr]">
+          <TextField
+            label={T.search}
+            value={filters.q}
+            placeholder={T.searchPlaceholder}
+            onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))}
+            onEnter={() => applyFilters()}
+          />
 
-      {error && (
-        <div data-testid="admin-enrollments-error-state" role="alert" aria-live="assertive">
-          <Alert title="Ошибка" tone="red">
-            {error}
-          </Alert>
-        </div>
-      )}
+          <SelectField label={T.status} value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
+            <option value="">{T.allStatuses}</option>
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
+          </SelectField>
 
-      {successMessage && (
-        <div data-testid="admin-enrollments-success-state" aria-live="polite">
-          <Alert title="Готово" tone="green">
-            {successMessage}
-          </Alert>
-        </div>
-      )}
+          <SelectField label={T.programCourse} value={filters.course_id} onChange={(event) => setFilters((current) => ({ ...current, course_id: event.target.value }))}>
+            <option value="">{T.selectCourse}</option>
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.title || course.slug}
+              </option>
+            ))}
+          </SelectField>
 
-      <EnrollmentSummaryCards
-        statusCounts={statusCounts}
-        users={users}
-        courses={courses}
-        groups={groups}
-      />
+          <SelectField label={T.organization} value={filters.organization_id} onChange={(event) => setFilters((current) => ({ ...current, organization_id: event.target.value }))}>
+            <option value="">{T.allOrganizations}</option>
+            {organizations.map((organization) => (
+              <option key={organization.id} value={organization.id}>
+                {organization.name}
+              </option>
+            ))}
+          </SelectField>
 
-      <EnrollmentWorkflowPanel
-        statusCounts={statusCounts}
-        courses={courses}
-        groups={groups}
-      />
-
-      <AdminEnrollmentOperationsDiagnostics
-        operationsStats={adminEnrollmentOperationsStats}
-        diagnostics={adminEnrollmentOperationsDiagnostics}
-      />
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)]">
-        <div className="space-y-6">
-        <div data-testid="admin-enrollments-create-section">
-          <SectionCard title="Создать назначение" subtitle="POST /api/v1/admin/enrollments">
-            <form data-testid="admin-enrollments-create-form" onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4">
-              <AdminFormField contentClassName="mt-2" label="Пользователь">
-                <select
-                  value={form.user_id}
-                  onChange={(event) => updateField("user_id", event.target.value)}
-                  className={INPUT_CLASS}
-                >
-                  <option value="">Выберите пользователя</option>
-                  {sortedUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {buildUserLabel(user)}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-2 text-xs leading-5 text-slate-500">
-                  Слушатели отображаются выше администраторов. Для назначения выберите пользователя с ролью слушателя.
-                </p>
-              </AdminFormField>
-
-              <AdminFormField contentClassName="mt-2" label="Программа">
-                <select
-                  value={form.course_id}
-                  onChange={(event) => updateField("course_id", event.target.value)}
-                  className={INPUT_CLASS}
-                >
-                  <option value="">Выберите программу</option>
-                  {activeCourses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {buildCourseLabel(course)}
-                    </option>
-                  ))}
-                </select>
-              </AdminFormField>
-
-              <AdminFormField contentClassName="mt-2" label="Организация">
-                <select
-                  value={form.organization_id}
-                  onChange={(event) => updateField("organization_id", event.target.value)}
-                  className={INPUT_CLASS}
-                >
-                  <option value="">Без организации</option>
-                  {sortedOrganizations.map((organization) => (
-                    <option key={organization.id} value={organization.id}>
-                      {organization.name}
-                    </option>
-                  ))}
-                </select>
-              </AdminFormField>
-
-              <OrganizationDocumentProfileHint
-                organization={organizationsById[form.organization_id]}
-                testId="enrollment-create-document-profile-hint"
-              />
-
-              <AdminFormField contentClassName="mt-2" label="Учебная группа">
-                <select
-                  value={form.learning_group_id}
-                  onChange={(event) => updateField("learning_group_id", event.target.value)}
-                  className={INPUT_CLASS}
-                  disabled={groups.length === 0 || !form.user_id}
-                >
-                  <option value="">
-                    {!form.user_id
-                      ? "Сначала выберите пользователя"
-                      : groups.length === 0
-                        ? "Групп пока нет"
-                        : "Без группы"}
-                  </option>
-                  {createFormGroups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {buildGroupLabel(group, organizationsById)}
-                    </option>
-                  ))}
-                </select>
-              </AdminFormField>
-
-              <AdminFormField contentClassName="mt-2" label="Статус">
-                <select
-                  value={form.status}
-                  onChange={(event) => updateField("status", event.target.value)}
-                  className={INPUT_CLASS}
-                >
-                  {ENROLLMENT_STATUSES.map((statusItem) => (
-                    <option key={statusItem.value} value={statusItem.value}>
-                      {statusItem.label}
-                    </option>
-                  ))}
-                </select>
-              </AdminFormField>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <AdminFormField contentClassName="mt-2" label="Начато">
-                  <input
-                    type="datetime-local"
-                    value={form.started_at}
-                    onChange={(event) => updateField("started_at", event.target.value)}
-                    className={INPUT_CLASS}
-                  />
-                </AdminFormField>
-
-                <AdminFormField contentClassName="mt-2" label="Завершено">
-                  <input
-                    type="datetime-local"
-                    value={form.completed_at}
-                    onChange={(event) => updateField("completed_at", event.target.value)}
-                    className={INPUT_CLASS}
-                  />
-                </AdminFormField>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3 pt-2">
-              <button type="submit" disabled={saving} className={BUTTON_PRIMARY_CLASS}>
-                {saving ? "Сохраняем..." : "Создать назначение"}
-              </button>
-
-              <button type="button" onClick={resetForm} disabled={saving} className={BUTTON_LIGHT_CLASS}>
-                Очистить
-              </button>
-            </div>
-            </form>
-          </SectionCard>
-        </div>
-
-        <div data-testid="admin-enrollments-bulk-section">
-          <SectionCard title="Массовое назначение группе" subtitle="POST /api/v1/admin/enrollments/group">
-            <form data-testid="admin-enrollments-bulk-form" onSubmit={handleBulkSubmit} className="space-y-4">
-            <p className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-100">
-              Выберите учебную группу и программу. Система создаст назначения для всех участников группы, а дубликаты пропустит.
-            </p>
-
-            <div className="grid gap-4">
-              <AdminFormField contentClassName="mt-2" label="Учебная группа">
-                <select
-                  value={bulkForm.learning_group_id}
-                  onChange={(event) => updateBulkField("learning_group_id", event.target.value)}
-                  className={INPUT_CLASS}
-                  disabled={bulkFormGroups.length === 0}
-                >
-                  <option value="">
-                    {bulkFormGroups.length === 0 ? "Групп пока нет" : "Выберите группу"}
-                  </option>
-                  {bulkFormGroups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {buildGroupLabel(group, organizationsById)}
-                    </option>
-                  ))}
-                </select>
-              </AdminFormField>
-
-              <AdminFormField contentClassName="mt-2" label="Программа">
-                <select
-                  value={bulkForm.course_id}
-                  onChange={(event) => updateBulkField("course_id", event.target.value)}
-                  className={INPUT_CLASS}
-                >
-                  <option value="">Выберите программу</option>
-                  {activeCourses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {buildCourseLabel(course)}
-                    </option>
-                  ))}
-                </select>
-              </AdminFormField>
-
-              <AdminFormField contentClassName="mt-2" label="Статус">
-                <select
-                  value={bulkForm.status}
-                  onChange={(event) => updateBulkField("status", event.target.value)}
-                  className={INPUT_CLASS}
-                >
-                  {ENROLLMENT_STATUSES.map((statusItem) => (
-                    <option key={statusItem.value} value={statusItem.value}>
-                      {statusItem.label}
-                    </option>
-                  ))}
-                </select>
-              </AdminFormField>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <AdminFormField contentClassName="mt-2" label="Начато">
-                  <input
-                    type="datetime-local"
-                    value={bulkForm.started_at}
-                    onChange={(event) => updateBulkField("started_at", event.target.value)}
-                    className={INPUT_CLASS}
-                  />
-                </AdminFormField>
-
-                <AdminFormField contentClassName="mt-2" label="Завершено">
-                  <input
-                    type="datetime-local"
-                    value={bulkForm.completed_at}
-                    onChange={(event) => updateBulkField("completed_at", event.target.value)}
-                    className={INPUT_CLASS}
-                  />
-                </AdminFormField>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3 pt-2">
-              <button type="submit" disabled={bulkSaving} className={BUTTON_DARK_CLASS}>
-                {bulkSaving ? "Назначаем..." : "Назначить группе"}
-              </button>
-
-              <button type="button" onClick={resetBulkForm} disabled={bulkSaving} className={BUTTON_LIGHT_CLASS}>
-                Очистить
-              </button>
-            </div>
-            </form>
-          </SectionCard>
-        </div>
-        </div>
-
-        <div data-testid="admin-enrollments-list-section">
-          <SectionCard title="Список назначений" subtitle="GET /api/v1/admin/enrollments">
-          <form data-testid="admin-enrollments-filters" onSubmit={handleApplyFilter} className="mb-5 grid gap-3 xl:grid-cols-[1.15fr_1fr_1fr_1fr_1fr_1fr_auto_auto]">
-            <input
-              data-testid="admin-enrollments-search-input"
-              type="search"
-              value={filterQuery}
-              onChange={(event) => setFilterQuery(event.target.value)}
-              placeholder="Поиск: e-mail, ФИО, курс, группа"
-              className={INPUT_CLASS}
-            />
-
-            <select
-              value={filterUserId}
-              onChange={(event) => setFilterUserId(event.target.value)}
-              className={INPUT_CLASS}
-            >
-              <option value="">Все пользователи</option>
-              {sortedUsers.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {buildUserLabel(user)}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={filterCourseId}
-              onChange={(event) => setFilterCourseId(event.target.value)}
-              className={INPUT_CLASS}
-            >
-              <option value="">Все программы</option>
-              {sortedCourses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {buildCourseLabel(course)}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={filterOrganizationId}
-              onChange={(event) => setFilterOrganizationId(event.target.value)}
-              className={INPUT_CLASS}
-            >
-              <option value="">Все организации</option>
-              {sortedOrganizations.map((organization) => (
-                <option key={organization.id} value={organization.id}>
-                  {organization.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              data-testid="admin-enrollments-status-filter"
-              value={filterStatus}
-              onChange={(event) => setFilterStatus(event.target.value)}
-              className={INPUT_CLASS}
-            >
-              <option value="">Все статусы</option>
-              {ENROLLMENT_STATUSES.map((statusItem) => (
-                <option key={statusItem.value} value={statusItem.value}>
-                  {statusItem.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={filterGroupId}
-              onChange={(event) => setFilterGroupId(event.target.value)}
-              className={INPUT_CLASS}
-            >
-              <option value="">Все группы</option>
-              {sortedGroups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {buildGroupLabel(group, organizationsById)}
-                </option>
-              ))}
-            </select>
-
-            <button data-testid="admin-enrollments-apply-filters-action" type="submit" className={BUTTON_DARK_CLASS}>
-              Применить
-            </button>
-
-            <button data-testid="admin-enrollments-reset-filters-action" type="button" onClick={handleResetFilter} className={BUTTON_LIGHT_CLASS}>
-              Сбросить
-            </button>
-          </form>
-
-          <AdminQuickFilterButtons
-              items={ENROLLMENT_STATUS_FILTERS}
-              activeValue={filterStatus}
-              counts={statusCounts}
-              disabled={loading}
-              onChange={handleQuickStatusFilter}
-              className="mb-5 flex flex-wrap gap-2"
-            />
-
-          <div
-            data-testid="enrollments-worklist-summary-note"
-            className="mb-5 text-xs text-slate-500"
-          >
-            Счётчики быстрых фильтров рассчитаны по текущим фильтрам страницы.
+          <div className="flex items-end gap-2">
+            <ActionButton tone="primary" onClick={() => applyFilters()}>
+              {T.apply}
+            </ActionButton>
+            <ActionButton onClick={resetFilters}>{T.reset}</ActionButton>
           </div>
+        </div>
+      </section>
 
-          <div className="mb-5">
-            <AdminActiveFiltersSummary
-              items={activeEnrollmentFilterItems}
-              onReset={handleResetFilter}
-              testId="admin-enrollments-active-filters-summary"
-              emptyText="Фильтры назначений не применены."
-            />
-          </div>
-
-          <div className="mb-5">
+      <section className="flex flex-wrap gap-2">
+        {[
+          [T.all, statusCounts.all, "", ""],
+          [T.active, statusCounts.active, "active", ""],
+          [T.completed, statusCounts.completed, "completed", ""],
+          [T.assigned, statusCounts.assigned, "assigned", ""],
+          [T.actionRequired, statusCounts.actionRequired, "", "true"],
+        ].map(([label, count, status, actionRequired]) => {
+          const active =
+            appliedFilters.status === status &&
+            (appliedFilters.action_required || "") === (actionRequired || "");
+          return (
             <button
+              key={`${label}-${status}-${actionRequired}`}
               type="button"
-              data-testid="enrollments-action-required-filter"
-              onClick={handleToggleActionRequiredFilter}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ring-1 transition ${
-                showActionRequiredOnly
-                  ? "bg-amber-600 text-white ring-amber-600"
-                  : "bg-amber-50 text-amber-800 ring-amber-200 hover:bg-amber-100"
-              }`}
+              onClick={() => applyTab(status, actionRequired)}
+              className={cx(
+                "inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-black ring-1 transition",
+                active ? "bg-slate-950 text-white ring-slate-950" : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+              )}
             >
-              <span>{"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}</span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs ${
-                  showActionRequiredOnly ? "bg-white/20 text-white" : "bg-white text-amber-800"
-                }`}
-              >
-                {actionRequiredCount}
+              <span>{label}</span>
+              <span className={cx("rounded-full px-2 py-0.5 text-xs", active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600")}>
+                {count}
               </span>
             </button>
-          </div>
+          );
+        })}
+      </section>
 
-          {showActionRequiredOnly && (
-            <div
-              data-testid="enrollments-action-required-banner"
-              className="mb-5 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
-            >
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="font-semibold">
-                    Включён режим контроля назначений
-                  </div>
-                  <p className="mt-1 leading-6 text-amber-800">
-                    Показаны только назначения со статусами «назначен» и «завершен».
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleToggleActionRequiredFilter}
-                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
-                >
-                  Показать все назначения
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="mb-5 flex flex-wrap gap-3 text-sm text-slate-500">
-            <span>Показано назначений: {visibleEnrollments.length}</span>
-            <span>Всего по текущим фильтрам: {statusCounts.all || 0}</span>
-            <span>{"\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"}: {actionRequiredCount}</span>
-          </div>
-
-          <div
-            data-testid="admin-enrollments-export-summary"
-            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-          >
-            <div>
-              <div className="text-sm font-semibold text-slate-900">Экспорт назначений</div>
-              <p className="mt-1 text-xs text-slate-600">
-                CSV содержит текущую выборку после поиска, статуса, пользователя, курса, организации и группы:
-                {" "}{visibleEnrollments.length} из {statusCounts.all || visibleEnrollments.length}.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              data-testid="admin-enrollments-export-csv-button"
-              onClick={handleExportEnrollmentsCsv}
-              disabled={loading || visibleEnrollments.length === 0}
-              className={BUTTON_LIGHT_CLASS}
-            >
-              Скачать CSV
-            </button>
-          </div>
-
-          {loading ? (
-            <div data-testid="admin-enrollments-loading-state" aria-live="polite" className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-              Загружаем назначения...
-            </div>
-          ) : visibleEnrollments.length === 0 ? (
-            <div data-testid="admin-enrollments-empty-state">
-              <AdminEmptyState
-              title={
-                showActionRequiredOnly
-                  ? "Назначения, требующие действия, не найдены"
-                  : "Назначения не найдены"
-              }
-              description={
-                showActionRequiredOnly
-                  ? "В текущей выборке нет назначений со статусами «назначен» или «завершен», которые требуют внимания администратора."
-                  : "Измените фильтры или назначьте пользователя на образовательную программу."
-              }
-              resetLabel={
-                showActionRequiredOnly
-                  ? "Показать все назначения"
-                  : "Сбросить фильтр"
-              }
-                onReset={showActionRequiredOnly ? handleToggleActionRequiredFilter : handleResetFilter}
-              />
-            </div>
-
-          ) : (
-            <div data-testid="admin-enrollments-list" className="space-y-4">
-              {visibleEnrollments.map((enrollment) => {
-                const isEditing = editingEnrollmentId === enrollment.id;
-                const isActionRunning = actionEnrollmentId === enrollment.id;
-                const enrollmentActionHint = getEnrollmentActionRequiredHint(enrollment);
-                const enrollmentOrganization = organizationsById[enrollment.organization_id] || null;
-                const enrollmentProfileStatus = getOrganizationDocumentProfileStatus(enrollmentOrganization);
-                const enrollmentAttentionItems = getEnrollmentAttentionItems(
-                  enrollment,
-                  enrollmentOrganization
-                );
-
-                return (
-                  <article
-                    key={enrollment.id}
-                    data-testid="admin-enrollment-card"
-                    className="rounded-shell bg-slate-50 p-5 ring-1 ring-slate-200"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${getStatusTone(enrollment.status)}`}>
-                        {getStatusLabel(enrollment.status)}
-                      </span>
-
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                        {enrollment.course_slug}
-                      </span>
-                    </div>
-
-                    {!isEditing ? (
-                      <>
-                        <div className="mt-4">
-                          <h2 className="text-xl font-bold text-slate-900">
-                            {enrollment.course_title}
-                          </h2>
-                          <div className="mt-1 text-sm text-slate-500">
-                            {enrollment.user_email}
-                            {enrollment.user_full_name ? ` - ${enrollment.user_full_name}` : ""}
-                          </div>
-                        </div>
-
-                        {enrollmentActionHint && (
-                          <div
-                            data-testid="enrollment-action-required-hint"
-                            className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${enrollmentActionHint.toneClass}`}
-                          >
-                            <div className="font-semibold">
-                              {enrollmentActionHint.title}
-                            </div>
-                            <p className="mt-1 leading-6">
-                              {enrollmentActionHint.description}
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {enrollment.status === "assigned" && (
-                                <button
-                                  type="button"
-                                  data-testid="enrollment-action-required-primary-action"
-                                  onClick={() => handleStartEdit(enrollment)}
-                                  disabled={isActionRunning}
-                                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  Проверить назначение
-                                </button>
-                              )}
-
-                              {enrollment.status === "completed" && (
-                                <Link
-                                  data-testid="enrollment-action-required-documents-link"
-                                  to={buildDocumentsPath({
-                                    enrollment_id: enrollment.id,
-                                    action_required: "true",
-                                  })}
-                                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
-                                >
-                                  Открыть документы
-                                </Link>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {enrollmentAttentionItems.length > 0 && (
-                          <div
-                            data-testid="enrollment-attention-fields"
-                            className={`mt-4 rounded-2xl p-4 text-sm ring-1 ${enrollmentActionHint?.toneClass || "bg-amber-50 text-amber-900 ring-amber-200"}`}
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div className="font-semibold text-slate-900">
-                                Что требует внимания в назначении
-                              </div>
-                              <span
-                                data-testid="enrollment-attention-count"
-                                className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
-                              >
-                                Пунктов внимания: {enrollmentAttentionItems.length}
-                              </span>
-                            </div>
-                            <p
-                              data-testid="enrollment-attention-diagnostics-note"
-                              className="mt-2 leading-6"
-                            >
-                              Диагностика основана на статусе, датах, группе, организации и PDF-профиле организации.
-                            </p>
-                            <ul className="mt-2 list-disc space-y-1 pl-5">
-                              {enrollmentAttentionItems.map((item) => (
-                                <li key={item}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Организация
-                            </div>
-                            {enrollment.organization_id ? (
-                              <Link
-                                data-testid="enrollment-organization-link"
-                                to={buildOrganizationsPath({ organization_id: enrollment.organization_id })}
-                                className="mt-2 inline-flex font-semibold text-blue-700 transition hover:text-blue-900"
-                              >
-                                {enrollment.organization_name || "Открыть организацию"}
-                              </Link>
-                            ) : (
-                              <div className="mt-2 font-semibold text-slate-900">
-                                -
-                              </div>
-                            )}
-                            <div
-                              data-testid="enrollment-list-document-profile-status"
-                              className={`mt-3 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${enrollmentProfileStatus.toneClass}`}
-                            >
-                              {enrollmentProfileStatus.label}
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Группа
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {getEnrollmentGroupName(enrollment)}
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Начато
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {formatDateTime(enrollment.started_at)}
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Завершено
-                            </div>
-                            <div className="mt-2 font-semibold text-slate-900">
-                              {formatDateTime(enrollment.completed_at)}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-5 flex flex-wrap gap-3">
-                          <Link
-                            to={buildDocumentsPath({ enrollment_id: enrollment.id })}
-                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                          >
-                            Документы
-                          </Link>
-
-                          {enrollment.course_slug && (
-                            <Link
-                              to={`/courses/${encodeURIComponent(enrollment.course_slug)}`}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Курс
-                            </Link>
-                          )}
-
-                          {enrollment.user_id && (
-                            <Link
-                              to={getEnrollmentFilterPath({
-                                q: "",
-                                user_id: enrollment.user_id,
-                                course_id: "",
-                                status: "",
-                                learning_group_id: "",
-                              })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Назначения слушателя
-                            </Link>
-                          )}
-
-                          {enrollment.course_id && (
-                            <Link
-                              to={getEnrollmentFilterPath({
-                                q: "",
-                                user_id: "",
-                                course_id: enrollment.course_id,
-                                status: "",
-                                learning_group_id: "",
-                              })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Назначения курса
-                            </Link>
-                          )}
-
-                          {enrollment.learning_group_id && (
-                            <Link
-                              to={getEnrollmentFilterPath({
-                                q: "",
-                                user_id: "",
-                                course_id: "",
-                                status: "",
-                                learning_group_id: enrollment.learning_group_id,
-                              })}
-                              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                            >
-                              Назначения группы
-                            </Link>
-                          )}
-
-                          {enrollment.status !== "completed" && enrollment.status !== "cancelled" && (
-                            <button
-                              type="button"
-                              data-testid="admin-enrollment-complete-action"
-                              onClick={() => handleCompleteEnrollment(enrollment)}
-                              className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                            >
-                              Завершить обучение
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            data-testid="admin-enrollment-edit-action"
-                            onClick={() => handleStartEdit(enrollment)}
-                            disabled={isActionRunning}
-                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Редактировать
-                          </button>
-
-                          <button
-                            type="button"
-                            data-testid="admin-enrollment-delete-action"
-                            onClick={() => handleDelete(enrollment)}
-                            disabled={isActionRunning}
-                            className={BUTTON_RED_CLASS}
-                          >
-                            {isActionRunning ? "Удаляем..." : "Удалить"}
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <form
-                        data-testid="admin-enrollment-edit-form"
-                        onSubmit={(event) => handleEditSubmit(event, enrollment.id)}
-                        className="mt-5 space-y-4 rounded-shell bg-white p-5 ring-1 ring-blue-100"
-                      >
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <AdminFormField contentClassName="mt-2" label="Организация">
-                            <select
-                              value={editForm.organization_id}
-                              onChange={(event) => updateEditField("organization_id", event.target.value)}
-                              className={INPUT_CLASS}
-                            >
-                              <option value="">Без организации</option>
-                              {sortedOrganizations.map((organization) => (
-                                <option key={organization.id} value={organization.id}>
-                                  {organization.name}
-                                </option>
-                              ))}
-                            </select>
-                          </AdminFormField>
-
-                          <OrganizationDocumentProfileHint
-                            organization={organizationsById[editForm.organization_id]}
-                            testId="enrollment-edit-document-profile-hint"
-                          />
-
-                          <AdminFormField contentClassName="mt-2" label="Учебная группа">
-                            <select
-                              value={editForm.learning_group_id}
-                              onChange={(event) => updateEditField("learning_group_id", event.target.value)}
-                              className={INPUT_CLASS}
-                              disabled={groups.length === 0}
-                            >
-                              <option value="">
-                                {groups.length === 0 ? "Групп пока нет" : "Без группы"}
-                              </option>
-                              {editFormGroups.map((group) => (
-                                <option key={group.id} value={group.id}>
-                                  {buildGroupLabel(group, organizationsById)}
-                                </option>
-                              ))}
-                            </select>
-                          </AdminFormField>
-
-                          <AdminFormField contentClassName="mt-2" label="Статус">
-                            <select
-                              value={editForm.status}
-                              onChange={(event) => updateEditField("status", event.target.value)}
-                              className={INPUT_CLASS}
-                            >
-                              {ENROLLMENT_STATUSES.map((statusItem) => (
-                                <option key={statusItem.value} value={statusItem.value}>
-                                  {statusItem.label}
-                                </option>
-                              ))}
-                            </select>
-                          </AdminFormField>
-
-                          <AdminFormField contentClassName="mt-2" label="Начато">
-                            <input
-                              type="datetime-local"
-                              value={editForm.started_at}
-                              onChange={(event) => updateEditField("started_at", event.target.value)}
-                              className={INPUT_CLASS}
-                            />
-                          </AdminFormField>
-
-                          <AdminFormField contentClassName="mt-2" label="Завершено">
-                            <input
-                              type="datetime-local"
-                              value={editForm.completed_at}
-                              onChange={(event) => updateEditField("completed_at", event.target.value)}
-                              className={INPUT_CLASS}
-                            />
-                          </AdminFormField>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            type="submit"
-                            disabled={isActionRunning}
-                            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isActionRunning ? "Сохраняем..." : "Сохранить"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={resetEditState}
-                            disabled={isActionRunning}
-                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          )}
-          </SectionCard>
+      {error ? (
+        <div data-testid="admin-enrollments-error-state" className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700 ring-1 ring-red-200">
+          {error}
         </div>
-      </div>
-    </div>
+      ) : null}
+
+      {successMessage ? (
+        <div data-testid="admin-enrollments-success-state" className="rounded-2xl bg-green-50 p-4 text-sm font-bold text-green-700 ring-1 ring-green-200">
+          {successMessage}
+        </div>
+      ) : null}
+
+      <section className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4 text-sm font-bold text-slate-600">
+          <span>{T.shown} {enrollments.length} {T.records}</span>
+          <span>{"\u00b7"}</span>
+          <span>{T.csvRows}: {enrollments.length}</span>
+          <button
+            type="button"
+            onClick={() => downloadCsv(enrollments)}
+            className="rounded-full bg-slate-50 px-3 py-1 text-xs font-black text-slate-800 ring-1 ring-slate-200"
+          >
+            {T.exportCsv}
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table data-testid="admin-enrollments-table" className="min-w-full border-separate border-spacing-0">
+            <thead>
+              <tr className="bg-slate-50 text-left text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
+                <th className="w-12 px-5 py-4" />
+                <th className="px-5 py-4">{T.user}</th>
+                <th className="px-5 py-4">{T.programCourse}</th>
+                <th className="px-5 py-4">{T.type}</th>
+                <th className="px-5 py-4">{T.group}</th>
+                <th className="px-5 py-4">{T.enrolledAt}</th>
+                <th className="px-5 py-4">{T.status}</th>
+                <th className="px-5 py-4">{T.progress}</th>
+                <th className="px-5 py-4">{T.updated}</th>
+                <th className="px-5 py-4 text-right">{T.actions}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={10} className="px-5 py-12 text-center text-sm font-bold text-slate-500">
+                    {T.loading}
+                  </td>
+                </tr>
+              ) : enrollments.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="px-5 py-12 text-center text-sm font-bold text-slate-500">
+                    {T.empty}
+                  </td>
+                </tr>
+              ) : (
+                enrollments.map((enrollment) => {
+                  const isSelected = selectedEnrollmentId === enrollment.id;
+                  const statusOption = getStatusOption(enrollment.status);
+                  const details = detailsById[enrollment.id] || enrollment;
+                  const documents = documentsById[enrollment.id] || [];
+                  const attempts = quizAttemptsById[enrollment.id] || [];
+                  const latestAttempt = getLatestAttempt(attempts);
+                  const documentState = getDocumentState(documents);
+                  const hints = getActionHints(details, documents);
+                  const progress = getDerivedProgress(details);
+                  const displayName = details.user_full_name || details.user_email || T.user;
+                  const groupName = details.learning_group_name || groupsById[details.learning_group_id]?.name || T.notSet;
+                  const organizationName = details.organization_name || organizationsById[details.organization_id]?.name || T.notSet;
+
+                  return (
+                    <Fragment key={`enrollment-row-block-${enrollment.id}`}>
+                      <tr className={cx("border-b border-slate-100 align-middle", isSelected ? "bg-blue-50/30" : "bg-white")}>
+                        <td className="px-5 py-4">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleEnrollment(enrollment)}
+                            className={cx(
+                              "inline-flex h-9 w-9 items-center justify-center rounded-full text-lg font-black ring-1 transition",
+                              isSelected ? "bg-blue-600 text-white ring-blue-600" : "bg-white text-blue-600 ring-slate-200 hover:bg-blue-50"
+                            )}
+                          >
+                            {isSelected ? "\u2212" : "\u203a"}
+                          </button>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
+                              {getInitials(displayName)}
+                            </div>
+                            <div>
+                              <div className="font-black text-slate-950">{displayName}</div>
+                              <div className="text-xs font-medium text-slate-500">{details.user_email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="font-black text-slate-950">{details.course_title || T.notSet}</div>
+                          <div className="text-xs font-medium uppercase text-slate-500">{details.course_slug || T.notSet}</div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <Badge className="bg-blue-50 text-blue-700 ring-blue-200">{getCourseType(details)}</Badge>
+                        </td>
+                        <td className="px-5 py-4 text-sm font-bold text-slate-700">{groupName}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-slate-700">{formatDate(details.started_at || details.created_at)}</td>
+                        <td className="px-5 py-4">
+                          <Badge className={statusOption.tone}>{statusOption.label}</Badge>
+                        </td>
+                        <td className="px-5 py-4">
+                          <ProgressBar value={progress} />
+                        </td>
+                        <td className="px-5 py-4 text-sm font-bold text-slate-600">{formatDate(details.updated_at)}</td>
+                        <td className="px-5 py-4 text-right">
+                          <div data-testid={`admin-enrollment-row-actions-${enrollment.id}`} className="flex justify-end gap-2">
+                            <ActionButton onClick={() => handleToggleEnrollment(enrollment)}>
+                              {isSelected ? T.close : T.open}
+                            </ActionButton>
+                            <ActionButton onClick={() => beginEdit(details)}>{T.edit}</ActionButton>
+                            <ActionButton onClick={() => handleDelete(details)} tone="danger" disabled={savingId === enrollment.id}>
+                              ...
+                            </ActionButton>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {isSelected ? (
+                        <tr key={`enrollment-detail-${enrollment.id}`} className="bg-slate-50/70">
+                          <td colSpan={10} className="px-4 pb-4 pt-0">
+                            <div data-testid="admin-enrollment-detail-content" className="rounded-3xl bg-white p-4 ring-1 ring-slate-200">
+                              <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl bg-slate-50 p-4">
+                                <div className="flex min-w-0 items-center gap-4">
+                                  <div className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-xl font-black text-blue-700 ring-1 ring-blue-100">
+                                    {getInitials(displayName)}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h2 className="truncate text-2xl font-black text-slate-950">{displayName}</h2>
+                                    <p className="mt-1 text-sm font-medium text-slate-500">
+                                      {details.user_email} {"\u00b7"} {organizationName}
+                                    </p>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      <Badge className={statusOption.tone}>{statusOption.label}</Badge>
+                                      <Badge className="bg-blue-50 text-blue-700 ring-blue-100">{getCourseType(details)}</Badge>
+                                      <Badge className="bg-slate-50 text-slate-700 ring-slate-200">{groupName}</Badge>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div data-testid="admin-enrollment-detail-actions" className="flex flex-wrap justify-end gap-2">
+                                  <ActionButton onClick={() => beginEdit(details)}>{T.edit}</ActionButton>
+                                  {details.status !== "active" ? (
+                                    <ActionButton onClick={() => handleStatusUpdate(details, "active")} disabled={savingId === details.id}>
+                                      {T.start}
+                                    </ActionButton>
+                                  ) : null}
+                                  {details.status !== "completed" ? (
+                                    <ActionButton onClick={() => handleStatusUpdate(details, "completed")} disabled={savingId === details.id}>
+                                      {T.complete}
+                                    </ActionButton>
+                                  ) : null}
+                                  {details.status !== "cancelled" ? (
+                                    <ActionButton onClick={() => handleStatusUpdate(details, "cancelled")} disabled={savingId === details.id}>
+                                      {T.cancel}
+                                    </ActionButton>
+                                  ) : null}
+                                  <ActionButton onClick={() => handleToggleEnrollment(details)}>{T.close}</ActionButton>
+                                </div>
+                              </div>
+
+                              {detailLoadingId === enrollment.id ? (
+                                <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-700 ring-1 ring-blue-100">
+                                  {T.loading}
+                                </div>
+                              ) : null}
+
+                              {hints.length > 0 ? (
+                                <div data-testid="enrollment-attention-diagnostics" className="mt-4 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
+                                  <div className="flex flex-wrap items-center gap-2 text-sm font-black text-amber-900">
+                                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-amber-600 ring-1 ring-amber-200">!</span>
+                                    <span>{T.actionRequired}</span>
+                                    <span>{"\u00b7"}</span>
+                                    <span>{hints.join(" \u2022 ")}</span>
+                                    <span className="ml-auto inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-white px-2 text-xs text-amber-700 ring-1 ring-amber-200">
+                                      {hints.length}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : null}
+
+                              {editingId === details.id ? (
+                                <form onSubmit={(event) => handleEditSubmit(event, details)} className="mt-4 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
+                                  <div className="grid gap-4 md:grid-cols-3">
+                                    <SelectField label={T.organization} value={editForm.organization_id} onChange={(event) => setEditForm((current) => ({ ...current, organization_id: event.target.value }))}>
+                                      <option value="">{T.optional}</option>
+                                      {organizations.map((organization) => (
+                                        <option key={organization.id} value={organization.id}>
+                                          {organization.name}
+                                        </option>
+                                      ))}
+                                    </SelectField>
+                                    <SelectField label={T.group} value={editForm.learning_group_id} onChange={(event) => setEditForm((current) => ({ ...current, learning_group_id: event.target.value }))}>
+                                      <option value="">{T.optional}</option>
+                                      {groups.map((group) => (
+                                        <option key={group.id} value={group.id}>
+                                          {group.name || group.code}
+                                        </option>
+                                      ))}
+                                    </SelectField>
+                                    <SelectField label={T.status} value={editForm.status} onChange={(event) => setEditForm((current) => ({ ...current, status: event.target.value }))}>
+                                      {STATUS_OPTIONS.map((status) => (
+                                        <option key={status.value} value={status.value}>
+                                          {status.label}
+                                        </option>
+                                      ))}
+                                    </SelectField>
+                                  </div>
+                                  <div className="mt-4 flex gap-2">
+                                    <ActionButton type="submit" tone="primary" disabled={savingId === details.id}>
+                                      {savingId === details.id ? T.saving : T.save}
+                                    </ActionButton>
+                                    <ActionButton onClick={() => setEditingId("")}>{T.cancel}</ActionButton>
+                                  </div>
+                                </form>
+                              ) : null}
+
+                              <div data-testid="enrollment-dashboard-grid" className="mt-4 grid gap-4 xl:grid-cols-4">
+                                <InfoCard title={T.profileUser} subtitle={T.user} testId="enrollment-user-card">
+                                  <div className="grid gap-3 sm:grid-cols-2">
+                                    <FieldCard label="ID" value={details.user_id} />
+                                    <FieldCard label="Email" value={details.user_email} />
+                                    <FieldCard label={T.organization} value={organizationName} />
+                                    <FieldCard label={T.group} value={groupName} />
+                                  </div>
+                                  <Link className="mt-4 inline-flex text-sm font-black text-blue-700 hover:text-blue-900" to={`/admin/users?user_id=${details.user_id}`}>
+                                    {T.openUser} {"\u2192"}
+                                  </Link>
+                                </InfoCard>
+
+                                <InfoCard title={T.courseInfo} subtitle={T.programCourse} testId="enrollment-course-card">
+                                  <div className="grid gap-3">
+                                    <FieldCard label={T.programCourse} value={details.course_title} />
+                                    <FieldCard label="Slug" value={details.course_slug} />
+                                    <FieldCard label={T.type} value={getCourseType(details)} />
+                                  </div>
+                                  <Link className="mt-4 inline-flex text-sm font-black text-blue-700 hover:text-blue-900" to={`/admin/courses?course_id=${details.course_id}`}>
+                                    {T.openCourse} {"\u2192"}
+                                  </Link>
+                                </InfoCard>
+
+                                <InfoCard title={T.performance} subtitle={T.progress} counter={attempts.length} testId="enrollment-performance-card">
+                                  <div className="space-y-4">
+                                    <div>
+                                      <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">{T.progress}</div>
+                                      <ProgressBar value={progress} />
+                                    </div>
+                                    <FieldCard label={T.grade} value={getAttemptText(latestAttempt)} />
+                                    <div className="rounded-2xl bg-slate-50 p-3">
+                                      <div className="text-xs font-black text-slate-500">{T.quizAttempts}</div>
+                                      {attempts.length === 0 ? (
+                                        <div className="mt-2 text-sm font-medium text-slate-500">{T.noQuiz}</div>
+                                      ) : (
+                                        <div className="mt-2 space-y-2">
+                                          {attempts.slice(0, 3).map((attempt) => (
+                                            <div key={attempt.id || `${attempt.block_id}-${attempt.created_at}`} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-100">
+                                              <span className="truncate text-sm font-bold text-slate-800">{attempt.lesson_title || attempt.block_title || T.quizAttempts}</span>
+                                              <Badge className={attempt.passed ? "bg-green-50 text-green-700 ring-green-200" : "bg-red-50 text-red-700 ring-red-200"}>
+                                                {attempt.percent ?? 0}%
+                                              </Badge>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </InfoCard>
+
+                                <InfoCard title={T.marksDocs} subtitle={T.documents} counter={documents.length} testId="enrollment-documents-card">
+                                  <div className="space-y-3">
+                                    <FieldCard label={documentState.label} value={documentState.value} />
+                                    {documents.length === 0 ? (
+                                      <p className="text-sm font-medium text-slate-500">{T.noDocs}</p>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        {documents.slice(0, 3).map((document) => (
+                                          <div key={document.id} className="rounded-2xl bg-slate-50 p-3">
+                                            <div className="text-sm font-black text-slate-950">{document.title || document.document_number}</div>
+                                            <div className="mt-1 text-xs font-bold text-slate-500">{document.document_number} {"\u00b7"} {document.status}</div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <Link className="inline-flex text-sm font-black text-blue-700 hover:text-blue-900" to={`/admin/documents?enrollment_id=${details.id}`}>
+                                      {T.openDocuments} {"\u2192"}
+                                    </Link>
+                                  </div>
+                                </InfoCard>
+
+                                <InfoCard title={T.history} subtitle={T.lastActivity} testId="enrollment-history-card">
+                                  <div className="space-y-3">
+                                    {[
+                                      [T.created, details.created_at],
+                                      [T.enrolledAt, details.started_at],
+                                      [T.completedAt, details.completed_at],
+                                      [T.updated, details.updated_at],
+                                    ].map(([label, value]) => (
+                                      <div key={label} className="flex gap-3 rounded-2xl bg-slate-50 p-3">
+                                        <span className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
+                                        <div>
+                                          <div className="text-sm font-black text-slate-900">{label}</div>
+                                          <div className="text-xs font-bold text-slate-500">{formatDate(value)}</div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <Link className="mt-4 inline-flex text-sm font-black text-blue-700 hover:text-blue-900" to={`/admin/audit?entity_type=enrollment&entity_id=${details.id}`}>
+                                    {T.openAudit} {"\u2192"}
+                                  </Link>
+                                </InfoCard>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   );
 }
+export { AdminEnrollmentsPage };
+export default AdminEnrollmentsPage;

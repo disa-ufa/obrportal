@@ -1,4 +1,4 @@
-﻿# Stage 59 - Production pre-deployment health check baseline
+# Stage 59 - Production pre-deployment health check baseline
 
 Status: planned
 Base branch: develop

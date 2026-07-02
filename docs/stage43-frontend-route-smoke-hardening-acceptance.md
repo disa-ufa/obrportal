@@ -1,4 +1,4 @@
-﻿# Stage 43 - Frontend route smoke hardening acceptance
+# Stage 43 - Frontend route smoke hardening acceptance
 
 Status: accepted
 Branch: stage43-frontend-route-smoke-hardening-audit

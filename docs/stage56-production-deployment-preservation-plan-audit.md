@@ -1,4 +1,4 @@
-﻿# Stage 56 - Production deployment preservation plan audit
+# Stage 56 - Production deployment preservation plan audit
 
 Status: draft
 Branch: stage56-production-deployment-preservation-plan-audit

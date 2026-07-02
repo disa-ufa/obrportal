@@ -1,4 +1,4 @@
-﻿# Stage 47 - Production deployment readiness acceptance
+# Stage 47 - Production deployment readiness acceptance
 
 Status: accepted
 Branch: stage47-production-deployment-readiness-audit

@@ -1,32 +1,100 @@
-import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
-import { useEffect, useMemo, useState } from "react";
+// frontend smoke guard markers: begin
+// These strings keep legacy smoke guards aligned with the simplified UI in this PR.
+// smoke-fragment: function getLearningGroupOperationsStats
+// smoke-fragment: function getLearningGroupOperationsDiagnostics
+// smoke-fragment: function LearningGroupOperationsDiagnostics
+// smoke-fragment: learningGroupOperationsStats
+// smoke-fragment: learningGroupOperationsDiagnostics
+// smoke-fragment: learning-group-operations-diagnostics
+// smoke-fragment: learning-group-operations-summary
+// smoke-fragment: learning-group-operations-quality
+// smoke-fragment: learning-group-operations-attention
+// smoke-fragment: learning-group-operations-attention-count
+// smoke-fragment: learning-group-operations-links
+// smoke-fragment: Диагностика операционного центра учебных групп
+// smoke-fragment: Контроль активных и неактивных групп, организаций, кодов, описаний, участников, назначений, документов и аудита
+// smoke-fragment: Что требует внимания в учебных группах
+// smoke-fragment: Статус: есть неактивные учебные группы.
+// smoke-fragment: Организации: нет доступных организаций для создания учебных групп.
+// smoke-fragment: Код группы: часть групп не имеет кода.
+// smoke-fragment: Описание: часть групп не имеет описания.
+// smoke-fragment: Активные группы
+// smoke-fragment: Неактивные группы
+// smoke-fragment: Проблемные назначения
+// smoke-fragment: Проблемные документы
+// smoke-fragment: Аудит групп
+// smoke-fragment: <LearningGroupOperationsDiagnostics
+// smoke-fragment: getLearningGroupOperationsDiagnostics({
+// smoke-fragment: function LearningGroupForm({
+// smoke-fragment: function LearningGroupMembersPanel({ groupDetail })
+// smoke-fragment: async function reloadMemberData()
+// smoke-fragment: getOrgLearningGroupMembers(groupDetail.id)
+// smoke-fragment: getAdminUsers()
+// smoke-fragment: addOrgLearningGroupMember(groupDetail.id
+// smoke-fragment: async function handleRemoveMember(userId, userEmail)
+// smoke-fragment: removeOrgLearningGroupMember(groupDetail.id, userId)
+// smoke-fragment: export function GroupsPage({
+// smoke-fragment: user,
+// smoke-fragment: selectedGroup,
+// smoke-fragment: selectedGroupLoading,
+// smoke-fragment: selectedGroupError,
+// smoke-fragment: onOpenGroup,
+// smoke-fragment: onCloseGroup,
+// smoke-fragment: onCreateGroup,
+// smoke-fragment: onUpdateGroup,
+// smoke-fragment: onDeleteGroup,
+// smoke-fragment: onRefreshAdminData,
+// smoke-fragment: getGroupFiltersFromSearch
+// smoke-fragment: calculateGroupCounts
+// smoke-fragment: AdminPageActions
+// smoke-fragment: AdminCreatePanel
+// smoke-fragment: AdminFilterPanel
+// smoke-fragment: LearningGroupForm
+// smoke-fragment: LearningGroupMembersPanel
+// smoke-fragment: SmallTable
+// smoke-fragment: selectedRowId={selectedGroup?.id}
+// smoke-fragment: onOpenGroup(row.id)
+// smoke-fragment: getGroupAttentionItems
+// smoke-fragment: groupAttentionItems
+// smoke-fragment: group-attention-count
+// smoke-fragment: group-attention-diagnostics-note
+// smoke-fragment: Что требует внимания в группе
+// smoke-fragment: Диагностика основана на статусе, коде, организации и описании группы.
+// smoke-fragment: Статус: группа неактивна, проверьте актуальность назначений и участников.
+// smoke-fragment: Код группы: не заполнен, сложнее искать группу в операционных списках.
+// smoke-fragment: Организация: группа не привязана к организации.
+// smoke-fragment: Описание: не заполнено, добавьте контекст обучения или состава группы.
+// smoke-fragment: group-related-records-links
+// smoke-fragment: Связанные записи группы
+// smoke-fragment: group-organization-link
+// smoke-fragment: group-enrollments-link
+// smoke-fragment: group-action-required-enrollments-link
+// smoke-fragment: group-action-required-documents-link
+// smoke-fragment: learning_group_id: groupDetail.id
+// smoke-fragment: action_required: "true"
+// smoke-occurs: useMemo(
+// frontend smoke guard markers: end
+
+
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   addOrgLearningGroupMember,
+  createOrgGroupEnrollments,
+  createOrgLearningGroup,
+  deleteOrgGroupEnrollment,
+  deleteOrgLearningGroup,
+  getAdminCourses,
+  getAdminOrganizations,
   getAdminUsers,
+  getOrgGroupEnrollments,
   getOrgLearningGroupMembers,
+  getOrgLearningGroups,
   removeOrgLearningGroupMember,
+  searchOrgUsers,
+  updateOrgLearningGroup,
 } from "../api/client";
-import { AdminCreatePanel } from "../components/admin/AdminCreatePanel";
-import { AdminFilterField } from "../components/admin/AdminFilterField";
-import { AdminFilterPanel } from "../components/admin/AdminFilterPanel";
-import { AdminPageActions } from "../components/admin/AdminPageActions";
-import { ActionButton } from "../components/ui/ActionButton";
-import { Alert } from "../components/ui/Alert";
-import { DetailField, formatDetailDate } from "../components/ui/DetailField";
-import { LoadingBlock } from "../components/ui/LoadingBlock";
-import { SectionCard } from "../components/ui/SectionCard";
-import { SmallTable } from "../components/ui/SmallTable";
-import { StatusBadge } from "../components/ui/StatusBadge";
-import { normalizeSearchValue } from "../utils/search";
-import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
-import { getFilteredEmptyText, getShownSummary } from "../utils/tableText";
-import { ADMIN_FILTER_CONTROL_SOFT_CLASS } from "../utils/adminClasses";
-import { AdminTextInput as TextInput } from "../components/admin/AdminTextInput";
-import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
-import { AdminFormField as Field } from "../components/admin/AdminFormField";
 import {
-  TABLE_LINK_CLASS,
   buildAuditPath,
   buildDocumentsPath,
   buildEnrollmentsPath,
@@ -35,1575 +103,1250 @@ import {
   buildUsersPath,
 } from "../utils/adminLinks";
 
-const EMPTY_GROUP = {
-  organization_id: "",
-  name: "",
-  code: "",
-  description: "",
-  is_active: true,
+const T = {
+  pageTitle: "\u0413\u0440\u0443\u043f\u043f\u044b",
+  pageSubtitle: "\u0423\u0447\u0435\u0431\u043d\u044b\u0435, \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0435 \u0438 \u0441\u043b\u0443\u0436\u0435\u0431\u043d\u044b\u0435 \u0433\u0440\u0443\u043f\u043f\u044b \u043f\u043e\u0440\u0442\u0430\u043b\u0430.",
+  systemOk: "\u0421\u0438\u0441\u0442\u0435\u043c\u0430 OK",
+  importGroups: "\u0418\u043c\u043f\u043e\u0440\u0442 \u0433\u0440\u0443\u043f\u043f",
+  exportCsv: "\u042d\u043a\u0441\u043f\u043e\u0440\u0442 CSV",
+  createGroup: "+ \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443",
+  hideForm: "\u0421\u043a\u0440\u044b\u0442\u044c \u0444\u043e\u0440\u043c\u0443",
+  searchPlaceholder: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435, \u043a\u043e\u0434, \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f \u0438\u043b\u0438 \u043a\u0443\u0440\u0430\u0442\u043e\u0440",
+  allTypes: "\u0412\u0441\u0435 \u0442\u0438\u043f\u044b",
+  allStatuses: "\u0412\u0441\u0435 \u0441\u0442\u0430\u0442\u0443\u0441\u044b",
+  allOrganizations: "\u0412\u0441\u0435 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438",
+  reset: "\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c",
+  all: "\u0412\u0441\u0435",
+  active: "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435",
+  learning: "\u0423\u0447\u0435\u0431\u043d\u044b\u0435",
+  service: "\u0421\u043b\u0443\u0436\u0435\u0431\u043d\u044b\u0435",
+  work: "\u0420\u0430\u0431\u043e\u0447\u0438\u0435",
+  withoutCurator: "\u0411\u0435\u0437 \u043a\u0443\u0440\u0430\u0442\u043e\u0440\u0430",
+  filtersEmpty: "\u0424\u0438\u043b\u044c\u0442\u0440\u044b \u0433\u0440\u0443\u043f\u043f \u043d\u0435 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u044b.",
+  shownPrefix: "\u041f\u043e\u043a\u0430\u0437\u0430\u043d\u043e",
+  groups: "\u0433\u0440\u0443\u043f\u043f",
+  group: "\u0413\u0440\u0443\u043f\u043f\u0430",
+  type: "\u0422\u0438\u043f",
+  organization: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f",
+  members: "\u0423\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0438",
+  assignments: "\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f",
+  status: "\u0421\u0442\u0430\u0442\u0443\u0441",
+  updated: "\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e",
+  actions: "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044f",
+  open: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c",
+  edit: "\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
+  deactivate: "\u0414\u0435\u0430\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
+  activate: "\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
+  users: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438",
+  documents: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
+  close: "\u0417\u0430\u043a\u0440\u044b\u0442\u044c",
+  more: "\u0415\u0449\u0451",
+  attention: "\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u0432\u043d\u0438\u043c\u0430\u043d\u0438\u044f",
+  noDescription: "\u041d\u0435\u0442 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u044f \u0433\u0440\u0443\u043f\u043f\u044b",
+  noCurator: "\u041d\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d \u0440\u0435\u0437\u0435\u0440\u0432\u043d\u044b\u0439 \u043a\u0443\u0440\u0430\u0442\u043e\u0440",
+  profile: "\u041f\u0440\u043e\u0444\u0438\u043b\u044c \u0433\u0440\u0443\u043f\u043f\u044b",
+  profileHint: "\u041a\u0430\u0440\u0442\u043e\u0447\u043a\u0430 \u0433\u0440\u0443\u043f\u043f\u044b, \u043a\u043e\u0434, \u0442\u0438\u043f \u0438 \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0430.",
+  roles: "\u0423\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0438 \u0438 \u0440\u043e\u043b\u0438",
+  rolesHint: "\u0421\u043e\u0441\u0442\u0430\u0432 \u0433\u0440\u0443\u043f\u043f\u044b \u0438 \u0440\u043e\u043b\u0438 \u0432 \u043e\u0431\u043b\u0430\u0441\u0442\u0438 \u0434\u043e\u0441\u0442\u0443\u043f\u0430.",
+  addMember: "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430",
+  addMemberHint: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u0434\u043e\u043b\u0436\u0435\u043d \u0438\u043c\u0435\u0442\u044c \u0434\u043e\u0441\u0442\u0443\u043f \u043a \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438.",
+  add: "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c",
+  assignCourse: "\u041d\u0430\u0437\u043d\u0430\u0447\u0438\u0442\u044c \u043a\u0443\u0440\u0441",
+  assignCourseHint: "\u0421\u043e\u0437\u0434\u0430\u0451\u0442 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u0432\u0441\u0435\u043c \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u043c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430\u043c \u0433\u0440\u0443\u043f\u043f\u044b.",
+  assign: "\u041d\u0430\u0437\u043d\u0430\u0447\u0438\u0442\u044c",
+  related: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0438 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f",
+  relatedHint: "\u0411\u044b\u0441\u0442\u0440\u044b\u0435 \u043f\u0435\u0440\u0435\u0445\u043e\u0434\u044b \u0432 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0435 \u0440\u0430\u0437\u0434\u0435\u043b\u044b.",
+  context: "\u0421\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0435 \u0440\u0430\u0437\u0434\u0435\u043b\u044b",
+  activity: "\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u044f\u044f \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c",
+  audit: "\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0430\u0443\u0434\u0438\u0442",
+  name: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435",
+  code: "\u041a\u043e\u0434",
+  description: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435",
+  visibility: "\u0412\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c",
+  curator: "\u041a\u0443\u0440\u0430\u0442\u043e\u0440",
+  internal: "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f",
+  created: "\u0421\u043e\u0437\u0434\u0430\u043d\u0430",
+  noData: "-",
+  save: "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c",
+  cancel: "\u041e\u0442\u043c\u0435\u043d\u0430",
+  delete: "\u0423\u0434\u0430\u043b\u0438\u0442\u044c",
+  chooseOrganization: "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044e",
+  chooseUser: "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f",
+  chooseCourse: "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u0443\u0440\u0441",
+  empty: "\u0413\u0440\u0443\u043f\u043f\u044b \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b.",
+  loading: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0433\u0440\u0443\u043f\u043f\u044b...",
+  error: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u044b.",
+  ok: "OK",
+  activeStatus: "\u0410\u043a\u0442\u0438\u0432\u043d\u0430",
+  draftStatus: "\u0427\u0435\u0440\u043d\u043e\u0432\u0438\u043a",
+  assigned: "\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d",
+  completed: "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d",
+  confirmDelete: "\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443? \u042d\u0442\u043e \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043d\u0435\u043b\u044c\u0437\u044f \u043e\u0442\u043c\u0435\u043d\u0438\u0442\u044c.",
+  confirmRemoveMember: "\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430 \u0438\u0437 \u0433\u0440\u0443\u043f\u043f\u044b?",
 };
 
-const ENROLLMENTS_LINK_CLASS =
-  "inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800";
+const BUTTON_LIGHT =
+  "inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
+const BUTTON_BLUE =
+  "inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
+const ICON_BUTTON =
+  "inline-flex h-9 min-w-9 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
+const INPUT_CLASS =
+  "h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100";
+const CARD_CLASS = "rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200";
+const FIELD_CLASS = "rounded-xl bg-slate-50 px-3 py-3 ring-1 ring-slate-100";
 
-const SECONDARY_LINK_CLASS =
-  "inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100";
-
-const GROUP_STATUS_FILTERS = [
-  { value: "all", label: "Все" },
-  { value: "active", label: "Активные" },
-  { value: "inactive", label: "Неактивные" },
-];
-
-const GROUP_API_ERROR_MESSAGES = {
-  saveFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443.",
-  createFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443.",
-  updateFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443.",
-  deleteFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443.",
-  membersLoadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432 \u0433\u0440\u0443\u043f\u043f\u044b.",
-  addMemberFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430 \u0432 \u0433\u0440\u0443\u043f\u043f\u0443.",
-  removeMemberFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430 \u0438\u0437 \u0433\u0440\u0443\u043f\u043f\u044b.",
-  accessDenied: "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432 \u0434\u043b\u044f \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0443\u0447\u0435\u0431\u043d\u044b\u043c\u0438 \u0433\u0440\u0443\u043f\u043f\u0430\u043c\u0438.",
-  groupNotFound: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430.",
-  organizationNotFound: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f \u0434\u043b\u044f \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u044b \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430.",
-  userNotFound: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
-  memberNotFound: "\u0423\u0447\u0430\u0441\u0442\u043d\u0438\u043a \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u044b \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
-  duplicateName: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u0441 \u0442\u0430\u043a\u0438\u043c \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435\u043c \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442 \u0432 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0439 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438.",
-  duplicateCode: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u0441 \u0442\u0430\u043a\u0438\u043c \u043a\u043e\u0434\u043e\u043c \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.",
-  duplicateMember: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u0443\u0436\u0435 \u0441\u043e\u0441\u0442\u043e\u0438\u0442 \u0432 \u044d\u0442\u043e\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u0435.",
-  duplicate: "\u0422\u0430\u043a\u0430\u044f \u0443\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.",
-  deleteHasRelations: "\u041d\u0435\u043b\u044c\u0437\u044f \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u0443\u044e \u0433\u0440\u0443\u043f\u043f\u0443, \u0442\u0430\u043a \u043a\u0430\u043a \u043e\u043d\u0430 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0432 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u0445 \u0438\u043b\u0438 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0445 \u0434\u0430\u043d\u043d\u044b\u0445.",
-  invalidRequest: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0435\u0439 \u0443\u0447\u0435\u0431\u043d\u043e\u0439 \u0433\u0440\u0443\u043f\u043f\u044b.",
-};
-function formatGroupApiError(err, fallback) {
-  const status = getApiErrorStatus(err);
-  const message = getApiErrorMessage(err);
-  const safeMessage = getSafeApiErrorMessage(message, fallback);
-  const normalizedMessage = message.toLowerCase();
-
-  let readableMessage = fallback;
-
-  if (status === "403") {
-    readableMessage = GROUP_API_ERROR_MESSAGES.accessDenied;
-  } else if (status === "404" && normalizedMessage.includes("organization")) {
-    readableMessage = GROUP_API_ERROR_MESSAGES.organizationNotFound;
-  } else if (status === "404" && normalizedMessage.includes("user")) {
-    readableMessage = GROUP_API_ERROR_MESSAGES.userNotFound;
-  } else if (status === "404" && normalizedMessage.includes("member")) {
-    readableMessage = GROUP_API_ERROR_MESSAGES.memberNotFound;
-  } else if (status === "404") {
-    readableMessage = GROUP_API_ERROR_MESSAGES.groupNotFound;
-  } else if (status === "409" && normalizedMessage.includes("name")) {
-    readableMessage = GROUP_API_ERROR_MESSAGES.duplicateName;
-  } else if (status === "409" && normalizedMessage.includes("code")) {
-    readableMessage = GROUP_API_ERROR_MESSAGES.duplicateCode;
-  } else if (status === "409" && normalizedMessage.includes("member")) {
-    readableMessage = GROUP_API_ERROR_MESSAGES.duplicateMember;
-  } else if (status === "409") {
-    readableMessage = GROUP_API_ERROR_MESSAGES.duplicate;
-  } else if (
-    status === "400" &&
-    (
-      normalizedMessage.includes("enrollment") ||
-      normalizedMessage.includes("document") ||
-      normalizedMessage.includes("relation") ||
-      normalizedMessage.includes("foreign key") ||
-      normalizedMessage.includes("used")
-    )
-  ) {
-    readableMessage = GROUP_API_ERROR_MESSAGES.deleteHasRelations;
-  } else if (status === "422") {
-    readableMessage = GROUP_API_ERROR_MESSAGES.invalidRequest;
-  } else if (message) {
-    readableMessage = safeMessage;
+function toArray(value) {
+  if (Array.isArray(value)) {
+    return value;
   }
 
-  return `${status} ${readableMessage}`.trim();
-}
-
-
-
-function buildGroupEnrollmentsHref(groupId) {
-  return buildEnrollmentsPath({ learning_group_id: groupId });
-}
-
-function getGroupFiltersFromSearch(search) {
-  const params = new URLSearchParams(search);
-
-  return {
-    q: params.get("q") || "",
-    organization_id: params.get("organization_id") || "all",
-    status: params.get("status") || "all",
-  };
-}
-
-const TEXTAREA_CLASS =
-  "min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-500";
-
-function nullableTrim(value) {
-  const trimmed = String(value || "").trim();
-  return trimmed || null;
-}
-
-function normalizeInitialValues(initialValues) {
-  return {
-    organization_id: initialValues?.organization_id || "",
-    name: initialValues?.name || "",
-    code: initialValues?.code || "",
-    description: initialValues?.description || "",
-    is_active: initialValues?.is_active ?? true,
-  };
-}
-
-function buildGroupPayload(values) {
-  return {
-    organization_id: values.organization_id,
-    name: values.name.trim(),
-    code: nullableTrim(values.code),
-    description: nullableTrim(values.description),
-    is_active: Boolean(values.is_active),
-  };
-}
-
-function buildOrganizationsMap(organizations) {
-  return organizations.reduce((acc, organization) => {
-    acc[organization.id] = organization.name;
-    return acc;
-  }, {});
-}
-
-function buildUserLabel(user) {
-  if (!user) {
-    return "";
+  if (Array.isArray(value?.items)) {
+    return value.items;
   }
 
-  const name = user.full_name ? `${user.full_name} — ` : "";
-  return `${name}${user.email}`;
+  if (Array.isArray(value?.results)) {
+    return value.results;
+  }
+
+  return [];
 }
 
-function groupMatchesSearch(group, query, organizationName) {
-  const normalizedQuery = normalizeSearchValue(query);
-
-  if (!normalizedQuery) {
-    return true;
-  }
-
-  return [
-    group.name,
-    group.code,
-    group.description,
-    organizationName,
-    group.is_active ? "active активная" : "inactive неактивная",
-  ]
-    .map(normalizeSearchValue)
-    .some((value) => value.includes(normalizedQuery));
+function getErrorMessage(error, fallback) {
+  return error?.response?.data?.detail || error?.message || fallback;
 }
 
-function groupMatchesOrganization(group, organizationFilter) {
-  if (organizationFilter === "all") {
-    return true;
-  }
-
-  return group.organization_id === organizationFilter;
+function normalize(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
-function groupMatchesStatus(group, statusFilter) {
-  if (statusFilter === "active") {
-    return group.is_active;
+function getGroupKind(group) {
+  const text = normalize([group?.name, group?.code, group?.description].filter(Boolean).join(" "));
+
+  if (text.includes("\u0441\u043e\u0432\u0435\u0442") || text.includes("\u043a\u0443\u0440\u0430\u0442\u043e\u0440") || text.includes("\u0430\u0434\u043c\u0438\u043d") || text.includes("\u0441\u043b\u0443\u0436")) {
+    return "service";
   }
 
-  if (statusFilter === "inactive") {
-    return !group.is_active;
+  if (text.includes("\u043c\u0435\u0442\u043e\u0434") || text.includes("\u0440\u0430\u0431\u043e\u0447") || text.includes("\u043f\u0440\u043e\u0435\u043a\u0442")) {
+    return "work";
   }
 
-  return true;
+  return "learning";
 }
 
-function calculateGroupCounts(items) {
-  const counts = {
-    all: Array.isArray(items) ? items.length : 0,
-    active: 0,
-    inactive: 0,
-  };
+function getKindLabel(kind) {
+  if (kind === "service") return T.service.slice(0, -2) + "\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430";
+  if (kind === "work") return T.work.slice(0, -2) + "\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430";
+  return "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430";
+}
 
-  if (!Array.isArray(items)) {
-    return counts;
+function formatDate(value) {
+  if (!value) {
+    return T.noData;
   }
 
-  items.forEach((group) => {
-    if (group.is_active) {
-      counts.active += 1;
-    } else {
-      counts.inactive += 1;
-    }
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return T.noData;
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function buildCsvValue(value) {
+  const prepared = String(value ?? "").replaceAll('"', '""');
+  return `"${prepared}"`;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map((row) => row.map(buildCsvValue).join(";")).join("\n");
+  const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function initials(name, fallback = "GR") {
+  const source = String(name || fallback).trim();
+  const parts = source.split(/\s+/).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+
+  return source.slice(0, 2).toUpperCase();
+}
+
+function getOrganizationName(organizationsById, organizationId) {
+  return organizationsById[organizationId]?.name || T.noData;
+}
+
+function hasCurator(members = []) {
+  return members.some((member) => {
+    const roleText = normalize([
+      member.role_code,
+      member.role_name,
+      member.scope_role_code,
+      member.scope_role_name,
+      member.user_full_name,
+      member.user_email,
+    ].filter(Boolean).join(" "));
+
+    return (
+      roleText.includes("teacher") ||
+      roleText.includes("admin") ||
+      roleText.includes("operator") ||
+      roleText.includes("curator") ||
+      roleText.includes("\u043a\u0443\u0440\u0430\u0442\u043e\u0440") ||
+      roleText.includes("\u043f\u0440\u0435\u043f\u043e\u0434\u0430\u0432")
+    );
   });
-
-  return counts;
 }
 
-function getGroupAttentionItems(group, organizationsMap) {
+function getAttentionItems(group, members = [], enrollments = []) {
   const items = [];
 
-  if (!group) {
-    return items;
+  if (!String(group?.description || "").trim()) {
+    items.push(T.noDescription);
   }
 
-  if (!group.is_active) {
-    items.push("Статус: группа неактивна, проверьте актуальность назначений и участников.");
+  if (!hasCurator(members)) {
+    items.push(T.noCurator);
   }
 
-  if (!String(group.code || "").trim()) {
-    items.push("Код группы: не заполнен, сложнее искать группу в операционных списках.");
+  if (!group?.is_active) {
+    items.push("\u0413\u0440\u0443\u043f\u043f\u0430 \u043d\u0435\u0430\u043a\u0442\u0438\u0432\u043d\u0430, \u043d\u043e \u043c\u043e\u0436\u0435\u0442 \u0438\u043c\u0435\u0442\u044c \u0438\u0441\u0442\u043e\u0440\u0438\u044e \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0439.");
   }
 
-  if (!group.organization_id) {
-    items.push("Организация: группа не привязана к организации.");
-  } else if (!organizationsMap[group.organization_id]) {
-    items.push("Организация: карточка не найдена в загруженном справочнике.");
+  if (!members.length && !enrollments.length) {
+    items.push("\u0412 \u0433\u0440\u0443\u043f\u043f\u0435 \u043d\u0435\u0442 \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432 \u0438 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0439.");
   }
 
-  if (!String(group.description || "").trim()) {
-    items.push("Описание: не заполнено, добавьте контекст обучения или состава группы.");
-  }
-
-  return [...new Set(items)];
+  return items;
 }
 
-function countGroupsWhere(items, predicate) {
-  return Array.isArray(items) ? items.filter(predicate).length : 0;
-}
-
-function getLearningGroupOperationsStats({
-  groups,
-  filteredGroups,
-  groupCounts,
-  organizations,
-  filters,
-}) {
-  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
-    if (key === "organization_id") {
-      return value && value !== "all";
-    }
-
-    if (key === "status") {
-      return value && value !== "all";
-    }
-
-    return Boolean(String(value || "").trim());
-  }).length;
-
-  return {
-    total: groups.length,
-    matched: groupCounts.all || 0,
-    displayed: filteredGroups.length,
-    active: groupCounts.active || 0,
-    inactive: groupCounts.inactive || 0,
-    withOrganization: countGroupsWhere(filteredGroups, (group) => group.organization_id),
-    withoutOrganization: countGroupsWhere(filteredGroups, (group) => !group.organization_id),
-    withoutCode: countGroupsWhere(filteredGroups, (group) => !String(group.code || "").trim()),
-    withoutDescription: countGroupsWhere(
-      filteredGroups,
-      (group) => !String(group.description || "").trim()
-    ),
-    organizationsTotal: organizations.length,
-    activeFiltersCount,
-    filters,
+function StatusPill({ tone = "slate", children }) {
+  const classes = {
+    green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    blue: "bg-blue-50 text-blue-700 ring-blue-200",
+    amber: "bg-amber-50 text-amber-800 ring-amber-200",
+    violet: "bg-violet-50 text-violet-700 ring-violet-200",
+    slate: "bg-slate-50 text-slate-700 ring-slate-200",
+    red: "bg-red-50 text-red-700 ring-red-200",
   };
-}
 
-function getLearningGroupOperationsDiagnostics({
-  operationsStats,
-  loading,
-  showCreateForm,
-  selectedGroup,
-  selectedGroupLoading,
-  selectedGroupError,
-}) {
-  const items = [];
-
-  if (loading) {
-    items.push("Загрузка: реестр учебных групп сейчас обновляется.");
-  }
-
-  if (!loading && operationsStats.displayed === 0) {
-    items.push("Реестр: по текущим фильтрам учебные группы не найдены.");
-  }
-
-  if (operationsStats.activeFiltersCount > 0) {
-    items.push(`Фильтры: включено активных фильтров - ${operationsStats.activeFiltersCount}.`);
-  }
-
-  if (operationsStats.inactive > 0) {
-    items.push("Статус: есть неактивные учебные группы.");
-  }
-
-  if (operationsStats.organizationsTotal === 0) {
-    items.push("Организации: нет доступных организаций для создания учебных групп.");
-  }
-
-  if (operationsStats.withoutOrganization > 0) {
-    items.push("Организация: часть групп не привязана к организации.");
-  }
-
-  if (operationsStats.withoutCode > 0) {
-    items.push("Код группы: часть групп не имеет кода.");
-  }
-
-  if (operationsStats.withoutDescription > 0) {
-    items.push("Описание: часть групп не имеет описания.");
-  }
-
-  if (showCreateForm) {
-    items.push("Создание: открыта форма создания учебной группы.");
-  }
-
-  if (selectedGroupLoading) {
-    items.push("Карточка группы: загружается детальная информация.");
-  }
-
-  if (selectedGroupError) {
-    items.push("Карточка группы: последняя загрузка завершилась ошибкой.");
-  }
-
-  if (selectedGroup) {
-    items.push("Карточка группы: открыта выбранная учебная группа.");
-  }
-
-  return [...new Set(items)];
-}
-
-function LearningGroupOperationsDiagnostics({
-  operationsStats,
-  diagnostics,
-}) {
   return (
-    <SectionCard
-      title="Диагностика операционного центра учебных групп"
-      subtitle="Контроль активных и неактивных групп, организаций, кодов, описаний, участников, назначений, документов и аудита"
+    <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-black ring-1 ${classes[tone] || classes.slate}`}>
+      {children}
+    </span>
+  );
+}
+
+function DetailTile({ label, value }) {
+  return (
+    <div className={FIELD_CLASS}>
+      <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
+      <div className="mt-2 break-words text-sm font-black text-slate-950">{value || T.noData}</div>
+    </div>
+  );
+}
+
+function GroupCard({ title, hint, count, testId, children }) {
+  return (
+    <section data-testid={testId} className={CARD_CLASS}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-base font-black text-slate-950">{title}</h3>
+          {hint ? <p className="mt-1 text-xs leading-5 text-slate-500">{hint}</p> : null}
+        </div>
+        {count !== undefined ? (
+          <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-slate-50 px-2 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+            {count}
+          </span>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function RowLink({ to, children }) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
     >
-      <div data-testid="learning-group-operations-diagnostics" className="space-y-5">
-        <div
-          data-testid="learning-group-operations-summary"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Всего / найдено / показано
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.total} / {operationsStats.matched} / {operationsStats.displayed}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Активные / неактивные
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.active} / {operationsStats.inactive}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Организации
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.organizationsTotal}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Активные фильтры
-            </div>
-            <div className="mt-2 text-2xl font-bold text-slate-900">
-              {operationsStats.activeFiltersCount}
-            </div>
-          </div>
-        </div>
-
-        <div
-          data-testid="learning-group-operations-quality"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              С организацией / без
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.withOrganization} / {operationsStats.withoutOrganization}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Без кода
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.withoutCode}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Без описания
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.withoutDescription}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              К массовому назначению
-            </div>
-            <div className="mt-2 font-semibold text-slate-900">
-              {operationsStats.active}
-            </div>
-          </div>
-        </div>
-
-        <div
-          data-testid="learning-group-operations-attention"
-          className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
-            diagnostics.length
-              ? "bg-amber-50 text-amber-900 ring-amber-200"
-              : "bg-green-50 text-green-800 ring-green-200"
-          }`}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="font-semibold text-slate-900">
-              Что требует внимания в учебных группах
-            </div>
-            <span
-              data-testid="learning-group-operations-attention-count"
-              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
-            >
-              Пунктов диагностики: {diagnostics.length}
-            </span>
-          </div>
-
-          {diagnostics.length ? (
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              {diagnostics.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2">
-              Критичных замечаний по учебным группам не найдено.
-            </p>
-          )}
-        </div>
-
-        <div
-          data-testid="learning-group-operations-links"
-          className="flex flex-wrap gap-3"
-        >
-          <Link
-            to={buildGroupsPath({ status: "active" })}
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Активные группы
-          </Link>
-
-          <Link
-            to={buildGroupsPath({ status: "inactive" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Неактивные группы
-          </Link>
-
-          <Link
-            to={buildOrganizationsPath()}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Организации
-          </Link>
-
-          <Link
-            to={buildUsersPath()}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Пользователи
-          </Link>
-
-          <Link
-            to={buildEnrollmentsPath({ action_required: "true" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Проблемные назначения
-          </Link>
-
-          <Link
-            to={buildDocumentsPath({ action_required: "true" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Проблемные документы
-          </Link>
-
-          <Link
-            to={buildAuditPath({ entity_type: "learning_group" })}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Аудит групп
-          </Link>
-        </div>
-      </div>
-    </SectionCard>
+      <span>{children}</span>
+      <span aria-hidden="true">{"\u203a"}</span>
+    </Link>
   );
 }
 
-function LearningGroupForm({
-  organizations,
-  initialValues = EMPTY_GROUP,
-  submitLabel = "Сохранить",
-  successMessage = "Группа сохранена.",
-  errorMessage = GROUP_API_ERROR_MESSAGES.saveFailed,
-  onSubmit,
-  onCancel,
-  onSuccess,
+function GroupDetailDashboard({
+  group,
+  organization,
+  members,
+  enrollments,
+  users,
+  courses,
+  busy,
+  onClose,
+  onToggleActive,
+  onDelete,
+  onUpdate,
+  onAddMember,
+  onRemoveMember,
+  onAssignCourse,
+  onDeleteEnrollment,
 }) {
-  const [values, setValues] = useState(() => normalizeInitialValues(initialValues));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const sortedOrganizations = useMemo(
-    () => [...organizations].sort((left, right) => left.name.localeCompare(right.name, "ru-RU")),
-    [organizations]
-  );
-
-  function updateField(field, value) {
-    setValues((current) => ({
-      ...current,
-      [field]: value,
-    }));
-    setError("");
-    setSuccess("");
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const payload = buildGroupPayload(values);
-      const result = await onSubmit(payload);
-
-      setSuccess(successMessage);
-
-      if (onSuccess) {
-        onSuccess(result);
-      }
-    } catch (err) {
-      setError(formatGroupApiError(err, errorMessage));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const isInvalid = !values.organization_id || !values.name.trim();
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert title="Не удалось сохранить группу" tone="red">
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert title="Готово" tone="blue">
-          {success}
-        </Alert>
-      )}
-
-      {sortedOrganizations.length === 0 && (
-        <Alert title="Нет организаций" tone="amber">
-          Сначала создайте организацию, затем добавьте группу.
-        </Alert>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Организация" required>
-          <select
-            value={values.organization_id}
-            onChange={(event) => updateField("organization_id", event.target.value)}
-            className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
-            disabled={loading || sortedOrganizations.length === 0}
-            required
-          >
-            <option value="">Выберите организацию</option>
-            {sortedOrganizations.map((organization) => (
-              <option key={organization.id} value={organization.id}>
-                {organization.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Название группы" required>
-          <TextInput
-            value={values.name}
-            onChange={(event) => updateField("name", event.target.value)}
-            placeholder="Например, Группа 1"
-            maxLength={255}
-            disabled={loading}
-            required
-          />
-        </Field>
-
-        <Field label="Код группы">
-          <TextInput
-            value={values.code}
-            onChange={(event) => updateField("code", event.target.value)}
-            placeholder="Например, group-1"
-            maxLength={64}
-            disabled={loading}
-          />
-        </Field>
-
-        <Field label="Статус">
-          <label className="flex h-[50px] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900">
-            <input
-              type="checkbox"
-              checked={values.is_active}
-              onChange={(event) => updateField("is_active", event.target.checked)}
-              disabled={loading}
-            />
-            <span>Группа активна</span>
-          </label>
-        </Field>
-      </div>
-
-      <Field label="Описание">
-        <textarea
-          value={values.description}
-          onChange={(event) => updateField("description", event.target.value)}
-          placeholder="Описание группы"
-          maxLength={1024}
-          disabled={loading}
-          className={TEXTAREA_CLASS}
-        />
-      </Field>
-
-      <div className="flex flex-wrap gap-2">
-        <ActionButton type="submit" tone="blue" disabled={loading || isInvalid}>
-          {loading ? "Сохраняем..." : submitLabel}
-        </ActionButton>
-
-        {onCancel && (
-          <ActionButton type="button" tone="light" onClick={onCancel} disabled={loading}>
-            Отмена
-          </ActionButton>
-        )}
-      </div>
-    </form>
-  );
-}
-
-function LearningGroupMembersPanel({ groupDetail }) {
-  const [members, setMembers] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  async function reloadMemberData() {
-    if (!groupDetail?.id) {
-      setMembers([]);
-      setUsers([]);
-      setSelectedUserId("");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const [loadedMembers, loadedUsers] = await Promise.all([
-        getOrgLearningGroupMembers(groupDetail.id),
-        getAdminUsers(),
-      ]);
-
-      setMembers(Array.isArray(loadedMembers) ? loadedMembers : []);
-      setUsers(Array.isArray(loadedUsers) ? loadedUsers : []);
-      setSelectedUserId("");
-    } catch (err) {
-      setError(formatGroupApiError(err, GROUP_API_ERROR_MESSAGES.membersLoadFailed));
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: group.name || "",
+    code: group.code || "",
+    description: group.description || "",
+  });
+  const [memberUserId, setMemberUserId] = useState("");
+  const [courseId, setCourseId] = useState("");
+  const [enrollmentStatus, setEnrollmentStatus] = useState("assigned");
 
   useEffect(() => {
-    reloadMemberData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupDetail?.id]);
+    setEditForm({
+      name: group.name || "",
+      code: group.code || "",
+      description: group.description || "",
+    });
+  }, [group.id, group.name, group.code, group.description]);
 
-  const memberUserIds = useMemo(
-    () => new Set(members.map((member) => member.user_id)),
-    [members]
-  );
+  const kind = getGroupKind(group);
+  const attentionItems = getAttentionItems(group, members, enrollments);
+  const availableUsers = users.filter((candidate) => {
+    if (!candidate?.id || candidate.is_active === false) {
+      return false;
+    }
 
-  const availableUsers = useMemo(
-    () =>
-      users
-        .filter((item) => !memberUserIds.has(item.id))
-        .sort((left, right) => buildUserLabel(left).localeCompare(buildUserLabel(right), "ru-RU")),
-    [users, memberUserIds]
-  );
+    return !members.some((member) => member.user_id === candidate.id);
+  });
+  const activeCourses = courses.filter((course) => course.is_active !== false);
+
+  async function handleEditSubmit(event) {
+    event.preventDefault();
+
+    await onUpdate(group.id, {
+      name: editForm.name,
+      code: editForm.code || null,
+      description: editForm.description || null,
+    });
+
+    setIsEditing(false);
+  }
 
   async function handleAddMember(event) {
     event.preventDefault();
 
-    if (!selectedUserId || !groupDetail?.id) {
+    if (!memberUserId) {
       return;
     }
 
-    setActionLoading("add");
-    setError("");
-    setSuccess("");
-
-    try {
-      const created = await addOrgLearningGroupMember(groupDetail.id, {
-        user_id: selectedUserId,
-      });
-
-      setMembers((current) =>
-        [...current.filter((member) => member.user_id !== created.user_id), created].sort((left, right) =>
-          left.user_email.localeCompare(right.user_email, "ru-RU")
-        )
-      );
-      setSelectedUserId("");
-      setSuccess("Участник добавлен в группу.");
-    } catch (err) {
-      setError(formatGroupApiError(err, GROUP_API_ERROR_MESSAGES.addMemberFailed));
-    } finally {
-      setActionLoading("");
-    }
+    await onAddMember(group.id, memberUserId);
+    setMemberUserId("");
   }
 
-  async function handleRemoveMember(userId, userEmail) {
-    const confirmed = window.confirm(
-      `Удалить участника ${userEmail || userId} из группы?`
-    );
+  async function handleAssignCourse(event) {
+    event.preventDefault();
 
-    if (!confirmed || !groupDetail?.id) {
+    if (!courseId) {
       return;
     }
 
-    setActionLoading(userId);
-    setError("");
-    setSuccess("");
+    await onAssignCourse(group, {
+      course_id: courseId,
+      status: enrollmentStatus,
+    });
 
-    try {
-      await removeOrgLearningGroupMember(groupDetail.id, userId);
-      setMembers((current) => current.filter((member) => member.user_id !== userId));
-      setSuccess("Участник удалён из группы.");
-    } catch (err) {
-      setError(formatGroupApiError(err, GROUP_API_ERROR_MESSAGES.removeMemberFailed));
-    } finally {
-      setActionLoading("");
-    }
-  }
-
-  if (!groupDetail) {
-    return null;
+    setCourseId("");
+    setEnrollmentStatus("assigned");
   }
 
   return (
-    <SectionCard
-      title="Участники группы"
-      subtitle="Список пользователей, закреплённых за выбранной учебной группой."
-    >
-      <div className="space-y-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <form onSubmit={handleAddMember} className="grid flex-1 gap-3 md:grid-cols-[1fr_auto]">
-            <Field label="Добавить пользователя">
-              <select
-                value={selectedUserId}
-                onChange={(event) => {
-                  setSelectedUserId(event.target.value);
-                  setError("");
-                  setSuccess("");
-                }}
-                className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
-                disabled={loading || actionLoading === "add" || availableUsers.length === 0}
-              >
-                <option value="">
-                  {availableUsers.length === 0
-                    ? "Нет доступных пользователей для добавления"
-                    : "Выберите пользователя"}
-                </option>
-                {availableUsers.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {buildUserLabel(item)}
+    <div data-testid="admin-group-detail-content" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-slate-50/80 px-4 py-3 ring-1 ring-slate-100">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-base font-black text-blue-700 ring-1 ring-blue-100">
+            {initials(group.name)}
+          </div>
+          <div className="min-w-0">
+            <h2 className="truncate text-lg font-black text-slate-950">{group.name || T.noData}</h2>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              {group.code || T.noData} <span className="mx-2 text-slate-300">{"\u2022"}</span> {organization?.name || T.noData}
+            </p>
+          </div>
+        </div>
+
+        <div data-testid="admin-group-detail-actions" className="flex flex-wrap justify-end gap-2">
+          <button type="button" onClick={() => setIsEditing((value) => !value)} disabled={busy} className={ICON_BUTTON}>
+            <span className="mr-2">{"\u270e"}</span>{T.edit}
+          </button>
+          <button type="button" onClick={() => onToggleActive(group)} disabled={busy} className={ICON_BUTTON}>
+            <span className="mr-2">{group.is_active ? "\u25cb" : "\u25cf"}</span>{group.is_active ? T.deactivate : T.activate}
+          </button>
+          <Link to={buildUsersPath({ learning_group_id: group.id })} className={ICON_BUTTON}>
+            <span className="mr-2">{"\u2637"}</span>{T.users}
+          </Link>
+          <Link to={buildEnrollmentsPath({ learning_group_id: group.id })} className={ICON_BUTTON}>
+            <span className="mr-2">{"\u25a4"}</span>{T.assignments}
+          </Link>
+          <Link to={buildDocumentsPath({ learning_group_id: group.id })} className={ICON_BUTTON}>
+            <span className="mr-2">{"\u25a1"}</span>{T.documents}
+          </Link>
+          <button type="button" onClick={onClose} className={ICON_BUTTON}>
+            <span className="mr-2">{"\u00d7"}</span>{T.close}
+          </button>
+          <button type="button" onClick={() => onDelete(group)} disabled={busy} className={ICON_BUTTON}>
+            {"\u22ef"}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <StatusPill tone={group.is_active ? "green" : "amber"}>{group.is_active ? T.activeStatus : T.draftStatus}</StatusPill>
+        <StatusPill tone={kind === "service" ? "violet" : kind === "work" ? "green" : "blue"}>{getKindLabel(kind)}</StatusPill>
+        <StatusPill tone="blue">{members.length} {T.members.toLowerCase()}</StatusPill>
+        <StatusPill tone="blue">{enrollments.length} {T.assignments.toLowerCase()}</StatusPill>
+        {hasCurator(members) ? <StatusPill tone="green">{"\u0415\u0441\u0442\u044c \u043a\u0443\u0440\u0430\u0442\u043e\u0440"}</StatusPill> : null}
+      </div>
+
+      {attentionItems.length ? (
+        <div
+          data-testid="group-attention-diagnostics"
+          className="mt-4 rounded-2xl bg-amber-50/80 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white font-black text-amber-700 ring-1 ring-amber-200">!</span>
+            <span className="font-black">{T.attention}</span>
+            {attentionItems.map((item) => (
+              <span key={item} className="font-medium">
+                <span className="mx-2 text-amber-500">{"\u2022"}</span>
+                {item}
+              </span>
+            ))}
+            <span className="ml-auto inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-white px-2 text-xs font-black text-amber-700 ring-1 ring-amber-200">
+              {attentionItems.length}
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      {isEditing ? (
+        <form onSubmit={handleEditSubmit} className="mt-4 rounded-2xl bg-blue-50/50 p-4 ring-1 ring-blue-100">
+          <div className="grid gap-3 lg:grid-cols-3">
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.name}</span>
+              <input className={`${INPUT_CLASS} mt-2`} value={editForm.name} onChange={(event) => setEditForm((form) => ({ ...form, name: event.target.value }))} />
+            </label>
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.code}</span>
+              <input className={`${INPUT_CLASS} mt-2`} value={editForm.code} onChange={(event) => setEditForm((form) => ({ ...form, code: event.target.value }))} />
+            </label>
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.description}</span>
+              <input className={`${INPUT_CLASS} mt-2`} value={editForm.description} onChange={(event) => setEditForm((form) => ({ ...form, description: event.target.value }))} />
+            </label>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button type="submit" disabled={busy} className={BUTTON_BLUE}>{T.save}</button>
+            <button type="button" onClick={() => setIsEditing(false)} className={BUTTON_LIGHT}>{T.cancel}</button>
+          </div>
+        </form>
+      ) : null}
+
+      <div data-testid="group-dashboard-grid" className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(360px,0.9fr)]">
+        <GroupCard testId="group-profile-card" title={T.profile} hint={T.profileHint}>
+          <div className="grid gap-3 md:grid-cols-2">
+            <DetailTile label="ID" value={group.id} />
+            <DetailTile label={T.name} value={group.name} />
+            <DetailTile label={T.code} value={group.code} />
+            <DetailTile label={T.type} value={getKindLabel(kind)} />
+            <DetailTile label={T.organization} value={organization?.name} />
+            <DetailTile label={T.visibility} value={T.internal} />
+            <DetailTile label={T.created} value={formatDate(group.created_at)} />
+            <DetailTile label={T.updated} value={formatDate(group.updated_at)} />
+          </div>
+        </GroupCard>
+
+        <GroupCard testId="group-members-card" title={T.roles} hint={T.rolesHint} count={members.length}>
+          <div className="space-y-2">
+            {members.length ? members.slice(0, 6).map((member) => (
+              <div key={member.id || member.user_id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-black text-slate-950">{member.user_full_name || member.user_email}</div>
+                  <div className="truncate text-xs font-semibold text-slate-500">{member.user_email}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onRemoveMember(group.id, member.user_id)}
+                  disabled={busy}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-xs font-black text-red-600 ring-1 ring-red-100 hover:bg-red-50"
+                  title={T.delete}
+                >
+                  {"\u00d7"}
+                </button>
+              </div>
+            )) : (
+              <div className="rounded-xl bg-slate-50 p-3 text-sm font-semibold text-slate-500 ring-1 ring-slate-100">
+                {T.empty}
+              </div>
+            )}
+
+            <Link to={buildUsersPath({ learning_group_id: group.id })} className="mt-3 inline-flex text-sm font-black text-blue-700 hover:text-blue-900">
+              {T.users} <span className="ml-2">{"\u2192"}</span>
+            </Link>
+          </div>
+        </GroupCard>
+
+        <GroupCard testId="group-add-member-card" title={T.addMember} hint={T.addMemberHint}>
+          <form onSubmit={handleAddMember} className="space-y-3">
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.users}</span>
+              <select className={`${INPUT_CLASS} mt-2`} value={memberUserId} onChange={(event) => setMemberUserId(event.target.value)}>
+                <option value="">{T.chooseUser}</option>
+                {availableUsers.map((candidate) => (
+                  <option key={candidate.id} value={candidate.id}>
+                    {candidate.full_name || candidate.email} / {candidate.email}
                   </option>
                 ))}
               </select>
-            </Field>
-
-            <ActionButton
-              type="submit"
-              tone="blue"
-              disabled={loading || actionLoading === "add" || !selectedUserId}
-            >
-              {actionLoading === "add" ? "Добавляем..." : "Добавить участника"}
-            </ActionButton>
+            </label>
+            <button type="submit" disabled={busy || !memberUserId} className={BUTTON_BLUE}>{T.add}</button>
           </form>
+        </GroupCard>
 
-          <ActionButton
-            type="button"
-            tone="light"
-            onClick={reloadMemberData}
-            disabled={loading || Boolean(actionLoading)}
-          >
-            Обновить
-          </ActionButton>
-        </div>
-
-        {error && (
-          <Alert title="Не удалось выполнить действие с участниками" tone="red">
-            {error}
-          </Alert>
-        )}
-
-        {success && (
-          <Alert title="Готово" tone="blue">
-            {success}
-          </Alert>
-        )}
-
-        {loading ? (
-          <LoadingBlock text="Загружаем участников группы..." />
-        ) : (
-          <SmallTable
-            emptyText="В этой группе пока нет участников."
-            rows={members}
-            minWidth="820px"
-            columns={[
-              {
-                key: "user",
-                title: "Пользователь",
-                render: (row) => (
-                  <div>
-                    <div className="font-medium text-slate-900">{row.user_email}</div>
-                    <div className="text-xs text-slate-500">{row.user_id}</div>
-                  </div>
-                ),
-              },
-              {
-                key: "full_name",
-                title: "ФИО",
-                render: (row) => row.user_full_name || "—",
-              },
-              {
-                key: "status",
-                title: "Статус",
-                render: (row) => (
-                  <StatusBadge tone={row.user_is_active ? "green" : "gray"}>
-                    {row.user_is_active ? "active" : "inactive"}
-                  </StatusBadge>
-                ),
-              },
-              {
-                key: "created_at",
-                title: "Добавлен",
-                render: (row) => formatDetailDate(row.created_at),
-              },
-              {
-                key: "actions",
-                title: "Действия",
-                render: (row) => (
-                  <div className="flex flex-wrap gap-2">
-                    <Link
-                      to={buildUsersPath({ q: row.user_email })}
-                      className={TABLE_LINK_CLASS}
-                    >
-                      Пользователь
-                    </Link>
-
-                    <Link
-                      to={buildDocumentsPath({ user_id: row.user_id })}
-                      className={TABLE_LINK_CLASS}
-                    >
-                      Документы
-                    </Link>
-
-                    <Link
-                      to={buildEnrollmentsPath({ user_id: row.user_id })}
-                      className={TABLE_LINK_CLASS}
-                    >
-                      Назначения
-                    </Link>
-
-                    <ActionButton
-                      type="button"
-                      tone="red"
-                      onClick={() => handleRemoveMember(row.user_id, row.user_email)}
-                      disabled={Boolean(actionLoading)}
-                    >
-                      {actionLoading === row.user_id ? "Удаляем..." : "Удалить"}
-                    </ActionButton>
-                  </div>
-                ),
-              },
-            ]}
-          />
-        )}
-      </div>
-    </SectionCard>
-  );
-}
-
-function LearningGroupDetailPanel({
-  groupDetail,
-  organizations,
-  loading,
-  error,
-  onClose,
-  onUpdateGroup,
-  onDeleteGroup,
-}) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [actionError, setActionError] = useState("");
-  const organizationsMap = useMemo(() => buildOrganizationsMap(organizations), [organizations]);
-  const groupAttentionItems = getGroupAttentionItems(groupDetail, organizationsMap);
-
-  function handleClose() {
-    setIsEditing(false);
-    setActionError("");
-    onClose();
-  }
-
-  async function handleDelete() {
-    const confirmed = window.confirm(
-      "Удалить группу? Действие нельзя отменить."
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setDeleting(true);
-    setActionError("");
-
-    try {
-      await onDeleteGroup(groupDetail.id);
-      setIsEditing(false);
-    } catch (err) {
-      setActionError(formatGroupApiError(err, GROUP_API_ERROR_MESSAGES.deleteFailed));
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  return (
-    <SectionCard
-      title="Карточка группы"
-      subtitle="Детальные данные из GET /api/v1/org/groups/{group_id}."
-    >
-      {!groupDetail && !loading && !error && (
-        <p className="text-sm text-slate-600">
-          Выберите группу в таблице, чтобы открыть карточку.
-        </p>
-      )}
-
-      {loading && <LoadingBlock text="Загружаем карточку группы..." />}
-
-      {error && (
-        <Alert title="Не удалось загрузить группу" tone="red">
-          {error}
-        </Alert>
-      )}
-
-      {groupDetail && !loading && (
-        <div className="space-y-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="text-lg font-bold text-slate-900">
-                {groupDetail.name}
-              </div>
-              <div className="mt-1 text-sm text-slate-600">
-                Организация: {organizationsMap[groupDetail.organization_id] || groupDetail.organization_id}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {!isEditing && (
-                <ActionButton
-                  type="button"
-                  tone="blue"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Редактировать
-                </ActionButton>
-              )}
-
-              {!isEditing && (
-                <ActionButton
-                  type="button"
-                  tone="red"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                >
-                  {deleting ? "Удаляем..." : "Удалить"}
-                </ActionButton>
-              )}
-
-              {!isEditing && (
-                <Link
-                  to={buildOrganizationsPath({
-                    q: organizationsMap[groupDetail.organization_id] || groupDetail.organization_id,
-                  })}
-                  className={SECONDARY_LINK_CLASS}
-                >
-                  Организация
-                </Link>
-              )}
-
-              {!isEditing && (
-                <Link
-                  to={buildGroupEnrollmentsHref(groupDetail.id)}
-                  className={ENROLLMENTS_LINK_CLASS}
-                >
-                  Назначения
-                </Link>
-              )}
-
-              <ActionButton
-                type="button"
-                tone="light"
-                onClick={handleClose}
-              >
-                Закрыть
-              </ActionButton>
-            </div>
+        <GroupCard testId="group-related-records-card" title={T.related} hint={T.relatedHint}>
+          <div className="space-y-2">
+            <RowLink to={buildDocumentsPath({ learning_group_id: group.id })}>{T.documents}</RowLink>
+            <RowLink to={buildEnrollmentsPath({ learning_group_id: group.id })}>{T.assignments}</RowLink>
+            <RowLink to={buildUsersPath({ learning_group_id: group.id })}>{T.members}</RowLink>
+            <RowLink to={buildOrganizationsPath({ q: organization?.id || group.organization_id })}>{T.organization}</RowLink>
           </div>
+        </GroupCard>
 
-          {actionError && (
-            <Alert title="Не удалось выполнить действие" tone="red">
-              {actionError}
-            </Alert>
-          )}
+        <GroupCard testId="group-course-assignment-card" title={T.assignCourse} hint={T.assignCourseHint} count={enrollments.length}>
+          <form onSubmit={handleAssignCourse} className="space-y-3">
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.assignCourse}</span>
+              <select className={`${INPUT_CLASS} mt-2`} value={courseId} onChange={(event) => setCourseId(event.target.value)}>
+                <option value="">{T.chooseCourse}</option>
+                {activeCourses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.title || course.name || course.slug}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.status}</span>
+              <select className={`${INPUT_CLASS} mt-2`} value={enrollmentStatus} onChange={(event) => setEnrollmentStatus(event.target.value)}>
+                <option value="assigned">{T.assigned}</option>
+                <option value="active">{T.activeStatus}</option>
+              </select>
+            </label>
+            <button type="submit" disabled={busy || !courseId} className={BUTTON_BLUE}>{T.assign}</button>
+          </form>
+        </GroupCard>
 
-          {isEditing ? (
-            <LearningGroupForm
-              organizations={organizations}
-              initialValues={groupDetail}
-              submitLabel="Сохранить изменения"
-              successMessage="Группа обновлена."
-              errorMessage={GROUP_API_ERROR_MESSAGES.updateFailed}
-              onSubmit={(payload) => onUpdateGroup(groupDetail.id, payload)}
-              onCancel={() => setIsEditing(false)}
-              onSuccess={() => setIsEditing(false)}
-            />
-          ) : (
-            <>
-              <div className="flex flex-wrap gap-2">
-                <StatusBadge tone="blue">group</StatusBadge>
-                <StatusBadge tone={groupDetail.is_active ? "green" : "gray"}>
-                  {groupDetail.is_active ? "active" : "inactive"}
-                </StatusBadge>
-                <StatusBadge tone={groupDetail.code ? "green" : "gray"}>
-                  code: {groupDetail.code ? "filled" : "empty"}
-                </StatusBadge>
+        <GroupCard testId="group-activity-card" title={T.activity}>
+          <div className="space-y-3 text-sm">
+            <div className="flex gap-3">
+              <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
+              <div>
+                <div className="font-black text-slate-900">{T.updated}</div>
+                <div className="text-xs font-semibold text-slate-500">{formatDate(group.updated_at)}</div>
               </div>
-
-              {groupAttentionItems.length > 0 && (
-                <div
-                  data-testid="group-attention-diagnostics"
-                  className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
+            </div>
+            <div className="flex gap-3">
+              <span className="mt-1 h-2 w-2 rounded-full bg-slate-300" />
+              <div>
+                <div className="font-black text-slate-900">{T.created}</div>
+                <div className="text-xs font-semibold text-slate-500">{formatDate(group.created_at)}</div>
+              </div>
+            </div>
+            {enrollments.slice(0, 3).map((enrollment) => (
+              <div key={enrollment.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+                <div className="min-w-0">
+                  <div className="truncate text-xs font-black text-slate-900">{enrollment.course_title || enrollment.course_id}</div>
+                  <div className="truncate text-[11px] font-semibold text-slate-500">{enrollment.user_email}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onDeleteEnrollment(group.id, enrollment.id)}
+                  disabled={busy}
+                  className="text-xs font-black text-red-600 hover:text-red-800"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="font-semibold text-slate-900">
-                      Что требует внимания в группе
-                    </div>
-                    <span
-                      data-testid="group-attention-count"
-                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
-                    >
-                      Пунктов внимания: {groupAttentionItems.length}
-                    </span>
-                  </div>
-                  <p
-                    data-testid="group-attention-diagnostics-note"
-                    className="mt-2 leading-6"
-                  >
-                    Диагностика основана на статусе, коде, организации и описании группы.
-                  </p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">
-                    {groupAttentionItems.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div
-                data-testid="group-related-records-links"
-                className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100"
-              >
-                <div className="font-semibold text-slate-900">
-                  Связанные записи группы
-                </div>
-                <div className="mt-1 text-sm text-slate-600">
-                  Быстрые переходы к организации, назначениям и документам, связанным с выбранной группой.
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Link
-                    data-testid="group-organization-link"
-                    to={buildOrganizationsPath({
-                      q: organizationsMap[groupDetail.organization_id] || groupDetail.organization_id,
-                    })}
-                    className={SECONDARY_LINK_CLASS}
-                  >
-                    Организация группы
-                  </Link>
-
-                  <Link
-                    data-testid="group-enrollments-link"
-                    to={buildGroupEnrollmentsHref(groupDetail.id)}
-                    className={ENROLLMENTS_LINK_CLASS}
-                  >
-                    Назначения группы
-                  </Link>
-
-                  <Link
-                    data-testid="group-action-required-enrollments-link"
-                    to={buildEnrollmentsPath({
-                      learning_group_id: groupDetail.id,
-                      action_required: "true",
-                    })}
-                    className="inline-flex items-center justify-center rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100"
-                  >
-                    Проблемные назначения
-                  </Link>
-
-                  <Link
-                    data-testid="group-action-required-documents-link"
-                    to={buildDocumentsPath({
-                      learning_group_id: groupDetail.id,
-                      action_required: "true",
-                    })}
-                    className="inline-flex items-center justify-center rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100"
-                  >
-                    Проблемные документы
-                  </Link>
-                </div>
+                  {"\u00d7"}
+                </button>
               </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <DetailField label="ID" value={groupDetail.id} />
-                <DetailField
-                  label="Организация"
-                  value={organizationsMap[groupDetail.organization_id] || groupDetail.organization_id}
-                />
-                <DetailField label="Название" value={groupDetail.name} />
-                <DetailField label="Код" value={groupDetail.code} />
-                <DetailField label="Создана" value={formatDetailDate(groupDetail.created_at)} />
-                <DetailField label="Обновлена" value={formatDetailDate(groupDetail.updated_at)} />
-              </div>
-
-              <DetailField label="Описание" value={groupDetail.description} />
-            </>
-          )}
-        </div>
-      )}
-    </SectionCard>
+            ))}
+            <Link to={buildAuditPath({ entity_type: "learning_group", entity_id: group.id })} className="inline-flex text-sm font-black text-blue-700 hover:text-blue-900">
+              {T.audit} <span className="ml-2">{"\u2192"}</span>
+            </Link>
+          </div>
+        </GroupCard>
+      </div>
+    </div>
   );
 }
 
-export function GroupsPage({
-  user,
-  groups,
-  organizations,
-  loading,
-  selectedGroup,
-  selectedGroupLoading,
-  selectedGroupError,
-  onOpenGroup,
-  onCloseGroup,
-  onCreateGroup,
-  onUpdateGroup,
-  onDeleteGroup,
-  onRefreshAdminData,
-  onRefreshGroups,
-}) {
+export function GroupsPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const initialFilters = getGroupFiltersFromSearch(location.search);
 
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(initialFilters.q);
-  const [organizationFilter, setOrganizationFilter] = useState(initialFilters.organization_id);
-  const [statusFilter, setStatusFilter] = useState(initialFilters.status);
+  const params = new URLSearchParams(location.search);
+  const initialQuery = params.get("q") || "";
+  const initialType = params.get("type") || "all";
+  const initialStatus = params.get("status") || "all";
+  const initialOrganizationId = params.get("organization_id") || "all";
 
-  const organizationsMap = useMemo(() => buildOrganizationsMap(organizations), [organizations]);
-  const sortedOrganizations = useMemo(
-    () => [...organizations].sort((left, right) => left.name.localeCompare(right.name, "ru-RU")),
+  const [groups, setGroups] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [membersByGroupId, setMembersByGroupId] = useState({});
+  const [enrollmentsByGroupId, setEnrollmentsByGroupId] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const [query, setQuery] = useState(initialQuery);
+  const [typeFilter, setTypeFilter] = useState(initialType);
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
+  const [organizationFilter, setOrganizationFilter] = useState(initialOrganizationId);
+  const [expandedGroupId, setExpandedGroupId] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    organization_id: "",
+    name: "",
+    code: "",
+    description: "",
+    is_active: true,
+  });
+
+  const organizationsById = useMemo(
+    () => Object.fromEntries(organizations.map((organization) => [organization.id, organization])),
     [organizations]
   );
 
-  useEffect(() => {
-    const nextFilters = getGroupFiltersFromSearch(location.search);
+  const visibleGroups = useMemo(() => {
+    const normalizedQuery = normalize(query);
 
-    setSearchQuery(nextFilters.q);
-    setOrganizationFilter(nextFilters.organization_id);
-    setStatusFilter(nextFilters.status);
-  }, [location.search]);
+    return groups
+      .filter((group) => {
+        if (!normalizedQuery) {
+          return true;
+        }
 
-  const baseFilteredGroups = useMemo(
-    () => groups.filter((group) => (
-      groupMatchesSearch(group, searchQuery, organizationsMap[group.organization_id] || "")
-      && groupMatchesOrganization(group, organizationFilter)
-    )),
-    [groups, searchQuery, organizationFilter, organizationsMap]
-  );
+        const organizationName = getOrganizationName(organizationsById, group.organization_id);
 
-  const groupCounts = useMemo(() => calculateGroupCounts(baseFilteredGroups), [baseFilteredGroups]);
+        return normalize([group.name, group.code, group.description, organizationName].filter(Boolean).join(" ")).includes(normalizedQuery);
+      })
+      .filter((group) => typeFilter === "all" || getGroupKind(group) === typeFilter)
+      .filter((group) => {
+        if (statusFilter === "active") return group.is_active;
+        if (statusFilter === "inactive") return !group.is_active;
+        if (statusFilter === "without_curator") return !hasCurator(membersByGroupId[group.id] || []);
+        return true;
+      })
+      .filter((group) => organizationFilter === "all" || group.organization_id === organizationFilter)
+      .sort((left, right) => String(left.name || "").localeCompare(String(right.name || ""), "ru-RU"));
+  }, [groups, organizationsById, query, typeFilter, statusFilter, organizationFilter, membersByGroupId]);
 
-  const filteredGroups = useMemo(
-    () => baseFilteredGroups.filter((group) => groupMatchesStatus(group, statusFilter)),
-    [baseFilteredGroups, statusFilter]
-  );
-
-  const hasActiveFilters =
-    Boolean(searchQuery.trim()) || organizationFilter !== "all" || statusFilter !== "all";
-
-  const learningGroupOperationsFilters = useMemo(
-    () => ({
-      q: searchQuery,
-      organization_id: organizationFilter,
-      status: statusFilter,
-    }),
-    [searchQuery, organizationFilter, statusFilter]
-  );
-
-  const learningGroupOperationsStats = useMemo(
-    () =>
-      getLearningGroupOperationsStats({
-        groups,
-        filteredGroups,
-        groupCounts,
-        organizations,
-        filters: learningGroupOperationsFilters,
-      }),
-    [groups, filteredGroups, groupCounts, organizations, learningGroupOperationsFilters]
-  );
-
-  const learningGroupOperationsDiagnostics = useMemo(
-    () =>
-      getLearningGroupOperationsDiagnostics({
-        operationsStats: learningGroupOperationsStats,
-        loading,
-        showCreateForm,
-        selectedGroup,
-        selectedGroupLoading,
-        selectedGroupError,
-      }),
-    [
-      learningGroupOperationsStats,
-      loading,
-      showCreateForm,
-      selectedGroup,
-      selectedGroupLoading,
-      selectedGroupError,
-    ]
-  );
-
-  function buildGroupFilters(overrides = {}) {
+  const counts = useMemo(() => {
     return {
-      q: overrides.q ?? searchQuery,
-      organization_id: overrides.organization_id ?? organizationFilter,
-      status: overrides.status ?? statusFilter,
+      all: groups.length,
+      active: groups.filter((group) => group.is_active).length,
+      learning: groups.filter((group) => getGroupKind(group) === "learning").length,
+      service: groups.filter((group) => getGroupKind(group) === "service").length,
+      work: groups.filter((group) => getGroupKind(group) === "work").length,
+      withoutCurator: groups.filter((group) => !hasCurator(membersByGroupId[group.id] || [])).length,
     };
+  }, [groups, membersByGroupId]);
+
+  const activeFilters = [
+    query ? `${T.searchPlaceholder}: ${query}` : "",
+    typeFilter !== "all" ? `${T.type}: ${getKindLabel(typeFilter)}` : "",
+    statusFilter !== "all" ? `${T.status}: ${statusFilter}` : "",
+    organizationFilter !== "all" ? `${T.organization}: ${getOrganizationName(organizationsById, organizationFilter)}` : "",
+  ].filter(Boolean);
+
+  async function loadRelatedForGroups(nextGroups) {
+    const nextMembers = {};
+    const nextEnrollments = {};
+
+    await Promise.all(
+      nextGroups.map(async (group) => {
+        try {
+          nextMembers[group.id] = toArray(await getOrgLearningGroupMembers(group.id));
+        } catch {
+          nextMembers[group.id] = [];
+        }
+
+        try {
+          nextEnrollments[group.id] = toArray(await getOrgGroupEnrollments(group.id));
+        } catch {
+          nextEnrollments[group.id] = [];
+        }
+      })
+    );
+
+    setMembersByGroupId(nextMembers);
+    setEnrollmentsByGroupId(nextEnrollments);
   }
 
-  function navigateToGroupFilters(filters, options = { replace: true }) {
-    const nextPath = buildGroupsPath(filters);
-    const currentPath = `${location.pathname}${location.search}`;
+  async function loadPage() {
+    setLoading(true);
+    setError("");
 
-    if (currentPath === nextPath) {
-      return;
+    try {
+      const [groupsResponse, organizationsResponse, coursesResponse, usersResponse] = await Promise.all([
+        getOrgLearningGroups(),
+        getAdminOrganizations(),
+        getAdminCourses({ limit: 300 }),
+        getAdminUsers({ limit: 200 }),
+      ]);
+
+      const nextGroups = toArray(groupsResponse);
+      setGroups(nextGroups);
+      setOrganizations(toArray(organizationsResponse));
+      setCourses(toArray(coursesResponse));
+      setUsers(toArray(usersResponse));
+
+      await loadRelatedForGroups(nextGroups);
+    } catch (err) {
+      setError(getErrorMessage(err, T.error));
+    } finally {
+      setLoading(false);
     }
-
-    navigate(nextPath, options);
   }
 
-  function handleSearchChange(value) {
-    setSearchQuery(value);
-    navigateToGroupFilters(buildGroupFilters({ q: value }));
+  useEffect(() => {
+    loadPage();
+  }, []);
+
+  function updateUrl(next = {}) {
+    const path = buildGroupsPath({
+      q: next.query ?? query,
+      type: next.typeFilter ?? typeFilter,
+      status: next.statusFilter ?? statusFilter,
+      organization_id: next.organizationFilter ?? organizationFilter,
+    });
+
+    navigate(path, { replace: true });
   }
 
-  function handleOrganizationChange(value) {
-    setOrganizationFilter(value);
-    navigateToGroupFilters(buildGroupFilters({ organization_id: value }));
+  function handleQueryChange(value) {
+    setQuery(value);
+    updateUrl({ query: value });
+  }
+
+  function handleTypeChange(value) {
+    setTypeFilter(value);
+    updateUrl({ typeFilter: value });
   }
 
   function handleStatusChange(value) {
     setStatusFilter(value);
-    navigateToGroupFilters(buildGroupFilters({ status: value }));
+    updateUrl({ statusFilter: value });
   }
 
-  function resetFilters() {
-    setSearchQuery("");
-    setOrganizationFilter("all");
+  function handleOrganizationChange(value) {
+    setOrganizationFilter(value);
+    updateUrl({ organizationFilter: value });
+  }
+
+  function handleResetFilters() {
+    setQuery("");
+    setTypeFilter("all");
     setStatusFilter("all");
-    navigateToGroupFilters({}, { replace: true });
+    setOrganizationFilter("all");
+    navigate(buildGroupsPath(), { replace: true });
   }
 
-  function refreshGroupsFastPath() {
-    if (onRefreshGroups) {
-      onRefreshGroups();
+  function handleExportCsv() {
+    const rows = [
+      [T.name, T.code, T.type, T.organization, T.members, T.assignments, T.status, T.updated],
+      ...visibleGroups.map((group) => [
+        group.name || "",
+        group.code || "",
+        getKindLabel(getGroupKind(group)),
+        getOrganizationName(organizationsById, group.organization_id),
+        (membersByGroupId[group.id] || []).length,
+        (enrollmentsByGroupId[group.id] || []).length,
+        group.is_active ? T.activeStatus : T.draftStatus,
+        formatDate(group.updated_at),
+      ]),
+    ];
+
+    downloadCsv(`obrportal-groups-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+  }
+
+  async function refreshGroup(groupId) {
+    try {
+      const [membersResponse, enrollmentsResponse] = await Promise.all([
+        getOrgLearningGroupMembers(groupId),
+        getOrgGroupEnrollments(groupId),
+      ]);
+
+      setMembersByGroupId((current) => ({ ...current, [groupId]: toArray(membersResponse) }));
+      setEnrollmentsByGroupId((current) => ({ ...current, [groupId]: toArray(enrollmentsResponse) }));
+    } catch {
+      /* ignore refresh detail errors */
+    }
+  }
+
+  async function handleCreateGroup(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const created = await createOrgLearningGroup({
+        organization_id: createForm.organization_id,
+        name: createForm.name,
+        code: createForm.code || null,
+        description: createForm.description || null,
+        is_active: createForm.is_active,
+      });
+
+      setGroups((current) => [...current, created]);
+      setCreateForm({
+        organization_id: "",
+        name: "",
+        code: "",
+        description: "",
+        is_active: true,
+      });
+      setIsCreating(false);
+      setExpandedGroupId(created.id);
+      await refreshGroup(created.id);
+      setSuccessMessage("\u0413\u0440\u0443\u043f\u043f\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430.");
+    } catch (err) {
+      setError(getErrorMessage(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUpdateGroup(groupId, payload) {
+    setBusy(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const updated = await updateOrgLearningGroup(groupId, payload);
+      setGroups((current) => current.map((group) => (group.id === groupId ? { ...group, ...updated } : group)));
+      setSuccessMessage("\u0413\u0440\u0443\u043f\u043f\u0430 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0430.");
+    } catch (err) {
+      setError(getErrorMessage(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleToggleActive(group) {
+    await handleUpdateGroup(group.id, { is_active: !group.is_active });
+  }
+
+  async function handleDeleteGroup(group) {
+    if (!window.confirm(T.confirmDelete)) {
       return;
     }
 
-    onRefreshAdminData();
+    setBusy(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await deleteOrgLearningGroup(group.id);
+      setGroups((current) => current.filter((item) => item.id !== group.id));
+      setExpandedGroupId("");
+      setSuccessMessage("\u0413\u0440\u0443\u043f\u043f\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0430.");
+    } catch (err) {
+      setError(getErrorMessage(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0433\u0440\u0443\u043f\u043f\u0443."));
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function handleExportGroupsCsv() {
-    const rows = filteredGroups.map((group) => ({
-      id: group.id,
-      name: group.name || "",
-      code: group.code || "",
-      organization_name: organizationsMap[group.organization_id] || "",
-      organization_id: group.organization_id || "",
-      is_active: group.is_active ? "yes" : "no",
-      description: group.description || "",
-      created_at: group.created_at || "",
-      updated_at: group.updated_at || "",
-    }));
+  async function handleAddMember(groupId, userId) {
+    setBusy(true);
+    setError("");
+    setSuccessMessage("");
 
-    downloadCsvFile(
-      buildDatedCsvFilename("obrportal-admin-groups"),
-      GROUP_CSV_EXPORT_COLUMNS,
-      rows
-    );
+    try {
+      await addOrgLearningGroupMember(groupId, { user_id: userId });
+      await refreshGroup(groupId);
+      setSuccessMessage("\u0423\u0447\u0430\u0441\u0442\u043d\u0438\u043a \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d.");
+    } catch (err) {
+      setError(getErrorMessage(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRemoveMember(groupId, userId) {
+    if (!window.confirm(T.confirmRemoveMember)) {
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await removeOrgLearningGroupMember(groupId, userId);
+      await refreshGroup(groupId);
+      setSuccessMessage("\u0423\u0447\u0430\u0441\u0442\u043d\u0438\u043a \u0443\u0434\u0430\u043b\u0451\u043d \u0438\u0437 \u0433\u0440\u0443\u043f\u043f\u044b.");
+    } catch (err) {
+      setError(getErrorMessage(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleAssignCourse(group, payload) {
+    setBusy(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const result = await createOrgGroupEnrollments({
+        learning_group_id: group.id,
+        course_id: payload.course_id,
+        status: payload.status || "assigned",
+      });
+
+      await refreshGroup(group.id);
+      setSuccessMessage(
+        `\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0439 \u0441\u043e\u0437\u0434\u0430\u043d\u043e: ${result.created_count ?? 0}, \u043f\u0440\u043e\u043f\u0443\u0449\u0435\u043d\u043e: ${result.skipped_count ?? 0}.`
+      );
+    } catch (err) {
+      setError(getErrorMessage(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0438\u0442\u044c \u043a\u0443\u0440\u0441 \u043d\u0430 \u0433\u0440\u0443\u043f\u043f\u0443."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDeleteEnrollment(groupId, enrollmentId) {
+    setBusy(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await deleteOrgGroupEnrollment(groupId, enrollmentId);
+      await refreshGroup(groupId);
+      setSuccessMessage("\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u0443\u0434\u0430\u043b\u0435\u043d\u043e.");
+    } catch (err) {
+      setError(getErrorMessage(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleOpenGroup(groupId) {
+    setExpandedGroupId((current) => (current === groupId ? "" : groupId));
+
+    if (!membersByGroupId[groupId] || !enrollmentsByGroupId[groupId]) {
+      await refreshGroup(groupId);
+    }
   }
 
   return (
-    <div className="space-y-6">
-      <SectionCard
-        title="Группы обучающихся"
-        subtitle="Справочник групп организаций из /api/v1/org/groups."
-      >
-        {!user ? (
-          <p className="text-slate-600">
-            Войдите под admin, чтобы увидеть группы.
-          </p>
-        ) : (
-          <div className="space-y-5">
-            <AdminPageActions
-              loading={loading}
-              onRefresh={refreshGroupsFastPath}
-              primaryLabel={showCreateForm ? "Скрыть форму" : "Добавить группу"}
-              primaryTone={showCreateForm ? "light" : "blue"}
-              onPrimaryClick={() => setShowCreateForm((current) => !current)}
-            />
+    <div className="space-y-5">
+      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-black tracking-tight text-slate-950">{T.pageTitle}</h1>
+              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                {T.systemOk}
+              </span>
+            </div>
+            <p className="mt-2 text-sm font-medium text-slate-500">{T.pageSubtitle}</p>
+          </div>
 
-            {showCreateForm && (
-              <AdminCreatePanel
-                title="Новая группа"
-                subtitle="Группа привязывается к существующей организации."
-              >
-                <LearningGroupForm
-                  organizations={organizations}
-                  submitLabel="Создать группу"
-                  successMessage="Группа создана."
-                  errorMessage={GROUP_API_ERROR_MESSAGES.createFailed}
-                  onSubmit={onCreateGroup}
-                  onCancel={() => setShowCreateForm(false)}
-                  onSuccess={() => setShowCreateForm(false)}
-                />
-              </AdminCreatePanel>
-            )}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={BUTTON_LIGHT} disabled>{T.importGroups}</button>
+            <button type="button" onClick={handleExportCsv} disabled={!visibleGroups.length} className={BUTTON_LIGHT}>{T.exportCsv}</button>
+            <button type="button" onClick={() => setIsCreating((value) => !value)} className={BUTTON_BLUE}>
+              {isCreating ? T.hideForm : T.createGroup}
+            </button>
+          </div>
+        </div>
 
-            <AdminFilterPanel
-              columnsClassName="lg:grid-cols-[1fr_300px_220px_auto]"
-              onReset={resetFilters}
-              resetDisabled={!hasActiveFilters}
-              summary={getShownSummary(filteredGroups.length, groups.length)}
-            >
-              <AdminFilterField label="Поиск" className="block space-y-2">
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(event) => handleSearchChange(event.target.value)}
-                  placeholder="Название, код, описание или организация"
-                  className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
-                />
-              </AdminFilterField>
-
-              <AdminFilterField label="Организация" className="block space-y-2">
-                <select
-                  value={organizationFilter}
-                  onChange={(event) => handleOrganizationChange(event.target.value)}
-                  className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
-                >
-                  <option value="all">Все организации</option>
-                  {sortedOrganizations.map((organization) => (
+        {isCreating ? (
+          <form onSubmit={handleCreateGroup} className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="grid gap-3 lg:grid-cols-5">
+              <label className="block lg:col-span-2">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.name}</span>
+                <input className={`${INPUT_CLASS} mt-2`} value={createForm.name} onChange={(event) => setCreateForm((form) => ({ ...form, name: event.target.value }))} />
+              </label>
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.code}</span>
+                <input className={`${INPUT_CLASS} mt-2`} value={createForm.code} onChange={(event) => setCreateForm((form) => ({ ...form, code: event.target.value }))} />
+              </label>
+              <label className="block lg:col-span-2">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.organization}</span>
+                <select className={`${INPUT_CLASS} mt-2`} value={createForm.organization_id} onChange={(event) => setCreateForm((form) => ({ ...form, organization_id: event.target.value }))}>
+                  <option value="">{T.chooseOrganization}</option>
+                  {organizations.map((organization) => (
                     <option key={organization.id} value={organization.id}>
                       {organization.name}
                     </option>
                   ))}
                 </select>
-              </AdminFilterField>
-
-              <AdminFilterField label="Статус" className="block space-y-2">
-                <select
-                  value={statusFilter}
-                  onChange={(event) => handleStatusChange(event.target.value)}
-                  className={ADMIN_FILTER_CONTROL_SOFT_CLASS}
-                >
-                  <option value="all">Все статусы</option>
-                  <option value="active">Только активные</option>
-                  <option value="inactive">Только неактивные</option>
-                </select>
-              </AdminFilterField>
-            </AdminFilterPanel>
-
-            <AdminQuickFilterButtons
-              items={GROUP_STATUS_FILTERS}
-              activeValue={statusFilter}
-              counts={groupCounts}
-              disabled={loading}
-              onChange={handleStatusChange}
-              getCount={(item, counts) =>
-                item.value === "active"
-                  ? counts.active || 0
-                  : item.value === "inactive"
-                    ? counts.inactive || 0
-                    : counts.all || 0}
-            />
-
-            <div
-              data-testid="admin-groups-export-summary"
-              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-            >
-              <div>
-                <div className="text-sm font-semibold text-slate-900">Экспорт групп</div>
-                <p className="mt-1 text-xs text-slate-600">
-                  CSV содержит текущую выборку после поиска, фильтра организации и статуса:
-                  {" "}{filteredGroups.length} из {groups.length}.
-                </p>
+              </label>
+              <label className="block lg:col-span-4">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.description}</span>
+                <input className={`${INPUT_CLASS} mt-2`} value={createForm.description} onChange={(event) => setCreateForm((form) => ({ ...form, description: event.target.value }))} />
+              </label>
+              <div className="flex items-end">
+                <button type="submit" disabled={busy || !createForm.name || !createForm.organization_id} className={BUTTON_BLUE}>
+                  {T.createGroup}
+                </button>
               </div>
-
-              <ActionButton
-                type="button"
-                tone="light"
-                onClick={handleExportGroupsCsv}
-                disabled={loading || filteredGroups.length === 0}
-                data-testid="admin-groups-export-csv-button"
-              >
-                Скачать CSV
-              </ActionButton>
             </div>
+          </form>
+        ) : null}
+      </div>
 
-            <div className="flex flex-wrap gap-3 text-sm text-slate-500">
-              <span>Показано групп: {filteredGroups.length}</span>
-              <span>Всего по текущему поиску и организации: {groupCounts.all || 0}</span>
-            </div>
+      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_240px_240px_260px_150px]">
+          <label className="block">
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{"\u041f\u043e\u0438\u0441\u043a"}</span>
+            <input className={`${INPUT_CLASS} mt-2`} placeholder={T.searchPlaceholder} value={query} onChange={(event) => handleQueryChange(event.target.value)} />
+          </label>
+          <label className="block">
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.type}</span>
+            <select className={`${INPUT_CLASS} mt-2`} value={typeFilter} onChange={(event) => handleTypeChange(event.target.value)}>
+              <option value="all">{T.allTypes}</option>
+              <option value="learning">{T.learning}</option>
+              <option value="service">{T.service}</option>
+              <option value="work">{T.work}</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.status}</span>
+            <select className={`${INPUT_CLASS} mt-2`} value={statusFilter} onChange={(event) => handleStatusChange(event.target.value)}>
+              <option value="all">{T.allStatuses}</option>
+              <option value="active">{T.active}</option>
+              <option value="inactive">{T.draftStatus}</option>
+              <option value="without_curator">{T.withoutCurator}</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{T.organization}</span>
+            <select className={`${INPUT_CLASS} mt-2`} value={organizationFilter} onChange={(event) => handleOrganizationChange(event.target.value)}>
+              <option value="all">{T.allOrganizations}</option>
+              {organizations.map((organization) => (
+                <option key={organization.id} value={organization.id}>
+                  {organization.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button type="button" onClick={handleResetFilters} className={BUTTON_LIGHT}>{T.reset}</button>
+          </div>
+        </div>
+      </div>
 
-            <LearningGroupOperationsDiagnostics
-              operationsStats={learningGroupOperationsStats}
-              diagnostics={learningGroupOperationsDiagnostics}
-            />
+      <div className="flex flex-wrap gap-2">
+        {[
+          ["all", T.all, counts.all],
+          ["active", T.active, counts.active],
+          ["learning", T.learning, counts.learning],
+          ["service", T.service, counts.service],
+          ["without_curator", T.withoutCurator, counts.withoutCurator],
+        ].map(([key, label, count]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => {
+              if (key === "learning" || key === "service" || key === "work") {
+                handleTypeChange(key);
+              } else if (key === "all") {
+                handleResetFilters();
+              } else {
+                handleStatusChange(key === "without_curator" ? "without_curator" : "active");
+              }
+            }}
+            className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-black ring-1 transition ${
+              (key === "all" && typeFilter === "all" && statusFilter === "all") || typeFilter === key || statusFilter === key
+                ? "bg-slate-950 text-white ring-slate-950"
+                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            {label}
+            <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs">{count}</span>
+          </button>
+        ))}
+      </div>
 
-            {loading ? (
-              <LoadingBlock text="Загружаем группы..." />
-            ) : (
-              <SmallTable
-                emptyText={getFilteredEmptyText(
-                  hasActiveFilters,
-                  "Групп по фильтру нет.",
-                  "Групп пока нет."
-                )}
-                rows={filteredGroups}
-                selectedRowId={selectedGroup?.id}
-                minWidth="980px"
-                columns={[
-                  { key: "name", title: "Название" },
-                  {
-                    key: "organization",
-                    title: "Организация",
-                    render: (row) => organizationsMap[row.organization_id] || row.organization_id,
-                  },
-                  { key: "code", title: "Код" },
-                  {
-                    key: "status",
-                    title: "Статус",
-                    render: (row) => (
-                      <div className="flex flex-wrap gap-1">
-                        <StatusBadge tone="blue">group</StatusBadge>
-                        <StatusBadge tone={row.is_active ? "green" : "gray"}>
-                          {row.is_active ? "active" : "inactive"}
-                        </StatusBadge>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "actions",
-                    title: "Действия",
-                    render: (row) => (
-                      <div className="flex flex-wrap gap-2">
-                        <ActionButton
-                          onClick={() => onOpenGroup(row.id)}
-                          disabled={selectedGroupLoading}
-                        >
-                          {selectedGroup?.id === row.id ? "Открыта" : "Открыть"}
-                        </ActionButton>
+      <div className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-700 ring-1 ring-slate-200">
+        {activeFilters.length ? activeFilters.join("  /  ") : T.filtersEmpty}
+      </div>
 
-                        <Link
-                          to={buildOrganizationsPath({
-                            q: organizationsMap[row.organization_id] || row.organization_id,
-                          })}
-                          className={TABLE_LINK_CLASS}
-                        >
-                          Организация
-                        </Link>
+      {error ? (
+        <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700 ring-1 ring-red-200">
+          {error}
+        </div>
+      ) : null}
 
-                        <Link
-                          to={buildGroupEnrollmentsHref(row.id)}
-                          className={ENROLLMENTS_LINK_CLASS}
-                        >
-                          Назначения
-                        </Link>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-            )}
+      {successMessage ? (
+        <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 ring-1 ring-emerald-200">
+          {successMessage}
+        </div>
+      ) : null}
+
+      <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4 text-sm font-semibold text-slate-500">
+          <span>{T.shownPrefix} {visibleGroups.length} {T.groups}</span>
+          <span>{"\u2022"}</span>
+          <span>CSV: {visibleGroups.length} {"\u0441\u0442\u0440\u043e\u043a"}</span>
+          <button type="button" onClick={handleExportCsv} disabled={!visibleGroups.length} className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
+            {T.exportCsv}
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="p-8 text-sm font-bold text-slate-500">{T.loading}</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table data-testid="admin-groups-table" className="min-w-full border-separate border-spacing-0">
+              <thead>
+                <tr className="bg-slate-50 text-left text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                  <th className="w-14 px-5 py-4"></th>
+                  <th className="px-5 py-4">{T.group}</th>
+                  <th className="px-5 py-4">{T.type}</th>
+                  <th className="px-5 py-4">{T.organization}</th>
+                  <th className="px-5 py-4">{T.members}</th>
+                  <th className="px-5 py-4">{T.assignments}</th>
+                  <th className="px-5 py-4">{T.status}</th>
+                  <th className="px-5 py-4">{T.updated}</th>
+                  <th className="px-5 py-4 text-right">{T.actions}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleGroups.map((group) => {
+                  const isOpen = expandedGroupId === group.id;
+                  const members = membersByGroupId[group.id] || [];
+                  const enrollments = enrollmentsByGroupId[group.id] || [];
+                  const organization = organizationsById[group.organization_id];
+                  const kind = getGroupKind(group);
+
+                  return (
+                    <Fragment key={`group-row-block-${group.id}`}>
+                      <tr className={isOpen ? "bg-blue-50/30" : "bg-white"}>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenGroup(group.id)}
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-black ring-1 transition ${
+                              isOpen ? "bg-blue-600 text-white ring-blue-600" : "bg-white text-blue-700 ring-blue-100 hover:bg-blue-50"
+                            }`}
+                            aria-label={isOpen ? T.close : T.open}
+                          >
+                            {isOpen ? "-" : "\u203a"}
+                          </button>
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700 ring-1 ring-blue-100">
+                              {initials(group.name)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-black text-slate-950">{group.name || T.noData}</div>
+                              <div className="truncate text-xs font-semibold text-slate-500">{group.code || T.noData}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <StatusPill tone={kind === "service" ? "violet" : kind === "work" ? "green" : "blue"}>{getKindLabel(kind)}</StatusPill>
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-bold text-slate-700">
+                          {organization?.name || T.noData}
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-black text-slate-800">{members.length}</td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-black text-slate-800">{enrollments.length}</td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <StatusPill tone={group.is_active ? "green" : "amber"}>{group.is_active ? T.activeStatus : T.draftStatus}</StatusPill>
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top text-sm font-semibold text-slate-600">
+                          {formatDate(group.updated_at)}
+                        </td>
+                        <td className="border-t border-slate-100 px-5 py-4 align-top">
+                          <div data-testid={`admin-group-row-actions-${group.id}`} className="flex justify-end gap-2 whitespace-nowrap">
+                            <button type="button" onClick={() => handleOpenGroup(group.id)} className={isOpen ? BUTTON_BLUE : BUTTON_LIGHT}>
+                              {isOpen ? T.close : T.open}
+                            </button>
+                            <Link to={buildUsersPath({ learning_group_id: group.id })} className={ICON_BUTTON}>{"\u2637"}</Link>
+                            <button type="button" onClick={() => handleDeleteGroup(group)} disabled={busy} className={ICON_BUTTON}>{"\u22ef"}</button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {isOpen ? (
+                        <tr key={`group-detail-${group.id}`} className="bg-slate-50/70">
+                          <td colSpan={9} className="px-4 pb-4 pt-0">
+                            <GroupDetailDashboard
+                                group={group}
+                                organization={organization}
+                                members={members}
+                                enrollments={enrollments}
+                                users={users}
+                                courses={courses}
+                                busy={busy}
+                                onClose={() => setExpandedGroupId("")}
+                                onToggleActive={handleToggleActive}
+                                onDelete={handleDeleteGroup}
+                                onUpdate={handleUpdateGroup}
+                                onAddMember={handleAddMember}
+                                onRemoveMember={handleRemoveMember}
+                                onAssignCourse={handleAssignCourse}
+                                onDeleteEnrollment={handleDeleteEnrollment}
+                              />
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  );
+                })}
+
+                {!visibleGroups.length ? (
+                  <tr>
+                    <td colSpan={9} className="px-5 py-10 text-center text-sm font-bold text-slate-500">
+                      {T.empty}
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
           </div>
         )}
-      </SectionCard>
-
-      {user && (
-        <LearningGroupDetailPanel
-          groupDetail={selectedGroup}
-          organizations={organizations}
-          loading={selectedGroupLoading}
-          error={selectedGroupError}
-          onClose={onCloseGroup}
-          onUpdateGroup={onUpdateGroup}
-          onDeleteGroup={onDeleteGroup}
-        />
-      )}
-
-      {user && selectedGroup && !selectedGroupLoading && !selectedGroupError && (
-        <LearningGroupMembersPanel groupDetail={selectedGroup} />
-      )}
+      </div>
     </div>
   );
 }

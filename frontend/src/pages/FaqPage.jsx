@@ -43,7 +43,7 @@ const FAQ_ITEMS = [
 
 function FaqItem({ question, answer }) {
   return (
-    <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
       <h2 className="text-lg font-bold text-slate-900">{question}</h2>
       <p className="mt-3 text-sm leading-6 text-slate-600">{answer}</p>
     </div>
@@ -53,7 +53,7 @@ function FaqItem({ question, answer }) {
 export function FaqPage({ onPageChange }) {
   return (
     <div className="space-y-6" data-testid="public-faq-page">
-      <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+      <section className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Публичная поддержка
         </div>
@@ -66,25 +66,25 @@ export function FaqPage({ onPageChange }) {
           официальные сведения об организации.
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={() => onPageChange("catalog")}
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
           >
             В каталог
           </button>
           <button
             type="button"
             onClick={() => onPageChange("contacts")}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="w-full rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
           >
             Контакты
           </button>
           <button
             type="button"
             onClick={() => onPageChange("verify-document")}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="w-full rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
           >
             Проверить документ
           </button>
@@ -101,8 +101,8 @@ export function FaqPage({ onPageChange }) {
         ))}
       </section>
 
-      <section className="rounded-shell bg-blue-50 p-6 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">
-        <h2 className="text-2xl font-bold text-blue-950">Не нашли ответ?</h2>
+      <section className="rounded-shell bg-blue-50 p-5 text-sm leading-6 text-blue-900 ring-1 ring-blue-200 sm:p-6">
+        <h2 className="text-xl font-bold text-blue-950 sm:text-2xl">Не нашли ответ?</h2>
         <p className="mt-3">
           Напишите на rcdodist@gmail.com или позвоните по телефону +7 (347) 200 10 17.
           Для проверки документа используйте отдельный публичный раздел проверки.

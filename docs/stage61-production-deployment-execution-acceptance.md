@@ -1,4 +1,4 @@
-﻿# Stage 61 - Production deployment execution acceptance
+# Stage 61 - Production deployment execution acceptance
 
 Status: accepted
 Branch: stage61-production-deployment-execution-audit

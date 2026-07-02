@@ -1,4 +1,4 @@
-﻿# Stage 68 - Organization cabinet document profile polish baseline
+# Stage 68 - Organization cabinet document profile polish baseline
 
 Status: planned
 Base branch: develop

@@ -1,4 +1,4 @@
-﻿# Stage 58 - Production deployment target release selection audit
+# Stage 58 - Production deployment target release selection audit
 
 Status: draft
 Branch: stage58-production-deployment-target-release-selection-audit

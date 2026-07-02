@@ -1,4 +1,4 @@
-﻿# Stage 39 — Admin documents incremental refresh baseline
+# Stage 39 — Admin documents incremental refresh baseline
 
 Status: planned
 Base branch: develop

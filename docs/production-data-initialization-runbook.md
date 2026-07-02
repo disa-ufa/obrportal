@@ -1,4 +1,4 @@
-﻿# Production Data Initialization Runbook
+# Production Data Initialization Runbook
 
 production_data_initialization_runbook=ready
 production_data_initialization_mode=additive_only

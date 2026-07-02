@@ -1,4 +1,4 @@
-﻿# Stage 64 - Release metadata version alignment audit
+# Stage 64 - Release metadata version alignment audit
 
 Status: draft
 Branch: stage64-release-metadata-version-alignment-audit

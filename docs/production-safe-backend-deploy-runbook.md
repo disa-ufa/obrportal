@@ -1,4 +1,4 @@
-﻿# Production Safe Backend Deploy Runbook
+# Production Safe Backend Deploy Runbook
 
 production_safe_backend_deploy_runbook=ready
 safe_backend_only_deploy=yes

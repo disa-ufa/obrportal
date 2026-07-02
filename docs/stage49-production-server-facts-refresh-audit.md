@@ -1,4 +1,4 @@
-﻿# Stage 49 - Production server facts refresh audit
+# Stage 49 - Production server facts refresh audit
 
 Status: draft
 Branch: stage49-production-server-facts-refresh-audit

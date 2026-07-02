@@ -1,4 +1,4 @@
-﻿# Stage 50 - Production server target selection audit
+# Stage 50 - Production server target selection audit
 
 Status: draft
 Branch: stage50-production-server-target-selection-audit

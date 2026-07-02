@@ -1,4 +1,4 @@
-﻿# Stage 60 - Production deployment execution plan audit
+# Stage 60 - Production deployment execution plan audit
 
 Status: draft
 Branch: stage60-production-deployment-execution-plan-audit

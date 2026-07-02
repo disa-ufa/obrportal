@@ -1,4 +1,4 @@
-﻿# Stage 63 - Product development backlog selection baseline
+# Stage 63 - Product development backlog selection baseline
 
 Status: planned
 Base branch: develop

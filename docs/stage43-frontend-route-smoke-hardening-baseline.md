@@ -1,4 +1,4 @@
-﻿# Stage 43 - Frontend route smoke hardening baseline
+# Stage 43 - Frontend route smoke hardening baseline
 
 Status: planned
 Base branch: develop

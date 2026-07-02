@@ -1,4 +1,4 @@
-﻿# Stage 71 - Next product backlog selection acceptance
+# Stage 71 - Next product backlog selection acceptance
 
 Status: accepted
 Branch: stage71-next-product-backlog-selection-audit

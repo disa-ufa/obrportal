@@ -1,4 +1,4 @@
-﻿# ObrPortal — Stage 6 checkpoint
+# ObrPortal — Stage 6 checkpoint
 
 ## Current checkpoint
 

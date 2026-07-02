@@ -1,4 +1,4 @@
-﻿# Stage 70 - Release readiness checkpoint baseline
+# Stage 70 - Release readiness checkpoint baseline
 
 Status: planned
 Base branch: develop

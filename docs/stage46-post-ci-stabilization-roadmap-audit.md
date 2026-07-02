@@ -1,4 +1,4 @@
-﻿# Stage 46 - Post-CI stabilization roadmap audit
+# Stage 46 - Post-CI stabilization roadmap audit
 
 Status: draft
 Branch: stage46-post-ci-stabilization-roadmap-audit

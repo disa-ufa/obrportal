@@ -1,4 +1,4 @@
-﻿# Stage 57 - Production protected backup execution baseline
+# Stage 57 - Production protected backup execution baseline
 
 Status: planned
 Base branch: develop

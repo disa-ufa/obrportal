@@ -1,4 +1,4 @@
-﻿# Stage 64 - Release metadata version alignment baseline
+# Stage 64 - Release metadata version alignment baseline
 
 Status: planned
 Base branch: develop

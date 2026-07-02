@@ -1,4 +1,4 @@
-﻿# Stage 54 - Production repository state preflight audit
+# Stage 54 - Production repository state preflight audit
 
 Status: draft
 Branch: stage54-production-repository-state-preflight-audit

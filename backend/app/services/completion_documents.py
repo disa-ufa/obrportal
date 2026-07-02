@@ -225,6 +225,8 @@ async def ensure_completion_document_for_enrollment(
     existing_document = existing_result.scalar_one_or_none()
 
     if existing_document is not None:
+        document_changed = False
+
         if not existing_document.storage_path:
             course, learner, organization = await load_completion_document_context(enrollment, session)
             existing_document.storage_path = write_completion_document_pdf_to_storage(
@@ -243,6 +245,9 @@ async def ensure_completion_document_for_enrollment(
                 session=session,
                 source="auto_completion",
             )
+            document_changed = True
+
+        if document_changed:
             await session.flush()
 
         return existing_document

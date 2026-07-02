@@ -1,4 +1,4 @@
-﻿# Stage 54 - Production repository state preflight baseline
+# Stage 54 - Production repository state preflight baseline
 
 Status: planned
 Base branch: develop

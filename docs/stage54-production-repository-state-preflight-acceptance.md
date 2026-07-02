@@ -1,4 +1,4 @@
-﻿# Stage 54 - Production repository state preflight acceptance
+# Stage 54 - Production repository state preflight acceptance
 
 Status: accepted with deployment blockers
 Branch: stage54-production-repository-state-preflight-audit

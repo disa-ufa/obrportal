@@ -206,11 +206,11 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
             </span>
           </label>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <button
               type="submit"
               disabled={loading}
-              className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               {loading ? "Регистрируем..." : "Зарегистрироваться"}
             </button>
@@ -218,7 +218,7 @@ export function RegisterPage({ onPageChange, onRegister, loading, error }) {
             <button
               type="button"
               onClick={() => onPageChange("login")}
-              className="rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+              className="w-full rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
             >
               У меня уже есть аккаунт
             </button>

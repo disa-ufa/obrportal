@@ -1,4 +1,4 @@
-﻿# Stage 64 - Release metadata version alignment acceptance
+# Stage 64 - Release metadata version alignment acceptance
 
 Status: accepted
 Branch: stage64-release-metadata-version-alignment-audit

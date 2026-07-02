@@ -1,4 +1,4 @@
-﻿# Stage 41 — Admin incremental refresh final audit acceptance
+# Stage 41 — Admin incremental refresh final audit acceptance
 
 Status: accepted
 Branch: stage41-admin-incremental-refresh-final-audit-cleanup

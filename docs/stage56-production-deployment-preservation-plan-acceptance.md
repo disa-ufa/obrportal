@@ -1,4 +1,4 @@
-﻿# Stage 56 - Production deployment preservation plan acceptance
+# Stage 56 - Production deployment preservation plan acceptance
 
 Status: accepted
 Branch: stage56-production-deployment-preservation-plan-audit

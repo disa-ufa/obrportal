@@ -301,7 +301,7 @@ function CatalogFilterSidebar({
   resetFilters,
 }) {
   return (
-    <aside className="portal-card sticky top-28 h-max p-5 xl:p-6">
+    <aside className="portal-card h-max p-5 lg:sticky lg:top-28 xl:p-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-[#111936]">Фильтры</h2>
         <button
@@ -383,7 +383,7 @@ function CourseCard({ course, index, user, enrollment, onOpenCourse, onPageChang
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-between gap-3">
+        <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className={`text-base font-black ${isCourseFree(course) ? "text-teal-700" : "text-[#111936]"}`}>
             {formatCoursePrice(course)}
           </div>
@@ -391,7 +391,7 @@ function CourseCard({ course, index, user, enrollment, onOpenCourse, onPageChang
           <button
             type="button"
             onClick={() => (enrollment ? onPageChange("account") : onOpenCourse(course.slug || course.id))}
-            className={enrollment ? "portal-btn-primary !px-4 !py-2" : "portal-btn-secondary !px-4 !py-2"}
+            className={enrollment ? "portal-btn-primary w-full !px-4 !py-2 sm:w-auto" : "portal-btn-secondary w-full !px-4 !py-2 sm:w-auto"}
           >
             {getCourseActionLabel(enrollment)}
           </button>
@@ -571,7 +571,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
 
   return (
     <div className="public-catalog-page space-y-7 md:space-y-8">
-      <section className="relative overflow-hidden rounded-shell bg-white px-7 py-9 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 md:px-10 lg:px-12 lg:py-12">
+      <section className="relative overflow-hidden rounded-shell bg-white px-5 py-8 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 sm:px-7 sm:py-9 md:px-10 lg:px-12 lg:py-12">
         <div className="absolute right-0 top-0 hidden h-full w-[36%] bg-gradient-to-l from-blue-50 to-transparent lg:block" />
         <div className="relative">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
@@ -579,7 +579,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
             <span>›</span>
             <span>Программы</span>
           </div>
-          <h1 className="mt-5 text-5xl font-black tracking-[0.06em] text-[#111936] md:text-6xl">
+          <h1 className="mt-5 text-4xl font-black tracking-[0.04em] text-[#111936] sm:text-5xl sm:tracking-[0.06em] md:text-6xl">
             Каталог программ
           </h1>
           <p className="mt-5 max-w-4xl text-base leading-7 text-slate-600 md:text-lg md:leading-8">
@@ -620,11 +620,11 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
               />
             </label>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button type="button" className="portal-btn-primary !h-12 !rounded-lg !px-7 !py-0">Найти</button>
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center xl:w-auto">
+              <button type="button" className="portal-btn-primary !h-12 w-full !rounded-lg !px-7 !py-0 sm:w-auto">Найти</button>
+              <div className="flex w-full flex-col items-start gap-2 text-xs font-bold text-slate-500 sm:w-auto sm:flex-row sm:items-center">
                 Сортировать:
-                <select className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100">
+                <select className="h-12 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 sm:w-auto">
                   <option>По популярности</option>
                   <option>По новизне</option>
                   <option>По цене</option>
@@ -642,12 +642,12 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
             ))}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm font-semibold text-slate-600">
               Найдено программ: <span className="font-black text-[#111936]">{foundLabel}</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 ring-1 ring-blue-100">
                 <Grid2X2 className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -704,7 +704,7 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
             </div>
           )}
 
-          <div className="mt-7 flex items-center justify-center gap-2">
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
             <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-slate-400 ring-1 ring-slate-200">
               <ChevronLeft className="h-4 w-4" />
             </button>

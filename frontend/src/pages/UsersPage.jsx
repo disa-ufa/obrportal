@@ -815,43 +815,76 @@ export function UsersPage({
                                 </td>
 
                                 <td className="px-4 py-3 align-middle">
-                                  <div className="flex justify-end gap-2">
+                                  <div
+                                    data-testid={`admin-user-row-actions-${row.id}`}
+                                    className="flex justify-end gap-1.5"
+                                  >
                                     <button
                                       type="button"
                                       onClick={() => handleOpenUserRow(row.id)}
                                       disabled={selectedUserLoading}
-                                      className={`inline-flex h-9 items-center justify-center rounded-xl px-3 text-xs font-black transition disabled:cursor-wait disabled:opacity-60 ${
+                                      className={`inline-flex h-8 w-8 items-center justify-center rounded-xl transition disabled:cursor-wait disabled:opacity-60 ${
                                         isSelected
-                                          ? "bg-blue-600 text-white"
-                                          : "bg-slate-950 text-white hover:bg-slate-800"
+                                          ? "bg-blue-600 text-white ring-1 ring-blue-600"
+                                          : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
                                       }`}
+                                      title={isSelected ? "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043e\u0442\u043a\u0440\u044b\u0442" : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f"}
+                                      aria-label={isSelected ? "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043e\u0442\u043a\u0440\u044b\u0442" : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f"}
                                     >
-                                      {isSelected ? "Открыт" : "Открыть"}
+                                      {isSelected ? "\u2713" : "\u2197"}
                                     </button>
 
                                     <Link
                                       to={buildDocumentsPath({ user_id: row.id })}
-                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
-                                      title="Документы пользователя"
+                                      className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                      title="\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f"
+                                      aria-label="\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f"
                                     >
-                                      Документы
+                                      {"\u25a3"}
                                     </Link>
 
-                                    <Link
-                                      to={buildEnrollmentsPath({ user_id: row.id })}
-                                      className="inline-flex h-9 items-center justify-center rounded-xl bg-white px-3 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
-                                      title="Назначения пользователя"
-                                    >
-                                      Назначения
-                                    </Link>
+                                    <details className="relative">
+                                      <summary
+                                        title="\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"
+                                        aria-label="\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f"
+                                        className="inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                                      >
+                                        {"\u22ef"}
+                                      </summary>
+
+                                      <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenUserRow(row.id)}
+                                          disabled={selectedUserLoading}
+                                          className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                                        >
+                                          {isSelected ? "\u041e\u0442\u043a\u0440\u044b\u0442" : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c"}
+                                        </button>
+
+                                        <Link
+                                          to={buildDocumentsPath({ user_id: row.id })}
+                                          className="block rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        >
+                                          {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"}
+                                        </Link>
+
+                                        <Link
+                                          to={buildEnrollmentsPath({ user_id: row.id })}
+                                          className="block rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        >
+                                          {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}
+                                        </Link>
+                                      </div>
+                                    </details>
                                   </div>
                                 </td>
                                 </tr>
 
                                 {isExpanded && (
-                                  <tr className="bg-slate-50/70">
-                                    <td colSpan={7} className="px-4 pb-5 pt-0">
-                                      <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-blue-100">
+                                  <tr className="bg-slate-50/60">
+                                    <td colSpan={7} className="px-3 pb-4 pt-0">
+                                      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
                                         <UserDetailPanel
                                           userDetail={selectedUser}
                                           roles={roles}

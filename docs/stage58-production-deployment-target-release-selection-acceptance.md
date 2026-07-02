@@ -1,4 +1,4 @@
-﻿# Stage 58 - Production deployment target release selection acceptance
+# Stage 58 - Production deployment target release selection acceptance
 
 Status: accepted
 Branch: stage58-production-deployment-target-release-selection-audit

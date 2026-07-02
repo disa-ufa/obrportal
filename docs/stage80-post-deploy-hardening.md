@@ -1,4 +1,4 @@
-﻿# Stage 80.5 - Post deploy hardening after Stage 80.4 recovery
+# Stage 80.5 - Post deploy hardening after Stage 80.4 recovery
 
 stage80_5_post_deploy_hardening_status=implementation_ready
 stage80_5_release_manifest_required=yes

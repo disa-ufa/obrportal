@@ -1,4 +1,4 @@
-﻿# Stage 49 - Production server facts refresh acceptance
+# Stage 49 - Production server facts refresh acceptance
 
 Status: accepted
 Branch: stage49-production-server-facts-refresh-audit

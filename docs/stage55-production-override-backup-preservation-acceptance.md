@@ -1,4 +1,4 @@
-﻿# Stage 55 - Production override and backup preservation preflight acceptance
+# Stage 55 - Production override and backup preservation preflight acceptance
 
 Status: accepted
 Branch: stage55-production-override-backup-preservation-audit

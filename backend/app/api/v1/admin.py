@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -24,6 +27,7 @@ from app.models.course_module import CourseModule
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
 from app.models.role import Permission, Role, RolePermission, UserRole
@@ -71,6 +75,7 @@ from app.schemas.admin import (
     AdminEnrollmentCreate,
     AdminEnrollmentGroupCreate,
     AdminEnrollmentItem,
+    AdminEnrollmentQuizAttemptItem,
     AdminEnrollmentUpdate,
     AdminDocumentGenerationEventItem,
     AdminDocumentItem,
@@ -117,6 +122,9 @@ SYSTEM_ROLE_CODES = {
 }
 
 ROLE_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,63}$")
+
+LESSON_PRESENTATION_ALLOWED_EXTENSIONS = {".pdf", ".pptx"}
+LESSON_PRESENTATION_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 
 async def get_user_roles(
@@ -2089,6 +2097,14 @@ async def ensure_document_enrollment_is_unique(
         )
 
 
+def ensure_document_enrollment_is_completed(enrollment: Enrollment) -> None:
+    if enrollment.status != "completed" or enrollment.completed_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document can be linked only to completed enrollment",
+        )
+
+
 async def get_admin_document_row_or_404(
     document_id: str,
     session: AsyncSession,
@@ -2336,6 +2352,9 @@ async def create_admin_document(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Enrollment course does not match document course",
             )
+
+    if normalized_enrollment_id is not None:
+        ensure_document_enrollment_is_completed(enrollment)
 
     await ensure_document_enrollment_is_unique(
         enrollment_id=normalized_enrollment_id,
@@ -2720,6 +2739,34 @@ async def update_admin_document(
             )
 
     try:
+        if document.enrollment_id is not None:
+            enrollment_result = await session.execute(
+                select(Enrollment).where(Enrollment.id == document.enrollment_id)
+            )
+            enrollment = enrollment_result.scalar_one_or_none()
+
+            if enrollment is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Enrollment not found",
+                )
+
+            if str(enrollment.user_id) != str(document.user_id):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Enrollment user does not match document user",
+                )
+
+            if document.course_id is None:
+                document.course_id = enrollment.course_id
+            elif str(enrollment.course_id) != str(document.course_id):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Enrollment course does not match document course",
+                )
+
+            ensure_document_enrollment_is_completed(enrollment)
+
         if has_file:
             new_storage_path = await save_admin_document_file(str(document.id), file)
             document.storage_path = new_storage_path
@@ -2896,6 +2943,8 @@ async def regenerate_admin_completion_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Enrollment not found",
         )
+
+    ensure_document_enrollment_is_completed(enrollment)
 
     before = document_record_snapshot(document)
     course, learner, organization = await load_completion_document_context(enrollment, session)
@@ -4126,6 +4175,224 @@ async def list_real_lesson_blocks(
     return list(result.scalars().all())
 
 
+def normalize_lesson_presentation_extension(filename: str | None) -> str:
+    suffix = Path(filename or "").suffix.lower()
+
+    if not suffix:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Presentation file extension is required",
+        )
+
+    if suffix not in LESSON_PRESENTATION_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Only PDF and PPTX presentation files are supported at this stage",
+        )
+
+    return suffix
+
+
+def get_lesson_presentation_converter_command() -> str:
+    return shutil.which("soffice") or shutil.which("libreoffice") or ""
+
+
+def convert_pptx_presentation_to_pdf(
+    *,
+    content: bytes,
+    asset_id: str,
+) -> bytes:
+    converter = get_lesson_presentation_converter_command()
+
+    if not converter:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Presentation converter is not installed",
+        )
+
+    with tempfile.TemporaryDirectory(prefix="obrportal-presentation-") as temp_dir:
+        temp_path = Path(temp_dir)
+        input_path = temp_path / f"{asset_id}.pptx"
+        output_dir = temp_path / "out"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        input_path.write_bytes(content)
+
+        command = [
+            converter,
+            "--headless",
+            "--nologo",
+            "--nodefault",
+            "--nofirststartwizard",
+            "--convert-to",
+            "pdf",
+            "--outdir",
+            str(output_dir),
+            str(input_path),
+        ]
+
+        try:
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                check=False,
+                text=True,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail="Presentation conversion timed out",
+            )
+
+        if completed.returncode != 0:
+            converter_output = " ".join(
+                item.strip()
+                for item in [completed.stderr, completed.stdout]
+                if item and item.strip()
+            )
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Presentation conversion failed: {converter_output[:500]}",
+            )
+
+        output_path = output_dir / f"{asset_id}.pdf"
+
+        if not output_path.exists():
+            pdf_candidates = list(output_dir.glob("*.pdf"))
+
+            if pdf_candidates:
+                output_path = pdf_candidates[0]
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Presentation conversion did not produce a PDF file",
+                )
+
+        pdf_content = output_path.read_bytes()
+
+        if not pdf_content.startswith(b"%PDF"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Converted presentation is not a valid PDF document",
+            )
+
+        return pdf_content
+
+
+async def save_admin_lesson_presentation_file(
+    *,
+    lesson_id: str,
+    asset_id: str,
+    upload_file: UploadFile,
+) -> tuple[str, int, str]:
+    content = await upload_file.read()
+
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Uploaded presentation file is empty",
+        )
+
+    if len(content) > LESSON_PRESENTATION_MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Presentation file is too large",
+        )
+
+    extension = normalize_lesson_presentation_extension(upload_file.filename)
+
+    if extension == ".pdf":
+        if not content.startswith(b"%PDF"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Uploaded file is not a valid PDF document",
+            )
+
+        pdf_content = content
+    elif extension == ".pptx":
+        pdf_content = convert_pptx_presentation_to_pdf(
+            content=content,
+            asset_id=asset_id,
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported presentation file extension",
+        )
+
+    relative_path = Path("lesson-presentations") / lesson_id / f"{asset_id}.pdf"
+
+    try:
+        storage_path = write_private_storage_file(relative_path, pdf_content)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid presentation storage path",
+        )
+
+    return storage_path, len(pdf_content), extension
+
+
+def build_lesson_presentation_public_urls(
+    *,
+    request: Request,
+    lesson_id: str,
+    asset_id: str,
+) -> dict[str, str]:
+    base_url = str(request.base_url).rstrip("/")
+    public_path = f"/api/v1/public/lesson-presentations/{lesson_id}/{asset_id}"
+
+    return {
+        "viewer_url": f"{base_url}{public_path}/view",
+        "download_url": f"{base_url}{public_path}/download",
+    }
+
+
+@router.post(
+    "/course-lessons/{lesson_id}/presentation-assets",
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_admin_lesson_presentation_asset(
+    lesson_id: str,
+    request: Request,
+    file: UploadFile = File(...),
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    asset_id = str(uuid4())
+
+    storage_path, size_bytes, source_extension = await save_admin_lesson_presentation_file(
+        lesson_id=str(lesson.id),
+        asset_id=asset_id,
+        upload_file=file,
+    )
+
+    urls = build_lesson_presentation_public_urls(
+        request=request,
+        lesson_id=str(lesson.id),
+        asset_id=asset_id,
+    )
+
+    return {
+        "asset_id": asset_id,
+        "lesson_id": str(lesson.id),
+        "material_kind": "presentation",
+        "original_filename": file.filename or "presentation.pdf",
+        "mime_type": "application/pdf",
+        "source_extension": source_extension,
+        "size_bytes": size_bytes,
+        "storage_path": storage_path,
+        "viewer_url": urls["viewer_url"],
+        "original_url": urls["download_url"],
+        "download_url": urls["download_url"],
+        "render_mode": "pdf",
+        "conversion_status": "ready",
+        "show_download": True,
+    }
+
+
 @router.get("/course-lessons/{lesson_id}/blocks", response_model=list[AdminLessonBlockItem])
 async def list_admin_lesson_blocks(
     lesson_id: str,
@@ -4605,6 +4872,290 @@ def build_admin_enrollment_item(row) -> AdminEnrollmentItem:
     )
 
 
+def admin_quiz_blank_text() -> str:
+    return "\u2014"
+
+
+def admin_quiz_bool_text(value) -> str:
+    if value is True:
+        return "\u0414\u0430"
+    if value is False:
+        return "\u041d\u0435\u0442"
+    return admin_quiz_blank_text()
+
+
+def admin_quiz_plain_text(value) -> str:
+    if value is None:
+        return admin_quiz_blank_text()
+
+    if isinstance(value, bool):
+        return admin_quiz_bool_text(value)
+
+    if isinstance(value, (int, float)):
+        return str(value)
+
+    if isinstance(value, list):
+        items = [admin_quiz_plain_text(item) for item in value]
+        items = [item for item in items if item and item != admin_quiz_blank_text()]
+        return ", ".join(items) if items else admin_quiz_blank_text()
+
+    text_value = str(value).strip()
+    return text_value if text_value else admin_quiz_blank_text()
+
+
+def admin_quiz_question_id(question) -> str:
+    if not isinstance(question, dict):
+        return ""
+
+    return str(question.get("id") or "").strip()
+
+
+def admin_quiz_option_map(question) -> dict[str, str]:
+    if not isinstance(question, dict):
+        return {}
+
+    options = question.get("options") if isinstance(question.get("options"), list) else []
+    result: dict[str, str] = {}
+
+    for index, option in enumerate(options, start=1):
+        if not isinstance(option, dict):
+            continue
+
+        option_id = str(option.get("id") or f"o_{index}").strip()
+        option_text = str(option.get("text") or option.get("label") or option_id).strip()
+
+        if option_id:
+            result[option_id] = option_text or option_id
+
+    return result
+
+
+def admin_quiz_option_answer_text(question, value) -> str:
+    option_map = admin_quiz_option_map(question)
+
+    if isinstance(value, list):
+        values = value
+    elif value is None:
+        values = []
+    else:
+        values = [value]
+
+    labels = []
+
+    for item in values:
+        item_key = str(item).strip()
+        labels.append(option_map.get(item_key) or item_key)
+
+    labels = [label for label in labels if label]
+
+    return ", ".join(labels) if labels else admin_quiz_blank_text()
+
+
+def admin_quiz_question_correct_value(question):
+    if not isinstance(question, dict):
+        return None
+
+    question_type = str(question.get("type") or "").strip()
+
+    if question_type == "single_choice":
+        options = question.get("options") if isinstance(question.get("options"), list) else []
+
+        for option in options:
+            if isinstance(option, dict) and bool(option.get("is_correct")):
+                return option.get("id")
+
+        return None
+
+    if question_type == "multiple_choice":
+        options = question.get("options") if isinstance(question.get("options"), list) else []
+
+        return [
+            option.get("id")
+            for option in options
+            if isinstance(option, dict) and bool(option.get("is_correct"))
+        ]
+
+    if question_type == "true_false":
+        if "correct_value" in question:
+            return bool(question.get("correct_value"))
+        if "correct_boolean" in question:
+            return bool(question.get("correct_boolean"))
+
+        return None
+
+    if question_type == "short_text":
+        accepted_answers = question.get("accepted_answers")
+
+        if isinstance(accepted_answers, list) and accepted_answers:
+            return accepted_answers
+
+        if "correct_text" in question:
+            return question.get("correct_text")
+
+        return None
+
+    if question_type == "number":
+        return question.get("correct_number")
+
+    return None
+
+
+def admin_quiz_answer_text(question, value) -> str:
+    question_type = ""
+
+    if isinstance(question, dict):
+        question_type = str(question.get("type") or "").strip()
+
+    if question_type in ("single_choice", "multiple_choice"):
+        return admin_quiz_option_answer_text(question, value)
+
+    if question_type == "true_false":
+        if isinstance(value, bool):
+            return admin_quiz_bool_text(value)
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in ("true", "1", "yes", "y", "\u0434\u0430"):
+                return admin_quiz_bool_text(True)
+            if normalized in ("false", "0", "no", "n", "\u043d\u0435\u0442"):
+                return admin_quiz_bool_text(False)
+
+    return admin_quiz_plain_text(value)
+
+
+def admin_quiz_points_text(earned_points, points) -> str:
+    earned = admin_quiz_plain_text(earned_points)
+    total = admin_quiz_plain_text(points)
+
+    return f"{earned} \u0438\u0437 {total}"
+
+
+def build_admin_quiz_question_results(result_json, answers_json, block_content_json) -> list[dict]:
+    safe_result_json = result_json if isinstance(result_json, dict) else {}
+    safe_answers_json = answers_json if isinstance(answers_json, dict) else {}
+    safe_content_json = block_content_json if isinstance(block_content_json, dict) else {}
+
+    raw_question_results = safe_result_json.get("question_results") or []
+
+    if not isinstance(raw_question_results, list):
+        raw_question_results = []
+
+    questions = safe_content_json.get("questions") or []
+
+    if not isinstance(questions, list):
+        questions = []
+
+    questions_by_id = {
+        admin_quiz_question_id(question): question
+        for question in questions
+        if admin_quiz_question_id(question)
+    }
+
+    readable_results: list[dict] = []
+
+    for index, raw_item in enumerate(raw_question_results, start=1):
+        if not isinstance(raw_item, dict):
+            continue
+
+        question_id = str(raw_item.get("question_id") or "").strip()
+        question = questions_by_id.get(question_id, {})
+
+        question_type = str(
+            raw_item.get("type")
+            or (question.get("type") if isinstance(question, dict) else "")
+            or ""
+        ).strip()
+
+        if isinstance(question, dict) and question_type and not question.get("type"):
+            question = {**question, "type": question_type}
+
+        question_title = ""
+
+        if isinstance(question, dict):
+            question_title = str(question.get("title") or question.get("text") or "").strip()
+
+        if not question_title:
+            question_title = question_id or f"Question {index}"
+
+        question_description = ""
+
+        if isinstance(question, dict):
+            question_description = str(question.get("description") or "").strip()
+
+        user_answer_value = (
+            raw_item.get("user_answer")
+            if "user_answer" in raw_item
+            else safe_answers_json.get(question_id)
+        )
+
+        correct_answer_value = (
+            raw_item.get("correct_answer")
+            if "correct_answer" in raw_item and raw_item.get("correct_answer") not in (None, "", [])
+            else admin_quiz_question_correct_value(question)
+        )
+
+        enriched = {
+            **raw_item,
+            "question_title": question_title,
+            "question_description": question_description,
+            "question_type": question_type,
+            "student_answer": user_answer_value,
+            "student_answer_text": admin_quiz_answer_text(question, user_answer_value),
+            "correct_answer": correct_answer_value,
+            "correct_answer_text": admin_quiz_answer_text(question, correct_answer_value),
+            "is_correct": bool(raw_item.get("correct")),
+            "points_text": admin_quiz_points_text(
+                raw_item.get("earned_points", 0),
+                raw_item.get("points", raw_item.get("total_points", 0)),
+            ),
+        }
+
+        readable_results.append(enriched)
+
+    return readable_results
+
+
+def build_admin_enrollment_quiz_attempt_item(row) -> AdminEnrollmentQuizAttemptItem:
+    result_json = row.result_json or {}
+    answers_json = row.answers_json or {}
+    question_results = build_admin_quiz_question_results(
+        result_json=result_json,
+        answers_json=answers_json,
+        block_content_json=row.block_content_json,
+    )
+
+    return AdminEnrollmentQuizAttemptItem(
+        id=str(row.id),
+        enrollment_id=str(row.enrollment_id),
+        user_id=str(row.user_id),
+        user_email=row.user_email,
+        user_full_name=row.user_full_name,
+        course_id=str(row.course_id),
+        course_slug=row.course_slug,
+        course_title=row.course_title,
+        lesson_id=str(row.lesson_id),
+        lesson_title=row.lesson_title,
+        block_id=str(row.block_id),
+        block_title=row.block_title,
+        block_type=row.block_type,
+        attempt_number=row.attempt_number,
+        status=row.status,
+        passed=row.passed,
+        earned_points=float(row.earned_points or 0),
+        total_points=float(row.total_points or 0),
+        percent=int(row.percent or 0),
+        correct_count=int(row.correct_count or 0),
+        question_count=int(row.question_count or 0),
+        pass_score_percent=int(row.pass_score_percent or 0),
+        answers_json=answers_json if isinstance(answers_json, dict) else {},
+        result_json=result_json if isinstance(result_json, dict) else {},
+        question_results=question_results,
+        submitted_at=row.submitted_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
 def enrollment_snapshot(enrollment: Enrollment) -> dict:
     return {
         "id": str(enrollment.id),
@@ -5071,6 +5622,70 @@ async def get_admin_enrollment_detail(
     row = await get_admin_enrollment_row_or_404(enrollment_id, session)
 
     return build_admin_enrollment_item(row)
+
+
+@router.get(
+    "/enrollments/{enrollment_id}/quiz-attempts",
+    response_model=list[AdminEnrollmentQuizAttemptItem],
+)
+async def list_admin_enrollment_quiz_attempts(
+    enrollment_id: str,
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminEnrollmentQuizAttemptItem]:
+    enrollment = await get_admin_enrollment_or_404(enrollment_id.strip(), session)
+
+    result = await session.execute(
+        select(
+            QuizAttempt.id.label("id"),
+            QuizAttempt.enrollment_id.label("enrollment_id"),
+            QuizAttempt.lesson_id.label("lesson_id"),
+            QuizAttempt.block_id.label("block_id"),
+            QuizAttempt.attempt_number.label("attempt_number"),
+            QuizAttempt.status.label("status"),
+            QuizAttempt.passed.label("passed"),
+            QuizAttempt.earned_points.label("earned_points"),
+            QuizAttempt.total_points.label("total_points"),
+            QuizAttempt.percent.label("percent"),
+            QuizAttempt.correct_count.label("correct_count"),
+            QuizAttempt.question_count.label("question_count"),
+            QuizAttempt.pass_score_percent.label("pass_score_percent"),
+            QuizAttempt.answers_json.label("answers_json"),
+            QuizAttempt.result_json.label("result_json"),
+            QuizAttempt.submitted_at.label("submitted_at"),
+            QuizAttempt.created_at.label("created_at"),
+            QuizAttempt.updated_at.label("updated_at"),
+            Enrollment.user_id.label("user_id"),
+            Enrollment.course_id.label("course_id"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            CourseLesson.title.label("lesson_title"),
+            CourseLesson.position.label("lesson_position"),
+            LessonBlock.title.label("block_title"),
+            LessonBlock.content_json.label("block_content_json"),
+            LessonBlock.block_type.label("block_type"),
+            LessonBlock.position.label("block_position"),
+        )
+        .select_from(QuizAttempt)
+        .join(Enrollment, Enrollment.id == QuizAttempt.enrollment_id)
+        .join(User, User.id == Enrollment.user_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .join(CourseLesson, CourseLesson.id == QuizAttempt.lesson_id)
+        .join(LessonBlock, LessonBlock.id == QuizAttempt.block_id)
+        .where(QuizAttempt.enrollment_id == enrollment.id)
+        .order_by(
+            CourseLesson.position.asc(),
+            LessonBlock.position.asc(),
+            QuizAttempt.attempt_number.asc(),
+        )
+    )
+
+    return [
+        build_admin_enrollment_quiz_attempt_item(row)
+        for row in result.all()
+    ]
 
 
 @router.patch("/enrollments/{enrollment_id}", response_model=AdminEnrollmentItem)

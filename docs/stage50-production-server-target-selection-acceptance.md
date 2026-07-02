@@ -1,4 +1,4 @@
-﻿# Stage 50 - Production server target selection acceptance
+# Stage 50 - Production server target selection acceptance
 
 Status: accepted
 Branch: stage50-production-server-target-selection-audit

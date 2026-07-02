@@ -76,7 +76,7 @@ function FactCard({ label, value }) {
 
 function PrivacyCard({ title, items }) {
   return (
-    <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
       <h2 className="text-xl font-bold text-slate-900">{title}</h2>
       <div className="mt-4 space-y-3">
         {items.map((item) => (
@@ -95,7 +95,7 @@ function PrivacyCard({ title, items }) {
 export function PrivacyPage({ onPageChange }) {
   return (
     <div className="space-y-6" data-testid="public-privacy-page">
-      <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+      <section className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Правовая информация
         </div>
@@ -108,32 +108,32 @@ export function PrivacyPage({ onPageChange }) {
           права пользователя и контакт для обращений.
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={() => onPageChange("home")}
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
           >
             На главную
           </button>
           <button
             type="button"
             onClick={() => onPageChange("contacts")}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="w-full rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
           >
             Контакты
           </button>
           <button
             type="button"
             onClick={() => onPageChange("organization-info")}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            className="w-full rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
           >
             Сведения об организации
           </button>
         </div>
       </section>
 
-      <section className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+      <section className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 md:p-8">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Оператор персональных данных
         </div>
@@ -154,7 +154,7 @@ export function PrivacyPage({ onPageChange }) {
         ))}
       </section>
 
-      <section className="rounded-shell bg-amber-50 p-6 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
+      <section className="rounded-shell bg-amber-50 p-5 text-sm leading-6 text-amber-900 ring-1 ring-amber-200 sm:p-6">
         <div className="font-bold text-amber-950">Важное уточнение</div>
         <p className="mt-2">
           Раздел содержит публичное описание обработки персональных данных на портале.

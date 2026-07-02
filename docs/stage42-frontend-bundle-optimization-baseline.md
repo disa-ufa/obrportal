@@ -1,4 +1,4 @@
-﻿# Stage 42 — Frontend bundle optimization baseline
+# Stage 42 — Frontend bundle optimization baseline
 
 Status: planned
 Base branch: develop

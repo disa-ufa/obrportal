@@ -1,4 +1,4 @@
-﻿# Stage 67 - Admin document workflow polish acceptance
+# Stage 67 - Admin document workflow polish acceptance
 
 Status: accepted
 Branch: stage67-admin-document-workflow-polish-audit

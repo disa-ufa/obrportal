@@ -1,4 +1,4 @@
-﻿# Stage 47 - Production deployment readiness audit
+# Stage 47 - Production deployment readiness audit
 
 Status: draft
 Branch: stage47-production-deployment-readiness-audit

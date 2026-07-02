@@ -1,4 +1,4 @@
-﻿# Stage 62 - Post-deployment monitoring and product development resume baseline
+# Stage 62 - Post-deployment monitoring and product development resume baseline
 
 Status: planned
 Base branch: develop

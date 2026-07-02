@@ -1,4 +1,4 @@
-﻿# Stage 52 - Production target DNS alignment audit
+# Stage 52 - Production target DNS alignment audit
 
 Status: draft
 Branch: stage52-production-target-dns-alignment-audit

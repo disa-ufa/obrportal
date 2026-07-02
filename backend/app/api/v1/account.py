@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,8 +19,10 @@ from app.models.learning_group import LearningGroup
 from app.models.lesson_progress import LessonProgress
 from app.models.lesson_block import LessonBlock
 from app.models.organization import Organization
+from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
 from app.services.completion_documents import ensure_completion_document_for_enrollment
+from app.services.quiz_attempts import grade_quiz_attempt, get_quiz_max_attempts
 from app.services.document_storage import (
     build_document_download_filename,
     detect_document_download_metadata,
@@ -32,6 +34,8 @@ from app.schemas.account import (
     AccountCourseLessonResponse,
     AccountCourseModuleResponse,
     AccountLessonBlockResponse,
+    AccountQuizAttemptResponse,
+    AccountQuizAttemptSubmitRequest,
     AccountCoursesResponse,
     AccountDocumentItemResponse,
     AccountDocumentsResponse,
@@ -61,6 +65,13 @@ def _build_account_document_download_url(
     return f"/api/v1/account/documents/{document_id}/download"
 
 
+def account_document_completion_visibility_condition():
+    return or_(
+        DocumentRecord.enrollment_id.is_(None),
+        (Enrollment.status == "completed") & Enrollment.completed_at.is_not(None),
+    )
+
+
 @router.get("/summary", response_model=AccountSummaryResponse)
 async def get_account_summary(
     current_user: User = Depends(get_current_user),
@@ -78,7 +89,12 @@ async def get_account_summary(
         )
     )
     documents_count = await session.scalar(
-        select(func.count(DocumentRecord.id)).where(DocumentRecord.user_id == current_user.id)
+        select(func.count(DocumentRecord.id))
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
+        .where(
+            DocumentRecord.user_id == current_user.id,
+            account_document_completion_visibility_condition(),
+        )
     )
 
     return AccountSummaryResponse(
@@ -173,7 +189,11 @@ async def get_account_documents(
             Course.title.label("course_title"),
         )
         .outerjoin(Course, Course.id == DocumentRecord.course_id)
-        .where(DocumentRecord.user_id == current_user.id)
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
+        .where(
+            DocumentRecord.user_id == current_user.id,
+            account_document_completion_visibility_condition(),
+        )
         .order_by(DocumentRecord.created_at.desc(), DocumentRecord.title.asc())
     )
 
@@ -239,9 +259,12 @@ async def get_account_document_download(
             DocumentRecord.title.label("title"),
             DocumentRecord.status.label("status"),
             DocumentRecord.storage_path.label("storage_path"),
-        ).where(
+        )
+        .outerjoin(Enrollment, Enrollment.id == DocumentRecord.enrollment_id)
+        .where(
             DocumentRecord.id == document_id,
             DocumentRecord.user_id == current_user.id,
+            account_document_completion_visibility_condition(),
         )
     )
     row = result.first()
@@ -314,6 +337,44 @@ def build_account_lesson_block(block: LessonBlock) -> AccountLessonBlockResponse
         settings_json=block.settings_json or {},
         is_required=block.is_required,
         is_active=block.is_active,
+    )
+
+
+def build_account_quiz_attempt_response(
+    attempt: QuizAttempt,
+    *,
+    max_attempts: int | None = None,
+) -> AccountQuizAttemptResponse:
+    result_json = attempt.result_json or {}
+    question_results = result_json.get("question_results")
+
+    if not isinstance(question_results, list):
+        question_results = []
+
+    remaining_attempts = None
+
+    if max_attempts is not None:
+        remaining_attempts = max(0, max_attempts - int(attempt.attempt_number or 0))
+
+    return AccountQuizAttemptResponse(
+        id=str(attempt.id),
+        enrollment_id=str(attempt.enrollment_id),
+        lesson_id=str(attempt.lesson_id),
+        block_id=str(attempt.block_id),
+        attempt_number=int(attempt.attempt_number or 0),
+        status=attempt.status,
+        passed=bool(attempt.passed),
+        earned_points=float(attempt.earned_points or 0),
+        total_points=float(attempt.total_points or 0),
+        percent=int(attempt.percent or 0),
+        correct_count=int(attempt.correct_count or 0),
+        question_count=int(attempt.question_count or 0),
+        pass_score_percent=int(attempt.pass_score_percent or 0),
+        max_attempts=max_attempts,
+        remaining_attempts=remaining_attempts,
+        answers_json=attempt.answers_json or {},
+        question_results=question_results,
+        submitted_at=attempt.submitted_at,
     )
 
 
@@ -596,6 +657,237 @@ async def get_account_course_detail(
     return build_account_course_detail_from_row(row, modules)
 
 
+async def get_missing_required_quiz_block_ids(
+    session: AsyncSession,
+    *,
+    enrollment_id: str,
+    lesson_id: str,
+) -> list[str]:
+    required_blocks_result = await session.execute(
+        select(LessonBlock.id).where(
+            LessonBlock.lesson_id == lesson_id,
+            LessonBlock.block_type == "quiz",
+            LessonBlock.is_active.is_(True),
+            LessonBlock.is_required.is_(True),
+        )
+    )
+    required_block_ids = list(required_blocks_result.scalars().all())
+
+    if not required_block_ids:
+        return []
+
+    passed_attempts_result = await session.execute(
+        select(QuizAttempt.block_id).where(
+            QuizAttempt.enrollment_id == enrollment_id,
+            QuizAttempt.lesson_id == lesson_id,
+            QuizAttempt.block_id.in_(required_block_ids),
+            QuizAttempt.passed.is_(True),
+        )
+    )
+    passed_block_ids = {
+        str(block_id)
+        for block_id in passed_attempts_result.scalars().all()
+    }
+
+    return [
+        str(block_id)
+        for block_id in required_block_ids
+        if str(block_id) not in passed_block_ids
+    ]
+
+
+@router.get(
+    "/courses/{enrollment_id}/lessons/{lesson_id}/quiz-attempts/{block_id}",
+    response_model=list[AccountQuizAttemptResponse],
+)
+async def list_account_course_lesson_quiz_attempts(
+    enrollment_id: str,
+    lesson_id: str,
+    block_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> list[AccountQuizAttemptResponse]:
+    enrollment = await get_account_enrollment_entity_or_404(
+        enrollment_id=enrollment_id,
+        current_user=current_user,
+        session=session,
+    )
+
+    lesson_result = await session.execute(
+        select(CourseLesson)
+        .join(CourseModule, CourseModule.id == CourseLesson.module_id)
+        .where(
+            CourseLesson.id == lesson_id.strip(),
+            CourseLesson.is_active.is_(True),
+            CourseModule.is_active.is_(True),
+            CourseModule.course_id == enrollment.course_id,
+        )
+    )
+    lesson = lesson_result.scalar_one_or_none()
+
+    if lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found in this course",
+        )
+
+    block_result = await session.execute(
+        select(LessonBlock).where(
+            LessonBlock.id == block_id.strip(),
+            LessonBlock.lesson_id == lesson.id,
+            LessonBlock.block_type == "quiz",
+            LessonBlock.is_active.is_(True),
+        )
+    )
+    block = block_result.scalar_one_or_none()
+
+    if block is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz block not found in this lesson",
+        )
+
+    max_attempts = get_quiz_max_attempts(block.content_json or {})
+    attempts_result = await session.execute(
+        select(QuizAttempt)
+        .where(
+            QuizAttempt.enrollment_id == enrollment.id,
+            QuizAttempt.lesson_id == lesson.id,
+            QuizAttempt.block_id == block.id,
+        )
+        .order_by(QuizAttempt.attempt_number.asc())
+    )
+    attempts = attempts_result.scalars().all()
+
+    return [
+        build_account_quiz_attempt_response(
+            attempt,
+            max_attempts=max_attempts,
+        )
+        for attempt in attempts
+    ]
+
+
+@router.post(
+    "/courses/{enrollment_id}/lessons/{lesson_id}/quiz-attempts/{block_id}",
+    response_model=AccountQuizAttemptResponse,
+)
+async def submit_account_course_lesson_quiz_attempt(
+    enrollment_id: str,
+    lesson_id: str,
+    block_id: str,
+    payload: AccountQuizAttemptSubmitRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountQuizAttemptResponse:
+    enrollment = await get_account_enrollment_entity_or_404(
+        enrollment_id=enrollment_id,
+        current_user=current_user,
+        session=session,
+    )
+
+    if enrollment.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Completed course cannot be changed",
+        )
+
+    lesson_result = await session.execute(
+        select(CourseLesson)
+        .join(CourseModule, CourseModule.id == CourseLesson.module_id)
+        .where(
+            CourseLesson.id == lesson_id.strip(),
+            CourseLesson.is_active.is_(True),
+            CourseModule.is_active.is_(True),
+            CourseModule.course_id == enrollment.course_id,
+        )
+    )
+    lesson = lesson_result.scalar_one_or_none()
+
+    if lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found in this course",
+        )
+
+    block_result = await session.execute(
+        select(LessonBlock).where(
+            LessonBlock.id == block_id.strip(),
+            LessonBlock.lesson_id == lesson.id,
+            LessonBlock.block_type == "quiz",
+            LessonBlock.is_active.is_(True),
+        )
+    )
+    block = block_result.scalar_one_or_none()
+
+    if block is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz block not found in this lesson",
+        )
+
+    max_attempts = get_quiz_max_attempts(block.content_json or {})
+    last_attempt_number = await session.scalar(
+        select(func.max(QuizAttempt.attempt_number)).where(
+            QuizAttempt.enrollment_id == enrollment.id,
+            QuizAttempt.block_id == block.id,
+        )
+    )
+    last_attempt_number = int(last_attempt_number or 0)
+
+    if max_attempts is not None and last_attempt_number >= max_attempts:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Quiz attempt limit reached",
+        )
+
+    now = datetime.now(timezone.utc)
+    answers = payload.answers if isinstance(payload.answers, dict) else {}
+    result = grade_quiz_attempt(block.content_json or {}, answers)
+    attempt_number = last_attempt_number + 1
+
+    if enrollment.status == "assigned":
+        enrollment.status = "active"
+
+    if enrollment.started_at is None:
+        enrollment.started_at = now
+
+    attempt = QuizAttempt(
+        enrollment_id=enrollment.id,
+        lesson_id=lesson.id,
+        block_id=block.id,
+        attempt_number=attempt_number,
+        status="submitted",
+        passed=bool(result["passed"]),
+        earned_points=float(result["earned_points"] or 0),
+        total_points=float(result["total_points"] or 0),
+        percent=int(result["percent"] or 0),
+        correct_count=int(result["correct_count"] or 0),
+        question_count=int(result["question_count"] or 0),
+        pass_score_percent=int(result["pass_score_percent"] or 0),
+        answers_json=answers,
+        result_json=result,
+        submitted_at=now,
+    )
+    session.add(attempt)
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Quiz attempt already exists",
+        ) from None
+
+    await session.refresh(attempt)
+
+    return build_account_quiz_attempt_response(
+        attempt,
+        max_attempts=max_attempts,
+    )
+
+
 @router.post(
     "/courses/{enrollment_id}/lessons/{lesson_id}/complete",
     response_model=AccountCourseDetailResponse,
@@ -634,6 +926,22 @@ async def complete_account_course_lesson(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Lesson not found in this course",
+        )
+
+    missing_required_quiz_block_ids = await get_missing_required_quiz_block_ids(
+        session,
+        enrollment_id=str(enrollment.id),
+        lesson_id=str(lesson.id),
+    )
+
+    if missing_required_quiz_block_ids:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "required_quiz_not_passed",
+                "message": "Required quiz is not passed",
+                "block_ids": missing_required_quiz_block_ids,
+            },
         )
 
     now = datetime.now(timezone.utc)

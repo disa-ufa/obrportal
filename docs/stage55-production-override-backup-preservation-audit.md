@@ -1,4 +1,4 @@
-﻿# Stage 55 - Production override and backup preservation preflight audit
+# Stage 55 - Production override and backup preservation preflight audit
 
 Status: draft
 Branch: stage55-production-override-backup-preservation-audit

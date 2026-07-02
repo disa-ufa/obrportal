@@ -1,4 +1,4 @@
-﻿# Stage 68 - Organization cabinet document profile polish acceptance
+# Stage 68 - Organization cabinet document profile polish acceptance
 
 Status: accepted
 Branch: stage68-organization-cabinet-document-profile-polish-audit

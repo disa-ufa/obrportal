@@ -1,4 +1,4 @@
-﻿# Stage 46 — Post-CI stabilization roadmap baseline
+# Stage 46 — Post-CI stabilization roadmap baseline
 
 Status: planned
 Base branch: develop

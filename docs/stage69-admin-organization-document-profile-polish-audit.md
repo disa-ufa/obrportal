@@ -1,4 +1,4 @@
-﻿# Stage 69 - Admin organization document profile polish audit
+# Stage 69 - Admin organization document profile polish audit
 
 Status: draft
 Branch: stage69-admin-organization-document-profile-polish-audit

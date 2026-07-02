@@ -2628,6 +2628,7 @@ def create_test_course_in_db(
     document_type: str | None = "Сертификат",
 ) -> dict:
     import asyncio
+    from datetime import datetime, timezone
     from uuid import uuid4
 
     import app.db.base  # noqa: F401
@@ -2682,6 +2683,7 @@ def create_test_course_with_enrollment_in_db(
     status: str = "assigned",
 ) -> dict:
     import asyncio
+    from datetime import datetime, timezone
     from uuid import uuid4
 
     import app.db.base  # noqa: F401
@@ -2717,6 +2719,7 @@ def create_test_course_with_enrollment_in_db(
                     organization_id=organization_id,
                     learning_group_id=learning_group_id,
                     status=status,
+                    completed_at=datetime.now(timezone.utc) if status == "completed" else None,
                 )
                 session.add(enrollment)
                 await session.commit()
@@ -2736,6 +2739,7 @@ def create_test_course_with_enrollment_in_db(
                         "organization_id": str(enrollment.organization_id) if enrollment.organization_id else None,
                         "learning_group_id": str(enrollment.learning_group_id) if enrollment.learning_group_id else None,
                         "status": enrollment.status,
+                        "completed_at": enrollment.completed_at.isoformat() if enrollment.completed_at else None,
                     },
                 }
         finally:

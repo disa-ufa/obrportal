@@ -1,4 +1,4 @@
-﻿# Stage 47 - Production deployment readiness hardening baseline
+# Stage 47 - Production deployment readiness hardening baseline
 
 Status: planned
 Base branch: develop

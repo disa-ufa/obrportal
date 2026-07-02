@@ -1,4 +1,4 @@
-﻿# Stage 81.5 - Manual admin UI content fill runbook
+# Stage 81.5 - Manual admin UI content fill runbook
 
 stage81_5_manual_admin_content_fill_runbook_status=implementation_ready
 stage81_5_release_manifest_required=yes

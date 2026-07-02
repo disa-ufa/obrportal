@@ -1,4 +1,4 @@
-﻿# Stage 36 — Admin groups incremental refresh acceptance
+# Stage 36 — Admin groups incremental refresh acceptance
 
 Status: accepted
 Branch: develop

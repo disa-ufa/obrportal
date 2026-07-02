@@ -96,6 +96,17 @@ export async function completeAccountCourseLesson(enrollmentId, lessonId) {
   });
 }
 
+export async function submitAccountCourseLessonQuizAttempt(enrollmentId, lessonId, blockId, answers = {}) {
+  return request(`/api/v1/account/courses/${enrollmentId}/lessons/${lessonId}/quiz-attempts/${blockId}`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
+  });
+}
+
+export async function getAccountCourseLessonQuizAttempts(enrollmentId, lessonId, blockId) {
+  return request(`/api/v1/account/courses/${enrollmentId}/lessons/${lessonId}/quiz-attempts/${blockId}`);
+}
+
 export async function enrollAccountCourse(courseId) {
   return request(`/api/v1/account/courses/${courseId}/enroll`, {
     method: "POST",
@@ -864,6 +875,16 @@ export async function reorderAdminLessonBlocks(lessonId, blocks) {
   });
 }
 
+export async function uploadAdminLessonPresentationAsset(lessonId, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return request(`/api/v1/admin/course-lessons/${lessonId}/presentation-assets`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
 
 
 export async function getAdminEnrollments(filters = {}) {
@@ -884,6 +905,10 @@ export async function getAdminEnrollments(filters = {}) {
 
 export async function getAdminEnrollmentDetail(enrollmentId) {
   return request(`/api/v1/admin/enrollments/${enrollmentId}`);
+}
+
+export async function getAdminEnrollmentQuizAttempts(enrollmentId) {
+  return request(`/api/v1/admin/enrollments/${enrollmentId}/quiz-attempts`);
 }
 
 export async function createAdminEnrollment(payload) {

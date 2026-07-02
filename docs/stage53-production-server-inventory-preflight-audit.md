@@ -1,4 +1,4 @@
-﻿# Stage 53 - Production server inventory preflight audit
+# Stage 53 - Production server inventory preflight audit
 
 Status: draft
 Branch: stage53-production-server-inventory-preflight-audit

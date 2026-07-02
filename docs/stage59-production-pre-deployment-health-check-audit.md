@@ -1,4 +1,4 @@
-﻿# Stage 59 - Production pre-deployment health check audit
+# Stage 59 - Production pre-deployment health check audit
 
 Status: draft
 Branch: stage59-production-pre-deployment-health-check-audit

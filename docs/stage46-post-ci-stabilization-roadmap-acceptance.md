@@ -1,4 +1,4 @@
-﻿# Stage 46 - Post-CI stabilization roadmap acceptance
+# Stage 46 - Post-CI stabilization roadmap acceptance
 
 Status: accepted
 Branch: stage46-post-ci-stabilization-roadmap-audit

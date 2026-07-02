@@ -1,4 +1,4 @@
-﻿# Stage 57 - Production protected backup execution audit
+# Stage 57 - Production protected backup execution audit
 
 Status: draft
 Branch: stage57-production-protected-backup-execution-audit

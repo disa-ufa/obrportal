@@ -442,6 +442,37 @@ class AdminEnrollmentItem(BaseModel):
     updated_at: datetime
 
 
+class AdminEnrollmentQuizAttemptItem(BaseModel):
+    id: str
+    enrollment_id: str
+    user_id: str
+    user_email: str
+    user_full_name: str | None = None
+    course_id: str
+    course_slug: str
+    course_title: str
+    lesson_id: str
+    lesson_title: str
+    block_id: str
+    block_title: str | None = None
+    block_type: str
+    attempt_number: int
+    status: str
+    passed: bool
+    earned_points: float = 0
+    total_points: float = 0
+    percent: int = 0
+    correct_count: int = 0
+    question_count: int = 0
+    pass_score_percent: int = 0
+    answers_json: dict[str, Any] = Field(default_factory=dict)
+    result_json: dict[str, Any] = Field(default_factory=dict)
+    question_results: list[dict[str, Any]] = Field(default_factory=list)
+    submitted_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
 class AdminEnrollmentCreate(BaseModel):
     user_id: str = Field(min_length=1, max_length=64)
     course_id: str = Field(min_length=1, max_length=64)
