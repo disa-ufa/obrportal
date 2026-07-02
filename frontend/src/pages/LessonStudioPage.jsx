@@ -434,6 +434,29 @@ function getSafeLessonRichTextHref(href) {
   }
 }
 
+const LESSON_RICH_TEXT_ALLOWED_COLORS = new Set([
+  "#dc2626",
+  "#d97706",
+  "#16a34a",
+  "#2563eb",
+]);
+
+function getSafeLessonRichTextColor(value) {
+  const color = `${value || ""}`.trim().toLowerCase();
+
+  return LESSON_RICH_TEXT_ALLOWED_COLORS.has(color) ? color : "";
+}
+
+function getLessonRichTextAlignClass(value) {
+  const align = `${value || ""}`.trim().toLowerCase();
+
+  if (align === "center") return "text-center";
+  if (align === "right") return "text-right";
+  if (align === "justify") return "text-justify";
+
+  return "text-left";
+}
+
 function renderLessonRichTextMarks(children, marks = [], keyPrefix = "mark") {
   return marks.reduce((currentChildren, mark, index) => {
     const markKey = `${keyPrefix}-${mark.type || "mark"}-${index}`;
@@ -486,6 +509,20 @@ function renderLessonRichTextMarks(children, marks = [], keyPrefix = "mark") {
       );
     }
 
+    if (mark.type === "textStyle") {
+      const safeColor = getSafeLessonRichTextColor(mark.attrs?.color);
+
+      if (!safeColor) {
+        return currentChildren;
+      }
+
+      return (
+        <span key={markKey} style={{ color: safeColor }}>
+          {currentChildren}
+        </span>
+      );
+    }
+
     return currentChildren;
   }, children);
 }
@@ -516,8 +553,10 @@ function renderLessonRichTextNode(node, key) {
   const children = renderLessonRichTextChildren(node.content, key);
 
   if (node.type === "paragraph") {
+    const alignClass = getLessonRichTextAlignClass(node.attrs?.textAlign);
+
     return (
-      <p key={key} className="text-base leading-8 text-slate-700">
+      <p key={key} className={`text-base leading-8 text-slate-700 ${alignClass}`}>
         {children?.length ? children : <br />}
       </p>
     );
@@ -526,10 +565,11 @@ function renderLessonRichTextNode(node, key) {
   if (node.type === "heading") {
     const level = Number(node.attrs?.level || 2);
     const HeadingTag = level >= 3 ? "h3" : "h2";
+    const alignClass = getLessonRichTextAlignClass(node.attrs?.textAlign);
     const className =
       level >= 3
-        ? "mt-5 text-lg font-black leading-8 text-slate-950 first:mt-0"
-        : "mt-6 text-2xl font-black leading-9 text-slate-950 first:mt-0";
+        ? `mt-5 text-lg font-black leading-8 text-slate-950 first:mt-0 ${alignClass}`
+        : `mt-6 text-2xl font-black leading-9 text-slate-950 first:mt-0 ${alignClass}`;
 
     return (
       <HeadingTag key={key} className={className}>
@@ -2469,10 +2509,10 @@ function LessonCanvasInsertBlockControl({
 
           <div
             data-testid="lesson-studio-canvas-insert-options"
-            className="absolute left-1/2 z-40 mt-3 w-[min(760px,calc(100vw-3rem))] -translate-x-1/2 rounded-2xl bg-white p-4 shadow-[0_20px_55px_rgba(15,23,42,0.14)] ring-1 ring-slate-200"
+            className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100vh-2rem)] w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.22)] ring-1 ring-slate-200"
           >
-            <div className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 bg-white ring-1 ring-slate-200" />
-            <div className="absolute left-1/2 top-0 h-5 w-12 -translate-x-1/2 bg-white" />
+            <div className="hidden" />
+            <div className="hidden" />
 
             <div className="relative">
               <button
