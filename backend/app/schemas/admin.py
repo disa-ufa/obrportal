@@ -322,6 +322,12 @@ class AdminCourseLessonItem(BaseModel):
     position: int
     is_required: bool
     is_active: bool
+    blocks_count: int = 0
+    active_blocks_count: int = 0
+    problem_blocks_count: int = 0
+    is_content_ready: bool = False
+    readiness_status: str = "empty"
+    readiness_issues: list[str] = Field(default_factory=list)
 
 
 class AdminCourseLessonDetail(AdminCourseLessonItem):

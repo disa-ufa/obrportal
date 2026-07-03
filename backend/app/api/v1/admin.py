@@ -50,6 +50,11 @@ from app.services.lesson_blocks import (
     build_synthetic_legacy_lesson_blocks,
     normalize_lesson_block_type,
 )
+from app.services.lesson_readiness import (
+    get_admin_lesson_readiness_payload,
+    get_admin_lessons_readiness_map,
+    normalize_admin_lesson_readiness_payload,
+)
 from app.schemas.admin import (
     AdminAuditEventItem,
     AdminCourseCreate,
@@ -3791,7 +3796,9 @@ def normalize_course_lesson_update_data(data: dict) -> dict:
     return normalized
 
 
-def build_admin_course_lesson_item(lesson: CourseLesson) -> AdminCourseLessonItem:
+def build_admin_course_lesson_item(lesson: CourseLesson, readiness: dict | None = None) -> AdminCourseLessonItem:
+    readiness = normalize_admin_lesson_readiness_payload(readiness)
+
     return AdminCourseLessonItem(
         id=str(lesson.id),
         module_id=str(lesson.module_id),
@@ -3806,10 +3813,18 @@ def build_admin_course_lesson_item(lesson: CourseLesson) -> AdminCourseLessonIte
         position=lesson.position,
         is_required=lesson.is_required,
         is_active=lesson.is_active,
+        blocks_count=readiness["blocks_count"],
+        active_blocks_count=readiness["active_blocks_count"],
+        problem_blocks_count=readiness["problem_blocks_count"],
+        is_content_ready=readiness["is_content_ready"],
+        readiness_status=readiness["readiness_status"],
+        readiness_issues=readiness["readiness_issues"],
     )
 
 
-def build_admin_course_lesson_detail(lesson: CourseLesson) -> AdminCourseLessonDetail:
+def build_admin_course_lesson_detail(lesson: CourseLesson, readiness: dict | None = None) -> AdminCourseLessonDetail:
+    readiness = normalize_admin_lesson_readiness_payload(readiness)
+
     return AdminCourseLessonDetail(
         id=str(lesson.id),
         module_id=str(lesson.module_id),
@@ -3824,6 +3839,12 @@ def build_admin_course_lesson_detail(lesson: CourseLesson) -> AdminCourseLessonD
         position=lesson.position,
         is_required=lesson.is_required,
         is_active=lesson.is_active,
+        blocks_count=readiness["blocks_count"],
+        active_blocks_count=readiness["active_blocks_count"],
+        problem_blocks_count=readiness["problem_blocks_count"],
+        is_content_ready=readiness["is_content_ready"],
+        readiness_status=readiness["readiness_status"],
+        readiness_issues=readiness["readiness_issues"],
         created_at=lesson.created_at,
         updated_at=lesson.updated_at,
     )
@@ -3891,9 +3912,13 @@ async def list_admin_course_lessons(
 
     result = await session.execute(query)
     lessons = result.scalars().all()
+    readiness_by_lesson_id = await get_admin_lessons_readiness_map(lessons, session)
 
     return [
-        build_admin_course_lesson_item(lesson)
+        build_admin_course_lesson_item(
+            lesson,
+            readiness_by_lesson_id.get(str(lesson.id)),
+        )
         for lesson in lessons
     ]
 
@@ -3953,8 +3978,9 @@ async def get_admin_course_lesson_detail(
     session: AsyncSession = Depends(get_db),
 ) -> AdminCourseLessonDetail:
     lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    readiness = await get_admin_lesson_readiness_payload(lesson, session)
 
-    return build_admin_course_lesson_detail(lesson)
+    return build_admin_course_lesson_detail(lesson, readiness)
 
 
 @router.patch("/course-lessons/{lesson_id}", response_model=AdminCourseLessonDetail)
@@ -4004,6 +4030,94 @@ async def update_admin_course_lesson(
         ) from exc
 
     return build_admin_course_lesson_detail(lesson)
+
+
+
+@router.post("/course-lessons/{lesson_id}/publish", response_model=AdminCourseLessonDetail)
+async def publish_admin_course_lesson(
+    lesson_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseLessonDetail:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    readiness = await get_admin_lesson_readiness_payload(lesson, session)
+
+    if not readiness["is_content_ready"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "message": "Lesson is not ready for publication",
+                "issues": readiness["readiness_issues"],
+            },
+        )
+
+    before = course_lesson_snapshot(lesson)
+
+    lesson.status = "published"
+    lesson.published_version_id = str(uuid4())
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.course_lesson_published",
+        entity_type="course_lesson",
+        entity_id=str(lesson.id),
+        payload={
+            "before": before,
+            "after": course_lesson_snapshot(lesson),
+            "readiness": readiness,
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(lesson)
+
+    readiness = await get_admin_lesson_readiness_payload(lesson, session)
+
+    return build_admin_course_lesson_detail(lesson, readiness)
+
+
+
+@router.post("/course-lessons/{lesson_id}/unpublish", response_model=AdminCourseLessonDetail)
+async def unpublish_admin_course_lesson(
+    lesson_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseLessonDetail:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    readiness = await get_admin_lesson_readiness_payload(lesson, session)
+    before = course_lesson_snapshot(lesson)
+
+    lesson.status = "draft"
+    lesson.published_version_id = None
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.course_lesson_unpublished",
+        entity_type="course_lesson",
+        entity_id=str(lesson.id),
+        payload={
+            "before": before,
+            "after": course_lesson_snapshot(lesson),
+            "readiness": readiness,
+        },
+        request=request,
+    )
+
+    await session.commit()
+    await session.refresh(lesson)
+
+    readiness = await get_admin_lesson_readiness_payload(lesson, session)
+
+    return build_admin_course_lesson_detail(lesson, readiness)
 
 
 @router.delete("/course-lessons/{lesson_id}", response_model=AdminDeleteResult)
