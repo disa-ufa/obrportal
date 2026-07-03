@@ -17,6 +17,7 @@ LESSON_PUBLICATION_STATUSES = {
 LESSON_BLOCK_TYPES = {
     "rich_text",
     "video",
+    "audio",
     "file_link",
     "presentation",
     "quiz",

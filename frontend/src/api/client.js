@@ -898,6 +898,17 @@ export async function uploadAdminLessonPresentationAsset(lessonId, file) {
 }
 
 
+export async function uploadAdminLessonAudioAsset(lessonId, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return request(`/api/v1/admin/course-lessons/${lessonId}/audio-assets`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+
 
 export async function getAdminEnrollments(filters = {}) {
   const params = new URLSearchParams();
