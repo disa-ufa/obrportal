@@ -1833,6 +1833,18 @@ const COURSE_BUILDER_MODULE_LESSON_UX_LABELS = {
 };
 
 function getCourseBuilderLessonContentIssue(lesson) {
+  const blocksCount = Number(lesson?.blocks_count || 0);
+
+  if (blocksCount > 0) {
+    if (lesson?.is_content_ready) {
+      return "";
+    }
+
+    return Array.isArray(lesson?.readiness_issues) && lesson.readiness_issues.length
+      ? lesson.readiness_issues[0]
+      : "\u0443\u0440\u043e\u043a \u0441 \u0431\u043b\u043e\u043a\u0430\u043c\u0438 Studio \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0438";
+  }
+
   const contentType = `${lesson.content_type || ""}`.toLowerCase();
   const hasText = Boolean(`${lesson.content_text || ""}`.trim());
   const hasUrl = Boolean(`${lesson.content_url || ""}`.trim());
@@ -2616,30 +2628,54 @@ function getCourseTreeCounts(modules = [], lessonsByModuleId = {}) {
 }
 
 function getLessonStructureBlockBadges(lesson) {
+  const blocksCount = Number(lesson?.blocks_count || 0);
+  const activeBlocksCount = Number(lesson?.active_blocks_count || 0);
+  const problemBlocksCount = Number(lesson?.problem_blocks_count || 0);
+  const published = lesson?.status === "published" && Boolean(lesson?.published_version_id);
+  const publicationBadge = published
+    ? "\u041e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d"
+    : lesson?.is_content_ready
+      ? "\u0413\u043e\u0442\u043e\u0432 \u043a \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438"
+      : "\u0427\u0435\u0440\u043d\u043e\u0432\u0438\u043a";
+
+  if (blocksCount > 0) {
+    if (lesson?.is_content_ready) {
+      return [publicationBadge, `Studio: ${activeBlocksCount || blocksCount} \u0431\u043b\u043e\u043a\u043e\u0432`];
+    }
+
+    if (problemBlocksCount > 0) {
+      return [publicationBadge, `\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0438: ${problemBlocksCount}`];
+    }
+
+    return [publicationBadge, "\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u043d\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f"];
+  }
+
   const badges = [];
   const contentType = `${lesson?.content_type || "text"}`.toLowerCase();
 
   if (`${lesson?.content_text || ""}`.trim()) {
-    badges.push("Текст");
+    badges.push("\u0422\u0435\u043a\u0441\u0442");
   }
 
   if (`${lesson?.content_url || ""}`.trim()) {
     if (contentType === "video") {
-      badges.push("Видео");
+      badges.push("\u0412\u0438\u0434\u0435\u043e");
     } else if (contentType === "file") {
-      badges.push("Файл");
+      badges.push("\u0424\u0430\u0439\u043b");
     } else if (contentType === "link") {
-      badges.push("Ссылка");
+      badges.push("\u0421\u0441\u044b\u043b\u043a\u0430");
     } else {
-      badges.push("Материал");
+      badges.push("\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b");
     }
   }
 
   if (contentType === "assignment") {
-    badges.push("Задание");
+    badges.push("\u0417\u0430\u0434\u0430\u043d\u0438\u0435");
   }
 
-  return badges.length ? badges : ["Требует наполнения"];
+  return badges.length
+    ? [publicationBadge, ...badges]
+    : [publicationBadge, "\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u043d\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f"];
 }
 
 function getLessonStructurePreviewText(lesson) {

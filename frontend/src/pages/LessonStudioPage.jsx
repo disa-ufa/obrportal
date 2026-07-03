@@ -5,6 +5,8 @@ import {
   deleteAdminLessonBlock,
   getAdminCourseLessonDetail,
   getAdminLessonBlocks,
+  publishAdminCourseLesson,
+  unpublishAdminCourseLesson,
   reorderAdminLessonBlocks,
   updateAdminLessonBlock,
   uploadAdminLessonPresentationAsset,
@@ -1984,7 +1986,7 @@ function LessonStudioReadinessChecklist({
 }
 
 
-function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
+function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange, readinessReport, publishing = false, onPublish, unpublishing = false, onUnpublish }) {
   const courseId =
     lesson?.course_id ||
     lesson?.courseId ||
@@ -1994,6 +1996,19 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
 
   const courseHref = courseId ? `/admin/courses#course-${courseId}` : "/admin/courses";
   const previewMode = mode === "preview";
+  const published = lesson?.status === "published" && Boolean(lesson?.published_version_id);
+  const readyForPublish = Boolean(readinessReport?.ready);
+  const canPublish = !publishing && !unpublishing && typeof onPublish === "function";
+  const canUnpublish = published && !publishing && !unpublishing && typeof onUnpublish === "function";
+  const publishButtonLabel = publishing
+    ? "\u041f\u0443\u0431\u043b\u0438\u043a\u0443\u0435\u043c..."
+    : published
+      ? "\u041e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c \u0437\u0430\u043d\u043e\u0432\u043e"
+      : "\u041e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c";
+  const publishButtonTitle = readyForPublish
+    ? "\u041e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c \u0443\u0440\u043e\u043a \u0434\u043b\u044f \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u0445\u0441\u044f"
+    : "\u041f\u0435\u0440\u0435\u0434 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0435\u0439 \u0438\u0441\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u043f\u0440\u043e\u0431\u043b\u0435\u043c\u044b \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u0438 \u0443\u0440\u043e\u043a\u0430";
+  const unpublishButtonLabel = "\u0421\u043d\u044f\u0442\u044c \u0441 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438";
   const courseTitle =
     lesson?.course_title ||
     lesson?.course?.title ||
@@ -2087,18 +2102,41 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange }) {
             <Eye className="h-4 w-4" aria-hidden="true" />
             {previewMode ? "К редактору" : "Предпросмотр"}
           </button>
-
           <button
             type="button"
-            data-testid="lesson-studio-publish-placeholder-button"
-            title="Публикация урока будет подключена отдельным этапом"
-            disabled
-            aria-disabled="true"
-            className="inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-xl bg-blue-700/60 px-4 text-sm font-bold text-white shadow-sm"
+            data-testid="lesson-studio-publish-button"
+            title={publishButtonTitle}
+            disabled={!canPublish}
+            aria-disabled={!canPublish}
+            onClick={onPublish}
+            className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-bold text-white shadow-sm transition ${
+              publishing || typeof onPublish !== "function"
+                ? "cursor-not-allowed bg-blue-700/45"
+                : readyForPublish
+                  ? "bg-blue-700 hover:bg-blue-800"
+                  : "bg-amber-600 hover:bg-amber-700"
+            }`}
           >
             <Send className="h-4 w-4" aria-hidden="true" />
-            Опубликовать
+            {publishButtonLabel}
           </button>
+          {published ? (
+            <button
+              type="button"
+              data-testid="lesson-studio-unpublish-button"
+              title={unpublishButtonLabel}
+              disabled={!canUnpublish}
+              aria-disabled={!canUnpublish}
+              onClick={onUnpublish}
+              className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-bold shadow-sm ring-1 transition ${
+                canUnpublish
+                  ? "bg-white text-red-700 ring-red-200 hover:bg-red-50"
+                  : "cursor-not-allowed bg-slate-50 text-slate-400 ring-slate-200"
+              }`}
+            >
+              {unpublishButtonLabel}
+            </button>
+          ) : null}
 
           <a
             href={courseHref}
@@ -5923,6 +5961,8 @@ export function LessonStudioPage({ lessonId }) {
   const [duplicatingBlockId, setDuplicatingBlockId] = useState("");
   const [deletingBlockId, setDeletingBlockId] = useState("");
   const [creatingTemplateKey, setCreatingTemplateKey] = useState("");
+  const [publishingLesson, setPublishingLesson] = useState(false);
+  const [unpublishingLesson, setUnpublishingLesson] = useState(false);
   const [error, setError] = useState("");
   const [showOnlyProblemBlocks, setShowOnlyProblemBlocks] = useState(false);
   const [pendingBlockSelection, setPendingBlockSelection] = useState(null);
@@ -6029,6 +6069,8 @@ export function LessonStudioPage({ lessonId }) {
     [lesson, blocks]
   );
 
+
+
   const handleEditorBlocksChanged = useCallback((nextBlocks) => {
     const normalizedBlocks = Array.isArray(nextBlocks) ? nextBlocks : [];
 
@@ -6092,6 +6134,67 @@ export function LessonStudioPage({ lessonId }) {
       inspectorText.includes("Есть несохранённые изменения")
     );
   }, []);
+
+  const handlePublishLesson = useCallback(async () => {
+    if (!lessonId) {
+      setError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u0434\u043b\u044f \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.");
+      return;
+    }
+
+    if (!lessonReadiness?.ready) {
+      setError("\u041f\u0435\u0440\u0435\u0434 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0435\u0439 \u0438\u0441\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u043f\u0440\u043e\u0431\u043b\u0435\u043c\u044b \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u0438 \u0443\u0440\u043e\u043a\u0430.");
+      return;
+    }
+
+    const guard = inlineEditorGuardRef.current || {};
+
+    if (guard.hasUnsavedChanges || getVisibleInlineUnsavedState()) {
+      setError("\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u0435 \u0442\u0435\u043a\u0443\u0449\u0438\u0439 \u0431\u043b\u043e\u043a, \u0437\u0430\u0442\u0435\u043c \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u0443\u0439\u0442\u0435 \u0443\u0440\u043e\u043a.");
+      return;
+    }
+
+    setPublishingLesson(true);
+    setError("");
+
+    try {
+      const updatedLesson = await publishAdminCourseLesson(lessonId);
+      setLesson(updatedLesson || null);
+      await loadBlocks();
+    } catch (err) {
+      const message = formatLessonStudioError(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c \u0443\u0440\u043e\u043a");
+      setError(message);
+    } finally {
+      setPublishingLesson(false);
+    }
+  }, [getVisibleInlineUnsavedState, lessonId, lessonReadiness, loadBlocks]);
+
+  const handleUnpublishLesson = useCallback(async () => {
+    if (!lessonId) {
+      setError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u0434\u043b\u044f \u0441\u043d\u044f\u0442\u0438\u044f \u0441 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.");
+      return;
+    }
+
+    const confirmed = window.confirm("\u0421\u043d\u044f\u0442\u044c \u0443\u0440\u043e\u043a \u0441 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setUnpublishingLesson(true);
+    setError("");
+
+    try {
+      const updatedLesson = await unpublishAdminCourseLesson(lessonId);
+      setLesson(updatedLesson || null);
+      await loadLesson();
+    } catch (err) {
+      const message = formatLessonStudioError(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043d\u044f\u0442\u044c \u0443\u0440\u043e\u043a \u0441 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438");
+      setError(message);
+    } finally {
+      setUnpublishingLesson(false);
+    }
+  }, [lessonId, loadLesson]);
+
 
   const handleSelectBlock = useCallback((blockId, options = {}) => {
     const guard = inlineEditorGuardRef.current || {};
@@ -6505,6 +6608,11 @@ export function LessonStudioPage({ lessonId }) {
         error={error}
         mode={viewMode}
         onModeChange={setViewMode}
+        readinessReport={lessonReadiness}
+        publishing={publishingLesson}
+        onPublish={handlePublishLesson}
+        unpublishing={unpublishingLesson}
+        onUnpublish={handleUnpublishLesson}
       />
 
       {viewMode !== "preview" ? (

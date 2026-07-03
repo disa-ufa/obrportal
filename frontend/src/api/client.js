@@ -837,6 +837,18 @@ export async function updateAdminCourseLesson(lessonId, payload) {
   });
 }
 
+export async function publishAdminCourseLesson(lessonId) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}/publish`, {
+    method: "POST",
+  });
+}
+
+export async function unpublishAdminCourseLesson(lessonId) {
+  return request(`/api/v1/admin/course-lessons/${lessonId}/unpublish`, {
+    method: "POST",
+  });
+}
+
 export async function deleteAdminCourseLesson(lessonId) {
   return request(`/api/v1/admin/course-lessons/${lessonId}`, {
     method: "DELETE",
