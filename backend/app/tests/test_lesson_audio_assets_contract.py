@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from app.api.v1 import admin, public
 from app.services.lesson_blocks import LESSON_BLOCK_TYPES, normalize_lesson_block_type
