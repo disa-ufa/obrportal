@@ -28,6 +28,83 @@ from app.schemas.public import (
 
 router = APIRouter(prefix="/public", tags=["public"])
 
+LESSON_AUDIO_ALLOWED_EXTENSIONS = (".mp3", ".wav", ".m4a", ".aac", ".ogg", ".oga", ".webm")
+LESSON_AUDIO_MIME_BY_EXTENSION = {
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".ogg": "audio/ogg",
+    ".oga": "audio/ogg",
+    ".webm": "audio/webm",
+}
+
+
+
+
+
+def resolve_public_lesson_audio_path(
+    *,
+    lesson_id: str,
+    asset_id: str,
+):
+    for suffix in LESSON_AUDIO_ALLOWED_EXTENSIONS:
+        resolved_path = resolve_private_storage_path(
+            f"lesson-audio/{lesson_id}/{asset_id}{suffix}"
+        )
+
+        if resolved_path and resolved_path.exists() and resolved_path.is_file():
+            return resolved_path, LESSON_AUDIO_MIME_BY_EXTENSION.get(suffix, "application/octet-stream")
+
+    return None, "application/octet-stream"
+
+
+@router.get("/lesson-audio/{lesson_id}/{asset_id}/stream")
+async def stream_public_lesson_audio(
+    lesson_id: str,
+    asset_id: str,
+):
+    resolved_path, media_type = resolve_public_lesson_audio_path(
+        lesson_id=lesson_id,
+        asset_id=asset_id,
+    )
+
+    if not resolved_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Audio file not found",
+        )
+
+    return FileResponse(
+        path=resolved_path,
+        media_type=media_type,
+        filename=resolved_path.name,
+        content_disposition_type="inline",
+    )
+
+
+@router.get("/lesson-audio/{lesson_id}/{asset_id}/download")
+async def download_public_lesson_audio(
+    lesson_id: str,
+    asset_id: str,
+):
+    resolved_path, media_type = resolve_public_lesson_audio_path(
+        lesson_id=lesson_id,
+        asset_id=asset_id,
+    )
+
+    if not resolved_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Audio file not found",
+        )
+
+    return FileResponse(
+        path=resolved_path,
+        media_type=media_type,
+        filename=resolved_path.name,
+        content_disposition_type="attachment",
+    )
 
 
 

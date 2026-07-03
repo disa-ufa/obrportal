@@ -10,6 +10,7 @@ import {
   reorderAdminLessonBlocks,
   updateAdminLessonBlock,
   uploadAdminLessonPresentationAsset,
+  uploadAdminLessonAudioAsset,
 } from "../api/client";
 import LessonRichTextEditor from "../components/admin/lesson-studio/LessonRichTextEditor";
 import QuizBlockEditor from "../components/admin/lesson-studio/quiz/QuizBlockEditor";
@@ -47,6 +48,26 @@ const STUDIO_QUICK_BLOCK_TEMPLATES = [
       block_type: "video",
       title: "Видео",
       content_json: { url: "" },
+      is_required: true,
+      is_active: true,
+    },
+  },
+  {
+    key: "audio",
+    label: "\u0410\u0443\u0434\u0438\u043e",
+    hint: "\u0410\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b \u0438\u043b\u0438 \u0441\u0441\u044b\u043b\u043a\u0430",
+    tone: "green",
+    values: {
+      block_type: "audio",
+      title: "\u0410\u0443\u0434\u0438\u043e",
+      content_json: {
+        material_kind: "audio",
+        url: "",
+        content_url: "",
+        audio_url: "",
+        stream_url: "",
+        show_download: true,
+      },
       is_required: true,
       is_active: true,
     },
@@ -326,6 +347,12 @@ function getBlockPreviewMeta(block) {
       icon: "▶",
       kicker: "Предпросмотр видео",
       description: "Видео-блок должен содержать ссылку на ролик или запись урока.",
+      surfaceClass: "bg-green-50 text-green-900 ring-green-200",
+    },
+    audio: {
+      icon: "AUD",
+      kicker: "\u0410\u0443\u0434\u0438\u043e\u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+      description: "\u0410\u0443\u0434\u0438\u043e\u0431\u043b\u043e\u043a \u0441\u043e\u0434\u0435\u0440\u0436\u0438\u0442 \u0437\u0430\u043f\u0438\u0441\u044c, \u0438\u043d\u0441\u0442\u0440\u0443\u043a\u0442\u0430\u0436 \u0438\u043b\u0438 \u0433\u043e\u043b\u043e\u0441\u043e\u0432\u043e\u0435 \u043f\u043e\u044f\u0441\u043d\u0435\u043d\u0438\u0435.",
       surfaceClass: "bg-green-50 text-green-900 ring-green-200",
     },
     file_link: {
@@ -1528,6 +1555,103 @@ function LessonQuizCanvasPreview({ block, previewValue, learnerMode = false }) {
 }
 
 
+
+
+function isLessonAudioBlock(block) {
+  const type = `${block?.block_type || ""}`.toLowerCase();
+
+  return type === "audio";
+}
+
+function getAudioBlockContent(block) {
+  return safeParseJson(block?.content_json);
+}
+
+function getAudioBlockUrl(block) {
+  const content = getAudioBlockContent(block);
+
+  return `${content.audio_url || content.stream_url || content.url || content.content_url || content.src || content.file_url || content.href || ""}`.trim();
+}
+
+function getAudioBlockDownloadUrl(block) {
+  const content = getAudioBlockContent(block);
+
+  return `${content.original_url || content.download_url || getAudioBlockUrl(block) || ""}`.trim();
+}
+
+function getAudioBlockFilename(block) {
+  const content = getAudioBlockContent(block);
+
+  return `${content.original_filename || content.filename || block?.title || "audio"}`.trim();
+}
+
+function LessonAudioCanvasPreview({ block, previewValue, learnerMode = false }) {
+  const sourceValue = getAudioBlockUrl(block) || `${previewValue || ""}`.trim();
+  const safeSrc = getSafeLessonRichTextHref(sourceValue);
+  const downloadUrl = getSafeLessonRichTextHref(getAudioBlockDownloadUrl(block));
+  const ready = Boolean(safeSrc);
+  const title = `${block?.title || "\u0410\u0443\u0434\u0438\u043e"}`.trim() || "\u0410\u0443\u0434\u0438\u043e";
+  const filename = getAudioBlockFilename(block);
+
+  return (
+    <div
+      data-testid="lesson-studio-audio-preview"
+      className={
+        learnerMode
+          ? "mt-5 rounded-3xl bg-green-50 p-5 ring-1 ring-green-100"
+          : "mt-3 rounded-2xl bg-white/90 p-4 ring-1 ring-black/5"
+      }
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-black text-slate-950"}>
+            {title}
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            {ready ? filename : "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0430\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b \u0438\u043b\u0438 \u0441\u0441\u044b\u043b\u043a\u0443 \u043d\u0430 \u0430\u0443\u0434\u0438\u043e."}
+          </div>
+        </div>
+
+        {ready ? (
+          <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-200">
+            {"\u2713 \u0410\u0443\u0434\u0438\u043e \u043d\u0430\u0439\u0434\u0435\u043d\u043e"}
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            {"\u041d\u0435\u0442 \u0430\u0443\u0434\u0438\u043e"}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4">
+        {ready ? (
+          <audio controls preload="metadata" src={safeSrc} className="w-full">
+            {"\u0412\u0430\u0448 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043d\u0435 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u0430\u0443\u0434\u0438\u043e\u043f\u043b\u0435\u0435\u0440."}
+          </audio>
+        ) : (
+          <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-500 ring-1 ring-slate-200">
+            {"\u0410\u0443\u0434\u0438\u043e\u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u043f\u043e\u043a\u0430 \u043d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d."}
+          </div>
+        )}
+      </div>
+
+      {ready && downloadUrl ? (
+        <div className="mt-3">
+          <a
+            href={downloadUrl}
+            target={downloadUrl.startsWith("/") || downloadUrl.startsWith("#") ? undefined : "_blank"}
+            rel={downloadUrl.startsWith("/") || downloadUrl.startsWith("#") ? undefined : "noreferrer"}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-white px-5 text-sm font-bold text-green-700 ring-1 ring-green-200 transition hover:bg-green-50"
+          >
+            {"\u0421\u043a\u0430\u0447\u0430\u0442\u044c \u0430\u0443\u0434\u0438\u043e"}
+          </a>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
 function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
   const meta = getBlockPreviewMeta(block);
@@ -1566,6 +1690,12 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
         <LessonRichTextSafePreview block={block} preview={previewValue} learnerMode={learnerMode} />
       ) : type === "video" ? (
         <LessonVideoCanvasPreview
+          block={block}
+          previewValue={previewValue}
+          learnerMode={learnerMode}
+        />
+      ) : type === "audio" ? (
+        <LessonAudioCanvasPreview
           block={block}
           previewValue={previewValue}
           learnerMode={learnerMode}
@@ -1652,6 +1782,10 @@ function getBlockValidationIssues(block) {
 
   if (type === "presentation" && !getPresentationBlockUrl({ content_json: content })) {
     issues.push("нет ссылки на презентацию");
+  }
+
+  if (type === "audio" && !getAudioBlockUrl({ content_json: content })) {
+    issues.push("\u043d\u0435\u0442 \u0430\u0443\u0434\u0438\u043e");
   }
 
   if ((type === "file_link" || type === "file" || type === "link") && !isLessonImageBlock({ ...block, content_json: content }) && !`${content.url || content.content_url || ""}`.trim()) {
@@ -2167,6 +2301,7 @@ function getStructureBlockIcon(blockType) {
   const type = `${blockType || ""}`.toLowerCase();
 
   if (type === "video") return PlayCircle;
+  if (type === "audio") return PlayCircle;
   if (type === "image" || type === "image_url") return ImageIcon;
   if (type === "quiz" || type === "survey") return BarChart3;
   if (type === "file_link" || type === "file") return FileText;
@@ -2658,6 +2793,7 @@ function LessonCanvasBlock({
   const blockTypeLabel = isLessonImageBlock(block) ? "Изображение" : getLessonBlockTypeLabel(block.block_type);
   const compactBlockType = `${block?.block_type || "rich_text"}`.toLowerCase();
   const isCompactVideo = compactBlockType === "video";
+  const isCompactAudio = compactBlockType === "audio";
   const isCompactPresentation = compactBlockType === "presentation";
   const isCompactImage = isLessonImageBlock(block);
   const isCompactFileLink =
@@ -2805,11 +2941,17 @@ function LessonCanvasBlock({
 
       {compact ? (
         <div
-          className={isCompactVideo || isCompactPresentation || isCompactFileLink || isCompactImage || isCompactCallout ? "mt-5 w-full" : "mt-5 max-w-4xl"}
+          className={isCompactVideo || isCompactAudio || isCompactPresentation || isCompactFileLink || isCompactImage || isCompactCallout ? "mt-5 w-full" : "mt-5 max-w-4xl"}
           data-testid="lesson-studio-block-compact-summary"
         >
           {isCompactVideo ? (
             <LessonVideoCanvasPreview
+              block={block}
+              previewValue={compactSummary}
+              learnerMode={false}
+            />
+          ) : isCompactAudio ? (
+            <LessonAudioCanvasPreview
               block={block}
               previewValue={compactSummary}
               learnerMode={false}
@@ -3682,6 +3824,258 @@ function LessonStudioVideoBlockEditor({ form, saving, onFieldChange }) {
 }
 
 
+
+
+
+
+function LessonStudioAudioBlockEditor({ lesson, form, saving, onFieldChange }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
+  const audioUrl = `${form.content_text || ""}`.trim();
+  const safeAudioUrl = getSafeLessonRichTextHref(audioUrl);
+  const uploadedAsset = form.audio_asset && typeof form.audio_asset === "object" ? form.audio_asset : {};
+  const filename = `${uploadedAsset.original_filename || ""}`.trim();
+  const ready = Boolean(safeAudioUrl);
+
+  const handleAudioFileChange = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setUploadError("");
+    setUploadSuccess("");
+
+    if (!lesson?.id) {
+      setUploadError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u0434\u043b\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0430\u0443\u0434\u0438\u043e.");
+      event.target.value = "";
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const uploaded = await uploadAdminLessonAudioAsset(lesson.id, file);
+      const nextUrl = `${uploaded.audio_url || uploaded.stream_url || uploaded.url || uploaded.content_url || ""}`.trim();
+
+      onFieldChange("audio_asset", uploaded);
+      onFieldChange("content_text", nextUrl);
+
+      if (!`${form.title || ""}`.trim() || `${form.title || ""}`.trim() === "\u0410\u0443\u0434\u0438\u043e") {
+        onFieldChange("title", uploaded.original_filename || file.name || "\u0410\u0443\u0434\u0438\u043e");
+      }
+
+      setUploadSuccess("\u0410\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c\u00bb, \u0447\u0442\u043e\u0431\u044b \u0437\u0430\u043a\u0440\u0435\u043f\u0438\u0442\u044c \u0435\u0433\u043e \u0432 \u0431\u043b\u043e\u043a\u0435.");
+    } catch (err) {
+      setUploadError(err?.message || "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0430\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b.");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  };
+
+  return (
+    <>
+      <section
+        data-testid="lesson-studio-audio-editor"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">{"\u0410\u0443\u0434\u0438\u043e\u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b"}</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {"\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0430\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b \u0438\u043b\u0438 \u0432\u0441\u0442\u0430\u0432\u044c\u0442\u0435 \u043f\u0440\u044f\u043c\u0443\u044e \u0441\u0441\u044b\u043b\u043a\u0443 \u043d\u0430 \u0430\u0443\u0434\u0438\u043e."}
+            </p>
+          </div>
+
+          {ready ? (
+            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+              {"\u2713 \u0410\u0443\u0434\u0438\u043e \u043d\u0430\u0439\u0434\u0435\u043d\u043e"}
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+              {"\u0422\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u0430\u0443\u0434\u0438\u043e"}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <label className="block rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {"\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0430\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b"}
+            </span>
+
+            <input
+              type="file"
+              accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/aac,audio/ogg,audio/webm,.mp3,.wav,.m4a,.aac,.ogg,.oga,.webm"
+              onChange={handleAudioFileChange}
+              disabled={saving || uploading}
+              className="mt-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-700 file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-white hover:file:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+            />
+
+            <span className="mt-2 block text-xs leading-5 text-slate-500">
+              {"\u041f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u044e\u0442\u0441\u044f MP3, WAV, M4A, AAC, OGG \u0438 WEBM."}
+            </span>
+          </label>
+
+          <label className="block rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-200" data-testid="lesson-studio-inspector-content-field">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {"\u0421\u0441\u044b\u043b\u043a\u0430 \u043d\u0430 \u0430\u0443\u0434\u0438\u043e"}
+            </span>
+
+            <input
+              type="url"
+              value={form.content_text}
+              onChange={(event) => {
+                onFieldChange("content_text", event.target.value);
+                onFieldChange("audio_asset", {
+                  ...(form.audio_asset || {}),
+                  material_kind: "audio",
+                  url: event.target.value,
+                  content_url: event.target.value,
+                  audio_url: event.target.value,
+                  stream_url: event.target.value,
+                });
+              }}
+              placeholder="https://.../audio.mp3"
+              disabled={saving || uploading}
+              className="mt-3 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+            />
+
+            <span className="mt-2 block text-xs leading-5 text-slate-500">
+              {"\u041c\u043e\u0436\u043d\u043e \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c \u043f\u0440\u044f\u043c\u0443\u044e \u0441\u0441\u044b\u043b\u043a\u0443 \u043d\u0430 \u0430\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b, \u0435\u0441\u043b\u0438 \u0444\u0430\u0439\u043b \u0443\u0436\u0435 \u0440\u0430\u0437\u043c\u0435\u0449\u0451\u043d \u0432\u043e \u0432\u043d\u0435\u0448\u043d\u0435\u043c \u0445\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435."}
+            </span>
+          </label>
+        </div>
+
+        {uploading ? (
+          <div className="mt-3 rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 ring-1 ring-blue-200">
+            {"\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0430\u0443\u0434\u0438\u043e..."}
+          </div>
+        ) : null}
+
+        {uploadSuccess ? (
+          <div className="mt-3 rounded-xl bg-green-50 px-4 py-3 text-sm font-semibold text-green-800 ring-1 ring-green-200">
+            {uploadSuccess}
+          </div>
+        ) : null}
+
+        {uploadError ? (
+          <div className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 ring-1 ring-red-200">
+            {uploadError}
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        data-testid="lesson-studio-audio-preview-editor"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-lg font-black text-slate-950">{"\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440"}</div>
+
+          {filename ? (
+            <span className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+              {filename}
+            </span>
+          ) : null}
+        </div>
+
+        <LessonAudioCanvasPreview
+          block={{
+            block_type: "audio",
+            title: form.title || "\u0410\u0443\u0434\u0438\u043e",
+            content_json: {
+              ...(form.audio_asset || {}),
+              url: form.content_text,
+              content_url: form.content_text,
+              audio_url: form.content_text,
+              stream_url: form.content_text,
+            },
+          }}
+          previewValue={form.content_text}
+          learnerMode={false}
+        />
+      </section>
+
+      <section
+        data-testid="lesson-studio-inspector-section-publication"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="text-lg font-black text-slate-950">{"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0431\u043b\u043e\u043a\u0430"}</div>
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          {"\u0417\u0430\u0433\u043e\u043b\u043e\u0432\u043e\u043a, \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0438 \u0432\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c \u0430\u0443\u0434\u0438\u043e \u0434\u043b\u044f \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u0445\u0441\u044f."}
+        </p>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_15rem_15rem]">
+          <label
+            className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+            data-testid="lesson-studio-inspector-title-field"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0431\u043b\u043e\u043a\u0430"}
+            </span>
+            <input
+              value={form.title}
+              onChange={(event) => onFieldChange("title", event.target.value)}
+              placeholder="\u0410\u0443\u0434\u0438\u043e"
+              disabled={saving || uploading}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+            />
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_required
+              ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">{"\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439"}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                {"\u041e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u0439\u0441\u044f \u0434\u043e\u043b\u0436\u0435\u043d \u043f\u0440\u043e\u0441\u043b\u0443\u0448\u0430\u0442\u044c \u044d\u0442\u043e\u0442 \u0431\u043b\u043e\u043a."}
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+              <input
+                type="checkbox"
+                checked={form.is_required}
+                onChange={(event) => onFieldChange("is_required", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_active
+              ? "bg-emerald-50/70 text-emerald-900 ring-emerald-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">{"\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0432 \u0443\u0440\u043e\u043a\u0435"}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                {"\u0411\u043b\u043e\u043a \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u0435\u043d \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u043c\u0441\u044f."}
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-emerald-600">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(event) => onFieldChange("is_active", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+        </div>
+      </section>
+    </>
+  );
+}
 
 
 function LessonStudioCalloutBlockEditor({ form, saving, onFieldChange }) {
@@ -4724,6 +5118,13 @@ function getInspectorContentFieldMeta(block) {
       rows: 1,
       inputType: "url",
     },
+    audio: {
+      label: "\u0421\u0441\u044b\u043b\u043a\u0430 \u043d\u0430 \u0430\u0443\u0434\u0438\u043e",
+      placeholder: "https://.../audio.mp3",
+      help: "\u041c\u043e\u0436\u043d\u043e \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0430\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b \u0438\u043b\u0438 \u0443\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u0440\u044f\u043c\u0443\u044e \u0441\u0441\u044b\u043b\u043a\u0443 \u043d\u0430 \u0430\u0443\u0434\u0438\u043e.",
+      rows: 1,
+      inputType: "url",
+    },
     file_link: {
       label: "Ссылка на материал",
       placeholder: "https://... или ссылка на PDF/презентацию",
@@ -4778,6 +5179,8 @@ function buildInspectorBlockForm(block) {
   const videoUrl = getVideoBlockUrl(block);
   const videoEmbedCode = getVideoBlockEmbedCode(block);
   const videoSourceValue = videoSourceType === "embed" ? videoEmbedCode : videoUrl;
+  const audioContent = getAudioBlockContent(block);
+  const audioUrl = getAudioBlockUrl(block);
   const imageContent = getImageBlockContent(block);
   const imageUrl = getImageBlockUrl(block);
   const quizContent = normalizeQuizContent(block?.content_json);
@@ -4786,9 +5189,11 @@ function buildInspectorBlockForm(block) {
     title: `${block?.title || ""}`,
     content_text: isLessonVideoBlock(block)
       ? videoSourceValue
-      : isLessonImageBlock(block)
-        ? imageUrl
-        : getInspectorContentText(block),
+      : isLessonAudioBlock(block)
+        ? audioUrl
+        : isLessonImageBlock(block)
+          ? imageUrl
+          : getInspectorContentText(block),
     editor_json: getInspectorEditorJson(block),
     editor_html: getInspectorEditorHtml(block),
     video_source_type: videoSourceType,
@@ -4802,6 +5207,7 @@ function buildInspectorBlockForm(block) {
     image_open_full_size: imageContent.open_full_size !== false,
     quiz_content: isLessonQuizBlock(block) ? quizContent : null,
     presentation_asset: isLessonPresentationBlock(block) ? getPresentationBlockContent(block) : null,
+    audio_asset: isLessonAudioBlock(block) ? audioContent : null,
     is_required: Boolean(block?.is_required),
     is_active: block?.is_active !== false,
   };
@@ -4851,6 +5257,7 @@ function getInspectorFormSnapshot(values) {
     image_open_full_size: values?.image_open_full_size !== false,
     quiz_content: stableStringifyLessonValue(values?.quiz_content || null),
     presentation_asset: stableStringifyLessonValue(values?.presentation_asset || null),
+    audio_asset: stableStringifyLessonValue(values?.audio_asset || null),
     is_required: Boolean(values?.is_required),
     is_active: Boolean(values?.is_active),
   });
@@ -4887,6 +5294,27 @@ function buildInspectorBlockPayload(block, values) {
     contentJson.embed_code = sourceType === "embed" ? embedCode : "";
     contentJson.video_embed_code = sourceType === "embed" ? embedCode : "";
     contentJson.allow_fullscreen = values.allow_fullscreen !== false;
+  } else if (type === "audio") {
+    const uploadedAudioAsset =
+      values.audio_asset && typeof values.audio_asset === "object"
+        ? values.audio_asset
+        : {};
+    const audioUrl = `${uploadedAudioAsset.stream_url || uploadedAudioAsset.audio_url || uploadedAudioAsset.url || contentText || ""}`.trim();
+    const downloadUrl = `${uploadedAudioAsset.original_url || uploadedAudioAsset.download_url || contentJson.original_url || contentJson.download_url || audioUrl}`.trim();
+
+    contentJson.material_kind = "audio";
+    contentJson.asset_id = uploadedAudioAsset.asset_id || contentJson.asset_id || "";
+    contentJson.original_filename = uploadedAudioAsset.original_filename || contentJson.original_filename || "";
+    contentJson.source_extension = uploadedAudioAsset.source_extension || contentJson.source_extension || "";
+    contentJson.mime_type = uploadedAudioAsset.mime_type || contentJson.mime_type || "";
+    contentJson.size_bytes = uploadedAudioAsset.size_bytes || contentJson.size_bytes || null;
+    contentJson.url = audioUrl;
+    contentJson.content_url = audioUrl;
+    contentJson.audio_url = audioUrl;
+    contentJson.stream_url = audioUrl;
+    contentJson.original_url = downloadUrl;
+    contentJson.download_url = downloadUrl;
+    contentJson.show_download = contentJson.show_download !== false;
   } else if (type === "presentation") {
     const uploadedPresentationAsset =
       values.presentation_asset && typeof values.presentation_asset === "object"
@@ -5402,6 +5830,13 @@ function LessonStudioInspector({
               </>
             ) : isLessonVideoBlock(selectedBlock) ? (
               <LessonStudioVideoBlockEditor
+                form={form}
+                saving={saving}
+                onFieldChange={handleFieldChange}
+              />
+            ) : isLessonAudioBlock(selectedBlock) ? (
+              <LessonStudioAudioBlockEditor
+                lesson={lesson}
                 form={form}
                 saving={saving}
                 onFieldChange={handleFieldChange}

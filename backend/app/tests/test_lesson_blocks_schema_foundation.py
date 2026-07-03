@@ -42,6 +42,7 @@ def test_lesson_block_model_contract() -> None:
 def test_lesson_block_type_normalization() -> None:
     assert "rich_text" in LESSON_BLOCK_TYPES
     assert "video" in LESSON_BLOCK_TYPES
+    assert "audio" in LESSON_BLOCK_TYPES
     assert "file_link" in LESSON_BLOCK_TYPES
     assert "quiz" in LESSON_BLOCK_TYPES
     assert "assignment" in LESSON_BLOCK_TYPES

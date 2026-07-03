@@ -130,6 +130,17 @@ ROLE_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,63}$")
 
 LESSON_PRESENTATION_ALLOWED_EXTENSIONS = {".pdf", ".pptx"}
 LESSON_PRESENTATION_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+LESSON_AUDIO_ALLOWED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".oga", ".webm"}
+LESSON_AUDIO_MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+LESSON_AUDIO_MIME_BY_EXTENSION = {
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".ogg": "audio/ogg",
+    ".oga": "audio/ogg",
+    ".webm": "audio/webm",
+}
 
 
 async def get_user_roles(
@@ -4287,6 +4298,124 @@ async def list_real_lesson_blocks(
     )
 
     return list(result.scalars().all())
+
+
+
+def normalize_lesson_audio_extension(filename: str | None) -> str:
+    suffix = Path(filename or "").suffix.lower()
+
+    if not suffix:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Audio file extension is required",
+        )
+
+    if suffix not in LESSON_AUDIO_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Only MP3, WAV, M4A, AAC, OGG and WEBM audio files are supported",
+        )
+
+    return suffix
+
+
+def get_lesson_audio_mime_type(extension: str) -> str:
+    return LESSON_AUDIO_MIME_BY_EXTENSION.get(extension.lower(), "application/octet-stream")
+
+
+async def save_admin_lesson_audio_file(
+    *,
+    lesson_id: str,
+    asset_id: str,
+    upload_file: UploadFile,
+) -> tuple[str, int, str, str]:
+    content = await upload_file.read()
+
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Uploaded audio file is empty",
+        )
+
+    if len(content) > LESSON_AUDIO_MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Audio file is too large",
+        )
+
+    extension = normalize_lesson_audio_extension(upload_file.filename)
+    mime_type = get_lesson_audio_mime_type(extension)
+    relative_path = Path("lesson-audio") / lesson_id / f"{asset_id}{extension}"
+
+    try:
+        storage_path = write_private_storage_file(relative_path, content)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid audio storage path",
+        )
+
+    return storage_path, len(content), extension, mime_type
+
+
+def build_lesson_audio_public_urls(
+    *,
+    request: Request,
+    lesson_id: str,
+    asset_id: str,
+) -> dict[str, str]:
+    base_url = str(request.base_url).rstrip("/")
+    public_path = f"/api/v1/public/lesson-audio/{lesson_id}/{asset_id}"
+
+    return {
+        "stream_url": f"{base_url}{public_path}/stream",
+        "download_url": f"{base_url}{public_path}/download",
+    }
+
+
+@router.post(
+    "/course-lessons/{lesson_id}/audio-assets",
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_admin_lesson_audio_asset(
+    lesson_id: str,
+    request: Request,
+    file: UploadFile = File(...),
+    _: User = Depends(require_permission("catalog.write")),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    lesson = await get_admin_course_lesson_or_404(lesson_id, session)
+    asset_id = str(uuid4())
+
+    storage_path, size_bytes, source_extension, mime_type = await save_admin_lesson_audio_file(
+        lesson_id=str(lesson.id),
+        asset_id=asset_id,
+        upload_file=file,
+    )
+
+    urls = build_lesson_audio_public_urls(
+        request=request,
+        lesson_id=str(lesson.id),
+        asset_id=asset_id,
+    )
+
+    return {
+        "asset_id": asset_id,
+        "lesson_id": str(lesson.id),
+        "material_kind": "audio",
+        "original_filename": file.filename or f"audio{source_extension}",
+        "mime_type": mime_type,
+        "source_extension": source_extension,
+        "size_bytes": size_bytes,
+        "storage_path": storage_path,
+        "url": urls["stream_url"],
+        "content_url": urls["stream_url"],
+        "audio_url": urls["stream_url"],
+        "stream_url": urls["stream_url"],
+        "original_url": urls["download_url"],
+        "download_url": urls["download_url"],
+    }
+
 
 
 def normalize_lesson_presentation_extension(filename: str | None) -> str:

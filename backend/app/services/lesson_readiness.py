@@ -76,6 +76,17 @@ def get_lesson_block_readiness_issues(block: LessonBlock) -> list[str]:
         if not has_source:
             issues.append("\u043d\u0435\u0442 \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0430 \u0432\u0438\u0434\u0435\u043e")
 
+    elif block_type == "audio":
+        has_audio = bool(
+            get_lesson_block_content_value(
+                content,
+                ["url", "content_url", "audio_url", "stream_url", "src", "file_url", "href", "download_url"],
+            )
+        )
+
+        if not has_audio:
+            issues.append("\u043d\u0435\u0442 \u0430\u0443\u0434\u0438\u043e")
+
     elif block_type == "presentation":
         has_presentation = bool(
             get_lesson_block_content_value(

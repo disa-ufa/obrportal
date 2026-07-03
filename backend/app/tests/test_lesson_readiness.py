@@ -102,3 +102,32 @@ def test_normalize_admin_lesson_readiness_payload_defaults_are_safe():
         "readiness_status": "empty",
         "readiness_issues": [],
     }
+
+
+
+def test_audio_block_requires_source():
+    lesson = make_lesson()
+    block = make_block(block_type="audio", title="Audio", content_json={})
+
+    payload = build_admin_lesson_readiness_payload(lesson, [block])
+
+    assert payload["blocks_count"] == 1
+    assert payload["problem_blocks_count"] == 1
+    assert payload["is_content_ready"] is False
+    assert payload["readiness_status"] == "needs_work"
+
+
+def test_audio_block_is_ready_with_audio_url():
+    lesson = make_lesson()
+    block = make_block(
+        block_type="audio",
+        title="Audio",
+        content_json={"audio_url": "https://example.invalid/audio.mp3"},
+    )
+
+    payload = build_admin_lesson_readiness_payload(lesson, [block])
+
+    assert payload["blocks_count"] == 1
+    assert payload["problem_blocks_count"] == 0
+    assert payload["is_content_ready"] is True
+    assert payload["readiness_status"] == "ready"
