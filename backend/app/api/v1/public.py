@@ -42,6 +42,80 @@ LESSON_AUDIO_MIME_BY_EXTENSION = {
 
 
 
+LESSON_IMAGE_ALLOWED_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp", ".gif")
+LESSON_IMAGE_MIME_BY_EXTENSION = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+}
+
+
+
+def resolve_public_lesson_image_path(
+    *,
+    lesson_id: str,
+    asset_id: str,
+):
+    for suffix in LESSON_IMAGE_ALLOWED_EXTENSIONS:
+        resolved_path = resolve_private_storage_path(
+            f"lesson-images/{lesson_id}/{asset_id}{suffix}"
+        )
+
+        if resolved_path and resolved_path.exists() and resolved_path.is_file():
+            return resolved_path, LESSON_IMAGE_MIME_BY_EXTENSION.get(suffix, "application/octet-stream")
+
+    return None, "application/octet-stream"
+
+
+@router.get("/lesson-images/{lesson_id}/{asset_id}/view")
+async def view_public_lesson_image(
+    lesson_id: str,
+    asset_id: str,
+):
+    resolved_path, media_type = resolve_public_lesson_image_path(
+        lesson_id=lesson_id,
+        asset_id=asset_id,
+    )
+
+    if not resolved_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image file not found",
+        )
+
+    return FileResponse(
+        path=resolved_path,
+        media_type=media_type,
+        filename=resolved_path.name,
+        content_disposition_type="inline",
+    )
+
+
+@router.get("/lesson-images/{lesson_id}/{asset_id}/download")
+async def download_public_lesson_image(
+    lesson_id: str,
+    asset_id: str,
+):
+    resolved_path, media_type = resolve_public_lesson_image_path(
+        lesson_id=lesson_id,
+        asset_id=asset_id,
+    )
+
+    if not resolved_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image file not found",
+        )
+
+    return FileResponse(
+        path=resolved_path,
+        media_type=media_type,
+        filename=resolved_path.name,
+        content_disposition_type="attachment",
+    )
+
 
 def resolve_public_lesson_audio_path(
     *,

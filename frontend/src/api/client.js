@@ -6,7 +6,7 @@ const RAW_API_BASE_URL = (
 
 const API_BASE_URL = `${RAW_API_BASE_URL || ""}`.trim().replace(/\/+$/, "");
 
-function buildApiUrl(path) {
+export function buildApiUrl(path) {
   if (!path.startsWith("/")) {
     throw new Error(`API path must start with "/": ${path}`);
   }
@@ -903,6 +903,17 @@ export async function uploadAdminLessonAudioAsset(lessonId, file) {
   formData.append("file", file);
 
   return request(`/api/v1/admin/course-lessons/${lessonId}/audio-assets`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+
+export async function uploadAdminLessonImageAsset(lessonId, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return request(`/api/v1/admin/course-lessons/${lessonId}/image-assets`, {
     method: "POST",
     body: formData,
   });
