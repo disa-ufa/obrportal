@@ -457,7 +457,20 @@ function getSafeLessonRichTextHref(href) {
     const url = new URL(value);
     const allowedProtocols = ["http:", "https:", "mailto:", "tel:"];
 
-    return allowedProtocols.includes(url.protocol) ? value : "";
+    if (!allowedProtocols.includes(url.protocol)) {
+      return "";
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      window.location?.host &&
+      url.host === window.location.host &&
+      (url.protocol === "http:" || url.protocol === "https:")
+    ) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+
+    return value;
   } catch {
     return "";
   }
@@ -6396,6 +6409,7 @@ export function LessonStudioPage({ lessonId }) {
   const [duplicatingBlockId, setDuplicatingBlockId] = useState("");
   const [deletingBlockId, setDeletingBlockId] = useState("");
   const [creatingTemplateKey, setCreatingTemplateKey] = useState("");
+  const [pendingCreatedBlockFocusId, setPendingCreatedBlockFocusId] = useState("");
   const [publishingLesson, setPublishingLesson] = useState(false);
   const [unpublishingLesson, setUnpublishingLesson] = useState(false);
   const [error, setError] = useState("");
@@ -6463,6 +6477,66 @@ export function LessonStudioPage({ lessonId }) {
   const reloadStudio = useCallback(async () => {
     await Promise.all([loadLesson(), loadBlocks()]);
   }, [loadLesson, loadBlocks]);
+
+  useEffect(() => {
+    if (!pendingCreatedBlockFocusId || viewMode === "preview") {
+      return undefined;
+    }
+
+    const createdBlockExists = blocks.some((block) => block.id === pendingCreatedBlockFocusId);
+
+    if (!createdBlockExists) {
+      return undefined;
+    }
+
+    const scrollToPendingCreatedBlock = (behavior = "smooth") => {
+      if (typeof document === "undefined" || typeof window === "undefined") {
+        return false;
+      }
+
+      const safeCreatedBlockId =
+        window.CSS?.escape
+          ? window.CSS.escape(pendingCreatedBlockFocusId)
+          : `${pendingCreatedBlockFocusId}`.replace(/"/g, '\\"');
+
+      const createdBlockElement = document.querySelector(
+        `[data-lesson-studio-block-id="${safeCreatedBlockId}"]`
+      );
+
+      if (!createdBlockElement) {
+        return false;
+      }
+
+      const targetTop = Math.max(
+        createdBlockElement.getBoundingClientRect().top + window.scrollY - 130,
+        0
+      );
+
+      window.scrollTo({
+        top: targetTop,
+        behavior,
+      });
+
+      createdBlockElement.focus?.({ preventScroll: true });
+
+      return true;
+    };
+
+    const timeouts = [0, 80, 180, 360, 700, 1100].map((delay, index, delays) =>
+      window.setTimeout(() => {
+        scrollToPendingCreatedBlock(index < 2 ? "auto" : "smooth");
+
+        if (index === delays.length - 1) {
+          setPendingCreatedBlockFocusId("");
+        }
+      }, delay)
+    );
+
+    return () => {
+      timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    };
+  }, [blocks, pendingCreatedBlockFocusId, viewMode, editingBlockId]);
+
 
   useEffect(() => {
     reloadStudio();
@@ -6867,8 +6941,11 @@ export function LessonStudioPage({ lessonId }) {
         await loadBlocks();
 
         if (createdBlock?.id) {
-          setSelectedBlockId(createdBlock.id);
-          setEditingBlockId(createdBlock.id);
+          const createdBlockId = createdBlock.id;
+
+          setSelectedBlockId(createdBlockId);
+          setEditingBlockId(createdBlockId);
+          setPendingCreatedBlockFocusId(createdBlockId);
         }
       } catch (err) {
         setError(formatLessonStudioError(err, "Не удалось добавить блок"));
