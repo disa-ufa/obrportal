@@ -143,6 +143,80 @@ LESSON_AUDIO_MIME_BY_EXTENSION = {
 }
 
 
+LESSON_IMAGE_ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+LESSON_IMAGE_MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+LESSON_IMAGE_MIME_BY_EXTENSION = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+}
+
+
+def normalize_lesson_image_extension(filename: str | None) -> str:
+    extension = Path(filename or "").suffix.lower()
+
+    if extension not in LESSON_IMAGE_ALLOWED_EXTENSIONS:
+        allowed = ", ".join(sorted(LESSON_IMAGE_ALLOWED_EXTENSIONS))
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported image format. Allowed: {allowed}",
+        )
+
+    return extension
+
+
+def get_lesson_image_mime_type(extension: str) -> str:
+    return LESSON_IMAGE_MIME_BY_EXTENSION.get(extension.lower(), "application/octet-stream")
+
+
+async def save_admin_lesson_image_file(
+    file: UploadFile,
+    *,
+    lesson_id: str,
+    asset_id: str,
+    extension: str,
+) -> tuple[str, int]:
+    content = await file.read()
+    size_bytes = len(content)
+
+    if size_bytes <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Image file is empty",
+        )
+
+    if size_bytes > LESSON_IMAGE_MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Image file is too large",
+        )
+
+    storage_path = f"lesson-images/{lesson_id}/{asset_id}{extension}"
+    saved_path = write_private_storage_file(storage_path, content)
+
+    return saved_path, size_bytes
+
+
+def build_lesson_image_public_urls(
+    *,
+    lesson_id: str,
+    asset_id: str,
+) -> dict:
+    base_path = f"/api/v1/public/lesson-images/{lesson_id}/{asset_id}"
+
+    return {
+        "url": f"{base_path}/view",
+        "content_url": f"{base_path}/view",
+        "image_url": f"{base_path}/view",
+        "image_src": f"{base_path}/view",
+        "src": f"{base_path}/view",
+        "original_url": f"{base_path}/download",
+        "download_url": f"{base_path}/download",
+    }
+
+
 async def get_user_roles(
     user_id: str,
     session: AsyncSession,
@@ -983,6 +1057,51 @@ async def get_admin_dashboard_summary(
             select(func.count()).select_from(AuditEvent),
         ),
     )
+
+
+
+@router.post("/course-lessons/{lesson_id}/image-assets")
+async def upload_admin_lesson_image_asset(
+    lesson_id: str,
+    file: UploadFile = File(...),
+    _: User = Depends(require_permission("admin.courses.write")),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    lesson_result = await session.execute(
+        select(CourseLesson).where(CourseLesson.id == lesson_id)
+    )
+    lesson = lesson_result.scalar_one_or_none()
+
+    if lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found",
+        )
+
+    extension = normalize_lesson_image_extension(file.filename)
+    asset_id = str(uuid4())
+    storage_path, size_bytes = await save_admin_lesson_image_file(
+        file,
+        lesson_id=lesson_id,
+        asset_id=asset_id,
+        extension=extension,
+    )
+    public_urls = build_lesson_image_public_urls(
+        lesson_id=lesson_id,
+        asset_id=asset_id,
+    )
+
+    return {
+        "asset_id": asset_id,
+        "lesson_id": lesson_id,
+        "material_kind": "image",
+        "original_filename": file.filename or f"image{extension}",
+        "mime_type": get_lesson_image_mime_type(extension),
+        "source_extension": extension,
+        "size_bytes": size_bytes,
+        "storage_path": storage_path,
+        **public_urls,
+    }
 
 
 @router.get("/users", response_model=list[AdminUserItem])

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, BarChart3, CheckCircle2, ChevronRight, Clock3, Eye, FileText, GripVertical, Image as ImageIcon, ListChecks, PlayCircle, Save, Send, Star, Type } from "lucide-react";
 import {
+  buildApiUrl,
   createAdminLessonBlock,
   deleteAdminLessonBlock,
   getAdminCourseLessonDetail,
@@ -11,6 +12,7 @@ import {
   updateAdminLessonBlock,
   uploadAdminLessonPresentationAsset,
   uploadAdminLessonAudioAsset,
+  uploadAdminLessonImageAsset,
 } from "../api/client";
 import LessonRichTextEditor from "../components/admin/lesson-studio/LessonRichTextEditor";
 import QuizBlockEditor from "../components/admin/lesson-studio/quiz/QuizBlockEditor";
@@ -449,7 +451,15 @@ function getSafeLessonRichTextHref(href) {
     return "";
   }
 
-  if (value.startsWith("/") || value.startsWith("#")) {
+  if (value.startsWith("#")) {
+    return value;
+  }
+
+  if (value.startsWith("/api/")) {
+    return buildApiUrl(value);
+  }
+
+  if (value.startsWith("/")) {
     return value;
   }
 
@@ -4255,7 +4265,9 @@ function LessonStudioCalloutBlockEditor({ form, saving, onFieldChange }) {
 
 
 
-function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
+function LessonStudioImageBlockEditor({ lesson, form, saving, onFieldChange }) {
+  const [imageUploadState, setImageUploadState] = useState("idle");
+  const [imageUploadError, setImageUploadError] = useState("");
   const imageUrl = `${form.image_url || form.content_text || ""}`;
   const imageCaption = `${form.image_caption || ""}`;
   const imageAlt = `${form.image_alt || ""}`;
@@ -4283,6 +4295,52 @@ function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
     onFieldChange("content_text", value);
   };
 
+  const handleImageFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!lesson?.id) {
+      setImageUploadError("Не найден идентификатор урока.");
+      return;
+    }
+
+    setImageUploadState("uploading");
+    setImageUploadError("");
+
+    try {
+      const uploadedImage = await uploadAdminLessonImageAsset(lesson.id, file);
+      const nextImageUrl = `${uploadedImage.image_url || uploadedImage.image_src || uploadedImage.url || uploadedImage.src || ""}`.trim();
+
+      if (!nextImageUrl) {
+        throw new Error("Сервер не вернул ссылку на изображение.");
+      }
+
+      onFieldChange("image_asset", uploadedImage);
+      onFieldChange("image_url", nextImageUrl);
+      onFieldChange("content_text", nextImageUrl);
+
+      if (!imageCaption && uploadedImage.original_filename) {
+        onFieldChange("image_caption", uploadedImage.original_filename);
+      }
+
+      if (!imageAlt && uploadedImage.original_filename) {
+        onFieldChange(
+          "image_alt",
+          uploadedImage.original_filename.replace(/\.[^/.]+$/, "")
+        );
+      }
+
+      setImageUploadState("done");
+    } catch (err) {
+      setImageUploadError(formatLessonStudioError(err, "Не удалось загрузить изображение"));
+      setImageUploadState("error");
+    }
+  };
+
   return (
     <>
       <section
@@ -4308,6 +4366,52 @@ function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
           )}
         </div>
 
+        <div
+          data-testid="lesson-studio-image-upload-field"
+          className="mt-4 rounded-xl bg-violet-50/70 p-4 ring-1 ring-violet-200"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-slate-950">Загрузка с компьютера</div>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Поддерживаются JPG, PNG, WebP и GIF. Максимальный размер — 20 МБ.
+              </p>
+            </div>
+
+            <input
+              id="lesson-studio-image-file-upload"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+              onChange={handleImageFileUpload}
+              disabled={saving || imageUploadState === "uploading"}
+              className="sr-only"
+            />
+
+            <label
+              htmlFor="lesson-studio-image-file-upload"
+              className={`inline-flex h-11 cursor-pointer items-center justify-center rounded-xl px-4 text-sm font-bold text-white shadow-sm ring-1 transition ${
+                saving || imageUploadState === "uploading"
+                  ? "pointer-events-none bg-slate-400 ring-slate-400"
+                  : "bg-violet-700 ring-violet-700 hover:bg-violet-800"
+              }`}
+            >
+              {imageUploadState === "uploading" ? "Загружаем..." : "Выбрать изображение"}
+            </label>
+          </div>
+
+          {imageUploadState === "done" ? (
+            <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold text-green-700 ring-1 ring-green-200">
+              Изображение загружено. Нажмите «Сохранить», чтобы закрепить его в блоке.
+            </div>
+          ) : null}
+
+          {imageUploadError ? (
+            <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold text-red-700 ring-1 ring-red-200">
+              {imageUploadError}
+            </div>
+          ) : null}
+        </div>
+
         <label className="mt-4 block" data-testid="lesson-studio-inspector-content-field">
           <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
             Ссылка на изображение
@@ -4315,7 +4419,8 @@ function LessonStudioImageBlockEditor({ form, saving, onFieldChange }) {
 
           <div className="mt-2 flex flex-col gap-2 lg:flex-row">
             <input
-              type="url"
+              type="text"
+              inputMode="url"
               value={imageUrl}
               onChange={(event) => handleImageUrlChange(event.target.value)}
               placeholder="https://example.com/image.jpg"
@@ -5218,6 +5323,7 @@ function buildInspectorBlockForm(block) {
     image_alt: `${imageContent.alt_text || imageContent.alt || ""}`,
     image_full_width: imageContent.full_width !== false,
     image_open_full_size: imageContent.open_full_size !== false,
+    image_asset: isLessonImageBlock(block) ? imageContent : null,
     quiz_content: isLessonQuizBlock(block) ? quizContent : null,
     presentation_asset: isLessonPresentationBlock(block) ? getPresentationBlockContent(block) : null,
     audio_asset: isLessonAudioBlock(block) ? audioContent : null,
@@ -5268,6 +5374,7 @@ function getInspectorFormSnapshot(values) {
     image_alt: `${values?.image_alt || ""}`.trim(),
     image_full_width: values?.image_full_width !== false,
     image_open_full_size: values?.image_open_full_size !== false,
+    image_asset: stableStringifyLessonValue(values?.image_asset || null),
     quiz_content: stableStringifyLessonValue(values?.quiz_content || null),
     presentation_asset: stableStringifyLessonValue(values?.presentation_asset || null),
     audio_asset: stableStringifyLessonValue(values?.audio_asset || null),
@@ -5307,6 +5414,35 @@ function buildInspectorBlockPayload(block, values) {
     contentJson.embed_code = sourceType === "embed" ? embedCode : "";
     contentJson.video_embed_code = sourceType === "embed" ? embedCode : "";
     contentJson.allow_fullscreen = values.allow_fullscreen !== false;
+  } else if (type === "image") {
+    const uploadedImageAsset =
+      values.image_asset && typeof values.image_asset === "object"
+        ? values.image_asset
+        : {};
+    const imageUrl = `${uploadedImageAsset.image_url || uploadedImageAsset.image_src || uploadedImageAsset.url || uploadedImageAsset.src || values.image_url || contentText || ""}`.trim();
+    const downloadUrl = `${uploadedImageAsset.original_url || uploadedImageAsset.download_url || contentJson.original_url || contentJson.download_url || imageUrl}`.trim();
+    const imageCaption = `${values.image_caption || contentJson.caption || contentJson.description || ""}`.trim();
+    const imageAlt = `${values.image_alt || contentJson.alt_text || contentJson.alt || ""}`.trim();
+
+    contentJson.material_kind = "image";
+    contentJson.asset_id = uploadedImageAsset.asset_id || contentJson.asset_id || "";
+    contentJson.original_filename = uploadedImageAsset.original_filename || contentJson.original_filename || "";
+    contentJson.source_extension = uploadedImageAsset.source_extension || contentJson.source_extension || "";
+    contentJson.mime_type = uploadedImageAsset.mime_type || contentJson.mime_type || "";
+    contentJson.size_bytes = uploadedImageAsset.size_bytes || contentJson.size_bytes || null;
+    contentJson.url = imageUrl;
+    contentJson.content_url = imageUrl;
+    contentJson.image_url = imageUrl;
+    contentJson.image_src = imageUrl;
+    contentJson.src = imageUrl;
+    contentJson.original_url = downloadUrl;
+    contentJson.download_url = downloadUrl;
+    contentJson.caption = imageCaption;
+    contentJson.description = imageCaption;
+    contentJson.alt_text = imageAlt;
+    contentJson.alt = imageAlt;
+    contentJson.full_width = values.image_full_width !== false;
+    contentJson.open_full_size = values.image_open_full_size !== false;
   } else if (type === "audio") {
     const uploadedAudioAsset =
       values.audio_asset && typeof values.audio_asset === "object"
@@ -5856,6 +5992,7 @@ function LessonStudioInspector({
               />
             ) : isLessonImageBlock(selectedBlock) ? (
               <LessonStudioImageBlockEditor
+                lesson={lesson}
                 form={form}
                 saving={saving}
                 onFieldChange={handleFieldChange}
