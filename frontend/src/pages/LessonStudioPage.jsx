@@ -746,31 +746,52 @@ function getCalloutBlockText(block, previewValue = "") {
 }
 
 function LessonCalloutCanvasPreview({ block, previewValue, learnerMode = false }) {
-  const textValue = getCalloutBlockText(block, previewValue);
+  const content = safeParseJson(block?.content_json);
+  const title = `${block?.title || content.title || "\u0412\u0440\u0435\u0437\u043a\u0430"}`.trim() || "\u0412\u0440\u0435\u0437\u043a\u0430";
+  const textValue = `${content.text || content.content_text || previewValue || ""}`.trim();
   const ready = Boolean(textValue);
-  const title = `${block?.title || "Важно"}`.trim() || "Важно";
+
+  if (learnerMode) {
+    return (
+      <section
+        data-testid="lesson-studio-callout-preview"
+        className="mt-5"
+      >
+        {title ? (
+          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
+            {title}
+          </div>
+        ) : null}
+
+        <div className="rounded-3xl bg-indigo-50/80 p-5 text-base font-semibold leading-8 text-slate-800 ring-1 ring-indigo-100">
+          {ready ? (
+            <div className="whitespace-pre-wrap break-words">{textValue}</div>
+          ) : (
+            <div className="text-slate-400">
+              {"\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u0432\u0440\u0435\u0437\u043a\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d."}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <div
       data-testid="lesson-studio-callout-preview"
-      className={
-        learnerMode
-          ? "mt-5 rounded-3xl border-l-4 border-indigo-300 bg-indigo-50 p-5 shadow-sm ring-1 ring-indigo-100"
-          : "mt-4 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-white p-4 shadow-sm ring-1 ring-indigo-100/70"
-      }
-      onClick={(event) => event.stopPropagation()}
+      className="mt-4 rounded-[1.5rem] bg-indigo-50/80 p-5 ring-1 ring-indigo-100"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-xl font-black text-indigo-700 shadow-sm ring-1 ring-indigo-200">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-lg font-black text-indigo-700 ring-1 ring-indigo-200">
             !
           </div>
 
           <div className="min-w-0">
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-indigo-700">
-              Врезка
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
+              {"\u0412\u0440\u0435\u0437\u043a\u0430"}
             </div>
-            <div className="mt-1 text-lg font-black leading-7 text-slate-950">
+            <div className="mt-1 text-base font-black text-slate-950">
               {title}
             </div>
           </div>
@@ -778,11 +799,11 @@ function LessonCalloutCanvasPreview({ block, previewValue, learnerMode = false }
 
         {ready ? (
           <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
-            ✓ Готово
+            {"\u2713 \u0413\u043e\u0442\u043e\u0432\u043e"}
           </span>
         ) : (
           <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
-            Требуется текст
+            {"\u0422\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u0442\u0435\u043a\u0441\u0442"}
           </span>
         )}
       </div>
@@ -792,19 +813,17 @@ function LessonCalloutCanvasPreview({ block, previewValue, learnerMode = false }
           <div className="whitespace-pre-wrap break-words">{textValue}</div>
         ) : (
           <div className="text-slate-400">
-            Добавьте короткое важное примечание, предупреждение или подсказку.
+            {"\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u043a\u043e\u0440\u043e\u0442\u043a\u043e\u0435 \u0432\u0430\u0436\u043d\u043e\u0435 \u043f\u0440\u0438\u043c\u0435\u0447\u0430\u043d\u0438\u0435, \u043f\u0440\u0435\u0434\u0443\u043f\u0440\u0435\u0436\u0434\u0435\u043d\u0438\u0435 \u0438\u043b\u0438 \u043f\u043e\u0434\u0441\u043a\u0430\u0437\u043a\u0443."}
           </div>
         )}
       </div>
 
       <div className="mt-3 text-xs leading-5 text-indigo-700/80">
-        Врезка выделяет ключевую мысль и помогает обучающемуся обратить внимание на важный фрагмент урока.
+        {"\u0412\u0440\u0435\u0437\u043a\u0430 \u0432\u044b\u0434\u0435\u043b\u044f\u0435\u0442 \u043a\u043b\u044e\u0447\u0435\u0432\u0443\u044e \u043c\u044b\u0441\u043b\u044c \u0438 \u043f\u043e\u043c\u043e\u0433\u0430\u0435\u0442 \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0435\u043c\u0443\u0441\u044f \u043e\u0431\u0440\u0430\u0442\u0438\u0442\u044c \u0432\u043d\u0438\u043c\u0430\u043d\u0438\u0435 \u043d\u0430 \u0432\u0430\u0436\u043d\u044b\u0439 \u0444\u0440\u0430\u0433\u043c\u0435\u043d\u0442 \u0443\u0440\u043e\u043a\u0430."}
       </div>
     </div>
   );
 }
-
-
 
 function isLessonImageBlock(block) {
   const type = `${block?.block_type || ""}`.toLowerCase();
@@ -863,7 +882,7 @@ function LessonImageCanvasPreview({ block, previewValue, learnerMode = false }) 
   const sourceValue = getImageBlockUrl(block) || `${previewValue || ""}`.trim();
   const safeSrc = getSafeLessonRichTextHref(sourceValue);
   const ready = Boolean(safeSrc);
-  const title = `${block?.title || "Изображение"}`.trim() || "Изображение";
+  const title = `${block?.title || "\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435"}`.trim() || "\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435";
   const caption = getImageBlockCaption(block);
   const altText = getImageBlockAlt(block);
   const hostLabel = getImageHostLabel(sourceValue);
@@ -876,38 +895,70 @@ function LessonImageCanvasPreview({ block, previewValue, learnerMode = false }) 
     setImageFailed(false);
   }, [safeSrc]);
 
+  if (learnerMode) {
+    return (
+      <figure
+        data-testid="lesson-studio-image-preview"
+        className="mt-5"
+      >
+        {title ? (
+          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
+            {title}
+          </div>
+        ) : null}
+
+        {ready && !imageFailed ? (
+          <div className={`overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 ${fullWidth ? "w-full" : "mx-auto max-w-3xl"}`}>
+            <img
+              src={safeSrc}
+              alt={altText}
+              onError={() => setImageFailed(true)}
+              className="max-h-[620px] w-full object-contain"
+            />
+          </div>
+        ) : (
+          <div className="rounded-3xl bg-slate-50 p-8 text-center text-sm font-semibold text-slate-500 ring-1 ring-slate-200">
+            {"\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e."}
+          </div>
+        )}
+
+        {caption ? (
+          <figcaption className="mt-3 text-center text-sm leading-6 text-slate-500">
+            {caption}
+          </figcaption>
+        ) : null}
+      </figure>
+    );
+  }
+
   return (
     <div
       data-testid="lesson-studio-image-preview"
-      className={
-        learnerMode
-          ? "mt-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
-          : "mt-4 rounded-2xl bg-white/90 p-4 shadow-sm ring-1 ring-black/5"
-      }
+      className="mt-4 rounded-2xl bg-white/90 p-4 shadow-sm ring-1 ring-black/5"
       onClick={(event) => event.stopPropagation()}
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="text-base font-black text-slate-950">{title}</div>
           <div className="mt-1 text-sm font-semibold text-slate-600">
-            {ready ? "Изображение по ссылке" : "Изображение не настроено"}
+            {ready ? "\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u043f\u043e \u0441\u0441\u044b\u043b\u043a\u0435" : "\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u043d\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u043e"}
           </div>
           <div className="mt-1 max-w-3xl break-words text-xs leading-5 text-slate-500">
-            {ready ? sourceValue : "Добавьте прямую ссылку на картинку или открытый графический материал."}
+            {ready ? sourceValue : "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u043f\u0440\u044f\u043c\u0443\u044e \u0441\u0441\u044b\u043b\u043a\u0443 \u043d\u0430 \u043a\u0430\u0440\u0442\u0438\u043d\u043a\u0443 \u0438\u043b\u0438 \u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0439 \u0433\u0440\u0430\u0444\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b."}
           </div>
         </div>
 
         {ready && !imageFailed ? (
           <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
-            ✓ Изображение найдено
+            {"\u2713 \u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u043e"}
           </span>
         ) : ready && imageFailed ? (
           <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
-            Не удалось загрузить
+            {"\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c"}
           </span>
         ) : (
           <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
-            Требуется ссылка
+            {"\u0422\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u0441\u0441\u044b\u043b\u043a\u0430"}
           </span>
         )}
       </div>
@@ -926,12 +977,12 @@ function LessonImageCanvasPreview({ block, previewValue, learnerMode = false }) 
               IMG
             </div>
             <div className="mt-4 text-base font-black text-slate-950">
-              {ready ? "Изображение не загрузилось" : "Добавьте изображение"}
+              {ready ? "\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043b\u043e\u0441\u044c" : "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435"}
             </div>
             <div className="mt-2 max-w-md text-sm leading-6 text-slate-500">
               {ready
-                ? "Проверьте, что ссылка открыта для просмотра и ведёт именно на изображение."
-                : "Вставьте ссылку на JPG, PNG, WebP, SVG или другое открытое изображение."}
+                ? "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435, \u0447\u0442\u043e \u0441\u0441\u044b\u043b\u043a\u0430 \u043e\u0442\u043a\u0440\u044b\u0442\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u0438 \u0432\u0435\u0434\u0451\u0442 \u0438\u043c\u0435\u043d\u043d\u043e \u043d\u0430 \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435."
+                : "\u0412\u0441\u0442\u0430\u0432\u044c\u0442\u0435 \u0441\u0441\u044b\u043b\u043a\u0443 \u043d\u0430 JPG, PNG, WebP, SVG \u0438\u043b\u0438 \u0434\u0440\u0443\u0433\u043e\u0435 \u043e\u0442\u043a\u0440\u044b\u0442\u043e\u0435 \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435."}
             </div>
           </div>
         )}
@@ -945,7 +996,7 @@ function LessonImageCanvasPreview({ block, previewValue, learnerMode = false }) 
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="text-xs leading-5 text-slate-500">
-          Источник: {ready ? hostLabel : "—"}. Alt-текст: {altText || "не указан"}.
+          {"\u0418\u0441\u0442\u043e\u0447\u043d\u0438\u043a"}: {ready ? hostLabel : "\u2014"}. Alt-{"\u0442\u0435\u043a\u0441\u0442"}: {altText || "\u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d"}.
         </div>
 
         {ready && openFullSize ? (
@@ -955,14 +1006,13 @@ function LessonImageCanvasPreview({ block, previewValue, learnerMode = false }) 
             rel={safeSrc.startsWith("/") || safeSrc.startsWith("#") ? undefined : "noreferrer"}
             className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
           >
-            Открыть изображение
+            {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435"}
           </a>
         ) : null}
       </div>
     </div>
   );
 }
-
 
 function isLessonFileLinkBlock(block) {
   const type = `${block?.block_type || ""}`.toLowerCase();
@@ -1309,37 +1359,75 @@ function LessonVideoCanvasPreview({ block, previewValue, learnerMode = false }) 
   const previewEmbedUrl = getVideoPreviewEmbedUrl(sourceValue);
   const previewReady = Boolean(previewEmbedUrl);
   const allowFullscreen = content.allow_fullscreen !== false;
-  const videoTitle = `${block?.title || content.title || "Видео"}`.trim() || "Видео";
+  const videoTitle = `${block?.title || content.title || "\u0412\u0438\u0434\u0435\u043e"}`.trim() || "\u0412\u0438\u0434\u0435\u043e";
   const videoHost = getVideoHostLabel(sourceValue || previewEmbedUrl);
-  const insertTypeLabel = getVideoBlockSourceType(block) === "embed" ? "Код вставки" : "Ссылка";
+  const insertTypeLabel = getVideoBlockSourceType(block) === "embed" ? "\u041a\u043e\u0434 \u0432\u0441\u0442\u0430\u0432\u043a\u0438" : "\u0421\u0441\u044b\u043b\u043a\u0430";
+
+  if (learnerMode) {
+    return (
+      <div
+        data-testid="lesson-studio-video-preview"
+        className="mt-5"
+      >
+        {videoTitle ? (
+          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
+            {videoTitle}
+          </div>
+        ) : null}
+
+        <div className="overflow-hidden rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <div className="overflow-hidden rounded-2xl bg-slate-950 shadow-sm ring-1 ring-slate-900/10">
+          <div className="relative aspect-[16/9] min-h-[260px] bg-slate-950">
+            {previewReady ? (
+              <iframe
+                title={videoTitle}
+                src={previewEmbedUrl}
+                className="absolute inset-0 h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen={allowFullscreen}
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-xl text-blue-700 shadow-xl">
+                  {"\u25b6"}
+                </div>
+
+                <div className="mt-4 text-sm font-semibold text-white/90">
+                  {"\u0412\u0438\u0434\u0435\u043e \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e"}
+                </div>
+              </div>
+            )}
+          </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       data-testid="lesson-studio-video-preview"
-      className={
-        learnerMode
-          ? "mt-5 overflow-hidden rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
-          : "mt-4 overflow-hidden rounded-2xl bg-white/90 p-3 shadow-sm ring-1 ring-black/5"
-      }
+      className="mt-4 overflow-hidden rounded-2xl bg-white/90 p-3 shadow-sm ring-1 ring-black/5"
       onClick={(event) => event.stopPropagation()}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-base font-black text-slate-950">
-            Видео для просмотра
+            {"\u0412\u0438\u0434\u0435\u043e \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430"}
           </div>
           <div className="mt-1 truncate text-xs font-semibold text-slate-500">
-            {previewReady ? sourceValue : "Добавьте ссылку или код вставки"}
+            {previewReady ? sourceValue : "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0441\u0441\u044b\u043b\u043a\u0443 \u0438\u043b\u0438 \u043a\u043e\u0434 \u0432\u0441\u0442\u0430\u0432\u043a\u0438"}
           </div>
         </div>
 
         {previewReady ? (
           <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
-            ✓ Видео найдено
+            {"\u2713 \u0412\u0438\u0434\u0435\u043e \u043d\u0430\u0439\u0434\u0435\u043d\u043e"}
           </span>
         ) : (
           <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
-            Нет источника
+            {"\u041d\u0435\u0442 \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0430"}
           </span>
         )}
       </div>
@@ -1361,14 +1449,14 @@ function LessonVideoCanvasPreview({ block, previewValue, learnerMode = false }) 
 
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-xl text-blue-700 shadow-xl">
-                  ▶
+                  {"\u25b6"}
                 </div>
 
                 <div className="mt-4 text-sm font-semibold text-white/90">
-                  Видео пока не настроено
+                  {"\u0412\u0438\u0434\u0435\u043e \u043f\u043e\u043a\u0430 \u043d\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u043e"}
                 </div>
                 <div className="mt-1 max-w-md text-xs leading-5 text-white/60">
-                  Вставьте ссылку YouTube, Rutube, VK Видео, Vimeo или iframe-код.
+                  {"\u0412\u0441\u0442\u0430\u0432\u044c\u0442\u0435 \u0441\u0441\u044b\u043b\u043a\u0443 YouTube, Rutube, VK \u0412\u0438\u0434\u0435\u043e, Vimeo \u0438\u043b\u0438 iframe-\u043a\u043e\u0434."}
                 </div>
               </div>
             </>
@@ -1378,9 +1466,9 @@ function LessonVideoCanvasPreview({ block, previewValue, learnerMode = false }) 
 
       <div className="mt-3 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
         {[
-          ["Название видео", previewReady ? videoTitle : "—"],
-          ["Источник", previewReady ? videoHost : "—"],
-          ["Тип вставки", previewReady ? insertTypeLabel : "—"],
+          ["\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0432\u0438\u0434\u0435\u043e", previewReady ? videoTitle : "\u2014"],
+          ["\u0418\u0441\u0442\u043e\u0447\u043d\u0438\u043a", previewReady ? videoHost : "\u2014"],
+          ["\u0422\u0438\u043f \u0432\u0441\u0442\u0430\u0432\u043a\u0438", previewReady ? insertTypeLabel : "\u2014"],
         ].map(([label, value]) => (
           <div
             key={label}
@@ -1394,8 +1482,6 @@ function LessonVideoCanvasPreview({ block, previewValue, learnerMode = false }) 
     </div>
   );
 }
-
-
 
 
 
@@ -1616,18 +1702,41 @@ function LessonAudioCanvasPreview({ block, previewValue, learnerMode = false }) 
   const title = `${block?.title || "\u0410\u0443\u0434\u0438\u043e"}`.trim() || "\u0410\u0443\u0434\u0438\u043e";
   const filename = getAudioBlockFilename(block);
 
+  if (learnerMode) {
+    return (
+      <section
+        data-testid="lesson-studio-audio-preview"
+        className="mt-5"
+      >
+        {title ? (
+          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
+            {title}
+          </div>
+        ) : null}
+
+        <div className="rounded-3xl bg-green-50 p-5 ring-1 ring-green-100">
+          {ready ? (
+            <audio controls preload="metadata" src={safeSrc} className="w-full">
+              {"\u0412\u0430\u0448 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043d\u0435 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u0430\u0443\u0434\u0438\u043e\u043f\u043b\u0435\u0435\u0440."}
+            </audio>
+          ) : (
+            <div className="rounded-2xl bg-white/70 px-4 py-6 text-center text-sm font-semibold text-slate-500 ring-1 ring-green-100">
+              {"\u0410\u0443\u0434\u0438\u043e \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e."}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <div
       data-testid="lesson-studio-audio-preview"
-      className={
-        learnerMode
-          ? "mt-5 rounded-3xl bg-green-50 p-5 ring-1 ring-green-100"
-          : "mt-3 rounded-2xl bg-white/90 p-4 ring-1 ring-black/5"
-      }
+      className="mt-3 rounded-2xl bg-white/90 p-4 ring-1 ring-black/5"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-black text-slate-950"}>
+          <div className="text-sm font-black text-slate-950">
             {title}
           </div>
           <div className="mt-1 text-xs leading-5 text-slate-500">
@@ -1673,7 +1782,6 @@ function LessonAudioCanvasPreview({ block, previewValue, learnerMode = false }) 
     </div>
   );
 }
-
 
 function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
