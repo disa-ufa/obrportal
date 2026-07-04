@@ -457,7 +457,20 @@ function getSafeLessonRichTextHref(href) {
     const url = new URL(value);
     const allowedProtocols = ["http:", "https:", "mailto:", "tel:"];
 
-    return allowedProtocols.includes(url.protocol) ? value : "";
+    if (!allowedProtocols.includes(url.protocol)) {
+      return "";
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      window.location?.host &&
+      url.host === window.location.host &&
+      (url.protocol === "http:" || url.protocol === "https:")
+    ) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+
+    return value;
   } catch {
     return "";
   }
