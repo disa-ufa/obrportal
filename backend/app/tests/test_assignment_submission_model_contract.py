@@ -1,4 +1,4 @@
-﻿from app.models.assignment_submission import AssignmentSubmission
+from app.models.assignment_submission import AssignmentSubmission
 
 
 def test_assignment_submission_table_contract():
