@@ -107,6 +107,16 @@ export async function getAccountCourseLessonQuizAttempts(enrollmentId, lessonId,
   return request(`/api/v1/account/courses/${enrollmentId}/lessons/${lessonId}/quiz-attempts/${blockId}`);
 }
 
+export async function getAccountCourseLessonAssignmentSubmission(enrollmentId, lessonId, blockId) {
+  return request(`/api/v1/account/courses/${enrollmentId}/lessons/${lessonId}/assignment-submissions/${blockId}`);
+}
+
+export async function completeAccountCourseLessonAssignment(enrollmentId, lessonId, blockId) {
+  return request(`/api/v1/account/courses/${enrollmentId}/lessons/${lessonId}/assignment-submissions/${blockId}/complete`, {
+    method: "POST",
+  });
+}
+
 export async function enrollAccountCourse(courseId) {
   return request(`/api/v1/account/courses/${courseId}/enroll`, {
     method: "POST",
