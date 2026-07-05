@@ -117,6 +117,15 @@ export async function completeAccountCourseLessonAssignment(enrollmentId, lesson
   });
 }
 
+export async function submitAccountCourseLessonAssignmentAnswer(enrollmentId, lessonId, blockId, answerText) {
+  return request(`/api/v1/account/courses/${enrollmentId}/lessons/${lessonId}/assignment-submissions/${blockId}/submit`, {
+    method: "POST",
+    body: JSON.stringify({
+      answer_text: answerText || "",
+    }),
+  });
+}
+
 export async function enrollAccountCourse(courseId) {
   return request(`/api/v1/account/courses/${courseId}/enroll`, {
     method: "POST",
