@@ -964,6 +964,17 @@ export async function getAdminEnrollmentQuizAttempts(enrollmentId) {
   return request(`/api/v1/admin/enrollments/${enrollmentId}/quiz-attempts`);
 }
 
+export async function getAdminEnrollmentAssignmentSubmissions(enrollmentId) {
+  return request(`/api/v1/admin/enrollments/${enrollmentId}/assignment-submissions`);
+}
+
+export async function reviewAdminAssignmentSubmission(submissionId, payload) {
+  return request(`/api/v1/admin/assignment-submissions/${submissionId}/review`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function createAdminEnrollment(payload) {
   return request("/api/v1/admin/enrollments", {
     method: "POST",

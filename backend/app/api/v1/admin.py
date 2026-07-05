@@ -20,6 +20,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
+from app.models.assignment_submission import AssignmentSubmission
 from app.models.course import Course
 from app.models.course_lesson import CourseLesson
 from app.models.lesson_block import LessonBlock
@@ -80,6 +81,8 @@ from app.schemas.admin import (
     AdminEnrollmentCreate,
     AdminEnrollmentGroupCreate,
     AdminEnrollmentItem,
+    AdminAssignmentSubmissionReview,
+    AdminEnrollmentAssignmentSubmissionItem,
     AdminEnrollmentQuizAttemptItem,
     AdminEnrollmentUpdate,
     AdminDocumentGenerationEventItem,
@@ -5518,6 +5521,136 @@ def build_admin_enrollment_quiz_attempt_item(row) -> AdminEnrollmentQuizAttemptI
     )
 
 
+ADMIN_ASSIGNMENT_REVIEW_STATUSES = {"approved", "rejected"}
+
+
+def normalize_admin_assignment_review_status(value: str) -> str:
+    normalized = str(value or "").strip()
+
+    if normalized not in ADMIN_ASSIGNMENT_REVIEW_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported assignment review status",
+        )
+
+    return normalized
+
+
+def admin_assignment_review_mode(content_json: dict | None) -> str:
+    if not isinstance(content_json, dict):
+        return "self_check"
+
+    review_mode = str(content_json.get("review_mode") or "").strip()
+
+    if review_mode in {"self_check", "submit_only", "manual_review"}:
+        return review_mode
+
+    return "self_check"
+
+
+def build_admin_assignment_submission_query():
+    reviewer = aliased(User)
+
+    return (
+        select(
+            AssignmentSubmission.id.label("id"),
+            AssignmentSubmission.enrollment_id.label("enrollment_id"),
+            AssignmentSubmission.user_id.label("submission_user_id"),
+            AssignmentSubmission.lesson_id.label("lesson_id"),
+            AssignmentSubmission.block_id.label("block_id"),
+            AssignmentSubmission.status.label("status"),
+            AssignmentSubmission.answer_text.label("answer_text"),
+            AssignmentSubmission.attachments_json.label("attachments_json"),
+            AssignmentSubmission.score.label("score"),
+            AssignmentSubmission.max_score.label("max_score"),
+            AssignmentSubmission.review_comment.label("review_comment"),
+            AssignmentSubmission.reviewed_by_user_id.label("reviewed_by_user_id"),
+            AssignmentSubmission.submitted_at.label("submitted_at"),
+            AssignmentSubmission.reviewed_at.label("reviewed_at"),
+            AssignmentSubmission.created_at.label("created_at"),
+            AssignmentSubmission.updated_at.label("updated_at"),
+            Enrollment.user_id.label("user_id"),
+            Enrollment.course_id.label("course_id"),
+            User.email.label("user_email"),
+            User.full_name.label("user_full_name"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            CourseLesson.title.label("lesson_title"),
+            CourseLesson.position.label("lesson_position"),
+            LessonBlock.title.label("block_title"),
+            LessonBlock.block_type.label("block_type"),
+            LessonBlock.content_json.label("block_content_json"),
+            LessonBlock.position.label("block_position"),
+            reviewer.email.label("reviewed_by_user_email"),
+            reviewer.full_name.label("reviewed_by_user_full_name"),
+        )
+        .select_from(AssignmentSubmission)
+        .join(Enrollment, Enrollment.id == AssignmentSubmission.enrollment_id)
+        .join(User, User.id == Enrollment.user_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .join(CourseLesson, CourseLesson.id == AssignmentSubmission.lesson_id)
+        .join(CourseModule, CourseModule.id == CourseLesson.module_id)
+        .join(LessonBlock, LessonBlock.id == AssignmentSubmission.block_id)
+        .outerjoin(reviewer, reviewer.id == AssignmentSubmission.reviewed_by_user_id)
+        .where(CourseModule.course_id == Enrollment.course_id)
+    )
+
+
+def build_admin_assignment_submission_item(row) -> AdminEnrollmentAssignmentSubmissionItem:
+    block_content_json = row.block_content_json if isinstance(row.block_content_json, dict) else {}
+    attachments_json = row.attachments_json if isinstance(row.attachments_json, dict) else {}
+
+    return AdminEnrollmentAssignmentSubmissionItem(
+        id=str(row.id),
+        enrollment_id=str(row.enrollment_id),
+        user_id=str(row.user_id),
+        user_email=row.user_email,
+        user_full_name=row.user_full_name,
+        course_id=str(row.course_id),
+        course_slug=row.course_slug,
+        course_title=row.course_title,
+        lesson_id=str(row.lesson_id),
+        lesson_title=row.lesson_title,
+        block_id=str(row.block_id),
+        block_title=row.block_title,
+        block_type=row.block_type,
+        block_content_json=block_content_json,
+        review_mode=admin_assignment_review_mode(block_content_json),
+        status=row.status,
+        answer_text=row.answer_text,
+        attachments_json=attachments_json,
+        score=row.score,
+        max_score=row.max_score,
+        review_comment=row.review_comment,
+        reviewed_by_user_id=str(row.reviewed_by_user_id) if row.reviewed_by_user_id else None,
+        reviewed_by_user_email=row.reviewed_by_user_email,
+        reviewed_by_user_full_name=row.reviewed_by_user_full_name,
+        submitted_at=row.submitted_at,
+        reviewed_at=row.reviewed_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+async def get_admin_assignment_submission_row_or_404(
+    submission_id: str,
+    session: AsyncSession,
+):
+    result = await session.execute(
+        build_admin_assignment_submission_query()
+        .where(AssignmentSubmission.id == submission_id.strip())
+    )
+    row = result.first()
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment submission not found",
+        )
+
+    return row
+
+
 def enrollment_snapshot(enrollment: Enrollment) -> dict:
     return {
         "id": str(enrollment.id),
@@ -6048,6 +6181,110 @@ async def list_admin_enrollment_quiz_attempts(
         build_admin_enrollment_quiz_attempt_item(row)
         for row in result.all()
     ]
+
+
+@router.get(
+    "/enrollments/{enrollment_id}/assignment-submissions",
+    response_model=list[AdminEnrollmentAssignmentSubmissionItem],
+)
+async def list_admin_enrollment_assignment_submissions(
+    enrollment_id: str,
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminEnrollmentAssignmentSubmissionItem]:
+    enrollment = await get_admin_enrollment_or_404(enrollment_id.strip(), session)
+
+    result = await session.execute(
+        build_admin_assignment_submission_query()
+        .where(AssignmentSubmission.enrollment_id == enrollment.id)
+        .order_by(
+            CourseLesson.position.asc(),
+            LessonBlock.position.asc(),
+            AssignmentSubmission.created_at.desc(),
+        )
+    )
+
+    return [
+        build_admin_assignment_submission_item(row)
+        for row in result.all()
+    ]
+
+
+@router.patch(
+    "/assignment-submissions/{submission_id}/review",
+    response_model=AdminEnrollmentAssignmentSubmissionItem,
+)
+async def review_admin_assignment_submission(
+    submission_id: str,
+    payload: AdminAssignmentSubmissionReview,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminEnrollmentAssignmentSubmissionItem:
+    review_status = normalize_admin_assignment_review_status(payload.status)
+
+    if payload.score is not None and payload.max_score is not None and payload.score > payload.max_score:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Score cannot be greater than max score",
+        )
+
+    result = await session.execute(
+        select(AssignmentSubmission).where(AssignmentSubmission.id == submission_id.strip())
+    )
+    submission = result.scalar_one_or_none()
+
+    if submission is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment submission not found",
+        )
+
+    before = {
+        "status": submission.status,
+        "score": submission.score,
+        "max_score": submission.max_score,
+        "review_comment": submission.review_comment,
+        "reviewed_by_user_id": str(submission.reviewed_by_user_id) if submission.reviewed_by_user_id else None,
+        "reviewed_at": submission.reviewed_at.isoformat() if submission.reviewed_at else None,
+    }
+
+    review_comment = payload.review_comment.strip() if payload.review_comment else None
+
+    submission.status = review_status
+    submission.score = payload.score
+    submission.max_score = payload.max_score
+    submission.review_comment = review_comment
+    submission.reviewed_by_user_id = current_user.id
+    submission.reviewed_at = datetime.now(timezone.utc)
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.assignment_submission_reviewed",
+        entity_type="assignment_submission",
+        entity_id=str(submission.id),
+        payload={
+            "before": before,
+            "after": {
+                "status": submission.status,
+                "score": submission.score,
+                "max_score": submission.max_score,
+                "review_comment": submission.review_comment,
+                "reviewed_by_user_id": str(submission.reviewed_by_user_id) if submission.reviewed_by_user_id else None,
+                "reviewed_at": submission.reviewed_at.isoformat() if submission.reviewed_at else None,
+            },
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    row = await get_admin_assignment_submission_row_or_404(str(submission.id), session)
+
+    return build_admin_assignment_submission_item(row)
 
 
 @router.patch("/enrollments/{enrollment_id}", response_model=AdminEnrollmentItem)

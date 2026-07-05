@@ -139,11 +139,13 @@ import {
   getAdminCourses,
   getAdminDocuments,
   getAdminEnrollmentDetail,
+  getAdminEnrollmentAssignmentSubmissions,
   getAdminEnrollmentQuizAttempts,
   getAdminEnrollments,
   getAdminOrganizations,
   getAdminUsers,
   getOrgLearningGroups,
+  reviewAdminAssignmentSubmission,
   updateAdminEnrollment,
 } from "../api/client";
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
@@ -324,6 +326,66 @@ function getAttemptText(attempt) {
   }
   const percent = attempt.percent ?? 0;
   return `${percent}%`;
+}
+
+const ASSIGNMENT_STATUS_LABELS = {
+  not_started: U("\u041d\u0435 \u043d\u0430\u0447\u0430\u0442\u043e"),
+  completed: U("\u0412\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e"),
+  submitted: U("\u041e\u0436\u0438\u0434\u0430\u0435\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438"),
+  approved: U("\u0417\u0430\u0447\u0442\u0435\u043d\u043e"),
+  rejected: U("\u041e\u0442\u043a\u043b\u043e\u043d\u0435\u043d\u043e"),
+};
+
+const ASSIGNMENT_REVIEW_MODE_LABELS = {
+  self_check: U("\u0421\u0430\u043c\u043e\u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430"),
+  submit_only: U("\u041e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u043e\u0442\u0432\u0435\u0442\u0430"),
+  manual_review: U("\u0420\u0443\u0447\u043d\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430"),
+};
+
+function getAssignmentStatusLabel(status) {
+  return ASSIGNMENT_STATUS_LABELS[status] || status || T.notSet;
+}
+
+function getAssignmentReviewModeLabel(mode) {
+  return ASSIGNMENT_REVIEW_MODE_LABELS[mode] || mode || T.notSet;
+}
+
+function getAssignmentStatusTone(status) {
+  if (status === "approved" || status === "completed") {
+    return "bg-green-50 text-green-700 ring-green-200";
+  }
+
+  if (status === "rejected") {
+    return "bg-red-50 text-red-700 ring-red-200";
+  }
+
+  if (status === "submitted") {
+    return "bg-amber-50 text-amber-700 ring-amber-200";
+  }
+
+  return "bg-slate-50 text-slate-700 ring-slate-200";
+}
+
+function getAssignmentTitle(submission) {
+  return (
+    submission?.block_title ||
+    submission?.block_content_json?.title ||
+    submission?.block_content_json?.heading ||
+    submission?.lesson_title ||
+    U("\u0417\u0430\u0434\u0430\u043d\u0438\u0435")
+  );
+}
+
+function parseOptionalNumber(value) {
+  const normalized = `${value ?? ""}`.trim().replace(",", ".");
+
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function getDocumentState(documents) {
@@ -510,6 +572,9 @@ function AdminEnrollmentsPage() {
   const [detailsById, setDetailsById] = useState({});
   const [documentsById, setDocumentsById] = useState({});
   const [quizAttemptsById, setQuizAttemptsById] = useState({});
+  const [assignmentSubmissionsById, setAssignmentSubmissionsById] = useState({});
+  const [assignmentReviewFormsById, setAssignmentReviewFormsById] = useState({});
+  const [reviewSavingId, setReviewSavingId] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -616,10 +681,11 @@ function AdminEnrollmentsPage() {
 
     try {
       setDetailLoadingId(enrollment.id);
-      const [detailResult, documentsResult, attemptsResult] = await Promise.allSettled([
+      const [detailResult, documentsResult, attemptsResult, assignmentSubmissionsResult] = await Promise.allSettled([
         getAdminEnrollmentDetail(enrollment.id),
         getAdminDocuments({ enrollment_id: enrollment.id }),
         getAdminEnrollmentQuizAttempts(enrollment.id),
+        getAdminEnrollmentAssignmentSubmissions(enrollment.id),
       ]);
 
       if (detailResult.status === "fulfilled") {
@@ -636,6 +702,11 @@ function AdminEnrollmentsPage() {
       setQuizAttemptsById((current) => ({
         ...current,
         [enrollment.id]: attemptsResult.status === "fulfilled" ? toArray(attemptsResult.value) : [],
+      }));
+
+      setAssignmentSubmissionsById((current) => ({
+        ...current,
+        [enrollment.id]: assignmentSubmissionsResult.status === "fulfilled" ? toArray(assignmentSubmissionsResult.value) : [],
       }));
     } finally {
       setDetailLoadingId("");
@@ -698,6 +769,68 @@ function AdminEnrollmentsPage() {
       setError(err?.message || T.saveFailed);
     } finally {
       setSavingId("");
+    }
+  }
+
+  function updateAssignmentReviewForm(submissionId, patch) {
+    setAssignmentReviewFormsById((current) => ({
+      ...current,
+      [submissionId]: {
+        ...(current[submissionId] || {}),
+        ...patch,
+      },
+    }));
+  }
+
+  async function handleAssignmentReview(submission, reviewStatus) {
+    if (!submission?.id) {
+      return;
+    }
+
+    const form = assignmentReviewFormsById[submission.id] || {};
+    const score = parseOptionalNumber(form.score);
+    const maxScore = parseOptionalNumber(form.max_score);
+
+    try {
+      setReviewSavingId(submission.id);
+      setError("");
+      setSuccessMessage("");
+
+      const updatedSubmission = await reviewAdminAssignmentSubmission(submission.id, {
+        status: reviewStatus,
+        score,
+        max_score: maxScore,
+        review_comment: form.review_comment || "",
+      });
+
+      setAssignmentSubmissionsById((current) => {
+        const enrollmentId = updatedSubmission.enrollment_id || submission.enrollment_id;
+        const items = current[enrollmentId] || [];
+
+        return {
+          ...current,
+          [enrollmentId]: items.map((item) => (item.id === updatedSubmission.id ? updatedSubmission : item)),
+        };
+      });
+
+      setAssignmentReviewFormsById((current) => ({
+        ...current,
+        [updatedSubmission.id]: {
+          score: updatedSubmission.score ?? "",
+          max_score: updatedSubmission.max_score ?? "",
+          review_comment: updatedSubmission.review_comment || "",
+        },
+      }));
+
+      setSuccessMessage(
+        reviewStatus === "approved"
+          ? U("\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0437\u0430\u0447\u0442\u0435\u043d\u043e.")
+          : U("\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u043e\u0442\u043a\u043b\u043e\u043d\u0435\u043d\u043e.")
+      );
+    } catch (err) {
+      setError(err?.message || T.saveFailed);
+    } finally {
+      setReviewSavingId("");
     }
   }
 
@@ -1104,6 +1237,7 @@ function AdminEnrollmentsPage() {
                   const details = detailsById[enrollment.id] || enrollment;
                   const documents = documentsById[enrollment.id] || [];
                   const attempts = quizAttemptsById[enrollment.id] || [];
+                  const assignmentSubmissions = assignmentSubmissionsById[enrollment.id] || [];
                   const latestAttempt = getLatestAttempt(attempts);
                   const documentState = getDocumentState(documents);
                   const hints = getActionHints(details, documents);
@@ -1314,6 +1448,116 @@ function AdminEnrollmentsPage() {
                                         </div>
                                       )}
                                     </div>
+                                  </div>
+                                </InfoCard>
+
+                                <InfoCard
+                                  title={U("\u041f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u044f")}
+                                  subtitle={U("\u0420\u0443\u0447\u043d\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043e\u0442\u0432\u0435\u0442\u043e\u0432")}
+                                  counter={assignmentSubmissions.length}
+                                  testId="enrollment-assignment-submissions-card"
+                                >
+                                  <div className="space-y-3">
+                                    {assignmentSubmissions.length === 0 ? (
+                                      <p className="rounded-2xl bg-slate-50 p-3 text-sm font-medium text-slate-500">
+                                        {U("\u041e\u0442\u0432\u0435\u0442\u044b \u043f\u043e \u0437\u0430\u0434\u0430\u043d\u0438\u044f\u043c \u043f\u043e\u043a\u0430 \u043d\u0435 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u044b.")}
+                                      </p>
+                                    ) : (
+                                      assignmentSubmissions.map((submission) => {
+                                        const reviewForm = assignmentReviewFormsById[submission.id] || {
+                                          score: submission.score ?? "",
+                                          max_score: submission.max_score ?? "",
+                                          review_comment: submission.review_comment || "",
+                                        };
+                                        const isReviewSaving = reviewSavingId === submission.id;
+                                        const hasAnswer = `${submission.answer_text || ""}`.trim();
+
+                                        return (
+                                          <div key={submission.id} className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
+                                            <div className="flex flex-wrap items-start justify-between gap-2">
+                                              <div className="min-w-0">
+                                                <div className="text-sm font-black text-slate-950">{getAssignmentTitle(submission)}</div>
+                                                <div className="mt-1 text-xs font-bold text-slate-500">
+                                                  {submission.lesson_title || T.notSet} {"\u00b7"} {getAssignmentReviewModeLabel(submission.review_mode)}
+                                                </div>
+                                              </div>
+                                              <Badge className={getAssignmentStatusTone(submission.status)}>
+                                                {getAssignmentStatusLabel(submission.status)}
+                                              </Badge>
+                                            </div>
+
+                                            <div className="mt-3 rounded-xl bg-white p-3 text-sm leading-6 text-slate-800 ring-1 ring-slate-100">
+                                              {hasAnswer || U("\u041e\u0442\u0432\u0435\u0442 \u043f\u0443\u0441\u0442\u043e\u0439.")}
+                                            </div>
+
+                                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                              <label className="block">
+                                                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                                                  {U("\u0411\u0430\u043b\u043b")}
+                                                </span>
+                                                <input
+                                                  className={cx(INPUT_CLASS, "mt-1")}
+                                                  value={reviewForm.score}
+                                                  disabled={isReviewSaving}
+                                                  inputMode="decimal"
+                                                  onChange={(event) => updateAssignmentReviewForm(submission.id, { score: event.target.value })}
+                                                  placeholder="0"
+                                                />
+                                              </label>
+                                              <label className="block">
+                                                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                                                  {U("\u041c\u0430\u043a\u0441. \u0431\u0430\u043b\u043b")}
+                                                </span>
+                                                <input
+                                                  className={cx(INPUT_CLASS, "mt-1")}
+                                                  value={reviewForm.max_score}
+                                                  disabled={isReviewSaving}
+                                                  inputMode="decimal"
+                                                  onChange={(event) => updateAssignmentReviewForm(submission.id, { max_score: event.target.value })}
+                                                  placeholder="0"
+                                                />
+                                              </label>
+                                            </div>
+
+                                            <label className="mt-3 block">
+                                              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                                                {U("\u041a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0439")}
+                                              </span>
+                                              <textarea
+                                                className={cx(INPUT_CLASS, "mt-1 min-h-[84px] resize-y")}
+                                                value={reviewForm.review_comment}
+                                                disabled={isReviewSaving}
+                                                onChange={(event) => updateAssignmentReviewForm(submission.id, { review_comment: event.target.value })}
+                                                placeholder={U("\u041a\u043e\u0440\u043e\u0442\u043a\u0438\u0439 \u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0439 \u0434\u043b\u044f \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0435\u0433\u043e\u0441\u044f")}
+                                              />
+                                            </label>
+
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                              <ActionButton
+                                                tone="primary"
+                                                disabled={isReviewSaving}
+                                                onClick={() => handleAssignmentReview(submission, "approved")}
+                                              >
+                                                {isReviewSaving ? T.saving : U("\u0417\u0430\u0447\u0435\u0441\u0442\u044c")}
+                                              </ActionButton>
+                                              <ActionButton
+                                                tone="danger"
+                                                disabled={isReviewSaving}
+                                                onClick={() => handleAssignmentReview(submission, "rejected")}
+                                              >
+                                                {U("\u041e\u0442\u043a\u043b\u043e\u043d\u0438\u0442\u044c")}
+                                              </ActionButton>
+                                            </div>
+
+                                            {submission.review_comment ? (
+                                              <div className="mt-3 rounded-xl bg-white p-3 text-xs font-semibold text-slate-600 ring-1 ring-slate-100">
+                                                {U("\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0439")}: {submission.review_comment}
+                                              </div>
+                                            ) : null}
+                                          </div>
+                                        );
+                                      })
+                                    )}
                                   </div>
                                 </InfoCard>
 
