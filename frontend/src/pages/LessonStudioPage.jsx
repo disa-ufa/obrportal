@@ -146,13 +146,23 @@ const STUDIO_QUICK_BLOCK_TEMPLATES = [
   },
   {
     key: "assignment",
-    label: "Задание",
-    hint: "Практическая работа",
+    label: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435",
+    hint: "\u041f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0440\u0430\u0431\u043e\u0442\u0430",
     tone: "red",
     values: {
       block_type: "assignment",
-      title: "Задание",
-      content_json: { description: "Опишите задание для слушателя." },
+      title: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435",
+      content_json: {
+        description: "\u041e\u043f\u0438\u0448\u0438\u0442\u0435, \u0447\u0442\u043e \u0434\u043e\u043b\u0436\u0435\u043d \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c.",
+        text: "\u041e\u043f\u0438\u0448\u0438\u0442\u0435, \u0447\u0442\u043e \u0434\u043e\u043b\u0436\u0435\u043d \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c.",
+        content_text: "\u041e\u043f\u0438\u0448\u0438\u0442\u0435, \u0447\u0442\u043e \u0434\u043e\u043b\u0436\u0435\u043d \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c.",
+        assignment_text: "\u041e\u043f\u0438\u0448\u0438\u0442\u0435, \u0447\u0442\u043e \u0434\u043e\u043b\u0436\u0435\u043d \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c.",
+        expected_result: "",
+        submission_format: "\u0423\u0441\u0442\u043d\u043e \u0438\u043b\u0438 \u0432 \u0444\u043e\u0440\u043c\u0435 \u043a\u0440\u0430\u0442\u043a\u043e\u0433\u043e \u043e\u0442\u0432\u0435\u0442\u0430",
+        criteria: "",
+        review_mode: "self_check",
+        estimated_minutes: 10,
+      },
       is_required: true,
       is_active: true,
     },
@@ -1783,6 +1793,190 @@ function LessonAudioCanvasPreview({ block, previewValue, learnerMode = false }) 
   );
 }
 
+
+const ASSIGNMENT_REVIEW_MODE_LABELS = {
+  self_check: "\u0421\u0430\u043c\u043e\u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430",
+  submit_only: "\u041e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u0431\u0435\u0437 \u0440\u0443\u0447\u043d\u043e\u0439 \u043e\u0446\u0435\u043d\u043a\u0438",
+  manual_review: "\u0420\u0443\u0447\u043d\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430",
+};
+
+function normalizeAssignmentReviewMode(value) {
+  const mode = `${value || ""}`.trim();
+
+  return Object.prototype.hasOwnProperty.call(ASSIGNMENT_REVIEW_MODE_LABELS, mode)
+    ? mode
+    : "self_check";
+}
+
+function getAssignmentReviewModeLabel(value) {
+  return ASSIGNMENT_REVIEW_MODE_LABELS[normalizeAssignmentReviewMode(value)];
+}
+
+function getAssignmentBlockContent(block) {
+  return safeParseJson(block?.content_json);
+}
+
+function getAssignmentBlockDescription(block, previewValue = "") {
+  const content = getAssignmentBlockContent(block);
+
+  return `${content.description || content.assignment_text || content.content_text || content.text || content.body || previewValue || ""}`.trim();
+}
+
+function getAssignmentBlockExpectedResult(block) {
+  const content = getAssignmentBlockContent(block);
+
+  return `${content.expected_result || content.expectedResult || content.result || ""}`.trim();
+}
+
+function getAssignmentBlockSubmissionFormat(block) {
+  const content = getAssignmentBlockContent(block);
+
+  return `${content.submission_format || content.submissionFormat || content.format || ""}`.trim();
+}
+
+function getAssignmentBlockCriteria(block) {
+  const content = getAssignmentBlockContent(block);
+
+  return `${content.criteria || content.checklist || content.evaluation_criteria || ""}`.trim();
+}
+
+function getAssignmentBlockEstimatedMinutes(block) {
+  const content = getAssignmentBlockContent(block);
+  const value = Number(content.estimated_minutes || content.estimatedMinutes || 0);
+
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : "";
+}
+
+function LessonAssignmentCanvasPreview({ block, previewValue, learnerMode = false }) {
+  const content = getAssignmentBlockContent(block);
+  const title = `${block?.title || content.title || "\u0417\u0430\u0434\u0430\u043d\u0438\u0435"}`.trim() || "\u0417\u0430\u0434\u0430\u043d\u0438\u0435";
+  const description = getAssignmentBlockDescription(block, previewValue);
+  const expectedResult = getAssignmentBlockExpectedResult(block);
+  const submissionFormat = getAssignmentBlockSubmissionFormat(block);
+  const criteria = getAssignmentBlockCriteria(block);
+  const estimatedMinutes = getAssignmentBlockEstimatedMinutes(block);
+  const reviewModeLabel = getAssignmentReviewModeLabel(content.review_mode);
+  const ready = Boolean(description);
+
+  const detailItems = [
+    expectedResult
+      ? ["\u0427\u0442\u043e \u0434\u043e\u043b\u0436\u043d\u043e \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u044c\u0441\u044f", expectedResult]
+      : null,
+    submissionFormat
+      ? ["\u0424\u043e\u0440\u043c\u0430\u0442 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f", submissionFormat]
+      : null,
+    criteria
+      ? ["\u041a\u0440\u0438\u0442\u0435\u0440\u0438\u0438", criteria]
+      : null,
+    estimatedMinutes
+      ? ["\u041f\u0440\u0438\u043c\u0435\u0440\u043d\u043e\u0435 \u0432\u0440\u0435\u043c\u044f", `${estimatedMinutes} \u043c\u0438\u043d.`]
+      : null,
+  ].filter(Boolean);
+
+  if (learnerMode) {
+    return (
+      <section
+        data-testid="lesson-studio-assignment-preview"
+        className="mt-5"
+      >
+        {title ? (
+          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
+            {title}
+          </div>
+        ) : null}
+
+        <div className="rounded-3xl bg-red-50/80 p-5 ring-1 ring-red-100">
+          <div className="text-sm font-black uppercase tracking-[0.14em] text-red-700">
+            {"\u041f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u043e\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u0435"}
+          </div>
+
+          <div className="mt-3 rounded-2xl bg-white/80 p-4 text-base font-semibold leading-8 text-slate-800 ring-1 ring-red-100">
+            {ready ? (
+              <div className="whitespace-pre-wrap break-words">{description}</div>
+            ) : (
+              <div className="text-slate-400">
+                {"\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e."}
+              </div>
+            )}
+          </div>
+
+          {detailItems.length ? (
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {detailItems.map(([label, value]) => (
+                <div
+                  key={label}
+                  className="rounded-2xl bg-white/70 p-4 ring-1 ring-red-100"
+                >
+                  <div className="text-xs font-black uppercase tracking-[0.12em] text-red-700">
+                    {label}
+                  </div>
+                  <div className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-700">
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <div
+      data-testid="lesson-studio-assignment-preview"
+      className="mt-3 rounded-2xl bg-white/90 p-4 ring-1 ring-black/5"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-base font-black text-slate-950">{title}</div>
+          <div className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-red-700">
+            {reviewModeLabel}
+          </div>
+        </div>
+
+        {ready ? (
+          <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+            {"\u2713 \u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0433\u043e\u0442\u043e\u0432\u043e"}
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+            {"\u0422\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435"}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-red-50/70 p-4 text-base font-semibold leading-8 text-slate-800 ring-1 ring-red-100">
+        {ready ? (
+          <div className="whitespace-pre-wrap break-words">{description}</div>
+        ) : (
+          <div className="text-slate-400">
+            {"\u041e\u043f\u0438\u0448\u0438\u0442\u0435, \u0447\u0442\u043e \u0434\u043e\u043b\u0436\u0435\u043d \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c."}
+          </div>
+        )}
+      </div>
+
+      {detailItems.length ? (
+        <div className="mt-4 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+          {detailItems.map(([label, value]) => (
+            <div
+              key={label}
+              className="grid gap-2 border-b border-slate-100 px-4 py-3 last:border-b-0 md:grid-cols-[13rem_minmax(0,1fr)]"
+            >
+              <div className="text-sm font-semibold text-slate-500">{label}</div>
+              <div className="whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-800">
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
 function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
   const type = `${block?.block_type || "rich_text"}`.toLowerCase();
   const meta = getBlockPreviewMeta(block);
@@ -1856,21 +2050,11 @@ function LessonCanvasTypePreview({ block, preview, learnerMode = false }) {
           learnerMode={learnerMode}
         />
       ) : type === "assignment" ? (
-        <div
-          data-testid="lesson-studio-assignment-preview"
-          className={
-            learnerMode
-              ? "mt-5 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200"
-              : "mt-3 rounded-2xl bg-white/80 p-3 ring-1 ring-black/5"
-          }
-        >
-          <div className={learnerMode ? "text-base font-black text-slate-950" : "text-sm font-bold"}>
-            Что нужно сделать
-          </div>
-          <div className={learnerMode ? "mt-2 text-base leading-8 text-slate-800" : "mt-1 text-sm"}>
-            {previewValue}
-          </div>
-        </div>
+        <LessonAssignmentCanvasPreview
+          block={block}
+          previewValue={previewValue}
+          learnerMode={learnerMode}
+        />
       ) : type === "callout" ? (
         <LessonCalloutCanvasPreview
           block={block}
@@ -1933,6 +2117,10 @@ function getBlockValidationIssues(block) {
     if (!quizValidation.isValid) {
       issues.push(...quizValidation.issues);
     }
+  }
+
+  if (type === "assignment" && !getAssignmentBlockDescription({ ...block, content_json: content })) {
+    issues.push("нет описания задания");
   }
 
   return issues;
@@ -4151,7 +4339,7 @@ function LessonStudioAudioBlockEditor({ lesson, form, saving, onFieldChange }) {
             <input
               value={form.title}
               onChange={(event) => onFieldChange("title", event.target.value)}
-              placeholder="\u0410\u0443\u0434\u0438\u043e"
+              placeholder="Аудио"
               disabled={saving || uploading}
               className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
             />
@@ -4166,6 +4354,251 @@ function LessonStudioAudioBlockEditor({ lesson, form, saving, onFieldChange }) {
               <span className="block font-bold text-slate-950">{"\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439"}</span>
               <span className="mt-1 block text-xs leading-5 text-slate-500">
                 {"\u041e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u0439\u0441\u044f \u0434\u043e\u043b\u0436\u0435\u043d \u043f\u0440\u043e\u0441\u043b\u0443\u0448\u0430\u0442\u044c \u044d\u0442\u043e\u0442 \u0431\u043b\u043e\u043a."}
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-blue-600">
+              <input
+                type="checkbox"
+                checked={form.is_required}
+                onChange={(event) => onFieldChange("is_required", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_active
+              ? "bg-emerald-50/70 text-emerald-900 ring-emerald-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">{"\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0432 \u0443\u0440\u043e\u043a\u0435"}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                {"\u0411\u043b\u043e\u043a \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u0435\u043d \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u043c\u0441\u044f."}
+              </span>
+            </span>
+
+            <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-slate-200 p-1 transition group-has-[:checked]:bg-emerald-600">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(event) => onFieldChange("is_active", event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+        </div>
+      </section>
+    </>
+  );
+}
+
+
+
+function LessonStudioAssignmentBlockEditor({ form, saving, onFieldChange }) {
+  const description = `${form.assignment_description || form.content_text || ""}`;
+  const expectedResult = `${form.assignment_expected_result || ""}`;
+  const submissionFormat = `${form.assignment_submission_format || ""}`;
+  const criteria = `${form.assignment_criteria || ""}`;
+  const reviewMode = normalizeAssignmentReviewMode(form.assignment_review_mode);
+  const estimatedMinutes = `${form.assignment_estimated_minutes || ""}`;
+  const ready = Boolean(description.trim());
+
+  const draftBlock = {
+    block_type: "assignment",
+    title: form.title || "\u0417\u0430\u0434\u0430\u043d\u0438\u0435",
+    content_json: {
+      description,
+      text: description,
+      content_text: description,
+      assignment_text: description,
+      expected_result: expectedResult,
+      submission_format: submissionFormat,
+      criteria,
+      review_mode: reviewMode,
+      estimated_minutes: estimatedMinutes,
+    },
+    is_required: form.is_required,
+    is_active: form.is_active,
+  };
+
+  return (
+    <>
+      <section
+        data-testid="lesson-studio-assignment-editor-content"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-lg font-black text-slate-950">
+              {"\u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u044f"}
+            </div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {"\u041e\u043f\u0438\u0448\u0438\u0442\u0435 \u043f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0443\u044e \u0440\u0430\u0431\u043e\u0442\u0443, \u043e\u0436\u0438\u0434\u0430\u0435\u043c\u044b\u0439 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0438 \u043a\u0440\u0438\u0442\u0435\u0440\u0438\u0438 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f."}
+            </p>
+          </div>
+
+          {ready ? (
+            <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+              {"\u2713 \u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0433\u043e\u0442\u043e\u0432\u043e"}
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
+              {"\u0422\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435"}
+            </span>
+          )}
+        </div>
+
+        <label className="mt-4 block" data-testid="lesson-studio-assignment-description-field">
+          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+            {"\u0427\u0442\u043e \u043d\u0443\u0436\u043d\u043e \u0441\u0434\u0435\u043b\u0430\u0442\u044c"}
+          </span>
+          <textarea
+            value={description}
+            onChange={(event) => onFieldChange("assignment_description", event.target.value)}
+            placeholder="Например: опишите алгоритм действий при остановке кровотечения."
+            rows={6}
+            disabled={saving}
+            className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+          />
+        </label>
+
+        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+          <label className="block">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {"\u0427\u0442\u043e \u0434\u043e\u043b\u0436\u043d\u043e \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u044c\u0441\u044f"}
+            </span>
+            <textarea
+              value={expectedResult}
+              onChange={(event) => onFieldChange("assignment_expected_result", event.target.value)}
+              placeholder="Ожидаемый результат"
+              rows={4}
+              disabled={saving}
+              className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {"\u0424\u043e\u0440\u043c\u0430\u0442 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f"}
+            </span>
+            <textarea
+              value={submissionFormat}
+              onChange={(event) => onFieldChange("assignment_submission_format", event.target.value)}
+              placeholder="Например: устно, в тетради, в виде краткого ответа"
+              rows={4}
+              disabled={saving}
+              className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+            />
+          </label>
+        </div>
+
+        <label className="mt-4 block">
+          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+            {"\u041a\u0440\u0438\u0442\u0435\u0440\u0438\u0438 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f"}
+          </span>
+          <textarea
+            value={criteria}
+            onChange={(event) => onFieldChange("assignment_criteria", event.target.value)}
+            placeholder="Как обучающийся поймёт, что задание выполнено верно"
+            rows={4}
+            disabled={saving}
+            className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+          />
+        </label>
+
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_14rem]">
+          <label className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {"\u0420\u0435\u0436\u0438\u043c \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438"}
+            </span>
+            <select
+              value={reviewMode}
+              onChange={(event) => onFieldChange("assignment_review_mode", event.target.value)}
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+            >
+              <option value="self_check">{"\u0421\u0430\u043c\u043e\u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430"}</option>
+              <option value="submit_only">{"\u041e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u0431\u0435\u0437 \u0440\u0443\u0447\u043d\u043e\u0439 \u043e\u0446\u0435\u043d\u043a\u0438"}</option>
+              <option value="manual_review">{"\u0420\u0443\u0447\u043d\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430"}</option>
+            </select>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              {"\u041d\u0430 \u044d\u0442\u043e\u043c \u044d\u0442\u0430\u043f\u0435 \u0432 \u0443\u0440\u043e\u043a\u0435 \u043e\u0442\u043e\u0431\u0440\u0430\u0436\u0430\u0435\u0442\u0441\u044f \u0438\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f. \u041e\u0442\u043f\u0440\u0430\u0432\u043a\u0443 \u0438 \u0440\u0443\u0447\u043d\u0443\u044e \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0443 \u0434\u043e\u0431\u0430\u0432\u0438\u043c \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u043c \u044d\u0442\u0430\u043f\u043e\u043c."}
+            </p>
+          </label>
+
+          <label className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {"\u0412\u0440\u0435\u043c\u044f, \u043c\u0438\u043d."}
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={estimatedMinutes}
+              onChange={(event) => onFieldChange("assignment_estimated_minutes", event.target.value)}
+              placeholder="10"
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section
+        data-testid="lesson-studio-assignment-preview-editor"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="text-lg font-black text-slate-950">{"\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440"}</div>
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          {"\u0422\u0430\u043a \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u0432\u044b\u0433\u043b\u044f\u0434\u0435\u0442\u044c \u043d\u0430 \u043f\u043e\u043b\u043e\u0442\u043d\u0435 \u0443\u0440\u043e\u043a\u0430."}
+        </p>
+
+        <LessonAssignmentCanvasPreview
+          block={draftBlock}
+          previewValue={description}
+          learnerMode={false}
+        />
+      </section>
+
+      <section
+        data-testid="lesson-studio-inspector-section-publication"
+        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="text-lg font-black text-slate-950">{"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0431\u043b\u043e\u043a\u0430"}</div>
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          {"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435, \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u0438 \u0432\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0434\u043b\u044f \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u0445\u0441\u044f."}
+        </p>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_17rem_17rem]">
+          <label
+            className="block rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200"
+            data-testid="lesson-studio-inspector-title-field"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0431\u043b\u043e\u043a\u0430"}
+            </span>
+            <input
+              value={form.title}
+              onChange={(event) => onFieldChange("title", event.target.value)}
+              placeholder="Задание"
+              disabled={saving}
+              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-100"
+            />
+          </label>
+
+          <label className={`group flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 text-sm ring-1 transition ${
+            form.is_required
+              ? "bg-blue-50/70 text-blue-900 ring-blue-200"
+              : "bg-slate-50/80 text-slate-700 ring-slate-200 hover:bg-slate-50"
+          }`}>
+            <span className="min-w-0">
+              <span className="block font-bold text-slate-950">{"\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439"}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                {"\u041e\u0431\u0443\u0447\u0430\u044e\u0449\u0438\u0439\u0441\u044f \u0434\u043e\u043b\u0436\u0435\u043d \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u044d\u0442\u043e \u0437\u0430\u0434\u0430\u043d\u0438\u0435."}
               </span>
             </span>
 
@@ -5276,6 +5709,12 @@ function isLessonQuizBlock(block) {
   return type === "quiz";
 }
 
+function isLessonAssignmentBlock(block) {
+  const type = `${block?.block_type || ""}`.toLowerCase();
+
+  return type === "assignment";
+}
+
 function buildLessonRichTextDocumentFromText(value) {
   const text = `${value || ""}`.trim();
 
@@ -5410,6 +5849,7 @@ function buildInspectorBlockForm(block) {
   const imageContent = getImageBlockContent(block);
   const imageUrl = getImageBlockUrl(block);
   const quizContent = normalizeQuizContent(block?.content_json);
+  const assignmentContent = getAssignmentBlockContent(block);
 
   return {
     title: `${block?.title || ""}`,
@@ -5435,6 +5875,12 @@ function buildInspectorBlockForm(block) {
     quiz_content: isLessonQuizBlock(block) ? quizContent : null,
     presentation_asset: isLessonPresentationBlock(block) ? getPresentationBlockContent(block) : null,
     audio_asset: isLessonAudioBlock(block) ? audioContent : null,
+    assignment_description: getAssignmentBlockDescription(block),
+    assignment_expected_result: getAssignmentBlockExpectedResult(block),
+    assignment_submission_format: getAssignmentBlockSubmissionFormat(block),
+    assignment_criteria: getAssignmentBlockCriteria(block),
+    assignment_review_mode: normalizeAssignmentReviewMode(assignmentContent.review_mode),
+    assignment_estimated_minutes: `${getAssignmentBlockEstimatedMinutes(block) || ""}`,
     is_required: Boolean(block?.is_required),
     is_active: block?.is_active !== false,
   };
@@ -5486,6 +5932,12 @@ function getInspectorFormSnapshot(values) {
     quiz_content: stableStringifyLessonValue(values?.quiz_content || null),
     presentation_asset: stableStringifyLessonValue(values?.presentation_asset || null),
     audio_asset: stableStringifyLessonValue(values?.audio_asset || null),
+    assignment_description: `${values?.assignment_description || ""}`.trim(),
+    assignment_expected_result: `${values?.assignment_expected_result || ""}`.trim(),
+    assignment_submission_format: `${values?.assignment_submission_format || ""}`.trim(),
+    assignment_criteria: `${values?.assignment_criteria || ""}`.trim(),
+    assignment_review_mode: normalizeAssignmentReviewMode(values?.assignment_review_mode),
+    assignment_estimated_minutes: `${values?.assignment_estimated_minutes || ""}`.trim(),
     is_required: Boolean(values?.is_required),
     is_active: Boolean(values?.is_active),
   });
@@ -5619,7 +6071,24 @@ function buildInspectorBlockPayload(block, values) {
       is_active: Boolean(values.is_active),
     };
   } else if (type === "assignment") {
-    contentJson.description = contentText;
+    const assignmentDescription = `${values.assignment_description || contentText || ""}`.trim();
+    const assignmentExpectedResult = `${values.assignment_expected_result || contentJson.expected_result || ""}`.trim();
+    const assignmentSubmissionFormat = `${values.assignment_submission_format || contentJson.submission_format || ""}`.trim();
+    const assignmentCriteria = `${values.assignment_criteria || contentJson.criteria || ""}`.trim();
+    const estimatedMinutesValue = Number(values.assignment_estimated_minutes || contentJson.estimated_minutes || 0);
+
+    contentJson.description = assignmentDescription;
+    contentJson.text = assignmentDescription;
+    contentJson.content_text = assignmentDescription;
+    contentJson.assignment_text = assignmentDescription;
+    contentJson.expected_result = assignmentExpectedResult;
+    contentJson.submission_format = assignmentSubmissionFormat;
+    contentJson.criteria = assignmentCriteria;
+    contentJson.review_mode = normalizeAssignmentReviewMode(values.assignment_review_mode || contentJson.review_mode);
+    contentJson.estimated_minutes =
+      Number.isFinite(estimatedMinutesValue) && estimatedMinutesValue > 0
+        ? Math.round(estimatedMinutesValue)
+        : null;
   } else {
     contentJson.text = contentText;
   }
@@ -6113,6 +6582,12 @@ function LessonStudioInspector({
               />
             ) : isLessonFileLinkBlock(selectedBlock) ? (
               <LessonStudioFileLinkBlockEditor
+                form={form}
+                saving={saving}
+                onFieldChange={handleFieldChange}
+              />
+            ) : isLessonAssignmentBlock(selectedBlock) ? (
+              <LessonStudioAssignmentBlockEditor
                 form={form}
                 saving={saving}
                 onFieldChange={handleFieldChange}
