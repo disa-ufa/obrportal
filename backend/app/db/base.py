@@ -1,3 +1,4 @@
+from app.models.assignment_submission import AssignmentSubmission
 from app.models.audit_event import AuditEvent
 from app.models.course import Course
 from app.models.course_module import CourseModule
@@ -12,6 +13,7 @@ from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 
 __all__ = [
+    "AssignmentSubmission",
     "AuditEvent",
     "Course",
     "LessonBlock",

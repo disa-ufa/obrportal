@@ -2,7 +2,7 @@ import { formatApiError } from "../utils/apiErrors";
 // Legacy CI smoke compatibility marker: import { useEffect, useState } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
-import { completeAccountCourse, completeAccountCourseLesson, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
+import { completeAccountCourse, completeAccountCourseLesson, completeAccountCourseLessonAssignment, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonAssignmentSubmission, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 import { buildInitialQuizAnswers } from "../components/admin/lesson-studio/quiz/quizGrading.js";
@@ -82,6 +82,41 @@ function getLearnerQuizCompletionGate(quizAttemptStateByLesson, lessonId) {
     passed: blocks.every((item) => item.passed),
   };
 }
+
+
+function getLearnerAssignmentCompletionGate(assignmentSubmissionStateByLesson, lesson) {
+  const lessonId = getLearnerLessonBlockViewerLessonId(lesson);
+  const blocks = getLearnerLessonBlockViewerBlocks(lesson)
+    .filter((block) => normalizeLearnerLessonBlockType(block?.block_type) === "assignment" && block?.is_required);
+
+  if (!blocks.length) {
+    return {
+      hasAssignment: false,
+      completed: true,
+      completedCount: 0,
+      requiredCount: 0,
+    };
+  }
+
+  const lessonState = assignmentSubmissionStateByLesson?.[`${lessonId || ""}`];
+  const statesByBlock = lessonState?.blocks && typeof lessonState.blocks === "object"
+    ? lessonState.blocks
+    : {};
+
+  const completedCount = blocks.reduce((count, block) => {
+    const blockKey = `${block?.id || block?.block_id || block?.position || ""}`;
+
+    return count + (statesByBlock[blockKey]?.completed ? 1 : 0);
+  }, 0);
+
+  return {
+    hasAssignment: true,
+    completed: completedCount >= blocks.length,
+    completedCount,
+    requiredCount: blocks.length,
+  };
+}
+
 
 function getEnrollmentStatusLabel(status) {
   switch (status) {
@@ -1879,7 +1914,301 @@ function LearnerQuizAttemptBlock({
   );
 }
 
-function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, options, lesson, enrollmentId, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange }) {
+
+const LEARNER_ASSIGNMENT_COMPLETION_LABELS = {
+  title: "\u041f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u043e\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u0435",
+  instruction: "\u0418\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f",
+  expectedResult: "\u0427\u0442\u043e \u0434\u043e\u043b\u0436\u043d\u043e \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u044c\u0441\u044f",
+  submissionFormat: "\u0424\u043e\u0440\u043c\u0430\u0442 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f",
+  criteria: "\u041a\u0440\u0438\u0442\u0435\u0440\u0438\u0438",
+  estimatedTime: "\u041f\u0440\u0438\u043c\u0435\u0440\u043d\u043e\u0435 \u0432\u0440\u0435\u043c\u044f",
+  status: "\u0421\u0442\u0430\u0442\u0443\u0441",
+  notStarted: "\u041d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e",
+  loading: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0441\u0442\u0430\u0442\u0443\u0441...",
+  completed: "\u0412\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e",
+  submitted: "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e",
+  approved: "\u041f\u0440\u0438\u043d\u044f\u0442\u043e",
+  returned: "\u0412\u0435\u0440\u043d\u0443\u0442\u043e \u043d\u0430 \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0443",
+  markCompleted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u044b\u043c",
+  saving: "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c...",
+  alreadyCompleted: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0443\u0436\u0435 \u043e\u0442\u043c\u0435\u0447\u0435\u043d\u043e \u043a\u0430\u043a \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u043e.",
+  saved: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e. \u0422\u0435\u043f\u0435\u0440\u044c \u043c\u043e\u0436\u043d\u043e \u043e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439.",
+  manualReviewInfo: "\u042d\u0442\u043e \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0440\u0443\u0447\u043d\u043e\u0439 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438. \u041e\u0442\u043f\u0440\u0430\u0432\u043a\u0443 \u043e\u0442\u0432\u0435\u0442\u0430 \u0434\u043e\u0431\u0430\u0432\u0438\u043c \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u043c \u044d\u0442\u0430\u043f\u043e\u043c.",
+  loadError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u0434\u0430\u043d\u0438\u044f.",
+  saveError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u044b\u043c.",
+};
+
+function normalizeLearnerAssignmentReviewMode(value) {
+  const mode = `${value || ""}`.trim();
+
+  return ["self_check", "submit_only", "manual_review"].includes(mode) ? mode : "self_check";
+}
+
+function getLearnerAssignmentContent(block) {
+  return getLearnerLessonBlockViewerContent(block);
+}
+
+function getLearnerAssignmentDescription(block, fallbackText = "") {
+  const content = getLearnerAssignmentContent(block);
+
+  return `${content.description || content.assignment_text || content.content_text || content.text || content.instruction || content.task || fallbackText || ""}`.trim();
+}
+
+function getLearnerAssignmentStatusLabel(status) {
+  switch (`${status || ""}`.trim()) {
+    case "completed":
+      return LEARNER_ASSIGNMENT_COMPLETION_LABELS.completed;
+    case "submitted":
+      return LEARNER_ASSIGNMENT_COMPLETION_LABELS.submitted;
+    case "approved":
+      return LEARNER_ASSIGNMENT_COMPLETION_LABELS.approved;
+    case "returned":
+    case "rejected":
+      return LEARNER_ASSIGNMENT_COMPLETION_LABELS.returned;
+    default:
+      return LEARNER_ASSIGNMENT_COMPLETION_LABELS.notStarted;
+  }
+}
+
+function doesLearnerAssignmentSubmissionComplete(reviewMode, submission) {
+  const status = `${submission?.status || "not_started"}`.trim();
+  const mode = normalizeLearnerAssignmentReviewMode(reviewMode);
+
+  if (mode === "manual_review") {
+    return status === "approved";
+  }
+
+  if (mode === "submit_only") {
+    return ["submitted", "approved", "completed"].includes(status);
+  }
+
+  return ["completed", "submitted", "approved"].includes(status);
+}
+
+function LearnerAssignmentCompletionBlock({
+  block,
+  lesson,
+  enrollmentId = "",
+  text = "",
+  href = "",
+  onAssignmentSubmissionStateChange,
+}) {
+  const content = getLearnerAssignmentContent(block);
+  const lessonId = getLearnerLessonBlockViewerLessonId(lesson);
+  const blockKey = `${block?.id || block?.block_id || block?.position || ""}`;
+  const reviewMode = normalizeLearnerAssignmentReviewMode(content.review_mode);
+  const description = getLearnerAssignmentDescription(block, text);
+  const expectedResult = `${content.expected_result || content.expectedResult || content.result || ""}`.trim();
+  const submissionFormat = `${content.submission_format || content.submissionFormat || content.format || ""}`.trim();
+  const criteria = `${content.criteria || content.checklist || content.evaluation_criteria || ""}`.trim();
+  const estimatedMinutes = Number(content.estimated_minutes || content.estimatedMinutes || 0);
+  const estimatedTimeText = Number.isFinite(estimatedMinutes) && estimatedMinutes > 0
+    ? `${Math.round(estimatedMinutes)} \u043c\u0438\u043d.`
+    : "";
+  const manualReview = reviewMode === "manual_review";
+
+  const [submission, setSubmission] = useState(null);
+  const [submissionLoading, setSubmissionLoading] = useState(false);
+  const [submissionSaving, setSubmissionSaving] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
+  const [submissionSuccess, setSubmissionSuccess] = useState("");
+
+  const completed = doesLearnerAssignmentSubmissionComplete(reviewMode, submission);
+  const statusLabel = submissionLoading
+    ? LEARNER_ASSIGNMENT_COMPLETION_LABELS.loading
+    : getLearnerAssignmentStatusLabel(submission?.status);
+
+  const detailItems = [
+    expectedResult ? [LEARNER_ASSIGNMENT_COMPLETION_LABELS.expectedResult, expectedResult] : null,
+    submissionFormat ? [LEARNER_ASSIGNMENT_COMPLETION_LABELS.submissionFormat, submissionFormat] : null,
+    criteria ? [LEARNER_ASSIGNMENT_COMPLETION_LABELS.criteria, criteria] : null,
+    estimatedTimeText ? [LEARNER_ASSIGNMENT_COMPLETION_LABELS.estimatedTime, estimatedTimeText] : null,
+  ].filter(Boolean);
+
+  function publishAssignmentState(nextSubmission, nextLoading = false) {
+    if (!lessonId || !blockKey) {
+      return;
+    }
+
+    onAssignmentSubmissionStateChange?.({
+      lessonId,
+      blockKey,
+      hasAssignment: true,
+      loading: nextLoading,
+      status: nextSubmission?.status || "not_started",
+      completed: doesLearnerAssignmentSubmissionComplete(reviewMode, nextSubmission),
+    });
+  }
+
+  useEffect(() => {
+    let ignore = false;
+
+    publishAssignmentState(submission, true);
+
+    if (!enrollmentId || !lessonId || !blockKey) {
+      publishAssignmentState(null, false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    async function loadSubmission() {
+      try {
+        setSubmissionLoading(true);
+        setSubmissionError("");
+        const nextSubmission = await getAccountCourseLessonAssignmentSubmission(enrollmentId, lessonId, blockKey);
+
+        if (ignore) {
+          return;
+        }
+
+        setSubmission(nextSubmission);
+        publishAssignmentState(nextSubmission, false);
+      } catch (err) {
+        if (ignore) {
+          return;
+        }
+
+        setSubmissionError(formatApiError(err, LEARNER_ASSIGNMENT_COMPLETION_LABELS.loadError));
+        publishAssignmentState(null, false);
+      } finally {
+        if (!ignore) {
+          setSubmissionLoading(false);
+        }
+      }
+    }
+
+    loadSubmission();
+
+    return () => {
+      ignore = true;
+    };
+  }, [enrollmentId, lessonId, blockKey, reviewMode]);
+
+  async function handleCompleteAssignment() {
+    if (!enrollmentId || !lessonId || !blockKey || completed || manualReview) {
+      return;
+    }
+
+    try {
+      setSubmissionSaving(true);
+      setSubmissionError("");
+      setSubmissionSuccess("");
+      const nextSubmission = await completeAccountCourseLessonAssignment(enrollmentId, lessonId, blockKey);
+
+      setSubmission(nextSubmission);
+      publishAssignmentState(nextSubmission, false);
+      setSubmissionSuccess(LEARNER_ASSIGNMENT_COMPLETION_LABELS.saved);
+    } catch (err) {
+      setSubmissionError(formatApiError(err, LEARNER_ASSIGNMENT_COMPLETION_LABELS.saveError));
+    } finally {
+      setSubmissionSaving(false);
+    }
+  }
+
+  return (
+    <div
+      data-testid="learner-lesson-block-viewer-assignment"
+      data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
+      className="mt-4 rounded-2xl bg-red-50/80 p-4 text-sm leading-6 text-red-900 ring-1 ring-red-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="font-black uppercase tracking-[0.12em] text-red-700">
+            {LEARNER_ASSIGNMENT_COMPLETION_LABELS.title}
+          </div>
+          <div className="mt-1 text-xs font-semibold text-red-700">
+            {LEARNER_ASSIGNMENT_COMPLETION_LABELS.status}: {statusLabel}
+          </div>
+        </div>
+
+        <span
+          data-testid="learner-assignment-completion-status"
+          className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${
+            completed
+              ? "bg-green-50 text-green-700 ring-green-200"
+              : "bg-white text-red-700 ring-red-200"
+          }`}
+        >
+          {completed ? LEARNER_ASSIGNMENT_COMPLETION_LABELS.completed : LEARNER_ASSIGNMENT_COMPLETION_LABELS.notStarted}
+        </span>
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-white/80 p-4 text-slate-800 ring-1 ring-red-100">
+        <div className="text-xs font-black uppercase tracking-[0.12em] text-red-700">
+          {LEARNER_ASSIGNMENT_COMPLETION_LABELS.instruction}
+        </div>
+        <div className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-7">
+          {description || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
+        </div>
+      </div>
+
+      {detailItems.length ? (
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {detailItems.map(([label, value]) => (
+            <div key={label} className="rounded-2xl bg-white/70 p-4 text-slate-800 ring-1 ring-red-100">
+              <div className="text-xs font-black uppercase tracking-[0.12em] text-red-700">
+                {label}
+              </div>
+              <div className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-6">
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {href ? (
+        <a
+          data-testid="learner-lesson-block-viewer-assignment-link"
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-50"
+        >
+          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.openMaterial}
+        </a>
+      ) : null}
+
+      {manualReview ? (
+        <div className="mt-4 rounded-2xl bg-white/80 p-4 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
+          {LEARNER_ASSIGNMENT_COMPLETION_LABELS.manualReviewInfo}
+        </div>
+      ) : null}
+
+      {submissionError ? (
+        <div className="mt-4 rounded-2xl bg-red-100 p-4 text-sm font-semibold text-red-800 ring-1 ring-red-200">
+          {submissionError}
+        </div>
+      ) : null}
+
+      {submissionSuccess ? (
+        <div className="mt-4 rounded-2xl bg-green-50 p-4 text-sm font-semibold text-green-800 ring-1 ring-green-200">
+          {submissionSuccess}
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button
+          type="button"
+          data-testid="learner-assignment-complete-button"
+          onClick={handleCompleteAssignment}
+          disabled={submissionLoading || submissionSaving || completed || manualReview}
+          className="rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {submissionSaving
+            ? LEARNER_ASSIGNMENT_COMPLETION_LABELS.saving
+            : completed
+              ? LEARNER_ASSIGNMENT_COMPLETION_LABELS.alreadyCompleted
+              : LEARNER_ASSIGNMENT_COMPLETION_LABELS.markCompleted}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, options, lesson, enrollmentId, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange, onAssignmentSubmissionStateChange }) {
   const content = getLearnerLessonBlockViewerContent(block);
   const question = getLearnerLessonBlockViewerQuestion(block);
   const fileName = getLearnerLessonBlockViewerFileName(block);
@@ -1955,29 +2284,14 @@ function LearnerLessonBlockViewerBody({ block, blockType, text, url, href, optio
 
   if (blockType === "assignment") {
     return (
-      <div
-        data-testid="learner-lesson-block-viewer-assignment"
-        data-stage={STAGE82_LEARNER_BLOCK_TYPE_RENDERING}
-        className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200"
-      >
-        <div className="font-semibold text-amber-950">
-          {LEARNER_LESSON_BLOCK_VIEWER_LABELS.assignmentInstruction}
-        </div>
-        <div className="mt-2">
-          {text || content.instruction || content.task || content.description || LEARNER_LESSON_BLOCK_VIEWER_LABELS.noBlocks}
-        </div>
-        {href ? (
-          <a
-            data-testid="learner-lesson-block-viewer-assignment-link"
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
-          >
-            {LEARNER_LESSON_BLOCK_VIEWER_LABELS.openMaterial}
-          </a>
-        ) : null}
-      </div>
+      <LearnerAssignmentCompletionBlock
+        block={block}
+        lesson={lesson}
+        enrollmentId={enrollmentId}
+        text={text}
+        href={href}
+        onAssignmentSubmissionStateChange={onAssignmentSubmissionStateChange}
+      />
     );
   }
 
@@ -2245,7 +2559,7 @@ function LearnerLessonBlockNavigation({ lessons, selectedLessonId, onSelectLesso
   );
 }
 
-function LearnerLessonBlockViewerBlock({ block, index, lesson, enrollmentId, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange }) {
+function LearnerLessonBlockViewerBlock({ block, index, lesson, enrollmentId, onCompleteLesson, lessonCompletionLoading, onQuizAttemptStateChange, onAssignmentSubmissionStateChange }) {
   const blockType = normalizeLearnerLessonBlockType(block.block_type);
   const typeLabel = LEARNER_LESSON_BLOCK_VIEWER_TYPE_LABELS[blockType] || LEARNER_LESSON_BLOCK_VIEWER_LABELS.richText;
   const text = getLearnerLessonBlockViewerText(block);
@@ -2294,6 +2608,7 @@ function LearnerLessonBlockViewerBlock({ block, index, lesson, enrollmentId, onC
         onCompleteLesson={onCompleteLesson}
         lessonCompletionLoading={lessonCompletionLoading}
         onQuizAttemptStateChange={onQuizAttemptStateChange}
+        onAssignmentSubmissionStateChange={onAssignmentSubmissionStateChange}
       />
     </article>
   );
@@ -2310,6 +2625,7 @@ function CourseLearnerLessonBlockViewerPanel({
   onCompleteLesson,
   lessonCompletionLoading = false,
   onQuizAttemptStateChange,
+  onAssignmentSubmissionStateChange,
 }) {
   const facts = getLearnerLessonBlockViewerFacts(course, existingEnrollment, user, selectedLessonId);
   const enrollmentId = getEnrollmentId(existingEnrollment);
@@ -2428,6 +2744,7 @@ function CourseLearnerLessonBlockViewerPanel({
               onCompleteLesson={onCompleteLesson}
               lessonCompletionLoading={lessonCompletionLoading}
               onQuizAttemptStateChange={onQuizAttemptStateChange}
+              onAssignmentSubmissionStateChange={onAssignmentSubmissionStateChange}
             />
           ))}
         </div>
@@ -4295,6 +4612,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [lessonCompletionError, setLessonCompletionError] = useState("");
   const [lessonCompletionSuccess, setLessonCompletionSuccess] = useState("");
   const [quizAttemptStateByLesson, setQuizAttemptStateByLesson] = useState({});
+  const [assignmentSubmissionStateByLesson, setAssignmentSubmissionStateByLesson] = useState({});
   const [courseCompletionLoading, setCourseCompletionLoading] = useState(false);
   const [courseCompletionError, setCourseCompletionError] = useState("");
   const [courseCompletionSuccess, setCourseCompletionSuccess] = useState("");
@@ -4432,6 +4750,15 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     [quizAttemptStateByLesson, selectedLessonId]
   );
 
+  const selectedLessonAssignmentCompletionGate = useMemo(() => {
+    const selectedLesson = getLearnerLessonBlockViewerSelectedLesson(
+      learnerLessonAccessFacts,
+      selectedLessonId
+    );
+
+    return getLearnerAssignmentCompletionGate(assignmentSubmissionStateByLesson, selectedLesson);
+  }, [assignmentSubmissionStateByLesson, learnerLessonAccessFacts, selectedLessonId]);
+
   useEffect(() => {
     const selectedLesson = getLearnerLessonBlockViewerSelectedLesson(learnerLessonAccessFacts, selectedLessonId);
     const nextLessonId = getLearnerLessonBlockViewerLessonId(selectedLesson);
@@ -4509,6 +4836,45 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     });
   }
 
+  function handleAssignmentSubmissionStateChange(payload) {
+    if (!payload?.lessonId || !payload?.blockKey) {
+      return;
+    }
+
+    setAssignmentSubmissionStateByLesson((current) => {
+      const previousLessonState = current[payload.lessonId] || { blocks: {} };
+      const previousBlockState = previousLessonState.blocks[payload.blockKey] || null;
+      const nextBlockState = {
+        hasAssignment: true,
+        loading: Boolean(payload.loading),
+        completed: Boolean(payload.completed),
+        status: `${payload.status || "not_started"}`,
+      };
+
+      if (
+        previousBlockState &&
+        previousBlockState.hasAssignment === nextBlockState.hasAssignment &&
+        previousBlockState.loading === nextBlockState.loading &&
+        previousBlockState.completed === nextBlockState.completed &&
+        previousBlockState.status === nextBlockState.status
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [payload.lessonId]: {
+          ...previousLessonState,
+          blocks: {
+            ...previousLessonState.blocks,
+            [payload.blockKey]: nextBlockState,
+          },
+        },
+      };
+    });
+  }
+
+
   async function handleCompleteLesson(lesson) {
     const enrollmentId = getEnrollmentId(existingEnrollment);
 
@@ -4535,6 +4901,20 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setLessonCompletionLoading(true);
       setLessonCompletionError("");
       setLessonCompletionSuccess("");
+
+      const assignmentCompletionGate = getLearnerAssignmentCompletionGate(
+        assignmentSubmissionStateByLesson,
+        lesson
+      );
+
+      if (assignmentCompletionGate.hasAssignment && !assignmentCompletionGate.completed) {
+        setLessonCompletionError(
+          `\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043e\u0442\u043c\u0435\u0442\u044c\u0442\u0435 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u043a\u0430\u043a \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u044b\u0435: ${assignmentCompletionGate.completedCount} \u0438\u0437 ${assignmentCompletionGate.requiredCount}.`
+        );
+        setLessonCompletionSuccess("");
+        setLessonCompletionLoading(false);
+        return;
+      }
 
       const updatedCourseDetail = await completeAccountCourseLesson(enrollmentId, lesson.id);
       const nextLesson = getLearnerNextLessonAfterCompletion(
@@ -4925,6 +5305,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         onCompleteLesson={handleCompleteLesson}
         lessonCompletionLoading={lessonCompletionLoading}
         onQuizAttemptStateChange={handleQuizAttemptStateChange}
+        onAssignmentSubmissionStateChange={handleAssignmentSubmissionStateChange}
       />
 
       <CourseLearnerCompletionActionPanel
@@ -4936,6 +5317,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         onCompleteLesson={handleCompleteLesson}
         selectedLessonId={selectedLessonId}
         quizCompletionGate={selectedLessonQuizCompletionGate}
+        assignmentCompletionGate={selectedLessonAssignmentCompletionGate}
         lessonCompletionLoading={lessonCompletionLoading}
         lessonCompletionError={lessonCompletionError}
         lessonCompletionSuccess={lessonCompletionSuccess}

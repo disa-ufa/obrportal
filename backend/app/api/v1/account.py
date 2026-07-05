@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import build_current_user_response, get_current_user
 from app.db.session import get_db
+from app.models.assignment_submission import AssignmentSubmission
 from app.models.course import Course
 from app.models.course_lesson import CourseLesson
 from app.models.course_module import CourseModule
@@ -29,6 +30,7 @@ from app.services.document_storage import (
     resolve_private_storage_path,
 )
 from app.schemas.account import (
+    AccountAssignmentSubmissionResponse,
     AccountCourseDetailResponse,
     AccountCourseItemResponse,
     AccountCourseLessonResponse,
@@ -378,6 +380,73 @@ def build_account_quiz_attempt_response(
     )
 
 
+ASSIGNMENT_REVIEW_MODES = {"self_check", "submit_only", "manual_review"}
+
+
+def normalize_assignment_review_mode(content_json: dict | None) -> str:
+    value = ""
+
+    if isinstance(content_json, dict):
+        value = str(content_json.get("review_mode") or "").strip()
+
+    return value if value in ASSIGNMENT_REVIEW_MODES else "self_check"
+
+
+def assignment_submission_satisfies_required_block(
+    block: LessonBlock,
+    submission: AssignmentSubmission | None,
+) -> bool:
+    if submission is None:
+        return False
+
+    mode = normalize_assignment_review_mode(block.content_json or {})
+    submission_status = str(submission.status or "").strip()
+
+    if mode == "manual_review":
+        return submission_status == "approved"
+
+    if mode == "submit_only":
+        return submission_status in {"submitted", "approved", "completed"}
+
+    return submission_status in {"completed", "submitted", "approved"}
+
+
+def build_account_assignment_submission_response(
+    *,
+    enrollment_id: str,
+    lesson_id: str,
+    block_id: str,
+    submission: AssignmentSubmission | None,
+) -> AccountAssignmentSubmissionResponse:
+    if submission is None:
+        return AccountAssignmentSubmissionResponse(
+            id=None,
+            enrollment_id=enrollment_id,
+            lesson_id=lesson_id,
+            block_id=block_id,
+            status="not_started",
+        )
+
+    return AccountAssignmentSubmissionResponse(
+        id=str(submission.id),
+        enrollment_id=str(submission.enrollment_id),
+        user_id=str(submission.user_id),
+        lesson_id=str(submission.lesson_id),
+        block_id=str(submission.block_id),
+        status=submission.status,
+        answer_text=submission.answer_text,
+        attachments_json=submission.attachments_json or {},
+        score=submission.score,
+        max_score=submission.max_score,
+        review_comment=submission.review_comment,
+        reviewed_by_user_id=str(submission.reviewed_by_user_id) if submission.reviewed_by_user_id else None,
+        submitted_at=submission.submitted_at,
+        reviewed_at=submission.reviewed_at,
+        created_at=submission.created_at,
+        updated_at=submission.updated_at,
+    )
+
+
 def build_account_course_lesson(
     lesson: CourseLesson,
     completed_at_by_lesson_id: dict[str, datetime] | None = None,
@@ -696,6 +765,92 @@ async def get_missing_required_quiz_block_ids(
     ]
 
 
+async def get_missing_required_assignment_block_ids(
+    session: AsyncSession,
+    *,
+    enrollment_id: str,
+    lesson_id: str,
+) -> list[str]:
+    required_blocks_result = await session.execute(
+        select(LessonBlock).where(
+            LessonBlock.lesson_id == lesson_id,
+            LessonBlock.block_type == "assignment",
+            LessonBlock.is_active.is_(True),
+            LessonBlock.is_required.is_(True),
+        )
+    )
+    required_blocks = list(required_blocks_result.scalars().all())
+
+    if not required_blocks:
+        return []
+
+    block_ids = [block.id for block in required_blocks]
+    submissions_result = await session.execute(
+        select(AssignmentSubmission).where(
+            AssignmentSubmission.enrollment_id == enrollment_id,
+            AssignmentSubmission.lesson_id == lesson_id,
+            AssignmentSubmission.block_id.in_(block_ids),
+        )
+    )
+    submissions_by_block_id = {
+        str(submission.block_id): submission
+        for submission in submissions_result.scalars().all()
+    }
+
+    return [
+        str(block.id)
+        for block in required_blocks
+        if not assignment_submission_satisfies_required_block(
+            block,
+            submissions_by_block_id.get(str(block.id)),
+        )
+    ]
+
+
+async def get_account_assignment_block_context_or_404(
+    *,
+    enrollment: Enrollment,
+    lesson_id: str,
+    block_id: str,
+    session: AsyncSession,
+) -> tuple[CourseLesson, LessonBlock]:
+    lesson_result = await session.execute(
+        select(CourseLesson)
+        .join(CourseModule, CourseModule.id == CourseLesson.module_id)
+        .where(
+            CourseLesson.id == lesson_id.strip(),
+            CourseLesson.is_active.is_(True),
+            CourseModule.is_active.is_(True),
+            CourseModule.course_id == enrollment.course_id,
+        )
+    )
+    lesson = lesson_result.scalar_one_or_none()
+
+    if lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found in this course",
+        )
+
+    block_result = await session.execute(
+        select(LessonBlock).where(
+            LessonBlock.id == block_id.strip(),
+            LessonBlock.lesson_id == lesson.id,
+            LessonBlock.block_type == "assignment",
+            LessonBlock.is_active.is_(True),
+        )
+    )
+    block = block_result.scalar_one_or_none()
+
+    if block is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment block not found in this lesson",
+        )
+
+    return lesson, block
+
+
 @router.get(
     "/courses/{enrollment_id}/lessons/{lesson_id}/quiz-attempts/{block_id}",
     response_model=list[AccountQuizAttemptResponse],
@@ -888,6 +1043,142 @@ async def submit_account_course_lesson_quiz_attempt(
     )
 
 
+@router.get(
+    "/courses/{enrollment_id}/lessons/{lesson_id}/assignment-submissions/{block_id}",
+    response_model=AccountAssignmentSubmissionResponse,
+)
+async def get_account_course_lesson_assignment_submission(
+    enrollment_id: str,
+    lesson_id: str,
+    block_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountAssignmentSubmissionResponse:
+    enrollment = await get_account_enrollment_entity_or_404(
+        enrollment_id=enrollment_id,
+        current_user=current_user,
+        session=session,
+    )
+    lesson, block = await get_account_assignment_block_context_or_404(
+        enrollment=enrollment,
+        lesson_id=lesson_id,
+        block_id=block_id,
+        session=session,
+    )
+
+    submission_result = await session.execute(
+        select(AssignmentSubmission).where(
+            AssignmentSubmission.enrollment_id == enrollment.id,
+            AssignmentSubmission.lesson_id == lesson.id,
+            AssignmentSubmission.block_id == block.id,
+        )
+    )
+    submission = submission_result.scalar_one_or_none()
+
+    return build_account_assignment_submission_response(
+        enrollment_id=str(enrollment.id),
+        lesson_id=str(lesson.id),
+        block_id=str(block.id),
+        submission=submission,
+    )
+
+
+@router.post(
+    "/courses/{enrollment_id}/lessons/{lesson_id}/assignment-submissions/{block_id}/complete",
+    response_model=AccountAssignmentSubmissionResponse,
+)
+async def complete_account_course_lesson_assignment_submission(
+    enrollment_id: str,
+    lesson_id: str,
+    block_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountAssignmentSubmissionResponse:
+    enrollment = await get_account_enrollment_entity_or_404(
+        enrollment_id=enrollment_id,
+        current_user=current_user,
+        session=session,
+    )
+
+    if enrollment.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Completed course cannot be changed",
+        )
+
+    lesson, block = await get_account_assignment_block_context_or_404(
+        enrollment=enrollment,
+        lesson_id=lesson_id,
+        block_id=block_id,
+        session=session,
+    )
+
+    review_mode = normalize_assignment_review_mode(block.content_json or {})
+
+    if review_mode == "manual_review":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "manual_review_assignment_requires_submission",
+                "message": "Manual review assignment requires submitted answer",
+                "block_id": str(block.id),
+            },
+        )
+
+    now = datetime.now(timezone.utc)
+    target_status = "submitted" if review_mode == "submit_only" else "completed"
+
+    if enrollment.status == "assigned":
+        enrollment.status = "active"
+
+    if enrollment.started_at is None:
+        enrollment.started_at = now
+
+    submission_result = await session.execute(
+        select(AssignmentSubmission).where(
+            AssignmentSubmission.enrollment_id == enrollment.id,
+            AssignmentSubmission.lesson_id == lesson.id,
+            AssignmentSubmission.block_id == block.id,
+        )
+    )
+    submission = submission_result.scalar_one_or_none()
+
+    if submission is None:
+        submission = AssignmentSubmission(
+            enrollment_id=enrollment.id,
+            user_id=current_user.id,
+            lesson_id=lesson.id,
+            block_id=block.id,
+            status=target_status,
+            attachments_json={},
+            submitted_at=now,
+        )
+        session.add(submission)
+    else:
+        submission.status = target_status
+        submission.user_id = current_user.id
+        if submission.submitted_at is None:
+            submission.submitted_at = now
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Assignment submission already exists",
+        ) from None
+
+    await session.refresh(submission)
+
+    return build_account_assignment_submission_response(
+        enrollment_id=str(enrollment.id),
+        lesson_id=str(lesson.id),
+        block_id=str(block.id),
+        submission=submission,
+    )
+
+
 @router.post(
     "/courses/{enrollment_id}/lessons/{lesson_id}/complete",
     response_model=AccountCourseDetailResponse,
@@ -941,6 +1232,22 @@ async def complete_account_course_lesson(
                 "code": "required_quiz_not_passed",
                 "message": "Required quiz is not passed",
                 "block_ids": missing_required_quiz_block_ids,
+            },
+        )
+
+    missing_required_assignment_block_ids = await get_missing_required_assignment_block_ids(
+        session,
+        enrollment_id=str(enrollment.id),
+        lesson_id=str(lesson.id),
+    )
+
+    if missing_required_assignment_block_ids:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "required_assignment_not_completed",
+                "message": "Required assignment is not completed",
+                "block_ids": missing_required_assignment_block_ids,
             },
         )
 

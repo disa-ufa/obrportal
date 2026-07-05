@@ -80,6 +80,25 @@ class AccountQuizAttemptResponse(BaseModel):
     submitted_at: datetime | None = None
 
 
+class AccountAssignmentSubmissionResponse(BaseModel):
+    id: str | None = None
+    enrollment_id: str
+    user_id: str | None = None
+    lesson_id: str
+    block_id: str
+    status: str = "not_started"
+    answer_text: str | None = None
+    attachments_json: dict[str, Any] = Field(default_factory=dict)
+    score: float | None = None
+    max_score: float | None = None
+    review_comment: str | None = None
+    reviewed_by_user_id: str | None = None
+    submitted_at: datetime | None = None
+    reviewed_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
 class AccountCourseLessonResponse(BaseModel):
     id: str
     module_id: str
