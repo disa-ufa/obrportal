@@ -479,6 +479,44 @@ class AdminEnrollmentQuizAttemptItem(BaseModel):
     updated_at: datetime | None = None
 
 
+class AdminEnrollmentAssignmentSubmissionItem(BaseModel):
+    id: str
+    enrollment_id: str
+    user_id: str
+    user_email: str
+    user_full_name: str | None = None
+    course_id: str
+    course_slug: str
+    course_title: str
+    lesson_id: str
+    lesson_title: str
+    block_id: str
+    block_title: str | None = None
+    block_type: str
+    block_content_json: dict[str, Any] = Field(default_factory=dict)
+    review_mode: str = "self_check"
+    status: str
+    answer_text: str | None = None
+    attachments_json: dict[str, Any] = Field(default_factory=dict)
+    score: float | None = None
+    max_score: float | None = None
+    review_comment: str | None = None
+    reviewed_by_user_id: str | None = None
+    reviewed_by_user_email: str | None = None
+    reviewed_by_user_full_name: str | None = None
+    submitted_at: datetime | None = None
+    reviewed_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class AdminAssignmentSubmissionReview(BaseModel):
+    status: str = Field(min_length=1, max_length=32)
+    score: float | None = Field(default=None, ge=0)
+    max_score: float | None = Field(default=None, ge=0)
+    review_comment: str | None = Field(default=None, max_length=5000)
+
+
 class AdminEnrollmentCreate(BaseModel):
     user_id: str = Field(min_length=1, max_length=64)
     course_id: str = Field(min_length=1, max_length=64)
