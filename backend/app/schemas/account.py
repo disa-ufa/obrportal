@@ -49,6 +49,10 @@ class AccountQuizAttemptSubmitRequest(BaseModel):
     answers: dict[str, Any] = Field(default_factory=dict)
 
 
+class AccountAssignmentSubmissionSubmitRequest(BaseModel):
+    answer_text: str = Field(default="", max_length=10000)
+
+
 class AccountQuizQuestionResultResponse(BaseModel):
     question_id: str | None = None
     type: str | None = None

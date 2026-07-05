@@ -30,6 +30,7 @@ from app.services.document_storage import (
     resolve_private_storage_path,
 )
 from app.schemas.account import (
+    AccountAssignmentSubmissionSubmitRequest,
     AccountAssignmentSubmissionResponse,
     AccountCourseDetailResponse,
     AccountCourseItemResponse,
@@ -1074,6 +1075,112 @@ async def get_account_course_lesson_assignment_submission(
         )
     )
     submission = submission_result.scalar_one_or_none()
+
+    return build_account_assignment_submission_response(
+        enrollment_id=str(enrollment.id),
+        lesson_id=str(lesson.id),
+        block_id=str(block.id),
+        submission=submission,
+    )
+
+
+@router.post(
+    "/courses/{enrollment_id}/lessons/{lesson_id}/assignment-submissions/{block_id}/submit",
+    response_model=AccountAssignmentSubmissionResponse,
+)
+async def submit_account_course_lesson_assignment_answer(
+    enrollment_id: str,
+    lesson_id: str,
+    block_id: str,
+    payload: AccountAssignmentSubmissionSubmitRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountAssignmentSubmissionResponse:
+    enrollment = await get_account_enrollment_entity_or_404(
+        enrollment_id=enrollment_id,
+        current_user=current_user,
+        session=session,
+    )
+
+    if enrollment.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Completed course cannot be changed",
+        )
+
+    answer_text = (payload.answer_text or "").strip()
+
+    if not answer_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "assignment_answer_required",
+                "message": "Assignment answer is required",
+                "block_id": block_id,
+            },
+        )
+
+    lesson, block = await get_account_assignment_block_context_or_404(
+        enrollment=enrollment,
+        lesson_id=lesson_id,
+        block_id=block_id,
+        session=session,
+    )
+
+    review_mode = normalize_assignment_review_mode(block.content_json or {})
+    target_status = "completed" if review_mode == "self_check" else "submitted"
+
+    now = datetime.now(timezone.utc)
+
+    if enrollment.status == "assigned":
+        enrollment.status = "active"
+
+    if enrollment.started_at is None:
+        enrollment.started_at = now
+
+    submission_result = await session.execute(
+        select(AssignmentSubmission).where(
+            AssignmentSubmission.enrollment_id == enrollment.id,
+            AssignmentSubmission.lesson_id == lesson.id,
+            AssignmentSubmission.block_id == block.id,
+        )
+    )
+    submission = submission_result.scalar_one_or_none()
+
+    if submission is None:
+        submission = AssignmentSubmission(
+            enrollment_id=enrollment.id,
+            user_id=current_user.id,
+            lesson_id=lesson.id,
+            block_id=block.id,
+            status=target_status,
+            answer_text=answer_text,
+            attachments_json={},
+            submitted_at=now,
+        )
+        session.add(submission)
+    else:
+        submission.user_id = current_user.id
+        submission.status = target_status
+        submission.answer_text = answer_text
+        submission.attachments_json = submission.attachments_json or {}
+        submission.submitted_at = now
+
+        if submission.review_comment or submission.reviewed_at or submission.reviewed_by_user_id:
+            submission.review_comment = None
+            submission.reviewed_at = None
+            submission.reviewed_by_user_id = None
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Assignment submission already exists",
+        ) from None
+
+    await session.refresh(submission)
 
     return build_account_assignment_submission_response(
         enrollment_id=str(enrollment.id),

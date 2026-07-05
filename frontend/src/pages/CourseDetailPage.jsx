@@ -2,7 +2,7 @@ import { formatApiError } from "../utils/apiErrors";
 // Legacy CI smoke compatibility marker: import { useEffect, useState } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
-import { completeAccountCourse, completeAccountCourseLesson, completeAccountCourseLessonAssignment, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonAssignmentSubmission, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
+import { completeAccountCourse, completeAccountCourseLesson, completeAccountCourseLessonAssignment, submitAccountCourseLessonAssignmentAnswer, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonAssignmentSubmission, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 import { buildInitialQuizAnswers } from "../components/admin/lesson-studio/quiz/quizGrading.js";
@@ -1929,11 +1929,20 @@ const LEARNER_ASSIGNMENT_COMPLETION_LABELS = {
   submitted: "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e",
   approved: "\u041f\u0440\u0438\u043d\u044f\u0442\u043e",
   returned: "\u0412\u0435\u0440\u043d\u0443\u0442\u043e \u043d\u0430 \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0443",
+  answerLabel: "\u0412\u0430\u0448 \u043e\u0442\u0432\u0435\u0442",
+  answerPlaceholder: "\u041d\u0430\u043f\u0438\u0448\u0438\u0442\u0435 \u043a\u0440\u0430\u0442\u043a\u0438\u0439 \u043e\u0442\u0432\u0435\u0442 \u043f\u043e \u0437\u0430\u0434\u0430\u043d\u0438\u044e.",
+  submitAnswer: "\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442",
+  submittingAnswer: "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c...",
+  answerRequired: "\u041d\u0430\u043f\u0438\u0448\u0438\u0442\u0435 \u043e\u0442\u0432\u0435\u0442 \u043f\u0435\u0440\u0435\u0434 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u043e\u0439.",
+  answerSaved: "\u041e\u0442\u0432\u0435\u0442 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d.",
+  answerSubmitted: "\u041e\u0442\u0432\u0435\u0442 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d. \u041e\u043d \u0431\u0443\u0434\u0435\u0442 \u0443\u0447\u0442\u0451\u043d \u0432 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0435 \u0443\u0440\u043e\u043a\u0430.",
+  manualReviewSubmitted: "\u041e\u0442\u0432\u0435\u0442 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d \u043d\u0430 \u0440\u0443\u0447\u043d\u0443\u044e \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0443.",
+  saveAnswerError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442.",
   markCompleted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u044b\u043c",
   saving: "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c...",
   alreadyCompleted: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0443\u0436\u0435 \u043e\u0442\u043c\u0435\u0447\u0435\u043d\u043e \u043a\u0430\u043a \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u043e.",
   saved: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e. \u0422\u0435\u043f\u0435\u0440\u044c \u043c\u043e\u0436\u043d\u043e \u043e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439.",
-  manualReviewInfo: "\u042d\u0442\u043e \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0440\u0443\u0447\u043d\u043e\u0439 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438. \u041e\u0442\u043f\u0440\u0430\u0432\u043a\u0443 \u043e\u0442\u0432\u0435\u0442\u0430 \u0434\u043e\u0431\u0430\u0432\u0438\u043c \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u043c \u044d\u0442\u0430\u043f\u043e\u043c.",
+  manualReviewInfo: "\u042d\u0442\u043e \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0440\u0443\u0447\u043d\u043e\u0439 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438. \u041f\u043e\u0441\u043b\u0435 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0438 \u043e\u0442\u0432\u0435\u0442\u0430 \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u0436\u0434\u0430\u0442\u044c \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438.",
   loadError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u0434\u0430\u043d\u0438\u044f.",
   saveError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u044b\u043c.",
 };
@@ -2012,6 +2021,8 @@ function LearnerAssignmentCompletionBlock({
   const [submissionSaving, setSubmissionSaving] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
   const [submissionSuccess, setSubmissionSuccess] = useState("");
+  const [answerText, setAnswerText] = useState("");
+  const [answerSubmitting, setAnswerSubmitting] = useState(false);
 
   const completed = doesLearnerAssignmentSubmissionComplete(reviewMode, submission);
   const statusLabel = submissionLoading
@@ -2063,6 +2074,7 @@ function LearnerAssignmentCompletionBlock({
         }
 
         setSubmission(nextSubmission);
+        setAnswerText(nextSubmission?.answer_text || "");
         publishAssignmentState(nextSubmission, false);
       } catch (err) {
         if (ignore) {
@@ -2084,6 +2096,49 @@ function LearnerAssignmentCompletionBlock({
       ignore = true;
     };
   }, [enrollmentId, lessonId, blockKey, reviewMode]);
+
+  async function handleSubmitAssignmentAnswer() {
+    if (!enrollmentId || !lessonId || !blockKey || answerSubmitting) {
+      return;
+    }
+
+    const normalizedAnswer = `${answerText || ""}`.trim();
+
+    if (!normalizedAnswer) {
+      setSubmissionError(LEARNER_ASSIGNMENT_COMPLETION_LABELS.answerRequired);
+      setSubmissionSuccess("");
+      return;
+    }
+
+    try {
+      setAnswerSubmitting(true);
+      setSubmissionError("");
+      setSubmissionSuccess("");
+
+      const nextSubmission = await submitAccountCourseLessonAssignmentAnswer(
+        enrollmentId,
+        lessonId,
+        blockKey,
+        normalizedAnswer
+      );
+
+      setSubmission(nextSubmission);
+      setAnswerText(nextSubmission?.answer_text || normalizedAnswer);
+      publishAssignmentState(nextSubmission, false);
+
+      setSubmissionSuccess(
+        reviewMode === "manual_review"
+          ? LEARNER_ASSIGNMENT_COMPLETION_LABELS.manualReviewSubmitted
+          : reviewMode === "submit_only"
+            ? LEARNER_ASSIGNMENT_COMPLETION_LABELS.answerSubmitted
+            : LEARNER_ASSIGNMENT_COMPLETION_LABELS.answerSaved
+      );
+    } catch (err) {
+      setSubmissionError(formatApiError(err, LEARNER_ASSIGNMENT_COMPLETION_LABELS.saveAnswerError));
+    } finally {
+      setAnswerSubmitting(false);
+    }
+  }
 
   async function handleCompleteAssignment() {
     if (!enrollmentId || !lessonId || !blockKey || completed || manualReview) {
@@ -2169,6 +2224,38 @@ function LearnerAssignmentCompletionBlock({
           {LEARNER_LESSON_BLOCK_VIEWER_LABELS.openMaterial}
         </a>
       ) : null}
+
+      <div className="mt-4 rounded-2xl bg-white/80 p-4 text-slate-800 ring-1 ring-red-100">
+        <label className="text-xs font-black uppercase tracking-[0.12em] text-red-700">
+          {LEARNER_ASSIGNMENT_COMPLETION_LABELS.answerLabel}
+        </label>
+        <textarea
+          data-testid="learner-assignment-answer-textarea"
+          value={answerText}
+          onChange={(event) => setAnswerText(event.target.value)}
+          rows={5}
+          maxLength={10000}
+          disabled={answerSubmitting || submissionLoading}
+          className="mt-3 min-h-[120px] w-full resize-y rounded-2xl border border-red-100 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-red-300 focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+          placeholder={LEARNER_ASSIGNMENT_COMPLETION_LABELS.answerPlaceholder}
+        />
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs font-semibold text-slate-500">
+            {answerText.trim().length} / 10000
+          </div>
+          <button
+            type="button"
+            data-testid="learner-assignment-submit-answer-button"
+            onClick={handleSubmitAssignmentAnswer}
+            disabled={answerSubmitting || submissionLoading || !answerText.trim()}
+            className="rounded-full bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {answerSubmitting
+              ? LEARNER_ASSIGNMENT_COMPLETION_LABELS.submittingAnswer
+              : LEARNER_ASSIGNMENT_COMPLETION_LABELS.submitAnswer}
+          </button>
+        </div>
+      </div>
 
       {manualReview ? (
         <div className="mt-4 rounded-2xl bg-white/80 p-4 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
