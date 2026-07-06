@@ -1927,7 +1927,7 @@ const LEARNER_ASSIGNMENT_COMPLETION_LABELS = {
   loading: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0441\u0442\u0430\u0442\u0443\u0441...",
   completed: "\u0412\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e",
   submitted: "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e",
-  approved: "\u041f\u0440\u0438\u043d\u044f\u0442\u043e",
+  approved: "\u0417\u0430\u0447\u0442\u0435\u043d\u043e",
   returned: "\u0412\u0435\u0440\u043d\u0443\u0442\u043e \u043d\u0430 \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0443",
   answerLabel: "\u0412\u0430\u0448 \u043e\u0442\u0432\u0435\u0442",
   answerPlaceholder: "\u041d\u0430\u043f\u0438\u0448\u0438\u0442\u0435 \u043a\u0440\u0430\u0442\u043a\u0438\u0439 \u043e\u0442\u0432\u0435\u0442 \u043f\u043e \u0437\u0430\u0434\u0430\u043d\u0438\u044e.",
@@ -1940,11 +1940,19 @@ const LEARNER_ASSIGNMENT_COMPLETION_LABELS = {
   saveAnswerError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442.",
   markCompleted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u044b\u043c",
   saving: "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c...",
-  alreadyCompleted: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0443\u0436\u0435 \u043e\u0442\u043c\u0435\u0447\u0435\u043d\u043e \u043a\u0430\u043a \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u043e.",
+  alreadyCompleted: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0443\u0436\u0435 \u043e\u0442\u043c\u0435\u0447\u0435\u043d\u043e \u043a\u0430\u043a \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e.",
   saved: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e. \u0422\u0435\u043f\u0435\u0440\u044c \u043c\u043e\u0436\u043d\u043e \u043e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439.",
   manualReviewInfo: "\u042d\u0442\u043e \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0440\u0443\u0447\u043d\u043e\u0439 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438. \u041f\u043e\u0441\u043b\u0435 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0438 \u043e\u0442\u0432\u0435\u0442\u0430 \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u0436\u0434\u0430\u0442\u044c \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438.",
   loadError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u0434\u0430\u043d\u0438\u044f.",
   saveError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0437\u0430\u0434\u0430\u043d\u0438\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043d\u044b\u043c.",
+  reviewResultTitle: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
+  reviewAwaiting: "\u041e\u0442\u0432\u0435\u0442 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d \u0438 \u043e\u0436\u0438\u0434\u0430\u0435\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438.",
+  reviewApproved: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u0437\u0430\u0447\u0442\u0435\u043d\u043e. \u0415\u0441\u043b\u0438 \u0443\u0440\u043e\u043a \u0435\u0449\u0451 \u043d\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d, \u0442\u0435\u043f\u0435\u0440\u044c \u0435\u0433\u043e \u043c\u043e\u0436\u043d\u043e \u043e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439.",
+  reviewRejected: "\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u043d\u0443\u0436\u043d\u043e \u0434\u043e\u0440\u0430\u0431\u043e\u0442\u0430\u0442\u044c. \u041f\u0440\u043e\u0447\u0438\u0442\u0430\u0439\u0442\u0435 \u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0439 \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u043e\u0442\u0432\u0435\u0442 \u0435\u0449\u0451 \u0440\u0430\u0437.",
+  reviewSubmitted: "\u041e\u0442\u0432\u0435\u0442 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d.",
+  reviewScore: "\u0411\u0430\u043b\u043b",
+  reviewComment: "\u041a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0439 \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u044e\u0449\u0435\u0433\u043e",
+  reviewedAt: "\u0414\u0430\u0442\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
 };
 
 function normalizeLearnerAssignmentReviewMode(value) {
@@ -1977,6 +1985,90 @@ function getLearnerAssignmentStatusLabel(status) {
     default:
       return LEARNER_ASSIGNMENT_COMPLETION_LABELS.notStarted;
   }
+}
+
+function getLearnerAssignmentStatusTone(status, completed = false) {
+  const normalized = `${status || ""}`.trim();
+
+  if (normalized === "approved" || completed) {
+    return "bg-green-50 text-green-700 ring-green-200";
+  }
+
+  if (normalized === "rejected" || normalized === "returned") {
+    return "bg-red-50 text-red-700 ring-red-200";
+  }
+
+  if (normalized === "submitted") {
+    return "bg-amber-50 text-amber-800 ring-amber-200";
+  }
+
+  if (normalized === "completed") {
+    return "bg-green-50 text-green-700 ring-green-200";
+  }
+
+  return "bg-white text-red-700 ring-red-200";
+}
+
+function getLearnerAssignmentReviewPanelTone(status) {
+  const normalized = `${status || ""}`.trim();
+
+  if (normalized === "approved") {
+    return "bg-green-50 text-green-900 ring-green-200";
+  }
+
+  if (normalized === "rejected" || normalized === "returned") {
+    return "bg-red-50 text-red-900 ring-red-200";
+  }
+
+  if (normalized === "submitted") {
+    return "bg-amber-50 text-amber-900 ring-amber-200";
+  }
+
+  return "bg-slate-50 text-slate-800 ring-slate-200";
+}
+
+function getLearnerAssignmentScoreText(submission) {
+  const score = submission?.score;
+  const maxScore = submission?.max_score;
+  const hasScore = score !== null && score !== undefined && score !== "";
+  const hasMaxScore = maxScore !== null && maxScore !== undefined && maxScore !== "";
+
+  if (hasScore && hasMaxScore) {
+    return `${score} / ${maxScore}`;
+  }
+
+  if (hasScore) {
+    return `${score}`;
+  }
+
+  if (hasMaxScore) {
+    return `0 / ${maxScore}`;
+  }
+
+  return "";
+}
+
+function getLearnerAssignmentReviewMessage(status, reviewMode) {
+  const normalized = `${status || ""}`.trim();
+  const mode = normalizeLearnerAssignmentReviewMode(reviewMode);
+
+  if (normalized === "approved") {
+    return LEARNER_ASSIGNMENT_COMPLETION_LABELS.reviewApproved;
+  }
+
+  if (normalized === "rejected" || normalized === "returned") {
+    return LEARNER_ASSIGNMENT_COMPLETION_LABELS.reviewRejected;
+  }
+
+  if (normalized === "submitted" && mode === "manual_review") {
+    return LEARNER_ASSIGNMENT_COMPLETION_LABELS.reviewAwaiting;
+  }
+
+  if (normalized === "submitted") {
+    return LEARNER_ASSIGNMENT_COMPLETION_LABELS.reviewSubmitted;
+  }
+
+  return "";
 }
 
 function doesLearnerAssignmentSubmissionComplete(reviewMode, submission) {
@@ -2025,9 +2117,24 @@ function LearnerAssignmentCompletionBlock({
   const [answerSubmitting, setAnswerSubmitting] = useState(false);
 
   const completed = doesLearnerAssignmentSubmissionComplete(reviewMode, submission);
+  const assignmentStatus = `${submission?.status || "not_started"}`.trim();
   const statusLabel = submissionLoading
     ? LEARNER_ASSIGNMENT_COMPLETION_LABELS.loading
     : getLearnerAssignmentStatusLabel(submission?.status);
+  const statusTone = submissionLoading
+    ? "bg-white text-slate-600 ring-slate-200"
+    : getLearnerAssignmentStatusTone(assignmentStatus, completed);
+  const scoreText = getLearnerAssignmentScoreText(submission);
+  const reviewComment = `${submission?.review_comment || ""}`.trim();
+  const reviewedAtText = submission?.reviewed_at ? formatDateTime(submission.reviewed_at) : "";
+  const reviewMessage = getLearnerAssignmentReviewMessage(assignmentStatus, reviewMode);
+  const showReviewFeedback = Boolean(submission) && Boolean(
+    reviewMessage ||
+    reviewComment ||
+    scoreText ||
+    reviewedAtText ||
+    ["submitted", "approved", "rejected", "returned"].includes(assignmentStatus)
+  );
 
   const detailItems = [
     expectedResult ? [LEARNER_ASSIGNMENT_COMPLETION_LABELS.expectedResult, expectedResult] : null,
@@ -2179,13 +2286,9 @@ function LearnerAssignmentCompletionBlock({
 
         <span
           data-testid="learner-assignment-completion-status"
-          className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${
-            completed
-              ? "bg-green-50 text-green-700 ring-green-200"
-              : "bg-white text-red-700 ring-red-200"
-          }`}
+          className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${statusTone}`}
         >
-          {completed ? LEARNER_ASSIGNMENT_COMPLETION_LABELS.completed : LEARNER_ASSIGNMENT_COMPLETION_LABELS.notStarted}
+          {statusLabel}
         </span>
       </div>
 
@@ -2257,9 +2360,62 @@ function LearnerAssignmentCompletionBlock({
         </div>
       </div>
 
-      {manualReview ? (
+      {manualReview && !completed ? (
         <div className="mt-4 rounded-2xl bg-white/80 p-4 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
           {LEARNER_ASSIGNMENT_COMPLETION_LABELS.manualReviewInfo}
+        </div>
+      ) : null}
+
+      {showReviewFeedback ? (
+        <div
+          data-testid="learner-assignment-review-result"
+          className={`mt-4 rounded-2xl p-4 text-sm font-semibold ring-1 ${getLearnerAssignmentReviewPanelTone(assignmentStatus)}`}
+        >
+          <div className="text-xs font-black uppercase tracking-[0.12em]">
+            {LEARNER_ASSIGNMENT_COMPLETION_LABELS.reviewResultTitle}
+          </div>
+
+          {reviewMessage ? (
+            <p className="mt-2 leading-6">
+              {reviewMessage}
+            </p>
+          ) : null}
+
+          {(scoreText || reviewedAtText) ? (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {scoreText ? (
+                <div className="rounded-xl bg-white/70 p-3 ring-1 ring-white/70">
+                  <div className="text-[11px] font-black uppercase tracking-[0.12em] opacity-70">
+                    {LEARNER_ASSIGNMENT_COMPLETION_LABELS.reviewScore}
+                  </div>
+                  <div className="mt-1 text-base font-black">{scoreText}</div>
+                </div>
+              ) : null}
+
+              {reviewedAtText ? (
+                <div className="rounded-xl bg-white/70 p-3 ring-1 ring-white/70">
+                  <div className="text-[11px] font-black uppercase tracking-[0.12em] opacity-70">
+                    {LEARNER_ASSIGNMENT_COMPLETION_LABELS.reviewedAt}
+                  </div>
+                  <div className="mt-1 text-base font-black">{reviewedAtText}</div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {reviewComment ? (
+            <div
+              data-testid="learner-assignment-review-comment"
+              className="mt-3 rounded-xl bg-white/70 p-3 ring-1 ring-white/70"
+            >
+              <div className="text-[11px] font-black uppercase tracking-[0.12em] opacity-70">
+                {LEARNER_ASSIGNMENT_COMPLETION_LABELS.reviewComment}
+              </div>
+              <div className="mt-2 whitespace-pre-wrap break-words leading-6">
+                {reviewComment}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
