@@ -2439,7 +2439,20 @@ function LessonStudioReadinessChecklist({
 }
 
 
-function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange, readinessReport, publishing = false, onPublish, unpublishing = false, onUnpublish }) {
+function LessonStudioTopbar({
+  lesson,
+  error,
+  mode = "editor",
+  onModeChange,
+  readinessReport,
+  publishing = false,
+  onPublish,
+  unpublishing = false,
+  onUnpublish,
+  selectedBlock = null,
+  hasUnsavedChanges = false,
+  savingBlock = false,
+}) {
   const courseId =
     lesson?.course_id ||
     lesson?.courseId ||
@@ -2451,6 +2464,27 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange, read
   const previewMode = mode === "preview";
   const published = lesson?.status === "published" && Boolean(lesson?.published_version_id);
   const readyForPublish = Boolean(readinessReport?.ready);
+  const hasSelectedBlock = Boolean(selectedBlock?.id);
+  const canSaveSelectedBlock = hasSelectedBlock && !savingBlock && !publishing && !unpublishing;
+  const draftStatusLabel = savingBlock
+    ? "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c \u0431\u043b\u043e\u043a..."
+    : !hasSelectedBlock
+      ? "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0431\u043b\u043e\u043a \u0434\u043b\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f"
+      : hasUnsavedChanges
+        ? "\u0415\u0441\u0442\u044c \u043d\u0435\u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0435 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u044f"
+        : "\u0412\u0441\u0435 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b";
+  const draftStatusClassName = savingBlock
+    ? "bg-blue-50 text-blue-700 ring-blue-200"
+    : !hasSelectedBlock
+      ? "bg-slate-50 text-slate-500 ring-slate-200"
+      : hasUnsavedChanges
+        ? "bg-amber-50 text-amber-800 ring-amber-200"
+        : "bg-green-50 text-green-700 ring-green-200";
+  const saveButtonTitle = !hasSelectedBlock
+    ? "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0431\u043b\u043e\u043a \u0443\u0440\u043e\u043a\u0430 \u0434\u043b\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f"
+    : hasUnsavedChanges
+      ? "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u0431\u043b\u043e\u043a \u0432 \u0447\u0435\u0440\u043d\u043e\u0432\u0438\u043a"
+      : "\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u0431\u043b\u043e\u043a \u0443\u0436\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d";
   const canPublish = !publishing && !unpublishing && typeof onPublish === "function";
   const canUnpublish = published && !publishing && !unpublishing && typeof onUnpublish === "function";
   const publishButtonLabel = publishing
@@ -2471,7 +2505,7 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange, read
   const lessonTitle = lesson?.title || "Урок без названия";
 
   const handleSaveShortcut = () => {
-    if (typeof document === "undefined") {
+    if (!canSaveSelectedBlock || typeof document === "undefined") {
       return;
     }
 
@@ -2517,9 +2551,12 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange, read
               Конструктор урока
             </h1>
 
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
-              <span aria-hidden="true" className="text-emerald-500/70">&#10003;</span>
-              Черновик сохранён
+            <span
+              data-testid="lesson-studio-draft-status-chip"
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${draftStatusClassName}`}
+            >
+              <span aria-hidden="true">{savingBlock ? "\u2026" : hasUnsavedChanges ? "!" : "\u2713"}</span>
+              {draftStatusLabel}
             </span>
 
             <span className="text-xs font-semibold text-slate-400">
@@ -2540,10 +2577,16 @@ function LessonStudioTopbar({ lesson, error, mode = "editor", onModeChange, read
             type="button"
             data-testid="lesson-studio-save-shortcut-button"
             onClick={handleSaveShortcut}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
+            disabled={!canSaveSelectedBlock}
+            title={saveButtonTitle}
+            className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-bold ring-1 transition ${
+              canSaveSelectedBlock
+                ? "bg-white text-slate-700 ring-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
+                : "cursor-not-allowed bg-slate-50 text-slate-400 ring-slate-200"
+            }`}
           >
             <Save className="h-4 w-4" aria-hidden="true" />
-            Сохранить
+            {"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0431\u043b\u043e\u043a"}
           </button>
 
           <button
@@ -7845,6 +7888,9 @@ export function LessonStudioPage({ lessonId }) {
         onPublish={handlePublishLesson}
         unpublishing={unpublishingLesson}
         onUnpublish={handleUnpublishLesson}
+        selectedBlock={selectedBlock}
+        hasUnsavedChanges={inlineEditorDirty}
+        savingBlock={Boolean(blockActionId && selectedBlock?.id === blockActionId)}
       />
 
       {viewMode !== "preview" ? (
