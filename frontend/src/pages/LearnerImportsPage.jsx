@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  applyAdminLearnerImport,
   getAdminLearnerImportDetail,
   getAdminLearnerImports,
   uploadAdminLearnerImport,
@@ -87,10 +88,13 @@ export function LearnerImportsPage() {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [applyingImportId, setApplyingImportId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   const selectedRows = selectedImport?.rows || [];
+  const canApplySelectedImport = selectedImport?.status === "parsed" && (selectedImport?.valid_rows || 0) > 0;
+  const selectedImportIsApplying = selectedImport?.id && applyingImportId === selectedImport.id;
 
   const totals = useMemo(() => {
     return imports.reduce(
@@ -139,6 +143,30 @@ export function LearnerImportsPage() {
       setSelectedImport(null);
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+
+  async function handleApplySelectedImport() {
+    if (!selectedImport?.id) {
+      return;
+    }
+
+    setApplyingImportId(selectedImport.id);
+    setError("");
+    setNotice("");
+
+    try {
+      const applied = await applyAdminLearnerImport(selectedImport.id);
+      setSelectedImport(applied);
+      setNotice(
+        `?????? ????????: ??????? ????????????? ${applied.created_users_count}, ???????? ${applied.created_profiles_count}, ?????????? ${applied.created_enrollments_count}.`
+      );
+      await loadImports();
+    } catch (err) {
+      setError(err.message || "?? ??????? ????????? ??????.");
+    } finally {
+      setApplyingImportId("");
     }
   }
 

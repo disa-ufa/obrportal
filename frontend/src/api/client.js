@@ -285,6 +285,13 @@ export async function getAdminLearnerImportDetail(batchId) {
   return request(`/api/v1/admin/learner-imports/${batchId}`);
 }
 
+
+export async function applyAdminLearnerImport(batchId) {
+  return request(`/api/v1/admin/learner-imports/${batchId}/apply`, {
+    method: "POST",
+  });
+}
+
 export async function uploadAdminLearnerImport(file, fields = {}) {
   const formData = new FormData();
   formData.append("file", file);
