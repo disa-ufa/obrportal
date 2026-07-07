@@ -274,6 +274,35 @@ export async function getAdminWorklistSummary(filters = {}) {
   return request(`/api/v1/admin/worklist-summary${query ? `?${query}` : ""}`);
 }
 
+
+export async function getAdminLearnerImports(filters = {}) {
+  const query = buildQueryString(filters);
+
+  return request(`/api/v1/admin/learner-imports${query}`);
+}
+
+export async function getAdminLearnerImportDetail(batchId) {
+  return request(`/api/v1/admin/learner-imports/${batchId}`);
+}
+
+export async function uploadAdminLearnerImport(file, fields = {}) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    formData.append(key, value);
+  });
+
+  return request("/api/v1/admin/learner-imports", {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export async function getHealth() {
   return request("/health");
 }

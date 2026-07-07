@@ -70,7 +70,7 @@ export const ADMIN_ROUTE_GROUPS = [
   {
     key: "operations",
     label: "Операции",
-    items: ["users", "organizations", "groups", "enrollments", "documents"],
+    items: ["users", "organizations", "groups", "enrollments", "learnerImports", "documents"],
   },
   {
     key: "content",
