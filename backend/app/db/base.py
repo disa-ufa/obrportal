@@ -6,6 +6,7 @@ from app.models.course_lesson import CourseLesson
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.import_batch import ImportBatch, ImportRow
 from app.models.learning_group import LearningGroup
 from app.models.learner_profile import LearnerProfile
 from app.models.lesson_block import LessonBlock
@@ -23,6 +24,8 @@ __all__ = [
     "DocumentGenerationEvent",
     "DocumentRecord",
     "Enrollment",
+    "ImportBatch",
+    "ImportRow",
     "LearningGroup",
     "LearnerProfile",
     "Organization",
