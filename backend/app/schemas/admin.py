@@ -599,4 +599,3 @@ class AdminLearnerImportBatchDetail(BaseModel):
     created_at: datetime
     updated_at: datetime
     rows: list[AdminLearnerImportRowItem] = Field(default_factory=list)
-
