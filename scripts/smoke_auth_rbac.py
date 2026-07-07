@@ -165,6 +165,62 @@ def request_form(
         return error.code, payload
 
 
+def request_multipart(
+    method: str,
+    path: str,
+    fields: dict[str, str] | None = None,
+    files: dict[str, tuple[str, str, bytes]] | None = None,
+    token: str | None = None,
+) -> tuple[int, dict | list | None]:
+    boundary = f"----obrportal-smoke-{uuid4().hex}"
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+    }
+
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    body = bytearray()
+
+    for name, value in (fields or {}).items():
+        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+        body.extend(f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode("utf-8"))
+        body.extend(str(value).encode("utf-8"))
+        body.extend(b"\r\n")
+
+    for name, file_data in (files or {}).items():
+        filename, content_type, content = file_data
+        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+        body.extend(
+            (
+                f'Content-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'
+                f"Content-Type: {content_type}\r\n\r\n"
+            ).encode("utf-8")
+        )
+        body.extend(content)
+        body.extend(b"\r\n")
+
+    body.extend(f"--{boundary}--\r\n".encode("utf-8"))
+
+    request = Request(
+        url=f"{BASE_URL}{path}",
+        data=bytes(body),
+        headers=headers,
+        method=method,
+    )
+
+    try:
+        with urlopen(request, timeout=REQUEST_TIMEOUT) as response:
+            raw = response.read().decode("utf-8")
+            payload = json.loads(raw) if raw else None
+            return response.status, payload
+    except HTTPError as error:
+        raw = error.read().decode("utf-8")
+        payload = json.loads(raw) if raw else None
+        return error.code, payload
+
+
 def request_binary(
     method: str,
     path: str,
@@ -256,6 +312,62 @@ def main() -> int:
     assert isinstance(me, dict)
     assert me["email"] == ADMIN_EMAIL
     checks.append("admin /auth/me ok")
+
+    learner_import_csv = (
+        "full name;email;phone;program\n"
+        "Ivanov Ivan Ivanovich;smoke-import-learner@mail.ru;89171234567;Smoke import course\n"
+        ";bad-email;;Smoke import course\n"
+    ).encode("utf-8-sig")
+
+    status, anonymous_learner_import = request_multipart(
+        "POST",
+        "/api/v1/admin/learner-imports",
+        files={
+            "file": ("smoke-learners.csv", "text/csv", learner_import_csv),
+        },
+    )
+    assert_status(status, 401, "admin learner import requires auth")
+    assert isinstance(anonymous_learner_import, dict)
+    checks.append("admin learner import requires auth")
+
+    status, learner_import = request_multipart(
+        "POST",
+        "/api/v1/admin/learner-imports",
+        fields={
+            "notes": "Smoke learner import",
+        },
+        files={
+            "file": ("smoke-learners.csv", "text/csv", learner_import_csv),
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin learner import upload")
+    assert isinstance(learner_import, dict)
+    assert learner_import["id"]
+    assert learner_import["import_type"] == "learner_roster"
+    assert learner_import["source_filename"] == "smoke-learners.csv"
+    assert learner_import["source_content_type"] == "text/csv"
+    assert learner_import["status"] == "parsed"
+    assert learner_import["total_rows"] == 2
+    assert learner_import["valid_rows"] == 1
+    assert learner_import["invalid_rows"] == 1
+    assert learner_import["created_users_count"] == 0
+    assert learner_import["created_profiles_count"] == 0
+    assert learner_import["created_enrollments_count"] == 0
+    assert learner_import["uploaded_by_user_id"] == me["id"]
+    assert learner_import["notes"] == "Smoke learner import"
+    assert isinstance(learner_import["rows"], list)
+    assert len(learner_import["rows"]) == 2
+
+    learner_import_rows = sorted(learner_import["rows"], key=lambda item: item["row_number"])
+    assert learner_import_rows[0]["status"] == "valid"
+    assert learner_import_rows[0]["normalized_data_json"]["email"] == "smoke-import-learner@mail.ru"
+    assert learner_import_rows[0]["normalized_data_json"]["phone"] == "+79171234567"
+    assert learner_import_rows[0]["validation_errors_json"] == []
+    assert learner_import_rows[1]["status"] == "invalid"
+    assert "full_name is required." in learner_import_rows[1]["validation_errors_json"]
+    assert "email is invalid." in learner_import_rows[1]["validation_errors_json"]
+    checks.append("admin learner import upload ok")
 
     status, admin_dashboard_summary = request_json(
         "GET",
