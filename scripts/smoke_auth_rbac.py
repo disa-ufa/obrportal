@@ -369,6 +369,71 @@ def main() -> int:
     assert "email is invalid." in learner_import_rows[1]["validation_errors_json"]
     checks.append("admin learner import upload ok")
 
+    status, learner_imports_list = request_json(
+        "GET",
+        "/api/v1/admin/learner-imports?status=parsed&q=smoke-learners.csv&limit=20",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learner imports list")
+    assert isinstance(learner_imports_list, list)
+
+    matching_imports = [
+        item
+        for item in learner_imports_list
+        if item.get("id") == learner_import["id"]
+    ]
+    if len(matching_imports) != 1:
+        raise AssertionError("admin learner imports list does not include uploaded import")
+
+    learner_import_item = matching_imports[0]
+    assert learner_import_item["id"] == learner_import["id"]
+    assert learner_import_item["import_type"] == "learner_roster"
+    assert learner_import_item["source_filename"] == "smoke-learners.csv"
+    assert learner_import_item["source_content_type"] == "text/csv"
+    assert learner_import_item["status"] == "parsed"
+    assert learner_import_item["total_rows"] == 2
+    assert learner_import_item["valid_rows"] == 1
+    assert learner_import_item["invalid_rows"] == 1
+    assert "rows" not in learner_import_item
+    checks.append("admin learner imports list ok")
+
+    status, learner_import_detail = request_json(
+        "GET",
+        f"/api/v1/admin/learner-imports/{learner_import['id']}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learner import detail")
+    assert isinstance(learner_import_detail, dict)
+    assert learner_import_detail["id"] == learner_import["id"]
+    assert learner_import_detail["import_type"] == "learner_roster"
+    assert learner_import_detail["source_filename"] == "smoke-learners.csv"
+    assert learner_import_detail["status"] == "parsed"
+    assert learner_import_detail["total_rows"] == 2
+    assert learner_import_detail["valid_rows"] == 1
+    assert learner_import_detail["invalid_rows"] == 1
+    assert isinstance(learner_import_detail["rows"], list)
+    assert len(learner_import_detail["rows"]) == 2
+
+    learner_import_detail_rows = sorted(
+        learner_import_detail["rows"],
+        key=lambda item: item["row_number"],
+    )
+    assert learner_import_detail_rows[0]["status"] == "valid"
+    assert learner_import_detail_rows[0]["normalized_data_json"]["email"] == "smoke-import-learner@mail.ru"
+    assert learner_import_detail_rows[1]["status"] == "invalid"
+    assert "full_name is required." in learner_import_detail_rows[1]["validation_errors_json"]
+    assert "email is invalid." in learner_import_detail_rows[1]["validation_errors_json"]
+    checks.append("admin learner import detail ok")
+
+    status, missing_learner_import_detail = request_json(
+        "GET",
+        "/api/v1/admin/learner-imports/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin missing learner import detail")
+    assert isinstance(missing_learner_import_detail, dict)
+    checks.append("admin missing learner import detail returns 404")
+
     status, admin_dashboard_summary = request_json(
         "GET",
         "/api/v1/admin/dashboard-summary",
