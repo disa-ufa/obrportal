@@ -57,7 +57,7 @@ from app.services.lesson_readiness import (
     get_admin_lessons_readiness_map,
     normalize_admin_lesson_readiness_payload,
 )
-from app.services.learner_import_batches import create_import_batch_from_parse_result
+from app.services.learner_import_batches import apply_learner_import_batch, create_import_batch_from_parse_result
 from app.services.learner_import_parser import parse_learner_import_file
 from app.schemas.admin import (
     AdminAuditEventItem,
@@ -6587,6 +6587,56 @@ async def list_learner_imports(
     batches = result.scalars().all()
 
     return [build_admin_learner_import_batch_item(batch) for batch in batches]
+
+
+@router.post("/learner-imports/{batch_id}/apply", response_model=AdminLearnerImportBatchDetail)
+async def apply_learner_import(
+    batch_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminLearnerImportBatchDetail:
+    batch = await get_admin_learner_import_batch_or_404(batch_id, session)
+
+    try:
+        apply_result = await apply_learner_import_batch(session, batch=batch)
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.learner_import_applied",
+            entity_type="import_batch",
+            entity_id=str(batch.id),
+            payload={
+                "batch_id": str(batch.id),
+                "source_filename": batch.source_filename,
+                "created_users_count": apply_result.created_users_count,
+                "updated_users_count": apply_result.updated_users_count,
+                "created_profiles_count": apply_result.created_profiles_count,
+                "updated_profiles_count": apply_result.updated_profiles_count,
+                "created_enrollments_count": apply_result.created_enrollments_count,
+                "error_rows_count": apply_result.error_rows_count,
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except ValueError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Learner import could not be applied because of duplicate user, phone, profile or enrollment data",
+        )
+
+    refreshed_batch = await get_admin_learner_import_batch_or_404(batch_id, session)
+
+    return build_admin_learner_import_batch_detail(refreshed_batch)
 
 
 @router.get("/learner-imports/{batch_id}", response_model=AdminLearnerImportBatchDetail)

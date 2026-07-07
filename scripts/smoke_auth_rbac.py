@@ -434,6 +434,39 @@ def main() -> int:
     assert isinstance(missing_learner_import_detail, dict)
     checks.append("admin missing learner import detail returns 404")
 
+    status, applied_learner_import = request_json(
+        "POST",
+        f"/api/v1/admin/learner-imports/{learner_import['id']}/apply",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learner import apply")
+    assert isinstance(applied_learner_import, dict)
+    assert applied_learner_import["id"] == learner_import["id"]
+    assert applied_learner_import["status"] == "applied"
+    assert applied_learner_import["created_users_count"] + applied_learner_import["updated_users_count"] == 1
+    assert applied_learner_import["created_profiles_count"] + applied_learner_import["updated_profiles_count"] == 1
+    assert applied_learner_import["created_enrollments_count"] == 0
+
+    applied_learner_import_rows = sorted(
+        applied_learner_import["rows"],
+        key=lambda item: item["row_number"],
+    )
+    assert applied_learner_import_rows[0]["status"] == "applied"
+    assert applied_learner_import_rows[0]["user_id"]
+    assert applied_learner_import_rows[0]["learner_profile_id"]
+    assert applied_learner_import_rows[0]["enrollment_id"] is None
+    assert applied_learner_import_rows[1]["status"] == "invalid"
+    checks.append("admin learner import apply ok")
+
+    status, repeated_learner_import_apply = request_json(
+        "POST",
+        f"/api/v1/admin/learner-imports/{learner_import['id']}/apply",
+        token=admin_token,
+    )
+    assert_status(status, 400, "admin learner import repeat apply")
+    assert isinstance(repeated_learner_import_apply, dict)
+    checks.append("admin learner import repeat apply returns 400")
+
     status, admin_dashboard_summary = request_json(
         "GET",
         "/api/v1/admin/dashboard-summary",
