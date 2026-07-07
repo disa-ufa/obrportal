@@ -6,6 +6,7 @@ from app.models.course_lesson import CourseLesson
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup, LearningGroupMember
+from app.models.learner_profile import LearnerProfile
 from app.models.lesson_progress import LessonProgress
 from app.models.lesson_block import LessonBlock
 from app.models.organization import Organization
@@ -23,6 +24,7 @@ __all__ = [
     "Enrollment",
     "LearningGroup",
     "LearningGroupMember",
+    "LearnerProfile",
     "LessonProgress",
     "LessonBlock",
     "Organization",
