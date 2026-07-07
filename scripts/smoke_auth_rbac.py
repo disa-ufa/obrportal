@@ -1682,9 +1682,14 @@ def main() -> int:
     assert_status(status, 200, "admin users")
     assert isinstance(users, list)
     assert len(users) >= 2
-    first_user = users[0]
-    assert isinstance(first_user, dict)
-    assert first_user.get("id")
+    admin_user = next(
+        (item for item in users if isinstance(item, dict) and item.get("email") == ADMIN_EMAIL),
+        None,
+    )
+    if admin_user is None:
+        raise AssertionError("admin user not found in admin users list")
+    if not admin_user.get("id"):
+        raise AssertionError("admin user id missing in admin users list")
     checks.append("admin users ok")
 
     status, frontend_admin_users_html, frontend_admin_users_headers = request_frontend_text("/admin/users")
@@ -1702,7 +1707,7 @@ def main() -> int:
 
     learner_user_id = str(learner_user["id"])
 
-    user_id = str(first_user["id"])
+    user_id = str(admin_user["id"])
     status, user_detail = request_json(
         "GET",
         f"/api/v1/admin/users/{user_id}",
