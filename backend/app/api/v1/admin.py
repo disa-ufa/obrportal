@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 from fastapi.responses import FileResponse
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.rbac import get_user_permission_codes, require_permission
@@ -73,6 +73,7 @@ from app.schemas.admin import (
     AdminLessonBlockItem,
     AdminLessonBlockReorder,
     AdminLearnerImportBatchDetail,
+    AdminLearnerImportBatchItem,
     AdminLearnerImportRowItem,
     AdminLessonBlockUpdate,
     AdminCourseModuleCreate,
@@ -492,6 +493,32 @@ def build_admin_learner_import_row_item(row: ImportRow) -> AdminLearnerImportRow
     )
 
 
+
+def build_admin_learner_import_batch_item(batch: ImportBatch) -> AdminLearnerImportBatchItem:
+    return AdminLearnerImportBatchItem(
+        id=str(batch.id),
+        import_type=batch.import_type,
+        source_filename=batch.source_filename,
+        source_content_type=batch.source_content_type,
+        status=batch.status,
+        organization_id=str(batch.organization_id) if batch.organization_id else None,
+        learning_group_id=str(batch.learning_group_id) if batch.learning_group_id else None,
+        course_id=str(batch.course_id) if batch.course_id else None,
+        total_rows=batch.total_rows,
+        valid_rows=batch.valid_rows,
+        invalid_rows=batch.invalid_rows,
+        created_users_count=batch.created_users_count,
+        updated_users_count=batch.updated_users_count,
+        created_profiles_count=batch.created_profiles_count,
+        updated_profiles_count=batch.updated_profiles_count,
+        created_enrollments_count=batch.created_enrollments_count,
+        uploaded_by_user_id=str(batch.uploaded_by_user_id) if batch.uploaded_by_user_id else None,
+        notes=batch.notes,
+        created_at=batch.created_at,
+        updated_at=batch.updated_at,
+    )
+
+
 def build_admin_learner_import_batch_detail(batch: ImportBatch) -> AdminLearnerImportBatchDetail:
     rows = sorted(batch.rows, key=lambda item: item.row_number)
 
@@ -799,6 +826,29 @@ async def ensure_admin_course_exists(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found",
         )
+
+
+async def get_admin_learner_import_batch_or_404(
+    batch_id: str,
+    session: AsyncSession,
+) -> ImportBatch:
+    result = await session.execute(
+        select(ImportBatch)
+        .options(selectinload(ImportBatch.rows))
+        .where(
+            ImportBatch.id == batch_id,
+            ImportBatch.import_type == "learner_roster",
+        )
+    )
+    batch = result.scalar_one_or_none()
+
+    if batch is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Learner import batch not found",
+        )
+
+    return batch
 
 
 async def get_user_role_or_404(
@@ -6492,6 +6542,62 @@ async def delete_admin_enrollment(
     await session.commit()
 
     return AdminDeleteResult(status="deleted", id=deleted_enrollment_id)
+
+
+@router.get("/learner-imports", response_model=list[AdminLearnerImportBatchItem])
+async def list_learner_imports(
+    q: str | None = Query(default=None, max_length=255),
+    status_filter: str | None = Query(default=None, alias="status", max_length=32),
+    organization_id: str | None = Query(default=None),
+    learning_group_id: str | None = Query(default=None),
+    course_id: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminLearnerImportBatchItem]:
+    query = select(ImportBatch).where(ImportBatch.import_type == "learner_roster")
+
+    if q:
+        normalized_q = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                ImportBatch.source_filename.ilike(normalized_q),
+                ImportBatch.notes.ilike(normalized_q),
+            )
+        )
+
+    if status_filter:
+        query = query.where(ImportBatch.status == status_filter)
+
+    if organization_id:
+        query = query.where(ImportBatch.organization_id == organization_id)
+
+    if learning_group_id:
+        query = query.where(ImportBatch.learning_group_id == learning_group_id)
+
+    if course_id:
+        query = query.where(ImportBatch.course_id == course_id)
+
+    result = await session.execute(
+        query.order_by(ImportBatch.created_at.desc(), ImportBatch.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    batches = result.scalars().all()
+
+    return [build_admin_learner_import_batch_item(batch) for batch in batches]
+
+
+@router.get("/learner-imports/{batch_id}", response_model=AdminLearnerImportBatchDetail)
+async def get_learner_import_detail(
+    batch_id: str,
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminLearnerImportBatchDetail:
+    batch = await get_admin_learner_import_batch_or_404(batch_id, session)
+
+    return build_admin_learner_import_batch_detail(batch)
 
 @router.post(
     "/learner-imports",

@@ -577,6 +577,29 @@ class AdminLearnerImportRowItem(BaseModel):
     updated_at: datetime
 
 
+class AdminLearnerImportBatchItem(BaseModel):
+    id: str
+    import_type: str
+    source_filename: str | None = None
+    source_content_type: str | None = None
+    status: str
+    organization_id: str | None = None
+    learning_group_id: str | None = None
+    course_id: str | None = None
+    total_rows: int
+    valid_rows: int
+    invalid_rows: int
+    created_users_count: int
+    updated_users_count: int
+    created_profiles_count: int
+    updated_profiles_count: int
+    created_enrollments_count: int
+    uploaded_by_user_id: str | None = None
+    notes: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
 class AdminLearnerImportBatchDetail(BaseModel):
     id: str
     import_type: str
