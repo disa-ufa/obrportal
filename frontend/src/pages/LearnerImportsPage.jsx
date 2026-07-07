@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   applyAdminLearnerImport,
   getAdminLearnerImportDetail,
@@ -6,9 +6,11 @@ import {
   uploadAdminLearnerImport,
 } from "../api/client";
 
+const DASH = "—";
+
 function formatDateTime(value) {
   if (!value) {
-    return "?";
+    return DASH;
   }
 
   try {
@@ -22,11 +24,11 @@ function formatDateTime(value) {
 }
 
 function getStatusTone(status) {
-  if (status === "parsed") {
+  if (status === "parsed" || status === "applied") {
     return "bg-emerald-50 text-emerald-700 ring-emerald-200";
   }
 
-  if (status === "failed" || status === "invalid") {
+  if (status === "failed" || status === "invalid" || status === "error") {
     return "bg-rose-50 text-rose-700 ring-rose-200";
   }
 
@@ -37,10 +39,25 @@ function getStatusTone(status) {
   return "bg-slate-50 text-slate-700 ring-slate-200";
 }
 
+function getStatusLabel(status) {
+  const labels = {
+    parsed: "Проверен",
+    applied: "Применён",
+    valid: "Валидная",
+    invalid: "Ошибка",
+    error: "Ошибка",
+    failed: "Сбой",
+    processing: "Обработка",
+    draft: "Черновик",
+  };
+
+  return labels[status] || status || "Неизвестно";
+}
+
 function StatusPill({ status }) {
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${getStatusTone(status)}`}>
-      {status || "unknown"}
+      {getStatusLabel(status)}
     </span>
   );
 }
@@ -63,7 +80,7 @@ function SummaryCard({ label, value, tone = "slate" }) {
 
 function safeJsonPreview(value) {
   if (!value || typeof value !== "object") {
-    return "?";
+    return DASH;
   }
 
   const entries = Object.entries(value)
@@ -71,7 +88,7 @@ function safeJsonPreview(value) {
     .slice(0, 4);
 
   if (!entries.length) {
-    return "?";
+    return DASH;
   }
 
   return entries.map(([key, item]) => `${key}: ${item}`).join("; ");
@@ -120,7 +137,7 @@ export function LearnerImportsPage() {
       });
       setImports(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || "?? ??????? ????????? ??????? ??????????.");
+      setError(err.message || "Не удалось загрузить импорты слушателей.");
     } finally {
       setLoading(false);
     }
@@ -139,13 +156,12 @@ export function LearnerImportsPage() {
       const detail = await getAdminLearnerImportDetail(batchId);
       setSelectedImport(detail);
     } catch (err) {
-      setError(err.message || "?? ??????? ??????? ??????.");
+      setError(err.message || "Не удалось открыть импорт.");
       setSelectedImport(null);
     } finally {
       setDetailLoading(false);
     }
   }
-
 
   async function handleApplySelectedImport() {
     if (!selectedImport?.id) {
@@ -160,11 +176,11 @@ export function LearnerImportsPage() {
       const applied = await applyAdminLearnerImport(selectedImport.id);
       setSelectedImport(applied);
       setNotice(
-        `?????? ????????: ??????? ????????????? ${applied.created_users_count}, ???????? ${applied.created_profiles_count}, ?????????? ${applied.created_enrollments_count}.`
+        `Импорт применён: создано пользователей ${applied.created_users_count}, профилей ${applied.created_profiles_count}, назначений ${applied.created_enrollments_count}.`
       );
       await loadImports();
     } catch (err) {
-      setError(err.message || "?? ??????? ????????? ??????.");
+      setError(err.message || "Не удалось применить импорт.");
     } finally {
       setApplyingImportId("");
     }
@@ -174,7 +190,7 @@ export function LearnerImportsPage() {
     event.preventDefault();
 
     if (!file) {
-      setError("???????? CSV ??? XLSX ???? ??? ???????.");
+      setError("Выберите CSV или XLSX файл для импорта.");
       return;
     }
 
@@ -184,13 +200,13 @@ export function LearnerImportsPage() {
 
     try {
       const created = await uploadAdminLearnerImport(file, { notes });
-      setNotice(`?????? ????????: ${created.valid_rows} ???????? ?????, ${created.invalid_rows} ????? ? ????????.`);
+      setNotice(`Импорт загружен: ${created.valid_rows} валидных строк, ${created.invalid_rows} строк с ошибками.`);
       setFile(null);
       setNotes("");
       await loadImports();
       await openImport(created.id);
     } catch (err) {
-      setError(err.message || "?? ??????? ????????? ??????.");
+      setError(err.message || "Не удалось загрузить импорт.");
     } finally {
       setUploading(false);
     }
@@ -210,10 +226,10 @@ export function LearnerImportsPage() {
       <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-blue-700">??????? / ?????? ??????????</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">?????? ??????????</h1>
+            <p className="text-sm font-semibold text-blue-700">Админка / Импорт слушателей</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Импорт слушателей</h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-600">
-              ????????? CSV ??? XLSX ????, ????????? ???????????? ?????? ? ?????? ????? ????????? ????????, ?????????? ? ??????????.
+              Загрузите CSV или XLSX файл, проверьте распознанные строки и ошибки перед созданием профилей, назначений и документов.
             </p>
           </div>
 
@@ -223,7 +239,7 @@ export function LearnerImportsPage() {
             disabled={loading}
             className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "?????????..." : "???????? ??????"}
+            {loading ? "Обновляем..." : "Обновить список"}
           </button>
         </div>
 
@@ -241,21 +257,21 @@ export function LearnerImportsPage() {
       </div>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <SummaryCard label="??????" value={imports.length} tone="blue" />
-        <SummaryCard label="???????? ?????" value={totals.validRows} tone="green" />
-        <SummaryCard label="????? ? ????????" value={totals.invalidRows} tone="red" />
+        <SummaryCard label="Файлов" value={imports.length} tone="blue" />
+        <SummaryCard label="Валидных строк" value={totals.validRows} tone="green" />
+        <SummaryCard label="Строк с ошибками" value={totals.invalidRows} tone="red" />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,420px)_1fr]">
         <div className="space-y-6">
           <form onSubmit={handleUpload} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-lg font-black text-slate-950">????????? ????</h2>
+            <h2 className="text-lg font-black text-slate-950">Загрузить файл</h2>
             <p className="mt-1 text-sm text-slate-600">
-              ?????????????? .csv ? .xlsx. ?? ???? ???? ?????? ?????? ??????????? ? ??????????? ??? batch ???????.
+              Поддерживаются .csv и .xlsx. На этом шаге данные только проверяются и сохраняются как batch импорта.
             </p>
 
             <label className="mt-5 block text-sm font-semibold text-slate-700">
-              ???? ???????
+              Файл импорта
               <input
                 type="file"
                 accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -265,12 +281,12 @@ export function LearnerImportsPage() {
             </label>
 
             <label className="mt-4 block text-sm font-semibold text-slate-700">
-              ??????????
+              Примечание
               <textarea
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 rows={3}
-                placeholder="????????: ?????? ????, ?????? ???? 2026"
+                placeholder="Например: первый курс, группа июль 2026"
                 className="mt-2 block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
               />
             </label>
@@ -280,35 +296,36 @@ export function LearnerImportsPage() {
               disabled={uploading}
               className="mt-5 w-full rounded-2xl bg-blue-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {uploading ? "?????????..." : "????????? ? ?????????"}
+              {uploading ? "Загружаем..." : "Загрузить и проверить"}
             </button>
           </form>
 
           <form onSubmit={handleApplyFilters} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-lg font-black text-slate-950">???????</h2>
+            <h2 className="text-lg font-black text-slate-950">Фильтры</h2>
 
             <label className="mt-4 block text-sm font-semibold text-slate-700">
-              ?????
+              Поиск
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="???? ??? ??????????"
+                placeholder="Файл или примечание"
                 className="mt-2 block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
               />
             </label>
 
             <label className="mt-4 block text-sm font-semibold text-slate-700">
-              ??????
+              Статус
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value)}
                 className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
               >
-                <option value="">???</option>
-                <option value="parsed">parsed</option>
-                <option value="draft">draft</option>
-                <option value="processing">processing</option>
-                <option value="failed">failed</option>
+                <option value="">Все</option>
+                <option value="parsed">Проверен</option>
+                <option value="applied">Применён</option>
+                <option value="draft">Черновик</option>
+                <option value="processing">Обработка</option>
+                <option value="failed">Сбой</option>
               </select>
             </label>
 
@@ -316,7 +333,7 @@ export function LearnerImportsPage() {
               type="submit"
               className="mt-5 w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"
             >
-              ?????????
+              Применить фильтры
             </button>
           </form>
         </div>
@@ -325,21 +342,21 @@ export function LearnerImportsPage() {
           <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-black text-slate-950">??????? ????????</h2>
-                <p className="mt-1 text-sm text-slate-600">????????? ??????????? ????? ? ?????? ???????? ?????.</p>
+                <h2 className="text-lg font-black text-slate-950">История импортов</h2>
+                <p className="mt-1 text-sm text-slate-600">Последние загруженные файлы и сводка проверки строк.</p>
               </div>
-              {loading ? <span className="text-sm text-slate-500">????????...</span> : null}
+              {loading ? <span className="text-sm text-slate-500">Загрузка...</span> : null}
             </div>
 
             <div className="mt-5 overflow-hidden rounded-2xl ring-1 ring-slate-200">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                   <tr>
-                    <th className="px-4 py-3">????</th>
-                    <th className="px-4 py-3">??????</th>
-                    <th className="px-4 py-3">??????</th>
-                    <th className="px-4 py-3">??????</th>
-                    <th className="px-4 py-3">????</th>
+                    <th className="px-4 py-3">Файл</th>
+                    <th className="px-4 py-3">Статус</th>
+                    <th className="px-4 py-3">Строки</th>
+                    <th className="px-4 py-3">Ошибки</th>
+                    <th className="px-4 py-3">Дата</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -347,8 +364,8 @@ export function LearnerImportsPage() {
                   {imports.length ? imports.map((item) => (
                     <tr key={item.id} className={selectedImportId === item.id ? "bg-blue-50/60" : ""}>
                       <td className="px-4 py-3">
-                        <div className="font-semibold text-slate-900">{item.source_filename || "??? ?????"}</div>
-                        <div className="mt-1 max-w-xs truncate text-xs text-slate-500">{item.notes || "?"}</div>
+                        <div className="font-semibold text-slate-900">{item.source_filename || "Без имени"}</div>
+                        <div className="mt-1 max-w-xs truncate text-xs text-slate-500">{item.notes || DASH}</div>
                       </td>
                       <td className="px-4 py-3"><StatusPill status={item.status} /></td>
                       <td className="px-4 py-3 text-slate-700">
@@ -362,14 +379,14 @@ export function LearnerImportsPage() {
                           onClick={() => openImport(item.id)}
                           className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
                         >
-                          ???????
+                          Открыть
                         </button>
                       </td>
                     </tr>
                   )) : (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
-                        ??????? ???? ?? ???????.
+                        Импорты пока не найдены.
                       </td>
                     </tr>
                   )}
@@ -381,31 +398,52 @@ export function LearnerImportsPage() {
           <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-black text-slate-950">?????? ???????</h2>
+                <h2 className="text-lg font-black text-slate-950">Детали импорта</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  ???????? ?????? ? ???????, ????? ?????????? ???????????? ?????? ? ??????.
+                  Выберите импорт в таблице, чтобы посмотреть распознанные строки и ошибки.
                 </p>
               </div>
-              {detailLoading ? <span className="text-sm text-slate-500">????????...</span> : null}
+
+              <div className="flex flex-wrap items-center gap-3">
+                {detailLoading ? <span className="text-sm text-slate-500">Загрузка...</span> : null}
+
+                {selectedImport ? (
+                  <button
+                    type="button"
+                    onClick={handleApplySelectedImport}
+                    disabled={!canApplySelectedImport || selectedImportIsApplying}
+                    title={
+                      selectedImport.status === "applied"
+                        ? "Импорт уже применён"
+                        : canApplySelectedImport
+                          ? "Создать или обновить пользователей и профили по валидным строкам"
+                          : "Нет валидных строк для применения"
+                    }
+                    className="rounded-2xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+                  >
+                    {selectedImportIsApplying ? "Применяем..." : "Применить импорт"}
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             {selectedImport ? (
               <div className="mt-5 space-y-5">
                 <div className="grid gap-3 md:grid-cols-4">
-                  <SummaryCard label="?????" value={selectedImport.total_rows} />
-                  <SummaryCard label="????????" value={selectedImport.valid_rows} tone="green" />
-                  <SummaryCard label="? ????????" value={selectedImport.invalid_rows} tone="red" />
-                  <SummaryCard label="??????" value={selectedImport.status} tone="blue" />
+                  <SummaryCard label="Всего" value={selectedImport.total_rows} />
+                  <SummaryCard label="Валидных" value={selectedImport.valid_rows} tone="green" />
+                  <SummaryCard label="С ошибками" value={selectedImport.invalid_rows} tone="red" />
+                  <SummaryCard label="Статус" value={getStatusLabel(selectedImport.status)} tone="blue" />
                 </div>
 
                 <div className="overflow-hidden rounded-2xl ring-1 ring-slate-200">
                   <table className="min-w-full divide-y divide-slate-200 text-sm">
                     <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                       <tr>
-                        <th className="px-4 py-3">?</th>
-                        <th className="px-4 py-3">??????</th>
-                        <th className="px-4 py-3">??????</th>
-                        <th className="px-4 py-3">??????</th>
+                        <th className="px-4 py-3">№</th>
+                        <th className="px-4 py-3">Статус</th>
+                        <th className="px-4 py-3">Данные</th>
+                        <th className="px-4 py-3">Ошибки</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -420,7 +458,7 @@ export function LearnerImportsPage() {
                                 {row.validation_errors_json.map((item) => <li key={item}>{item}</li>)}
                               </ul>
                             ) : (
-                              <span className="text-slate-400">?</span>
+                              <span className="text-slate-400">{DASH}</span>
                             )}
                           </td>
                         </tr>
@@ -431,7 +469,7 @@ export function LearnerImportsPage() {
               </div>
             ) : (
               <div className="mt-5 rounded-2xl bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
-                ?????? ??????? ?? ???????.
+                Детали импорта не выбраны.
               </div>
             )}
           </section>
