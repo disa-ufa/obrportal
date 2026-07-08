@@ -81,6 +81,21 @@ function SummaryCard({ label, value, tone = "slate" }) {
   );
 }
 
+
+function WorkflowStep({ number, title, description }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-700 text-sm font-black text-white shadow-sm">
+        {number}
+      </div>
+      <div className="min-w-0">
+        <div className="text-sm font-black text-slate-950">{title}</div>
+        <div className="mt-0.5 text-xs text-slate-500">{description}</div>
+      </div>
+    </div>
+  );
+}
+
 function safeJsonPreview(value) {
   if (!value || typeof value !== "object") {
     return DASH;
@@ -133,6 +148,10 @@ export function LearnerImportsPage() {
       },
       { totalRows: 0, validRows: 0, invalidRows: 0 }
     );
+  }, [imports]);
+
+  const readyToApplyCount = useMemo(() => {
+    return imports.filter((item) => item.status === "parsed" && (item.valid_rows || 0) > 0).length;
   }, [imports]);
 
   async function loadImports(overrides = {}) {
@@ -279,6 +298,14 @@ export function LearnerImportsPage() {
           </button>
         </div>
 
+        <div className="mt-6 grid gap-4 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200 lg:grid-cols-[1fr_auto_1fr_auto_1fr]">
+          <WorkflowStep number="1" title="Загрузить файл" description="CSV/XLSX и контекст назначения" />
+          <div className="hidden items-center text-2xl text-slate-300 lg:flex">→</div>
+          <WorkflowStep number="2" title="Проверить строки" description="Валидация и просмотр ошибок" />
+          <div className="hidden items-center text-2xl text-slate-300 lg:flex">→</div>
+          <WorkflowStep number="3" title="Применить импорт" description="Создать профили и назначения" />
+        </div>
+
         {error ? (
           <div className="mt-5 rounded-2xl bg-rose-50 p-4 text-sm font-medium text-rose-700 ring-1 ring-rose-200">
             {error}
@@ -292,10 +319,11 @@ export function LearnerImportsPage() {
         ) : null}
       </div>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Файлов" value={imports.length} tone="blue" />
         <SummaryCard label="Валидных строк" value={totals.validRows} tone="green" />
         <SummaryCard label="Строк с ошибками" value={totals.invalidRows} tone="red" />
+        <SummaryCard label="Готово к применению" value={readyToApplyCount} tone="blue" />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,420px)_1fr]">
