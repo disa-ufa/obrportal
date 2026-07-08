@@ -175,6 +175,7 @@ export function LearnerImportsPage() {
   const [notice, setNotice] = useState("");
 
   const selectedRows = selectedImport?.rows || [];
+  const selectedExpectedEnrollments = selectedImport?.course_id ? selectedImport?.valid_rows || 0 : 0;
   const canApplySelectedImport = selectedImport?.status === "parsed" && (selectedImport?.valid_rows || 0) > 0;
   const selectedImportIsApplying = selectedImport?.id && applyingImportId === selectedImport.id;
 
@@ -618,6 +619,25 @@ export function LearnerImportsPage() {
                   <SummaryCard label="Валидных" value={selectedImport.valid_rows} tone="green" />
                   <SummaryCard label="С ошибками" value={selectedImport.invalid_rows} tone="red" />
                   <SummaryCard label="Статус" value={getStatusLabel(selectedImport.status)} tone="blue" />
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                  <div className="text-sm font-black text-slate-950">Будет создано или обновлено</div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Пользователи</div>
+                      <div className="mt-1 text-2xl font-black text-slate-950">{selectedImport.valid_rows || 0}</div>
+                    </div>
+                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Профили</div>
+                      <div className="mt-1 text-2xl font-black text-slate-950">{selectedImport.valid_rows || 0}</div>
+                    </div>
+                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Назначения</div>
+                      <div className="mt-1 text-2xl font-black text-slate-950">{selectedExpectedEnrollments}</div>
+                      <div className="mt-1 text-xs text-slate-500">Создаются, если в импорте выбран курс</div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="overflow-hidden rounded-2xl ring-1 ring-slate-200">
