@@ -225,16 +225,16 @@ def _validate_normalized_row(normalized: dict[str, Any]) -> list[str]:
     errors: list[str] = []
 
     if not normalized["full_name"]:
-        errors.append("full_name is required.")
+        errors.append("\u0424\u0418\u041e \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e.")
 
     if normalized["email"] and not _is_valid_email(normalized["email"]):
-        errors.append("email is invalid.")
+        errors.append("\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email.")
 
     if not normalized["email"] and not normalized["phone"]:
-        errors.append("email or phone is required.")
+        errors.append("\u0423\u043a\u0430\u0436\u0438\u0442\u0435 email \u0438\u043b\u0438 \u0442\u0435\u043b\u0435\u0444\u043e\u043d.")
 
     if normalized["snils"] and not re.fullmatch(r"\d{3}-\d{3}-\d{3} \d{2}", normalized["snils"]):
-        errors.append("snils must contain 11 digits.")
+        errors.append("\u0421\u041d\u0418\u041b\u0421 \u0434\u043e\u043b\u0436\u0435\u043d \u0441\u043e\u0434\u0435\u0440\u0436\u0430\u0442\u044c 11 \u0446\u0438\u0444\u0440.")
 
     return errors
 

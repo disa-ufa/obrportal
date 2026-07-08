@@ -59,8 +59,8 @@ def test_build_admin_learner_import_batch_detail_sorts_rows_and_maps_payload() -
             status="invalid",
             raw_data_json={"Email": "bad-email"},
             normalized_data_json={"email": "bad-email"},
-            validation_errors_json=["email is invalid."],
-            error_summary="email is invalid.",
+            validation_errors_json=["\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email."],
+            error_summary="\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email.",
             created_at=now,
             updated_at=now,
         )
@@ -98,8 +98,8 @@ def test_build_admin_learner_import_batch_detail_sorts_rows_and_maps_payload() -
     assert detail.rows[0].status == "valid"
     assert detail.rows[0].normalized_data_json["email"] == "learner@mail.ru"
     assert detail.rows[1].status == "invalid"
-    assert detail.rows[1].validation_errors_json == ["email is invalid."]
-    assert detail.rows[1].error_summary == "email is invalid."
+    assert detail.rows[1].validation_errors_json == ["\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email."]
+    assert detail.rows[1].error_summary == "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email."
 
 
 def test_build_admin_learner_import_batch_item_maps_summary_without_rows() -> None:

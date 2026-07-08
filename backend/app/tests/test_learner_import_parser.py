@@ -43,8 +43,8 @@ def test_parse_csv_learner_import_reports_row_errors() -> None:
     assert result.valid_rows == 0
     assert result.invalid_rows == 1
     assert result.rows[0].status == "invalid"
-    assert "full_name is required." in result.rows[0].validation_errors
-    assert "email is invalid." in result.rows[0].validation_errors
+    assert "\u0424\u0418\u041e \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e." in result.rows[0].validation_errors
+    assert "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email." in result.rows[0].validation_errors
 
 
 def test_parse_xlsx_learner_import_finds_header_below_top_rows() -> None:

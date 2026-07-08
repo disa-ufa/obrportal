@@ -80,9 +80,9 @@ async def test_create_import_batch_from_csv_parse_result() -> None:
     invalid_row = batch.rows[1]
     assert invalid_row.row_number == 3
     assert invalid_row.status == "invalid"
-    assert "full_name is required." in invalid_row.validation_errors_json
-    assert "email is invalid." in invalid_row.validation_errors_json
-    assert invalid_row.error_summary == "full_name is required.; email is invalid."
+    assert "\u0424\u0418\u041e \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e." in invalid_row.validation_errors_json
+    assert "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email." in invalid_row.validation_errors_json
+    assert invalid_row.error_summary == "\u0424\u0418\u041e \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e.; \u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email."
 
 
 @pytest.mark.asyncio

@@ -365,8 +365,8 @@ def main() -> int:
     assert learner_import_rows[0]["normalized_data_json"]["phone"] == "+79171234567"
     assert learner_import_rows[0]["validation_errors_json"] == []
     assert learner_import_rows[1]["status"] == "invalid"
-    assert "full_name is required." in learner_import_rows[1]["validation_errors_json"]
-    assert "email is invalid." in learner_import_rows[1]["validation_errors_json"]
+    assert "\u0424\u0418\u041e \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e." in learner_import_rows[1]["validation_errors_json"]
+    assert "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email." in learner_import_rows[1]["validation_errors_json"]
     checks.append("admin learner import upload ok")
 
     status, learner_imports_list = request_json(
@@ -421,8 +421,8 @@ def main() -> int:
     assert learner_import_detail_rows[0]["status"] == "valid"
     assert learner_import_detail_rows[0]["normalized_data_json"]["email"] == "smoke-import-learner@mail.ru"
     assert learner_import_detail_rows[1]["status"] == "invalid"
-    assert "full_name is required." in learner_import_detail_rows[1]["validation_errors_json"]
-    assert "email is invalid." in learner_import_detail_rows[1]["validation_errors_json"]
+    assert "\u0424\u0418\u041e \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e." in learner_import_detail_rows[1]["validation_errors_json"]
+    assert "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email." in learner_import_detail_rows[1]["validation_errors_json"]
     checks.append("admin learner import detail ok")
 
     status, missing_learner_import_detail = request_json(
