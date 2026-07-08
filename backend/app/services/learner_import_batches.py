@@ -162,8 +162,8 @@ async def find_or_create_learner_role(db: AsyncSession) -> Role:
 
     learner_role = Role(
         code="learner",
-        name="?????????",
-        description="????????????, ?????????? ???????? ?? ???????",
+        name="\u0421\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c",
+        description="\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c, \u043f\u0440\u043e\u0445\u043e\u0434\u044f\u0449\u0438\u0439 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0430 \u043f\u043e\u0440\u0442\u0430\u043b\u0435",
     )
     db.add(learner_role)
     await db.flush()
