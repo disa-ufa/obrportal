@@ -1,8 +1,11 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   applyAdminLearnerImport,
+  getAdminCourses,
   getAdminLearnerImportDetail,
   getAdminLearnerImports,
+  getAdminOrganizations,
+  getOrgLearningGroups,
   uploadAdminLearnerImport,
 } from "../api/client";
 
@@ -100,6 +103,13 @@ export function LearnerImportsPage() {
   const [selectedImportId, setSelectedImportId] = useState("");
   const [file, setFile] = useState(null);
   const [notes, setNotes] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
+  const [learningGroups, setLearningGroups] = useState([]);
+  const [courseId, setCourseId] = useState("");
+  const [organizationId, setOrganizationId] = useState("");
+  const [learningGroupId, setLearningGroupId] = useState("");
+  const [referenceLoading, setReferenceLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("parsed");
   const [loading, setLoading] = useState(false);
@@ -199,7 +209,12 @@ export function LearnerImportsPage() {
     setNotice("");
 
     try {
-      const created = await uploadAdminLearnerImport(file, { notes });
+      const created = await uploadAdminLearnerImport(file, {
+        notes,
+        course_id: courseId,
+        organization_id: organizationId,
+        learning_group_id: learningGroupId,
+      });
       setNotice(`Импорт загружен: ${created.valid_rows} валидных строк, ${created.invalid_rows} строк с ошибками.`);
       setFile(null);
       setNotes("");
@@ -217,9 +232,30 @@ export function LearnerImportsPage() {
     loadImports();
   }
 
+  const loadImportReferences = useCallback(async () => {
+    setReferenceLoading(true);
+
+    try {
+      const [coursesData, organizationsData, groupsData] = await Promise.all([
+        getAdminCourses({ limit: 300 }),
+        getAdminOrganizations(),
+        getOrgLearningGroups({ limit: 300 }),
+      ]);
+
+      setCourses(Array.isArray(coursesData) ? coursesData : []);
+      setOrganizations(Array.isArray(organizationsData) ? organizationsData : []);
+      setLearningGroups(Array.isArray(groupsData) ? groupsData : []);
+    } catch (err) {
+      setError(err.message || "Не удалось загрузить курсы, организации и группы.");
+    } finally {
+      setReferenceLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadImports();
-  }, []);
+    loadImportReferences();
+  }, [loadImportReferences]);
 
   return (
     <div className="space-y-6" data-testid="admin-learner-imports-page">
@@ -279,6 +315,81 @@ export function LearnerImportsPage() {
                 className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
               />
             </label>
+
+            <div className="grid gap-3">
+              <label className="block text-sm font-semibold text-slate-800">
+                Курс для назначения
+                <select
+                  value={courseId}
+                  onChange={(event) => setCourseId(event.target.value)}
+                  disabled={referenceLoading}
+                  className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                >
+                  <option value="">Без назначения на курс</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.title || course.slug || course.id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block text-sm font-semibold text-slate-800">
+                Организация
+                <select
+                  value={organizationId}
+                  onChange={(event) => {
+                    const nextOrganizationId = event.target.value;
+                    setOrganizationId(nextOrganizationId);
+
+                    const selectedGroup = learningGroups.find((group) => group.id === learningGroupId);
+                    if (selectedGroup && nextOrganizationId && selectedGroup.organization_id !== nextOrganizationId) {
+                      setLearningGroupId("");
+                    }
+                  }}
+                  disabled={referenceLoading}
+                  className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                >
+                  <option value="">Без организации</option>
+                  {organizations.map((organization) => (
+                    <option key={organization.id} value={organization.id}>
+                      {organization.name || organization.short_name || organization.id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block text-sm font-semibold text-slate-800">
+                Группа
+                <select
+                  value={learningGroupId}
+                  onChange={(event) => {
+                    const nextGroupId = event.target.value;
+                    setLearningGroupId(nextGroupId);
+
+                    const selectedGroup = learningGroups.find((group) => group.id === nextGroupId);
+                    if (selectedGroup?.organization_id) {
+                      setOrganizationId(selectedGroup.organization_id);
+                    }
+                  }}
+                  disabled={referenceLoading}
+                  className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                >
+                  <option value="">Без группы</option>
+                  {learningGroups
+                    .filter((group) => !organizationId || group.organization_id === organizationId)
+                    .map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name || group.title || group.id}
+                      </option>
+                    ))}
+                </select>
+              </label>
+
+              <p className="text-xs leading-relaxed text-slate-500">
+                Если выбрать курс, после применения импорта будут созданы назначения. Организация и группа необязательны.
+              </p>
+            </div>
 
             <label className="mt-4 block text-sm font-semibold text-slate-700">
               Примечание
