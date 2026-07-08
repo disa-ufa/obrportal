@@ -438,43 +438,6 @@ export function LearnerImportsPage() {
               {uploading ? "Загружаем..." : "Загрузить и проверить"}
             </button>
           </form>
-
-          <form onSubmit={handleApplyFilters} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-lg font-black text-slate-950">Фильтры</h2>
-
-            <label className="mt-4 block text-sm font-semibold text-slate-700">
-              Поиск
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Файл или примечание"
-                className="mt-2 block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
-              />
-            </label>
-
-            <label className="mt-4 block text-sm font-semibold text-slate-700">
-              Статус
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
-              >
-                <option value="">Все</option>
-                <option value="parsed">Проверен</option>
-                <option value="applied">Применён</option>
-                <option value="draft">Черновик</option>
-                <option value="processing">Обработка</option>
-                <option value="failed">Сбой</option>
-              </select>
-            </label>
-
-            <button
-              type="submit"
-              className="mt-5 w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"
-            >
-              Применить фильтры
-            </button>
-          </form>
         </div>
 
         <div className="space-y-6">
@@ -486,6 +449,39 @@ export function LearnerImportsPage() {
               </div>
               {loading ? <span className="text-sm text-slate-500">Загрузка...</span> : null}
             </div>
+
+            <form
+              onSubmit={handleApplyFilters}
+              data-testid="learner-import-history-filters"
+              className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_auto]"
+            >
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Поиск по файлу или примечанию"
+                className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              />
+
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              >
+                <option value="">Все статусы</option>
+                <option value="parsed">Проверен</option>
+                <option value="applied">Применён</option>
+                <option value="draft">Черновик</option>
+                <option value="processing">Обработка</option>
+                <option value="failed">Сбой</option>
+              </select>
+
+              <button
+                type="submit"
+                className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"
+              >
+                Фильтр
+              </button>
+            </form>
 
             <div className="mt-5 overflow-hidden rounded-2xl ring-1 ring-slate-200">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
