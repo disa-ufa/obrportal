@@ -57,6 +57,30 @@ function getStatusLabel(status) {
   return labels[status] || status || "Неизвестно";
 }
 
+
+function formatValidationError(message) {
+  const normalized = `${message || ""}`.trim();
+  const lower = normalized.toLowerCase();
+
+  if (lower === "full_name is required." || lower === "full_name is required") {
+    return "ФИО обязательно.";
+  }
+
+  if (lower === "email is invalid." || lower === "email is invalid") {
+    return "Некорректный email.";
+  }
+
+  if (lower === "phone is invalid." || lower === "phone is invalid") {
+    return "Некорректный телефон.";
+  }
+
+  if (lower === "snils is invalid." || lower === "snils is invalid") {
+    return "Некорректный СНИЛС.";
+  }
+
+  return normalized || DASH;
+}
+
 function StatusPill({ status }) {
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${getStatusTone(status)}`}>
@@ -129,6 +153,46 @@ function ImportContextCell({ item, courses, organizations, learningGroups }) {
     <div className="space-y-0.5 text-xs leading-5 text-slate-600">
       {parts.map(([label, value]) => (
         <div key={label} className="max-w-[220px] truncate">
+          <span className="font-black text-slate-500">{label}:</span> {value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+function getRowName(row) {
+  const data = row.normalized_data_json || {};
+  const compositeName = [data.last_name, data.first_name, data.middle_name].filter(Boolean).join(" ").trim();
+  return data.full_name || compositeName || "(пусто)";
+}
+
+function getRowContact(row) {
+  const data = row.normalized_data_json || {};
+  return data.email || data.phone || DASH;
+}
+
+function getImportRowContextParts(row, selectedImport, courses, organizations, learningGroups) {
+  const data = row.normalized_data_json || {};
+
+  return [
+    ["Курс", data.program_title || data.course_title || getEntityLabel(courses, selectedImport?.course_id)],
+    ["Орг.", getEntityLabel(organizations, selectedImport?.organization_id)],
+    ["Группа", getEntityLabel(learningGroups, selectedImport?.learning_group_id)],
+  ];
+}
+
+function ImportRowContextCell({ row, selectedImport, courses, organizations, learningGroups }) {
+  const parts = getImportRowContextParts(row, selectedImport, courses, organizations, learningGroups).filter(([, value]) => value && value !== DASH);
+
+  if (!parts.length) {
+    return <span className="text-slate-400">{DASH}</span>;
+  }
+
+  return (
+    <div className="space-y-0.5 text-xs leading-5 text-slate-600">
+      {parts.map(([label, value]) => (
+        <div key={label} className="max-w-[240px] truncate">
           <span className="font-black text-slate-500">{label}:</span> {value}
         </div>
       ))}
@@ -646,7 +710,8 @@ export function LearnerImportsPage() {
                       <tr>
                         <th className="px-4 py-3">№</th>
                         <th className="px-4 py-3">Статус</th>
-                        <th className="px-4 py-3">Данные</th>
+                        <th className="px-4 py-3">ФИО / Email</th>
+                        <th className="px-4 py-3">Контекст</th>
                         <th className="px-4 py-3">Ошибки</th>
                       </tr>
                     </thead>
@@ -655,11 +720,23 @@ export function LearnerImportsPage() {
                         <tr key={row.id}>
                           <td className="px-4 py-3 font-semibold text-slate-700">{row.row_number}</td>
                           <td className="px-4 py-3"><StatusPill status={row.status} /></td>
-                          <td className="px-4 py-3 text-slate-700">{safeJsonPreview(row.normalized_data_json)}</td>
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-slate-900">{getRowName(row)}</div>
+                            <div className="mt-1 text-xs text-slate-500">{getRowContact(row)}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <ImportRowContextCell
+                              row={row}
+                              selectedImport={selectedImport}
+                              courses={courses}
+                              organizations={organizations}
+                              learningGroups={learningGroups}
+                            />
+                          </td>
                           <td className="px-4 py-3">
                             {row.validation_errors_json?.length ? (
                               <ul className="list-disc space-y-1 pl-5 text-rose-700">
-                                {row.validation_errors_json.map((item) => <li key={item}>{item}</li>)}
+                                {row.validation_errors_json.map((item) => <li key={item}>{formatValidationError(item)}</li>)}
                               </ul>
                             ) : (
                               <span className="text-slate-400">{DASH}</span>
