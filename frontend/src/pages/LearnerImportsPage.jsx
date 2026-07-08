@@ -58,6 +58,12 @@ function getStatusLabel(status) {
 }
 
 
+
+function csvEscape(value) {
+  const textValue = value === null || value === undefined ? "" : String(value);
+  return `"${textValue.replaceAll('"', '""')}"`;
+}
+
 function formatValidationError(message) {
   const normalized = `${message || ""}`.trim();
   const lower = normalized.toLowerCase();
@@ -237,6 +243,7 @@ export function LearnerImportsPage() {
   const [applyingImportId, setApplyingImportId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [rowFilter, setRowFilter] = useState("all");
 
   const selectedRows = selectedImport?.rows || [];
   const selectedExpectedEnrollments = selectedImport?.course_id ? selectedImport?.valid_rows || 0 : 0;
@@ -258,6 +265,22 @@ export function LearnerImportsPage() {
   const readyToApplyCount = useMemo(() => {
     return imports.filter((item) => item.status === "parsed" && (item.valid_rows || 0) > 0).length;
   }, [imports]);
+
+  const visibleSelectedRows = useMemo(() => {
+    if (rowFilter === "valid") {
+      return selectedRows.filter((row) => row.status === "valid");
+    }
+
+    if (rowFilter === "invalid") {
+      return selectedRows.filter((row) => row.status !== "valid");
+    }
+
+    return selectedRows;
+  }, [rowFilter, selectedRows]);
+
+  const selectedImportHasErrors = useMemo(() => {
+    return selectedRows.some((row) => row.validation_errors_json?.length);
+  }, [selectedRows]);
 
   async function loadImports(overrides = {}) {
     setLoading(true);
@@ -354,6 +377,47 @@ export function LearnerImportsPage() {
   function handleApplyFilters(event) {
     event.preventDefault();
     loadImports();
+  }
+
+  function downloadSelectedImportErrors() {
+    if (!selectedImport) {
+      return;
+    }
+
+    const errorRows = selectedRows.filter((row) => row.validation_errors_json?.length);
+
+    if (!errorRows.length) {
+      return;
+    }
+
+    const lines = [
+      [
+        "Номер строки",
+        "ФИО",
+        "Email/телефон",
+        "Ошибки",
+        "Данные",
+      ].map(csvEscape).join(";"),
+      ...errorRows.map((row) =>
+        [
+          row.row_number,
+          getRowName(row),
+          getRowContact(row),
+          row.validation_errors_json.map(formatValidationError).join(" | "),
+          JSON.stringify(row.normalized_data_json || {}),
+        ].map(csvEscape).join(";")
+      ),
+    ];
+
+    const blob = new Blob([String.fromCharCode(0xfeff) + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedImport.source_filename || "learner-import"}.errors.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   const loadImportReferences = useCallback(async () => {
@@ -704,7 +768,35 @@ export function LearnerImportsPage() {
                   </div>
                 </div>
 
-                <div className="overflow-hidden rounded-2xl ring-1 ring-slate-200">
+                                <div className="grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)]">
+                  <button
+                    type="button"
+                    onClick={downloadSelectedImportErrors}
+                    disabled={!selectedImportHasErrors}
+                    className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-blue-700 shadow-sm ring-1 ring-blue-200 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:ring-slate-200"
+                  >
+                    Скачать ошибки CSV
+                  </button>
+
+                  <div className="grid grid-cols-3 overflow-hidden rounded-2xl bg-slate-100 p-1 text-xs font-black text-slate-600">
+                    {[
+                      ["all", `Все строки (${selectedRows.length})`],
+                      ["valid", `Валидные (${selectedImport.valid_rows || 0})`],
+                      ["invalid", `С ошибками (${selectedImport.invalid_rows || 0})`],
+                    ].map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setRowFilter(key)}
+                        className={`rounded-xl px-3 py-2 transition ${rowFilter === key ? "bg-white text-blue-700 shadow-sm" : "hover:bg-white/70"}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+<div className="overflow-hidden rounded-2xl ring-1 ring-slate-200">
                   <table className="min-w-full divide-y divide-slate-200 text-sm">
                     <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                       <tr>
@@ -716,7 +808,7 @@ export function LearnerImportsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
-                      {selectedRows.map((row) => (
+                      {visibleSelectedRows.map((row) => (
                         <tr key={row.id}>
                           <td className="px-4 py-3 font-semibold text-slate-700">{row.row_number}</td>
                           <td className="px-4 py-3"><StatusPill status={row.status} /></td>
@@ -746,6 +838,10 @@ export function LearnerImportsPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                <div className="text-xs text-slate-500">
+                  Показано строк: {visibleSelectedRows.length} из {selectedRows.length}.
                 </div>
               </div>
             ) : (
