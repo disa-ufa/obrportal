@@ -96,6 +96,46 @@ function WorkflowStep({ number, title, description }) {
   );
 }
 
+
+function getEntityLabel(items, id, fallback = DASH) {
+  if (!id) {
+    return fallback;
+  }
+
+  const found = items.find((item) => String(item.id) === String(id));
+  return found?.title || found?.name || found?.short_name || found?.slug || id || fallback;
+}
+
+function getImportContextParts(item, courses, organizations, learningGroups) {
+  if (!item) {
+    return [];
+  }
+
+  return [
+    ["Курс", getEntityLabel(courses, item.course_id)],
+    ["Орг.", getEntityLabel(organizations, item.organization_id)],
+    ["Группа", getEntityLabel(learningGroups, item.learning_group_id)],
+  ];
+}
+
+function ImportContextCell({ item, courses, organizations, learningGroups }) {
+  const parts = getImportContextParts(item, courses, organizations, learningGroups).filter(([, value]) => value && value !== DASH);
+
+  if (!parts.length) {
+    return <span className="text-slate-400">{DASH}</span>;
+  }
+
+  return (
+    <div className="space-y-0.5 text-xs leading-5 text-slate-600">
+      {parts.map(([label, value]) => (
+        <div key={label} className="max-w-[220px] truncate">
+          <span className="font-black text-slate-500">{label}:</span> {value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function safeJsonPreview(value) {
   if (!value || typeof value !== "object") {
     return DASH;
@@ -489,6 +529,7 @@ export function LearnerImportsPage() {
                   <tr>
                     <th className="px-4 py-3">Файл</th>
                     <th className="px-4 py-3">Статус</th>
+                    <th className="px-4 py-3">Контекст</th>
                     <th className="px-4 py-3">Строки</th>
                     <th className="px-4 py-3">Ошибки</th>
                     <th className="px-4 py-3">Дата</th>
@@ -503,6 +544,14 @@ export function LearnerImportsPage() {
                         <div className="mt-1 max-w-xs truncate text-xs text-slate-500">{item.notes || DASH}</div>
                       </td>
                       <td className="px-4 py-3"><StatusPill status={item.status} /></td>
+                      <td className="px-4 py-3">
+                        <ImportContextCell
+                          item={item}
+                          courses={courses}
+                          organizations={organizations}
+                          learningGroups={learningGroups}
+                        />
+                      </td>
                       <td className="px-4 py-3 text-slate-700">
                         <span className="font-semibold">{item.valid_rows}</span> / {item.total_rows}
                       </td>
@@ -520,7 +569,7 @@ export function LearnerImportsPage() {
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
+                      <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
                         Импорты пока не найдены.
                       </td>
                     </tr>
