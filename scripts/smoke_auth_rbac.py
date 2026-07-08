@@ -458,6 +458,29 @@ def main() -> int:
     assert applied_learner_import_rows[1]["status"] == "invalid"
     checks.append("admin learner import apply ok")
 
+    status, imported_user_search = request_json(
+        "GET",
+        "/api/v1/admin/users?q=smoke-import-learner@mail.ru",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin imported learner user search")
+    assert isinstance(imported_user_search, list)
+
+    imported_user_matches = [
+        item
+        for item in imported_user_search
+        if item.get("email") == "smoke-import-learner@mail.ru"
+    ]
+    if len(imported_user_matches) != 1:
+        raise AssertionError("admin imported learner user was not found after import apply")
+
+    imported_user_roles = imported_user_matches[0].get("roles") or []
+    imported_user_role_codes = {role.get("code") for role in imported_user_roles}
+    if "learner" not in imported_user_role_codes:
+        raise AssertionError(f"imported learner user does not have learner role: {imported_user_roles!r}")
+
+    checks.append("admin learner import assigns learner role ok")
+
     status, repeated_learner_import_apply = request_json(
         "POST",
         f"/api/v1/admin/learner-imports/{learner_import['id']}/apply",

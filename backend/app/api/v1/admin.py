@@ -6615,6 +6615,7 @@ async def apply_learner_import(
                 "created_profiles_count": apply_result.created_profiles_count,
                 "updated_profiles_count": apply_result.updated_profiles_count,
                 "created_enrollments_count": apply_result.created_enrollments_count,
+                "assigned_learner_roles_count": apply_result.assigned_learner_roles_count,
                 "error_rows_count": apply_result.error_rows_count,
             },
             request=request,

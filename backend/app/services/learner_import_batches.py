@@ -11,6 +11,7 @@ from app.core.security import get_password_hash
 from app.models.enrollment import Enrollment
 from app.models.import_batch import ImportBatch, ImportRow
 from app.models.learner_profile import LearnerProfile
+from app.models.role import Role, UserRole
 from app.models.user import User
 from app.services.learner_import_parser import ParsedLearnerImportResult
 
@@ -30,6 +31,7 @@ class LearnerImportApplyResult:
     created_profiles_count: int = 0
     updated_profiles_count: int = 0
     created_enrollments_count: int = 0
+    assigned_learner_roles_count: int = 0
     error_rows_count: int = 0
 
 
@@ -151,6 +153,70 @@ async def find_enrollment(
     return result.scalar_one_or_none()
 
 
+async def find_or_create_learner_role(db: AsyncSession) -> Role:
+    result = await db.execute(select(Role).where(Role.code == "learner"))
+    learner_role = result.scalar_one_or_none()
+
+    if learner_role is not None:
+        return learner_role
+
+    learner_role = Role(
+        code="learner",
+        name="?????????",
+        description="????????????, ?????????? ???????? ?? ???????",
+    )
+    db.add(learner_role)
+    await db.flush()
+
+    return learner_role
+
+
+async def find_global_user_role(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    role_id: str,
+) -> UserRole | None:
+    result = await db.execute(
+        select(UserRole).where(
+            UserRole.user_id == user_id,
+            UserRole.role_id == role_id,
+            UserRole.organization_id.is_(None),
+        )
+    )
+
+    return result.scalar_one_or_none()
+
+
+async def assign_learner_role_if_available(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    learner_role: Role | None,
+) -> bool:
+    if learner_role is None:
+        return False
+
+    existing_assignment = await find_global_user_role(
+        db,
+        user_id=user_id,
+        role_id=str(learner_role.id),
+    )
+    if existing_assignment is not None:
+        return False
+
+    db.add(
+        UserRole(
+            user_id=user_id,
+            role_id=str(learner_role.id),
+            organization_id=None,
+        )
+    )
+    await db.flush()
+
+    return True
+
+
 def apply_profile_data(profile: LearnerProfile, data: dict) -> None:
     field_map = {
         "last_name": "last_name",
@@ -194,8 +260,11 @@ async def apply_learner_import_batch(
         "created_profiles_count": 0,
         "updated_profiles_count": 0,
         "created_enrollments_count": 0,
+        "assigned_learner_roles_count": 0,
         "error_rows_count": 0,
     }
+
+    learner_role = await find_or_create_learner_role(db)
 
     valid_rows = sorted(
         [row for row in batch.rows if row.status == "valid"],
@@ -282,6 +351,14 @@ async def apply_learner_import_batch(
                     enrollment.organization_id = str(batch.organization_id)
                 if batch.learning_group_id and not enrollment.learning_group_id:
                     enrollment.learning_group_id = str(batch.learning_group_id)
+
+        learner_role_assigned = await assign_learner_role_if_available(
+            db,
+            user_id=str(user.id),
+            learner_role=learner_role,
+        )
+        if learner_role_assigned:
+            counts["assigned_learner_roles_count"] += 1
 
         row.status = "applied"
         row.user_id = str(user.id)
