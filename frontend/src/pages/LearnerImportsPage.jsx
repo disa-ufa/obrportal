@@ -236,7 +236,7 @@ export function LearnerImportsPage() {
   const [learningGroupId, setLearningGroupId] = useState("");
   const [referenceLoading, setReferenceLoading] = useState(false);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("parsed");
+  const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -335,7 +335,8 @@ export function LearnerImportsPage() {
       setNotice(
         `Импорт применён: создано пользователей ${applied.created_users_count}, профилей ${applied.created_profiles_count}, назначений ${applied.created_enrollments_count}.`
       );
-      await loadImports();
+      setStatusFilter("");
+      await loadImports({ status: "" });
     } catch (err) {
       setError(err.message || "Не удалось применить импорт.");
     } finally {
