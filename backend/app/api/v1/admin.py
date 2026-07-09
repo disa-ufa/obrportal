@@ -75,6 +75,7 @@ from app.schemas.admin import (
     AdminLessonBlockReorder,
     AdminLearnerImportBatchDetail,
     AdminLearnerImportBatchItem,
+    AdminLearnerImportInvitationItem,
     AdminLearnerImportRowItem,
     AdminLessonBlockUpdate,
     AdminCourseModuleCreate,
@@ -521,7 +522,11 @@ def build_admin_learner_import_batch_item(batch: ImportBatch) -> AdminLearnerImp
     )
 
 
-def build_admin_learner_import_batch_detail(batch: ImportBatch) -> AdminLearnerImportBatchDetail:
+def build_admin_learner_import_batch_detail(
+    batch: ImportBatch,
+    *,
+    invitations: list[AdminLearnerImportInvitationItem] | None = None,
+) -> AdminLearnerImportBatchDetail:
     rows = sorted(batch.rows, key=lambda item: item.row_number)
 
     return AdminLearnerImportBatchDetail(
@@ -546,6 +551,7 @@ def build_admin_learner_import_batch_detail(batch: ImportBatch) -> AdminLearnerI
         created_at=batch.created_at,
         updated_at=batch.updated_at,
         rows=[build_admin_learner_import_row_item(row) for row in rows],
+        invitations=invitations or [],
     )
 
 
@@ -6650,6 +6656,32 @@ async def apply_learner_import(
     try:
         apply_result = await apply_learner_import_batch(session, batch=batch)
 
+        invitations: list[AdminLearnerImportInvitationItem] = []
+        for candidate in apply_result.invitation_candidates:
+            invited_user = await session.get(User, candidate.user_id)
+            if invited_user is None:
+                continue
+
+            created_token = await create_user_password_token(
+                session,
+                user=invited_user,
+                created_by_user=current_user,
+                delivery_target_email=invited_user.email,
+                mark_sent=False,
+            )
+            setup_url = build_password_setup_url(settings.public_base_url, created_token.raw_token)
+
+            invitations.append(
+                AdminLearnerImportInvitationItem(
+                    row_id=candidate.row_id,
+                    row_number=candidate.row_number,
+                    user_id=str(invited_user.id),
+                    email=invited_user.email,
+                    setup_url=setup_url,
+                    expires_at=created_token.record.expires_at,
+                )
+            )
+
         await create_admin_audit_event(
             session,
             actor_user=current_user,
@@ -6666,6 +6698,7 @@ async def apply_learner_import(
                 "created_enrollments_count": apply_result.created_enrollments_count,
                 "assigned_learner_roles_count": apply_result.assigned_learner_roles_count,
                 "error_rows_count": apply_result.error_rows_count,
+                "created_invitations_count": len(invitations),
             },
             request=request,
         )
@@ -6686,7 +6719,7 @@ async def apply_learner_import(
 
     refreshed_batch = await get_admin_learner_import_batch_or_404(batch_id, session)
 
-    return build_admin_learner_import_batch_detail(refreshed_batch)
+    return build_admin_learner_import_batch_detail(refreshed_batch, invitations=invitations)
 
 
 @router.get("/learner-imports/{batch_id}", response_model=AdminLearnerImportBatchDetail)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from uuid import uuid4
 from typing import Protocol
 
@@ -25,6 +25,14 @@ class ImportBatchSession(Protocol):
 
 
 @dataclass(frozen=True)
+class LearnerImportInvitationCandidate:
+    row_id: str
+    row_number: int
+    user_id: str
+    email: str
+
+
+@dataclass(frozen=True)
 class LearnerImportApplyResult:
     created_users_count: int = 0
     updated_users_count: int = 0
@@ -33,6 +41,7 @@ class LearnerImportApplyResult:
     created_enrollments_count: int = 0
     assigned_learner_roles_count: int = 0
     error_rows_count: int = 0
+    invitation_candidates: tuple[LearnerImportInvitationCandidate, ...] = field(default_factory=tuple)
 
 
 def normalize_import_text(value: object) -> str:
@@ -264,6 +273,8 @@ async def apply_learner_import_batch(
         "error_rows_count": 0,
     }
 
+    invitation_candidates: list[LearnerImportInvitationCandidate] = []
+
     learner_role = await find_or_create_learner_role(db)
 
     valid_rows = sorted(
@@ -278,6 +289,8 @@ async def apply_learner_import_batch(
         full_name = normalize_import_text(data.get("full_name"))
         snils = normalize_import_text(data.get("snils"))
 
+        created_new_user = False
+
         user, user_conflict = await find_user_for_import_row(db, email=email, phone=phone)
         if user_conflict:
             mark_import_row_error(row, user_conflict)
@@ -290,13 +303,14 @@ async def apply_learner_import_batch(
                 phone=phone or None,
                 full_name=full_name or None,
                 hashed_password=get_password_hash(f"Import-{uuid4().hex}"),
-                is_active=True,
+                is_active=False,
                 is_email_verified=False,
                 mfa_enabled=False,
             )
             db.add(user)
             await db.flush()
             counts["created_users_count"] += 1
+            created_new_user = True
         else:
             if full_name and not user.full_name:
                 user.full_name = full_name
@@ -366,6 +380,16 @@ async def apply_learner_import_batch(
         row.enrollment_id = str(enrollment.id) if enrollment else None
         row.error_summary = None
 
+        if created_new_user:
+            invitation_candidates.append(
+                LearnerImportInvitationCandidate(
+                    row_id=str(row.id),
+                    row_number=row.row_number,
+                    user_id=str(user.id),
+                    email=user.email,
+                )
+            )
+
     batch.created_users_count = counts["created_users_count"]
     batch.updated_users_count = counts["updated_users_count"]
     batch.created_profiles_count = counts["created_profiles_count"]
@@ -377,4 +401,4 @@ async def apply_learner_import_batch(
 
     await db.flush()
 
-    return LearnerImportApplyResult(**counts)
+    return LearnerImportApplyResult(**counts, invitation_candidates=tuple(invitation_candidates))

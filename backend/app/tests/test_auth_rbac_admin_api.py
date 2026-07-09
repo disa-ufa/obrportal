@@ -16,6 +16,8 @@ from app.core.security import get_password_hash
 from app.models.base import utcnow
 from app.models.user import User
 from app.services.user_password_tokens import create_user_password_token
+from app.services.learner_import_batches import create_import_batch_from_parse_result
+from app.services.learner_import_parser import ParsedLearnerImportResult, ParsedLearnerImportRow
 
 
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
@@ -1663,6 +1665,144 @@ def test_admin_can_create_user_and_created_user_can_login() -> None:
     )
 
 
+
+
+
+
+def create_learner_import_batch_fixture(
+    *,
+    email: str,
+    full_name: str = "Import Invite User",
+) -> str:
+    async def _create() -> str:
+        engine = create_async_engine(str(settings.database_url))
+        session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+        last_name, first_name, *rest = full_name.split()
+        middle_name = " ".join(rest)
+
+        parse_result = ParsedLearnerImportResult(
+            filename="learners.csv",
+            rows=[
+                ParsedLearnerImportRow(
+                    row_number=2,
+                    status="valid",
+                    raw_data={
+                        "???": full_name,
+                        "email": email,
+                    },
+                    normalized_data={
+                        "full_name": full_name,
+                        "last_name": last_name,
+                        "first_name": first_name,
+                        "middle_name": middle_name,
+                        "email": email,
+                        "phone": "",
+                        "program_title": "",
+                        "course_code": "",
+                        "training_dates_text": "",
+                        "stage": "",
+                        "grade": "",
+                        "snils": "",
+                        "has_snils_text": "",
+                        "document_number": "",
+                    },
+                    validation_errors=[],
+                )
+            ],
+        )
+
+        async with session_factory() as session:
+            batch = await create_import_batch_from_parse_result(
+                session,
+                parse_result=parse_result,
+                notes="Autotest learner import invitation batch",
+            )
+            batch_id = str(batch.id)
+            await session.commit()
+
+        await engine.dispose()
+
+        return batch_id
+
+    return asyncio.run(_create())
+
+
+
+
+def test_admin_apply_learner_import_returns_password_setup_invitation_for_new_user() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    email = f"import_invite_{uuid4().hex[:12]}@example.com"
+    new_password = "ImportInvitePassword123!"
+
+    batch_id = create_learner_import_batch_fixture(email=email)
+
+    status, applied = request_json(
+        "POST",
+        f"/api/v1/admin/learner-imports/{batch_id}/apply",
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(applied, dict)
+    assert applied["status"] == "applied"
+    assert applied["created_users_count"] == 1
+    assert applied["updated_users_count"] == 0
+
+    invitations = applied.get("invitations")
+    assert isinstance(invitations, list)
+    assert len(invitations) == 1
+
+    invitation = invitations[0]
+    assert invitation["email"] == email
+    assert invitation["row_number"] == 2
+    assert invitation["user_id"]
+    assert invitation["setup_url"].startswith(settings.public_base_url.rstrip("/") + "/set-password?token=")
+    assert invitation["expires_at"]
+
+    status, users = request_json(
+        "GET",
+        f"/api/v1/admin/users?{urlencode({'q': email, 'limit': 20})}",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(users, list)
+    imported_user = next(user for user in users if user["email"] == email)
+    assert imported_user["id"] == invitation["user_id"]
+    assert imported_user["is_active"] is False
+    assert imported_user["is_email_verified"] is False
+
+    raw_token = extract_token_from_setup_url(str(invitation["setup_url"]))
+
+    status, setup = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": raw_token,
+            "password": new_password,
+        },
+    )
+    assert status == 200
+    assert isinstance(setup, dict)
+    assert setup["user_id"] == invitation["user_id"]
+    assert setup["email"] == email
+
+    learner_token = login(email, new_password)
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=learner_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    assert me_payload["email"] == email
+    assert me_payload["is_active"] is True
+    assert me_payload["is_email_verified"] is True
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/admin/learner-imports/{batch_id}",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(detail, dict)
+    assert detail["invitations"] == []
 
 
 def test_admin_can_invite_user_and_user_can_set_password() -> None:

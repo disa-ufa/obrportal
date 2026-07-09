@@ -585,6 +585,15 @@ class AdminLearnerImportRowItem(BaseModel):
     updated_at: datetime
 
 
+class AdminLearnerImportInvitationItem(BaseModel):
+    row_id: str
+    row_number: int
+    user_id: str
+    email: str
+    setup_url: str
+    expires_at: datetime
+
+
 class AdminLearnerImportBatchItem(BaseModel):
     id: str
     import_type: str
@@ -630,3 +639,4 @@ class AdminLearnerImportBatchDetail(BaseModel):
     created_at: datetime
     updated_at: datetime
     rows: list[AdminLearnerImportRowItem] = Field(default_factory=list)
+    invitations: list[AdminLearnerImportInvitationItem] = Field(default_factory=list)
