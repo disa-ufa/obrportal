@@ -1,11 +1,21 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+from datetime import timedelta
 from uuid import uuid4
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from app.core.config import settings
+from app.core.security import get_password_hash
+from app.models.base import utcnow
+from app.models.user import User
+from app.services.user_password_tokens import create_user_password_token
 
 
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
@@ -187,6 +197,60 @@ def request_json(
         return error.code, payload
 
 
+
+
+def create_password_setup_user(
+    *,
+    email: str,
+    initial_password: str = "InitialSetupUser123!",
+    is_active: bool = False,
+    is_email_verified: bool = False,
+    expired: bool = False,
+) -> dict:
+    async def _create() -> dict:
+        engine = create_async_engine(str(settings.database_url))
+        session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+        async with session_factory() as session:
+            user = User(
+                email=email,
+                phone=None,
+                full_name="Password setup test user",
+                hashed_password=get_password_hash(initial_password),
+                is_active=is_active,
+                is_email_verified=is_email_verified,
+                mfa_enabled=False,
+            )
+            session.add(user)
+            await session.flush()
+
+            created_token = await create_user_password_token(
+                session,
+                user=user,
+                expires_delta=timedelta(days=7),
+                delivery_target_email=email,
+            )
+
+            if expired:
+                created_token.record.expires_at = utcnow() - timedelta(seconds=1)
+
+            user_id = str(user.id)
+            raw_token = created_token.raw_token
+
+            await session.commit()
+
+        await engine.dispose()
+
+        return {
+            "user_id": user_id,
+            "email": email,
+            "raw_token": raw_token,
+            "initial_password": initial_password,
+        }
+
+    return asyncio.run(_create())
+
+
 def login(email: str, password: str) -> str:
     status, payload = request_json(
         "POST",
@@ -199,6 +263,107 @@ def login(email: str, password: str) -> str:
     assert payload["access_token"]
 
     return str(payload["access_token"])
+
+
+
+
+def test_public_set_password_with_initial_token_activates_user_and_allows_login() -> None:
+    email = f"set_password_{uuid4().hex[:12]}@example.com"
+    new_password = "NewSetupPassword123!"
+
+    fixture = create_password_setup_user(email=email)
+
+    status, before_payload = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": email, "password": fixture["initial_password"]},
+    )
+    assert status == 403
+    assert isinstance(before_payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": fixture["raw_token"],
+            "password": new_password,
+        },
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["status"] == "ok"
+    assert payload["user_id"] == fixture["user_id"]
+    assert payload["email"] == email
+
+    status, repeat_payload = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": fixture["raw_token"],
+            "password": "AnotherSetupPassword123!",
+        },
+    )
+    assert status == 400
+    assert isinstance(repeat_payload, dict)
+
+    status, old_password_payload = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": email, "password": fixture["initial_password"]},
+    )
+    assert status == 401
+    assert isinstance(old_password_payload, dict)
+
+    token = login(email, new_password)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    assert me_payload["email"] == email
+    assert me_payload["is_active"] is True
+    assert me_payload["is_email_verified"] is True
+
+
+def test_public_set_password_rejects_invalid_token() -> None:
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": "invalid-token-value-with-enough-length",
+            "password": "InvalidTokenPassword123!",
+        },
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+    assert payload["detail"] == "Invalid or expired password setup token"
+
+
+def test_public_set_password_rejects_expired_token() -> None:
+    email = f"expired_set_password_{uuid4().hex[:12]}@example.com"
+    fixture = create_password_setup_user(email=email, expired=True)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": fixture["raw_token"],
+            "password": "ExpiredSetupPassword123!",
+        },
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+    assert payload["detail"] == "Invalid or expired password setup token"
+
+    status, login_payload = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": email, "password": "ExpiredSetupPassword123!"},
+    )
+    assert status == 401
+    assert isinstance(login_payload, dict)
 
 
 def test_admin_login_and_me() -> None:
