@@ -372,6 +372,12 @@ export async function resetAdminUserPassword(userId, password) {
   });
 }
 
+export async function inviteAdminUser(userId) {
+  return request(`/api/v1/admin/users/${userId}/invite`, {
+    method: "POST",
+  });
+}
+
 export async function activateAdminUser(userId) {
   return request(`/api/v1/admin/users/${userId}/activate`, {
     method: "POST",

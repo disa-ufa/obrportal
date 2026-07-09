@@ -70,6 +70,7 @@ export function AdminPageRenderer({
   handleCreateUser,
   handleUpdateUser,
   handleResetUserPassword,
+  handleInviteUser,
   handleActivateUser,
   handleDeactivateUser,
   handleAssignUserRole,
@@ -141,6 +142,7 @@ export function AdminPageRenderer({
         onCreateUser={handleCreateUser}
         onUpdateUser={handleUpdateUser}
         onResetUserPassword={handleResetUserPassword}
+        onInviteUser={handleInviteUser}
         onActivateUser={handleActivateUser}
         onDeactivateUser={handleDeactivateUser}
         onAssignUserRole={handleAssignUserRole}

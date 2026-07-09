@@ -87,6 +87,23 @@ function formatValidationError(message) {
   return normalized || DASH;
 }
 
+async function copyTextToClipboard(value) {
+  if (navigator?.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const element = document.createElement("textarea");
+  element.value = value;
+  element.setAttribute("readonly", "readonly");
+  element.style.position = "fixed";
+  element.style.left = "-9999px";
+  document.body.appendChild(element);
+  element.select();
+  document.execCommand("copy");
+  document.body.removeChild(element);
+}
+
 function StatusPill({ status }) {
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${getStatusTone(status)}`}>
@@ -243,6 +260,7 @@ export function LearnerImportsPage() {
   const [applyingImportId, setApplyingImportId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [copiedInvitationKey, setCopiedInvitationKey] = useState("");
   const [rowFilter, setRowFilter] = useState("all");
 
   const selectedRows = selectedImport?.rows || [];
@@ -331,9 +349,12 @@ export function LearnerImportsPage() {
 
     try {
       const applied = await applyAdminLearnerImport(selectedImport.id);
+      const invitationCount = Array.isArray(applied.invitations) ? applied.invitations.length : 0;
+
       setSelectedImport(applied);
+      setCopiedInvitationKey("");
       setNotice(
-        `Импорт применён: создано пользователей ${applied.created_users_count}, профилей ${applied.created_profiles_count}, назначений ${applied.created_enrollments_count}.`
+        `?????? ????????: ??????? ????????????? ${applied.created_users_count}, ???????? ${applied.created_profiles_count}, ?????????? ${applied.created_enrollments_count}.${invitationCount ? ` ?????? ???????????: ${invitationCount}.` : ""}`
       );
       setStatusFilter("");
       await loadImports({ status: "" });
@@ -341,6 +362,23 @@ export function LearnerImportsPage() {
       setError(err.message || "Не удалось применить импорт.");
     } finally {
       setApplyingImportId("");
+    }
+  }
+
+  async function handleCopyImportInvitation(invitation) {
+    if (!invitation?.setup_url) {
+      return;
+    }
+
+    const key = invitation.row_id || invitation.user_id || invitation.email || invitation.setup_url;
+
+    try {
+      await copyTextToClipboard(invitation.setup_url);
+      setCopiedInvitationKey(key);
+      setNotice(`?????? ??????????? ??? ${invitation.email || "????????????"} ???????????.`);
+    } catch {
+      setCopiedInvitationKey("");
+      setError("?? ??????? ??????????? ??????. ?????????? ?? ??????? ?? ????? ???????????.");
     }
   }
 
@@ -749,6 +787,71 @@ export function LearnerImportsPage() {
                   <SummaryCard label="С ошибками" value={selectedImport.invalid_rows} tone="red" />
                   <SummaryCard label="Статус" value={getStatusLabel(selectedImport.status)} tone="blue" />
                 </div>
+
+                {selectedImport.invitations?.length ? (
+                  <div
+                    data-testid="learner-import-invitations-card"
+                    className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-black text-emerald-950">
+                          {"\u0421\u0441\u044b\u043b\u043a\u0438 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0438 \u043f\u0430\u0440\u043e\u043b\u044f"}
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-emerald-800">
+                          {"\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u0441\u0440\u0430\u0437\u0443 \u043f\u043e\u0441\u043b\u0435 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u044f \u0438\u043c\u043f\u043e\u0440\u0442\u0430. \u041e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u044d\u0442\u0438 \u0441\u0441\u044b\u043b\u043a\u0438 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f\u043c, \u0447\u0442\u043e\u0431\u044b \u043e\u043d\u0438 \u0441\u0430\u043c\u0438 \u0437\u0430\u0434\u0430\u043b\u0438 \u043f\u0430\u0440\u043e\u043b\u044c."}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-200">
+                        {selectedImport.invitations.length}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 overflow-hidden rounded-2xl bg-white ring-1 ring-emerald-100">
+                      <table className="min-w-full divide-y divide-emerald-100 text-sm">
+                        <thead className="bg-emerald-50/70 text-left text-xs font-bold uppercase tracking-wide text-emerald-700">
+                          <tr>
+                            <th className="px-4 py-3">{"\u0421\u0442\u0440\u043e\u043a\u0430"}</th>
+                            <th className="px-4 py-3">Email</th>
+                            <th className="px-4 py-3">{"\u0421\u0441\u044b\u043b\u043a\u0430"}</th>
+                            <th className="px-4 py-3 text-right">{"\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435"}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-emerald-100">
+                          {selectedImport.invitations.map((invitation) => {
+                            const key = invitation.row_id || invitation.user_id || invitation.email || invitation.setup_url;
+                            const isCopied = copiedInvitationKey === key;
+
+                            return (
+                              <tr key={key}>
+                                <td className="px-4 py-3 font-semibold text-slate-700">
+                                  {invitation.row_number || "-"}
+                                </td>
+                                <td className="px-4 py-3 text-slate-700">
+                                  {invitation.email || "-"}
+                                </td>
+                                <td className="max-w-md px-4 py-3">
+                                  <div className="break-all rounded-xl bg-slate-50 p-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-100">
+                                    {invitation.setup_url}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyImportInvitation(invitation)}
+                                    className="rounded-xl bg-white px-3 py-2 text-xs font-black text-emerald-700 ring-1 ring-emerald-200 transition hover:bg-emerald-50"
+                                  >
+                                    {isCopied ? "\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e" : "\u041a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                   <div className="text-sm font-black text-slate-950">Будет создано или обновлено</div>

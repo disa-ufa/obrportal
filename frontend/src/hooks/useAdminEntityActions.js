@@ -8,6 +8,7 @@ import {
   createOrgLearningGroup,
   deactivateAdminUser,
   deleteAdminOrganization,
+  inviteAdminUser,
   deleteAdminRole,
   deleteOrgLearningGroup,
   removeAdminRolePermission,
@@ -67,6 +68,10 @@ export function useAdminEntityActions({
     setSelectedUser(updated);
 
     return updated;
+  }
+
+  async function handleInviteUser(userId) {
+    return inviteAdminUser(userId);
   }
 
   async function handleActivateUser(userId) {
@@ -214,6 +219,7 @@ export function useAdminEntityActions({
     handleCreateUser,
     handleUpdateUser,
     handleResetUserPassword,
+    handleInviteUser,
     handleActivateUser,
     handleDeactivateUser,
     handleAssignUserRole,
