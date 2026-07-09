@@ -104,6 +104,14 @@ class AdminUserPasswordUpdate(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class AdminUserInviteResponse(BaseModel):
+    status: str
+    user_id: str
+    email: str
+    setup_url: str
+    expires_at: datetime
+
+
 class AdminUserRoleAssign(BaseModel):
     role_id: str
     organization_id: str | None = None

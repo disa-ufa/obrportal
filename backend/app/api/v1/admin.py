@@ -59,6 +59,7 @@ from app.services.lesson_readiness import (
 )
 from app.services.learner_import_batches import apply_learner_import_batch, create_import_batch_from_parse_result
 from app.services.learner_import_parser import parse_learner_import_file
+from app.services.user_password_tokens import build_password_setup_url, create_user_password_token
 from app.schemas.admin import (
     AdminAuditEventItem,
     AdminCourseCreate,
@@ -109,6 +110,7 @@ from app.schemas.admin import (
     AdminRoleUpdate,
     AdminUserCreate,
     AdminUserDetail,
+    AdminUserInviteResponse,
     AdminUserItem,
     AdminUserPasswordUpdate,
     AdminUserRoleAssign,
@@ -1458,6 +1460,53 @@ async def reset_user_password(
     roles = await get_user_roles(str(user.id), session)
 
     return build_admin_user_detail(user, roles)
+
+
+@router.post("/users/{user_id}/invite", response_model=AdminUserInviteResponse)
+async def invite_user(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserInviteResponse:
+    user = await get_admin_user_or_404(user_id, session)
+
+    created_token = await create_user_password_token(
+        session,
+        user=user,
+        created_by_user=current_user,
+        delivery_target_email=user.email,
+        mark_sent=False,
+    )
+
+    setup_url = build_password_setup_url(settings.public_base_url, created_token.raw_token)
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.user_invited",
+        entity_type="user",
+        entity_id=str(user.id),
+        payload={
+            "email": user.email,
+            "delivery_target_email": user.email,
+            "password_link_id": created_token.record.id,
+            "expires_at": created_token.record.expires_at.isoformat(),
+            "delivery_mode": "dev_response",
+            "setup_url_returned": True,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return AdminUserInviteResponse(
+        status="created",
+        user_id=str(user.id),
+        email=user.email,
+        setup_url=setup_url,
+        expires_at=created_token.record.expires_at,
+    )
 
 
 @router.post("/users/{user_id}/activate", response_model=AdminUserDetail)
