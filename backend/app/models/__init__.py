@@ -14,6 +14,7 @@ from app.models.organization import Organization
 from app.models.quiz_attempt import QuizAttempt
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
+from app.models.user_password_token import UserPasswordToken
 
 __all__ = [
     "AssignmentSubmission",
@@ -36,5 +37,6 @@ __all__ = [
     "Role",
     "RolePermission",
     "User",
+    "UserPasswordToken",
     "UserRole",
 ]
