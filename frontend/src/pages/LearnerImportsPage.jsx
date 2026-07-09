@@ -182,7 +182,7 @@ function getImportRowContextParts(row, selectedImport, courses, organizations, l
   const data = row.normalized_data_json || {};
 
   return [
-    ["Курс", data.program_title || data.course_title || getEntityLabel(courses, selectedImport?.course_id)],
+    ["Курс", getEntityLabel(courses, selectedImport?.course_id, data.program_title || data.course_title || DASH)],
     ["Орг.", getEntityLabel(organizations, selectedImport?.organization_id)],
     ["Группа", getEntityLabel(learningGroups, selectedImport?.learning_group_id)],
   ];
