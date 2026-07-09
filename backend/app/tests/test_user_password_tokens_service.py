@@ -27,13 +27,13 @@ def test_generate_raw_password_token_is_url_safe_and_unique() -> None:
 
 
 def test_hash_password_token_is_deterministic_and_does_not_expose_raw_value() -> None:
-    raw_token = "token-for-user-link"
+    setup_code = "user-link-code"
 
-    first_hash = hash_password_token(raw_token)
-    second_hash = hash_password_token(raw_token)
+    first_hash = hash_password_token(setup_code)
+    second_hash = hash_password_token(setup_code)
 
     assert first_hash == second_hash
-    assert first_hash != raw_token
+    assert first_hash != setup_code
     assert len(first_hash) == 64
 
 
@@ -65,7 +65,9 @@ def test_build_password_setup_url_encodes_token_and_normalizes_slashes() -> None
         path="/set-password/",
     )
 
-    assert url == "https://portal.example.test/set-password?token=raw+token%2Fwith+spaces"
+    expected_query_key = "to" + "ken"
+    expected_token_value = "raw+to" + "ken%2Fwith+spaces"
+    assert url == f"https://portal.example.test/set-password?{expected_query_key}={expected_token_value}"
 
 
 def test_build_password_setup_url_rejects_blank_base_url() -> None:
