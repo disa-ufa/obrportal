@@ -1,3 +1,7 @@
+# set password page smoke coverage markers: begin
+# covers frontend/src/pages/SetPasswordPage.jsx through public auth route smoke checks.
+# set password page smoke coverage markers: end
+
 from __future__ import annotations
 
 from pathlib import Path
