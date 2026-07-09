@@ -24,6 +24,7 @@ const OrganizationInfoPage = lazyNamed(() => import("../pages/OrganizationInfoPa
 const OrganizationCabinetPage = lazyNamed(() => import("../pages/OrganizationCabinetPage"), "OrganizationCabinetPage");
 const PrivacyPage = lazyNamed(() => import("../pages/PrivacyPage"), "PrivacyPage");
 const RegisterPage = lazyNamed(() => import("../pages/RegisterPage"), "RegisterPage");
+const SetPasswordPage = lazyNamed(() => import("../pages/SetPasswordPage"), "SetPasswordPage");
 const VerifyDocumentPage = lazyNamed(() => import("../pages/VerifyDocumentPage"), "VerifyDocumentPage");
 const CourseDetailPublicRoute = lazyNamed(
   () => import("./PublicRouteComponents"),
@@ -180,6 +181,10 @@ export function PublicRoutes({
               error={error}
             />
           }
+        />
+        <Route
+          path="/set-password"
+          element={<SetPasswordPage onPageChange={handleNavigatePublicPage} />}
         />
         <Route
           path="/account"

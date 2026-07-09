@@ -74,6 +74,13 @@ export async function registerUser(payload) {
   });
 }
 
+export async function setPasswordWithToken(token, password) {
+  return request("/api/v1/auth/set-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
 export async function getCurrentUser() {
   return request("/api/v1/auth/me");
 }
