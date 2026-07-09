@@ -10,7 +10,7 @@
     "lint": "eslint . --ext js,jsx --max-warnings 0"
   },
   "dependencies": {
-    "@tiptap/extension-color": "3.27.0",
+    "@tiptap/extension-color": "^3.27.0",
     "@tiptap/extension-link": "^3.27.0",
     "@tiptap/extension-text-align": "3.27.0",
     "@tiptap/extension-text-style": "3.27.0",
