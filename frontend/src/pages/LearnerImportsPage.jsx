@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   applyAdminLearnerImport,
   getAdminCourses,
@@ -8,6 +8,7 @@ import {
   getOrgLearningGroups,
   uploadAdminLearnerImport,
 } from "../api/client";
+import { formatApiError } from "../utils/apiErrors";
 
 const DASH = "—";
 
@@ -312,7 +313,7 @@ export function LearnerImportsPage() {
       });
       setImports(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || "Не удалось загрузить импорты слушателей.");
+      setError(formatApiError(err, "Не удалось загрузить импорты слушателей."));
     } finally {
       setLoading(false);
     }
@@ -331,7 +332,7 @@ export function LearnerImportsPage() {
       const detail = await getAdminLearnerImportDetail(batchId);
       setSelectedImport(detail);
     } catch (err) {
-      setError(err.message || "Не удалось открыть импорт.");
+      setError(formatApiError(err, "Не удалось открыть импорт."));
       setSelectedImport(null);
     } finally {
       setDetailLoading(false);
@@ -359,7 +360,7 @@ export function LearnerImportsPage() {
       setStatusFilter("");
       await loadImports({ status: "" });
     } catch (err) {
-      setError(err.message || "Не удалось применить импорт.");
+      setError(formatApiError(err, "Не удалось применить импорт."));
     } finally {
       setApplyingImportId("");
     }
@@ -407,7 +408,7 @@ export function LearnerImportsPage() {
       await loadImports();
       await openImport(created.id);
     } catch (err) {
-      setError(err.message || "Не удалось загрузить импорт.");
+      setError(formatApiError(err, "Не удалось загрузить импорт."));
     } finally {
       setUploading(false);
     }
@@ -473,7 +474,7 @@ export function LearnerImportsPage() {
       setOrganizations(Array.isArray(organizationsData) ? organizationsData : []);
       setLearningGroups(Array.isArray(groupsData) ? groupsData : []);
     } catch (err) {
-      setError(err.message || "Не удалось загрузить курсы, организации и группы.");
+      setError(formatApiError(err, "Не удалось загрузить курсы, организации и группы."));
     } finally {
       setReferenceLoading(false);
     }

@@ -1,4 +1,4 @@
-﻿export const ADMIN_ROUTE_ITEMS = [
+export const ADMIN_ROUTE_ITEMS = [
   {
     key: "dashboard",
     label: "Обзор",
