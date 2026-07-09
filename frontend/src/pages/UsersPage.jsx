@@ -294,6 +294,7 @@ export function UsersPage({
   onCreateUser,
   onUpdateUser,
   onResetUserPassword,
+  onInviteUser,
   onActivateUser,
   onDeactivateUser,
   onAssignUserRole,
@@ -894,6 +895,7 @@ export function UsersPage({
                                           onClose={handleCloseInlineUser}
                                           onUpdateUser={onUpdateUser}
                                           onResetUserPassword={onResetUserPassword}
+                                          onInviteUser={onInviteUser}
                                           onActivateUser={onActivateUser}
                                           onDeactivateUser={onDeactivateUser}
                                           onAssignUserRole={onAssignUserRole}

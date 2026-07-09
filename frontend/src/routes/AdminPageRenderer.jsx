@@ -14,6 +14,7 @@ const AuditPage = lazyNamed(() => import("../pages/AuditPage"), "AuditPage");
 const DashboardPage = lazyNamed(() => import("../pages/DashboardPage"), "DashboardPage");
 const AdminCoursesPage = lazyNamed(() => import("../pages/AdminCoursesPage"), "AdminCoursesPage");
 const LessonStudioPage = lazyNamed(() => import("../pages/LessonStudioPage"), "LessonStudioPage");
+const LearnerImportsPage = lazyNamed(() => import("../pages/LearnerImportsPage"), "LearnerImportsPage");
 const AdminEnrollmentsPage = lazyNamed(() => import("../pages/AdminEnrollmentsPage"), "AdminEnrollmentsPage");
 const DocumentsPage = lazyNamed(() => import("../pages/DocumentsPage"), "DocumentsPage");
 const GroupsPage = lazyNamed(() => import("../pages/GroupsPage"), "GroupsPage");
@@ -69,6 +70,7 @@ export function AdminPageRenderer({
   handleCreateUser,
   handleUpdateUser,
   handleResetUserPassword,
+  handleInviteUser,
   handleActivateUser,
   handleDeactivateUser,
   handleAssignUserRole,
@@ -122,6 +124,8 @@ export function AdminPageRenderer({
     content = <AdminCoursesPage onRefreshCourses={refreshAdminCourses} />;
   } else if (page === "enrollments") {
     content = <AdminEnrollmentsPage onRefreshEnrollments={refreshAdminEnrollments} />;
+  } else if (page === "learnerImports") {
+    content = <LearnerImportsPage />;
   } else if (page === "users") {
     content = (
       <UsersPage
@@ -138,6 +142,7 @@ export function AdminPageRenderer({
         onCreateUser={handleCreateUser}
         onUpdateUser={handleUpdateUser}
         onResetUserPassword={handleResetUserPassword}
+        onInviteUser={handleInviteUser}
         onActivateUser={handleActivateUser}
         onDeactivateUser={handleDeactivateUser}
         onAssignUserRole={handleAssignUserRole}

@@ -165,6 +165,62 @@ def request_form(
         return error.code, payload
 
 
+def request_multipart(
+    method: str,
+    path: str,
+    fields: dict[str, str] | None = None,
+    files: dict[str, tuple[str, str, bytes]] | None = None,
+    token: str | None = None,
+) -> tuple[int, dict | list | None]:
+    boundary = f"----obrportal-smoke-{uuid4().hex}"
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+    }
+
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    body = bytearray()
+
+    for name, value in (fields or {}).items():
+        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+        body.extend(f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode("utf-8"))
+        body.extend(str(value).encode("utf-8"))
+        body.extend(b"\r\n")
+
+    for name, file_data in (files or {}).items():
+        filename, content_type, content = file_data
+        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+        body.extend(
+            (
+                f'Content-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'
+                f"Content-Type: {content_type}\r\n\r\n"
+            ).encode("utf-8")
+        )
+        body.extend(content)
+        body.extend(b"\r\n")
+
+    body.extend(f"--{boundary}--\r\n".encode("utf-8"))
+
+    request = Request(
+        url=f"{BASE_URL}{path}",
+        data=bytes(body),
+        headers=headers,
+        method=method,
+    )
+
+    try:
+        with urlopen(request, timeout=REQUEST_TIMEOUT) as response:
+            raw = response.read().decode("utf-8")
+            payload = json.loads(raw) if raw else None
+            return response.status, payload
+    except HTTPError as error:
+        raw = error.read().decode("utf-8")
+        payload = json.loads(raw) if raw else None
+        return error.code, payload
+
+
 def request_binary(
     method: str,
     path: str,
@@ -256,6 +312,183 @@ def main() -> int:
     assert isinstance(me, dict)
     assert me["email"] == ADMIN_EMAIL
     checks.append("admin /auth/me ok")
+
+    learner_import_csv = (
+        "full name;email;phone;program\n"
+        "Ivanov Ivan Ivanovich;smoke-import-learner@mail.ru;89171234567;Smoke import course\n"
+        ";bad-email;;Smoke import course\n"
+    ).encode("utf-8-sig")
+
+    status, anonymous_learner_import = request_multipart(
+        "POST",
+        "/api/v1/admin/learner-imports",
+        files={
+            "file": ("smoke-learners.csv", "text/csv", learner_import_csv),
+        },
+    )
+    assert_status(status, 401, "admin learner import requires auth")
+    assert isinstance(anonymous_learner_import, dict)
+    checks.append("admin learner import requires auth")
+
+    status, learner_import = request_multipart(
+        "POST",
+        "/api/v1/admin/learner-imports",
+        fields={
+            "notes": "Smoke learner import",
+        },
+        files={
+            "file": ("smoke-learners.csv", "text/csv", learner_import_csv),
+        },
+        token=admin_token,
+    )
+    assert_status(status, 201, "admin learner import upload")
+    assert isinstance(learner_import, dict)
+    assert learner_import["id"]
+    assert learner_import["import_type"] == "learner_roster"
+    assert learner_import["source_filename"] == "smoke-learners.csv"
+    assert learner_import["source_content_type"] == "text/csv"
+    assert learner_import["status"] == "parsed"
+    assert learner_import["total_rows"] == 2
+    assert learner_import["valid_rows"] == 1
+    assert learner_import["invalid_rows"] == 1
+    assert learner_import["created_users_count"] == 0
+    assert learner_import["created_profiles_count"] == 0
+    assert learner_import["created_enrollments_count"] == 0
+    assert learner_import["uploaded_by_user_id"] == me["id"]
+    assert learner_import["notes"] == "Smoke learner import"
+    assert isinstance(learner_import["rows"], list)
+    assert len(learner_import["rows"]) == 2
+
+    learner_import_rows = sorted(learner_import["rows"], key=lambda item: item["row_number"])
+    assert learner_import_rows[0]["status"] == "valid"
+    assert learner_import_rows[0]["normalized_data_json"]["email"] == "smoke-import-learner@mail.ru"
+    assert learner_import_rows[0]["normalized_data_json"]["phone"] == "+79171234567"
+    assert learner_import_rows[0]["validation_errors_json"] == []
+    assert learner_import_rows[1]["status"] == "invalid"
+    assert "\u0424\u0418\u041e \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e." in learner_import_rows[1]["validation_errors_json"]
+    assert "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email." in learner_import_rows[1]["validation_errors_json"]
+    checks.append("admin learner import upload ok")
+
+    status, learner_imports_list = request_json(
+        "GET",
+        "/api/v1/admin/learner-imports?status=parsed&q=smoke-learners.csv&limit=20",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learner imports list")
+    assert isinstance(learner_imports_list, list)
+
+    matching_imports = [
+        item
+        for item in learner_imports_list
+        if item.get("id") == learner_import["id"]
+    ]
+    if len(matching_imports) != 1:
+        raise AssertionError("admin learner imports list does not include uploaded import")
+
+    learner_import_item = matching_imports[0]
+    assert learner_import_item["id"] == learner_import["id"]
+    assert learner_import_item["import_type"] == "learner_roster"
+    assert learner_import_item["source_filename"] == "smoke-learners.csv"
+    assert learner_import_item["source_content_type"] == "text/csv"
+    assert learner_import_item["status"] == "parsed"
+    assert learner_import_item["total_rows"] == 2
+    assert learner_import_item["valid_rows"] == 1
+    assert learner_import_item["invalid_rows"] == 1
+    assert "rows" not in learner_import_item
+    checks.append("admin learner imports list ok")
+
+    status, learner_import_detail = request_json(
+        "GET",
+        f"/api/v1/admin/learner-imports/{learner_import['id']}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learner import detail")
+    assert isinstance(learner_import_detail, dict)
+    assert learner_import_detail["id"] == learner_import["id"]
+    assert learner_import_detail["import_type"] == "learner_roster"
+    assert learner_import_detail["source_filename"] == "smoke-learners.csv"
+    assert learner_import_detail["status"] == "parsed"
+    assert learner_import_detail["total_rows"] == 2
+    assert learner_import_detail["valid_rows"] == 1
+    assert learner_import_detail["invalid_rows"] == 1
+    assert isinstance(learner_import_detail["rows"], list)
+    assert len(learner_import_detail["rows"]) == 2
+
+    learner_import_detail_rows = sorted(
+        learner_import_detail["rows"],
+        key=lambda item: item["row_number"],
+    )
+    assert learner_import_detail_rows[0]["status"] == "valid"
+    assert learner_import_detail_rows[0]["normalized_data_json"]["email"] == "smoke-import-learner@mail.ru"
+    assert learner_import_detail_rows[1]["status"] == "invalid"
+    assert "\u0424\u0418\u041e \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e." in learner_import_detail_rows[1]["validation_errors_json"]
+    assert "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email." in learner_import_detail_rows[1]["validation_errors_json"]
+    checks.append("admin learner import detail ok")
+
+    status, missing_learner_import_detail = request_json(
+        "GET",
+        "/api/v1/admin/learner-imports/00000000-0000-0000-0000-000000000000",
+        token=admin_token,
+    )
+    assert_status(status, 404, "admin missing learner import detail")
+    assert isinstance(missing_learner_import_detail, dict)
+    checks.append("admin missing learner import detail returns 404")
+
+    status, applied_learner_import = request_json(
+        "POST",
+        f"/api/v1/admin/learner-imports/{learner_import['id']}/apply",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learner import apply")
+    assert isinstance(applied_learner_import, dict)
+    assert applied_learner_import["id"] == learner_import["id"]
+    assert applied_learner_import["status"] == "applied"
+    assert applied_learner_import["created_users_count"] + applied_learner_import["updated_users_count"] == 1
+    assert applied_learner_import["created_profiles_count"] + applied_learner_import["updated_profiles_count"] == 1
+    assert applied_learner_import["created_enrollments_count"] == 0
+
+    applied_learner_import_rows = sorted(
+        applied_learner_import["rows"],
+        key=lambda item: item["row_number"],
+    )
+    assert applied_learner_import_rows[0]["status"] == "applied"
+    assert applied_learner_import_rows[0]["user_id"]
+    assert applied_learner_import_rows[0]["learner_profile_id"]
+    assert applied_learner_import_rows[0]["enrollment_id"] is None
+    assert applied_learner_import_rows[1]["status"] == "invalid"
+    checks.append("admin learner import apply ok")
+
+    status, imported_user_search = request_json(
+        "GET",
+        "/api/v1/admin/users?q=smoke-import-learner@mail.ru",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin imported learner user search")
+    assert isinstance(imported_user_search, list)
+
+    imported_user_matches = [
+        item
+        for item in imported_user_search
+        if item.get("email") == "smoke-import-learner@mail.ru"
+    ]
+    if len(imported_user_matches) != 1:
+        raise AssertionError("admin imported learner user was not found after import apply")
+
+    imported_user_roles = imported_user_matches[0].get("roles") or []
+    imported_user_role_codes = {role.get("code") for role in imported_user_roles}
+    if "learner" not in imported_user_role_codes:
+        raise AssertionError(f"imported learner user does not have learner role: {imported_user_roles!r}")
+
+    checks.append("admin learner import assigns learner role ok")
+
+    status, repeated_learner_import_apply = request_json(
+        "POST",
+        f"/api/v1/admin/learner-imports/{learner_import['id']}/apply",
+        token=admin_token,
+    )
+    assert_status(status, 400, "admin learner import repeat apply")
+    assert isinstance(repeated_learner_import_apply, dict)
+    checks.append("admin learner import repeat apply returns 400")
 
     status, admin_dashboard_summary = request_json(
         "GET",
@@ -1130,6 +1363,7 @@ def main() -> int:
         ("/admin/groups", "groups"),
         ("/admin/courses", "courses"),
         ("/admin/enrollments", "enrollments"),
+        ("/admin/learner-imports", "learner-imports"),
         ("/admin/documents", "documents"),
         ("/admin/roles", "roles"),
         ("/admin/permissions", "permissions"),
@@ -1162,6 +1396,7 @@ def main() -> int:
         ("/admin/enrollments?status=assigned", "enrollments status"),
         ("/admin/enrollments?course_id=00000000-0000-0000-0000-000000000000", "enrollments course"),
         ("/admin/enrollments?organization_id=00000000-0000-0000-0000-000000000000", "enrollments organization"),
+        ("/admin/learner-imports?status=parsed&q=smoke", "learner imports parsed search"),
         ("/admin/documents?status=available", "documents status"),
         ("/admin/documents?status=draft", "documents draft"),
         ("/admin/documents?status=revoked", "documents revoked"),
@@ -1682,9 +1917,14 @@ def main() -> int:
     assert_status(status, 200, "admin users")
     assert isinstance(users, list)
     assert len(users) >= 2
-    first_user = users[0]
-    assert isinstance(first_user, dict)
-    assert first_user.get("id")
+    admin_user = next(
+        (item for item in users if isinstance(item, dict) and item.get("email") == ADMIN_EMAIL),
+        None,
+    )
+    if admin_user is None:
+        raise AssertionError("admin user not found in admin users list")
+    if not admin_user.get("id"):
+        raise AssertionError("admin user id missing in admin users list")
     checks.append("admin users ok")
 
     status, frontend_admin_users_html, frontend_admin_users_headers = request_frontend_text("/admin/users")
@@ -1702,7 +1942,7 @@ def main() -> int:
 
     learner_user_id = str(learner_user["id"])
 
-    user_id = str(first_user["id"])
+    user_id = str(admin_user["id"])
     status, user_detail = request_json(
         "GET",
         f"/api/v1/admin/users/{user_id}",

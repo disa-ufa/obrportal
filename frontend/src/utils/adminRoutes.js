@@ -36,6 +36,12 @@ export const ADMIN_ROUTE_ITEMS = [
     description: "Назначения программ слушателям и группам.",
   },
   {
+    key: "learnerImports",
+    label: "Импорт слушателей",
+    path: "/admin/learner-imports",
+    description: "Загрузка CSV/XLSX, проверка строк и подготовка слушателей к созданию профилей.",
+  },
+  {
     key: "documents",
     label: "Документы",
     path: "/admin/documents",
@@ -70,7 +76,7 @@ export const ADMIN_ROUTE_GROUPS = [
   {
     key: "operations",
     label: "Операции",
-    items: ["users", "organizations", "groups", "enrollments", "documents"],
+    items: ["users", "organizations", "groups", "enrollments", "learnerImports", "documents"],
   },
   {
     key: "content",

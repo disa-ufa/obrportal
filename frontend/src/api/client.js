@@ -74,6 +74,13 @@ export async function registerUser(payload) {
   });
 }
 
+export async function setPasswordWithToken(token, password) {
+  return request("/api/v1/auth/set-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
 export async function getCurrentUser() {
   return request("/api/v1/auth/me");
 }
@@ -274,6 +281,42 @@ export async function getAdminWorklistSummary(filters = {}) {
   return request(`/api/v1/admin/worklist-summary${query ? `?${query}` : ""}`);
 }
 
+
+export async function getAdminLearnerImports(filters = {}) {
+  const query = buildQueryString(filters);
+
+  return request(`/api/v1/admin/learner-imports${query}`);
+}
+
+export async function getAdminLearnerImportDetail(batchId) {
+  return request(`/api/v1/admin/learner-imports/${batchId}`);
+}
+
+
+export async function applyAdminLearnerImport(batchId) {
+  return request(`/api/v1/admin/learner-imports/${batchId}/apply`, {
+    method: "POST",
+  });
+}
+
+export async function uploadAdminLearnerImport(file, fields = {}) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value === undefined || value === null || `${value}`.trim() === "") {
+      return;
+    }
+
+    formData.append(key, value);
+  });
+
+  return request("/api/v1/admin/learner-imports", {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export async function getHealth() {
   return request("/health");
 }
@@ -326,6 +369,12 @@ export async function resetAdminUserPassword(userId, password) {
   return request(`/api/v1/admin/users/${userId}/password`, {
     method: "POST",
     body: JSON.stringify({ password }),
+  });
+}
+
+export async function inviteAdminUser(userId) {
+  return request(`/api/v1/admin/users/${userId}/invite`, {
+    method: "POST",
   });
 }
 

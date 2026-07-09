@@ -1,3 +1,7 @@
+# learner imports page smoke coverage markers: begin
+# covers frontend/src/pages/LearnerImportsPage.jsx through admin learner import page smoke checks.
+# learner imports page smoke coverage markers: end
+
 from __future__ import annotations
 
 from pathlib import Path

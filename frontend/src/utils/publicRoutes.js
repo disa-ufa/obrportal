@@ -12,6 +12,7 @@ export const PUBLIC_ROUTE_MAP = {
   offer: "/offer",
   login: "/login",
   register: "/register",
+  "set-password": "/set-password",
   account: "/account",
 };
 
@@ -29,6 +30,7 @@ export function getPublicPageFromPathname(pathname) {
   if (pathname === "/offer") return "offer";
   if (pathname === "/login") return "login";
   if (pathname === "/register") return "register";
+  if (pathname === "/set-password") return "set-password";
   if (pathname === "/account") return "account";
   return "not-found";
 }
@@ -152,6 +154,14 @@ export function buildPublicMeta(pathname) {
     };
   }
 
+  if (pathname === "/set-password") {
+    return {
+      title: "Установка пароля - ObrPortal",
+      description:
+        "Страница установки пароля по одноразовой ссылке приглашения пользователя ObrPortal.",
+    };
+  }
+
   if (pathname === "/account") {
     return {
       title: "Личный кабинет — ObrPortal",
@@ -181,6 +191,7 @@ export const PUBLIC_ROUTE_META_DIAGNOSTIC_CASES = [
   { pathname: "/offer", expectedPage: "offer", expectedTitle: "Условия использования портала — ObrPortal" },
   { pathname: "/login", expectedPage: "login", expectedTitle: "Вход — ObrPortal" },
   { pathname: "/register", expectedPage: "register", expectedTitle: "Регистрация — ObrPortal" },
+  { pathname: "/set-password", expectedPage: "set-password", expectedTitle: "Установка пароля - ObrPortal" },
   { pathname: "/account", expectedPage: "account", expectedTitle: "Личный кабинет — ObrPortal" },
   { pathname: "/__missing_routes_meta_public__", expectedPage: "not-found", expectedTitle: "Страница не найдена — ObrPortal" },
 ];

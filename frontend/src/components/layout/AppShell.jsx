@@ -5,7 +5,7 @@
 // import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, BookOpen, Building2, ChevronDown, ChevronLeft, CircleHelp, FileCheck2, FileText, Globe2, Home, Layers3, Settings, ShieldCheck, UserRound, UsersRound } from "lucide-react";
+import { Bell, BookOpen, Building2, ChevronDown, ChevronLeft, CircleHelp, FileCheck2, FileText, Globe2, Home, Layers3, Settings, ShieldCheck, UploadCloud, UserRound, UsersRound } from "lucide-react";
 import { ADMIN_ROUTE_ITEMS, getAdminRouteItem } from "../../utils/adminRoutes";
 import { StatusBadge } from "../ui/StatusBadge";
 
@@ -24,6 +24,7 @@ const ADMIN_SHELL_REQUIRED_KEYS = [
   "groups",
   "courses",
   "enrollments",
+  "learnerImports",
   "documents",
   "roles",
   "permissions",
@@ -36,6 +37,7 @@ const ADMIN_SHELL_COUNT_KEYS = [
   "groups",
   "courses",
   "enrollments",
+  "learnerImports",
   "documents",
   "roles",
   "permissions",
@@ -49,6 +51,7 @@ const ADMIN_ICON_BY_KEY = {
   organizations: Building2,
   groups: UserRound,
   enrollments: FileText,
+  learnerImports: UploadCloud,
   documents: FileCheck2,
   roles: ShieldCheck,
   permissions: Settings,
@@ -62,6 +65,7 @@ const ADMIN_NAV_ORDER = [
   "organizations",
   "groups",
   "enrollments",
+  "learnerImports",
   "documents",
   "roles",
   "permissions",
@@ -529,4 +533,3 @@ Smoke guard for simplified admin shell toolbar:
 Импорт
 Добавить
 */
-

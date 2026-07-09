@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 from fastapi.responses import FileResponse
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.rbac import get_user_permission_codes, require_permission
@@ -28,6 +28,7 @@ from app.models.course_module import CourseModule
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.import_batch import ImportBatch, ImportRow
 from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
@@ -56,6 +57,9 @@ from app.services.lesson_readiness import (
     get_admin_lessons_readiness_map,
     normalize_admin_lesson_readiness_payload,
 )
+from app.services.learner_import_batches import apply_learner_import_batch, create_import_batch_from_parse_result
+from app.services.learner_import_parser import parse_learner_import_file
+from app.services.user_password_tokens import build_password_setup_url, create_user_password_token
 from app.schemas.admin import (
     AdminAuditEventItem,
     AdminCourseCreate,
@@ -69,6 +73,10 @@ from app.schemas.admin import (
     AdminLessonBlockDetail,
     AdminLessonBlockItem,
     AdminLessonBlockReorder,
+    AdminLearnerImportBatchDetail,
+    AdminLearnerImportBatchItem,
+    AdminLearnerImportInvitationItem,
+    AdminLearnerImportRowItem,
     AdminLessonBlockUpdate,
     AdminCourseModuleCreate,
     AdminCourseModuleDetail,
@@ -103,6 +111,7 @@ from app.schemas.admin import (
     AdminRoleUpdate,
     AdminUserCreate,
     AdminUserDetail,
+    AdminUserInviteResponse,
     AdminUserItem,
     AdminUserPasswordUpdate,
     AdminUserRoleAssign,
@@ -133,6 +142,8 @@ ROLE_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,63}$")
 
 LESSON_PRESENTATION_ALLOWED_EXTENSIONS = {".pdf", ".pptx"}
 LESSON_PRESENTATION_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+LEARNER_IMPORT_ALLOWED_EXTENSIONS = {".csv", ".xlsx"}
+LEARNER_IMPORT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 LESSON_AUDIO_ALLOWED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".oga", ".webm"}
 LESSON_AUDIO_MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 LESSON_AUDIO_MIME_BY_EXTENSION = {
@@ -155,6 +166,19 @@ LESSON_IMAGE_MIME_BY_EXTENSION = {
     ".webp": "image/webp",
     ".gif": "image/gif",
 }
+
+
+def normalize_learner_import_extension(filename: str | None) -> str:
+    extension = Path(filename or "").suffix.lower()
+
+    if extension not in LEARNER_IMPORT_ALLOWED_EXTENSIONS:
+        allowed = ", ".join(sorted(LEARNER_IMPORT_ALLOWED_EXTENSIONS))
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported import format. Allowed: {allowed}",
+        )
+
+    return extension
 
 
 def normalize_lesson_image_extension(filename: str | None) -> str:
@@ -455,6 +479,82 @@ def build_admin_audit_event_item(
     )
 
 
+def build_admin_learner_import_row_item(row: ImportRow) -> AdminLearnerImportRowItem:
+    return AdminLearnerImportRowItem(
+        id=str(row.id),
+        row_number=row.row_number,
+        status=row.status,
+        raw_data_json=row.raw_data_json or {},
+        normalized_data_json=row.normalized_data_json or {},
+        validation_errors_json=row.validation_errors_json or [],
+        error_summary=row.error_summary,
+        user_id=str(row.user_id) if row.user_id else None,
+        learner_profile_id=str(row.learner_profile_id) if row.learner_profile_id else None,
+        enrollment_id=str(row.enrollment_id) if row.enrollment_id else None,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+
+def build_admin_learner_import_batch_item(batch: ImportBatch) -> AdminLearnerImportBatchItem:
+    return AdminLearnerImportBatchItem(
+        id=str(batch.id),
+        import_type=batch.import_type,
+        source_filename=batch.source_filename,
+        source_content_type=batch.source_content_type,
+        status=batch.status,
+        organization_id=str(batch.organization_id) if batch.organization_id else None,
+        learning_group_id=str(batch.learning_group_id) if batch.learning_group_id else None,
+        course_id=str(batch.course_id) if batch.course_id else None,
+        total_rows=batch.total_rows,
+        valid_rows=batch.valid_rows,
+        invalid_rows=batch.invalid_rows,
+        created_users_count=batch.created_users_count,
+        updated_users_count=batch.updated_users_count,
+        created_profiles_count=batch.created_profiles_count,
+        updated_profiles_count=batch.updated_profiles_count,
+        created_enrollments_count=batch.created_enrollments_count,
+        uploaded_by_user_id=str(batch.uploaded_by_user_id) if batch.uploaded_by_user_id else None,
+        notes=batch.notes,
+        created_at=batch.created_at,
+        updated_at=batch.updated_at,
+    )
+
+
+def build_admin_learner_import_batch_detail(
+    batch: ImportBatch,
+    *,
+    invitations: list[AdminLearnerImportInvitationItem] | None = None,
+) -> AdminLearnerImportBatchDetail:
+    rows = sorted(batch.rows, key=lambda item: item.row_number)
+
+    return AdminLearnerImportBatchDetail(
+        id=str(batch.id),
+        import_type=batch.import_type,
+        source_filename=batch.source_filename,
+        source_content_type=batch.source_content_type,
+        status=batch.status,
+        organization_id=str(batch.organization_id) if batch.organization_id else None,
+        learning_group_id=str(batch.learning_group_id) if batch.learning_group_id else None,
+        course_id=str(batch.course_id) if batch.course_id else None,
+        total_rows=batch.total_rows,
+        valid_rows=batch.valid_rows,
+        invalid_rows=batch.invalid_rows,
+        created_users_count=batch.created_users_count,
+        updated_users_count=batch.updated_users_count,
+        created_profiles_count=batch.created_profiles_count,
+        updated_profiles_count=batch.updated_profiles_count,
+        created_enrollments_count=batch.created_enrollments_count,
+        uploaded_by_user_id=str(batch.uploaded_by_user_id) if batch.uploaded_by_user_id else None,
+        notes=batch.notes,
+        created_at=batch.created_at,
+        updated_at=batch.updated_at,
+        rows=[build_admin_learner_import_row_item(row) for row in rows],
+        invitations=invitations or [],
+    )
+
+
 def model_to_dict(model, **kwargs) -> dict:
     if hasattr(model, "model_dump"):
         return model.model_dump(**kwargs)
@@ -704,6 +804,59 @@ async def get_admin_organization_or_404(
         )
 
     return organization
+
+
+async def ensure_admin_learning_group_exists(
+    learning_group_id: str,
+    session: AsyncSession,
+) -> None:
+    result = await session.execute(
+        select(LearningGroup.id).where(LearningGroup.id == learning_group_id)
+    )
+
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Learning group not found",
+        )
+
+
+async def ensure_admin_course_exists(
+    course_id: str,
+    session: AsyncSession,
+) -> None:
+    result = await session.execute(
+        select(Course.id).where(Course.id == course_id)
+    )
+
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+
+async def get_admin_learner_import_batch_or_404(
+    batch_id: str,
+    session: AsyncSession,
+) -> ImportBatch:
+    result = await session.execute(
+        select(ImportBatch)
+        .options(selectinload(ImportBatch.rows))
+        .where(
+            ImportBatch.id == batch_id,
+            ImportBatch.import_type == "learner_roster",
+        )
+    )
+    batch = result.scalar_one_or_none()
+
+    if batch is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Learner import batch not found",
+        )
+
+    return batch
 
 
 async def get_user_role_or_404(
@@ -1313,6 +1466,53 @@ async def reset_user_password(
     roles = await get_user_roles(str(user.id), session)
 
     return build_admin_user_detail(user, roles)
+
+
+@router.post("/users/{user_id}/invite", response_model=AdminUserInviteResponse)
+async def invite_user(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminUserInviteResponse:
+    user = await get_admin_user_or_404(user_id, session)
+
+    created_token = await create_user_password_token(
+        session,
+        user=user,
+        created_by_user=current_user,
+        delivery_target_email=user.email,
+        mark_sent=False,
+    )
+
+    setup_url = build_password_setup_url(settings.public_base_url, created_token.raw_token)
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.user_invited",
+        entity_type="user",
+        entity_id=str(user.id),
+        payload={
+            "email": user.email,
+            "delivery_target_email": user.email,
+            "password_link_id": created_token.record.id,
+            "expires_at": created_token.record.expires_at.isoformat(),
+            "delivery_mode": "dev_response",
+            "setup_url_returned": True,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return AdminUserInviteResponse(
+        status="created",
+        user_id=str(user.id),
+        email=user.email,
+        setup_url=setup_url,
+        expires_at=created_token.record.expires_at,
+    )
 
 
 @router.post("/users/{user_id}/activate", response_model=AdminUserDetail)
@@ -6397,3 +6597,220 @@ async def delete_admin_enrollment(
     await session.commit()
 
     return AdminDeleteResult(status="deleted", id=deleted_enrollment_id)
+
+
+@router.get("/learner-imports", response_model=list[AdminLearnerImportBatchItem])
+async def list_learner_imports(
+    q: str | None = Query(default=None, max_length=255),
+    status_filter: str | None = Query(default=None, alias="status", max_length=32),
+    organization_id: str | None = Query(default=None),
+    learning_group_id: str | None = Query(default=None),
+    course_id: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminLearnerImportBatchItem]:
+    query = select(ImportBatch).where(ImportBatch.import_type == "learner_roster")
+
+    if q:
+        normalized_q = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                ImportBatch.source_filename.ilike(normalized_q),
+                ImportBatch.notes.ilike(normalized_q),
+            )
+        )
+
+    if status_filter:
+        query = query.where(ImportBatch.status == status_filter)
+
+    if organization_id:
+        query = query.where(ImportBatch.organization_id == organization_id)
+
+    if learning_group_id:
+        query = query.where(ImportBatch.learning_group_id == learning_group_id)
+
+    if course_id:
+        query = query.where(ImportBatch.course_id == course_id)
+
+    result = await session.execute(
+        query.order_by(ImportBatch.created_at.desc(), ImportBatch.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    batches = result.scalars().all()
+
+    return [build_admin_learner_import_batch_item(batch) for batch in batches]
+
+
+@router.post("/learner-imports/{batch_id}/apply", response_model=AdminLearnerImportBatchDetail)
+async def apply_learner_import(
+    batch_id: str,
+    request: Request,
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminLearnerImportBatchDetail:
+    batch = await get_admin_learner_import_batch_or_404(batch_id, session)
+
+    try:
+        apply_result = await apply_learner_import_batch(session, batch=batch)
+
+        invitations: list[AdminLearnerImportInvitationItem] = []
+        for candidate in apply_result.invitation_candidates:
+            invited_user = await session.get(User, candidate.user_id)
+            if invited_user is None:
+                continue
+
+            created_token = await create_user_password_token(
+                session,
+                user=invited_user,
+                created_by_user=current_user,
+                delivery_target_email=invited_user.email,
+                mark_sent=False,
+            )
+            setup_url = build_password_setup_url(settings.public_base_url, created_token.raw_token)
+
+            invitations.append(
+                AdminLearnerImportInvitationItem(
+                    row_id=candidate.row_id,
+                    row_number=candidate.row_number,
+                    user_id=str(invited_user.id),
+                    email=invited_user.email,
+                    setup_url=setup_url,
+                    expires_at=created_token.record.expires_at,
+                )
+            )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.learner_import_applied",
+            entity_type="import_batch",
+            entity_id=str(batch.id),
+            payload={
+                "batch_id": str(batch.id),
+                "source_filename": batch.source_filename,
+                "created_users_count": apply_result.created_users_count,
+                "updated_users_count": apply_result.updated_users_count,
+                "created_profiles_count": apply_result.created_profiles_count,
+                "updated_profiles_count": apply_result.updated_profiles_count,
+                "created_enrollments_count": apply_result.created_enrollments_count,
+                "assigned_learner_roles_count": apply_result.assigned_learner_roles_count,
+                "error_rows_count": apply_result.error_rows_count,
+                "created_invitations_count": len(invitations),
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except ValueError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Learner import could not be applied because of duplicate user, phone, profile or enrollment data",
+        )
+
+    refreshed_batch = await get_admin_learner_import_batch_or_404(batch_id, session)
+
+    return build_admin_learner_import_batch_detail(refreshed_batch, invitations=invitations)
+
+
+@router.get("/learner-imports/{batch_id}", response_model=AdminLearnerImportBatchDetail)
+async def get_learner_import_detail(
+    batch_id: str,
+    _: User = Depends(require_permission("admin.users.read")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminLearnerImportBatchDetail:
+    batch = await get_admin_learner_import_batch_or_404(batch_id, session)
+
+    return build_admin_learner_import_batch_detail(batch)
+
+@router.post(
+    "/learner-imports",
+    response_model=AdminLearnerImportBatchDetail,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_learner_import(
+    request: Request,
+    file: UploadFile = File(...),
+    organization_id: str | None = Form(default=None),
+    learning_group_id: str | None = Form(default=None),
+    course_id: str | None = Form(default=None),
+    notes: str | None = Form(default=None),
+    current_user: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminLearnerImportBatchDetail:
+    normalize_learner_import_extension(file.filename)
+
+    content = await file.read()
+    size_bytes = len(content)
+
+    if size_bytes <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Import file is empty",
+        )
+
+    if size_bytes > LEARNER_IMPORT_MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Import file is too large",
+        )
+
+    if organization_id is not None:
+        await get_admin_organization_or_404(organization_id, session)
+
+    if learning_group_id is not None:
+        await ensure_admin_learning_group_exists(learning_group_id, session)
+
+    if course_id is not None:
+        await ensure_admin_course_exists(course_id, session)
+
+    try:
+        parse_result = parse_learner_import_file(file.filename or "learners.csv", content)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    batch = await create_import_batch_from_parse_result(
+        session,
+        parse_result=parse_result,
+        source_content_type=file.content_type,
+        organization_id=organization_id,
+        learning_group_id=learning_group_id,
+        course_id=course_id,
+        uploaded_by_user_id=str(current_user.id),
+        notes=notes,
+    )
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.learner_import_parsed",
+        entity_type="import_batch",
+        entity_id=str(batch.id),
+        payload={
+            "source_filename": batch.source_filename,
+            "source_content_type": batch.source_content_type,
+            "organization_id": str(batch.organization_id) if batch.organization_id else None,
+            "learning_group_id": str(batch.learning_group_id) if batch.learning_group_id else None,
+            "course_id": str(batch.course_id) if batch.course_id else None,
+            "total_rows": batch.total_rows,
+            "valid_rows": batch.valid_rows,
+            "invalid_rows": batch.invalid_rows,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return build_admin_learner_import_batch_detail(batch)

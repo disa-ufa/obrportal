@@ -1,11 +1,23 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+from datetime import timedelta
 from uuid import uuid4
 from urllib.error import HTTPError
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
+
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from app.core.config import settings
+from app.core.security import get_password_hash
+from app.models.base import utcnow
+from app.models.user import User
+from app.services.user_password_tokens import create_user_password_token
+from app.services.learner_import_batches import create_import_batch_from_parse_result
+from app.services.learner_import_parser import ParsedLearnerImportResult, ParsedLearnerImportRow
 
 
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
@@ -187,6 +199,72 @@ def request_json(
         return error.code, payload
 
 
+
+
+
+
+def extract_token_from_setup_url(setup_url: str) -> str:
+    parsed_url = urlparse(setup_url)
+    values = parse_qs(parsed_url.query).get("token")
+
+    assert values
+    assert values[0]
+
+    return values[0]
+
+
+def create_password_setup_user(
+    *,
+    email: str,
+    initial_password: str = "InitialSetupUser123!",
+    is_active: bool = False,
+    is_email_verified: bool = False,
+    expired: bool = False,
+) -> dict:
+    async def _create() -> dict:
+        engine = create_async_engine(str(settings.database_url))
+        session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+        async with session_factory() as session:
+            user = User(
+                email=email,
+                phone=None,
+                full_name="Password setup test user",
+                hashed_password=get_password_hash(initial_password),
+                is_active=is_active,
+                is_email_verified=is_email_verified,
+                mfa_enabled=False,
+            )
+            session.add(user)
+            await session.flush()
+
+            created_token = await create_user_password_token(
+                session,
+                user=user,
+                expires_delta=timedelta(days=7),
+                delivery_target_email=email,
+            )
+
+            if expired:
+                created_token.record.expires_at = utcnow() - timedelta(seconds=1)
+
+            user_id = str(user.id)
+            raw_token = created_token.raw_token
+
+            await session.commit()
+
+        await engine.dispose()
+
+        return {
+            "user_id": user_id,
+            "email": email,
+            "raw_token": raw_token,
+            "initial_password": initial_password,
+        }
+
+    return asyncio.run(_create())
+
+
 def login(email: str, password: str) -> str:
     status, payload = request_json(
         "POST",
@@ -199,6 +277,107 @@ def login(email: str, password: str) -> str:
     assert payload["access_token"]
 
     return str(payload["access_token"])
+
+
+
+
+def test_public_set_password_with_initial_token_activates_user_and_allows_login() -> None:
+    email = f"set_password_{uuid4().hex[:12]}@example.com"
+    new_password = "NewSetupPassword123!"
+
+    fixture = create_password_setup_user(email=email)
+
+    status, before_payload = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": email, "password": fixture["initial_password"]},
+    )
+    assert status == 403
+    assert isinstance(before_payload, dict)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": fixture["raw_token"],
+            "password": new_password,
+        },
+    )
+
+    assert status == 200
+    assert isinstance(payload, dict)
+    assert payload["status"] == "ok"
+    assert payload["user_id"] == fixture["user_id"]
+    assert payload["email"] == email
+
+    status, repeat_payload = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": fixture["raw_token"],
+            "password": "AnotherSetupPassword123!",
+        },
+    )
+    assert status == 400
+    assert isinstance(repeat_payload, dict)
+
+    status, old_password_payload = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": email, "password": fixture["initial_password"]},
+    )
+    assert status == 401
+    assert isinstance(old_password_payload, dict)
+
+    token = login(email, new_password)
+
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    assert me_payload["email"] == email
+    assert me_payload["is_active"] is True
+    assert me_payload["is_email_verified"] is True
+
+
+def test_public_set_password_rejects_invalid_token() -> None:
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": "invalid-token-value-with-enough-length",
+            "password": "InvalidTokenPassword123!",
+        },
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+    assert payload["detail"] == "Invalid or expired password setup token"
+
+
+def test_public_set_password_rejects_expired_token() -> None:
+    email = f"expired_set_password_{uuid4().hex[:12]}@example.com"
+    fixture = create_password_setup_user(email=email, expired=True)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": fixture["raw_token"],
+            "password": "ExpiredSetupPassword123!",
+        },
+    )
+
+    assert status == 400
+    assert isinstance(payload, dict)
+    assert payload["detail"] == "Invalid or expired password setup token"
+
+    status, login_payload = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": email, "password": "ExpiredSetupPassword123!"},
+    )
+    assert status == 401
+    assert isinstance(login_payload, dict)
 
 
 def test_admin_login_and_me() -> None:
@@ -1484,6 +1663,327 @@ def test_admin_can_create_user_and_created_user_can_login() -> None:
         and event["entity_id"] == created["id"]
         for event in audit_events
     )
+
+
+
+
+
+
+def create_learner_import_batch_fixture(
+    *,
+    email: str,
+    full_name: str = "Import Invite User",
+) -> str:
+    async def _create() -> str:
+        engine = create_async_engine(str(settings.database_url))
+        session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+        last_name, first_name, *rest = full_name.split()
+        middle_name = " ".join(rest)
+
+        parse_result = ParsedLearnerImportResult(
+            filename="learners.csv",
+            rows=[
+                ParsedLearnerImportRow(
+                    row_number=2,
+                    status="valid",
+                    raw_data={
+                        "???": full_name,
+                        "email": email,
+                    },
+                    normalized_data={
+                        "full_name": full_name,
+                        "last_name": last_name,
+                        "first_name": first_name,
+                        "middle_name": middle_name,
+                        "email": email,
+                        "phone": "",
+                        "program_title": "",
+                        "course_code": "",
+                        "training_dates_text": "",
+                        "stage": "",
+                        "grade": "",
+                        "snils": "",
+                        "has_snils_text": "",
+                        "document_number": "",
+                    },
+                    validation_errors=[],
+                )
+            ],
+        )
+
+        async with session_factory() as session:
+            batch = await create_import_batch_from_parse_result(
+                session,
+                parse_result=parse_result,
+                notes="Autotest learner import invitation batch",
+            )
+            batch_id = str(batch.id)
+            await session.commit()
+
+        await engine.dispose()
+
+        return batch_id
+
+    return asyncio.run(_create())
+
+
+
+
+def test_admin_apply_learner_import_returns_password_setup_invitation_for_new_user() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    email = f"import_invite_{uuid4().hex[:12]}@example.com"
+    new_password = "ImportInvitePassword123!"
+
+    batch_id = create_learner_import_batch_fixture(email=email)
+
+    status, applied = request_json(
+        "POST",
+        f"/api/v1/admin/learner-imports/{batch_id}/apply",
+        token=admin_token,
+    )
+
+    assert status == 200
+    assert isinstance(applied, dict)
+    assert applied["status"] == "applied"
+    assert applied["created_users_count"] == 1
+    assert applied["updated_users_count"] == 0
+
+    invitations = applied.get("invitations")
+    assert isinstance(invitations, list)
+    assert len(invitations) == 1
+
+    invitation = invitations[0]
+    assert invitation["email"] == email
+    assert invitation["row_number"] == 2
+    assert invitation["user_id"]
+    assert invitation["setup_url"].startswith(settings.public_base_url.rstrip("/") + "/set-password?token=")
+    assert invitation["expires_at"]
+
+    status, users = request_json(
+        "GET",
+        f"/api/v1/admin/users?{urlencode({'q': email, 'limit': 20})}",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(users, list)
+    imported_user = next(user for user in users if user["email"] == email)
+    assert imported_user["id"] == invitation["user_id"]
+    assert imported_user["is_active"] is False
+    assert imported_user["is_email_verified"] is False
+
+    raw_token = extract_token_from_setup_url(str(invitation["setup_url"]))
+
+    status, setup = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": raw_token,
+            "password": new_password,
+        },
+    )
+    assert status == 200
+    assert isinstance(setup, dict)
+    assert setup["user_id"] == invitation["user_id"]
+    assert setup["email"] == email
+
+    learner_token = login(email, new_password)
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=learner_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    assert me_payload["email"] == email
+    assert me_payload["is_active"] is True
+    assert me_payload["is_email_verified"] is True
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/admin/learner-imports/{batch_id}",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(detail, dict)
+    assert detail["invitations"] == []
+
+
+def test_admin_can_invite_user_and_user_can_set_password() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    suffix = uuid4().hex[:10]
+    email = f"invite-{suffix}@obrportal.local"
+    temporary_password = "TemporaryInvite123!"
+    new_password = "InvitedUserPassword123!"
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": email,
+            "password": temporary_password,
+            "full_name": "Invited user",
+            "is_active": False,
+            "is_email_verified": False,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(created, dict)
+    user_id = str(created["id"])
+
+    status, inactive_login = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": email, "password": temporary_password},
+    )
+    assert status == 403
+    assert isinstance(inactive_login, dict)
+
+    status, invite = request_json(
+        "POST",
+        f"/api/v1/admin/users/{user_id}/invite",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(invite, dict)
+    assert invite["status"] == "created"
+    assert invite["user_id"] == user_id
+    assert invite["email"] == email
+    assert invite["setup_url"].startswith(settings.public_base_url.rstrip("/") + "/set-password?token=")
+    assert invite["expires_at"]
+
+    raw_token = extract_token_from_setup_url(str(invite["setup_url"]))
+
+    status, setup = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": raw_token,
+            "password": new_password,
+        },
+    )
+    assert status == 200
+    assert isinstance(setup, dict)
+    assert setup["user_id"] == user_id
+    assert setup["email"] == email
+
+    status, old_password_payload = request_json(
+        "POST",
+        "/api/v1/auth/login",
+        {"email": email, "password": temporary_password},
+    )
+    assert status == 401
+    assert isinstance(old_password_payload, dict)
+
+    invited_token = login(email, new_password)
+    status, me_payload = request_json("GET", "/api/v1/auth/me", token=invited_token)
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    assert me_payload["email"] == email
+    assert me_payload["is_active"] is True
+    assert me_payload["is_email_verified"] is True
+
+    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=admin_token)
+    assert status == 200
+    assert isinstance(audit_events, list)
+    matching_events = [
+        event for event in audit_events
+        if event["action"] == "admin.user_invited" and event["entity_id"] == user_id
+    ]
+    assert matching_events
+
+    audit_payload = matching_events[0].get("payload", {})
+    assert "token" not in json.dumps(audit_payload).lower()
+    assert raw_token not in json.dumps(audit_payload)
+
+
+def test_admin_invite_reissue_invalidates_previous_token() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    suffix = uuid4().hex[:10]
+    email = f"invite-reissue-{suffix}@obrportal.local"
+
+    status, created = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": email,
+            "password": "TemporaryInviteReissue123!",
+            "full_name": "Invite reissue user",
+            "is_active": False,
+            "is_email_verified": False,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(created, dict)
+    user_id = str(created["id"])
+
+    status, first_invite = request_json(
+        "POST",
+        f"/api/v1/admin/users/{user_id}/invite",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(first_invite, dict)
+    first_token = extract_token_from_setup_url(str(first_invite["setup_url"]))
+
+    status, second_invite = request_json(
+        "POST",
+        f"/api/v1/admin/users/{user_id}/invite",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(second_invite, dict)
+    second_token = extract_token_from_setup_url(str(second_invite["setup_url"]))
+
+    assert first_token != second_token
+
+    status, first_setup = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": first_token,
+            "password": "OldInviteTokenPassword123!",
+        },
+    )
+    assert status == 400
+    assert isinstance(first_setup, dict)
+
+    status, second_setup = request_json(
+        "POST",
+        "/api/v1/auth/set-password",
+        {
+            "token": second_token,
+            "password": "SecondInvitePassword123!",
+        },
+    )
+    assert status == 200
+    assert isinstance(second_setup, dict)
+
+
+def test_admin_invite_missing_user_returns_404() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, payload = request_json(
+        "POST",
+        "/api/v1/admin/users/00000000-0000-0000-0000-000000000000/invite",
+        token=admin_token,
+    )
+
+    assert status == 404
+    assert isinstance(payload, dict)
+
+
+def test_learner_cannot_invite_user() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+    learner_user_id = get_user_id_by_email(admin_token, LEARNER_EMAIL)
+
+    status, payload = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/invite",
+        token=learner_token,
+    )
+
+    assert status == 403
+    assert isinstance(payload, dict)
 
 
 def test_admin_can_reset_user_password() -> None:

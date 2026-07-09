@@ -14,7 +14,12 @@ from app.models.audit_event import AuditEvent
 from app.models.organization import Organization  # noqa: F401
 from app.models.role import Role, UserRole
 from app.models.user import User
-from app.schemas.auth import CurrentUserResponse, CurrentUserRole, LoginRequest, RegisterRequest, TokenResponse
+from app.services.user_password_tokens import (
+    USER_PASSWORD_TOKEN_PURPOSE_INITIAL_PASSWORD_SETUP,
+    get_valid_user_password_token,
+    mark_user_password_token_used,
+)
+from app.schemas.auth import CurrentUserResponse, CurrentUserRole, LoginRequest, RegisterRequest, SetPasswordRequest, SetPasswordResponse, TokenResponse
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -197,6 +202,79 @@ async def register(
     await session.commit()
 
     return TokenResponse(access_token=access_token)
+
+
+@router.post("/set-password", response_model=SetPasswordResponse)
+async def set_password(
+    payload: SetPasswordRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+) -> SetPasswordResponse:
+    token_record = await get_valid_user_password_token(
+        session,
+        raw_token=payload.token,
+        purpose=USER_PASSWORD_TOKEN_PURPOSE_INITIAL_PASSWORD_SETUP,
+    )
+
+    if token_record is None:
+        await write_audit_event(
+            session,
+            action="password_setup_failed",
+            request=request,
+            entity_type="user_password_token",
+            payload={"reason": "invalid_or_expired_token"},
+        )
+        await session.commit()
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password setup token",
+        )
+
+    result = await session.execute(select(User).where(User.id == token_record.user_id))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        await write_audit_event(
+            session,
+            action="password_setup_failed",
+            request=request,
+            entity_type="user_password_token",
+            entity_id=token_record.id,
+            payload={"reason": "user_not_found"},
+        )
+        await session.commit()
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password setup token",
+        )
+
+    user.hashed_password = get_password_hash(payload.password)
+    user.is_active = True
+    user.is_email_verified = True
+
+    await mark_user_password_token_used(session, record=token_record)
+
+    await write_audit_event(
+        session,
+        action="password_setup_success",
+        request=request,
+        actor_user_id=user.id,
+        entity_type="user",
+        entity_id=user.id,
+        payload={
+            "email": user.email,
+            "purpose": token_record.purpose,
+        },
+    )
+    await session.commit()
+
+    return SetPasswordResponse(
+        status="ok",
+        user_id=user.id,
+        email=user.email,
+    )
 
 
 @router.post("/login", response_model=TokenResponse)

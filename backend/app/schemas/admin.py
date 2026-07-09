@@ -104,6 +104,14 @@ class AdminUserPasswordUpdate(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class AdminUserInviteResponse(BaseModel):
+    status: str
+    user_id: str
+    email: str
+    setup_url: str
+    expires_at: datetime
+
+
 class AdminUserRoleAssign(BaseModel):
     role_id: str
     organization_id: str | None = None
@@ -560,3 +568,75 @@ class AdminEnrollmentUpdate(BaseModel):
     status: str | None = Field(default=None, max_length=32)
     started_at: datetime | None = None
     completed_at: datetime | None = None
+
+
+class AdminLearnerImportRowItem(BaseModel):
+    id: str
+    row_number: int
+    status: str
+    raw_data_json: dict[str, Any] = Field(default_factory=dict)
+    normalized_data_json: dict[str, Any] = Field(default_factory=dict)
+    validation_errors_json: list[str] = Field(default_factory=list)
+    error_summary: str | None = None
+    user_id: str | None = None
+    learner_profile_id: str | None = None
+    enrollment_id: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminLearnerImportInvitationItem(BaseModel):
+    row_id: str
+    row_number: int
+    user_id: str
+    email: str
+    setup_url: str
+    expires_at: datetime
+
+
+class AdminLearnerImportBatchItem(BaseModel):
+    id: str
+    import_type: str
+    source_filename: str | None = None
+    source_content_type: str | None = None
+    status: str
+    organization_id: str | None = None
+    learning_group_id: str | None = None
+    course_id: str | None = None
+    total_rows: int
+    valid_rows: int
+    invalid_rows: int
+    created_users_count: int
+    updated_users_count: int
+    created_profiles_count: int
+    updated_profiles_count: int
+    created_enrollments_count: int
+    uploaded_by_user_id: str | None = None
+    notes: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminLearnerImportBatchDetail(BaseModel):
+    id: str
+    import_type: str
+    source_filename: str | None = None
+    source_content_type: str | None = None
+    status: str
+    organization_id: str | None = None
+    learning_group_id: str | None = None
+    course_id: str | None = None
+    total_rows: int
+    valid_rows: int
+    invalid_rows: int
+    created_users_count: int
+    updated_users_count: int
+    created_profiles_count: int
+    updated_profiles_count: int
+    created_enrollments_count: int
+    uploaded_by_user_id: str | None = None
+    notes: str | None = None
+    created_at: datetime
+    updated_at: datetime
+    rows: list[AdminLearnerImportRowItem] = Field(default_factory=list)
+    invitations: list[AdminLearnerImportInvitationItem] = Field(default_factory=list)

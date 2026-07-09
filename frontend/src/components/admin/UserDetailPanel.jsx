@@ -225,6 +225,120 @@ function UserPasswordResetForm({ userDetail, onReset }) {
   );
 }
 
+
+async function copyTextToClipboard(value) {
+  if (navigator?.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const element = document.createElement("textarea");
+  element.value = value;
+  element.setAttribute("readonly", "readonly");
+  element.style.position = "fixed";
+  element.style.left = "-9999px";
+  document.body.appendChild(element);
+  element.select();
+  document.execCommand("copy");
+  document.body.removeChild(element);
+}
+
+function UserPasswordInviteCard({ userDetail, onInvite }) {
+  const [loading, setLoading] = useState(false);
+  const [invitation, setInvitation] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleCreateInvite() {
+    if (!onInvite || !userDetail?.id) {
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setCopied(false);
+
+    try {
+      const payload = await onInvite(userDetail.id);
+      setInvitation(payload);
+    } catch (err) {
+      setInvitation(null);
+      setError(formatUserApiError(err, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u0441\u044b\u043b\u043a\u0443 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f."));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCopyInvite() {
+    if (!invitation?.setup_url) {
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(invitation.setup_url);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+      setError("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u0441\u044b\u043b\u043a\u0443. \u0421\u043a\u043e\u043f\u0438\u0440\u0443\u0439\u0442\u0435 \u0435\u0451 \u0432\u0440\u0443\u0447\u043d\u0443\u044e.");
+    }
+  }
+
+  return (
+    <div
+      id="user-password-invite-card"
+      data-testid="user-password-invite-card"
+      className="rounded-2xl bg-white p-3.5 ring-1 ring-slate-200"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-black text-slate-900">
+            {"\u0421\u0441\u044b\u043b\u043a\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f"}
+          </div>
+          <p className="mt-1 text-xs text-slate-600">
+            {"\u0421\u043e\u0437\u0434\u0430\u0451\u0442 \u043e\u0434\u043d\u043e\u0440\u0430\u0437\u043e\u0432\u0443\u044e \u0441\u0441\u044b\u043b\u043a\u0443 \u0434\u043b\u044f \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0438 \u043f\u0430\u0440\u043e\u043b\u044f. \u0413\u043e\u0442\u043e\u0432\u044b\u0439 \u043f\u0430\u0440\u043e\u043b\u044c \u043d\u0435 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c."}
+          </p>
+        </div>
+
+        <ActionButton
+          type="button"
+          tone="blue"
+          onClick={handleCreateInvite}
+          disabled={loading || !onInvite}
+        >
+          {loading ? "\u0421\u043e\u0437\u0434\u0430\u0451\u043c..." : "\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u0441\u044b\u043b\u043a\u0443"}
+        </ActionButton>
+      </div>
+
+      {error && (
+        <div className="mt-3">
+          <Alert title={"\u041e\u0448\u0438\u0431\u043a\u0430"} tone="red">
+            {error}
+          </Alert>
+        </div>
+      )}
+
+      {invitation?.setup_url && (
+        <div className="mt-4 rounded-2xl bg-emerald-50 p-3 ring-1 ring-emerald-200">
+          <div className="text-xs font-black uppercase tracking-wide text-emerald-700">
+            {"\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430"}
+          </div>
+          <div className="mt-2 break-all rounded-xl bg-white p-3 text-xs font-semibold text-slate-700 ring-1 ring-emerald-100">
+            {invitation.setup_url}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <ActionButton type="button" tone="light" onClick={handleCopyInvite}>
+              {copied ? "\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e" : "\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c"}
+            </ActionButton>
+            <span className="text-xs text-emerald-700">
+              {"\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u043f\u0440\u0438 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u0438. \u041f\u0440\u0438 \u043d\u043e\u0432\u043e\u043c \u0437\u0430\u043f\u0440\u043e\u0441\u0435 \u0441\u0442\u0430\u0440\u0430\u044f \u0441\u0441\u044b\u043b\u043a\u0430 \u0441\u0442\u0430\u043d\u0435\u0442 \u043d\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0439."}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UserRoleAssignmentForm({
   roles,
   organizations,
@@ -371,6 +485,7 @@ export function UserDetailPanel({
   onClose,
   onUpdateUser,
   onResetUserPassword,
+  onInviteUser,
   onActivateUser,
   onDeactivateUser,
   onAssignUserRole,
@@ -810,6 +925,11 @@ export function UserDetailPanel({
                     </Link>
                   </div>
                 </div>
+
+                <UserPasswordInviteCard
+                  userDetail={userDetail}
+                  onInvite={onInviteUser}
+                />
 
                 <UserPasswordResetForm
                   userDetail={userDetail}

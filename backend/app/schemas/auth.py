@@ -15,6 +15,17 @@ class RegisterRequest(BaseModel):
     phone: str | None = Field(default=None, min_length=5, max_length=32)
 
 
+class SetPasswordRequest(BaseModel):
+    token: str = Field(min_length=16, max_length=512)
+    password: str = Field(min_length=8, max_length=128)
+
+
+class SetPasswordResponse(BaseModel):
+    status: str = "ok"
+    user_id: str
+    email: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
