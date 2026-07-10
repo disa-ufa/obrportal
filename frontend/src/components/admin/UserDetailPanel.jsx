@@ -226,6 +226,38 @@ function UserPasswordResetForm({ userDetail, onReset }) {
 }
 
 
+function getInviteEmailDeliveryLabel(status) {
+  if (status === "sent") {
+    return "Email \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D";
+  }
+
+  if (status === "failed") {
+    return "\u041E\u0448\u0438\u0431\u043A\u0430 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438";
+  }
+
+  if (status === "skipped") {
+    return "Email \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u043B\u0441\u044F";
+  }
+
+  return "\u0421\u0442\u0430\u0442\u0443\u0441 email \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u0435\u043D";
+}
+
+function getInviteEmailDeliveryTone(status) {
+  if (status === "sent") {
+    return "green";
+  }
+
+  if (status === "failed") {
+    return "red";
+  }
+
+  if (status === "skipped") {
+    return "amber";
+  }
+
+  return "blue";
+}
+
 async function copyTextToClipboard(value) {
   if (navigator?.clipboard?.writeText) {
     await navigator.clipboard.writeText(value);
@@ -319,9 +351,24 @@ function UserPasswordInviteCard({ userDetail, onInvite }) {
 
       {invitation?.setup_url && (
         <div className="mt-4 rounded-2xl bg-emerald-50 p-3 ring-1 ring-emerald-200">
-          <div className="text-xs font-black uppercase tracking-wide text-emerald-700">
-            {"\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430"}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs font-black uppercase tracking-wide text-emerald-700">
+              {"\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430"}
+            </div>
+            {invitation.email_delivery_status ? (
+              <StatusBadge tone={getInviteEmailDeliveryTone(invitation.email_delivery_status)}>
+                {getInviteEmailDeliveryLabel(invitation.email_delivery_status)}
+              </StatusBadge>
+            ) : null}
           </div>
+
+          {invitation.email_delivery_detail || invitation.email_delivery_error ? (
+            <p className="mt-2 text-xs leading-5 text-emerald-800">
+              {invitation.email_delivery_detail}
+              {invitation.email_delivery_error ? ` \u041E\u0448\u0438\u0431\u043A\u0430: ${invitation.email_delivery_error}` : ""}
+            </p>
+          ) : null}
+
           <div className="mt-2 break-all rounded-xl bg-white p-3 text-xs font-semibold text-slate-700 ring-1 ring-emerald-100">
             {invitation.setup_url}
           </div>
