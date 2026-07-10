@@ -110,6 +110,12 @@ class AdminUserInviteResponse(BaseModel):
     email: str
     setup_url: str
     expires_at: datetime
+    email_delivery_status: str
+    email_delivery_detail: str | None = None
+    email_delivery_error: str | None = None
+    email_delivery_status: str
+    email_delivery_detail: str | None = None
+    email_delivery_error: str | None = None
 
 
 class AdminUserRoleAssign(BaseModel):
@@ -592,6 +598,12 @@ class AdminLearnerImportInvitationItem(BaseModel):
     email: str
     setup_url: str
     expires_at: datetime
+    email_delivery_status: str
+    email_delivery_detail: str | None = None
+    email_delivery_error: str | None = None
+    email_delivery_status: str
+    email_delivery_detail: str | None = None
+    email_delivery_error: str | None = None
 
 
 class AdminLearnerImportBatchItem(BaseModel):

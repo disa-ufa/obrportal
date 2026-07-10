@@ -5,7 +5,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
 
     app_name: str = "ObrPortal"
     app_version: str = Field(
@@ -36,6 +41,67 @@ class Settings(BaseSettings):
             "APP_PUBLIC_URL",
             "OBRPORTAL_PUBLIC_BASE_URL",
         ),
+    )
+
+    email_delivery_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "EMAIL_DELIVERY_ENABLED",
+            "SMTP_ENABLED",
+            "OBRPORTAL_EMAIL_DELIVERY_ENABLED",
+        ),
+    )
+    email_from_address: str = Field(
+        default="no-reply@obrportal.local",
+        validation_alias=AliasChoices(
+            "EMAIL_FROM_ADDRESS",
+            "SMTP_FROM_ADDRESS",
+            "OBRPORTAL_EMAIL_FROM_ADDRESS",
+        ),
+    )
+    email_from_name: str = Field(
+        default="ObrPortal",
+        validation_alias=AliasChoices(
+            "EMAIL_FROM_NAME",
+            "SMTP_FROM_NAME",
+            "OBRPORTAL_EMAIL_FROM_NAME",
+        ),
+    )
+    smtp_host: str = Field(
+        default="",
+        validation_alias=AliasChoices("SMTP_HOST", "EMAIL_SMTP_HOST", "OBRPORTAL_SMTP_HOST"),
+    )
+    smtp_port: int = Field(
+        default=587,
+        validation_alias=AliasChoices("SMTP_PORT", "EMAIL_SMTP_PORT", "OBRPORTAL_SMTP_PORT"),
+    )
+    smtp_auth_username: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "SMTP_USERNAME",
+            "EMAIL_SMTP_USERNAME",
+            "OBRPORTAL_SMTP_USERNAME",
+        ),
+    )
+    smtp_auth_value: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "SMTP_PASSWORD",
+            "EMAIL_SMTP_PASSWORD",
+            "OBRPORTAL_SMTP_PASSWORD",
+        ),
+    )
+    smtp_use_tls: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("SMTP_USE_TLS", "EMAIL_SMTP_USE_TLS"),
+    )
+    smtp_use_ssl: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("SMTP_USE_SSL", "EMAIL_SMTP_USE_SSL"),
+    )
+    smtp_timeout_seconds: float = Field(
+        default=10.0,
+        validation_alias=AliasChoices("SMTP_TIMEOUT_SECONDS", "EMAIL_SMTP_TIMEOUT_SECONDS"),
     )
 
     document_org_name: str = Field(

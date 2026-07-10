@@ -59,6 +59,7 @@ from app.services.lesson_readiness import (
 )
 from app.services.learner_import_batches import apply_learner_import_batch, create_import_batch_from_parse_result
 from app.services.learner_import_parser import parse_learner_import_file
+from app.services.email_delivery import send_password_setup_email
 from app.services.user_password_tokens import build_password_setup_url, create_user_password_token
 from app.schemas.admin import (
     AdminAuditEventItem,
@@ -1486,6 +1487,15 @@ async def invite_user(
     )
 
     setup_url = build_password_setup_url(settings.public_base_url, created_token.raw_token)
+    email_delivery_result = send_password_setup_email(
+        recipient=user.email,
+        user_email=user.email,
+        setup_url=setup_url,
+        expires_at=created_token.record.expires_at,
+    )
+
+    if email_delivery_result.sent:
+        created_token.record.sent_at = datetime.now(timezone.utc)
 
     await create_admin_audit_event(
         session,
@@ -1498,7 +1508,9 @@ async def invite_user(
             "delivery_target_email": user.email,
             "password_link_id": created_token.record.id,
             "expires_at": created_token.record.expires_at.isoformat(),
-            "delivery_mode": "dev_response",
+            "delivery_mode": "email",
+            "email_delivery_status": email_delivery_result.status,
+            "email_delivery_error": email_delivery_result.error,
             "setup_url_returned": True,
         },
         request=request,
@@ -1512,6 +1524,9 @@ async def invite_user(
         email=user.email,
         setup_url=setup_url,
         expires_at=created_token.record.expires_at,
+        email_delivery_status=email_delivery_result.status,
+        email_delivery_detail=email_delivery_result.detail,
+        email_delivery_error=email_delivery_result.error,
     )
 
 
@@ -6670,6 +6685,15 @@ async def apply_learner_import(
                 mark_sent=False,
             )
             setup_url = build_password_setup_url(settings.public_base_url, created_token.raw_token)
+            email_delivery_result = send_password_setup_email(
+                recipient=invited_user.email,
+                user_email=invited_user.email,
+                setup_url=setup_url,
+                expires_at=created_token.record.expires_at,
+            )
+
+            if email_delivery_result.sent:
+                created_token.record.sent_at = datetime.now(timezone.utc)
 
             invitations.append(
                 AdminLearnerImportInvitationItem(
@@ -6679,6 +6703,9 @@ async def apply_learner_import(
                     email=invited_user.email,
                     setup_url=setup_url,
                     expires_at=created_token.record.expires_at,
+                    email_delivery_status=email_delivery_result.status,
+                    email_delivery_detail=email_delivery_result.detail,
+                    email_delivery_error=email_delivery_result.error,
                 )
             )
 
@@ -6699,6 +6726,24 @@ async def apply_learner_import(
                 "assigned_learner_roles_count": apply_result.assigned_learner_roles_count,
                 "error_rows_count": apply_result.error_rows_count,
                 "created_invitations_count": len(invitations),
+                "sent_invitations_count": sum(
+                    1 for item in invitations if item.email_delivery_status == "sent"
+                ),
+                "failed_invitations_count": sum(
+                    1 for item in invitations if item.email_delivery_status == "failed"
+                ),
+                "skipped_invitations_count": sum(
+                    1 for item in invitations if item.email_delivery_status == "skipped"
+                ),
+                "sent_invitations_count": sum(
+                    1 for item in invitations if item.email_delivery_status == "sent"
+                ),
+                "failed_invitations_count": sum(
+                    1 for item in invitations if item.email_delivery_status == "failed"
+                ),
+                "skipped_invitations_count": sum(
+                    1 for item in invitations if item.email_delivery_status == "skipped"
+                ),
             },
             request=request,
         )

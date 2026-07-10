@@ -240,7 +240,39 @@ function safeJsonPreview(value) {
   return entries.map(([key, item]) => `${key}: ${item}`).join("; ");
 }
 
-export function LearnerImportsPage() {
+export function getImportInvitationEmailDeliveryLabel(status) {
+  if (status === "sent") {
+    return "\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E";
+  }
+
+  if (status === "failed") {
+    return "\u041E\u0448\u0438\u0431\u043A\u0430";
+  }
+
+  if (status === "skipped") {
+    return "\u041D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u043B\u043E\u0441\u044C";
+  }
+
+  return "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u043E";
+}
+
+function getImportInvitationEmailDeliveryClassName(status) {
+  if (status === "sent") {
+    return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  }
+
+  if (status === "failed") {
+    return "bg-red-50 text-red-700 ring-red-200";
+  }
+
+  if (status === "skipped") {
+    return "bg-amber-50 text-amber-700 ring-amber-200";
+  }
+
+  return "bg-slate-50 text-slate-600 ring-slate-200";
+}
+
+function LearnerImportsPage() {
   const [imports, setImports] = useState([]);
   const [selectedImport, setSelectedImport] = useState(null);
   const [selectedImportId, setSelectedImportId] = useState("");
@@ -800,7 +832,7 @@ export function LearnerImportsPage() {
                           {"\u0421\u0441\u044b\u043b\u043a\u0438 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0438 \u043f\u0430\u0440\u043e\u043b\u044f"}
                         </div>
                         <p className="mt-1 text-xs leading-5 text-emerald-800">
-                          {"\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u0441\u0440\u0430\u0437\u0443 \u043f\u043e\u0441\u043b\u0435 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u044f \u0438\u043c\u043f\u043e\u0440\u0442\u0430. \u041e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u044d\u0442\u0438 \u0441\u0441\u044b\u043b\u043a\u0438 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f\u043c, \u0447\u0442\u043e\u0431\u044b \u043e\u043d\u0438 \u0441\u0430\u043c\u0438 \u0437\u0430\u0434\u0430\u043b\u0438 \u043f\u0430\u0440\u043e\u043b\u044c."}
+                          {"\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u0441\u0440\u0430\u0437\u0443 \u043f\u043e\u0441\u043b\u0435 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u044f \u0438\u043c\u043f\u043e\u0440\u0442\u0430. \u0415\u0441\u043b\u0438 SMTP \u0432\u044b\u043a\u043b\u044e\u0447\u0435\u043d, \u0441\u0441\u044b\u043b\u043a\u0438 \u043d\u0443\u0436\u043d\u043e \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u0432\u0440\u0443\u0447\u043d\u0443\u044e."}
                         </p>
                       </div>
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-200">
@@ -814,6 +846,7 @@ export function LearnerImportsPage() {
                           <tr>
                             <th className="px-4 py-3">{"\u0421\u0442\u0440\u043e\u043a\u0430"}</th>
                             <th className="px-4 py-3">Email</th>
+                            <th className="px-4 py-3">Email-\u0441\u0442\u0430\u0442\u0443\u0441</th>
                             <th className="px-4 py-3">{"\u0421\u0441\u044b\u043b\u043a\u0430"}</th>
                             <th className="px-4 py-3 text-right">{"\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435"}</th>
                           </tr>
@@ -830,6 +863,18 @@ export function LearnerImportsPage() {
                                 </td>
                                 <td className="px-4 py-3 text-slate-700">
                                   {invitation.email || "-"}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span
+                                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-black ring-1 ${getImportInvitationEmailDeliveryClassName(invitation.email_delivery_status)}`}
+                                  >
+                                    {getImportInvitationEmailDeliveryLabel(invitation.email_delivery_status)}
+                                  </span>
+                                  {invitation.email_delivery_error ? (
+                                    <div className="mt-1 text-xs text-red-600">
+                                      {invitation.email_delivery_error}
+                                    </div>
+                                  ) : null}
                                 </td>
                                 <td className="max-w-md px-4 py-3">
                                   <div className="break-all rounded-xl bg-slate-50 p-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-100">
