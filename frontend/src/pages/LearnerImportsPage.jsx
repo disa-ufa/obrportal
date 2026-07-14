@@ -272,7 +272,7 @@ function getImportInvitationEmailDeliveryClassName(status) {
   return "bg-slate-50 text-slate-600 ring-slate-200";
 }
 
-function LearnerImportsPage() {
+export function LearnerImportsPage() {
   const [imports, setImports] = useState([]);
   const [selectedImport, setSelectedImport] = useState(null);
   const [selectedImportId, setSelectedImportId] = useState("");
