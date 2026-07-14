@@ -1,8 +1,9 @@
 # Development process v2 - accelerated stage workflow
 
-Status: active proposal
+Status: active
 Project: ObrPortal
 Applies from: Stage 75
+Last revised: 2026-07-14
 
 ## 1. Purpose
 
@@ -86,7 +87,7 @@ The following remain mandatory:
 Default target branch for active development:
 
 ```text
-develop
+main
 ```
 
 Feature branches should use descriptive package names, for example:
@@ -95,7 +96,7 @@ Feature branches should use descriptive package names, for example:
 stage75-public-portal-content-polish
 ```
 
-Pull requests must target `develop` first. Merging to `main` is a separate release action.
+Pull requests must target `main`. Merging to `main` does not deploy automatically. Production deployment remains a separate explicit action.
 
 ## 6. Preferred stage flow
 
@@ -103,7 +104,7 @@ Pull requests must target `develop` first. Merging to `main` is a separate relea
 2. Add or update package documentation.
 3. Implement code changes.
 4. Run local checks.
-5. Open PR into `develop`.
+5. Open PR into `main`.
 6. Merge after checks pass.
 7. Deploy according to the package type.
 8. Record production evidence in the release manifest and package document.
@@ -119,7 +120,7 @@ No runtime deployment required.
 Allowed actions:
 
 ```bash
-git pull --ff-only origin develop
+git pull --ff-only origin main
 docker compose build frontend
 docker compose up -d --no-deps frontend
 ```
@@ -142,15 +143,33 @@ Requires backup confirmation, migration plan, rollback plan and explicit approva
 
 ## 8. Current adoption checkpoint
 
-The new process starts after the successful Stage 74 production deployment.
+The accelerated workflow remains active.
 
-Current known production state after Stage 74:
+Current branch policy:
 
 ```text
-production_branch=develop
-production_head=865aaa8
-frontend_health=healthy
-organization_info_http=200
-backend_runtime_changed=no
-database_migration_run=no
+development_base=main
+production_branch=main
+merge_to_main_does_not_auto_deploy=yes
+production_deployment_requires_explicit_decision=yes
 ```
+
+Confirmed production state after the 2026-07-14 release:
+
+```text
+production_branch=main
+production_head=fa090cd
+production_host=portal.rcdo02.ru
+public_base_url=https://portal.rcdo02.ru
+frontend_health=healthy
+backend_health=ok
+ready_status=ok
+last_migration=6427_user_password_tokens
+invitation_email_delivery=verified
+password_setup_e2e=verified
+backup_status=verified
+docker_cleanup_performed=no
+```
+
+The next product stage is Stage 82.23:
+First real course end-to-end pilot.
