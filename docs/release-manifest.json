@@ -2,15 +2,15 @@
   "schema_version": 1,
   "project": "ObrPortal",
   "process": "development-process-v2",
-  "current_stage": "82.22",
+  "current_stage": "82.23",
   "current_branch_policy": {
-    "development_base": "develop",
-    "production_branch": "develop",
+    "development_base": "main",
+    "production_branch": "main",
     "main_release_requires_separate_decision": true
   },
   "production_checkpoint": {
-    "last_confirmed_stage": "82.21",
-    "last_confirmed_head": "ffedb5d",
+    "last_confirmed_stage": "82.22",
+    "last_confirmed_head": "fa090cd",
     "last_confirmed_host": "portal.rcdo02.ru",
     "last_confirmed_ip": "89.127.203.70",
     "frontend_health": "healthy",
@@ -22,16 +22,19 @@
     "public_routes_http": {
       "/account": 200,
       "/admin/documents": 200,
-      "/verify/DOCV-6DC5C651C5ED4B28957B1ECE": 200
+      "/verify/DOCV-6DC5C651C5ED4B28957B1ECE": 200,
+      "/": 200,
+      "/set-password": 200,
+      "/admin/learner-imports": 200
     },
     "static_index_title": "Образовательный портал ГБОУ РЦДО",
-    "backend_runtime_changed": false,
-    "database_migration_run": false,
-    "frontend_runtime_changed": false,
+    "backend_runtime_changed": true,
+    "database_migration_run": true,
+    "frontend_runtime_changed": true,
     "recovery_status": "production_recovered_and_deployed",
     "postgres_restored_from": "/opt/obrportal-backups/postgres/postgres-before-stage80-4-20260608T105519Z.sql",
     "minio_restore_decision": "not_restored_backup_contains_only_minio_system_metadata",
-    "status": "organization_learning_attention_filters_deployed",
+    "status": "user_invitations_email_delivery_deployed_and_e2e_verified",
     "production_data_changed": true,
     "report_path": "local:tmp_stage81_11_admin_forms_inventory.txt; local:tmp_stage81_11_deep_content_inventory.txt",
     "postgres_backup_path": "/opt/obrportal-backups/postgres/postgres-before-stage81-15-real-batch-001-20260609T080137Z.sql",
@@ -40,7 +43,7 @@
       "by_code": 200
     },
     "cleanup_performed": false,
-    "decision": "continue_with_organization_attention_csv_export",
+    "decision": "run_first_real_course_end_to_end_pilot",
     "first_batch_id": "real-batch-001",
     "raw_contacts_committed": false,
     "password_committed": false,
@@ -60,12 +63,28 @@
       "completed_lessons": 1
     },
     "known_issues": [
-      "pdf_layout_verification_code_overlaps_place_field"
+      "pdf_layout_verification_code_overlaps_place_field",
+      "smtp_domain_authentication_requires_dkim_dmarc_review",
+      "github_pull_requests_have_no_required_ci_checks"
     ],
-    "next_planned_stage": "82.22",
-    "next_planned_focus": "organization_attention_csv_export",
+    "next_planned_stage": "82.23",
+    "next_planned_focus": "first_real_course_end_to_end_pilot",
     "last_confirmed_tag": "v0.1.0-stage82-21-organization-learning-attention-filters",
-    "last_migration": "6422_lesson_blocks_schema"
+    "last_migration": "6427_user_password_tokens",
+    "last_confirmed_full_head": "fa090cdaafef0cecfa78c7bca685e470f5a3088b",
+    "production_branch": "main",
+    "email_delivery_status": "smtp_authenticated_and_invitation_delivered",
+    "smtp_host": "mail.nic.ru",
+    "smtp_port": 465,
+    "smtp_ssl": true,
+    "smtp_tls": false,
+    "smtp_password_committed": false,
+    "password_setup_e2e": "verified",
+    "invitation_public_url": "https://portal.rcdo02.ru/set-password",
+    "backup_path": "/opt/obrportal/backups/email-invitations-before-deploy-20260714-065503",
+    "backup_status": "verified",
+    "release_tag_planned": "v0.2.0-production-invitations",
+    "deployed_on": "2026-07-14"
   },
   "global_safety_boundaries": [
     "no_secrets_in_git",
@@ -5365,7 +5384,7 @@
     {
       "id": "82.22",
       "name": "Organization attention CSV export",
-      "status": "implementation_ready",
+      "status": "production_deployed",
       "branch": "stage82-22-organization-attention-csv-export",
       "base": "develop",
       "deployment_type": "frontend-only",
@@ -5379,7 +5398,7 @@
         "revoked_document_csv",
         "active_learning_csv"
       ],
-      "server_touched": false,
+      "server_touched": true,
       "frontend_runtime_changed": true,
       "backend_runtime_changed": false,
       "database_migration_run": false,
@@ -5429,6 +5448,52 @@
         "no_production_data_change",
         "no_cleanup"
       ],
+      "raw_contacts_committed": false,
+      "password_committed": false,
+      "head": "fa090cd",
+      "production_evidence": {
+        "production_branch": "main",
+        "deployed_head": "fa090cd",
+        "frontend_health": "healthy",
+        "backend_health": "ok",
+        "public_https": 200,
+        "feature_specific_csv_export_smoke": "not_repeated_in_this_release"
+      }
+    },
+    {
+      "id": "82.23",
+      "name": "First real course end-to-end pilot",
+      "status": "planned",
+      "branch": "stage82-23-first-real-course-e2e-pilot",
+      "base": "main",
+      "deployment_type": "production-e2e-validation",
+      "runtime_scope": [
+        "course_creation",
+        "course_publication",
+        "learner_import",
+        "invitation_email_delivery",
+        "password_setup",
+        "learner_login",
+        "lesson_progress",
+        "assignment_submission",
+        "assignment_review",
+        "course_completion",
+        "document_generation",
+        "document_download",
+        "public_document_verification"
+      ],
+      "server_touched": false,
+      "frontend_runtime_changed": false,
+      "backend_runtime_changed": false,
+      "database_migration_run": false,
+      "database_migration_required": false,
+      "runtime_rebuild_required": false,
+      "runtime_restart_required": false,
+      "production_data_changed": false,
+      "cleanup_performed": false,
+      "first_real_course_e2e_pilot_plan": true,
+      "decision": "run_first_real_course_end_to_end_pilot",
+      "next_stage": "82.24",
       "raw_contacts_committed": false,
       "password_committed": false
     }

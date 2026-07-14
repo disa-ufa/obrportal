@@ -23,27 +23,27 @@ def main() -> None:
         fail("project must be ObrPortal")
     if manifest.get("process") != "development-process-v2":
         fail("process must be development-process-v2")
-    if manifest.get("current_stage") != "82.22":
-        fail("current_stage must be 82.22")
+    if manifest.get("current_stage") != "82.23":
+        fail("current_stage must be 82.23")
 
     checkpoint = manifest.get("production_checkpoint") or {}
-    if checkpoint.get("last_confirmed_stage") != "82.21":
-        fail("last_confirmed_stage must be 82.21")
-    if checkpoint.get("last_confirmed_head") != "ffedb5d":
-        fail("last_confirmed_head must be ffedb5d")
+    if checkpoint.get("last_confirmed_stage") != "82.22":
+        fail("last_confirmed_stage must be 82.22")
+    if checkpoint.get("last_confirmed_head") != "fa090cd":
+        fail("last_confirmed_head must be fa090cd")
     if checkpoint.get("last_confirmed_tag") != "v0.1.0-stage82-21-organization-learning-attention-filters":
         fail("last_confirmed_tag mismatch")
-    if checkpoint.get("last_migration") != "6422_lesson_blocks_schema":
+    if checkpoint.get("last_migration") != "6427_user_password_tokens":
         fail("checkpoint last_migration mismatch")
-    if checkpoint.get("status") != "organization_learning_attention_filters_deployed":
+    if checkpoint.get("status") != "user_invitations_email_delivery_deployed_and_e2e_verified":
         fail("checkpoint status mismatch")
-    if checkpoint.get("decision") != "continue_with_organization_attention_csv_export":
+    if checkpoint.get("decision") != "run_first_real_course_end_to_end_pilot":
         fail("checkpoint decision mismatch")
     if checkpoint.get("cleanup_performed") is not False:
         fail("checkpoint cleanup_performed must be false")
 
     stages = {stage.get("id"): stage for stage in manifest.get("stages", [])}
-    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7", "82.8", "82.9", "82.10", "82.11", "82.12", "82.13", "82.14", "82.15", "82.16", "82.17", "82.18", "82.19", "82.20", "82.21", "82.22"]:
+    for stage_id in ["80.4", "80.5", "81.1", "81.2", "81.3", "81.4", "81.5", "81.6", "81.7", "81.8", "81.9", "81.10", "81.11", "81.12", "81.13", "81.14", "81.15", "82.1", "82.2", "82.3", "82.4", "82.5", "82.6", "82.7", "82.8", "82.9", "82.10", "82.11", "82.12", "82.13", "82.14", "82.15", "82.16", "82.17", "82.18", "82.19", "82.20", "82.21", "82.22", "82.23"]:
         if stage_id not in stages:
             fail(f"stage {stage_id} record is missing")
 
@@ -669,7 +669,7 @@ def main() -> None:
 
 
     stage = stages["82.22"]
-    if stage.get("status") != "implementation_ready":
+    if stage.get("status") != "production_deployed":
         fail("stage 82.22 status mismatch")
     if stage.get("branch") != "stage82-22-organization-attention-csv-export":
         fail("stage 82.22 branch mismatch")
@@ -679,9 +679,11 @@ def main() -> None:
         fail("stage 82.22 decision mismatch")
     if stage.get("next_stage") != "82.23":
         fail("stage 82.22 next_stage mismatch")
+    if stage.get("head") != "fa090cd":
+        fail("stage 82.22 head mismatch")
 
     expected_booleans = {
-        "server_touched": False,
+        "server_touched": True,
         "frontend_runtime_changed": True,
         "backend_runtime_changed": False,
         "database_migration_run": False,
@@ -700,6 +702,26 @@ def main() -> None:
         if stage.get(key) is not expected:
             fail(f"stage 82.22 {key} must be {expected}")
 
+
+    stage = stages["82.23"]
+    if stage.get("status") != "planned":
+        fail("stage 82.23 status mismatch")
+    if stage.get("branch") != "stage82-23-first-real-course-e2e-pilot":
+        fail("stage 82.23 branch mismatch")
+    if stage.get("base") != "main":
+        fail("stage 82.23 base mismatch")
+    if stage.get("deployment_type") != "production-e2e-validation":
+        fail("stage 82.23 deployment_type mismatch")
+    if stage.get("decision") != "run_first_real_course_end_to_end_pilot":
+        fail("stage 82.23 decision mismatch")
+    if stage.get("next_stage") != "82.24":
+        fail("stage 82.23 next_stage mismatch")
+    if stage.get("first_real_course_e2e_pilot_plan") is not True:
+        fail("stage 82.23 pilot plan marker must be true")
+    if stage.get("database_migration_required") is not False:
+        fail("stage 82.23 must not require a migration")
+    if stage.get("cleanup_performed") is not False:
+        fail("stage 82.23 cleanup_performed must be false")
     print("release manifest guard passed")
 
 
