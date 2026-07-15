@@ -48,13 +48,6 @@ def normalize_import_text(value: object) -> str:
     return str(value or "").strip()
 
 
-def build_import_row_fallback_email(batch_id: str, row_number: int) -> str:
-    normalized_batch_id = "".join(ch for ch in str(batch_id).lower() if ch.isalnum())[:16]
-    normalized_batch_id = normalized_batch_id or uuid4().hex[:16]
-
-    return f"import-{normalized_batch_id}-row-{row_number}@obrportal.local"
-
-
 async def create_import_batch_from_parse_result(
     db: ImportBatchSession,
     *,
@@ -289,6 +282,14 @@ async def apply_learner_import_batch(
         full_name = normalize_import_text(data.get("full_name"))
         snils = normalize_import_text(data.get("snils"))
 
+        if not email:
+            mark_import_row_error(
+                row,
+                "Email \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u0435\u043d \u0434\u043b\u044f \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u043d\u0430 \u043f\u043e\u0440\u0442\u0430\u043b\u0435.",
+            )
+            counts["error_rows_count"] += 1
+            continue
+
         created_new_user = False
 
         user, user_conflict = await find_user_for_import_row(db, email=email, phone=phone)
@@ -299,7 +300,7 @@ async def apply_learner_import_batch(
 
         if user is None:
             user = User(
-                email=email or build_import_row_fallback_email(str(batch.id), row.row_number),
+                email=email,
                 phone=phone or None,
                 full_name=full_name or None,
                 hashed_password=get_password_hash(f"Import-{uuid4().hex}"),
