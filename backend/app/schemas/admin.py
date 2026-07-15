@@ -113,9 +113,6 @@ class AdminUserInviteResponse(BaseModel):
     email_delivery_status: str
     email_delivery_detail: str | None = None
     email_delivery_error: str | None = None
-    email_delivery_status: str
-    email_delivery_detail: str | None = None
-    email_delivery_error: str | None = None
 
 
 class AdminUserRoleAssign(BaseModel):
@@ -601,9 +598,6 @@ class AdminLearnerImportInvitationItem(BaseModel):
     email_delivery_status: str
     email_delivery_detail: str | None = None
     email_delivery_error: str | None = None
-    email_delivery_status: str
-    email_delivery_detail: str | None = None
-    email_delivery_error: str | None = None
 
 
 class AdminLearnerImportBatchItem(BaseModel):
@@ -629,6 +623,44 @@ class AdminLearnerImportBatchItem(BaseModel):
     updated_at: datetime
 
 
+
+class AdminLearnerImportPreflightRowItem(BaseModel):
+    row_id: str
+    row_number: int
+    email: str
+    classification: str
+    account_state: str
+    user_id: str | None = None
+    learner_profile_id: str | None = None
+    enrollment_id: str | None = None
+    user_action: str
+    profile_action: str
+    enrollment_action: str
+    notification_action: str
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+class AdminLearnerImportPreflightItem(BaseModel):
+    total_rows: int
+    valid_rows: int
+    invalid_rows: int
+    new_users_count: int
+    existing_inactive_users_count: int
+    existing_active_users_count: int
+    existing_enrollments_count: int
+    identity_conflicts_count: int
+    invalid_rows_count: int
+    new_profiles_count: int
+    updated_profiles_count: int
+    new_enrollments_count: int
+    password_setup_invitations_count: int
+    new_course_notifications_count: int
+    rows: list[
+        AdminLearnerImportPreflightRowItem
+    ] = Field(default_factory=list)
+
+
 class AdminLearnerImportBatchDetail(BaseModel):
     id: str
     import_type: str
@@ -652,3 +684,4 @@ class AdminLearnerImportBatchDetail(BaseModel):
     updated_at: datetime
     rows: list[AdminLearnerImportRowItem] = Field(default_factory=list)
     invitations: list[AdminLearnerImportInvitationItem] = Field(default_factory=list)
+    preflight: AdminLearnerImportPreflightItem | None = None

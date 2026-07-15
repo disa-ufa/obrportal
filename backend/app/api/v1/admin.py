@@ -57,7 +57,12 @@ from app.services.lesson_readiness import (
     get_admin_lessons_readiness_map,
     normalize_admin_lesson_readiness_payload,
 )
-from app.services.learner_import_batches import apply_learner_import_batch, create_import_batch_from_parse_result
+from app.services.learner_import_batches import (
+    LearnerImportPreflightResult,
+    apply_learner_import_batch,
+    build_learner_import_preflight,
+    create_import_batch_from_parse_result,
+)
 from app.services.learner_import_parser import parse_learner_import_file
 from app.services.email_delivery import send_password_setup_email
 from app.services.user_password_tokens import build_password_setup_url, create_user_password_token
@@ -77,6 +82,8 @@ from app.schemas.admin import (
     AdminLearnerImportBatchDetail,
     AdminLearnerImportBatchItem,
     AdminLearnerImportInvitationItem,
+    AdminLearnerImportPreflightItem,
+    AdminLearnerImportPreflightRowItem,
     AdminLearnerImportRowItem,
     AdminLessonBlockUpdate,
     AdminCourseModuleCreate,
@@ -523,36 +530,166 @@ def build_admin_learner_import_batch_item(batch: ImportBatch) -> AdminLearnerImp
     )
 
 
+def build_admin_learner_import_preflight_item(
+    batch: ImportBatch,
+    preflight: LearnerImportPreflightResult | None,
+) -> AdminLearnerImportPreflightItem | None:
+    if preflight is None:
+        return None
+
+    return AdminLearnerImportPreflightItem(
+        total_rows=batch.total_rows,
+        valid_rows=batch.valid_rows,
+        invalid_rows=batch.invalid_rows,
+        new_users_count=preflight.new_users_count,
+        existing_inactive_users_count=(
+            preflight.existing_inactive_users_count
+        ),
+        existing_active_users_count=(
+            preflight.existing_active_users_count
+        ),
+        existing_enrollments_count=(
+            preflight.existing_enrollments_count
+        ),
+        identity_conflicts_count=(
+            preflight.identity_conflicts_count
+        ),
+        invalid_rows_count=preflight.invalid_rows_count,
+        new_profiles_count=preflight.new_profiles_count,
+        updated_profiles_count=(
+            preflight.updated_profiles_count
+        ),
+        new_enrollments_count=(
+            preflight.new_enrollments_count
+        ),
+        password_setup_invitations_count=(
+            preflight.password_setup_invitations_count
+        ),
+        new_course_notifications_count=(
+            preflight.new_course_notifications_count
+        ),
+        rows=[
+            AdminLearnerImportPreflightRowItem(
+                row_id=item.row_id,
+                row_number=item.row_number,
+                email=item.email,
+                classification=item.classification,
+                account_state=item.account_state,
+                user_id=item.user_id,
+                learner_profile_id=(
+                    item.learner_profile_id
+                ),
+                enrollment_id=item.enrollment_id,
+                user_action=item.user_action,
+                profile_action=item.profile_action,
+                enrollment_action=(
+                    item.enrollment_action
+                ),
+                notification_action=(
+                    item.notification_action
+                ),
+                error_code=item.error_code,
+                error_message=item.error_message,
+            )
+            for item in preflight.rows
+        ],
+    )
+
+
 def build_admin_learner_import_batch_detail(
     batch: ImportBatch,
     *,
-    invitations: list[AdminLearnerImportInvitationItem] | None = None,
+    invitations: list[
+        AdminLearnerImportInvitationItem
+    ] | None = None,
+    preflight: LearnerImportPreflightResult | None = None,
 ) -> AdminLearnerImportBatchDetail:
-    rows = sorted(batch.rows, key=lambda item: item.row_number)
-
     return AdminLearnerImportBatchDetail(
         id=str(batch.id),
         import_type=batch.import_type,
         source_filename=batch.source_filename,
         source_content_type=batch.source_content_type,
         status=batch.status,
-        organization_id=str(batch.organization_id) if batch.organization_id else None,
-        learning_group_id=str(batch.learning_group_id) if batch.learning_group_id else None,
-        course_id=str(batch.course_id) if batch.course_id else None,
+        organization_id=(
+            str(batch.organization_id)
+            if batch.organization_id
+            else None
+        ),
+        learning_group_id=(
+            str(batch.learning_group_id)
+            if batch.learning_group_id
+            else None
+        ),
+        course_id=(
+            str(batch.course_id)
+            if batch.course_id
+            else None
+        ),
         total_rows=batch.total_rows,
         valid_rows=batch.valid_rows,
         invalid_rows=batch.invalid_rows,
         created_users_count=batch.created_users_count,
         updated_users_count=batch.updated_users_count,
-        created_profiles_count=batch.created_profiles_count,
-        updated_profiles_count=batch.updated_profiles_count,
-        created_enrollments_count=batch.created_enrollments_count,
-        uploaded_by_user_id=str(batch.uploaded_by_user_id) if batch.uploaded_by_user_id else None,
+        created_profiles_count=(
+            batch.created_profiles_count
+        ),
+        updated_profiles_count=(
+            batch.updated_profiles_count
+        ),
+        created_enrollments_count=(
+            batch.created_enrollments_count
+        ),
+        uploaded_by_user_id=(
+            str(batch.uploaded_by_user_id)
+            if batch.uploaded_by_user_id
+            else None
+        ),
         notes=batch.notes,
         created_at=batch.created_at,
         updated_at=batch.updated_at,
-        rows=[build_admin_learner_import_row_item(row) for row in rows],
-        invitations=invitations or [],
+        rows=[
+            AdminLearnerImportRowItem(
+                id=str(row.id),
+                row_number=row.row_number,
+                status=row.status,
+                raw_data_json=row.raw_data_json or {},
+                normalized_data_json=(
+                    row.normalized_data_json or {}
+                ),
+                validation_errors_json=(
+                    row.validation_errors_json or []
+                ),
+                error_summary=row.error_summary,
+                user_id=(
+                    str(row.user_id)
+                    if row.user_id
+                    else None
+                ),
+                learner_profile_id=(
+                    str(row.learner_profile_id)
+                    if row.learner_profile_id
+                    else None
+                ),
+                enrollment_id=(
+                    str(row.enrollment_id)
+                    if row.enrollment_id
+                    else None
+                ),
+                created_at=row.created_at,
+                updated_at=row.updated_at,
+            )
+            for row in sorted(
+                batch.rows,
+                key=lambda item: item.row_number,
+            )
+        ],
+        invitations=list(invitations or []),
+        preflight=(
+            build_admin_learner_import_preflight_item(
+                batch,
+                preflight,
+            )
+        ),
     )
 
 
@@ -6735,15 +6872,6 @@ async def apply_learner_import(
                 "skipped_invitations_count": sum(
                     1 for item in invitations if item.email_delivery_status == "skipped"
                 ),
-                "sent_invitations_count": sum(
-                    1 for item in invitations if item.email_delivery_status == "sent"
-                ),
-                "failed_invitations_count": sum(
-                    1 for item in invitations if item.email_delivery_status == "failed"
-                ),
-                "skipped_invitations_count": sum(
-                    1 for item in invitations if item.email_delivery_status == "skipped"
-                ),
             },
             request=request,
         )
@@ -6775,7 +6903,19 @@ async def get_learner_import_detail(
 ) -> AdminLearnerImportBatchDetail:
     batch = await get_admin_learner_import_batch_or_404(batch_id, session)
 
-    return build_admin_learner_import_batch_detail(batch)
+    preflight = (
+        await build_learner_import_preflight(
+            session,
+            batch=batch,
+        )
+        if batch.status == "parsed"
+        else None
+    )
+
+    return build_admin_learner_import_batch_detail(
+        batch,
+        preflight=preflight,
+    )
 
 @router.post(
     "/learner-imports",
@@ -6858,4 +6998,12 @@ async def create_learner_import(
 
     await session.commit()
 
-    return build_admin_learner_import_batch_detail(batch)
+    preflight = await build_learner_import_preflight(
+        session,
+        batch=batch,
+    )
+
+    return build_admin_learner_import_batch_detail(
+        batch,
+        preflight=preflight,
+    )
