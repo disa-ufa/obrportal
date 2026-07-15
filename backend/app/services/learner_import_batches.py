@@ -44,6 +44,445 @@ class LearnerImportApplyResult:
     invitation_candidates: tuple[LearnerImportInvitationCandidate, ...] = field(default_factory=tuple)
 
 
+@dataclass(frozen=True)
+class LearnerImportPreflightRow:
+    row_id: str
+    row_number: int
+    email: str
+    classification: str
+    account_state: str
+    user_id: str | None
+    learner_profile_id: str | None
+    enrollment_id: str | None
+    user_action: str
+    profile_action: str
+    enrollment_action: str
+    notification_action: str
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+@dataclass(frozen=True)
+class LearnerImportPreflightResult:
+    rows: tuple[LearnerImportPreflightRow, ...] = field(
+        default_factory=tuple
+    )
+    new_users_count: int = 0
+    existing_inactive_users_count: int = 0
+    existing_active_users_count: int = 0
+    existing_enrollments_count: int = 0
+    identity_conflicts_count: int = 0
+    invalid_rows_count: int = 0
+    new_profiles_count: int = 0
+    updated_profiles_count: int = 0
+    new_enrollments_count: int = 0
+    password_setup_invitations_count: int = 0
+    new_course_notifications_count: int = 0
+
+
+def import_user_will_update(
+    user: User,
+    data: dict,
+) -> bool:
+    full_name = normalize_import_text(
+        data.get("full_name")
+    )
+    phone = normalize_import_text(
+        data.get("phone")
+    )
+
+    return bool(
+        (full_name and not user.full_name)
+        or (phone and not user.phone)
+    )
+
+
+def import_profile_will_update(
+    profile: LearnerProfile,
+    data: dict,
+) -> bool:
+    field_map = {
+        "last_name": "last_name",
+        "first_name": "first_name",
+        "middle_name": "middle_name",
+        "phone": "phone",
+        "email": "email",
+        "snils": "snils",
+    }
+
+    for source_key, target_attr in field_map.items():
+        value = normalize_import_text(
+            data.get(source_key)
+        )
+
+        if value and not getattr(
+            profile,
+            target_attr,
+        ):
+            return True
+
+    return False
+
+
+def import_enrollment_will_update(
+    enrollment: Enrollment,
+    batch: ImportBatch,
+) -> bool:
+    return bool(
+        (
+            batch.organization_id
+            and not enrollment.organization_id
+        )
+        or (
+            batch.learning_group_id
+            and not enrollment.learning_group_id
+        )
+    )
+
+
+def build_learner_import_preflight_result(
+    rows: list[LearnerImportPreflightRow],
+) -> LearnerImportPreflightResult:
+    return LearnerImportPreflightResult(
+        rows=tuple(rows),
+        new_users_count=sum(
+            item.classification == "new_user"
+            for item in rows
+        ),
+        existing_inactive_users_count=sum(
+            item.account_state == "inactive"
+            for item in rows
+        ),
+        existing_active_users_count=sum(
+            item.account_state == "active"
+            for item in rows
+        ),
+        existing_enrollments_count=sum(
+            item.classification
+            == "existing_enrollment"
+            for item in rows
+        ),
+        identity_conflicts_count=sum(
+            item.classification
+            == "identity_conflict"
+            for item in rows
+        ),
+        invalid_rows_count=sum(
+            item.classification == "invalid_row"
+            for item in rows
+        ),
+        new_profiles_count=sum(
+            item.profile_action == "created"
+            for item in rows
+        ),
+        updated_profiles_count=sum(
+            item.profile_action == "updated"
+            for item in rows
+        ),
+        new_enrollments_count=sum(
+            item.enrollment_action == "created"
+            for item in rows
+        ),
+        password_setup_invitations_count=sum(
+            item.notification_action
+            == "password_setup_invitation"
+            for item in rows
+        ),
+        new_course_notifications_count=sum(
+            item.notification_action
+            == "new_course_notification"
+            for item in rows
+        ),
+    )
+
+
+async def build_learner_import_preflight(
+    db: AsyncSession,
+    *,
+    batch: ImportBatch,
+) -> LearnerImportPreflightResult:
+    preflight_rows: list[
+        LearnerImportPreflightRow
+    ] = []
+
+    rows = sorted(
+        batch.rows,
+        key=lambda item: item.row_number,
+    )
+
+    for row in rows:
+        data = row.normalized_data_json or {}
+        email = normalize_import_text(
+            data.get("email")
+        ).lower()
+        phone = normalize_import_text(
+            data.get("phone")
+        )
+        snils = normalize_import_text(
+            data.get("snils")
+        )
+
+        if row.status != "valid":
+            error_message = (
+                row.error_summary
+                or "; ".join(
+                    row.validation_errors_json or []
+                )
+                or "Import row is invalid."
+            )
+
+            preflight_rows.append(
+                LearnerImportPreflightRow(
+                    row_id=str(row.id),
+                    row_number=row.row_number,
+                    email=email,
+                    classification="invalid_row",
+                    account_state="unknown",
+                    user_id=None,
+                    learner_profile_id=None,
+                    enrollment_id=None,
+                    user_action="skipped",
+                    profile_action="skipped",
+                    enrollment_action="skipped",
+                    notification_action="not_required",
+                    error_code="validation_error",
+                    error_message=error_message,
+                )
+            )
+            continue
+
+        if not email:
+            preflight_rows.append(
+                LearnerImportPreflightRow(
+                    row_id=str(row.id),
+                    row_number=row.row_number,
+                    email=email,
+                    classification="invalid_row",
+                    account_state="unknown",
+                    user_id=None,
+                    learner_profile_id=None,
+                    enrollment_id=None,
+                    user_action="skipped",
+                    profile_action="skipped",
+                    enrollment_action="skipped",
+                    notification_action="not_required",
+                    error_code="email_required",
+                    error_message=(
+                        "Email is required for portal "
+                        "registration."
+                    ),
+                )
+            )
+            continue
+
+        user, user_conflict = (
+            await find_user_for_import_row(
+                db,
+                email=email,
+                phone=phone,
+            )
+        )
+
+        if user_conflict:
+            preflight_rows.append(
+                LearnerImportPreflightRow(
+                    row_id=str(row.id),
+                    row_number=row.row_number,
+                    email=email,
+                    classification="identity_conflict",
+                    account_state="unknown",
+                    user_id=None,
+                    learner_profile_id=None,
+                    enrollment_id=None,
+                    user_action="conflict",
+                    profile_action="skipped",
+                    enrollment_action="skipped",
+                    notification_action="not_required",
+                    error_code="identity_conflict",
+                    error_message=user_conflict,
+                )
+            )
+            continue
+
+        snils_profile = None
+
+        if snils:
+            snils_profile = (
+                await find_profile_by_snils(
+                    db,
+                    snils,
+                )
+            )
+
+        if (
+            snils_profile is not None
+            and (
+                user is None
+                or str(snils_profile.user_id)
+                != str(user.id)
+            )
+        ):
+            preflight_rows.append(
+                LearnerImportPreflightRow(
+                    row_id=str(row.id),
+                    row_number=row.row_number,
+                    email=email,
+                    classification="identity_conflict",
+                    account_state=(
+                        "inactive"
+                        if user is not None
+                        and not user.is_active
+                        else (
+                            "active"
+                            if user is not None
+                            else "unknown"
+                        )
+                    ),
+                    user_id=(
+                        str(user.id)
+                        if user is not None
+                        else None
+                    ),
+                    learner_profile_id=None,
+                    enrollment_id=None,
+                    user_action="conflict",
+                    profile_action="skipped",
+                    enrollment_action="skipped",
+                    notification_action="not_required",
+                    error_code="snils_conflict",
+                    error_message=(
+                        "SNILS belongs to another "
+                        "learner profile."
+                    ),
+                )
+            )
+            continue
+
+        if user is None:
+            preflight_rows.append(
+                LearnerImportPreflightRow(
+                    row_id=str(row.id),
+                    row_number=row.row_number,
+                    email=email,
+                    classification="new_user",
+                    account_state="new",
+                    user_id=None,
+                    learner_profile_id=None,
+                    enrollment_id=None,
+                    user_action="created",
+                    profile_action="created",
+                    enrollment_action=(
+                        "created"
+                        if batch.course_id
+                        else "skipped"
+                    ),
+                    notification_action=(
+                        "password_setup_invitation"
+                    ),
+                )
+            )
+            continue
+
+        profile = await find_profile_for_user(
+            db,
+            str(user.id),
+        )
+
+        enrollment = None
+
+        if batch.course_id:
+            enrollment = await find_enrollment(
+                db,
+                user_id=str(user.id),
+                course_id=str(batch.course_id),
+            )
+
+        account_state = (
+            "active"
+            if user.is_active
+            else "inactive"
+        )
+
+        if enrollment is not None:
+            classification = "existing_enrollment"
+        elif user.is_active:
+            classification = "existing_active_user"
+        else:
+            classification = "existing_inactive_user"
+
+        if profile is None:
+            profile_action = "created"
+        elif import_profile_will_update(
+            profile,
+            data,
+        ):
+            profile_action = "updated"
+        else:
+            profile_action = "unchanged"
+
+        if not batch.course_id:
+            enrollment_action = "skipped"
+        elif enrollment is None:
+            enrollment_action = "created"
+        elif import_enrollment_will_update(
+            enrollment,
+            batch,
+        ):
+            enrollment_action = "updated"
+        else:
+            enrollment_action = "unchanged"
+
+        if not user.is_active:
+            notification_action = (
+                "password_setup_invitation"
+            )
+        elif (
+            batch.course_id
+            and enrollment is None
+        ):
+            notification_action = (
+                "new_course_notification"
+            )
+        else:
+            notification_action = "not_required"
+
+        preflight_rows.append(
+            LearnerImportPreflightRow(
+                row_id=str(row.id),
+                row_number=row.row_number,
+                email=email,
+                classification=classification,
+                account_state=account_state,
+                user_id=str(user.id),
+                learner_profile_id=(
+                    str(profile.id)
+                    if profile is not None
+                    else None
+                ),
+                enrollment_id=(
+                    str(enrollment.id)
+                    if enrollment is not None
+                    else None
+                ),
+                user_action=(
+                    "updated"
+                    if import_user_will_update(
+                        user,
+                        data,
+                    )
+                    else "unchanged"
+                ),
+                profile_action=profile_action,
+                enrollment_action=enrollment_action,
+                notification_action=notification_action,
+            )
+        )
+
+    return build_learner_import_preflight_result(
+        preflight_rows
+    )
+
+
 def normalize_import_text(value: object) -> str:
     return str(value or "").strip()
 
