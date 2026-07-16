@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from app.core.config import Settings
 from app.services import email_delivery
@@ -32,6 +33,7 @@ def build_settings(**overrides: object) -> Settings:
 
 
 
+
 def test_build_password_setup_email_message_contains_invitation_context() -> None:
     expires_at = datetime(
         2026,
@@ -41,6 +43,14 @@ def test_build_password_setup_email_message_contains_invitation_context() -> Non
         0,
         tzinfo=timezone.utc,
     )
+    course_title = (
+        "\u041e\u043a\u0430\u0437\u0430\u043d\u0438\u0435 "
+        "\u043f\u0435\u0440\u0432\u043e\u0439 "
+        "\u043f\u043e\u043c\u043e\u0449\u0438 "
+        "\u043f\u043e\u0441\u0442\u0440\u0430"
+        "\u0434\u0430\u0432\u0448\u0438\u043c"
+    )
+
     message = build_password_setup_email_message(
         recipient="learner@example.test",
         user_email="learner@example.test",
@@ -49,10 +59,7 @@ def test_build_password_setup_email_message_contains_invitation_context() -> Non
             "set-password?code=abc"
         ),
         expires_at=expires_at,
-        course_title=(
-            "???????? ?????? ?????? "
-            "????????????"
-        ),
+        course_title=course_title,
         email_settings=build_settings(),
     )
 
@@ -63,27 +70,42 @@ def test_build_password_setup_email_message_contains_invitation_context() -> Non
         "ObrPortal <no-reply@example.test>"
     )
     assert message["Subject"] == (
-        "ObrPortal: ??????????? "
-        "? ??????????????? ??????"
+        "ObrPortal: "
+        "\u043f\u0440\u0438\u0433\u043b\u0430"
+        "\u0448\u0435\u043d\u0438\u0435 "
+        "\u0432 \u043e\u0431\u0440\u0430\u0437"
+        "\u043e\u0432\u0430\u0442\u0435\u043b"
+        "\u044c\u043d\u044b\u0439 "
+        "\u043f\u043e\u0440\u0442\u0430\u043b"
     )
 
     body = message.get_content()
 
-    assert "????????????!" in body
     assert (
-        "??? ??? ??????? ??????? ??????"
+        "\u0417\u0434\u0440\u0430\u0432"
+        "\u0441\u0442\u0432\u0443\u0439\u0442\u0435!"
         in body
     )
     assert (
-        "?????: learner@example.test"
+        "\u0414\u043b\u044f \u0432\u0430\u0441 "
+        "\u0441\u043e\u0437\u0434\u0430\u043d\u0430 "
+        "\u0443\u0447\u0451\u0442\u043d\u0430\u044f "
+        "\u0437\u0430\u043f\u0438\u0441\u044c"
         in body
     )
-    assert "??? ???????? ????:" in body
     assert (
-        "???????? ?????? ?????? "
-        "????????????"
+        "\u041b\u043e\u0433\u0438\u043d: "
+        "learner@example.test"
         in body
     )
+    assert (
+        "\u0412\u0430\u043c "
+        "\u043d\u0430\u0437\u043d\u0430"
+        "\u0447\u0435\u043d "
+        "\u043a\u0443\u0440\u0441:"
+        in body
+    )
+    assert course_title in body
     assert (
         "https://portal.example.test/"
         "set-password?code=abc"
@@ -173,3 +195,34 @@ def test_send_password_setup_email_sends_via_smtp(monkeypatch) -> None:
     assert smtp.started_tls is True
     assert len(smtp.sent_messages) == 1
     assert smtp.sent_messages[0]["To"] == "learner@example.test"
+
+
+def test_email_sources_have_no_corrupted_question_mark_runs() -> None:
+    repository_root = (
+        Path(__file__).resolve().parents[3]
+    )
+
+    source_paths = (
+        (
+            repository_root
+            / "backend"
+            / "app"
+            / "services"
+            / "email_delivery.py"
+        ),
+        (
+            repository_root
+            / "backend"
+            / "app"
+            / "api"
+            / "v1"
+            / "admin.py"
+        ),
+    )
+
+    for source_path in source_paths:
+        source = source_path.read_text(
+            encoding="utf-8"
+        )
+
+        assert "?" * 3 not in source, source_path
