@@ -198,21 +198,19 @@ def test_send_password_setup_email_sends_via_smtp(monkeypatch) -> None:
 
 
 def test_email_sources_have_no_corrupted_question_mark_runs() -> None:
-    repository_root = (
-        Path(__file__).resolve().parents[3]
+    backend_root = (
+        Path(__file__).resolve().parents[2]
     )
 
     source_paths = (
         (
-            repository_root
-            / "backend"
+            backend_root
             / "app"
             / "services"
             / "email_delivery.py"
         ),
         (
-            repository_root
-            / "backend"
+            backend_root
             / "app"
             / "api"
             / "v1"
