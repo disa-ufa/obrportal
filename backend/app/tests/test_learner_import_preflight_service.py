@@ -532,3 +532,130 @@ def test_preflight_summary_classifications_are_mutually_exclusive() -> None:
     assert result.existing_enrollments_count == 1
     assert result.identity_conflicts_count == 1
     assert result.invalid_rows_count == 1
+
+@pytest.mark.asyncio
+async def test_find_user_for_import_row_rejects_phone_only_match() -> None:
+    phone_owner = User(
+        id="phone-owner",
+        email="owner@example.org",
+        phone="+79000000002",
+        full_name="Existing Owner",
+        hashed_password="hash",
+        is_active=True,
+        is_email_verified=True,
+        mfa_enabled=False,
+    )
+
+    class ScalarResult:
+        def __init__(
+            self,
+            value: User | None,
+        ) -> None:
+            self.value = value
+
+        def scalar_one_or_none(
+            self,
+        ) -> User | None:
+            return self.value
+
+    class SequentialSession:
+        def __init__(
+            self,
+            values: list[User | None],
+        ) -> None:
+            self.values = values
+
+        async def execute(
+            self,
+            statement: object,
+        ) -> ScalarResult:
+            del statement
+
+            return ScalarResult(
+                self.values.pop(0)
+            )
+
+    session = SequentialSession(
+        [
+            None,
+            phone_owner,
+        ]
+    )
+
+    user, conflict = (
+        await service.find_user_for_import_row(
+            session,
+            email="new-person@example.org",
+            phone="+79000000002",
+        )
+    )
+
+    assert user is None
+    assert conflict == (
+        "Phone belongs to another user "
+        "with a different email."
+    )
+
+
+@pytest.mark.asyncio
+async def test_find_user_for_import_row_rejects_email_with_different_phone() -> None:
+    email_owner = User(
+        id="email-owner",
+        email="owner@example.org",
+        phone="+79000000001",
+        full_name="Existing Owner",
+        hashed_password="hash",
+        is_active=True,
+        is_email_verified=True,
+        mfa_enabled=False,
+    )
+
+    class ScalarResult:
+        def __init__(
+            self,
+            value: User | None,
+        ) -> None:
+            self.value = value
+
+        def scalar_one_or_none(
+            self,
+        ) -> User | None:
+            return self.value
+
+    class SequentialSession:
+        def __init__(
+            self,
+            values: list[User | None],
+        ) -> None:
+            self.values = values
+
+        async def execute(
+            self,
+            statement: object,
+        ) -> ScalarResult:
+            del statement
+
+            return ScalarResult(
+                self.values.pop(0)
+            )
+
+    session = SequentialSession(
+        [
+            email_owner,
+            None,
+        ]
+    )
+
+    user, conflict = (
+        await service.find_user_for_import_row(
+            session,
+            email="owner@example.org",
+            phone="+79000000002",
+        )
+    )
+
+    assert user is None
+    assert conflict == (
+        "Email belongs to a user "
+        "with a different phone."
+    )
