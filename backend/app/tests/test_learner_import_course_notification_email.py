@@ -34,15 +34,21 @@ def build_settings(
 
 
 
+
 def test_course_assignment_message_contains_context() -> None:
+    course_title = (
+        "\u041e\u043a\u0430\u0437\u0430\u043d\u0438\u0435 "
+        "\u043f\u0435\u0440\u0432\u043e\u0439 "
+        "\u043f\u043e\u043c\u043e\u0449\u0438 "
+        "\u043f\u043e\u0441\u0442\u0440\u0430"
+        "\u0434\u0430\u0432\u0448\u0438\u043c"
+    )
+
     message = (
         build_course_assignment_email_message(
             recipient="learner@example.test",
             user_email="learner@example.test",
-            course_title=(
-                "???????? ?????? ?????? "
-                "????????????"
-            ),
+            course_title=course_title,
             portal_url=(
                 "https://portal.example.test"
             ),
@@ -57,25 +63,38 @@ def test_course_assignment_message_contains_context() -> None:
     assert (
         message["Subject"]
         == (
-            "ObrPortal: ??? ???????? "
-            "????? ????"
+            "ObrPortal: "
+            "\u0432\u0430\u043c "
+            "\u043d\u0430\u0437\u043d\u0430"
+            "\u0447\u0435\u043d "
+            "\u043d\u043e\u0432\u044b\u0439 "
+            "\u043a\u0443\u0440\u0441"
         )
     )
 
     body = message.get_content()
 
-    assert "????????????!" in body
     assert (
-        "??? ???????? ????? ????"
+        "\u0417\u0434\u0440\u0430\u0432"
+        "\u0441\u0442\u0432\u0443\u0439\u0442\u0435!"
         in body
     )
     assert (
-        "?????: learner@example.test"
+        "\u0432\u0430\u043c "
+        "\u043d\u0430\u0437\u043d\u0430"
+        "\u0447\u0435\u043d "
+        "\u043d\u043e\u0432\u044b\u0439 "
+        "\u043a\u0443\u0440\u0441"
         in body
     )
     assert (
-        "????: ???????? ?????? ?????? "
-        "????????????"
+        "\u041b\u043e\u0433\u0438\u043d: "
+        "learner@example.test"
+        in body
+    )
+    assert (
+        "\u041a\u0443\u0440\u0441: "
+        + course_title
         in body
     )
     assert (

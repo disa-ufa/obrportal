@@ -561,6 +561,7 @@ def build_admin_learner_import_row_item(
 
 
 
+
 async def get_learner_import_course_title(
     session: AsyncSession,
     course_id: str | None,
@@ -573,8 +574,14 @@ async def get_learner_import_course_title(
         course_id,
     )
 
+    fallback_title = (
+        "\u041d\u0430\u0437\u043d\u0430"
+        "\u0447\u0435\u043d\u043d\u044b\u0439 "
+        "\u043a\u0443\u0440\u0441"
+    )
+
     if course is None:
-        return "??????????? ????"
+        return fallback_title
 
     course_title = (
         str(course.title).strip()
@@ -584,7 +591,7 @@ async def get_learner_import_course_title(
 
     return (
         course_title
-        or "??????????? ????"
+        or fallback_title
     )
 
 
@@ -7133,7 +7140,11 @@ async def apply_learner_import(
                 course_title = (
                     course.title
                     if course is not None
-                    else "??????????? ????"
+                    else (
+                        "\u041d\u0430\u0437\u043d\u0430"
+                        "\u0447\u0435\u043d\u043d\u044b\u0439 "
+                        "\u043a\u0443\u0440\u0441"
+                    )
                 )
                 course_titles[
                     candidate.course_id
