@@ -33,12 +33,16 @@ def build_settings(
     )
 
 
+
 def test_course_assignment_message_contains_context() -> None:
     message = (
         build_course_assignment_email_message(
             recipient="learner@example.test",
             user_email="learner@example.test",
-            course_title="First aid",
+            course_title=(
+                "???????? ?????? ?????? "
+                "????????????"
+            ),
             portal_url=(
                 "https://portal.example.test"
             ),
@@ -52,13 +56,28 @@ def test_course_assignment_message_contains_context() -> None:
     )
     assert (
         message["Subject"]
-        == "ObrPortal: new course assigned"
+        == (
+            "ObrPortal: ??? ???????? "
+            "????? ????"
+        )
     )
 
     body = message.get_content()
 
-    assert "learner@example.test" in body
-    assert "First aid" in body
+    assert "????????????!" in body
+    assert (
+        "??? ???????? ????? ????"
+        in body
+    )
+    assert (
+        "?????: learner@example.test"
+        in body
+    )
+    assert (
+        "????: ???????? ?????? ?????? "
+        "????????????"
+        in body
+    )
     assert (
         "https://portal.example.test"
         in body

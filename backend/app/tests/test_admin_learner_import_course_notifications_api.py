@@ -466,3 +466,60 @@ def test_batch_detail_maps_not_required_delivery() -> None:
         outcome.email_delivery_status
         == "not_required"
     )
+
+
+@pytest.mark.asyncio
+async def test_get_learner_import_course_title() -> None:
+    course = SimpleNamespace(
+        id="course-1",
+        title=(
+            "???????? ?????? ?????? "
+            "????????????"
+        ),
+    )
+
+    class CourseSession:
+        async def get(
+            self,
+            model: object,
+            entity_id: str,
+        ) -> object:
+            assert model is admin.Course
+            assert entity_id == "course-1"
+
+            return course
+
+    title = (
+        await admin.get_learner_import_course_title(
+            CourseSession(),
+            "course-1",
+        )
+    )
+
+    assert title == (
+        "???????? ?????? ?????? "
+        "????????????"
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_learner_import_course_title_uses_russian_fallback() -> None:
+    class MissingCourseSession:
+        async def get(
+            self,
+            model: object,
+            entity_id: str,
+        ) -> None:
+            assert model is admin.Course
+            assert entity_id == "missing-course"
+
+            return None
+
+    title = (
+        await admin.get_learner_import_course_title(
+            MissingCourseSession(),
+            "missing-course",
+        )
+    )
+
+    assert title == "??????????? ????"
