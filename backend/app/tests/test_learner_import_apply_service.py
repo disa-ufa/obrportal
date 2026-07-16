@@ -308,6 +308,10 @@ async def test_apply_invites_existing_inactive_user(
         result.invitation_candidates[0].user_id
         == user.id
     )
+    assert (
+        result.invitation_candidates[0].course_id
+        == "course-1"
+    )
     assert result.course_notification_candidates == ()
     assert result.created_enrollments_count == 1
     assert db.nested_count == 1

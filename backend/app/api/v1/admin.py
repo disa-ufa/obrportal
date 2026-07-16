@@ -560,6 +560,34 @@ def build_admin_learner_import_row_item(
 
 
 
+
+async def get_learner_import_course_title(
+    session: AsyncSession,
+    course_id: str | None,
+) -> str | None:
+    if not course_id:
+        return None
+
+    course = await session.get(
+        Course,
+        course_id,
+    )
+
+    if course is None:
+        return "??????????? ????"
+
+    course_title = (
+        str(course.title).strip()
+        if course.title
+        else ""
+    )
+
+    return (
+        course_title
+        or "??????????? ????"
+    )
+
+
 def build_admin_learner_import_batch_item(batch: ImportBatch) -> AdminLearnerImportBatchItem:
     return AdminLearnerImportBatchItem(
         id=str(batch.id),
@@ -6928,6 +6956,8 @@ async def apply_learner_import(
             for item in preflight.rows
         }
 
+        course_titles: dict[str, str] = {}
+
         invitations: list[
             AdminLearnerImportInvitationItem
         ] = []
@@ -6978,6 +7008,28 @@ async def apply_learner_import(
                 created_token.raw_token,
             )
 
+            invitation_course_title = None
+
+            if candidate.course_id:
+                invitation_course_title = (
+                    course_titles.get(
+                        candidate.course_id
+                    )
+                )
+
+                if invitation_course_title is None:
+                    invitation_course_title = (
+                        await get_learner_import_course_title(
+                            session,
+                            candidate.course_id,
+                        )
+                    )
+
+                    if invitation_course_title:
+                        course_titles[
+                            candidate.course_id
+                        ] = invitation_course_title
+
             delivery_result = (
                 send_password_setup_email(
                     recipient=invited_user.email,
@@ -6985,6 +7037,9 @@ async def apply_learner_import(
                     setup_url=setup_url,
                     expires_at=(
                         created_token.record.expires_at
+                    ),
+                    course_title=(
+                        invitation_course_title
                     ),
                 )
             )
@@ -7035,7 +7090,6 @@ async def apply_learner_import(
         course_notifications: list[
             AdminLearnerImportCourseNotificationItem
         ] = []
-        course_titles: dict[str, str] = {}
 
         for candidate in (
             apply_result
@@ -7079,7 +7133,7 @@ async def apply_learner_import(
                 course_title = (
                     course.title
                     if course is not None
-                    else "Assigned course"
+                    else "??????????? ????"
                 )
                 course_titles[
                     candidate.course_id

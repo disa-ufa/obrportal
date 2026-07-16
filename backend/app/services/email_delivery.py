@@ -49,12 +49,21 @@ def build_email_from_header(email_settings: Settings = settings) -> str:
     return from_address
 
 
+
 def build_password_setup_email_subject(
     *,
     app_name: str | None = None,
 ) -> str:
-    safe_app_name = normalize_email_header_value(app_name) or settings.app_name
-    return f"{safe_app_name}: account invitation"
+    safe_app_name = (
+        normalize_email_header_value(app_name)
+        or settings.app_name
+    )
+
+    return (
+        f"{safe_app_name}: "
+        "??????????? ? ??????????????? ??????"
+    )
+
 
 
 def build_password_setup_email_body(
@@ -62,38 +71,87 @@ def build_password_setup_email_body(
     user_email: str,
     setup_url: str,
     expires_at: datetime | None = None,
+    course_title: str | None = None,
     app_name: str | None = None,
 ) -> str:
-    safe_app_name = normalize_email_header_value(app_name) or settings.app_name
+    safe_app_name = (
+        normalize_email_header_value(app_name)
+        or settings.app_name
+    )
+    safe_course_title = (
+        normalize_email_header_value(
+            course_title
+        )
+        if course_title
+        else ""
+    )
+
     lines = [
-        "Hello,",
+        "????????????!",
         "",
-        f"An administrator created an invitation for your {safe_app_name} account.",
-        f"Account: {user_email}",
-        "",
-        "Open this link to set your password:",
-        setup_url,
-        "",
+        (
+            "??? ??? ??????? ??????? ?????? "
+            f"? ??????????????? ??????? {safe_app_name}."
+        ),
+        f"?????: {user_email}",
     ]
 
-    if expires_at is not None:
+    if safe_course_title:
         lines.extend(
             [
-                "The link is valid until:",
-                expires_at.isoformat(),
+                "",
+                "??? ???????? ????:",
+                safe_course_title,
+            ]
+        )
+
+    lines.extend(
+        [
+            "",
+            (
+                "????? ????????? ??????????? "
+                "? ?????? ????????, ?????????? ??????."
+            ),
+            "????????? ?? ??????:",
+            setup_url,
+            "",
+        ]
+    )
+
+    if expires_at is not None:
+        formatted_expires_at = (
+            expires_at.strftime(
+                "%d.%m.%Y %H:%M"
+            )
+        )
+        timezone_name = expires_at.tzname()
+
+        if timezone_name:
+            formatted_expires_at += (
+                f" ({timezone_name})"
+            )
+
+        lines.extend(
+            [
+                "?????? ????????????? ??:",
+                formatted_expires_at,
                 "",
             ]
         )
 
     lines.extend(
         [
-            "If you did not expect this message, ignore it.",
+            (
+                "???? ?? ?? ??????? ??? ??????, "
+                "?????? ?????????????? ???."
+            ),
             "",
-            f"-- {safe_app_name}",
+            f"? ?????????, ??????? {safe_app_name}",
         ]
     )
 
     return "\n".join(lines)
+
 
 
 def build_password_setup_email_message(
@@ -102,23 +160,37 @@ def build_password_setup_email_message(
     setup_url: str,
     user_email: str | None = None,
     expires_at: datetime | None = None,
+    course_title: str | None = None,
     app_name: str | None = None,
     email_settings: Settings = settings,
 ) -> EmailMessage:
-    normalized_recipient = normalize_email_header_value(recipient)
-    if not normalized_recipient:
-        raise ValueError("Recipient email is required.")
+    normalized_recipient = (
+        normalize_email_header_value(recipient)
+    )
 
-    subject = build_password_setup_email_subject(app_name=app_name)
+    if not normalized_recipient:
+        raise ValueError(
+            "Recipient email is required."
+        )
+
+    subject = build_password_setup_email_subject(
+        app_name=app_name
+    )
     body = build_password_setup_email_body(
-        user_email=user_email or normalized_recipient,
+        user_email=(
+            user_email
+            or normalized_recipient
+        ),
         setup_url=setup_url,
         expires_at=expires_at,
+        course_title=course_title,
         app_name=app_name,
     )
 
     message = EmailMessage()
-    message["From"] = build_email_from_header(email_settings)
+    message["From"] = build_email_from_header(
+        email_settings
+    )
     message["To"] = normalized_recipient
     message["Subject"] = subject
     message.set_content(body)
@@ -187,12 +259,14 @@ def send_email_message(
     )
 
 
+
 def send_password_setup_email(
     *,
     recipient: str,
     setup_url: str,
     user_email: str | None = None,
     expires_at: datetime | None = None,
+    course_title: str | None = None,
     app_name: str | None = None,
     email_settings: Settings = settings,
 ) -> EmailDeliveryResult:
@@ -201,11 +275,16 @@ def send_password_setup_email(
         setup_url=setup_url,
         user_email=user_email,
         expires_at=expires_at,
+        course_title=course_title,
         app_name=app_name,
         email_settings=email_settings,
     )
 
-    return send_email_message(message, email_settings=email_settings)
+    return send_email_message(
+        message,
+        email_settings=email_settings,
+    )
+
 
 
 def build_course_assignment_email_subject(
@@ -219,8 +298,9 @@ def build_course_assignment_email_subject(
 
     return (
         f"{safe_app_name}: "
-        "new course assigned"
+        "??? ???????? ????? ????"
     )
+
 
 
 def build_course_assignment_email_body(
@@ -238,24 +318,24 @@ def build_course_assignment_email_body(
         normalize_email_header_value(
             course_title
         )
-        or "Assigned course"
+        or "??????????? ????"
     )
 
     return "\n".join(
         [
-            "Hello,",
+            "????????????!",
             "",
             (
-                "A new course has been assigned "
-                f"to your {safe_app_name} account."
+                "? ??????????????? ??????? "
+                f"{safe_app_name} ??? ???????? ????? ????."
             ),
-            f"Account: {user_email}",
-            f"Course: {safe_course_title}",
+            f"?????: {user_email}",
+            f"????: {safe_course_title}",
             "",
-            "Open the learning portal:",
+            "??????? ? ??????????????? ??????:",
             portal_url,
             "",
-            f"-- {safe_app_name}",
+            f"? ?????????, ??????? {safe_app_name}",
         ]
     )
 

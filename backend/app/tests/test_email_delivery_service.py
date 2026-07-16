@@ -31,24 +31,68 @@ def build_settings(**overrides: object) -> Settings:
     return Settings(_env_file=None, **values)
 
 
+
 def test_build_password_setup_email_message_contains_invitation_context() -> None:
-    expires_at = datetime(2026, 7, 20, 12, 0, tzinfo=timezone.utc)
+    expires_at = datetime(
+        2026,
+        7,
+        20,
+        12,
+        0,
+        tzinfo=timezone.utc,
+    )
     message = build_password_setup_email_message(
         recipient="learner@example.test",
         user_email="learner@example.test",
-        setup_url="https://portal.example.test/set-password?code=abc",
+        setup_url=(
+            "https://portal.example.test/"
+            "set-password?code=abc"
+        ),
         expires_at=expires_at,
+        course_title=(
+            "???????? ?????? ?????? "
+            "????????????"
+        ),
         email_settings=build_settings(),
     )
 
-    assert message["To"] == "learner@example.test"
-    assert message["From"] == "ObrPortal <no-reply@example.test>"
-    assert message["Subject"] == "ObrPortal: account invitation"
+    assert message["To"] == (
+        "learner@example.test"
+    )
+    assert message["From"] == (
+        "ObrPortal <no-reply@example.test>"
+    )
+    assert message["Subject"] == (
+        "ObrPortal: ??????????? "
+        "? ??????????????? ??????"
+    )
 
     body = message.get_content()
-    assert "learner@example.test" in body
-    assert "https://portal.example.test/set-password?code=abc" in body
-    assert "2026-07-20T12:00:00+00:00" in body
+
+    assert "????????????!" in body
+    assert (
+        "??? ??? ??????? ??????? ??????"
+        in body
+    )
+    assert (
+        "?????: learner@example.test"
+        in body
+    )
+    assert "??? ???????? ????:" in body
+    assert (
+        "???????? ?????? ?????? "
+        "????????????"
+        in body
+    )
+    assert (
+        "https://portal.example.test/"
+        "set-password?code=abc"
+        in body
+    )
+    assert (
+        "20.07.2026 12:00 (UTC)"
+        in body
+    )
 
 
 def test_send_password_setup_email_skips_when_delivery_disabled() -> None:

@@ -31,6 +31,7 @@ class LearnerImportInvitationCandidate:
     row_number: int
     user_id: str
     email: str
+    course_id: str | None = None
 
 @dataclass(frozen=True)
 class LearnerImportCourseNotificationCandidate:
@@ -1055,6 +1056,11 @@ async def apply_learner_import_batch(
                                 ),
                                 user_id=str(user.id),
                                 email=user.email,
+                                course_id=(
+                                    str(batch.course_id)
+                                    if batch.course_id
+                                    else None
+                                ),
                             )
                         )
                     elif (
