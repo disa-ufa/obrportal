@@ -272,6 +272,106 @@ function getImportInvitationEmailDeliveryClassName(status) {
   return "bg-slate-50 text-slate-600 ring-slate-200";
 }
 
+
+export function getPreflightClassificationLabel(
+  classification
+) {
+  const labels = {
+    new_user: "\u041d\u043e\u0432\u044b\u0439 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c",
+    existing_inactive_user: "\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c",
+    existing_active_user: "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c",
+    existing_enrollment: "\u0423\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d \u043d\u0430 \u043a\u0443\u0440\u0441",
+    identity_conflict: "\u041a\u043e\u043d\u0444\u043b\u0438\u043a\u0442 \u043b\u0438\u0447\u043d\u043e\u0441\u0442\u0438",
+    invalid_row: "\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0442\u0440\u043e\u043a\u0438",
+  };
+
+  return labels[classification] || classification || DASH;
+}
+
+function getPreflightClassificationTone(
+  classification
+) {
+  if (classification === "new_user") {
+    return "bg-blue-50 text-blue-700 ring-blue-200";
+  }
+
+  if (
+    classification === "existing_inactive_user"
+    || classification === "existing_active_user"
+  ) {
+    return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  }
+
+  if (classification === "existing_enrollment") {
+    return "bg-slate-100 text-slate-700 ring-slate-200";
+  }
+
+  if (
+    classification === "identity_conflict"
+    || classification === "invalid_row"
+  ) {
+    return "bg-rose-50 text-rose-700 ring-rose-200";
+  }
+
+  return "bg-slate-50 text-slate-600 ring-slate-200";
+}
+
+function getPreflightActionLabel(action) {
+  const labels = {
+    create: "\u0431\u0443\u0434\u0435\u0442 \u0441\u043e\u0437\u0434\u0430\u043d\u043e",
+    created: "\u0431\u0443\u0434\u0435\u0442 \u0441\u043e\u0437\u0434\u0430\u043d\u043e",
+    update: "\u0431\u0443\u0434\u0435\u0442 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e",
+    updated: "\u0431\u0443\u0434\u0435\u0442 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e",
+    reuse: "\u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044e\u0449\u0435\u0435",
+    existing: "\u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044e\u0449\u0435\u0435",
+    unchanged: "\u0431\u0435\u0437 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0439",
+    no_change: "\u0431\u0435\u0437 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0439",
+    skip: "\u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f",
+    skipped: "\u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f",
+    not_required: "\u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f",
+    conflict: "\u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u043e \u043a\u043e\u043d\u0444\u043b\u0438\u043a\u0442\u043e\u043c",
+    blocked: "\u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u043e",
+  };
+
+  return labels[action] || action || DASH;
+}
+
+function getPreflightNotificationLabel(action) {
+  const labels = {
+    password_setup_invitation: "\u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u0435 \u0434\u043b\u044f \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u043f\u0430\u0440\u043e\u043b\u044f",
+    new_course_notification: "\u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0435 \u043e \u043d\u043e\u0432\u043e\u043c \u043a\u0443\u0440\u0441\u0435",
+    not_required: "\u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f",
+    skipped: "\u043d\u0435 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u0442\u0441\u044f",
+  };
+
+  return labels[action] || action || DASH;
+}
+
+function getPreflightRowActionSummary(item) {
+  if (!item) {
+    return DASH;
+  }
+
+  return [
+    `\u0410\u043a\u043a\u0430\u0443\u043d\u0442: ${getPreflightActionLabel(item.user_action)}`,
+    `\u041f\u0440\u043e\u0444\u0438\u043b\u044c: ${getPreflightActionLabel(item.profile_action)}`,
+    `\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435: ${getPreflightActionLabel(item.enrollment_action)}`,
+    `\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0435: ${getPreflightNotificationLabel(item.notification_action)}`,
+  ].join(" \u00b7 ");
+}
+
+function PreflightClassificationPill({
+  classification,
+}) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-black ring-1 ${getPreflightClassificationTone(classification)}`}
+    >
+      {getPreflightClassificationLabel(classification)}
+    </span>
+  );
+}
+
 export function LearnerImportsPage() {
   const [imports, setImports] = useState([]);
   const [selectedImport, setSelectedImport] = useState(null);
@@ -297,9 +397,35 @@ export function LearnerImportsPage() {
   const [rowFilter, setRowFilter] = useState("all");
 
   const selectedRows = selectedImport?.rows || [];
-  const selectedExpectedEnrollments = selectedImport?.course_id ? selectedImport?.valid_rows || 0 : 0;
+  const selectedPreflight = selectedImport?.preflight || null;
+  const selectedPreflightAttentionCount =
+    (selectedPreflight?.identity_conflicts_count || 0)
+    + (selectedPreflight?.invalid_rows_count || 0);
   const canApplySelectedImport = selectedImport?.status === "parsed" && (selectedImport?.valid_rows || 0) > 0;
   const selectedImportIsApplying = selectedImport?.id && applyingImportId === selectedImport.id;
+
+  const selectedPreflightRowsByKey = useMemo(() => {
+    const result = new Map();
+    const rows = selectedImport?.preflight?.rows || [];
+
+    rows.forEach((item) => {
+      if (item.row_id) {
+        result.set(`row_id:${item.row_id}`, item);
+      }
+
+      if (
+        item.row_number !== undefined
+        && item.row_number !== null
+      ) {
+        result.set(
+          `row_number:${item.row_number}`,
+          item
+        );
+      }
+    });
+
+    return result;
+  }, [selectedImport]);
 
   const totals = useMemo(() => {
     return imports.reduce(
@@ -383,11 +509,12 @@ export function LearnerImportsPage() {
     try {
       const applied = await applyAdminLearnerImport(selectedImport.id);
       const invitationCount = Array.isArray(applied.invitations) ? applied.invitations.length : 0;
+      const courseNotificationCount = Array.isArray(applied.course_notifications) ? applied.course_notifications.length : 0;
 
       setSelectedImport(applied);
       setCopiedInvitationKey("");
       setNotice(
-        `Импорт применён: создано пользователей ${applied.created_users_count}, профилей ${applied.created_profiles_count}, назначений ${applied.created_enrollments_count}.${invitationCount ? ` Ссылок приглашения: ${invitationCount}.` : ""}`
+        `?????? ????????: ??????? ????????????? ${applied.created_users_count}, ???????? ${applied.created_profiles_count}, ?????????? ${applied.created_enrollments_count}.${invitationCount ? ` ?????? ???????????: ${invitationCount}.` : ""}${courseNotificationCount ? ` ??????????? ? ?????: ${courseNotificationCount}.` : ""}`
       );
       setStatusFilter("");
       await loadImports({ status: "" });
@@ -821,6 +948,126 @@ export function LearnerImportsPage() {
                   <SummaryCard label="Статус" value={getStatusLabel(selectedImport.status)} tone="blue" />
                 </div>
 
+                {selectedPreflight ? (
+                  <div
+                    data-testid="learner-import-preflight-card"
+                    className="rounded-2xl bg-blue-50 p-5 ring-1 ring-blue-200"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-black text-blue-950">
+                          {"\u041f\u0440\u0435\u0434\u0432\u0430\u0440\u0438\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430"}
+                        </div>
+                        <p className="mt-1 max-w-3xl text-xs leading-5 text-blue-800">
+                          {"\u0420\u0430\u0441\u0447\u0451\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442, \u0447\u0442\u043e \u0431\u0443\u0434\u0435\u0442 \u0441\u0434\u0435\u043b\u0430\u043d\u043e \u0434\u043b\u044f \u043a\u0430\u0436\u0434\u043e\u0439 \u0441\u0442\u0440\u043e\u043a\u0438 \u043f\u043e\u0441\u043b\u0435 \u043d\u0430\u0436\u0430\u0442\u0438\u044f \u00ab\u041f\u0440\u0438\u043c\u0435\u043d\u0438\u0442\u044c \u0438\u043c\u043f\u043e\u0440\u0442\u00bb."}
+                        </p>
+                      </div>
+
+                      <span
+                        data-testid="learner-import-preflight-attention-count"
+                        className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${
+                          selectedPreflightAttentionCount
+                            ? "bg-rose-50 text-rose-700 ring-rose-200"
+                            : "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                        }`}
+                      >
+                        {selectedPreflightAttentionCount
+                          ? `\u0422\u0440\u0435\u0431\u0443\u044e\u0442 \u0432\u043d\u0438\u043c\u0430\u043d\u0438\u044f: ${selectedPreflightAttentionCount}`
+                          : "\u041a\u0440\u0438\u0442\u0438\u0447\u043d\u044b\u0445 \u043a\u043e\u043d\u0444\u043b\u0438\u043a\u0442\u043e\u0432 \u043d\u0435\u0442"}
+                      </span>
+                    </div>
+
+                    <div
+                      data-testid="learner-import-preflight-summary"
+                      className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                    >
+                      <SummaryCard
+                        label={"\u041d\u043e\u0432\u044b\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438"}
+                        value={selectedPreflight.new_users_count || 0}
+                        tone="blue"
+                      />
+                      <SummaryCard
+                        label={"\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u0430\u043a\u043a\u0430\u0443\u043d\u0442\u044b"}
+                        value={selectedPreflight.existing_inactive_users_count || 0}
+                        tone="green"
+                      />
+                      <SummaryCard
+                        label={"\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u0430\u043a\u043a\u0430\u0443\u043d\u0442\u044b"}
+                        value={selectedPreflight.existing_active_users_count || 0}
+                        tone="green"
+                      />
+                      <SummaryCard
+                        label={"\u0423\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u044b"}
+                        value={selectedPreflight.existing_enrollments_count || 0}
+                      />
+                      <SummaryCard
+                        label={"\u041a\u043e\u043d\u0444\u043b\u0438\u043a\u0442\u044b \u043b\u0438\u0447\u043d\u043e\u0441\u0442\u0438"}
+                        value={selectedPreflight.identity_conflicts_count || 0}
+                        tone="red"
+                      />
+                      <SummaryCard
+                        label={"\u041d\u0435\u0432\u0430\u043b\u0438\u0434\u043d\u044b\u0435 \u0441\u0442\u0440\u043e\u043a\u0438"}
+                        value={selectedPreflight.invalid_rows_count || 0}
+                        tone="red"
+                      />
+                    </div>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                      <SummaryCard
+                        label={"\u041d\u043e\u0432\u044b\u0435 \u043f\u0440\u043e\u0444\u0438\u043b\u0438"}
+                        value={selectedPreflight.new_profiles_count || 0}
+                      />
+                      <SummaryCard
+                        label={"\u041e\u0431\u043d\u043e\u0432\u043b\u044f\u0435\u043c\u044b\u0435 \u043f\u0440\u043e\u0444\u0438\u043b\u0438"}
+                        value={selectedPreflight.updated_profiles_count || 0}
+                      />
+                      <SummaryCard
+                        label={"\u041d\u043e\u0432\u044b\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f"}
+                        value={selectedPreflight.new_enrollments_count || 0}
+                        tone="blue"
+                      />
+                      <SummaryCard
+                        label={"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430 \u043f\u0430\u0440\u043e\u043b\u044f"}
+                        value={selectedPreflight.password_setup_invitations_count || 0}
+                        tone="green"
+                      />
+                      <SummaryCard
+                        label={"\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f \u043e \u043a\u0443\u0440\u0441\u0435"}
+                        value={selectedPreflight.new_course_notifications_count || 0}
+                        tone="green"
+                      />
+                    </div>
+                  </div>
+                ) : selectedImport.status === "applied" ? (
+                  <div
+                    data-testid="learner-import-apply-result-card"
+                    className="rounded-2xl bg-emerald-50 p-5 ring-1 ring-emerald-200"
+                  >
+                    <div className="text-sm font-black text-emerald-950">
+                      {"\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u044f"}
+                    </div>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <SummaryCard
+                        label={"\u0421\u043e\u0437\u0434\u0430\u043d\u043e \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439"}
+                        value={selectedImport.created_users_count || 0}
+                        tone="green"
+                      />
+                      <SummaryCard
+                        label={"\u0421\u043e\u0437\u0434\u0430\u043d\u043e \u043f\u0440\u043e\u0444\u0438\u043b\u0435\u0439"}
+                        value={selectedImport.created_profiles_count || 0}
+                        tone="green"
+                      />
+                      <SummaryCard
+                        label={"\u0421\u043e\u0437\u0434\u0430\u043d\u043e \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0439"}
+                        value={selectedImport.created_enrollments_count || 0}
+                        tone="green"
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+
                 {selectedImport.invitations?.length ? (
                   <div
                     data-testid="learner-import-invitations-card"
@@ -899,24 +1146,101 @@ export function LearnerImportsPage() {
                   </div>
                 ) : null}
 
-                <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                  <div className="text-sm font-black text-slate-950">Будет создано или обновлено</div>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Пользователи</div>
-                      <div className="mt-1 text-2xl font-black text-slate-950">{selectedImport.valid_rows || 0}</div>
+                {selectedImport.course_notifications?.length ? (
+                  <div
+                    data-testid="learner-import-course-notifications-card"
+                    className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-200"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-black text-blue-950">
+                          {"\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f \u043e \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0438 \u043a\u0443\u0440\u0441\u0430"}
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-blue-800">
+                          {"\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u044b \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0438 \u043f\u0438\u0441\u0435\u043c \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u043c \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f\u043c, \u043a\u043e\u0442\u043e\u0440\u044b\u043c \u0431\u044b\u043b \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d \u043d\u043e\u0432\u044b\u0439 \u043a\u0443\u0440\u0441."}
+                        </p>
+                      </div>
+
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700 ring-1 ring-blue-200">
+                        {selectedImport.course_notifications.length}
+                      </span>
                     </div>
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Профили</div>
-                      <div className="mt-1 text-2xl font-black text-slate-950">{selectedImport.valid_rows || 0}</div>
-                    </div>
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Назначения</div>
-                      <div className="mt-1 text-2xl font-black text-slate-950">{selectedExpectedEnrollments}</div>
-                      <div className="mt-1 text-xs text-slate-500">Создаются, если в импорте выбран курс</div>
+
+                    <div className="mt-4 overflow-x-auto rounded-2xl bg-white ring-1 ring-blue-100">
+                      <table className="min-w-full divide-y divide-blue-100 text-sm">
+                        <thead className="bg-blue-50/70 text-left text-xs font-bold uppercase tracking-wide text-blue-700">
+                          <tr>
+                            <th className="px-4 py-3">
+                              {"\u0421\u0442\u0440\u043e\u043a\u0430"}
+                            </th>
+                            <th className="px-4 py-3">Email</th>
+                            <th className="px-4 py-3">
+                              {"\u041a\u0443\u0440\u0441"}
+                            </th>
+                            <th className="px-4 py-3">
+                              Email-{"\u0441\u0442\u0430\u0442\u0443\u0441"}
+                            </th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-blue-100">
+                          {selectedImport.course_notifications.map((notification) => {
+                            const key =
+                              notification.row_id
+                              || notification.user_id
+                              || notification.email
+                              || notification.course_id;
+
+                            return (
+                              <tr key={key}>
+                                <td className="px-4 py-3 font-semibold text-slate-700">
+                                  {notification.row_number || DASH}
+                                </td>
+
+                                <td className="px-4 py-3 text-slate-700">
+                                  {notification.email || DASH}
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  <div className="font-semibold text-slate-800">
+                                    {notification.course_title || DASH}
+                                  </div>
+
+                                  {notification.course_id ? (
+                                    <div className="mt-1 text-xs text-slate-400">
+                                      {notification.course_id}
+                                    </div>
+                                  ) : null}
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  <span
+                                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-black ring-1 ${getImportInvitationEmailDeliveryClassName(notification.email_delivery_status)}`}
+                                  >
+                                    {getImportInvitationEmailDeliveryLabel(notification.email_delivery_status)}
+                                  </span>
+
+                                  {notification.email_delivery_detail ? (
+                                    <div className="mt-1 text-xs text-slate-500">
+                                      {notification.email_delivery_detail}
+                                    </div>
+                                  ) : null}
+
+                                  {notification.email_delivery_error ? (
+                                    <div className="mt-1 text-xs font-semibold text-red-600">
+                                      {notification.email_delivery_error}
+                                    </div>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-                </div>
+                ) : null}
+
 
                                 <div className="grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)]">
                   <button
@@ -952,40 +1276,96 @@ export function LearnerImportsPage() {
                       <tr>
                         <th className="px-4 py-3">№</th>
                         <th className="px-4 py-3">Статус</th>
+                        <th
+                          data-testid="learner-import-preflight-row-decision"
+                          className="px-4 py-3"
+                        >
+                          {"\u0420\u0435\u0448\u0435\u043d\u0438\u0435"}
+                        </th>
                         <th className="px-4 py-3">ФИО / Email</th>
                         <th className="px-4 py-3">Контекст</th>
                         <th className="px-4 py-3">Ошибки</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
-                      {visibleSelectedRows.map((row) => (
-                        <tr key={row.id}>
-                          <td className="px-4 py-3 font-semibold text-slate-700">{row.row_number}</td>
-                          <td className="px-4 py-3"><StatusPill status={row.status} /></td>
-                          <td className="px-4 py-3">
-                            <div className="font-semibold text-slate-900">{getRowName(row)}</div>
-                            <div className="mt-1 text-xs text-slate-500">{getRowContact(row)}</div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <ImportRowContextCell
-                              row={row}
-                              selectedImport={selectedImport}
-                              courses={courses}
-                              organizations={organizations}
-                              learningGroups={learningGroups}
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            {row.validation_errors_json?.length ? (
-                              <ul className="list-disc space-y-1 pl-5 text-rose-700">
-                                {row.validation_errors_json.map((item) => <li key={item}>{formatValidationError(item)}</li>)}
-                              </ul>
-                            ) : (
-                              <span className="text-slate-400">{DASH}</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {visibleSelectedRows.map((row) => {
+                        const preflightRow =
+                          selectedPreflightRowsByKey.get(`row_id:${row.id}`)
+                          || selectedPreflightRowsByKey.get(`row_number:${row.row_number}`);
+                        const appliedRowOutcome = row.classification ? row : null;
+                        const decisionRow = preflightRow || appliedRowOutcome;
+
+                        return (
+                          <tr key={row.id}>
+                            <td className="px-4 py-3 font-semibold text-slate-700">{row.row_number}</td>
+                            <td className="px-4 py-3"><StatusPill status={row.status} /></td>
+                            <td className="min-w-[260px] px-4 py-3">
+                              {decisionRow ? (
+                                <div className="space-y-2">
+                                  <PreflightClassificationPill
+                                    classification={decisionRow.classification}
+                                  />
+                                  <div className="text-xs leading-5 text-slate-600">
+                                    {getPreflightRowActionSummary(decisionRow)}
+                                  </div>
+                                  {decisionRow.email_delivery_status ? (
+                                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                                      <span className="font-semibold text-slate-500">
+                                        {"????????:"}
+                                      </span>
+                                      <span
+                                        data-testid="learner-import-row-delivery-status"
+                                        className={`inline-flex rounded-full px-2.5 py-1 font-black ring-1 ${getImportInvitationEmailDeliveryClassName(decisionRow.email_delivery_status)}`}
+                                      >
+                                        {getImportInvitationEmailDeliveryLabel(decisionRow.email_delivery_status)}
+                                      </span>
+                                    </div>
+                                  ) : null}
+                                  {decisionRow.email_delivery_detail ? (
+                                    <div className="text-xs leading-5 text-slate-500">
+                                      {decisionRow.email_delivery_detail}
+                                    </div>
+                                  ) : null}
+                                  {decisionRow.email_delivery_error ? (
+                                    <div className="rounded-xl bg-rose-50 p-2 text-xs font-semibold text-rose-700 ring-1 ring-rose-100">
+                                      {decisionRow.email_delivery_error}
+                                    </div>
+                                  ) : null}
+                                  {decisionRow.error_message ? (
+                                    <div className="rounded-xl bg-rose-50 p-2 text-xs font-semibold text-rose-700 ring-1 ring-rose-100">
+                                      {decisionRow.error_message}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400">{DASH}</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="font-semibold text-slate-900">{getRowName(row)}</div>
+                              <div className="mt-1 text-xs text-slate-500">{getRowContact(row)}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <ImportRowContextCell
+                                row={row}
+                                selectedImport={selectedImport}
+                                courses={courses}
+                                organizations={organizations}
+                                learningGroups={learningGroups}
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              {row.validation_errors_json?.length ? (
+                                <ul className="list-disc space-y-1 pl-5 text-rose-700">
+                                  {row.validation_errors_json.map((item) => <li key={item}>{formatValidationError(item)}</li>)}
+                                </ul>
+                              ) : (
+                                <span className="text-slate-400">{DASH}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

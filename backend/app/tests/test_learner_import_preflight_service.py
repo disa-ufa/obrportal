@@ -377,3 +377,158 @@ async def test_preflight_preserves_invalid_row(
     assert row.error_code == "validation_error"
     assert row.error_message == "Invalid row."
     assert result.invalid_rows_count == 1
+
+
+@pytest.mark.asyncio
+async def test_preflight_existing_inactive_enrollment_has_no_notification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = make_user(is_active=False)
+
+    configure_lookups(
+        monkeypatch,
+        user=user,
+        profile=make_profile(),
+        snils_profile=make_profile(),
+        enrollment=make_enrollment(),
+    )
+
+    result = (
+        await service.build_learner_import_preflight(
+            object(),
+            batch=make_batch(),
+        )
+    )
+
+    row = result.rows[0]
+
+    assert row.classification == "existing_enrollment"
+    assert row.account_state == "inactive"
+    assert row.notification_action == "not_required"
+    assert result.existing_enrollments_count == 1
+    assert result.existing_inactive_users_count == 0
+    assert result.existing_active_users_count == 0
+    assert result.password_setup_invitations_count == 0
+    assert result.new_course_notifications_count == 0
+
+
+def test_preflight_summary_classifications_are_mutually_exclusive() -> None:
+    rows = [
+        service.LearnerImportPreflightRow(
+            row_id="row-new",
+            row_number=1,
+            email="new@example.org",
+            classification="new_user",
+            account_state="new",
+            user_id=None,
+            learner_profile_id=None,
+            enrollment_id=None,
+            user_action="created",
+            profile_action="created",
+            enrollment_action="created",
+            notification_action=(
+                "password_setup_invitation"
+            ),
+        ),
+        service.LearnerImportPreflightRow(
+            row_id="row-inactive",
+            row_number=2,
+            email="inactive@example.org",
+            classification=(
+                "existing_inactive_user"
+            ),
+            account_state="inactive",
+            user_id="user-inactive",
+            learner_profile_id="profile-inactive",
+            enrollment_id=None,
+            user_action="unchanged",
+            profile_action="unchanged",
+            enrollment_action="created",
+            notification_action=(
+                "password_setup_invitation"
+            ),
+        ),
+        service.LearnerImportPreflightRow(
+            row_id="row-active",
+            row_number=3,
+            email="active@example.org",
+            classification="existing_active_user",
+            account_state="active",
+            user_id="user-active",
+            learner_profile_id="profile-active",
+            enrollment_id=None,
+            user_action="unchanged",
+            profile_action="unchanged",
+            enrollment_action="created",
+            notification_action=(
+                "new_course_notification"
+            ),
+        ),
+        service.LearnerImportPreflightRow(
+            row_id="row-enrollment",
+            row_number=4,
+            email="assigned@example.org",
+            classification="existing_enrollment",
+            account_state="inactive",
+            user_id="user-assigned",
+            learner_profile_id="profile-assigned",
+            enrollment_id="enrollment-assigned",
+            user_action="unchanged",
+            profile_action="unchanged",
+            enrollment_action="unchanged",
+            notification_action="not_required",
+        ),
+        service.LearnerImportPreflightRow(
+            row_id="row-conflict",
+            row_number=5,
+            email="conflict@example.org",
+            classification="identity_conflict",
+            account_state="active",
+            user_id="user-conflict",
+            learner_profile_id=None,
+            enrollment_id=None,
+            user_action="conflict",
+            profile_action="skipped",
+            enrollment_action="skipped",
+            notification_action="not_required",
+        ),
+        service.LearnerImportPreflightRow(
+            row_id="row-invalid",
+            row_number=6,
+            email="",
+            classification="invalid_row",
+            account_state="unknown",
+            user_id=None,
+            learner_profile_id=None,
+            enrollment_id=None,
+            user_action="skipped",
+            profile_action="skipped",
+            enrollment_action="skipped",
+            notification_action="not_required",
+        ),
+    ]
+
+    result = (
+        service.build_learner_import_preflight_result(
+            rows
+        )
+    )
+
+    category_total = sum(
+        [
+            result.new_users_count,
+            result.existing_inactive_users_count,
+            result.existing_active_users_count,
+            result.existing_enrollments_count,
+            result.identity_conflicts_count,
+            result.invalid_rows_count,
+        ]
+    )
+
+    assert category_total == len(rows)
+    assert result.new_users_count == 1
+    assert result.existing_inactive_users_count == 1
+    assert result.existing_active_users_count == 1
+    assert result.existing_enrollments_count == 1
+    assert result.identity_conflicts_count == 1
+    assert result.invalid_rows_count == 1

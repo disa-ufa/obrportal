@@ -577,13 +577,28 @@ class AdminLearnerImportRowItem(BaseModel):
     id: str
     row_number: int
     status: str
-    raw_data_json: dict[str, Any] = Field(default_factory=dict)
-    normalized_data_json: dict[str, Any] = Field(default_factory=dict)
-    validation_errors_json: list[str] = Field(default_factory=list)
+    raw_data_json: dict[str, Any] = Field(
+        default_factory=dict
+    )
+    normalized_data_json: dict[str, Any] = Field(
+        default_factory=dict
+    )
+    validation_errors_json: list[str] = Field(
+        default_factory=list
+    )
     error_summary: str | None = None
     user_id: str | None = None
     learner_profile_id: str | None = None
     enrollment_id: str | None = None
+    classification: str | None = None
+    account_state: str | None = None
+    user_action: str | None = None
+    profile_action: str | None = None
+    enrollment_action: str | None = None
+    notification_action: str | None = None
+    email_delivery_status: str | None = None
+    email_delivery_detail: str | None = None
+    email_delivery_error: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -598,6 +613,20 @@ class AdminLearnerImportInvitationItem(BaseModel):
     email_delivery_status: str
     email_delivery_detail: str | None = None
     email_delivery_error: str | None = None
+
+class AdminLearnerImportCourseNotificationItem(
+    BaseModel
+):
+    row_id: str
+    row_number: int
+    user_id: str
+    email: str
+    course_id: str
+    course_title: str
+    email_delivery_status: str
+    email_delivery_detail: str | None = None
+    email_delivery_error: str | None = None
+
 
 
 class AdminLearnerImportBatchItem(BaseModel):
@@ -682,6 +711,15 @@ class AdminLearnerImportBatchDetail(BaseModel):
     notes: str | None = None
     created_at: datetime
     updated_at: datetime
-    rows: list[AdminLearnerImportRowItem] = Field(default_factory=list)
-    invitations: list[AdminLearnerImportInvitationItem] = Field(default_factory=list)
-    preflight: AdminLearnerImportPreflightItem | None = None
+    rows: list[
+        AdminLearnerImportRowItem
+    ] = Field(default_factory=list)
+    invitations: list[
+        AdminLearnerImportInvitationItem
+    ] = Field(default_factory=list)
+    course_notifications: list[
+        AdminLearnerImportCourseNotificationItem
+    ] = Field(default_factory=list)
+    preflight: (
+        AdminLearnerImportPreflightItem | None
+    ) = None

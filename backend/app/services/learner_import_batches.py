@@ -5,6 +5,7 @@ from uuid import uuid4
 from typing import Protocol
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_password_hash
@@ -31,6 +32,15 @@ class LearnerImportInvitationCandidate:
     user_id: str
     email: str
 
+@dataclass(frozen=True)
+class LearnerImportCourseNotificationCandidate:
+    row_id: str
+    row_number: int
+    user_id: str
+    email: str
+    course_id: str
+
+
 
 @dataclass(frozen=True)
 class LearnerImportApplyResult:
@@ -41,7 +51,13 @@ class LearnerImportApplyResult:
     created_enrollments_count: int = 0
     assigned_learner_roles_count: int = 0
     error_rows_count: int = 0
-    invitation_candidates: tuple[LearnerImportInvitationCandidate, ...] = field(default_factory=tuple)
+    invitation_candidates: tuple[LearnerImportInvitationCandidate, ...] = field(
+        default_factory=tuple
+    )
+    course_notification_candidates: tuple[
+        LearnerImportCourseNotificationCandidate,
+        ...,
+    ] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -150,11 +166,13 @@ def build_learner_import_preflight_result(
             for item in rows
         ),
         existing_inactive_users_count=sum(
-            item.account_state == "inactive"
+            item.classification
+            == "existing_inactive_user"
             for item in rows
         ),
         existing_active_users_count=sum(
-            item.account_state == "active"
+            item.classification
+            == "existing_active_user"
             for item in rows
         ),
         existing_enrollments_count=sum(
@@ -432,14 +450,13 @@ async def build_learner_import_preflight(
         else:
             enrollment_action = "unchanged"
 
-        if not user.is_active:
+        if enrollment is not None:
+            notification_action = "not_required"
+        elif not user.is_active:
             notification_action = (
                 "password_setup_invitation"
             )
-        elif (
-            batch.course_id
-            and enrollment is None
-        ):
+        elif batch.course_id:
             notification_action = (
                 "new_course_notification"
             )
@@ -690,10 +707,14 @@ async def apply_learner_import_batch(
     batch: ImportBatch,
 ) -> LearnerImportApplyResult:
     if batch.status == "applied":
-        raise ValueError("Learner import batch has already been applied.")
+        raise ValueError(
+            "Learner import batch has already been applied."
+        )
 
     if batch.status != "parsed":
-        raise ValueError("Only parsed learner import batches can be applied.")
+        raise ValueError(
+            "Only parsed learner import batches can be applied."
+        )
 
     counts = {
         "created_users_count": 0,
@@ -705,140 +726,386 @@ async def apply_learner_import_batch(
         "error_rows_count": 0,
     }
 
-    invitation_candidates: list[LearnerImportInvitationCandidate] = []
+    invitation_candidates: list[
+        LearnerImportInvitationCandidate
+    ] = []
+    course_notification_candidates: list[
+        LearnerImportCourseNotificationCandidate
+    ] = []
 
     learner_role = await find_or_create_learner_role(db)
 
     valid_rows = sorted(
-        [row for row in batch.rows if row.status == "valid"],
+        [
+            row
+            for row in batch.rows
+            if row.status == "valid"
+        ],
         key=lambda row: row.row_number,
     )
 
     for row in valid_rows:
         data = row.normalized_data_json or {}
-        email = normalize_import_text(data.get("email")).lower()
-        phone = normalize_import_text(data.get("phone"))
-        full_name = normalize_import_text(data.get("full_name"))
-        snils = normalize_import_text(data.get("snils"))
+        email = normalize_import_text(
+            data.get("email")
+        ).lower()
+        phone = normalize_import_text(
+            data.get("phone")
+        )
+        full_name = normalize_import_text(
+            data.get("full_name")
+        )
+        snils = normalize_import_text(
+            data.get("snils")
+        )
 
         if not email:
             mark_import_row_error(
                 row,
-                "Email \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u0435\u043d \u0434\u043b\u044f \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u043d\u0430 \u043f\u043e\u0440\u0442\u0430\u043b\u0435.",
+                (
+                    "Email is required for portal "
+                    "registration."
+                ),
             )
             counts["error_rows_count"] += 1
             continue
 
-        created_new_user = False
+        row_counts = {
+            key: 0
+            for key in counts
+            if key != "error_rows_count"
+        }
 
-        user, user_conflict = await find_user_for_import_row(db, email=email, phone=phone)
-        if user_conflict:
-            mark_import_row_error(row, user_conflict)
-            counts["error_rows_count"] += 1
-            continue
+        invitation_candidate = None
+        course_notification_candidate = None
 
-        if user is None:
-            user = User(
-                email=email,
-                phone=phone or None,
-                full_name=full_name or None,
-                hashed_password=get_password_hash(f"Import-{uuid4().hex}"),
-                is_active=False,
-                is_email_verified=False,
-                mfa_enabled=False,
-            )
-            db.add(user)
-            await db.flush()
-            counts["created_users_count"] += 1
-            created_new_user = True
-        else:
-            if full_name and not user.full_name:
-                user.full_name = full_name
-            if phone and not user.phone:
-                user.phone = phone
-            counts["updated_users_count"] += 1
-
-        if snils:
-            snils_profile = await find_profile_by_snils(db, snils)
-            if snils_profile and snils_profile.user_id != user.id:
-                mark_import_row_error(row, "snils belongs to another learner profile.")
-                counts["error_rows_count"] += 1
-                continue
-
-        profile = await find_profile_for_user(db, str(user.id))
-        if profile is None:
-            profile = LearnerProfile(
-                user_id=str(user.id),
-                last_name=normalize_import_text(data.get("last_name")) or None,
-                first_name=normalize_import_text(data.get("first_name")) or None,
-                middle_name=normalize_import_text(data.get("middle_name")) or None,
-                phone=phone or None,
-                email=email or None,
-                snils=snils or None,
-                source="learner_import",
-                personal_data_basis="import",
-                notes=f"Import batch {batch.id}, row {row.row_number}",
-            )
-            db.add(profile)
-            await db.flush()
-            counts["created_profiles_count"] += 1
-        else:
-            apply_profile_data(profile, data)
-            counts["updated_profiles_count"] += 1
-
-        enrollment: Enrollment | None = None
-        if batch.course_id:
-            enrollment = await find_enrollment(db, user_id=str(user.id), course_id=str(batch.course_id))
-            if enrollment is None:
-                enrollment = Enrollment(
-                    user_id=str(user.id),
-                    course_id=str(batch.course_id),
-                    organization_id=str(batch.organization_id) if batch.organization_id else None,
-                    learning_group_id=str(batch.learning_group_id) if batch.learning_group_id else None,
-                    status="assigned",
+        try:
+            async with db.begin_nested():
+                user, user_conflict = (
+                    await find_user_for_import_row(
+                        db,
+                        email=email,
+                        phone=phone,
+                    )
                 )
-                db.add(enrollment)
+
+                if user_conflict:
+                    mark_import_row_error(
+                        row,
+                        user_conflict,
+                    )
+                    counts["error_rows_count"] += 1
+                    continue
+
+                snils_profile = None
+
+                if snils:
+                    snils_profile = (
+                        await find_profile_by_snils(
+                            db,
+                            snils,
+                        )
+                    )
+
+                if (
+                    snils_profile is not None
+                    and (
+                        user is None
+                        or str(snils_profile.user_id)
+                        != str(user.id)
+                    )
+                ):
+                    mark_import_row_error(
+                        row,
+                        (
+                            "SNILS belongs to another "
+                            "learner profile."
+                        ),
+                    )
+                    counts["error_rows_count"] += 1
+                    continue
+
+                if user is None:
+                    user = User(
+                        email=email,
+                        phone=phone or None,
+                        full_name=full_name or None,
+                        hashed_password=get_password_hash(
+                            f"Import-{uuid4().hex}"
+                        ),
+                        is_active=False,
+                        is_email_verified=False,
+                        mfa_enabled=False,
+                    )
+                    db.add(user)
+                    await db.flush()
+                    row_counts[
+                        "created_users_count"
+                    ] = 1
+                elif import_user_will_update(
+                    user,
+                    data,
+                ):
+                    if (
+                        full_name
+                        and not user.full_name
+                    ):
+                        user.full_name = full_name
+
+                    if phone and not user.phone:
+                        user.phone = phone
+
+                    row_counts[
+                        "updated_users_count"
+                    ] = 1
+
+                profile = await find_profile_for_user(
+                    db,
+                    str(user.id),
+                )
+
+                if profile is None:
+                    profile = LearnerProfile(
+                        user_id=str(user.id),
+                        last_name=(
+                            normalize_import_text(
+                                data.get("last_name")
+                            )
+                            or None
+                        ),
+                        first_name=(
+                            normalize_import_text(
+                                data.get("first_name")
+                            )
+                            or None
+                        ),
+                        middle_name=(
+                            normalize_import_text(
+                                data.get("middle_name")
+                            )
+                            or None
+                        ),
+                        phone=phone or None,
+                        email=email,
+                        snils=snils or None,
+                        source="learner_import",
+                        personal_data_basis="import",
+                        notes=(
+                            f"Import batch {batch.id}, "
+                            f"row {row.row_number}"
+                        ),
+                    )
+                    db.add(profile)
+                    await db.flush()
+                    row_counts[
+                        "created_profiles_count"
+                    ] = 1
+                elif import_profile_will_update(
+                    profile,
+                    data,
+                ):
+                    apply_profile_data(
+                        profile,
+                        data,
+                    )
+                    row_counts[
+                        "updated_profiles_count"
+                    ] = 1
+
+                enrollment: Enrollment | None = None
+                had_existing_enrollment = False
+                created_enrollment = False
+
+                if batch.course_id:
+                    enrollment = await find_enrollment(
+                        db,
+                        user_id=str(user.id),
+                        course_id=str(
+                            batch.course_id
+                        ),
+                    )
+
+                    had_existing_enrollment = (
+                        enrollment is not None
+                    )
+
+                    if enrollment is None:
+                        enrollment = Enrollment(
+                            user_id=str(user.id),
+                            course_id=str(
+                                batch.course_id
+                            ),
+                            organization_id=(
+                                str(
+                                    batch.organization_id
+                                )
+                                if batch.organization_id
+                                else None
+                            ),
+                            learning_group_id=(
+                                str(
+                                    batch.learning_group_id
+                                )
+                                if batch.learning_group_id
+                                else None
+                            ),
+                            status="assigned",
+                        )
+                        db.add(enrollment)
+                        await db.flush()
+
+                        created_enrollment = True
+                        row_counts[
+                            "created_enrollments_count"
+                        ] = 1
+                    else:
+                        if (
+                            batch.organization_id
+                            and not (
+                                enrollment.organization_id
+                            )
+                        ):
+                            enrollment.organization_id = (
+                                str(
+                                    batch.organization_id
+                                )
+                            )
+
+                        if (
+                            batch.learning_group_id
+                            and not (
+                                enrollment.learning_group_id
+                            )
+                        ):
+                            enrollment.learning_group_id = (
+                                str(
+                                    batch.learning_group_id
+                                )
+                            )
+
+                learner_role_assigned = (
+                    await assign_learner_role_if_available(
+                        db,
+                        user_id=str(user.id),
+                        learner_role=learner_role,
+                    )
+                )
+
+                if learner_role_assigned:
+                    row_counts[
+                        "assigned_learner_roles_count"
+                    ] = 1
+
+                row.status = "applied"
+                row.user_id = str(user.id)
+                row.learner_profile_id = str(
+                    profile.id
+                )
+                row.enrollment_id = (
+                    str(enrollment.id)
+                    if enrollment
+                    else None
+                )
+                row.error_summary = None
+
+                if not had_existing_enrollment:
+                    if not user.is_active:
+                        invitation_candidate = (
+                            LearnerImportInvitationCandidate(
+                                row_id=str(row.id),
+                                row_number=(
+                                    row.row_number
+                                ),
+                                user_id=str(user.id),
+                                email=user.email,
+                            )
+                        )
+                    elif (
+                        created_enrollment
+                        and batch.course_id
+                    ):
+                        course_notification_candidate = (
+                            LearnerImportCourseNotificationCandidate(
+                                row_id=str(row.id),
+                                row_number=(
+                                    row.row_number
+                                ),
+                                user_id=str(user.id),
+                                email=user.email,
+                                course_id=str(
+                                    batch.course_id
+                                ),
+                            )
+                        )
+
                 await db.flush()
-                counts["created_enrollments_count"] += 1
-            else:
-                if batch.organization_id and not enrollment.organization_id:
-                    enrollment.organization_id = str(batch.organization_id)
-                if batch.learning_group_id and not enrollment.learning_group_id:
-                    enrollment.learning_group_id = str(batch.learning_group_id)
 
-        learner_role_assigned = await assign_learner_role_if_available(
-            db,
-            user_id=str(user.id),
-            learner_role=learner_role,
-        )
-        if learner_role_assigned:
-            counts["assigned_learner_roles_count"] += 1
+        except IntegrityError:
+            mark_import_row_error(
+                row,
+                (
+                    "Database constraint conflict "
+                    "while applying learner import row."
+                ),
+            )
+            counts["error_rows_count"] += 1
+            continue
 
-        row.status = "applied"
-        row.user_id = str(user.id)
-        row.learner_profile_id = str(profile.id)
-        row.enrollment_id = str(enrollment.id) if enrollment else None
-        row.error_summary = None
+        for key, value in row_counts.items():
+            counts[key] += value
 
-        if created_new_user:
+        if invitation_candidate is not None:
             invitation_candidates.append(
-                LearnerImportInvitationCandidate(
-                    row_id=str(row.id),
-                    row_number=row.row_number,
-                    user_id=str(user.id),
-                    email=user.email,
-                )
+                invitation_candidate
             )
 
-    batch.created_users_count = counts["created_users_count"]
-    batch.updated_users_count = counts["updated_users_count"]
-    batch.created_profiles_count = counts["created_profiles_count"]
-    batch.updated_profiles_count = counts["updated_profiles_count"]
-    batch.created_enrollments_count = counts["created_enrollments_count"]
-    batch.invalid_rows = len([row for row in batch.rows if row.status in {"invalid", "error"}])
-    batch.valid_rows = len([row for row in batch.rows if row.status in {"valid", "applied"}])
+        if (
+            course_notification_candidate
+            is not None
+        ):
+            course_notification_candidates.append(
+                course_notification_candidate
+            )
+
+    batch.created_users_count = counts[
+        "created_users_count"
+    ]
+    batch.updated_users_count = counts[
+        "updated_users_count"
+    ]
+    batch.created_profiles_count = counts[
+        "created_profiles_count"
+    ]
+    batch.updated_profiles_count = counts[
+        "updated_profiles_count"
+    ]
+    batch.created_enrollments_count = counts[
+        "created_enrollments_count"
+    ]
+    batch.invalid_rows = len(
+        [
+            row
+            for row in batch.rows
+            if row.status in {"invalid", "error"}
+        ]
+    )
+    batch.valid_rows = len(
+        [
+            row
+            for row in batch.rows
+            if row.status in {"valid", "applied"}
+        ]
+    )
     batch.status = "applied"
 
     await db.flush()
 
-    return LearnerImportApplyResult(**counts, invitation_candidates=tuple(invitation_candidates))
+    return LearnerImportApplyResult(
+        **counts,
+        invitation_candidates=tuple(
+            invitation_candidates
+        ),
+        course_notification_candidates=tuple(
+            course_notification_candidates
+        ),
+    )
