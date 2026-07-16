@@ -514,7 +514,7 @@ export function LearnerImportsPage() {
       setSelectedImport(applied);
       setCopiedInvitationKey("");
       setNotice(
-        `?????? ????????: ??????? ????????????? ${applied.created_users_count}, ???????? ${applied.created_profiles_count}, ?????????? ${applied.created_enrollments_count}.${invitationCount ? ` ?????? ???????????: ${invitationCount}.` : ""}${courseNotificationCount ? ` ??????????? ? ?????: ${courseNotificationCount}.` : ""}`
+        `\u0418\u043c\u043f\u043e\u0440\u0442 \u043f\u0440\u0438\u043c\u0435\u043d\u0451\u043d: \u0441\u043e\u0437\u0434\u0430\u043d\u043e \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439 ${applied.created_users_count}, \u043f\u0440\u043e\u0444\u0438\u043b\u0435\u0439 ${applied.created_profiles_count}, \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0439 ${applied.created_enrollments_count}.${invitationCount ? ` \u0421\u0441\u044b\u043b\u043e\u043a \u0430\u043a\u0442\u0438\u0432\u0430\u0446\u0438\u0438: ${invitationCount}.` : ""}${courseNotificationCount ? ` \u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0439 \u043e \u043a\u0443\u0440\u0441\u0435: ${courseNotificationCount}.` : ""}`
       );
       setStatusFilter("");
       await loadImports({ status: "" });
@@ -1311,7 +1311,7 @@ export function LearnerImportsPage() {
                                   {decisionRow.email_delivery_status ? (
                                     <div className="flex flex-wrap items-center gap-2 text-xs">
                                       <span className="font-semibold text-slate-500">
-                                        {"????????:"}
+                                        {"\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430:"}
                                       </span>
                                       <span
                                         data-testid="learner-import-row-delivery-status"

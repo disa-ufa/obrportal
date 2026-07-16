@@ -1522,7 +1522,33 @@ def main() -> None:
         ],
     )
 
-    print("Frontend admin pages behavior smoke passed")
+
+learner_import_corrupted_text_guard = (
+    Path("frontend/src/pages/LearnerImportsPage.jsx")
+    .read_text(encoding="utf-8")
+)
+
+if "???" in learner_import_corrupted_text_guard:
+    raise SystemExit(
+        "LearnerImportsPage.jsx contains "
+        "corrupted question-mark text"
+    )
+
+for required_fragment in (
+    r"\u0418\u043c\u043f\u043e\u0440\u0442 "
+    r"\u043f\u0440\u0438\u043c\u0435\u043d\u0451\u043d:",
+    r"\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430:",
+):
+    if (
+        required_fragment
+        not in learner_import_corrupted_text_guard
+    ):
+        raise SystemExit(
+            "LearnerImportsPage.jsx is missing "
+            f"required fragment: {required_fragment}"
+        )
+
+print("Frontend admin pages behavior smoke passed")
 
 
 if __name__ == "__main__":

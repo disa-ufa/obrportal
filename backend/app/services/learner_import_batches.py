@@ -570,17 +570,54 @@ async def find_user_for_import_row(
     phone_user: User | None = None
 
     if email:
-        result = await db.execute(select(User).where(User.email == email))
+        result = await db.execute(
+            select(User).where(User.email == email)
+        )
         email_user = result.scalar_one_or_none()
 
     if phone:
-        result = await db.execute(select(User).where(User.phone == phone))
+        result = await db.execute(
+            select(User).where(User.phone == phone)
+        )
         phone_user = result.scalar_one_or_none()
 
-    if email_user and phone_user and email_user.id != phone_user.id:
-        return None, "email and phone belong to different users."
+    if email_user is None and phone_user is not None:
+        return (
+            None,
+            (
+                "Phone belongs to another user "
+                "with a different email."
+            ),
+        )
 
-    return email_user or phone_user, None
+    if (
+        email_user is not None
+        and phone_user is not None
+        and email_user.id != phone_user.id
+    ):
+        return (
+            None,
+            "Email and phone belong to different users.",
+        )
+
+    if email_user is not None and phone:
+        existing_phone = normalize_import_text(
+            email_user.phone
+        )
+
+        if (
+            existing_phone
+            and existing_phone != phone
+        ):
+            return (
+                None,
+                (
+                    "Email belongs to a user "
+                    "with a different phone."
+                ),
+            )
+
+    return email_user, None
 
 
 async def find_profile_for_user(db: AsyncSession, user_id: str) -> LearnerProfile | None:

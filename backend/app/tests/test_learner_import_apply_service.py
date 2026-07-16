@@ -448,3 +448,104 @@ async def test_apply_uses_independent_savepoint_per_row(
     assert batch.rows[0].status == "error"
     assert batch.rows[1].status == "applied"
     assert batch.status == "applied"
+
+@pytest.mark.asyncio
+async def test_apply_rejects_phone_identity_conflict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    batch = make_batch(
+        "new-person@example.org"
+    )
+    row = batch.rows[0]
+
+    row.normalized_data_json[
+        "phone"
+    ] = "+79000000002"
+
+    async def find_role(
+        db: object,
+    ) -> object:
+        del db
+        return object()
+
+    async def find_conflicting_user(
+        db: object,
+        *,
+        email: str,
+        phone: str,
+    ) -> tuple[None, str]:
+        del db
+
+        assert email == "new-person@example.org"
+        assert phone == "+79000000002"
+
+        return (
+            None,
+            (
+                "Phone belongs to another user "
+                "with a different email."
+            ),
+        )
+
+    class NestedTransaction:
+        async def __aenter__(
+            self,
+        ) -> None:
+            return None
+
+        async def __aexit__(
+            self,
+            exc_type: object,
+            exc: object,
+            traceback: object,
+        ) -> None:
+            del exc_type, exc, traceback
+
+    class FakeSession:
+        def begin_nested(
+            self,
+        ) -> NestedTransaction:
+            return NestedTransaction()
+
+        async def flush(
+            self,
+        ) -> None:
+            return None
+
+    monkeypatch.setattr(
+        service,
+        "find_or_create_learner_role",
+        find_role,
+    )
+
+    monkeypatch.setattr(
+        service,
+        "find_user_for_import_row",
+        find_conflicting_user,
+    )
+
+    result = await service.apply_learner_import_batch(
+        FakeSession(),
+        batch=batch,
+    )
+
+    assert row.status == "error"
+    assert row.user_id is None
+    assert row.learner_profile_id is None
+    assert row.enrollment_id is None
+    assert row.error_summary == (
+        "Phone belongs to another user "
+        "with a different email."
+    )
+
+    assert result.created_users_count == 0
+    assert result.updated_users_count == 0
+    assert result.created_profiles_count == 0
+    assert result.updated_profiles_count == 0
+    assert result.created_enrollments_count == 0
+    assert result.error_rows_count == 1
+    assert result.invitation_candidates == ()
+    assert (
+        result.course_notification_candidates
+        == ()
+    )
