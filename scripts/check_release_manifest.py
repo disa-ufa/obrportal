@@ -37,7 +37,7 @@ def main() -> None:
         fail("checkpoint last_migration mismatch")
     if checkpoint.get("status") != "user_invitations_email_delivery_deployed_and_e2e_verified":
         fail("checkpoint status mismatch")
-    if checkpoint.get("decision") != "run_first_real_course_end_to_end_pilot":
+    if checkpoint.get("decision") != "implement_production_learner_onboarding":
         fail("checkpoint decision mismatch")
     if checkpoint.get("cleanup_performed") is not False:
         fail("checkpoint cleanup_performed must be false")
@@ -704,24 +704,22 @@ def main() -> None:
 
 
     stage = stages["82.23"]
-    if stage.get("status") != "planned":
+    if stage.get("status") != "implementation_in_progress":
         fail("stage 82.23 status mismatch")
-    if stage.get("branch") != "stage82-23-first-real-course-e2e-pilot":
+    if stage.get("branch") != "stage82-23-production-learner-onboarding":
         fail("stage 82.23 branch mismatch")
     if stage.get("base") != "main":
         fail("stage 82.23 base mismatch")
-    if stage.get("deployment_type") != "production-e2e-validation":
+    if stage.get("deployment_type") != "backend-frontend":
         fail("stage 82.23 deployment_type mismatch")
-    if stage.get("decision") != "run_first_real_course_end_to_end_pilot":
+    if stage.get("decision") != "implement_production_learner_onboarding":
         fail("stage 82.23 decision mismatch")
     if stage.get("next_stage") != "82.24":
         fail("stage 82.23 next_stage mismatch")
-    if stage.get("first_real_course_e2e_pilot_plan") is not True:
-        fail("stage 82.23 pilot plan marker must be true")
     if stage.get("database_migration_required") is not False:
-        fail("stage 82.23 must not require a migration")
+        fail("stage 82.23 migration mismatch")
     if stage.get("cleanup_performed") is not False:
-        fail("stage 82.23 cleanup_performed must be false")
+        fail("stage 82.23 cleanup mismatch")
     print("release manifest guard passed")
 
 

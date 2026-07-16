@@ -57,9 +57,17 @@ from app.services.lesson_readiness import (
     get_admin_lessons_readiness_map,
     normalize_admin_lesson_readiness_payload,
 )
-from app.services.learner_import_batches import apply_learner_import_batch, create_import_batch_from_parse_result
+from app.services.learner_import_batches import (
+    LearnerImportPreflightResult,
+    apply_learner_import_batch,
+    build_learner_import_preflight,
+    create_import_batch_from_parse_result,
+)
 from app.services.learner_import_parser import parse_learner_import_file
-from app.services.email_delivery import send_password_setup_email
+from app.services.email_delivery import (
+    send_course_assignment_email,
+    send_password_setup_email,
+)
 from app.services.user_password_tokens import build_password_setup_url, create_user_password_token
 from app.schemas.admin import (
     AdminAuditEventItem,
@@ -76,7 +84,10 @@ from app.schemas.admin import (
     AdminLessonBlockReorder,
     AdminLearnerImportBatchDetail,
     AdminLearnerImportBatchItem,
+    AdminLearnerImportCourseNotificationItem,
     AdminLearnerImportInvitationItem,
+    AdminLearnerImportPreflightItem,
+    AdminLearnerImportPreflightRowItem,
     AdminLearnerImportRowItem,
     AdminLessonBlockUpdate,
     AdminCourseModuleCreate,
@@ -480,18 +491,69 @@ def build_admin_audit_event_item(
     )
 
 
-def build_admin_learner_import_row_item(row: ImportRow) -> AdminLearnerImportRowItem:
+def build_admin_learner_import_row_item(
+    row: ImportRow,
+    *,
+    applied_outcome: (
+        dict[str, str | None] | None
+    ) = None,
+) -> AdminLearnerImportRowItem:
+    outcome = applied_outcome or {}
+
     return AdminLearnerImportRowItem(
         id=str(row.id),
         row_number=row.row_number,
         status=row.status,
         raw_data_json=row.raw_data_json or {},
-        normalized_data_json=row.normalized_data_json or {},
-        validation_errors_json=row.validation_errors_json or [],
+        normalized_data_json=(
+            row.normalized_data_json or {}
+        ),
+        validation_errors_json=(
+            row.validation_errors_json or []
+        ),
         error_summary=row.error_summary,
-        user_id=str(row.user_id) if row.user_id else None,
-        learner_profile_id=str(row.learner_profile_id) if row.learner_profile_id else None,
-        enrollment_id=str(row.enrollment_id) if row.enrollment_id else None,
+        user_id=(
+            str(row.user_id)
+            if row.user_id
+            else None
+        ),
+        learner_profile_id=(
+            str(row.learner_profile_id)
+            if row.learner_profile_id
+            else None
+        ),
+        enrollment_id=(
+            str(row.enrollment_id)
+            if row.enrollment_id
+            else None
+        ),
+        classification=outcome.get(
+            "classification"
+        ),
+        account_state=outcome.get(
+            "account_state"
+        ),
+        user_action=outcome.get(
+            "user_action"
+        ),
+        profile_action=outcome.get(
+            "profile_action"
+        ),
+        enrollment_action=outcome.get(
+            "enrollment_action"
+        ),
+        notification_action=outcome.get(
+            "notification_action"
+        ),
+        email_delivery_status=outcome.get(
+            "email_delivery_status"
+        ),
+        email_delivery_detail=outcome.get(
+            "email_delivery_detail"
+        ),
+        email_delivery_error=outcome.get(
+            "email_delivery_error"
+        ),
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -523,36 +585,167 @@ def build_admin_learner_import_batch_item(batch: ImportBatch) -> AdminLearnerImp
     )
 
 
+def build_admin_learner_import_preflight_item(
+    batch: ImportBatch,
+    preflight: LearnerImportPreflightResult | None,
+) -> AdminLearnerImportPreflightItem | None:
+    if preflight is None:
+        return None
+
+    return AdminLearnerImportPreflightItem(
+        total_rows=batch.total_rows,
+        valid_rows=batch.valid_rows,
+        invalid_rows=batch.invalid_rows,
+        new_users_count=preflight.new_users_count,
+        existing_inactive_users_count=(
+            preflight.existing_inactive_users_count
+        ),
+        existing_active_users_count=(
+            preflight.existing_active_users_count
+        ),
+        existing_enrollments_count=(
+            preflight.existing_enrollments_count
+        ),
+        identity_conflicts_count=(
+            preflight.identity_conflicts_count
+        ),
+        invalid_rows_count=preflight.invalid_rows_count,
+        new_profiles_count=preflight.new_profiles_count,
+        updated_profiles_count=(
+            preflight.updated_profiles_count
+        ),
+        new_enrollments_count=(
+            preflight.new_enrollments_count
+        ),
+        password_setup_invitations_count=(
+            preflight.password_setup_invitations_count
+        ),
+        new_course_notifications_count=(
+            preflight.new_course_notifications_count
+        ),
+        rows=[
+            AdminLearnerImportPreflightRowItem(
+                row_id=item.row_id,
+                row_number=item.row_number,
+                email=item.email,
+                classification=item.classification,
+                account_state=item.account_state,
+                user_id=item.user_id,
+                learner_profile_id=(
+                    item.learner_profile_id
+                ),
+                enrollment_id=item.enrollment_id,
+                user_action=item.user_action,
+                profile_action=item.profile_action,
+                enrollment_action=(
+                    item.enrollment_action
+                ),
+                notification_action=(
+                    item.notification_action
+                ),
+                error_code=item.error_code,
+                error_message=item.error_message,
+            )
+            for item in preflight.rows
+        ],
+    )
+
+
 def build_admin_learner_import_batch_detail(
     batch: ImportBatch,
     *,
-    invitations: list[AdminLearnerImportInvitationItem] | None = None,
+    invitations: list[
+        AdminLearnerImportInvitationItem
+    ] | None = None,
+    course_notifications: list[
+        AdminLearnerImportCourseNotificationItem
+    ] | None = None,
+    applied_row_outcomes: (
+        dict[
+            str,
+            dict[str, str | None],
+        ]
+        | None
+    ) = None,
+    preflight: (
+        LearnerImportPreflightResult | None
+    ) = None,
 ) -> AdminLearnerImportBatchDetail:
-    rows = sorted(batch.rows, key=lambda item: item.row_number)
+    outcome_map = applied_row_outcomes or {}
 
     return AdminLearnerImportBatchDetail(
         id=str(batch.id),
         import_type=batch.import_type,
         source_filename=batch.source_filename,
-        source_content_type=batch.source_content_type,
+        source_content_type=(
+            batch.source_content_type
+        ),
         status=batch.status,
-        organization_id=str(batch.organization_id) if batch.organization_id else None,
-        learning_group_id=str(batch.learning_group_id) if batch.learning_group_id else None,
-        course_id=str(batch.course_id) if batch.course_id else None,
+        organization_id=(
+            str(batch.organization_id)
+            if batch.organization_id
+            else None
+        ),
+        learning_group_id=(
+            str(batch.learning_group_id)
+            if batch.learning_group_id
+            else None
+        ),
+        course_id=(
+            str(batch.course_id)
+            if batch.course_id
+            else None
+        ),
         total_rows=batch.total_rows,
         valid_rows=batch.valid_rows,
         invalid_rows=batch.invalid_rows,
-        created_users_count=batch.created_users_count,
-        updated_users_count=batch.updated_users_count,
-        created_profiles_count=batch.created_profiles_count,
-        updated_profiles_count=batch.updated_profiles_count,
-        created_enrollments_count=batch.created_enrollments_count,
-        uploaded_by_user_id=str(batch.uploaded_by_user_id) if batch.uploaded_by_user_id else None,
+        created_users_count=(
+            batch.created_users_count
+        ),
+        updated_users_count=(
+            batch.updated_users_count
+        ),
+        created_profiles_count=(
+            batch.created_profiles_count
+        ),
+        updated_profiles_count=(
+            batch.updated_profiles_count
+        ),
+        created_enrollments_count=(
+            batch.created_enrollments_count
+        ),
+        uploaded_by_user_id=(
+            str(batch.uploaded_by_user_id)
+            if batch.uploaded_by_user_id
+            else None
+        ),
         notes=batch.notes,
         created_at=batch.created_at,
         updated_at=batch.updated_at,
-        rows=[build_admin_learner_import_row_item(row) for row in rows],
-        invitations=invitations or [],
+        rows=[
+            build_admin_learner_import_row_item(
+                row,
+                applied_outcome=outcome_map.get(
+                    str(row.id)
+                ),
+            )
+            for row in sorted(
+                batch.rows,
+                key=lambda item: item.row_number,
+            )
+        ],
+        invitations=list(
+            invitations or []
+        ),
+        course_notifications=list(
+            course_notifications or []
+        ),
+        preflight=(
+            build_admin_learner_import_preflight_item(
+                batch,
+                preflight,
+            )
+        ),
     )
 
 
@@ -6663,37 +6856,143 @@ async def list_learner_imports(
 async def apply_learner_import(
     batch_id: str,
     request: Request,
-    current_user: User = Depends(require_permission("admin.users.write")),
+    current_user: User = Depends(
+        require_permission("admin.users.write")
+    ),
     session: AsyncSession = Depends(get_db),
 ) -> AdminLearnerImportBatchDetail:
-    batch = await get_admin_learner_import_batch_or_404(batch_id, session)
+    batch = (
+        await get_admin_learner_import_batch_or_404(
+            batch_id,
+            session,
+        )
+    )
 
     try:
-        apply_result = await apply_learner_import_batch(session, batch=batch)
+        preflight = (
+            await build_learner_import_preflight(
+                session,
+                batch=batch,
+            )
+        )
 
-        invitations: list[AdminLearnerImportInvitationItem] = []
-        for candidate in apply_result.invitation_candidates:
-            invited_user = await session.get(User, candidate.user_id)
+        apply_result = (
+            await apply_learner_import_batch(
+                session,
+                batch=batch,
+            )
+        )
+
+        applied_row_outcomes: dict[
+            str,
+            dict[str, str | None],
+        ] = {
+            item.row_id: {
+                "classification": (
+                    item.classification
+                ),
+                "account_state": (
+                    item.account_state
+                ),
+                "user_action": item.user_action,
+                "profile_action": (
+                    item.profile_action
+                ),
+                "enrollment_action": (
+                    item.enrollment_action
+                ),
+                "notification_action": (
+                    item.notification_action
+                ),
+                "email_delivery_status": (
+                    "not_required"
+                    if (
+                        item.notification_action
+                        == "not_required"
+                    )
+                    else "skipped"
+                ),
+                "email_delivery_detail": (
+                    "Email delivery was not required."
+                    if (
+                        item.notification_action
+                        == "not_required"
+                    )
+                    else (
+                        "Email delivery was not "
+                        "completed."
+                    )
+                ),
+                "email_delivery_error": None,
+            }
+            for item in preflight.rows
+        }
+
+        invitations: list[
+            AdminLearnerImportInvitationItem
+        ] = []
+
+        for candidate in (
+            apply_result.invitation_candidates
+        ):
+            invited_user = await session.get(
+                User,
+                candidate.user_id,
+            )
+
             if invited_user is None:
+                outcome = applied_row_outcomes.get(
+                    candidate.row_id
+                )
+
+                if outcome is not None:
+                    outcome[
+                        "email_delivery_status"
+                    ] = "failed"
+                    outcome[
+                        "email_delivery_detail"
+                    ] = None
+                    outcome[
+                        "email_delivery_error"
+                    ] = (
+                        "Imported user could not be "
+                        "loaded for invitation delivery."
+                    )
+
                 continue
 
-            created_token = await create_user_password_token(
-                session,
-                user=invited_user,
-                created_by_user=current_user,
-                delivery_target_email=invited_user.email,
-                mark_sent=False,
-            )
-            setup_url = build_password_setup_url(settings.public_base_url, created_token.raw_token)
-            email_delivery_result = send_password_setup_email(
-                recipient=invited_user.email,
-                user_email=invited_user.email,
-                setup_url=setup_url,
-                expires_at=created_token.record.expires_at,
+            created_token = (
+                await create_user_password_token(
+                    session,
+                    user=invited_user,
+                    created_by_user=current_user,
+                    delivery_target_email=(
+                        invited_user.email
+                    ),
+                    mark_sent=False,
+                )
             )
 
-            if email_delivery_result.sent:
-                created_token.record.sent_at = datetime.now(timezone.utc)
+            setup_url = build_password_setup_url(
+                settings.public_base_url,
+                created_token.raw_token,
+            )
+
+            delivery_result = (
+                send_password_setup_email(
+                    recipient=invited_user.email,
+                    user_email=invited_user.email,
+                    setup_url=setup_url,
+                    expires_at=(
+                        created_token.record.expires_at
+                    ),
+                )
+            )
+
+            if delivery_result.sent:
+                created_token.record.sent_at = (
+                    datetime.now(timezone.utc)
+                )
 
             invitations.append(
                 AdminLearnerImportInvitationItem(
@@ -6702,69 +7001,325 @@ async def apply_learner_import(
                     user_id=str(invited_user.id),
                     email=invited_user.email,
                     setup_url=setup_url,
-                    expires_at=created_token.record.expires_at,
-                    email_delivery_status=email_delivery_result.status,
-                    email_delivery_detail=email_delivery_result.detail,
-                    email_delivery_error=email_delivery_result.error,
+                    expires_at=(
+                        created_token.record.expires_at
+                    ),
+                    email_delivery_status=(
+                        delivery_result.status
+                    ),
+                    email_delivery_detail=(
+                        delivery_result.detail
+                    ),
+                    email_delivery_error=(
+                        delivery_result.error
+                    ),
                 )
             )
+
+            outcome = applied_row_outcomes.get(
+                candidate.row_id
+            )
+
+            if outcome is not None:
+                outcome[
+                    "email_delivery_status"
+                ] = delivery_result.status
+                outcome[
+                    "email_delivery_detail"
+                ] = delivery_result.detail
+                outcome[
+                    "email_delivery_error"
+                ] = delivery_result.error
+
+
+        course_notifications: list[
+            AdminLearnerImportCourseNotificationItem
+        ] = []
+        course_titles: dict[str, str] = {}
+
+        for candidate in (
+            apply_result
+            .course_notification_candidates
+        ):
+            notified_user = await session.get(
+                User,
+                candidate.user_id,
+            )
+
+            if notified_user is None:
+                outcome = applied_row_outcomes.get(
+                    candidate.row_id
+                )
+
+                if outcome is not None:
+                    outcome[
+                        "email_delivery_status"
+                    ] = "failed"
+                    outcome[
+                        "email_delivery_detail"
+                    ] = None
+                    outcome[
+                        "email_delivery_error"
+                    ] = (
+                        "Imported user could not be "
+                        "loaded for course notification."
+                    )
+
+                continue
+
+            course_title = course_titles.get(
+                candidate.course_id
+            )
+
+            if course_title is None:
+                course = await session.get(
+                    Course,
+                    candidate.course_id,
+                )
+                course_title = (
+                    course.title
+                    if course is not None
+                    else "Assigned course"
+                )
+                course_titles[
+                    candidate.course_id
+                ] = course_title
+
+            delivery_result = (
+                send_course_assignment_email(
+                    recipient=notified_user.email,
+                    user_email=notified_user.email,
+                    course_title=course_title,
+                    portal_url=(
+                        settings.public_base_url
+                    ),
+                )
+            )
+
+            course_notifications.append(
+                AdminLearnerImportCourseNotificationItem(
+                    row_id=candidate.row_id,
+                    row_number=candidate.row_number,
+                    user_id=str(notified_user.id),
+                    email=notified_user.email,
+                    course_id=candidate.course_id,
+                    course_title=course_title,
+                    email_delivery_status=(
+                        delivery_result.status
+                    ),
+                    email_delivery_detail=(
+                        delivery_result.detail
+                    ),
+                    email_delivery_error=(
+                        delivery_result.error
+                    ),
+                )
+            )
+
+            outcome = applied_row_outcomes.get(
+                candidate.row_id
+            )
+
+            if outcome is not None:
+                outcome[
+                    "email_delivery_status"
+                ] = delivery_result.status
+                outcome[
+                    "email_delivery_detail"
+                ] = delivery_result.detail
+                outcome[
+                    "email_delivery_error"
+                ] = delivery_result.error
+
 
         await create_admin_audit_event(
             session,
             actor_user=current_user,
-            action="admin.learner_import_applied",
+            action=(
+                "admin.learner_import_applied"
+            ),
             entity_type="import_batch",
             entity_id=str(batch.id),
             payload={
                 "batch_id": str(batch.id),
-                "source_filename": batch.source_filename,
-                "created_users_count": apply_result.created_users_count,
-                "updated_users_count": apply_result.updated_users_count,
-                "created_profiles_count": apply_result.created_profiles_count,
-                "updated_profiles_count": apply_result.updated_profiles_count,
-                "created_enrollments_count": apply_result.created_enrollments_count,
-                "assigned_learner_roles_count": apply_result.assigned_learner_roles_count,
-                "error_rows_count": apply_result.error_rows_count,
-                "created_invitations_count": len(invitations),
+                "source_filename": (
+                    batch.source_filename
+                ),
+                "created_users_count": (
+                    apply_result.created_users_count
+                ),
+                "updated_users_count": (
+                    apply_result.updated_users_count
+                ),
+                "created_profiles_count": (
+                    apply_result.created_profiles_count
+                ),
+                "updated_profiles_count": (
+                    apply_result.updated_profiles_count
+                ),
+                "created_enrollments_count": (
+                    apply_result
+                    .created_enrollments_count
+                ),
+                "assigned_learner_roles_count": (
+                    apply_result
+                    .assigned_learner_roles_count
+                ),
+                "error_rows_count": (
+                    apply_result.error_rows_count
+                ),
+                "created_invitations_count": len(
+                    invitations
+                ),
                 "sent_invitations_count": sum(
-                    1 for item in invitations if item.email_delivery_status == "sent"
+                    1
+                    for item in invitations
+                    if (
+                        item.email_delivery_status
+                        == "sent"
+                    )
                 ),
                 "failed_invitations_count": sum(
-                    1 for item in invitations if item.email_delivery_status == "failed"
+                    1
+                    for item in invitations
+                    if (
+                        item.email_delivery_status
+                        == "failed"
+                    )
                 ),
                 "skipped_invitations_count": sum(
-                    1 for item in invitations if item.email_delivery_status == "skipped"
+                    1
+                    for item in invitations
+                    if (
+                        item.email_delivery_status
+                        == "skipped"
+                    )
                 ),
-                "sent_invitations_count": sum(
-                    1 for item in invitations if item.email_delivery_status == "sent"
+                "course_notifications_count": len(
+                    course_notifications
                 ),
-                "failed_invitations_count": sum(
-                    1 for item in invitations if item.email_delivery_status == "failed"
+                "sent_course_notifications_count": sum(
+                    1
+                    for item in course_notifications
+                    if (
+                        item.email_delivery_status
+                        == "sent"
+                    )
                 ),
-                "skipped_invitations_count": sum(
-                    1 for item in invitations if item.email_delivery_status == "skipped"
+                "failed_course_notifications_count": sum(
+                    1
+                    for item in course_notifications
+                    if (
+                        item.email_delivery_status
+                        == "failed"
+                    )
+                ),
+                "skipped_course_notifications_count": sum(
+                    1
+                    for item in course_notifications
+                    if (
+                        item.email_delivery_status
+                        == "skipped"
+                    )
                 ),
             },
             request=request,
         )
 
         await session.commit()
+
     except ValueError as exc:
         await session.rollback()
+
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=(
+                status.HTTP_400_BAD_REQUEST
+            ),
             detail=str(exc),
         )
+
     except IntegrityError:
         await session.rollback()
+
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Learner import could not be applied because of duplicate user, phone, profile or enrollment data",
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "Learner import could not be "
+                "applied because of duplicate "
+                "user, phone, profile or "
+                "enrollment data"
+            ),
         )
 
-    refreshed_batch = await get_admin_learner_import_batch_or_404(batch_id, session)
+    refreshed_batch = (
+        await get_admin_learner_import_batch_or_404(
+            batch_id,
+            session,
+        )
+    )
 
-    return build_admin_learner_import_batch_detail(refreshed_batch, invitations=invitations)
+    for row in refreshed_batch.rows:
+        row_id = str(row.id)
+        outcome = applied_row_outcomes.get(
+            row_id
+        )
+
+        if outcome is None:
+            outcome = {
+                "classification": (
+                    "invalid_row"
+                    if row.status == "invalid"
+                    else "identity_conflict"
+                ),
+                "account_state": "unknown",
+                "user_action": "skipped",
+                "profile_action": "skipped",
+                "enrollment_action": "skipped",
+                "notification_action": (
+                    "not_required"
+                ),
+                "email_delivery_status": (
+                    "not_required"
+                ),
+                "email_delivery_detail": (
+                    "Email delivery was not required."
+                ),
+                "email_delivery_error": None,
+            }
+            applied_row_outcomes[row_id] = outcome
+
+        if row.status == "error":
+            outcome["classification"] = (
+                "identity_conflict"
+            )
+            outcome["user_action"] = "conflict"
+            outcome["profile_action"] = "skipped"
+            outcome["enrollment_action"] = "skipped"
+            outcome["notification_action"] = (
+                "not_required"
+            )
+            outcome["email_delivery_status"] = (
+                "not_required"
+            )
+            outcome["email_delivery_detail"] = (
+                "Email delivery was not required."
+            )
+            outcome["email_delivery_error"] = (
+                row.error_summary
+            )
+
+    return build_admin_learner_import_batch_detail(
+        refreshed_batch,
+        invitations=invitations,
+        course_notifications=(
+            course_notifications
+        ),
+        applied_row_outcomes=(
+            applied_row_outcomes
+        ),
+    )
 
 
 @router.get("/learner-imports/{batch_id}", response_model=AdminLearnerImportBatchDetail)
@@ -6775,7 +7330,19 @@ async def get_learner_import_detail(
 ) -> AdminLearnerImportBatchDetail:
     batch = await get_admin_learner_import_batch_or_404(batch_id, session)
 
-    return build_admin_learner_import_batch_detail(batch)
+    preflight = (
+        await build_learner_import_preflight(
+            session,
+            batch=batch,
+        )
+        if batch.status == "parsed"
+        else None
+    )
+
+    return build_admin_learner_import_batch_detail(
+        batch,
+        preflight=preflight,
+    )
 
 @router.post(
     "/learner-imports",
@@ -6858,4 +7425,12 @@ async def create_learner_import(
 
     await session.commit()
 
-    return build_admin_learner_import_batch_detail(batch)
+    preflight = await build_learner_import_preflight(
+        session,
+        batch=batch,
+    )
+
+    return build_admin_learner_import_batch_detail(
+        batch,
+        preflight=preflight,
+    )

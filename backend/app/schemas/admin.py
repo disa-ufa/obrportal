@@ -113,9 +113,6 @@ class AdminUserInviteResponse(BaseModel):
     email_delivery_status: str
     email_delivery_detail: str | None = None
     email_delivery_error: str | None = None
-    email_delivery_status: str
-    email_delivery_detail: str | None = None
-    email_delivery_error: str | None = None
 
 
 class AdminUserRoleAssign(BaseModel):
@@ -580,13 +577,28 @@ class AdminLearnerImportRowItem(BaseModel):
     id: str
     row_number: int
     status: str
-    raw_data_json: dict[str, Any] = Field(default_factory=dict)
-    normalized_data_json: dict[str, Any] = Field(default_factory=dict)
-    validation_errors_json: list[str] = Field(default_factory=list)
+    raw_data_json: dict[str, Any] = Field(
+        default_factory=dict
+    )
+    normalized_data_json: dict[str, Any] = Field(
+        default_factory=dict
+    )
+    validation_errors_json: list[str] = Field(
+        default_factory=list
+    )
     error_summary: str | None = None
     user_id: str | None = None
     learner_profile_id: str | None = None
     enrollment_id: str | None = None
+    classification: str | None = None
+    account_state: str | None = None
+    user_action: str | None = None
+    profile_action: str | None = None
+    enrollment_action: str | None = None
+    notification_action: str | None = None
+    email_delivery_status: str | None = None
+    email_delivery_detail: str | None = None
+    email_delivery_error: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -601,9 +613,20 @@ class AdminLearnerImportInvitationItem(BaseModel):
     email_delivery_status: str
     email_delivery_detail: str | None = None
     email_delivery_error: str | None = None
+
+class AdminLearnerImportCourseNotificationItem(
+    BaseModel
+):
+    row_id: str
+    row_number: int
+    user_id: str
+    email: str
+    course_id: str
+    course_title: str
     email_delivery_status: str
     email_delivery_detail: str | None = None
     email_delivery_error: str | None = None
+
 
 
 class AdminLearnerImportBatchItem(BaseModel):
@@ -629,6 +652,44 @@ class AdminLearnerImportBatchItem(BaseModel):
     updated_at: datetime
 
 
+
+class AdminLearnerImportPreflightRowItem(BaseModel):
+    row_id: str
+    row_number: int
+    email: str
+    classification: str
+    account_state: str
+    user_id: str | None = None
+    learner_profile_id: str | None = None
+    enrollment_id: str | None = None
+    user_action: str
+    profile_action: str
+    enrollment_action: str
+    notification_action: str
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+class AdminLearnerImportPreflightItem(BaseModel):
+    total_rows: int
+    valid_rows: int
+    invalid_rows: int
+    new_users_count: int
+    existing_inactive_users_count: int
+    existing_active_users_count: int
+    existing_enrollments_count: int
+    identity_conflicts_count: int
+    invalid_rows_count: int
+    new_profiles_count: int
+    updated_profiles_count: int
+    new_enrollments_count: int
+    password_setup_invitations_count: int
+    new_course_notifications_count: int
+    rows: list[
+        AdminLearnerImportPreflightRowItem
+    ] = Field(default_factory=list)
+
+
 class AdminLearnerImportBatchDetail(BaseModel):
     id: str
     import_type: str
@@ -650,5 +711,15 @@ class AdminLearnerImportBatchDetail(BaseModel):
     notes: str | None = None
     created_at: datetime
     updated_at: datetime
-    rows: list[AdminLearnerImportRowItem] = Field(default_factory=list)
-    invitations: list[AdminLearnerImportInvitationItem] = Field(default_factory=list)
+    rows: list[
+        AdminLearnerImportRowItem
+    ] = Field(default_factory=list)
+    invitations: list[
+        AdminLearnerImportInvitationItem
+    ] = Field(default_factory=list)
+    course_notifications: list[
+        AdminLearnerImportCourseNotificationItem
+    ] = Field(default_factory=list)
+    preflight: (
+        AdminLearnerImportPreflightItem | None
+    ) = None

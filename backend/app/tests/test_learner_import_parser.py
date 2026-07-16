@@ -47,6 +47,30 @@ def test_parse_csv_learner_import_reports_row_errors() -> None:
     assert "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email." in result.rows[0].validation_errors
 
 
+def test_parse_csv_learner_import_requires_email_for_phone_only_row() -> None:
+    content = (
+        "\u0424\u0418\u041e;Email;\u0422\u0435\u043b\u0435\u0444\u043e\u043d\n"
+        "\u0421\u0438\u0434\u043e\u0440\u043e\u0432 \u0421\u0438\u0434\u043e\u0440 "
+        "\u0421\u0438\u0434\u043e\u0440\u043e\u0432\u0438\u0447;;89171234567\n"
+    ).encode("utf-8")
+
+    result = parse_learner_import_file(
+        "learners.csv",
+        content,
+    )
+
+    assert result.total_rows == 1
+    assert result.valid_rows == 0
+    assert result.invalid_rows == 1
+
+    row = result.rows[0]
+
+    assert row.status == "invalid"
+    assert row.normalized_data["email"] == ""
+    assert row.normalized_data["phone"] == "+79171234567"
+    assert "Email \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u0435\u043d \u0434\u043b\u044f \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u043d\u0430 \u043f\u043e\u0440\u0442\u0430\u043b\u0435." in row.validation_errors
+
+
 def test_parse_xlsx_learner_import_finds_header_below_top_rows() -> None:
     workbook = Workbook()
     sheet = workbook.active

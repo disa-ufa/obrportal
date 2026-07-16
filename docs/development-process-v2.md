@@ -172,4 +172,4 @@ docker_cleanup_performed=no
 ```
 
 The next product stage is Stage 82.23:
-First real course end-to-end pilot.
+Production learner onboarding rules and preview.

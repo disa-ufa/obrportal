@@ -206,3 +206,124 @@ def send_password_setup_email(
     )
 
     return send_email_message(message, email_settings=email_settings)
+
+
+def build_course_assignment_email_subject(
+    *,
+    app_name: str | None = None,
+) -> str:
+    safe_app_name = (
+        normalize_email_header_value(app_name)
+        or settings.app_name
+    )
+
+    return (
+        f"{safe_app_name}: "
+        "new course assigned"
+    )
+
+
+def build_course_assignment_email_body(
+    *,
+    user_email: str,
+    course_title: str,
+    portal_url: str,
+    app_name: str | None = None,
+) -> str:
+    safe_app_name = (
+        normalize_email_header_value(app_name)
+        or settings.app_name
+    )
+    safe_course_title = (
+        normalize_email_header_value(
+            course_title
+        )
+        or "Assigned course"
+    )
+
+    return "\n".join(
+        [
+            "Hello,",
+            "",
+            (
+                "A new course has been assigned "
+                f"to your {safe_app_name} account."
+            ),
+            f"Account: {user_email}",
+            f"Course: {safe_course_title}",
+            "",
+            "Open the learning portal:",
+            portal_url,
+            "",
+            f"-- {safe_app_name}",
+        ]
+    )
+
+
+def build_course_assignment_email_message(
+    *,
+    recipient: str,
+    course_title: str,
+    portal_url: str,
+    user_email: str | None = None,
+    app_name: str | None = None,
+    email_settings: Settings = settings,
+) -> EmailMessage:
+    normalized_recipient = (
+        normalize_email_header_value(recipient)
+    )
+
+    if not normalized_recipient:
+        raise ValueError(
+            "Recipient email is required."
+        )
+
+    message = EmailMessage()
+    message["From"] = build_email_from_header(
+        email_settings
+    )
+    message["To"] = normalized_recipient
+    message["Subject"] = (
+        build_course_assignment_email_subject(
+            app_name=app_name
+        )
+    )
+    message.set_content(
+        build_course_assignment_email_body(
+            user_email=(
+                user_email
+                or normalized_recipient
+            ),
+            course_title=course_title,
+            portal_url=portal_url,
+            app_name=app_name,
+        )
+    )
+
+    return message
+
+
+def send_course_assignment_email(
+    *,
+    recipient: str,
+    course_title: str,
+    portal_url: str,
+    user_email: str | None = None,
+    app_name: str | None = None,
+    email_settings: Settings = settings,
+) -> EmailDeliveryResult:
+    message = (
+        build_course_assignment_email_message(
+            recipient=recipient,
+            user_email=user_email,
+            course_title=course_title,
+            portal_url=portal_url,
+            app_name=app_name,
+            email_settings=email_settings,
+        )
+    )
+
+    return send_email_message(
+        message,
+        email_settings=email_settings,
+    )
