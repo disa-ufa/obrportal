@@ -634,6 +634,7 @@ class AdminLearnerImportBatchItem(BaseModel):
     import_type: str
     source_filename: str | None = None
     source_content_type: str | None = None
+    source_digest: str | None = None
     status: str
     organization_id: str | None = None
     learning_group_id: str | None = None
@@ -695,6 +696,7 @@ class AdminLearnerImportBatchDetail(BaseModel):
     import_type: str
     source_filename: str | None = None
     source_content_type: str | None = None
+    source_digest: str | None = None
     status: str
     organization_id: str | None = None
     learning_group_id: str | None = None

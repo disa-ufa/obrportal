@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,8 +60,11 @@ from app.services.lesson_readiness import (
 from app.services.learner_import_batches import (
     LearnerImportPreflightResult,
     apply_learner_import_batch,
+    build_learner_import_deduplication_key,
     build_learner_import_preflight,
+    compute_learner_import_source_digest,
     create_import_batch_from_parse_result,
+    find_learner_import_batch_by_deduplication_key,
 )
 from app.services.learner_import_parser import parse_learner_import_file
 from app.services.email_delivery import (
@@ -601,6 +604,7 @@ def build_admin_learner_import_batch_item(batch: ImportBatch) -> AdminLearnerImp
         import_type=batch.import_type,
         source_filename=batch.source_filename,
         source_content_type=batch.source_content_type,
+        source_digest=batch.source_digest,
         status=batch.status,
         organization_id=str(batch.organization_id) if batch.organization_id else None,
         learning_group_id=str(batch.learning_group_id) if batch.learning_group_id else None,
@@ -715,6 +719,7 @@ def build_admin_learner_import_batch_detail(
         source_content_type=(
             batch.source_content_type
         ),
+        source_digest=batch.source_digest,
         status=batch.status,
         organization_id=(
             str(batch.organization_id)
@@ -7413,86 +7418,218 @@ async def get_learner_import_detail(
     "/learner-imports",
     response_model=AdminLearnerImportBatchDetail,
     status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_200_OK: {
+            "model": AdminLearnerImportBatchDetail,
+            "description": (
+                "Existing learner import batch reused"
+            ),
+            "headers": {
+                "X-Import-Reused": {
+                    "description": (
+                        "Indicates that an existing "
+                        "import batch was returned"
+                    ),
+                    "schema": {
+                        "type": "string",
+                        "enum": ["true"],
+                    },
+                },
+            },
+        },
+    },
 )
 async def create_learner_import(
     request: Request,
+    response: Response,
     file: UploadFile = File(...),
     organization_id: str | None = Form(default=None),
     learning_group_id: str | None = Form(default=None),
     course_id: str | None = Form(default=None),
     notes: str | None = Form(default=None),
-    current_user: User = Depends(require_permission("admin.users.write")),
+    current_user: User = Depends(
+        require_permission("admin.users.write")
+    ),
     session: AsyncSession = Depends(get_db),
 ) -> AdminLearnerImportBatchDetail:
-    normalize_learner_import_extension(file.filename)
+    normalize_learner_import_extension(
+        file.filename
+    )
 
     content = await file.read()
     size_bytes = len(content)
 
     if size_bytes <= 0:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
             detail="Import file is empty",
         )
 
     if size_bytes > LEARNER_IMPORT_MAX_UPLOAD_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=(
+                status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+            ),
             detail="Import file is too large",
         )
 
     if organization_id is not None:
-        await get_admin_organization_or_404(organization_id, session)
+        await get_admin_organization_or_404(
+            organization_id,
+            session,
+        )
 
     if learning_group_id is not None:
-        await ensure_admin_learning_group_exists(learning_group_id, session)
+        await ensure_admin_learning_group_exists(
+            learning_group_id,
+            session,
+        )
 
     if course_id is not None:
-        await ensure_admin_course_exists(course_id, session)
+        await ensure_admin_course_exists(
+            course_id,
+            session,
+        )
 
-    try:
-        parse_result = parse_learner_import_file(file.filename or "learners.csv", content)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
-        ) from exc
-
-    batch = await create_import_batch_from_parse_result(
-        session,
-        parse_result=parse_result,
-        source_content_type=file.content_type,
-        organization_id=organization_id,
-        learning_group_id=learning_group_id,
-        course_id=course_id,
-        uploaded_by_user_id=str(current_user.id),
-        notes=notes,
+    source_digest = (
+        compute_learner_import_source_digest(
+            content
+        )
     )
+    deduplication_key = (
+        build_learner_import_deduplication_key(
+            source_digest=source_digest,
+            organization_id=organization_id,
+            learning_group_id=learning_group_id,
+            course_id=course_id,
+        )
+    )
+
+    batch = (
+        await find_learner_import_batch_by_deduplication_key(
+            session,
+            deduplication_key=deduplication_key,
+        )
+    )
+    batch_reused = batch is not None
+
+    if batch is None:
+        try:
+            parse_result = parse_learner_import_file(
+                file.filename or "learners.csv",
+                content,
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
+                detail=str(exc),
+            ) from exc
+
+        try:
+            async with session.begin_nested():
+                batch = (
+                    await create_import_batch_from_parse_result(
+                        session,
+                        parse_result=parse_result,
+                        source_content_type=(
+                            file.content_type
+                        ),
+                        source_digest=source_digest,
+                        organization_id=organization_id,
+                        learning_group_id=(
+                            learning_group_id
+                        ),
+                        course_id=course_id,
+                        uploaded_by_user_id=str(
+                            current_user.id
+                        ),
+                        notes=notes,
+                    )
+                )
+        except IntegrityError:
+            batch = (
+                await find_learner_import_batch_by_deduplication_key(
+                    session,
+                    deduplication_key=(
+                        deduplication_key
+                    ),
+                )
+            )
+
+            if batch is None:
+                raise HTTPException(
+                    status_code=(
+                        status.HTTP_409_CONFLICT
+                    ),
+                    detail=(
+                        "Learner import batch could "
+                        "not be created because of "
+                        "a concurrent upload conflict"
+                    ),
+                )
+
+            batch_reused = True
+
+    if batch_reused:
+        response.status_code = status.HTTP_200_OK
+        response.headers[
+            "X-Import-Reused"
+        ] = "true"
 
     await create_admin_audit_event(
         session,
         actor_user=current_user,
-        action="admin.learner_import_parsed",
+        action=(
+            "admin.learner_import_reused"
+            if batch_reused
+            else "admin.learner_import_parsed"
+        ),
         entity_type="import_batch",
         entity_id=str(batch.id),
         payload={
-            "source_filename": batch.source_filename,
-            "source_content_type": batch.source_content_type,
-            "organization_id": str(batch.organization_id) if batch.organization_id else None,
-            "learning_group_id": str(batch.learning_group_id) if batch.learning_group_id else None,
-            "course_id": str(batch.course_id) if batch.course_id else None,
+            "source_filename": (
+                batch.source_filename
+            ),
+            "source_content_type": (
+                batch.source_content_type
+            ),
+            "source_digest": batch.source_digest,
+            "organization_id": (
+                str(batch.organization_id)
+                if batch.organization_id
+                else None
+            ),
+            "learning_group_id": (
+                str(batch.learning_group_id)
+                if batch.learning_group_id
+                else None
+            ),
+            "course_id": (
+                str(batch.course_id)
+                if batch.course_id
+                else None
+            ),
             "total_rows": batch.total_rows,
             "valid_rows": batch.valid_rows,
             "invalid_rows": batch.invalid_rows,
+            "reused": batch_reused,
         },
         request=request,
     )
 
     await session.commit()
 
-    preflight = await build_learner_import_preflight(
-        session,
-        batch=batch,
+    preflight = (
+        await build_learner_import_preflight(
+            session,
+            batch=batch,
+        )
+        if batch.status == "parsed"
+        else None
     )
 
     return build_admin_learner_import_batch_detail(
