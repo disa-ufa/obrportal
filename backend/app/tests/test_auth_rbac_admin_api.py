@@ -3128,7 +3128,6 @@ def create_test_course_in_db(
     document_type: str | None = "Сертификат",
 ) -> dict:
     import asyncio
-    from datetime import datetime, timezone
     from uuid import uuid4
 
     import app.db.base  # noqa: F401
@@ -3944,8 +3943,6 @@ def patch_multipart_admin_document(
 
 
 def test_admin_can_update_document_status_and_replace_file() -> None:
-    from urllib.request import Request, urlopen
-
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
     status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)

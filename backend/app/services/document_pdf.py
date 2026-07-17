@@ -218,10 +218,6 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
         context.organization_name,
         fallback="\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f",
     )
-    organization_short_name = normalize_document_text(
-        context.organization_short_name,
-        fallback="",
-    )
     organization_license = normalize_document_text(
         context.organization_license,
         fallback="",
