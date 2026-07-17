@@ -12,6 +12,17 @@ class ImportBatch(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     import_type: Mapped[str] = mapped_column(String(64), default="learner_roster", nullable=False)
     source_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
     source_content_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    source_digest: Mapped[str | None] = mapped_column(
+        String(64),
+        index=True,
+        nullable=True,
+    )
+    deduplication_key: Mapped[str | None] = mapped_column(
+        String(64),
+        index=True,
+        unique=True,
+        nullable=True,
+    )
 
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
 

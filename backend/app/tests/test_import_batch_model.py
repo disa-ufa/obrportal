@@ -19,6 +19,8 @@ def test_import_batch_model_columns_contract() -> None:
         "import_type",
         "source_filename",
         "source_content_type",
+        "source_digest",
+        "deduplication_key",
         "status",
         "organization_id",
         "learning_group_id",
@@ -41,6 +43,26 @@ def test_import_batch_model_columns_contract() -> None:
     assert columns["import_type"].nullable is False
     assert columns["status"].nullable is False
     assert columns["total_rows"].nullable is False
+    assert columns["source_digest"].nullable is True
+    assert columns["deduplication_key"].nullable is True
+
+    indexes = {
+        index.name: index
+        for index in ImportBatch.__table__.indexes
+    }
+
+    assert (
+        indexes[
+            "ix_import_batches_source_digest"
+        ].unique
+        is False
+    )
+    assert (
+        indexes[
+            "ix_import_batches_deduplication_key"
+        ].unique
+        is True
+    )
 
 
 def test_import_row_model_columns_contract() -> None:

@@ -6,7 +6,11 @@ import pytest
 from openpyxl import Workbook
 
 from app.models.import_batch import ImportBatch
-from app.services.learner_import_batches import create_import_batch_from_parse_result
+from app.services.learner_import_batches import (
+    build_learner_import_deduplication_key,
+    compute_learner_import_source_digest,
+    create_import_batch_from_parse_result,
+)
 from app.services.learner_import_parser import parse_learner_import_file
 
 
@@ -32,10 +36,15 @@ async def test_create_import_batch_from_csv_parse_result() -> None:
     parse_result = parse_learner_import_file("learners.csv", content)
     db = FakeAsyncSession()
 
+    source_digest = (
+        compute_learner_import_source_digest(content)
+    )
+
     batch = await create_import_batch_from_parse_result(
         db,
         parse_result=parse_result,
         source_content_type="text/csv",
+        source_digest=source_digest,
         organization_id="org-1",
         learning_group_id="group-1",
         course_id="course-1",
@@ -51,6 +60,15 @@ async def test_create_import_batch_from_csv_parse_result() -> None:
     assert batch.status == "parsed"
     assert batch.source_filename == "learners.csv"
     assert batch.source_content_type == "text/csv"
+    assert batch.source_digest == source_digest
+    assert batch.deduplication_key == (
+        build_learner_import_deduplication_key(
+            source_digest=source_digest,
+            organization_id="org-1",
+            learning_group_id="group-1",
+            course_id="course-1",
+        )
+    )
     assert batch.organization_id == "org-1"
     assert batch.learning_group_id == "group-1"
     assert batch.course_id == "course-1"
@@ -126,3 +144,78 @@ async def test_create_import_batch_from_xlsx_parse_result() -> None:
     assert batch.rows[0].status == "valid"
     assert batch.rows[0].normalized_data_json["full_name"] == "\u041f\u0435\u0442\u0440\u043e\u0432 \u041f\u0435\u0442\u0440 \u041f\u0435\u0442\u0440\u043e\u0432\u0438\u0447"
     assert batch.rows[0].normalized_data_json["course_code"] == "01"
+
+
+def test_learner_import_deduplication_key_is_context_aware() -> None:
+    first_digest = (
+        compute_learner_import_source_digest(
+            b"same learner file"
+        )
+    )
+    second_digest = (
+        compute_learner_import_source_digest(
+            b"different learner file"
+        )
+    )
+
+    first_key = build_learner_import_deduplication_key(
+        source_digest=first_digest,
+        organization_id="org-1",
+        learning_group_id="group-1",
+        course_id="course-1",
+    )
+
+    assert first_key == (
+        build_learner_import_deduplication_key(
+            source_digest=first_digest.upper(),
+            organization_id="org-1",
+            learning_group_id="group-1",
+            course_id="course-1",
+        )
+    )
+
+    assert first_key != (
+        build_learner_import_deduplication_key(
+            source_digest=first_digest,
+            organization_id="org-2",
+            learning_group_id="group-1",
+            course_id="course-1",
+        )
+    )
+
+    assert first_key != (
+        build_learner_import_deduplication_key(
+            source_digest=first_digest,
+            organization_id="org-1",
+            learning_group_id="group-2",
+            course_id="course-1",
+        )
+    )
+
+    assert first_key != (
+        build_learner_import_deduplication_key(
+            source_digest=first_digest,
+            organization_id="org-1",
+            learning_group_id="group-1",
+            course_id="course-2",
+        )
+    )
+
+    assert first_key != (
+        build_learner_import_deduplication_key(
+            source_digest=second_digest,
+            organization_id="org-1",
+            learning_group_id="group-1",
+            course_id="course-1",
+        )
+    )
+
+
+def test_learner_import_deduplication_key_rejects_invalid_digest() -> None:
+    with pytest.raises(
+        ValueError,
+        match="64-character SHA-256",
+    ):
+        build_learner_import_deduplication_key(
+            source_digest="not-a-sha256-digest",
+        )

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from hashlib import sha256
 from uuid import uuid4
 from typing import Protocol
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.security import get_password_hash
 from app.models.enrollment import Enrollment
@@ -23,6 +25,70 @@ class ImportBatchSession(Protocol):
 
     async def flush(self) -> None:
         ...
+
+
+LEARNER_IMPORT_TYPE = "learner_roster"
+
+
+def compute_learner_import_source_digest(
+    content: bytes,
+) -> str:
+    return sha256(content).hexdigest()
+
+
+def build_learner_import_deduplication_key(
+    *,
+    source_digest: str,
+    import_type: str = LEARNER_IMPORT_TYPE,
+    organization_id: str | None = None,
+    learning_group_id: str | None = None,
+    course_id: str | None = None,
+) -> str:
+    normalized_digest = source_digest.strip().lower()
+
+    if (
+        len(normalized_digest) != 64
+        or any(
+            character not in "0123456789abcdef"
+            for character in normalized_digest
+        )
+    ):
+        raise ValueError(
+            "Learner import source digest must be "
+            "a 64-character SHA-256 hex string."
+        )
+
+    canonical_parts = (
+        "learner-import-dedup-v1",
+        import_type.strip().lower(),
+        normalized_digest,
+        str(organization_id or "").strip(),
+        str(learning_group_id or "").strip(),
+        str(course_id or "").strip(),
+    )
+
+    return sha256(
+        "\x1f".join(canonical_parts).encode("utf-8")
+    ).hexdigest()
+
+
+async def find_learner_import_batch_by_deduplication_key(
+    db: AsyncSession,
+    *,
+    deduplication_key: str,
+    import_type: str = LEARNER_IMPORT_TYPE,
+) -> ImportBatch | None:
+    result = await db.execute(
+        select(ImportBatch)
+        .options(selectinload(ImportBatch.rows))
+        .where(
+            ImportBatch.import_type == import_type,
+            ImportBatch.deduplication_key
+            == deduplication_key,
+        )
+    )
+
+    return result.scalar_one_or_none()
 
 
 @dataclass(frozen=True)
@@ -510,6 +576,7 @@ async def create_import_batch_from_parse_result(
     *,
     parse_result: ParsedLearnerImportResult,
     source_content_type: str | None = None,
+    source_digest: str | None = None,
     organization_id: str | None = None,
     learning_group_id: str | None = None,
     course_id: str | None = None,
@@ -523,10 +590,28 @@ async def create_import_batch_from_parse_result(
     operator can review the import before applying it.
     """
 
+    normalized_source_digest = (
+        source_digest.strip().lower()
+        if source_digest
+        else None
+    )
+    deduplication_key = (
+        build_learner_import_deduplication_key(
+            source_digest=normalized_source_digest,
+            organization_id=organization_id,
+            learning_group_id=learning_group_id,
+            course_id=course_id,
+        )
+        if normalized_source_digest
+        else None
+    )
+
     batch = ImportBatch(
-        import_type="learner_roster",
+        import_type=LEARNER_IMPORT_TYPE,
         source_filename=parse_result.filename,
         source_content_type=source_content_type,
+        source_digest=normalized_source_digest,
+        deduplication_key=deduplication_key,
         status="parsed",
         organization_id=organization_id,
         learning_group_id=learning_group_id,
