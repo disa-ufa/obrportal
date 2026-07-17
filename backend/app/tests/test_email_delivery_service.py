@@ -16,22 +16,63 @@ from app.services.email_delivery import (
 
 
 def build_settings(**overrides: object) -> Settings:
-    values = {
-        "email_delivery_enabled": False,
-        "email_from_address": "no-reply@example.test",
-        "email_from_name": "ObrPortal",
-        "smtp_host": "",
-        "smtp_port": 587,
-        "smtp_auth_username": "",
-        "smtp_auth_value": "",
-        "smtp_use_tls": True,
-        "smtp_use_ssl": False,
-        "smtp_timeout_seconds": 10.0,
+    """Build email settings isolated from Docker process environment."""
+
+    alias_by_field = {
+        "email_delivery_enabled": (
+            "EMAIL_DELIVERY_ENABLED"
+        ),
+        "email_from_address": (
+            "EMAIL_FROM_ADDRESS"
+        ),
+        "email_from_name": (
+            "EMAIL_FROM_NAME"
+        ),
+        "smtp_host": "SMTP_HOST",
+        "smtp_port": "SMTP_PORT",
+        "smtp_auth_username": (
+            "SMTP_USERNAME"
+        ),
+        "smtp_auth_value": (
+            "SMTP_PASSWORD"
+        ),
+        "smtp_use_tls": "SMTP_USE_TLS",
+        "smtp_use_ssl": "SMTP_USE_SSL",
+        "smtp_timeout_seconds": (
+            "SMTP_TIMEOUT_SECONDS"
+        ),
     }
-    values.update(overrides)
-    return Settings(_env_file=None, **values)
 
+    values: dict[str, object] = {
+        "EMAIL_DELIVERY_ENABLED": False,
+        "EMAIL_FROM_ADDRESS": (
+            "no-reply@example.test"
+        ),
+        "EMAIL_FROM_NAME": "ObrPortal",
+        "SMTP_HOST": "",
+        "SMTP_PORT": 587,
+        "SMTP_USERNAME": "",
+        "SMTP_PASSWORD": "",
+        "SMTP_USE_TLS": True,
+        "SMTP_USE_SSL": False,
+        "SMTP_TIMEOUT_SECONDS": 10.0,
+    }
 
+    for field_name, value in overrides.items():
+        alias = alias_by_field.get(field_name)
+
+        if alias is None:
+            raise KeyError(
+                "Unsupported test email setting: "
+                f"{field_name}"
+            )
+
+        values[alias] = value
+
+    return Settings(
+        _env_file=None,
+        **values,
+    )
 
 
 def test_build_password_setup_email_message_contains_invitation_context() -> None:
