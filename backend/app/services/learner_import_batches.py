@@ -5,7 +5,7 @@ from hashlib import sha256
 from uuid import uuid4
 from typing import Protocol
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -163,6 +163,335 @@ class LearnerImportPreflightResult:
     new_course_notifications_count: int = 0
 
 
+@dataclass(frozen=True)
+class LearnerImportPreflightLookups:
+    users_by_email: dict[str, User] = field(
+        default_factory=dict
+    )
+    users_by_phone: dict[str, User] = field(
+        default_factory=dict
+    )
+    profiles_by_user_id: dict[
+        str,
+        LearnerProfile,
+    ] = field(default_factory=dict)
+    profiles_by_snils: dict[
+        str,
+        LearnerProfile,
+    ] = field(default_factory=dict)
+    enrollments_by_user_id: dict[
+        str,
+        Enrollment,
+    ] = field(default_factory=dict)
+
+
+def resolve_learner_import_user(
+    *,
+    email: str,
+    phone: str,
+    lookups: LearnerImportPreflightLookups,
+) -> tuple[User | None, str | None]:
+    normalized_email = normalize_import_text(
+        email
+    ).lower()
+    normalized_phone = normalize_import_text(
+        phone
+    )
+
+    email_user = (
+        lookups.users_by_email.get(
+            normalized_email
+        )
+        if normalized_email
+        else None
+    )
+    phone_user = (
+        lookups.users_by_phone.get(
+            normalized_phone
+        )
+        if normalized_phone
+        else None
+    )
+
+    if (
+        email_user is None
+        and phone_user is not None
+    ):
+        return (
+            None,
+            (
+                "Phone belongs to another user "
+                "with a different email."
+            ),
+        )
+
+    if (
+        email_user is not None
+        and phone_user is not None
+        and email_user.id != phone_user.id
+    ):
+        return (
+            None,
+            "Email and phone belong to different users.",
+        )
+
+    if (
+        email_user is not None
+        and normalized_phone
+    ):
+        existing_phone = normalize_import_text(
+            email_user.phone
+        )
+
+        if (
+            existing_phone
+            and existing_phone
+            != normalized_phone
+        ):
+            return (
+                None,
+                (
+                    "Email belongs to a user "
+                    "with a different phone."
+                ),
+            )
+
+    return email_user, None
+
+
+LEARNER_IMPORT_PREFLIGHT_LOOKUP_CHUNK_SIZE = 1000
+
+
+def chunk_learner_import_lookup_values(
+    values: set[str],
+) -> tuple[tuple[str, ...], ...]:
+    chunk_size = (
+        LEARNER_IMPORT_PREFLIGHT_LOOKUP_CHUNK_SIZE
+    )
+
+    if chunk_size <= 0:
+        raise RuntimeError(
+            "Learner import lookup chunk size "
+            "must be greater than zero."
+        )
+
+    ordered_values = sorted(values)
+
+    return tuple(
+        tuple(
+            ordered_values[
+                start:start + chunk_size
+            ]
+        )
+        for start in range(
+            0,
+            len(ordered_values),
+            chunk_size,
+        )
+    )
+
+
+async def load_learner_import_preflight_lookups(
+    db: AsyncSession,
+    *,
+    rows: list[ImportRow],
+    course_id: str | None,
+) -> LearnerImportPreflightLookups:
+    emails: set[str] = set()
+    phones: set[str] = set()
+    snils_values: set[str] = set()
+
+    for row in rows:
+        if row.status != "valid":
+            continue
+
+        data = row.normalized_data_json or {}
+        email = normalize_import_text(
+            data.get("email")
+        ).lower()
+
+        if not email:
+            continue
+
+        emails.add(email)
+
+        phone = normalize_import_text(
+            data.get("phone")
+        )
+        snils = normalize_import_text(
+            data.get("snils")
+        )
+
+        if phone:
+            phones.add(phone)
+
+        if snils:
+            snils_values.add(snils)
+
+    email_chunks = (
+        chunk_learner_import_lookup_values(
+            emails
+        )
+    )
+    phone_chunks = (
+        chunk_learner_import_lookup_values(
+            phones
+        )
+    )
+
+    users_by_id: dict[str, User] = {}
+
+    user_query_count = max(
+        len(email_chunks),
+        len(phone_chunks),
+    )
+
+    for chunk_index in range(user_query_count):
+        user_conditions = []
+
+        if chunk_index < len(email_chunks):
+            user_conditions.append(
+                User.email.in_(
+                    email_chunks[chunk_index]
+                )
+            )
+
+        if chunk_index < len(phone_chunks):
+            user_conditions.append(
+                User.phone.in_(
+                    phone_chunks[chunk_index]
+                )
+            )
+
+        result = await db.execute(
+            select(User).where(
+                or_(*user_conditions)
+            )
+        )
+
+        for user in result.scalars().all():
+            users_by_id[str(user.id)] = user
+
+    users = tuple(users_by_id.values())
+
+    users_by_email = {
+        normalize_import_text(
+            user.email
+        ).lower(): user
+        for user in users
+        if normalize_import_text(user.email)
+    }
+    users_by_phone = {
+        normalize_import_text(user.phone): user
+        for user in users
+        if normalize_import_text(user.phone)
+    }
+
+    user_ids = set(users_by_id)
+    user_id_chunks = (
+        chunk_learner_import_lookup_values(
+            user_ids
+        )
+    )
+    snils_chunks = (
+        chunk_learner_import_lookup_values(
+            snils_values
+        )
+    )
+
+    profiles_by_id: dict[
+        str,
+        LearnerProfile,
+    ] = {}
+
+    profile_query_count = max(
+        len(user_id_chunks),
+        len(snils_chunks),
+    )
+
+    for chunk_index in range(
+        profile_query_count
+    ):
+        profile_conditions = []
+
+        if chunk_index < len(user_id_chunks):
+            profile_conditions.append(
+                LearnerProfile.user_id.in_(
+                    user_id_chunks[chunk_index]
+                )
+            )
+
+        if chunk_index < len(snils_chunks):
+            profile_conditions.append(
+                LearnerProfile.snils.in_(
+                    snils_chunks[chunk_index]
+                )
+            )
+
+        result = await db.execute(
+            select(LearnerProfile).where(
+                or_(*profile_conditions)
+            )
+        )
+
+        for profile in result.scalars().all():
+            profiles_by_id[
+                str(profile.id)
+            ] = profile
+
+    profiles = tuple(
+        profiles_by_id.values()
+    )
+
+    profiles_by_user_id = {
+        str(profile.user_id): profile
+        for profile in profiles
+    }
+    profiles_by_snils = {
+        normalize_import_text(
+            profile.snils
+        ): profile
+        for profile in profiles
+        if normalize_import_text(profile.snils)
+    }
+
+    enrollments_by_user_id: dict[
+        str,
+        Enrollment,
+    ] = {}
+
+    if course_id:
+        for user_id_chunk in user_id_chunks:
+            result = await db.execute(
+                select(Enrollment).where(
+                    Enrollment.user_id.in_(
+                        user_id_chunk
+                    ),
+                    Enrollment.course_id
+                    == str(course_id),
+                )
+            )
+
+            for enrollment in (
+                result.scalars().all()
+            ):
+                enrollments_by_user_id[
+                    str(enrollment.user_id)
+                ] = enrollment
+
+    return LearnerImportPreflightLookups(
+        users_by_email=users_by_email,
+        users_by_phone=users_by_phone,
+        profiles_by_user_id=(
+            profiles_by_user_id
+        ),
+        profiles_by_snils=profiles_by_snils,
+        enrollments_by_user_id=(
+            enrollments_by_user_id
+        ),
+    )
+
+
 def import_user_will_update(
     user: User,
     data: dict,
@@ -295,6 +624,18 @@ async def build_learner_import_preflight(
         key=lambda item: item.row_number,
     )
 
+    lookups = (
+        await load_learner_import_preflight_lookups(
+            db,
+            rows=rows,
+            course_id=(
+                str(batch.course_id)
+                if batch.course_id
+                else None
+            ),
+        )
+    )
+
     for row in rows:
         data = row.normalized_data_json or {}
         email = normalize_import_text(
@@ -361,10 +702,10 @@ async def build_learner_import_preflight(
             continue
 
         user, user_conflict = (
-            await find_user_for_import_row(
-                db,
+            resolve_learner_import_user(
                 email=email,
                 phone=phone,
+                lookups=lookups,
             )
         )
 
@@ -389,15 +730,11 @@ async def build_learner_import_preflight(
             )
             continue
 
-        snils_profile = None
-
-        if snils:
-            snils_profile = (
-                await find_profile_by_snils(
-                    db,
-                    snils,
-                )
-            )
+        snils_profile = (
+            lookups.profiles_by_snils.get(snils)
+            if snils
+            else None
+        )
 
         if (
             snils_profile is not None
@@ -468,19 +805,19 @@ async def build_learner_import_preflight(
             )
             continue
 
-        profile = await find_profile_for_user(
-            db,
-            str(user.id),
+        profile = (
+            lookups.profiles_by_user_id.get(
+                str(user.id)
+            )
         )
 
-        enrollment = None
-
-        if batch.course_id:
-            enrollment = await find_enrollment(
-                db,
-                user_id=str(user.id),
-                course_id=str(batch.course_id),
+        enrollment = (
+            lookups.enrollments_by_user_id.get(
+                str(user.id)
             )
+            if batch.course_id
+            else None
+        )
 
         account_state = (
             "active"
@@ -652,58 +989,54 @@ async def find_user_for_import_row(
     email: str,
     phone: str,
 ) -> tuple[User | None, str | None]:
+    normalized_email = normalize_import_text(
+        email
+    ).lower()
+    normalized_phone = normalize_import_text(
+        phone
+    )
+
     email_user: User | None = None
     phone_user: User | None = None
 
-    if email:
+    if normalized_email:
         result = await db.execute(
-            select(User).where(User.email == email)
+            select(User).where(
+                User.email == normalized_email
+            )
         )
         email_user = result.scalar_one_or_none()
 
-    if phone:
+    if normalized_phone:
         result = await db.execute(
-            select(User).where(User.phone == phone)
+            select(User).where(
+                User.phone == normalized_phone
+            )
         )
         phone_user = result.scalar_one_or_none()
 
-    if email_user is None and phone_user is not None:
-        return (
-            None,
-            (
-                "Phone belongs to another user "
-                "with a different email."
-            ),
-        )
+    lookups = LearnerImportPreflightLookups(
+        users_by_email=(
+            {
+                normalized_email: email_user
+            }
+            if email_user is not None
+            else {}
+        ),
+        users_by_phone=(
+            {
+                normalized_phone: phone_user
+            }
+            if phone_user is not None
+            else {}
+        ),
+    )
 
-    if (
-        email_user is not None
-        and phone_user is not None
-        and email_user.id != phone_user.id
-    ):
-        return (
-            None,
-            "Email and phone belong to different users.",
-        )
-
-    if email_user is not None and phone:
-        existing_phone = normalize_import_text(
-            email_user.phone
-        )
-
-        if (
-            existing_phone
-            and existing_phone != phone
-        ):
-            return (
-                None,
-                (
-                    "Email belongs to a user "
-                    "with a different phone."
-                ),
-            )
-
-    return email_user, None
+    return resolve_learner_import_user(
+        email=normalized_email,
+        phone=normalized_phone,
+        lookups=lookups,
+    )
 
 
 async def find_profile_for_user(db: AsyncSession, user_id: str) -> LearnerProfile | None:

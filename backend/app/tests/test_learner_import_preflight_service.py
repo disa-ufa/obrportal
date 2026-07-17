@@ -111,57 +111,77 @@ def configure_lookups(
     snils_profile: LearnerProfile | None = None,
     enrollment: Enrollment | None = None,
 ) -> None:
-    async def find_user(
+    async def load_lookups(
         db: object,
+        *,
+        rows: list[ImportRow],
+        course_id: str | None,
+    ) -> service.LearnerImportPreflightLookups:
+        del db, rows, course_id
+
+        profiles_by_user_id = {}
+
+        if (
+            user is not None
+            and profile is not None
+        ):
+            profiles_by_user_id[
+                str(user.id)
+            ] = profile
+
+        profiles_by_snils = {}
+
+        if (
+            snils_profile is not None
+            and snils_profile.snils
+        ):
+            profiles_by_snils[
+                str(snils_profile.snils)
+            ] = snils_profile
+
+        enrollments_by_user_id = {}
+
+        if (
+            user is not None
+            and enrollment is not None
+        ):
+            enrollments_by_user_id[
+                str(user.id)
+            ] = enrollment
+
+        return service.LearnerImportPreflightLookups(
+            profiles_by_user_id=(
+                profiles_by_user_id
+            ),
+            profiles_by_snils=(
+                profiles_by_snils
+            ),
+            enrollments_by_user_id=(
+                enrollments_by_user_id
+            ),
+        )
+
+    def resolve_user(
         *,
         email: str,
         phone: str,
+        lookups: (
+            service.LearnerImportPreflightLookups
+        ),
     ) -> tuple[User | None, str | None]:
-        del db, email, phone
+        del email, phone, lookups
+
         return user, user_conflict
 
-    async def find_profile_by_snils(
-        db: object,
-        snils: str,
-    ) -> LearnerProfile | None:
-        del db, snils
-        return snils_profile
-
-    async def find_profile(
-        db: object,
-        user_id: str,
-    ) -> LearnerProfile | None:
-        del db, user_id
-        return profile
-
-    async def find_enrollment(
-        db: object,
-        *,
-        user_id: str,
-        course_id: str,
-    ) -> Enrollment | None:
-        del db, user_id, course_id
-        return enrollment
-
     monkeypatch.setattr(
         service,
-        "find_user_for_import_row",
-        find_user,
+        "load_learner_import_preflight_lookups",
+        load_lookups,
     )
     monkeypatch.setattr(
         service,
-        "find_profile_by_snils",
-        find_profile_by_snils,
-    )
-    monkeypatch.setattr(
-        service,
-        "find_profile_for_user",
-        find_profile,
-    )
-    monkeypatch.setattr(
-        service,
-        "find_enrollment",
-        find_enrollment,
+        "resolve_learner_import_user",
+        resolve_user,
     )
 
 
@@ -658,4 +678,383 @@ async def test_find_user_for_import_row_rejects_email_with_different_phone() -> 
     assert conflict == (
         "Email belongs to a user "
         "with a different phone."
+    )
+
+
+
+class FakePreflightScalarResult:
+    def __init__(
+        self,
+        items: list[object],
+    ) -> None:
+        self.items = items
+
+    def scalars(
+        self,
+    ) -> FakePreflightScalarResult:
+        return self
+
+    def all(self) -> list[object]:
+        return list(self.items)
+
+
+class FakePreflightLookupSession:
+    def __init__(
+        self,
+        result_sets: list[list[object]],
+    ) -> None:
+        self.result_sets = list(result_sets)
+        self.statements: list[object] = []
+
+    async def execute(
+        self,
+        statement: object,
+    ) -> FakePreflightScalarResult:
+        self.statements.append(statement)
+
+        if not self.result_sets:
+            raise AssertionError(
+                "Unexpected additional database query."
+            )
+
+        return FakePreflightScalarResult(
+            self.result_sets.pop(0)
+        )
+
+
+@pytest.mark.asyncio
+async def test_preflight_uses_three_queries_for_many_rows() -> None:
+    row_count = 25
+
+    batch = ImportBatch(
+        id="batch-query-count",
+        status="parsed",
+        import_type="learner_roster",
+        course_id="course-1",
+        organization_id="org-1",
+        learning_group_id="group-1",
+        total_rows=row_count,
+        valid_rows=row_count,
+        invalid_rows=0,
+    )
+
+    users: list[User] = []
+    profiles: list[LearnerProfile] = []
+    enrollments: list[Enrollment] = []
+
+    for index in range(row_count):
+        user_id = f"user-{index}"
+        email = f"learner-{index}@example.org"
+        phone = f"+7999000{index:04d}"
+        snils = f"123-456-{index:03d} 00"
+
+        user = User(
+            id=user_id,
+            email=email,
+            phone=phone,
+            full_name=f"Learner {index}",
+            hashed_password="hash",
+            is_active=True,
+            is_email_verified=True,
+            mfa_enabled=False,
+        )
+        profile = LearnerProfile(
+            id=f"profile-{index}",
+            user_id=user_id,
+            first_name="Learner",
+            last_name=str(index),
+            phone=phone,
+            email=email,
+            snils=snils,
+        )
+        enrollment = Enrollment(
+            id=f"enrollment-{index}",
+            user_id=user_id,
+            course_id="course-1",
+            organization_id="org-1",
+            learning_group_id="group-1",
+            status="assigned",
+        )
+
+        users.append(user)
+        profiles.append(profile)
+        enrollments.append(enrollment)
+
+        batch.rows.append(
+            ImportRow(
+                id=f"row-{index}",
+                row_number=index + 2,
+                status="valid",
+                raw_data_json={},
+                normalized_data_json={
+                    "full_name": f"Learner {index}",
+                    "first_name": "Learner",
+                    "last_name": str(index),
+                    "middle_name": "",
+                    "email": email,
+                    "phone": phone,
+                    "snils": snils,
+                },
+                validation_errors_json=[],
+            )
+        )
+
+    session = FakePreflightLookupSession(
+        [
+            list(users),
+            list(profiles),
+            list(enrollments),
+        ]
+    )
+
+    result = (
+        await service.build_learner_import_preflight(
+            session,
+            batch=batch,
+        )
+    )
+
+    assert len(session.statements) == 3
+    assert session.result_sets == []
+    assert len(result.rows) == row_count
+    assert all(
+        row.classification
+        == "existing_enrollment"
+        for row in result.rows
+    )
+    assert result.existing_enrollments_count == row_count
+    assert result.identity_conflicts_count == 0
+
+
+
+def test_resolver_rejects_distinct_email_and_phone_users() -> None:
+    email_user = User(
+        id="email-user",
+        email="email@example.org",
+        phone="+79990000001",
+        full_name="Email User",
+        hashed_password="hash",
+        is_active=True,
+        is_email_verified=True,
+        mfa_enabled=False,
+    )
+    phone_user = User(
+        id="phone-user",
+        email="phone@example.org",
+        phone="+79990000002",
+        full_name="Phone User",
+        hashed_password="hash",
+        is_active=True,
+        is_email_verified=True,
+        mfa_enabled=False,
+    )
+
+    lookups = service.LearnerImportPreflightLookups(
+        users_by_email={
+            "email@example.org": email_user,
+        },
+        users_by_phone={
+            "+79990000002": phone_user,
+        },
+    )
+
+    user, conflict = (
+        service.resolve_learner_import_user(
+            email="EMAIL@EXAMPLE.ORG",
+            phone="+79990000002",
+            lookups=lookups,
+        )
+    )
+
+    assert user is None
+    assert conflict == (
+        "Email and phone belong to different users."
+    )
+
+
+@pytest.mark.asyncio
+async def test_preflight_lookup_normalizes_email_dictionary_key() -> None:
+    user = User(
+        id="mixed-case-user",
+        email="Mixed.Case@Example.Org",
+        phone=None,
+        full_name="Mixed Case",
+        hashed_password="hash",
+        is_active=True,
+        is_email_verified=True,
+        mfa_enabled=False,
+    )
+
+    row = ImportRow(
+        id="mixed-case-row",
+        row_number=2,
+        status="valid",
+        raw_data_json={},
+        normalized_data_json={
+            "full_name": "Mixed Case",
+            "email": "mixed.case@example.org",
+            "phone": "",
+            "snils": "",
+        },
+        validation_errors_json=[],
+    )
+
+    session = FakePreflightLookupSession(
+        [
+            [user],
+            [],
+        ]
+    )
+
+    lookups = (
+        await service.load_learner_import_preflight_lookups(
+            session,
+            rows=[row],
+            course_id=None,
+        )
+    )
+
+    assert len(session.statements) == 2
+    assert (
+        lookups.users_by_email[
+            "mixed.case@example.org"
+        ]
+        is user
+    )
+
+    resolved_user, conflict = (
+        service.resolve_learner_import_user(
+            email="MIXED.CASE@EXAMPLE.ORG",
+            phone="",
+            lookups=lookups,
+        )
+    )
+
+    assert resolved_user is user
+    assert conflict is None
+
+
+
+@pytest.mark.asyncio
+async def test_preflight_lookup_chunks_large_value_sets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        service,
+        "LEARNER_IMPORT_PREFLIGHT_LOOKUP_CHUNK_SIZE",
+        2,
+    )
+
+    row_count = 5
+    rows: list[ImportRow] = []
+    users: list[User] = []
+    profiles: list[LearnerProfile] = []
+    enrollments: list[Enrollment] = []
+
+    for index in range(row_count):
+        user_id = f"chunk-user-{index}"
+        email = (
+            f"chunk-{index}@example.org"
+        )
+        phone = f"+7999111{index:04d}"
+        snils = f"987-654-{index:03d} 00"
+
+        rows.append(
+            ImportRow(
+                id=f"chunk-row-{index}",
+                row_number=index + 2,
+                status="valid",
+                raw_data_json={},
+                normalized_data_json={
+                    "full_name": (
+                        f"Chunk Learner {index}"
+                    ),
+                    "email": email,
+                    "phone": phone,
+                    "snils": snils,
+                },
+                validation_errors_json=[],
+            )
+        )
+
+        users.append(
+            User(
+                id=user_id,
+                email=email,
+                phone=phone,
+                full_name=(
+                    f"Chunk Learner {index}"
+                ),
+                hashed_password="hash",
+                is_active=True,
+                is_email_verified=True,
+                mfa_enabled=False,
+            )
+        )
+
+        profiles.append(
+            LearnerProfile(
+                id=f"chunk-profile-{index}",
+                user_id=user_id,
+                first_name="Chunk",
+                last_name=str(index),
+                email=email,
+                phone=phone,
+                snils=snils,
+            )
+        )
+
+        enrollments.append(
+            Enrollment(
+                id=f"chunk-enrollment-{index}",
+                user_id=user_id,
+                course_id="course-1",
+                status="assigned",
+            )
+        )
+
+    def chunks(
+        items: list[object],
+    ) -> list[list[object]]:
+        return [
+            items[start:start + 2]
+            for start in range(
+                0,
+                len(items),
+                2,
+            )
+        ]
+
+    session = FakePreflightLookupSession(
+        [
+            *chunks(list(users)),
+            *chunks(list(profiles)),
+            *chunks(list(enrollments)),
+        ]
+    )
+
+    lookups = (
+        await service.load_learner_import_preflight_lookups(
+            session,
+            rows=rows,
+            course_id="course-1",
+        )
+    )
+
+    assert len(session.statements) == 9
+    assert session.result_sets == []
+
+    assert len(lookups.users_by_email) == row_count
+    assert len(lookups.users_by_phone) == row_count
+    assert (
+        len(lookups.profiles_by_user_id)
+        == row_count
+    )
+    assert (
+        len(lookups.profiles_by_snils)
+        == row_count
+    )
+    assert (
+        len(lookups.enrollments_by_user_id)
+        == row_count
     )
