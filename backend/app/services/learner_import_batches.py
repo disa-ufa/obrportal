@@ -185,6 +185,14 @@ class LearnerImportPreflightLookups:
     ] = field(default_factory=dict)
 
 
+@dataclass
+class LearnerImportApplyLookups:
+    identity: LearnerImportPreflightLookups
+    learner_role_user_ids: set[str] = field(
+        default_factory=set
+    )
+
+
 def resolve_learner_import_user(
     *,
     email: str,
@@ -490,6 +498,159 @@ async def load_learner_import_preflight_lookups(
             enrollments_by_user_id
         ),
     )
+
+
+async def load_learner_import_apply_lookups(
+    db: AsyncSession,
+    *,
+    rows: list[ImportRow],
+    course_id: str | None,
+    learner_role: Role | None,
+) -> LearnerImportApplyLookups:
+    identity = (
+        await load_learner_import_preflight_lookups(
+            db,
+            rows=rows,
+            course_id=course_id,
+        )
+    )
+
+    existing_users_by_id: dict[
+        str,
+        User,
+    ] = {}
+
+    for user in identity.users_by_email.values():
+        existing_users_by_id[
+            str(user.id)
+        ] = user
+
+    for user in identity.users_by_phone.values():
+        existing_users_by_id[
+            str(user.id)
+        ] = user
+
+    learner_role_user_ids: set[str] = set()
+
+    if learner_role is not None:
+        user_id_chunks = (
+            chunk_learner_import_lookup_values(
+                set(existing_users_by_id)
+            )
+        )
+
+        for user_id_chunk in user_id_chunks:
+            result = await db.execute(
+                select(UserRole.user_id).where(
+                    UserRole.user_id.in_(
+                        user_id_chunk
+                    ),
+                    UserRole.role_id
+                    == str(learner_role.id),
+                    UserRole.organization_id.is_(
+                        None
+                    ),
+                )
+            )
+
+            learner_role_user_ids.update(
+                str(user_id)
+                for user_id
+                in result.scalars().all()
+            )
+
+    return LearnerImportApplyLookups(
+        identity=identity,
+        learner_role_user_ids=(
+            learner_role_user_ids
+        ),
+    )
+
+
+async def assign_learner_role_from_apply_lookups(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    learner_role: Role | None,
+    lookups: LearnerImportApplyLookups,
+) -> bool:
+    if learner_role is None:
+        return False
+
+    normalized_user_id = str(user_id)
+
+    if (
+        normalized_user_id
+        in lookups.learner_role_user_ids
+    ):
+        return False
+
+    db.add(
+        UserRole(
+            user_id=normalized_user_id,
+            role_id=str(learner_role.id),
+            organization_id=None,
+        )
+    )
+    await db.flush()
+
+    return True
+
+
+def remember_learner_import_apply_success(
+    *,
+    lookups: LearnerImportApplyLookups,
+    user: User,
+    profile: LearnerProfile,
+    enrollment: Enrollment | None,
+    learner_role_assigned: bool,
+) -> None:
+    user_id = normalize_import_text(user.id)
+
+    if not user_id:
+        raise RuntimeError(
+            "Applied learner user must have an ID."
+        )
+
+    email = normalize_import_text(
+        user.email
+    ).lower()
+    phone = normalize_import_text(
+        user.phone
+    )
+
+    if email:
+        lookups.identity.users_by_email[
+            email
+        ] = user
+
+    if phone:
+        lookups.identity.users_by_phone[
+            phone
+        ] = user
+
+    lookups.identity.profiles_by_user_id[
+        user_id
+    ] = profile
+
+    snils = normalize_import_text(
+        profile.snils
+    )
+
+    if snils:
+        lookups.identity.profiles_by_snils[
+            snils
+        ] = profile
+
+    if enrollment is not None:
+        lookups.identity.enrollments_by_user_id[
+            user_id
+        ] = enrollment
+
+    if learner_role_assigned:
+        lookups.learner_role_user_ids.add(
+            user_id
+        )
 
 
 def import_user_will_update(
@@ -1189,7 +1350,9 @@ async def apply_learner_import_batch(
         LearnerImportCourseNotificationCandidate
     ] = []
 
-    learner_role = await find_or_create_learner_role(db)
+    learner_role = await find_or_create_learner_role(
+        db
+    )
 
     valid_rows = sorted(
         [
@@ -1200,8 +1363,24 @@ async def apply_learner_import_batch(
         key=lambda row: row.row_number,
     )
 
+    course_id = (
+        str(batch.course_id)
+        if batch.course_id
+        else None
+    )
+
+    apply_lookups = (
+        await load_learner_import_apply_lookups(
+            db,
+            rows=valid_rows,
+            course_id=course_id,
+            learner_role=learner_role,
+        )
+    )
+
     for row in valid_rows:
         data = row.normalized_data_json or {}
+
         email = normalize_import_text(
             data.get("email")
         ).lower()
@@ -1235,13 +1414,20 @@ async def apply_learner_import_batch(
         invitation_candidate = None
         course_notification_candidate = None
 
+        user: User | None = None
+        profile: LearnerProfile | None = None
+        enrollment: Enrollment | None = None
+        learner_role_assigned = False
+
         try:
             async with db.begin_nested():
                 user, user_conflict = (
-                    await find_user_for_import_row(
-                        db,
+                    resolve_learner_import_user(
                         email=email,
                         phone=phone,
+                        lookups=(
+                            apply_lookups.identity
+                        ),
                     )
                 )
 
@@ -1250,24 +1436,27 @@ async def apply_learner_import_batch(
                         row,
                         user_conflict,
                     )
-                    counts["error_rows_count"] += 1
+                    counts[
+                        "error_rows_count"
+                    ] += 1
                     continue
 
-                snils_profile = None
-
-                if snils:
-                    snils_profile = (
-                        await find_profile_by_snils(
-                            db,
-                            snils,
-                        )
-                    )
+                snils_profile = (
+                    apply_lookups
+                    .identity
+                    .profiles_by_snils
+                    .get(snils)
+                    if snils
+                    else None
+                )
 
                 if (
                     snils_profile is not None
                     and (
                         user is None
-                        or str(snils_profile.user_id)
+                        or str(
+                            snils_profile.user_id
+                        )
                         != str(user.id)
                     )
                 ):
@@ -1278,16 +1467,22 @@ async def apply_learner_import_batch(
                             "learner profile."
                         ),
                     )
-                    counts["error_rows_count"] += 1
+                    counts[
+                        "error_rows_count"
+                    ] += 1
                     continue
 
                 if user is None:
                     user = User(
                         email=email,
                         phone=phone or None,
-                        full_name=full_name or None,
-                        hashed_password=get_password_hash(
-                            f"Import-{uuid4().hex}"
+                        full_name=(
+                            full_name or None
+                        ),
+                        hashed_password=(
+                            get_password_hash(
+                                f"Import-{uuid4().hex}"
+                            )
                         ),
                         is_active=False,
                         is_email_verified=False,
@@ -1295,6 +1490,7 @@ async def apply_learner_import_batch(
                     )
                     db.add(user)
                     await db.flush()
+
                     row_counts[
                         "created_users_count"
                     ] = 1
@@ -1315,14 +1511,18 @@ async def apply_learner_import_batch(
                         "updated_users_count"
                     ] = 1
 
-                profile = await find_profile_for_user(
-                    db,
-                    str(user.id),
+                user_id = str(user.id)
+
+                profile = (
+                    apply_lookups
+                    .identity
+                    .profiles_by_user_id
+                    .get(user_id)
                 )
 
                 if profile is None:
                     profile = LearnerProfile(
-                        user_id=str(user.id),
+                        user_id=user_id,
                         last_name=(
                             normalize_import_text(
                                 data.get("last_name")
@@ -1353,6 +1553,7 @@ async def apply_learner_import_batch(
                     )
                     db.add(profile)
                     await db.flush()
+
                     row_counts[
                         "created_profiles_count"
                     ] = 1
@@ -1368,17 +1569,15 @@ async def apply_learner_import_batch(
                         "updated_profiles_count"
                     ] = 1
 
-                enrollment: Enrollment | None = None
                 had_existing_enrollment = False
                 created_enrollment = False
 
-                if batch.course_id:
-                    enrollment = await find_enrollment(
-                        db,
-                        user_id=str(user.id),
-                        course_id=str(
-                            batch.course_id
-                        ),
+                if course_id:
+                    enrollment = (
+                        apply_lookups
+                        .identity
+                        .enrollments_by_user_id
+                        .get(user_id)
                     )
 
                     had_existing_enrollment = (
@@ -1387,10 +1586,8 @@ async def apply_learner_import_batch(
 
                     if enrollment is None:
                         enrollment = Enrollment(
-                            user_id=str(user.id),
-                            course_id=str(
-                                batch.course_id
-                            ),
+                            user_id=user_id,
+                            course_id=course_id,
                             organization_id=(
                                 str(
                                     batch.organization_id
@@ -1440,10 +1637,11 @@ async def apply_learner_import_batch(
                             )
 
                 learner_role_assigned = (
-                    await assign_learner_role_if_available(
+                    await assign_learner_role_from_apply_lookups(
                         db,
-                        user_id=str(user.id),
+                        user_id=user_id,
                         learner_role=learner_role,
+                        lookups=apply_lookups,
                     )
                 )
 
@@ -1453,7 +1651,7 @@ async def apply_learner_import_batch(
                     ] = 1
 
                 row.status = "applied"
-                row.user_id = str(user.id)
+                row.user_id = user_id
                 row.learner_profile_id = str(
                     profile.id
                 )
@@ -1472,18 +1670,14 @@ async def apply_learner_import_batch(
                                 row_number=(
                                     row.row_number
                                 ),
-                                user_id=str(user.id),
+                                user_id=user_id,
                                 email=user.email,
-                                course_id=(
-                                    str(batch.course_id)
-                                    if batch.course_id
-                                    else None
-                                ),
+                                course_id=course_id,
                             )
                         )
                     elif (
                         created_enrollment
-                        and batch.course_id
+                        and course_id
                     ):
                         course_notification_candidate = (
                             LearnerImportCourseNotificationCandidate(
@@ -1491,17 +1685,17 @@ async def apply_learner_import_batch(
                                 row_number=(
                                     row.row_number
                                 ),
-                                user_id=str(user.id),
+                                user_id=user_id,
                                 email=user.email,
-                                course_id=str(
-                                    batch.course_id
-                                ),
+                                course_id=course_id,
                             )
                         )
 
                 await db.flush()
 
         except IntegrityError:
+            await db.refresh(row)
+
             mark_import_row_error(
                 row,
                 (
@@ -1510,7 +1704,32 @@ async def apply_learner_import_batch(
                 ),
             )
             counts["error_rows_count"] += 1
+
+            apply_lookups = (
+                await load_learner_import_apply_lookups(
+                    db,
+                    rows=valid_rows,
+                    course_id=course_id,
+                    learner_role=learner_role,
+                )
+            )
             continue
+
+        if user is None or profile is None:
+            raise RuntimeError(
+                "Applied learner row is missing "
+                "its user or learner profile."
+            )
+
+        remember_learner_import_apply_success(
+            lookups=apply_lookups,
+            user=user,
+            profile=profile,
+            enrollment=enrollment,
+            learner_role_assigned=(
+                learner_role_assigned
+            ),
+        )
 
         for key, value in row_counts.items():
             counts[key] += value
@@ -1543,18 +1762,25 @@ async def apply_learner_import_batch(
     batch.created_enrollments_count = counts[
         "created_enrollments_count"
     ]
+
     batch.invalid_rows = len(
         [
             row
             for row in batch.rows
-            if row.status in {"invalid", "error"}
+            if row.status in {
+                "invalid",
+                "error",
+            }
         ]
     )
     batch.valid_rows = len(
         [
             row
             for row in batch.rows
-            if row.status in {"valid", "applied"}
+            if row.status in {
+                "valid",
+                "applied",
+            }
         ]
     )
     batch.status = "applied"
