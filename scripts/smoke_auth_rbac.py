@@ -476,10 +476,15 @@ def main() -> int:
 
     imported_user_roles = imported_user_matches[0].get("roles") or []
     imported_user_role_codes = {role.get("code") for role in imported_user_roles}
-    if "learner" not in imported_user_role_codes:
-        raise AssertionError(f"imported learner user does not have learner role: {imported_user_roles!r}")
+    if "learner_fl" not in imported_user_role_codes:
+        raise AssertionError(
+            "imported learner user does not have "
+            f"learner_fl role: {imported_user_roles!r}"
+        )
 
-    checks.append("admin learner import assigns learner role ok")
+    checks.append(
+        "admin learner import assigns learner_fl role ok"
+    )
 
     status, repeated_learner_import_apply = request_json(
         "POST",

@@ -73,7 +73,10 @@ function roleBadgeTone(roleCode) {
     return "amber";
   }
 
-  if (roleCode === "learner") {
+  if (
+    roleCode === "learner_fl"
+    || roleCode === "learner_org"
+  ) {
     return "green";
   }
 

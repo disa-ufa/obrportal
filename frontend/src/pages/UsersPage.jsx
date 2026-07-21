@@ -238,7 +238,10 @@ function getUserRoleTone(role) {
     return "amber";
   }
 
-  if (role.code === "learner") {
+  if (
+    role.code === "learner_fl"
+    || role.code === "learner_org"
+  ) {
     return "green";
   }
 

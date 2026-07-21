@@ -268,7 +268,7 @@ def configure_apply_lookups(
 
     monkeypatch.setattr(
         service,
-        "find_or_create_learner_role",
+        "find_learner_import_role",
         find_role,
     )
     monkeypatch.setattr(
@@ -552,7 +552,7 @@ async def test_apply_rejects_phone_identity_conflict(
 
     monkeypatch.setattr(
         service,
-        "find_or_create_learner_role",
+        "find_learner_import_role",
         find_role,
     )
     monkeypatch.setattr(
@@ -1045,7 +1045,7 @@ async def test_apply_uses_only_batched_lookup_queries(
 
     monkeypatch.setattr(
         service,
-        "find_or_create_learner_role",
+        "find_learner_import_role",
         find_role,
     )
 
@@ -1169,7 +1169,7 @@ async def test_apply_reuses_objects_created_by_previous_row(
 
     monkeypatch.setattr(
         service,
-        "find_or_create_learner_role",
+        "find_learner_import_role",
         find_role,
     )
     monkeypatch.setattr(
@@ -1329,7 +1329,7 @@ async def test_apply_reloads_lookups_after_integrity_error(
 
     monkeypatch.setattr(
         service,
-        "find_or_create_learner_role",
+        "find_learner_import_role",
         find_role,
     )
     monkeypatch.setattr(
@@ -1429,3 +1429,74 @@ async def test_apply_refreshes_row_after_integrity_error(
         "while applying learner import row."
     )
     assert batch.status == "applied"
+
+
+
+@pytest.mark.asyncio
+async def test_find_learner_import_role_uses_canonical_code(
+) -> None:
+    expected_role = SimpleNamespace(
+        id="learner-fl-role"
+    )
+
+    class Result:
+        def scalar_one_or_none(
+            self,
+        ) -> object:
+            return expected_role
+
+    class Session:
+        def __init__(self) -> None:
+            self.statements: list[object] = []
+
+        async def execute(
+            self,
+            statement: object,
+        ) -> Result:
+            self.statements.append(statement)
+            return Result()
+
+    session = Session()
+
+    actual_role = (
+        await service.find_learner_import_role(
+            session,
+        )
+    )
+
+    assert actual_role is expected_role
+    assert len(session.statements) == 1
+
+    compiled = session.statements[0].compile()
+
+    assert (
+        service.LEARNER_IMPORT_ROLE_CODE
+        == "learner_fl"
+    )
+    assert "learner_fl" in compiled.params.values()
+
+
+@pytest.mark.asyncio
+async def test_find_learner_import_role_requires_seeded_role(
+) -> None:
+    class Result:
+        def scalar_one_or_none(
+            self,
+        ) -> None:
+            return None
+
+    class Session:
+        async def execute(
+            self,
+            statement: object,
+        ) -> Result:
+            del statement
+            return Result()
+
+    with pytest.raises(
+        RuntimeError,
+        match="learner_fl",
+    ):
+        await service.find_learner_import_role(
+            Session(),
+        )

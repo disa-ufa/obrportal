@@ -28,6 +28,7 @@ class ImportBatchSession(Protocol):
 
 
 LEARNER_IMPORT_TYPE = "learner_roster"
+LEARNER_IMPORT_ROLE_CODE = "learner_fl"
 
 
 def compute_learner_import_source_digest(
@@ -1228,20 +1229,23 @@ async def find_enrollment(
     return result.scalar_one_or_none()
 
 
-async def find_or_create_learner_role(db: AsyncSession) -> Role:
-    result = await db.execute(select(Role).where(Role.code == "learner"))
+async def find_learner_import_role(
+    db: AsyncSession,
+) -> Role:
+    result = await db.execute(
+        select(Role).where(
+            Role.code == LEARNER_IMPORT_ROLE_CODE
+        )
+    )
     learner_role = result.scalar_one_or_none()
 
-    if learner_role is not None:
-        return learner_role
-
-    learner_role = Role(
-        code="learner",
-        name="\u0421\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c",
-        description="\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c, \u043f\u0440\u043e\u0445\u043e\u0434\u044f\u0449\u0438\u0439 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0430 \u043f\u043e\u0440\u0442\u0430\u043b\u0435",
-    )
-    db.add(learner_role)
-    await db.flush()
+    if learner_role is None:
+        raise RuntimeError(
+            "Learner import role "
+            f"'{LEARNER_IMPORT_ROLE_CODE}' "
+            "is not configured. Run the RBAC seed "
+            "before applying learner imports."
+        )
 
     return learner_role
 
@@ -1350,7 +1354,7 @@ async def apply_learner_import_batch(
         LearnerImportCourseNotificationCandidate
     ] = []
 
-    learner_role = await find_or_create_learner_role(
+    learner_role = await find_learner_import_role(
         db
     )
 
