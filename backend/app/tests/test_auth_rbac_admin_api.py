@@ -2308,6 +2308,94 @@ def test_admin_can_assign_and_remove_user_role() -> None:
     )
 
 
+def test_admin_global_user_role_duplicate_returns_409() -> None:
+    token = login(
+        ADMIN_EMAIL,
+        ADMIN_PASSWORD,
+    )
+    learner_user_id = get_user_id_by_email(
+        token,
+        LEARNER_EMAIL,
+    )
+
+    role_code = unique_role_code()
+    status, role = request_json(
+        "POST",
+        "/api/v1/admin/roles",
+        {
+            "code": role_code,
+            "name": "Global duplicate test role",
+        },
+        token=token,
+    )
+
+    assert status == 201
+    assert isinstance(role, dict)
+
+    role_id = str(role["id"])
+
+    status, assigned = request_json(
+        "POST",
+        (
+            f"/api/v1/admin/users/"
+            f"{learner_user_id}/roles"
+        ),
+        {
+            "role_id": role_id,
+            "organization_id": None,
+        },
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(assigned, dict)
+
+    user_role_id = find_user_role_id(
+        assigned,
+        role_code=role_code,
+        organization_id=None,
+    )
+
+    status, duplicate = request_json(
+        "POST",
+        (
+            f"/api/v1/admin/users/"
+            f"{learner_user_id}/roles"
+        ),
+        {
+            "role_id": role_id,
+            "organization_id": None,
+        },
+        token=token,
+    )
+
+    assert status == 409
+    assert isinstance(duplicate, dict)
+
+    cleanup_status, cleanup_user = request_json(
+        "DELETE",
+        (
+            f"/api/v1/admin/users/"
+            f"{learner_user_id}/roles/"
+            f"{user_role_id}"
+        ),
+        token=token,
+    )
+
+    assert cleanup_status == 200
+    assert isinstance(cleanup_user, dict)
+
+    delete_status, deleted_role = request_json(
+        "DELETE",
+        f"/api/v1/admin/roles/{role_id}",
+        token=token,
+    )
+
+    assert delete_status == 200
+    assert isinstance(deleted_role, dict)
+    assert deleted_role["status"] == "deleted"
+
+
 def test_admin_user_role_write_missing_returns_404() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     learner_user_id = get_user_id_by_email(token, LEARNER_EMAIL)

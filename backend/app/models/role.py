@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -34,7 +34,26 @@ class RolePermission(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
 class UserRole(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "user_roles"
-    __table_args__ = (UniqueConstraint("user_id", "role_id", "organization_id", name="uq_user_role_scope"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "role_id",
+            "organization_id",
+            name="uq_user_role_scope",
+        ),
+        Index(
+            "uq_user_role_global",
+            "user_id",
+            "role_id",
+            unique=True,
+            postgresql_where=text(
+                "organization_id IS NULL"
+            ),
+            sqlite_where=text(
+                "organization_id IS NULL"
+            ),
+        ),
+    )
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     role_id: Mapped[str] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
