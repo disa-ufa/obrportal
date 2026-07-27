@@ -29,22 +29,21 @@ def upgrade() -> None:
             canonical_role_id varchar;
         BEGIN
             SELECT id
-            INTO canonical_role_id
-            FROM roles
-            WHERE code = 'learner_fl';
-
-            IF canonical_role_id IS NULL THEN
-                RAISE EXCEPTION
-                    'Cannot migrate learner role: '
-                    'canonical role learner_fl is missing';
-            END IF;
-
-            SELECT id
             INTO legacy_role_id
             FROM roles
             WHERE code = 'learner';
 
             IF legacy_role_id IS NOT NULL THEN
+                SELECT id
+                INTO canonical_role_id
+                FROM roles
+                WHERE code = 'learner_fl';
+
+                IF canonical_role_id IS NULL THEN
+                    RAISE EXCEPTION
+                        'Cannot migrate learner role: '
+                        'canonical role learner_fl is missing';
+                END IF;
                 WITH ranked_legacy_assignments AS (
                     SELECT
                         id,
