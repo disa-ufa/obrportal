@@ -10,8 +10,10 @@ from app.services.email_delivery import (
     EMAIL_DELIVERY_STATUS_SENT,
     EMAIL_DELIVERY_STATUS_SKIPPED,
     build_password_setup_email_message,
+    build_public_registration_email_message,
     send_email_message,
     send_password_setup_email,
+    send_public_registration_email,
 )
 
 
@@ -237,6 +239,106 @@ def test_send_password_setup_email_sends_via_smtp(monkeypatch) -> None:
     assert len(smtp.sent_messages) == 1
     assert smtp.sent_messages[0]["To"] == "learner@example.test"
 
+
+
+
+def test_build_public_registration_email_message_contains_self_service_context() -> None:
+    expires_at = datetime(
+        2026,
+        7,
+        28,
+        18,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    message = build_public_registration_email_message(
+        recipient="public@example.test",
+        setup_url=(
+            "https://portal.example.test/"
+            "set-password?token=registration"
+        ),
+        expires_at=expires_at,
+        email_settings=build_settings(),
+    )
+
+    assert message["To"] == "public@example.test"
+    assert message["Subject"] == (
+        "ObrPortal: "
+        "\u0437\u0430\u0432\u0435\u0440\u0448"
+        "\u0435\u043d\u0438\u0435 "
+        "\u0440\u0435\u0433\u0438\u0441\u0442"
+        "\u0440\u0430\u0446\u0438\u0438"
+    )
+
+    body = message.get_content()
+
+    assert (
+        "\u0441\u0430\u043c\u043e\u0441\u0442"
+        "\u043e\u044f\u0442\u0435\u043b\u044c"
+        "\u043d\u0443\u044e "
+        "\u0440\u0435\u0433\u0438\u0441\u0442"
+        "\u0440\u0430\u0446\u0438\u044e"
+        in body
+    )
+    assert (
+        "\u043f\u043e\u0434\u0442\u0432\u0435"
+        "\u0440\u0434\u0438\u0442\u044c "
+        "\u0430\u0434\u0440\u0435\u0441 "
+        "\u044d\u043b\u0435\u043a\u0442\u0440"
+        "\u043e\u043d\u043d\u043e\u0439 "
+        "\u043f\u043e\u0447\u0442\u044b"
+        in body
+    )
+    assert "public@example.test" in body
+    assert (
+        "https://portal.example.test/"
+        "set-password?token=registration"
+        in body
+    )
+    assert "28.07.2026 18:00 (UTC)" in body
+    assert (
+        "\u043d\u0435 "
+        "\u043e\u0442\u043f\u0440\u0430\u0432"
+        "\u043b\u044f\u043b\u0438 "
+        "\u0437\u0430\u044f\u0432\u043a\u0443"
+        in body
+    )
+
+
+def test_send_public_registration_email_skips_when_delivery_disabled() -> None:
+    result = send_public_registration_email(
+        recipient="public@example.test",
+        setup_url=(
+            "https://portal.example.test/"
+            "set-password?token=registration"
+        ),
+        email_settings=build_settings(
+            email_delivery_enabled=False
+        ),
+    )
+
+    assert result.status == EMAIL_DELIVERY_STATUS_SKIPPED
+    assert result.sent is False
+    assert result.recipient == "public@example.test"
+
+
+def test_public_registration_email_rejects_blank_recipient() -> None:
+    try:
+        build_public_registration_email_message(
+            recipient="   ",
+            setup_url=(
+                "https://portal.example.test/"
+                "set-password?token=registration"
+            ),
+            email_settings=build_settings(),
+        )
+    except ValueError as error:
+        assert str(error) == "Recipient email is required."
+    else:
+        raise AssertionError(
+            "Expected blank recipient to be rejected."
+        )
 
 def test_email_sources_have_no_corrupted_question_mark_runs() -> None:
     backend_root = (
