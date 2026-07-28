@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LoginRequest(BaseModel):
@@ -9,10 +11,46 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
+    """Legacy immediate-registration request kept until endpoint cutover."""
+
     email: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=8, max_length=255)
-    full_name: str | None = Field(default=None, min_length=1, max_length=255)
-    phone: str | None = Field(default=None, min_length=5, max_length=32)
+    full_name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+    )
+    phone: str | None = Field(
+        default=None,
+        min_length=5,
+        max_length=32,
+    )
+
+
+class PublicRegistrationRequest(BaseModel):
+    """Target request for email-confirmed public registration."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    last_name: str = Field(min_length=1, max_length=128)
+    first_name: str = Field(min_length=1, max_length=128)
+    middle_name: str | None = Field(
+        default=None,
+        max_length=128,
+    )
+    email: str = Field(min_length=3, max_length=320)
+    phone: str | None = Field(
+        default=None,
+        min_length=5,
+        max_length=32,
+    )
+    personal_data_consent: Literal[True]
+    terms_accepted: Literal[True]
+
+
+class PublicRegistrationAcceptedResponse(BaseModel):
+    status: Literal["accepted"]
+    message: str = Field(min_length=1, max_length=512)
 
 
 class SetPasswordRequest(BaseModel):
