@@ -11,15 +11,36 @@ from app.core.config import settings
 from app.core.security import create_access_token, decode_access_token, get_password_hash, verify_password
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
+from app.models.base import utcnow
 from app.models.organization import Organization  # noqa: F401
 from app.models.role import Role, UserRole
 from app.models.user import User
+from app.services.email_delivery import (
+    EMAIL_DELIVERY_STATUS_SENT,
+    send_public_registration_email,
+)
+from app.services.public_registration import (
+    PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
+    PUBLIC_REGISTRATION_ACCEPTED_STATUS,
+    normalize_public_registration_data,
+    prepare_public_registration,
+)
 from app.services.user_password_tokens import (
     USER_PASSWORD_TOKEN_PURPOSE_INITIAL_PASSWORD_SETUP,
+    build_password_setup_url,
     get_valid_user_password_token,
     mark_user_password_token_used,
 )
-from app.schemas.auth import CurrentUserResponse, CurrentUserRole, LoginRequest, RegisterRequest, SetPasswordRequest, SetPasswordResponse, TokenResponse
+from app.schemas.auth import (
+    CurrentUserResponse,
+    CurrentUserRole,
+    LoginRequest,
+    PublicRegistrationAcceptedResponse,
+    PublicRegistrationRequest,
+    SetPasswordRequest,
+    SetPasswordResponse,
+    TokenResponse,
+)
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -128,81 +149,105 @@ async def build_current_user_response(session: AsyncSession, user: User) -> Curr
     )
 
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=PublicRegistrationAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def register(
-    payload: RegisterRequest,
+    payload: PublicRegistrationRequest,
     request: Request,
     session: AsyncSession = Depends(get_db),
-) -> TokenResponse:
-    normalized_email = payload.email.lower().strip()
-    normalized_full_name = payload.full_name.strip() if payload.full_name else None
-    normalized_phone = payload.phone.strip() if payload.phone else None
-
-    existing_user = await get_user_by_email(session, normalized_email)
-    if existing_user:
-        await write_audit_event(
-            session,
-            action="register_failed",
-            request=request,
-            entity_type="user",
-            payload={"email": normalized_email, "reason": "email_conflict"},
-        )
-        await session.commit()
-
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User with this email already exists",
-        )
-
-    if normalized_phone:
-        result = await session.execute(select(User).where(User.phone == normalized_phone))
-        existing_phone_user = result.scalar_one_or_none()
-
-        if existing_phone_user:
-            await write_audit_event(
-                session,
-                action="register_failed",
-                request=request,
-                entity_type="user",
-                payload={"email": normalized_email, "phone": normalized_phone, "reason": "phone_conflict"},
-            )
-            await session.commit()
-
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="User with this phone already exists",
-            )
-
-    user = User(
-        email=normalized_email,
-        phone=normalized_phone,
-        full_name=normalized_full_name,
-        hashed_password=get_password_hash(payload.password),
-        is_active=True,
-        is_email_verified=False,
-        mfa_enabled=False,
-    )
-    session.add(user)
-    await session.flush()
-
-    access_token = create_access_token(
-        subject=user.id,
-        expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
+) -> PublicRegistrationAcceptedResponse:
+    normalized_data = normalize_public_registration_data(
+        last_name=payload.last_name,
+        first_name=payload.first_name,
+        middle_name=payload.middle_name,
+        email=payload.email,
+        phone=payload.phone,
     )
 
     await write_audit_event(
         session,
-        action="register_success",
+        action="public_registration.requested",
         request=request,
-        actor_user_id=user.id,
         entity_type="user",
-        entity_id=user.id,
-        payload={"email": user.email},
+        payload={"email": normalized_data.email},
+    )
+
+    prepared = await prepare_public_registration(
+        session,
+        data=normalized_data,
+    )
+    entity_id = (
+        prepared.user.id
+        if prepared.user is not None
+        else None
+    )
+
+    await write_audit_event(
+        session,
+        action=f"public_registration.{prepared.outcome}",
+        request=request,
+        entity_type="user",
+        entity_id=entity_id,
+        payload={"email": normalized_data.email},
     )
     await session.commit()
 
-    return TokenResponse(access_token=access_token)
+    if (
+        prepared.user is not None
+        and prepared.created_token is not None
+    ):
+        delivery_status = "failed"
+        delivery_error: str | None = None
 
+        try:
+            setup_url = build_password_setup_url(
+                settings.public_base_url,
+                prepared.created_token.raw_token,
+            )
+            delivery_result = send_public_registration_email(
+                recipient=prepared.user.email,
+                user_email=prepared.user.email,
+                setup_url=setup_url,
+                expires_at=(
+                    prepared.created_token.record.expires_at
+                ),
+            )
+            delivery_status = delivery_result.status
+            delivery_error = delivery_result.error
+
+            if delivery_result.sent:
+                prepared.created_token.record.sent_at = utcnow()
+        except Exception as error:
+            delivery_error = error.__class__.__name__
+
+        email_action = (
+            "public_registration.email_sent"
+            if delivery_status
+            == EMAIL_DELIVERY_STATUS_SENT
+            else "public_registration.email_failed"
+        )
+
+        await write_audit_event(
+            session,
+            action=email_action,
+            request=request,
+            entity_type="user_password_token",
+            entity_id=prepared.created_token.record.id,
+            payload={
+                "email": prepared.user.email,
+                "delivery_status": delivery_status,
+                "error": delivery_error,
+            },
+        )
+        await session.commit()
+
+    return PublicRegistrationAcceptedResponse(
+        status=PUBLIC_REGISTRATION_ACCEPTED_STATUS,
+        message=PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
+    )
 
 @router.post("/set-password", response_model=SetPasswordResponse)
 async def set_password(
