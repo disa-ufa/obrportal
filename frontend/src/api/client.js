@@ -74,6 +74,10 @@ export async function registerUser(payload) {
   });
 }
 
+export async function getPublicRegistrationStatus() {
+  return request("/api/v1/auth/registration-status");
+}
+
 export async function setPasswordWithToken(token, password) {
   return request("/api/v1/auth/set-password", {
     method: "POST",

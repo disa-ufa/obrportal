@@ -54,6 +54,8 @@ export function PublicRoutes({
   initializingAuth,
   user,
   isAdmin,
+  publicRegistrationEnabled,
+  publicRegistrationLoading,
   setEmail,
   setPassword,
   handleLogin,
@@ -163,6 +165,8 @@ export function PublicRoutes({
               loading={authLoading || initializingAuth}
               error={error}
               user={user}
+              publicRegistrationEnabled={publicRegistrationEnabled}
+              publicRegistrationLoading={publicRegistrationLoading}
               onEmailChange={setEmail}
               onPasswordChange={setPassword}
               onLogin={handleLogin}
@@ -174,12 +178,18 @@ export function PublicRoutes({
         <Route
           path="/register"
           element={
-            <RegisterPage
-              onPageChange={handleNavigatePublicPage}
-              onRegister={handleRegister}
-              loading={authLoading || initializingAuth}
-              error={error}
-            />
+            publicRegistrationLoading ? (
+              <PublicRouteLoadingFallback />
+            ) : publicRegistrationEnabled ? (
+              <RegisterPage
+                onPageChange={handleNavigatePublicPage}
+                onRegister={handleRegister}
+                loading={authLoading || initializingAuth}
+                error={error}
+              />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
         <Route

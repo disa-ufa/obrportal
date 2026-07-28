@@ -20,6 +20,7 @@ import { useSystemStatus } from "./hooks/useSystemStatus";
 import { useAdminDataLoader } from "./hooks/useAdminDataLoader";
 import { usePendingEnrollment } from "./hooks/usePendingEnrollment";
 import { useAuthFlow } from "./hooks/useAuthFlow";
+import { usePublicRegistrationStatus } from "./hooks/usePublicRegistrationStatus";
 import { useAppNavigation } from "./hooks/useAppNavigation";
 import { usePageMeta } from "./hooks/usePageMeta";
 import { useAppRouteState } from "./hooks/useAppRouteState";
@@ -33,6 +34,10 @@ export default function App() {
     ready,
     loadSystemStatus,
   } = useSystemStatus();
+  const {
+    publicRegistrationEnabled,
+    publicRegistrationLoading,
+  } = usePublicRegistrationStatus();
 
   const [rbac, setRbac] = useState(null);
   const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
@@ -395,6 +400,7 @@ export default function App() {
       isAdmin={isAdmin}
       currentPage={currentPublicPage}
       onPageChange={handleNavigatePublicPage}
+      publicRegistrationEnabled={publicRegistrationEnabled}
     >
       <PublicRoutes
         email={email}
@@ -404,6 +410,8 @@ export default function App() {
         initializingAuth={initializingAuth}
         user={user}
         isAdmin={isAdmin}
+        publicRegistrationEnabled={publicRegistrationEnabled}
+        publicRegistrationLoading={publicRegistrationLoading}
         setEmail={setEmail}
         setPassword={setPassword}
         handleLogin={handleLogin}
