@@ -52,6 +52,9 @@ class PublicRegistrationAcceptedResponse(BaseModel):
     status: Literal["accepted"]
     message: str = Field(min_length=1, max_length=512)
 
+class PublicRegistrationStatusResponse(BaseModel):
+    enabled: bool
+
 
 class SetPasswordRequest(BaseModel):
     token: str = Field(min_length=16, max_length=512)

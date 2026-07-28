@@ -43,6 +43,13 @@ class Settings(BaseSettings):
         ),
     )
 
+    public_registration_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "PUBLIC_REGISTRATION_ENABLED",
+            "OBRPORTAL_PUBLIC_REGISTRATION_ENABLED",
+        ),
+    )
     email_delivery_enabled: bool = Field(
         default=False,
         validation_alias=AliasChoices(

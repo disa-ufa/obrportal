@@ -37,6 +37,7 @@ from app.schemas.auth import (
     LoginRequest,
     PublicRegistrationAcceptedResponse,
     PublicRegistrationRequest,
+    PublicRegistrationStatusResponse,
     SetPasswordRequest,
     SetPasswordResponse,
     TokenResponse,
@@ -149,6 +150,15 @@ async def build_current_user_response(session: AsyncSession, user: User) -> Curr
     )
 
 
+@router.get(
+    "/registration-status",
+    response_model=PublicRegistrationStatusResponse,
+)
+async def registration_status() -> PublicRegistrationStatusResponse:
+    return PublicRegistrationStatusResponse(
+        enabled=settings.public_registration_enabled,
+    )
+
 @router.post(
     "/register",
     response_model=PublicRegistrationAcceptedResponse,
@@ -159,6 +169,13 @@ async def register(
     request: Request,
     session: AsyncSession = Depends(get_db),
 ) -> PublicRegistrationAcceptedResponse:
+    if not settings.public_registration_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Public registration is temporarily unavailable."
+            ),
+        )
     normalized_data = normalize_public_registration_data(
         last_name=payload.last_name,
         first_name=payload.first_name,
