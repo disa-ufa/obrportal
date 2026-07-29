@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
+from ipaddress import ip_address
 import hmac
 from typing import Protocol
 
@@ -77,7 +78,45 @@ def normalize_public_registration_rate_limit_identifier(
     return normalized_identifier
 
 
+def resolve_public_registration_client_identifier(
+    *,
+    peer_host: str | None,
+    forwarded_for: str | None,
+) -> str:
+    normalized_peer = (peer_host or "").strip()
+
+    if not normalized_peer:
+        return "unknown-client"
+
+    try:
+        peer_address = ip_address(normalized_peer)
+    except ValueError:
+        return normalized_peer.casefold()
+
+    peer_is_trusted_proxy = (
+        peer_address.is_private
+        or peer_address.is_loopback
+        or peer_address.is_link_local
+    )
+
+    if peer_is_trusted_proxy and forwarded_for:
+        for candidate in forwarded_for.split(","):
+            normalized_candidate = candidate.strip()
+
+            if not normalized_candidate:
+                continue
+
+            try:
+                return ip_address(
+                    normalized_candidate
+                ).compressed
+            except ValueError:
+                continue
+
+    return peer_address.compressed
+
 def build_public_registration_rate_limit_key(
+
     *,
     scope: str,
     identifier: str,

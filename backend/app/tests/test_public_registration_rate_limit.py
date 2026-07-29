@@ -10,6 +10,7 @@ from app.services.public_registration_rate_limit import (
     build_public_registration_rate_limit_key,
     consume_public_registration_rate_limit,
     normalize_public_registration_rate_limit_scope,
+    resolve_public_registration_client_identifier,
 )
 
 
@@ -210,3 +211,30 @@ def test_consume_rate_limit_rejects_malformed_redis_response() -> None:
                 secret_key="test-secret",
             )
         )
+
+
+def test_client_identifier_trusts_forwarded_for_from_private_peer() -> None:
+    identifier = resolve_public_registration_client_identifier(
+        peer_host="172.18.0.5",
+        forwarded_for="203.0.113.25, 172.18.0.2",
+    )
+
+    assert identifier == "203.0.113.25"
+
+
+def test_client_identifier_ignores_forwarded_for_from_public_peer() -> None:
+    identifier = resolve_public_registration_client_identifier(
+        peer_host="8.8.8.8",
+        forwarded_for="203.0.113.25",
+    )
+
+    assert identifier == "8.8.8.8"
+
+
+def test_client_identifier_falls_back_when_forwarded_for_invalid() -> None:
+    identifier = resolve_public_registration_client_identifier(
+        peer_host="127.0.0.1",
+        forwarded_for="not-an-ip",
+    )
+
+    assert identifier == "127.0.0.1"

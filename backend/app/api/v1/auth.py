@@ -4,10 +4,13 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
+from redis.asyncio import Redis
+from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.redis import get_redis_client
 from app.core.security import create_access_token, decode_access_token, get_password_hash, verify_password
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
@@ -25,7 +28,14 @@ from app.services.public_registration import (
     normalize_public_registration_data,
     prepare_public_registration,
 )
+from app.services.public_registration_rate_limit import (
+    PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT,
+    PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL,
+    consume_public_registration_rate_limit,
+    resolve_public_registration_client_identifier,
+)
 from app.services.user_password_tokens import (
+
     USER_PASSWORD_TOKEN_PURPOSE_INITIAL_PASSWORD_SETUP,
     build_password_setup_url,
     get_valid_user_password_token,
@@ -168,6 +178,7 @@ async def register(
     payload: PublicRegistrationRequest,
     request: Request,
     session: AsyncSession = Depends(get_db),
+    redis_client: Redis = Depends(get_redis_client),
 ) -> PublicRegistrationAcceptedResponse:
     if not settings.public_registration_enabled:
         raise HTTPException(
@@ -183,8 +194,92 @@ async def register(
         email=payload.email,
         phone=payload.phone,
     )
+    client_identifier = (
+        resolve_public_registration_client_identifier(
+            peer_host=_request_ip(request),
+            forwarded_for=request.headers.get(
+                "x-forwarded-for"
+            ),
+        )
+    )
 
+    try:
+        email_rate_limit = (
+            await consume_public_registration_rate_limit(
+                redis_client,
+                scope=(
+                    PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL
+                ),
+                identifier=normalized_data.email,
+                limit=(
+                    settings
+                    .public_registration_rate_limit_email_max_attempts
+                ),
+                window_seconds=(
+                    settings
+                    .public_registration_rate_limit_window_seconds
+                ),
+                secret_key=settings.secret_key,
+            )
+        )
+
+        if not email_rate_limit.allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    "Too many registration attempts. "
+                    "Please try again later."
+                ),
+                headers={
+                    "Retry-After": str(
+                        email_rate_limit.retry_after_seconds
+                    )
+                },
+            )
+
+        client_rate_limit = (
+            await consume_public_registration_rate_limit(
+                redis_client,
+                scope=(
+                    PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT
+                ),
+                identifier=client_identifier,
+                limit=(
+                    settings
+                    .public_registration_rate_limit_client_max_attempts
+                ),
+                window_seconds=(
+                    settings
+                    .public_registration_rate_limit_window_seconds
+                ),
+                secret_key=settings.secret_key,
+            )
+        )
+
+        if not client_rate_limit.allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    "Too many registration attempts. "
+                    "Please try again later."
+                ),
+                headers={
+                    "Retry-After": str(
+                        client_rate_limit.retry_after_seconds
+                    )
+                },
+            )
+    except HTTPException:
+        raise
+    except (RedisError, RuntimeError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Public registration is temporarily unavailable."
+            ),
+        ) from error
     await write_audit_event(
+
         session,
         action="public_registration.requested",
         request=request,
