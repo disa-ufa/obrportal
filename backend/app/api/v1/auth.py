@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -169,6 +170,60 @@ async def registration_status() -> PublicRegistrationStatusResponse:
         enabled=settings.public_registration_enabled,
     )
 
+async def _prepare_public_registration_transaction(
+    session: AsyncSession,
+    *,
+    data,
+    request: Request,
+):
+    try:
+        await write_audit_event(
+            session,
+            action="public_registration.requested",
+            request=request,
+            entity_type="user",
+            payload={"email": data.email},
+        )
+
+        prepared = await prepare_public_registration(
+            session,
+            data=data,
+        )
+        entity_id = (
+            prepared.user.id
+            if prepared.user is not None
+            else None
+        )
+
+        await write_audit_event(
+            session,
+            action=f"public_registration.{prepared.outcome}",
+            request=request,
+            entity_type="user",
+            entity_id=entity_id,
+            payload={"email": data.email},
+        )
+        await session.commit()
+
+        return prepared
+    except IntegrityError:
+        await session.rollback()
+
+        await write_audit_event(
+            session,
+            action="public_registration.identity_conflict",
+            request=request,
+            entity_type="user",
+            payload={
+                "email": data.email,
+                "reason": "concurrent_integrity_conflict",
+            },
+        )
+        await session.commit()
+
+        return None
+
+
 @router.post(
     "/register",
     response_model=PublicRegistrationAcceptedResponse,
@@ -278,34 +333,17 @@ async def register(
                 "Public registration is temporarily unavailable."
             ),
         ) from error
-    await write_audit_event(
-
-        session,
-        action="public_registration.requested",
-        request=request,
-        entity_type="user",
-        payload={"email": normalized_data.email},
-    )
-
-    prepared = await prepare_public_registration(
+    prepared = await _prepare_public_registration_transaction(
         session,
         data=normalized_data,
-    )
-    entity_id = (
-        prepared.user.id
-        if prepared.user is not None
-        else None
+        request=request,
     )
 
-    await write_audit_event(
-        session,
-        action=f"public_registration.{prepared.outcome}",
-        request=request,
-        entity_type="user",
-        entity_id=entity_id,
-        payload={"email": normalized_data.email},
-    )
-    await session.commit()
+    if prepared is None:
+        return PublicRegistrationAcceptedResponse(
+            status=PUBLIC_REGISTRATION_ACCEPTED_STATUS,
+            message=PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
+        )
 
     if (
         prepared.user is not None
