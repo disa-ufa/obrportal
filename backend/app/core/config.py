@@ -74,6 +74,27 @@ class Settings(BaseSettings):
             "OBRPORTAL_PUBLIC_REGISTRATION_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
         ),
     )
+    password_recovery_rate_limit_window_seconds: int = Field(
+        default=900,
+        validation_alias=AliasChoices(
+            "PASSWORD_RECOVERY_RATE_LIMIT_WINDOW_SECONDS",
+            "OBRPORTAL_PASSWORD_RECOVERY_RATE_LIMIT_WINDOW_SECONDS",
+        ),
+    )
+    password_recovery_rate_limit_email_max_attempts: int = Field(
+        default=3,
+        validation_alias=AliasChoices(
+            "PASSWORD_RECOVERY_RATE_LIMIT_EMAIL_MAX_ATTEMPTS",
+            "OBRPORTAL_PASSWORD_RECOVERY_RATE_LIMIT_EMAIL_MAX_ATTEMPTS",
+        ),
+    )
+    password_recovery_rate_limit_client_max_attempts: int = Field(
+        default=20,
+        validation_alias=AliasChoices(
+            "PASSWORD_RECOVERY_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+            "OBRPORTAL_PASSWORD_RECOVERY_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+        ),
+    )
     email_delivery_enabled: bool = Field(
         default=False,
         validation_alias=AliasChoices(

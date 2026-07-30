@@ -35,6 +35,7 @@ from app.services.public_registration_rate_limit import (
     PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL,
     consume_public_registration_rate_limit,
     resolve_public_registration_client_identifier,
+    consume_password_recovery_rate_limit,
 )
 from app.services.user_password_tokens import (
 
@@ -415,8 +416,93 @@ async def forgot_password(
     payload: ForgotPasswordRequest,
     request: Request,
     session: AsyncSession = Depends(get_db),
+    redis_client: Redis = Depends(get_redis_client),
 ) -> ForgotPasswordAcceptedResponse:
     normalized_email = payload.email.lower().strip()
+    client_identifier = (
+        resolve_public_registration_client_identifier(
+            peer_host=_request_ip(request),
+            forwarded_for=request.headers.get(
+                "x-forwarded-for"
+            ),
+        )
+    )
+
+    try:
+        email_rate_limit = (
+            await consume_password_recovery_rate_limit(
+                redis_client,
+                scope=(
+                    PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL
+                ),
+                identifier=normalized_email,
+                limit=(
+                    settings
+                    .password_recovery_rate_limit_email_max_attempts
+                ),
+                window_seconds=(
+                    settings
+                    .password_recovery_rate_limit_window_seconds
+                ),
+                secret_key=settings.secret_key,
+            )
+        )
+
+        if not email_rate_limit.allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    "Too many password recovery attempts. "
+                    "Please try again later."
+                ),
+                headers={
+                    "Retry-After": str(
+                        email_rate_limit.retry_after_seconds
+                    )
+                },
+            )
+
+        client_rate_limit = (
+            await consume_password_recovery_rate_limit(
+                redis_client,
+                scope=(
+                    PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT
+                ),
+                identifier=client_identifier,
+                limit=(
+                    settings
+                    .password_recovery_rate_limit_client_max_attempts
+                ),
+                window_seconds=(
+                    settings
+                    .password_recovery_rate_limit_window_seconds
+                ),
+                secret_key=settings.secret_key,
+            )
+        )
+
+        if not client_rate_limit.allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    "Too many password recovery attempts. "
+                    "Please try again later."
+                ),
+                headers={
+                    "Retry-After": str(
+                        client_rate_limit.retry_after_seconds
+                    )
+                },
+            )
+    except HTTPException:
+        raise
+    except (RedisError, RuntimeError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Password recovery is temporarily unavailable."
+            ),
+        ) from error
 
     await write_audit_event(
         session,

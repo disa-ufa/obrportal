@@ -17,6 +17,9 @@ PUBLIC_REGISTRATION_RATE_LIMIT_SCOPES = frozenset(
 PUBLIC_REGISTRATION_RATE_LIMIT_KEY_PREFIX = (
     "obrportal:public-registration:rate-limit"
 )
+PASSWORD_RECOVERY_RATE_LIMIT_KEY_PREFIX = (
+    "obrportal:password-recovery:rate-limit"
+)
 
 PUBLIC_REGISTRATION_RATE_LIMIT_LUA = """
 local count = redis.call("INCR", KEYS[1])
@@ -194,6 +197,7 @@ async def consume_public_registration_rate_limit(
     limit: int,
     window_seconds: int,
     secret_key: str,
+    prefix: str = PUBLIC_REGISTRATION_RATE_LIMIT_KEY_PREFIX,
 ) -> PublicRegistrationRateLimitDecision:
     if limit <= 0:
         raise ValueError(
@@ -211,6 +215,7 @@ async def consume_public_registration_rate_limit(
         scope=scope,
         identifier=identifier,
         secret_key=secret_key,
+        prefix=prefix,
     )
 
     result = await redis_client.eval(
@@ -234,4 +239,24 @@ async def consume_public_registration_rate_limit(
             if allowed
             else max(ttl_seconds, 1)
         ),
+    )
+
+
+async def consume_password_recovery_rate_limit(
+    redis_client: AsyncRateLimitRedisClient,
+    *,
+    scope: str,
+    identifier: str,
+    limit: int,
+    window_seconds: int,
+    secret_key: str,
+) -> PublicRegistrationRateLimitDecision:
+    return await consume_public_registration_rate_limit(
+        redis_client,
+        scope=scope,
+        identifier=identifier,
+        limit=limit,
+        window_seconds=window_seconds,
+        secret_key=secret_key,
+        prefix=PASSWORD_RECOVERY_RATE_LIMIT_KEY_PREFIX,
     )
