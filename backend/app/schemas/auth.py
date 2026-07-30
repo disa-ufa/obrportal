@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 
 class LoginRequest(BaseModel):
@@ -54,6 +54,24 @@ class PublicRegistrationAcceptedResponse(BaseModel):
 
 class PublicRegistrationStatusResponse(BaseModel):
     enabled: bool
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ForgotPasswordAcceptedResponse(BaseModel):
+    status: Literal["accepted"]
+    message: str = Field(min_length=1, max_length=512)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=16, max_length=512)
+    password: str = Field(min_length=8, max_length=128)
+
+
+class ResetPasswordResponse(BaseModel):
+    status: Literal["ok"] = "ok"
 
 
 class SetPasswordRequest(BaseModel):

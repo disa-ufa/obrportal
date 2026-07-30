@@ -704,3 +704,100 @@ def send_course_assignment_email(
         message,
         email_settings=email_settings,
     )
+
+
+def build_password_reset_email_subject(
+    *,
+    app_name: str | None = None,
+) -> str:
+    safe_app_name = normalize_email_header_value(app_name) or settings.app_name
+    return f"{safe_app_name}: восстановление пароля"
+
+
+def build_password_reset_email_body(
+    *,
+    user_email: str,
+    reset_url: str,
+    expires_at: datetime | None = None,
+    app_name: str | None = None,
+) -> str:
+    safe_app_name = normalize_email_header_value(app_name) or settings.app_name
+    lines = [
+        "Здравствуйте!",
+        "",
+        (
+            "Для учётной записи "
+            f"{user_email} запрошено восстановление пароля "
+            f"в портале {safe_app_name}."
+        ),
+        "Чтобы установить новый пароль, перейдите по ссылке:",
+        reset_url,
+        "",
+    ]
+
+    if expires_at is not None:
+        formatted_expires_at = expires_at.strftime("%d.%m.%Y %H:%M")
+        timezone_name = expires_at.tzname()
+        if timezone_name:
+            formatted_expires_at += f" ({timezone_name})"
+        lines.extend([f"Ссылка действительна до: {formatted_expires_at}", ""])
+
+    lines.extend(
+        [
+            (
+                "Если вы не запрашивали восстановление пароля, "
+                "проигнорируйте это письмо."
+            ),
+            "",
+            f"С уважением, команда {safe_app_name}",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def build_password_reset_email_message(
+    *,
+    recipient: str,
+    reset_url: str,
+    user_email: str | None = None,
+    expires_at: datetime | None = None,
+    app_name: str | None = None,
+    email_settings: Settings = settings,
+) -> EmailMessage:
+    normalized_recipient = normalize_email_header_value(recipient)
+    if not normalized_recipient:
+        raise ValueError("Recipient email is required.")
+
+    message = EmailMessage()
+    message["From"] = build_email_from_header(email_settings)
+    message["To"] = normalized_recipient
+    message["Subject"] = build_password_reset_email_subject(app_name=app_name)
+    message.set_content(
+        build_password_reset_email_body(
+            user_email=user_email or normalized_recipient,
+            reset_url=reset_url,
+            expires_at=expires_at,
+            app_name=app_name,
+        )
+    )
+    return message
+
+
+def send_password_reset_email(
+    *,
+    recipient: str,
+    reset_url: str,
+    user_email: str | None = None,
+    expires_at: datetime | None = None,
+    app_name: str | None = None,
+    email_settings: Settings = settings,
+) -> EmailDeliveryResult:
+    message = build_password_reset_email_message(
+        recipient=recipient,
+        reset_url=reset_url,
+        user_email=user_email,
+        expires_at=expires_at,
+        app_name=app_name,
+        email_settings=email_settings,
+    )
+    return send_email_message(message, email_settings=email_settings)
