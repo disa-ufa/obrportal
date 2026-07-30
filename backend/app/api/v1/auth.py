@@ -22,6 +22,7 @@ from app.models.user import User
 from app.services.email_delivery import (
     EMAIL_DELIVERY_STATUS_SENT,
     send_public_registration_email,
+    send_password_reset_email,
 )
 from app.services.public_registration import (
     PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
@@ -41,6 +42,8 @@ from app.services.user_password_tokens import (
     build_password_setup_url,
     get_valid_user_password_token,
     mark_user_password_token_used,
+    USER_PASSWORD_TOKEN_PURPOSE_PASSWORD_RESET,
+    create_user_password_token,
 )
 from app.schemas.auth import (
     CurrentUserResponse,
@@ -52,6 +55,10 @@ from app.schemas.auth import (
     SetPasswordRequest,
     SetPasswordResponse,
     TokenResponse,
+    ForgotPasswordAcceptedResponse,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
 )
 
 
@@ -398,6 +405,209 @@ async def register(
         status=PUBLIC_REGISTRATION_ACCEPTED_STATUS,
         message=PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
     )
+
+@router.post(
+    "/forgot-password",
+    response_model=ForgotPasswordAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+) -> ForgotPasswordAcceptedResponse:
+    normalized_email = payload.email.lower().strip()
+
+    await write_audit_event(
+        session,
+        action="password_recovery.requested",
+        request=request,
+        entity_type="user",
+        payload={"email": normalized_email},
+    )
+
+    user = await get_user_by_email(
+        session,
+        normalized_email,
+    )
+    created_token = None
+
+    if user is not None and user.is_active:
+        created_token = await create_user_password_token(
+            session,
+            user=user,
+            purpose=(
+                USER_PASSWORD_TOKEN_PURPOSE_PASSWORD_RESET
+            ),
+            delivery_target_email=user.email,
+        )
+
+        await write_audit_event(
+            session,
+            action="password_recovery.accepted",
+            request=request,
+            entity_type="user",
+            entity_id=user.id,
+            payload={"email": normalized_email},
+        )
+    else:
+        await write_audit_event(
+            session,
+            action="password_recovery.accepted",
+            request=request,
+            entity_type="user",
+            payload={"email": normalized_email},
+        )
+
+    await session.commit()
+
+    if created_token is not None and user is not None:
+        delivery_status = "failed"
+        delivery_error: str | None = None
+
+        try:
+            reset_url = build_password_setup_url(
+                settings.public_base_url,
+                created_token.raw_token,
+                path="/reset-password",
+            )
+            delivery_result = send_password_reset_email(
+                recipient=user.email,
+                user_email=user.email,
+                reset_url=reset_url,
+                expires_at=(
+                    created_token.record.expires_at
+                ),
+            )
+            delivery_status = delivery_result.status
+            delivery_error = delivery_result.error
+
+            if delivery_result.sent:
+                created_token.record.sent_at = utcnow()
+        except Exception as error:
+            delivery_error = error.__class__.__name__
+
+        email_action = (
+            "password_recovery.email_sent"
+            if delivery_status
+            == EMAIL_DELIVERY_STATUS_SENT
+            else "password_recovery.email_failed"
+        )
+
+        await write_audit_event(
+            session,
+            action=email_action,
+            request=request,
+            entity_type="user_password_token",
+            entity_id=created_token.record.id,
+            payload={
+                "email": user.email,
+                "delivery_status": delivery_status,
+                "error": delivery_error,
+            },
+        )
+        await session.commit()
+
+    return ForgotPasswordAcceptedResponse(
+        status="accepted",
+        message=(
+            "Если учетная запись существует, инструкции "
+            "по восстановлению пароля отправлены "
+            "на указанный адрес."
+        ),
+    )
+
+
+@router.post(
+    "/reset-password",
+    response_model=ResetPasswordResponse,
+)
+async def reset_password(
+    payload: ResetPasswordRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+) -> ResetPasswordResponse:
+    token_record = await get_valid_user_password_token(
+        session,
+        raw_token=payload.token,
+        purpose=(
+            USER_PASSWORD_TOKEN_PURPOSE_PASSWORD_RESET
+        ),
+    )
+
+    if token_record is None:
+        await write_audit_event(
+            session,
+            action="password_recovery.reset_failed",
+            request=request,
+            entity_type="user_password_token",
+            payload={
+                "reason": "invalid_or_expired_token"
+            },
+        )
+        await session.commit()
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Недействительная или просроченная "
+                "ссылка восстановления пароля."
+            ),
+        )
+
+    result = await session.execute(
+        select(User).where(
+            User.id == token_record.user_id
+        )
+    )
+    user = result.scalar_one_or_none()
+
+    if user is None or not user.is_active:
+        await write_audit_event(
+            session,
+            action="password_recovery.reset_failed",
+            request=request,
+            entity_type="user_password_token",
+            entity_id=token_record.id,
+            payload={
+                "reason": "user_not_found_or_inactive"
+            },
+        )
+        await session.commit()
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Недействительная или просроченная "
+                "ссылка восстановления пароля."
+            ),
+        )
+
+    user.hashed_password = get_password_hash(
+        payload.password
+    )
+
+    await mark_user_password_token_used(
+        session,
+        record=token_record,
+    )
+
+    await write_audit_event(
+        session,
+        action="password_recovery.reset_success",
+        request=request,
+        actor_user_id=user.id,
+        entity_type="user",
+        entity_id=user.id,
+        payload={
+            "email": user.email,
+            "purpose": token_record.purpose,
+        },
+    )
+    await session.commit()
+
+    return ResetPasswordResponse(status="ok")
+
 
 @router.post("/set-password", response_model=SetPasswordResponse)
 async def set_password(
