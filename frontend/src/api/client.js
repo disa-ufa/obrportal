@@ -85,6 +85,20 @@ export async function setPasswordWithToken(token, password) {
   });
 }
 
+export async function requestPasswordReset(email) {
+  return request("/api/v1/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPasswordWithToken(token, password) {
+  return request("/api/v1/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
 export async function getCurrentUser() {
   return request("/api/v1/auth/me");
 }

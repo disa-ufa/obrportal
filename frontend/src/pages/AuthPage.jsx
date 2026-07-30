@@ -1,5 +1,6 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getPublicCourseDetail } from "../api/client";
 import { AuthPanel } from "../components/auth/AuthPanel";
 import { Alert } from "../components/ui/Alert";
@@ -129,6 +130,17 @@ export function AuthPage({
             onLogout={onLogout}
           />
         </div>
+
+        {!user && (
+          <div className="mt-4 text-center">
+            <Link
+              to="/forgot-password"
+              className="text-sm font-semibold text-blue-700 transition hover:text-blue-900"
+            >
+              Забыли пароль?
+            </Link>
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard
