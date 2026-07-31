@@ -73,47 +73,53 @@ def test_forgot_password_rate_limit_keeps_success_neutral() -> None:
 
 
 def test_forgot_password_rate_limits_normalized_email() -> None:
+    from app.core.config import settings
+
     local_part = f"recovery-email-{uuid4().hex}"
     email = f"{local_part}@example.com"
-    client = "203.0.113.62"
+    limit = settings.password_recovery_rate_limit_email_max_attempts
+    assert limit >= 1
 
-    first_status, _, _ = request_json(
+    accepted_statuses = []
+
+    for index in range(limit):
+        candidate = email.upper() if index == 0 else email
+        status, _, _ = request_json(
+            "/api/v1/auth/forgot-password",
+            email=candidate,
+            forwarded_for=f"2001:db8:10::{index + 1}",
+        )
+        accepted_statuses.append(status)
+
+    assert accepted_statuses == [202] * limit
+
+    blocked_status, blocked_payload, blocked_headers = request_json(
         "/api/v1/auth/forgot-password",
         email=email,
-        forwarded_for=client,
-    )
-    second_status, _, _ = request_json(
-        "/api/v1/auth/forgot-password",
-        email=email.upper(),
-        forwarded_for=client,
-    )
-    third_status, third_payload, third_headers = (
-        request_json(
-            "/api/v1/auth/forgot-password",
-            email=f"{local_part}@example.com",
-            forwarded_for=client,
-        )
+        forwarded_for="2001:db8:10::ffff",
     )
 
-    assert first_status == 202
-    assert second_status == 202
-    assert third_status == 429
-    assert third_payload == {
+    assert blocked_status == 429
+    assert blocked_payload == {
         "detail": (
             "Too many password recovery attempts. "
             "Please try again later."
         )
     }
-    assert int(third_headers["retry-after"]) >= 1
+    assert int(blocked_headers["retry-after"]) >= 1
 
 
 def test_forgot_password_rate_limits_client_identifier() -> None:
+    from app.core.config import settings
+
     client = "203.0.113.63"
+    limit = settings.password_recovery_rate_limit_client_max_attempts
+    assert limit >= 1
 
-    statuses = []
+    accepted_statuses = []
 
-    for index in range(3):
-        status, _, headers = request_json(
+    for index in range(limit):
+        status, _, _ = request_json(
             "/api/v1/auth/forgot-password",
             email=(
                 f"recovery-client-{index}-"
@@ -121,11 +127,18 @@ def test_forgot_password_rate_limits_client_identifier() -> None:
             ),
             forwarded_for=client,
         )
-        statuses.append((status, headers))
+        accepted_statuses.append(status)
 
-    assert [status for status, _ in statuses] == [
-        202,
-        202,
-        429,
-    ]
-    assert int(statuses[-1][1]["retry-after"]) >= 1
+    assert accepted_statuses == [202] * limit
+
+    blocked_status, _, blocked_headers = request_json(
+        "/api/v1/auth/forgot-password",
+        email=(
+            "recovery-client-blocked-"
+            f"{uuid4().hex}@example.com"
+        ),
+        forwarded_for=client,
+    )
+
+    assert blocked_status == 429
+    assert int(blocked_headers["retry-after"]) >= 1

@@ -182,6 +182,9 @@ jobs:
       - name: Create env file
         run: |
           cp .env.example .env
+          sed -i \
+            's/^PUBLIC_REGISTRATION_ENABLED=.*/PUBLIC_REGISTRATION_ENABLED=true/' \
+            .env
 
       - name: Build and start services
         run: |

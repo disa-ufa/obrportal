@@ -91,26 +91,38 @@ def test_public_registration_rate_limit_keeps_success_neutral() -> None:
 
 
 def test_public_registration_rate_limits_normalized_email() -> None:
+    from app.core.config import settings
+
     suffix = uuid4().hex
     email = f"rate-email-{suffix}@example.test"
+    limit = settings.public_registration_rate_limit_email_max_attempts
+    assert limit >= 1
 
-    first = post_registration(
-        email=email.upper(),
-        forwarded_for=f"2001:db8:2::{suffix[:4]}",
-    )
-    second = post_registration(
-        email=f"  {email}  ",
-        forwarded_for=f"2001:db8:3::{suffix[:4]}",
-    )
-    third = post_registration(
+    email_variants = [email.upper(), f"  {email}  "]
+    accepted_results = []
+
+    for index in range(limit):
+        candidate = (
+            email_variants[index]
+            if index < len(email_variants)
+            else email
+        )
+        accepted_results.append(
+            post_registration(
+                email=candidate,
+                forwarded_for=(
+                    f"2001:db8:2:{index + 1}::{suffix[:4]}"
+                ),
+            )
+        )
+
+    for status_code, payload, _ in accepted_results:
+        assert_neutral_accepted(status_code, payload)
+
+    status_code, payload, headers = post_registration(
         email=email,
-        forwarded_for=f"2001:db8:4::{suffix[:4]}",
+        forwarded_for=f"2001:db8:2:ffff::{suffix[:4]}",
     )
-
-    assert_neutral_accepted(first[0], first[1])
-    assert_neutral_accepted(second[0], second[1])
-
-    status_code, payload, headers = third
 
     assert status_code == 429
     assert payload == {"detail": RATE_LIMIT_DETAIL}
@@ -119,32 +131,37 @@ def test_public_registration_rate_limits_normalized_email() -> None:
 
 
 def test_public_registration_rate_limits_client_identifier() -> None:
+    from app.core.config import settings
+
     suffix = uuid4().hex
     forwarded_for = f"2001:db8:5::{suffix[:4]}"
+    limit = settings.public_registration_rate_limit_client_max_attempts
+    assert limit >= 1
 
-    first = post_registration(
-        email=f"rate-client-a-{suffix}@example.test",
+    accepted_results = []
+
+    for index in range(limit):
+        accepted_results.append(
+            post_registration(
+                email=(
+                    f"rate-client-{index}-{suffix}"
+                    "@example.test"
+                ),
+                forwarded_for=forwarded_for,
+            )
+        )
+
+    for status_code, payload, _ in accepted_results:
+        assert_neutral_accepted(status_code, payload)
+
+    blocked_email = f"rate-client-blocked-{suffix}@example.test"
+    status_code, payload, headers = post_registration(
+        email=blocked_email,
         forwarded_for=forwarded_for,
     )
-    second = post_registration(
-        email=f"rate-client-b-{suffix}@example.test",
-        forwarded_for=forwarded_for,
-    )
-    third_email = (
-        f"rate-client-c-{suffix}@example.test"
-    )
-    third = post_registration(
-        email=third_email,
-        forwarded_for=forwarded_for,
-    )
-
-    assert_neutral_accepted(first[0], first[1])
-    assert_neutral_accepted(second[0], second[1])
-
-    status_code, payload, headers = third
 
     assert status_code == 429
     assert payload == {"detail": RATE_LIMIT_DETAIL}
     assert int(headers["retry-after"]) >= 1
-    assert third_email not in json.dumps(payload)
+    assert blocked_email not in json.dumps(payload)
     assert forwarded_for not in json.dumps(payload)
