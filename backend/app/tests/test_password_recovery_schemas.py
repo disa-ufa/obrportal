@@ -31,14 +31,14 @@ def test_forgot_password_response_requires_accepted_status() -> None:
 def test_reset_password_request_validates_lengths() -> None:
     payload = ResetPasswordRequest(
         token="a" * 32,
-        password="NewPassword123!",
+        password="new-password-test-123!",
     )
     assert len(payload.token) == 32
 
     with pytest.raises(ValidationError):
         ResetPasswordRequest(
             token="short",
-            password="NewPassword123!",
+            password="new-password-test-123!",
         )
 
 
