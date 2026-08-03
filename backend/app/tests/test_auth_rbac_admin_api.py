@@ -3056,100 +3056,93 @@ def test_learner_cannot_delete_learning_group() -> None:
     )
     assert status == 403
     assert isinstance(payload, dict)
-def test_public_register_returns_token_and_me() -> None:
+def public_registration_payload(
+    *,
+    email: str,
+    phone: str | None = None,
+) -> dict:
+    return {
+        "last_name": "Public",
+        "first_name": "User",
+        "middle_name": None,
+        "email": email,
+        "phone": phone,
+        "personal_data_consent": True,
+        "terms_accepted": True,
+    }
+
+
+def test_public_register_returns_neutral_accepted_response() -> None:
     email = f"public_{uuid4().hex[:12]}@example.com"
-    password = "Public123Local2026!"
-    phone = unique_phone()
 
     status, payload = request_json(
         "POST",
         "/api/v1/auth/register",
-        {
-            "email": email.upper(),
-            "password": password,
-            "full_name": "Public User",
-            "phone": phone,
-        },
+        public_registration_payload(
+            email=email.upper(),
+            phone=unique_phone(),
+        ),
     )
 
-    assert status == 201
+    assert status == 202
     assert isinstance(payload, dict)
-    assert payload["access_token"]
-
-    token = str(payload["access_token"])
-
-    status, me_payload = request_json("GET", "/api/v1/auth/me", token=token)
-    assert status == 200
-    assert isinstance(me_payload, dict)
-    assert me_payload["email"] == email
-    assert me_payload["full_name"] == "Public User"
-    assert me_payload["is_active"] is True
-    assert me_payload["is_email_verified"] is False
-    assert me_payload["mfa_enabled"] is False
-    assert me_payload["roles"] == []
-
-    login_token = login(email, password)
-    assert login_token
+    assert payload["status"] == "accepted"
+    assert "message" in payload
+    assert "access_token" not in payload
+    assert "user_id" not in payload
 
 
-def test_public_register_duplicate_email_returns_409() -> None:
+def test_public_register_duplicate_email_returns_neutral_202() -> None:
     email = f"dup_{uuid4().hex[:12]}@example.com"
 
     first_status, first_payload = request_json(
         "POST",
         "/api/v1/auth/register",
-        {
-            "email": email,
-            "password": "Public123Local2026!",
-            "full_name": "Duplicate Email User",
-        },
+        public_registration_payload(email=email),
     )
-    assert first_status == 201
+    assert first_status == 202
     assert isinstance(first_payload, dict)
 
     status, payload = request_json(
         "POST",
         "/api/v1/auth/register",
-        {
-            "email": email.upper(),
-            "password": "Public123Local2026!",
-            "full_name": "Duplicate Email User 2",
-        },
+        public_registration_payload(email=email.upper()),
     )
 
-    assert status == 409
+    assert status == 202
     assert isinstance(payload, dict)
+    assert payload == first_payload
+    assert "access_token" not in payload
 
 
-def test_public_register_duplicate_phone_returns_409() -> None:
+def test_public_register_duplicate_phone_returns_neutral_202() -> None:
     phone = unique_phone()
 
     first_status, first_payload = request_json(
         "POST",
         "/api/v1/auth/register",
-        {
-            "email": f"phonea_{uuid4().hex[:12]}@example.com",
-            "password": "Public123Local2026!",
-            "full_name": "Phone A",
-            "phone": phone,
-        },
+        public_registration_payload(
+            email=f"phonea_{uuid4().hex[:12]}@example.com",
+            phone=phone,
+        ),
     )
-    assert first_status == 201
+    assert first_status == 202
     assert isinstance(first_payload, dict)
 
     status, payload = request_json(
         "POST",
         "/api/v1/auth/register",
-        {
-            "email": f"phoneb_{uuid4().hex[:12]}@example.com",
-            "password": "Public123Local2026!",
-            "full_name": "Phone B",
-            "phone": phone,
-        },
+        public_registration_payload(
+            email=f"phoneb_{uuid4().hex[:12]}@example.com",
+            phone=phone,
+        ),
     )
 
-    assert status == 409
+    assert status == 202
     assert isinstance(payload, dict)
+    assert payload == first_payload
+    assert "access_token" not in payload
+
 def test_admin_can_get_account_summary() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 

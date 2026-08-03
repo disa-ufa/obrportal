@@ -15,7 +15,12 @@ const FOOTER_LINKS = [
   { key: "contacts", label: "Контакты" },
 ];
 
-function getPublicShellNavigationStats({ user, isAdmin, currentPage }) {
+function getPublicShellNavigationStats({
+  user,
+  isAdmin,
+  currentPage,
+  publicRegistrationEnabled,
+}) {
   const primaryKeys = PUBLIC_NAV_ITEMS.map((item) => item.key);
   const footerKeys = FOOTER_LINKS.map((item) => item.key);
   const allKnownKeys = [
@@ -43,6 +48,7 @@ function getPublicShellNavigationStats({ user, isAdmin, currentPage }) {
     userAuthenticated: Boolean(user),
     isAdmin,
     isOrgRepresentative,
+    publicRegistrationEnabled,
     targetArea: isAdmin && user
       ? "admin"
       : user && isOrgRepresentative
@@ -73,7 +79,11 @@ function getPublicShellNavigationDiagnostics(stats) {
   }
 
   if (stats.targetArea === "auth") {
-    items.push("Auth: гостю доступны вход и регистрация.");
+    items.push(
+      stats.publicRegistrationEnabled
+        ? "Auth: гостю доступны вход и регистрация."
+        : "Auth: гостю доступен вход; самостоятельная регистрация выключена."
+    );
   }
 
   if (stats.targetArea === "admin") {
@@ -178,6 +188,7 @@ export function PublicShell({
   isAdmin,
   currentPage,
   onPageChange,
+  publicRegistrationEnabled,
   children,
 }) {
   const isOrgRepresentative = userHasRole(user, "org_rep");
@@ -185,6 +196,7 @@ export function PublicShell({
     user,
     isAdmin,
     currentPage,
+    publicRegistrationEnabled,
   });
   const publicShellNavigationDiagnostics = getPublicShellNavigationDiagnostics(
     publicShellNavigationStats
@@ -194,7 +206,14 @@ export function PublicShell({
     ? { page: "dashboard", label: "Админка" }
     : user && isOrgRepresentative
       ? { page: "organization", label: "Кабинет организации" }
-      : { page: user ? "account" : "register", label: "Личный кабинет" };
+      : {
+          page: user
+            ? "account"
+            : publicRegistrationEnabled
+              ? "register"
+              : "login",
+          label: "Личный кабинет",
+        };
 
   return (
     <main className="min-h-screen bg-[#f7faff] text-[#111936]">

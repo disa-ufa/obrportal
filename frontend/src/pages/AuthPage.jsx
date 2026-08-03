@@ -1,5 +1,6 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getPublicCourseDetail } from "../api/client";
 import { AuthPanel } from "../components/auth/AuthPanel";
 import { Alert } from "../components/ui/Alert";
@@ -25,6 +26,8 @@ export function AuthPage({
   loading,
   error,
   user,
+  publicRegistrationEnabled,
+  publicRegistrationLoading,
   onEmailChange,
   onPasswordChange,
   onLogin,
@@ -127,6 +130,17 @@ export function AuthPage({
             onLogout={onLogout}
           />
         </div>
+
+        {!user && (
+          <div className="mt-4 text-center">
+            <Link
+              to="/forgot-password"
+              className="text-sm font-semibold text-blue-700 transition hover:text-blue-900"
+            >
+              Забыли пароль?
+            </Link>
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard
@@ -161,7 +175,7 @@ export function AuthPage({
             </div>
           )}
 
-          {!user && (
+          {!user && publicRegistrationEnabled && (
             <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-200">
               <div className="font-semibold text-blue-900">
                 Нет аккаунта?
@@ -179,6 +193,27 @@ export function AuthPage({
               </button>
             </div>
           )}
+
+          {!user && publicRegistrationLoading && (
+            <div className="rounded-2xl bg-slate-50 p-4 text-slate-700 ring-1 ring-slate-200">
+              Проверяем доступность самостоятельной регистрации...
+            </div>
+          )}
+
+          {!user &&
+            !publicRegistrationLoading &&
+            !publicRegistrationEnabled && (
+              <div className="rounded-2xl bg-amber-50 p-4 text-amber-800 ring-1 ring-amber-200">
+                <div className="font-semibold text-amber-900">
+                  Самостоятельная регистрация временно недоступна
+                </div>
+                <div className="mt-1">
+                  Пользователи с уже созданной учётной записью могут войти по
+                  e-mail и паролю. Для получения доступа обратитесь в
+                  поддержку портала.
+                </div>
+              </div>
+            )}
 
           {user && (
             <div className="rounded-2xl bg-green-50 p-4 text-green-800 ring-1 ring-green-200">

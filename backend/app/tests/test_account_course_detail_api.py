@@ -22,29 +22,67 @@ def unique_phone() -> str:
 
 
 def register_learner(*, prefix: str = "learner") -> dict:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     email = unique_email(prefix)
-    learner_plain_value = "LearnerPassword123!"
+    learner_plain_value = "learner-test-password-123!"
     phone = unique_phone()
 
-    status, data = request_json(
+    status, roles = request_json(
+        "GET",
+        "/api/v1/admin/roles",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(roles, list)
+
+    learner_role_id = next(
+        (
+            str(role["id"])
+            for role in roles
+            if role.get("code") == "learner_fl"
+        ),
+        None,
+    )
+    assert learner_role_id is not None
+
+    status, created = request_json(
         "POST",
-        "/api/v1/auth/register",
+        "/api/v1/admin/users",
         {
             "email": email,
             "password": learner_plain_value,
             "full_name": f"{prefix} user",
             "phone": phone,
+            "is_active": True,
+            "is_email_verified": True,
         },
+        token=admin_token,
     )
-
     assert status == 201
-    assert isinstance(data, dict)
+    assert isinstance(created, dict)
+
+    status, updated = request_json(
+        "POST",
+        f"/api/v1/admin/users/{created['id']}/roles",
+        {
+            "role_id": learner_role_id,
+            "organization_id": None,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert any(
+        role["code"] == "learner_fl"
+        and role.get("organization_id") is None
+        for role in updated["roles"]
+    )
 
     return {
         "email": email,
         "password": learner_plain_value,
         "phone": phone,
-        "response": data,
+        "response": updated,
     }
 
 

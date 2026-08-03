@@ -78,26 +78,9 @@ export function useAuthFlow({
     setError("");
 
     try {
-      const tokenResponse = await registerUser(payload);
-      storeToken(tokenResponse.access_token);
-
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-
-      if (userHasRole(currentUser, "admin")) {
-        setCurrentPage("dashboard");
-        await loadAdminData();
-        navigate("/admin", { replace: true });
-      } else {
-        setAdminData(EMPTY_ADMIN_DATA);
-        setAdminDataLoadedAt("");
-        await completePendingEnrollmentIfNeeded();
-        navigate(getPostAuthPublicPath(currentUser), { replace: true });
-      }
-
-      return currentUser;
+      return await registerUser(payload);
     } catch (err) {
-      setError(formatApiError(err, "Не удалось завершить регистрацию."));
+      setError(formatApiError(err, "Не удалось отправить заявку на регистрацию."));
       throw err;
     } finally {
       setAuthLoading(false);

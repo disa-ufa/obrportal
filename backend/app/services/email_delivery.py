@@ -336,6 +336,219 @@ def send_password_setup_email(
 
 
 
+
+
+def build_public_registration_email_subject(
+    *,
+    app_name: str | None = None,
+) -> str:
+    safe_app_name = (
+        normalize_email_header_value(app_name)
+        or settings.app_name
+    )
+
+    return (
+        f"{safe_app_name}: "
+        "\u0437\u0430\u0432\u0435\u0440\u0448"
+        "\u0435\u043d\u0438\u0435 "
+        "\u0440\u0435\u0433\u0438\u0441\u0442"
+        "\u0440\u0430\u0446\u0438\u0438"
+    )
+
+
+def build_public_registration_email_body(
+    *,
+    user_email: str,
+    setup_url: str,
+    expires_at: datetime | None = None,
+    app_name: str | None = None,
+) -> str:
+    safe_app_name = (
+        normalize_email_header_value(app_name)
+        or settings.app_name
+    )
+
+    lines = [
+        (
+            "\u0417\u0434\u0440\u0430\u0432"
+            "\u0441\u0442\u0432\u0443\u0439"
+            "\u0442\u0435!"
+        ),
+        "",
+        (
+            "\u0412\u044b \u043d\u0430\u0447"
+            "\u0430\u043b\u0438 "
+            "\u0441\u0430\u043c\u043e\u0441"
+            "\u0442\u043e\u044f\u0442\u0435"
+            "\u043b\u044c\u043d\u0443\u044e "
+            "\u0440\u0435\u0433\u0438\u0441"
+            "\u0442\u0440\u0430\u0446\u0438"
+            "\u044e \u043d\u0430 "
+            f"\u043f\u043e\u0440\u0442\u0430"
+            f"\u043b\u0435 {safe_app_name}."
+        ),
+        (
+            "\u041b\u043e\u0433\u0438\u043d: "
+            f"{user_email}"
+        ),
+        "",
+        (
+            "\u0427\u0442\u043e\u0431\u044b "
+            "\u043f\u043e\u0434\u0442\u0432"
+            "\u0435\u0440\u0434\u0438\u0442"
+            "\u044c \u0430\u0434\u0440\u0435"
+            "\u0441 \u044d\u043b\u0435\u043a"
+            "\u0442\u0440\u043e\u043d\u043d"
+            "\u043e\u0439 \u043f\u043e\u0447"
+            "\u0442\u044b \u0438 "
+            "\u0437\u0430\u0434\u0430\u0442"
+            "\u044c \u043f\u0430\u0440\u043e"
+            "\u043b\u044c, "
+            "\u043f\u0435\u0440\u0435\u0439"
+            "\u0434\u0438\u0442\u0435 "
+            "\u043f\u043e \u0441\u0441\u044b"
+            "\u043b\u043a\u0435:"
+        ),
+        setup_url,
+        "",
+    ]
+
+    if expires_at is not None:
+        formatted_expires_at = expires_at.strftime(
+            "%d.%m.%Y %H:%M"
+        )
+        timezone_name = expires_at.tzname()
+
+        if timezone_name:
+            formatted_expires_at += (
+                f" ({timezone_name})"
+            )
+
+        lines.extend(
+            [
+                (
+                    "\u0421\u0441\u044b\u043b"
+                    "\u043a\u0430 "
+                    "\u0434\u0435\u0439\u0441"
+                    "\u0442\u0432\u0438\u0442"
+                    "\u0435\u043b\u044c\u043d"
+                    "\u0430 \u0434\u043e:"
+                ),
+                formatted_expires_at,
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            (
+                "\u0415\u0441\u043b\u0438 "
+                "\u0432\u044b \u043d\u0435 "
+                "\u043e\u0442\u043f\u0440\u0430"
+                "\u0432\u043b\u044f\u043b\u0438 "
+                "\u0437\u0430\u044f\u0432\u043a"
+                "\u0443, "
+                "\u043f\u0440\u043e\u0441\u0442"
+                "\u043e "
+                "\u043f\u0440\u043e\u0438\u0433"
+                "\u043d\u043e\u0440\u0438\u0440"
+                "\u0443\u0439\u0442\u0435 "
+                "\u044d\u0442\u043e "
+                "\u043f\u0438\u0441\u044c\u043c"
+                "\u043e."
+            ),
+            (
+                "\u0415\u0441\u043b\u0438 "
+                "\u043d\u0443\u0436\u043d\u0430 "
+                "\u043f\u043e\u043c\u043e\u0449"
+                "\u044c, "
+                "\u043e\u0431\u0440\u0430\u0442"
+                "\u0438\u0442\u0435\u0441\u044c "
+                "\u0432 "
+                "\u043f\u043e\u0434\u0434\u0435"
+                "\u0440\u0436\u043a\u0443 "
+                "\u043f\u043e\u0440\u0442\u0430"
+                "\u043b\u0430."
+            ),
+            "",
+            (
+                "\u0421 \u0443\u0432\u0430\u0436"
+                "\u0435\u043d\u0438\u0435\u043c, "
+                f"\u043a\u043e\u043c\u0430\u043d"
+                f"\u0434\u0430 {safe_app_name}"
+            ),
+        ]
+    )
+
+    return "\n".join(lines)
+
+
+def build_public_registration_email_message(
+    *,
+    recipient: str,
+    setup_url: str,
+    user_email: str | None = None,
+    expires_at: datetime | None = None,
+    app_name: str | None = None,
+    email_settings: Settings = settings,
+) -> EmailMessage:
+    normalized_recipient = normalize_email_header_value(
+        recipient
+    )
+
+    if not normalized_recipient:
+        raise ValueError(
+            "Recipient email is required."
+        )
+
+    message = EmailMessage()
+    message["From"] = build_email_from_header(
+        email_settings
+    )
+    message["To"] = normalized_recipient
+    message["Subject"] = (
+        build_public_registration_email_subject(
+            app_name=app_name
+        )
+    )
+    message.set_content(
+        build_public_registration_email_body(
+            user_email=(
+                user_email
+                or normalized_recipient
+            ),
+            setup_url=setup_url,
+            expires_at=expires_at,
+            app_name=app_name,
+        )
+    )
+
+    return message
+
+
+def send_public_registration_email(
+    *,
+    recipient: str,
+    setup_url: str,
+    user_email: str | None = None,
+    expires_at: datetime | None = None,
+    app_name: str | None = None,
+    email_settings: Settings = settings,
+) -> EmailDeliveryResult:
+    message = build_public_registration_email_message(
+        recipient=recipient,
+        setup_url=setup_url,
+        user_email=user_email,
+        expires_at=expires_at,
+        app_name=app_name,
+        email_settings=email_settings,
+    )
+
+    return send_email_message(
+        message,
+        email_settings=email_settings,
+    )
+
 def build_course_assignment_email_subject(
     *,
     app_name: str | None = None,
@@ -491,3 +704,100 @@ def send_course_assignment_email(
         message,
         email_settings=email_settings,
     )
+
+
+def build_password_reset_email_subject(
+    *,
+    app_name: str | None = None,
+) -> str:
+    safe_app_name = normalize_email_header_value(app_name) or settings.app_name
+    return f"{safe_app_name}: восстановление пароля"
+
+
+def build_password_reset_email_body(
+    *,
+    user_email: str,
+    reset_url: str,
+    expires_at: datetime | None = None,
+    app_name: str | None = None,
+) -> str:
+    safe_app_name = normalize_email_header_value(app_name) or settings.app_name
+    lines = [
+        "Здравствуйте!",
+        "",
+        (
+            "Для учётной записи "
+            f"{user_email} запрошено восстановление пароля "
+            f"в портале {safe_app_name}."
+        ),
+        "Чтобы установить новый пароль, перейдите по ссылке:",
+        reset_url,
+        "",
+    ]
+
+    if expires_at is not None:
+        formatted_expires_at = expires_at.strftime("%d.%m.%Y %H:%M")
+        timezone_name = expires_at.tzname()
+        if timezone_name:
+            formatted_expires_at += f" ({timezone_name})"
+        lines.extend([f"Ссылка действительна до: {formatted_expires_at}", ""])
+
+    lines.extend(
+        [
+            (
+                "Если вы не запрашивали восстановление пароля, "
+                "проигнорируйте это письмо."
+            ),
+            "",
+            f"С уважением, команда {safe_app_name}",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def build_password_reset_email_message(
+    *,
+    recipient: str,
+    reset_url: str,
+    user_email: str | None = None,
+    expires_at: datetime | None = None,
+    app_name: str | None = None,
+    email_settings: Settings = settings,
+) -> EmailMessage:
+    normalized_recipient = normalize_email_header_value(recipient)
+    if not normalized_recipient:
+        raise ValueError("Recipient email is required.")
+
+    message = EmailMessage()
+    message["From"] = build_email_from_header(email_settings)
+    message["To"] = normalized_recipient
+    message["Subject"] = build_password_reset_email_subject(app_name=app_name)
+    message.set_content(
+        build_password_reset_email_body(
+            user_email=user_email or normalized_recipient,
+            reset_url=reset_url,
+            expires_at=expires_at,
+            app_name=app_name,
+        )
+    )
+    return message
+
+
+def send_password_reset_email(
+    *,
+    recipient: str,
+    reset_url: str,
+    user_email: str | None = None,
+    expires_at: datetime | None = None,
+    app_name: str | None = None,
+    email_settings: Settings = settings,
+) -> EmailDeliveryResult:
+    message = build_password_reset_email_message(
+        recipient=recipient,
+        reset_url=reset_url,
+        user_email=user_email,
+        expires_at=expires_at,
+        app_name=app_name,
+        email_settings=email_settings,
+    )
+    return send_email_message(message, email_settings=email_settings)

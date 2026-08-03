@@ -14,6 +14,7 @@ function lazyNamed(loader, exportName) {
 
 const AccountPage = lazyNamed(() => import("../pages/AccountPage"), "AccountPage");
 const AuthPage = lazyNamed(() => import("../pages/AuthPage"), "AuthPage");
+const ForgotPasswordPage = lazyNamed(() => import("../pages/ForgotPasswordPage"), "ForgotPasswordPage");
 const CatalogPage = lazyNamed(() => import("../pages/CatalogPage"), "CatalogPage");
 const ContactsPage = lazyNamed(() => import("../pages/ContactsPage"), "ContactsPage");
 const FaqPage = lazyNamed(() => import("../pages/FaqPage"), "FaqPage");
@@ -25,6 +26,7 @@ const OrganizationCabinetPage = lazyNamed(() => import("../pages/OrganizationCab
 const PrivacyPage = lazyNamed(() => import("../pages/PrivacyPage"), "PrivacyPage");
 const RegisterPage = lazyNamed(() => import("../pages/RegisterPage"), "RegisterPage");
 const SetPasswordPage = lazyNamed(() => import("../pages/SetPasswordPage"), "SetPasswordPage");
+const ResetPasswordPage = lazyNamed(() => import("../pages/ResetPasswordPage"), "ResetPasswordPage");
 const VerifyDocumentPage = lazyNamed(() => import("../pages/VerifyDocumentPage"), "VerifyDocumentPage");
 const CourseDetailPublicRoute = lazyNamed(
   () => import("./PublicRouteComponents"),
@@ -54,6 +56,8 @@ export function PublicRoutes({
   initializingAuth,
   user,
   isAdmin,
+  publicRegistrationEnabled,
+  publicRegistrationLoading,
   setEmail,
   setPassword,
   handleLogin,
@@ -163,6 +167,8 @@ export function PublicRoutes({
               loading={authLoading || initializingAuth}
               error={error}
               user={user}
+              publicRegistrationEnabled={publicRegistrationEnabled}
+              publicRegistrationLoading={publicRegistrationLoading}
               onEmailChange={setEmail}
               onPasswordChange={setPassword}
               onLogin={handleLogin}
@@ -172,19 +178,41 @@ export function PublicRoutes({
           }
         />
         <Route
+          path="/forgot-password"
+          element={
+            <ForgotPasswordPage
+              onPageChange={handleNavigatePublicPage}
+            />
+          }
+        />
+        <Route
           path="/register"
           element={
-            <RegisterPage
-              onPageChange={handleNavigatePublicPage}
-              onRegister={handleRegister}
-              loading={authLoading || initializingAuth}
-              error={error}
-            />
+            publicRegistrationLoading ? (
+              <PublicRouteLoadingFallback />
+            ) : publicRegistrationEnabled ? (
+              <RegisterPage
+                onPageChange={handleNavigatePublicPage}
+                onRegister={handleRegister}
+                loading={authLoading || initializingAuth}
+                error={error}
+              />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
         <Route
           path="/set-password"
           element={<SetPasswordPage onPageChange={handleNavigatePublicPage} />}
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <ResetPasswordPage
+              onPageChange={handleNavigatePublicPage}
+            />
+          }
         />
         <Route
           path="/account"

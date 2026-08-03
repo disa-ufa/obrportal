@@ -56,6 +56,12 @@ SECRET_PATTERNS = [
     ("jwt_like_token", re.compile(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b")),
 ]
 
+TEST_FIXTURE_VALUE_RE = re.compile(
+    r"(?i)(?:^|[^a-z0-9])"
+    r"(?:test|dummy|fake|example|placeholder)"
+    r"(?:[^a-z0-9]|$)"
+)
+
 GENERIC_SECRET_ASSIGNMENT_RE = re.compile(
     r"(?i)\b("
     r"secret|service_secret|api_key|apikey|access_key|secret_key|"
@@ -105,6 +111,25 @@ def is_allowed_context(path: Path, line: str) -> bool:
     return False
 
 
+def is_test_path(path: Path) -> bool:
+    relative_parts = {
+        part.lower()
+        for part in path.relative_to(ROOT).parts
+    }
+    return (
+        "tests" in relative_parts
+        or path.name.lower().startswith("test_")
+    )
+
+
+def looks_like_test_fixture(path: Path, value: str) -> bool:
+    if not is_test_path(path):
+        return False
+
+    normalized_value = value.strip("`'\"")
+    return bool(TEST_FIXTURE_VALUE_RE.search(normalized_value))
+
+
 def looks_like_code_reference(path: Path, line: str, value: str) -> bool:
     if path.suffix.lower() not in SOURCE_CODE_EXTENSIONS:
         return False
@@ -134,6 +159,13 @@ def looks_like_code_reference(path: Path, line: str, value: str) -> bool:
     if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", value):
         return True
 
+    if re.fullmatch(
+        r"[A-Za-z_][A-Za-z0-9_]*"
+        r"(?:\.[A-Za-z_][A-Za-z0-9_]*)+",
+        value,
+    ):
+        return True
+
     if lowered_value in {"token", "password", "secret", "headers", "payload"}:
         return True
 
@@ -153,6 +185,9 @@ def scan_generic_assignment(path: Path, line: str, line_number: int) -> list[str
             continue
 
         if has_safe_marker(value):
+            continue
+
+        if looks_like_test_fixture(path, value):
             continue
 
         if looks_like_code_reference(path, line, value):

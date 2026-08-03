@@ -74,8 +74,26 @@ export async function registerUser(payload) {
   });
 }
 
+export async function getPublicRegistrationStatus() {
+  return request("/api/v1/auth/registration-status");
+}
+
 export async function setPasswordWithToken(token, password) {
   return request("/api/v1/auth/set-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
+export async function requestPasswordReset(email) {
+  return request("/api/v1/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPasswordWithToken(token, password) {
+  return request("/api/v1/auth/reset-password", {
     method: "POST",
     body: JSON.stringify({ token, password }),
   });
