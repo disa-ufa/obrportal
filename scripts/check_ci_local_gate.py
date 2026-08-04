@@ -59,6 +59,7 @@ REQUIRED_CI_COMMANDS = [
     "docker compose exec -T backend pytest app/tests -q",
     "python scripts/smoke_auth_rbac.py",
     "python scripts/smoke_auth_entry_route_guards.py",
+    "python scripts/smoke_auth_components.py",
     "python scripts/smoke_document_generation_flow.py",
     "python scripts/smoke_documents_page.py",
     "python scripts/smoke_admin_components.py",
