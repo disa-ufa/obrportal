@@ -67,6 +67,11 @@ export function PublicRoutes({
   handleOpenPublicCourse,
 }) {
   const isOrgRepresentative = userHasRole(user, "org_rep");
+  const authenticatedEntryPath = isAdmin
+    ? getAdminPathForPage("dashboard")
+    : isOrgRepresentative
+      ? "/organization"
+      : "/account";
 
   return (
     <Suspense fallback={<PublicRouteLoadingFallback />}>
@@ -161,20 +166,26 @@ export function PublicRoutes({
         <Route
           path="/login"
           element={
-            <AuthPage
-              email={email}
-              password={password}
-              loading={authLoading || initializingAuth}
-              error={error}
-              user={user}
-              publicRegistrationEnabled={publicRegistrationEnabled}
-              publicRegistrationLoading={publicRegistrationLoading}
-              onEmailChange={setEmail}
-              onPasswordChange={setPassword}
-              onLogin={handleLogin}
-              onLogout={handleLogout}
-              onPageChange={handleNavigatePublicPage}
-            />
+            initializingAuth ? (
+              <PublicRouteLoadingFallback />
+            ) : user ? (
+              <Navigate to={authenticatedEntryPath} replace />
+            ) : (
+              <AuthPage
+                email={email}
+                password={password}
+                loading={authLoading}
+                error={error}
+                user={user}
+                publicRegistrationEnabled={publicRegistrationEnabled}
+                publicRegistrationLoading={publicRegistrationLoading}
+                onEmailChange={setEmail}
+                onPasswordChange={setPassword}
+                onLogin={handleLogin}
+                onLogout={handleLogout}
+                onPageChange={handleNavigatePublicPage}
+              />
+            )
           }
         />
         <Route
@@ -188,13 +199,17 @@ export function PublicRoutes({
         <Route
           path="/register"
           element={
-            publicRegistrationLoading ? (
+            initializingAuth ? (
+              <PublicRouteLoadingFallback />
+            ) : user ? (
+              <Navigate to={authenticatedEntryPath} replace />
+            ) : publicRegistrationLoading ? (
               <PublicRouteLoadingFallback />
             ) : publicRegistrationEnabled ? (
               <RegisterPage
                 onPageChange={handleNavigatePublicPage}
                 onRegister={handleRegister}
-                loading={authLoading || initializingAuth}
+                loading={authLoading}
                 error={error}
               />
             ) : (
