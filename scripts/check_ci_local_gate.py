@@ -61,6 +61,7 @@ REQUIRED_CI_COMMANDS = [
     "python scripts/smoke_auth_entry_route_guards.py",
     "python scripts/smoke_auth_components.py",
     "python scripts/smoke_login_page_layout.py",
+    "python scripts/smoke_register_page_layout.py",
     "python scripts/smoke_document_generation_flow.py",
     "python scripts/smoke_documents_page.py",
     "python scripts/smoke_admin_components.py",
