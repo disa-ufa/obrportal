@@ -2,11 +2,31 @@ import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPublicCourseDetail } from "../api/client";
+import { AuthBrandPanel } from "../components/auth/AuthBrandPanel";
+import { AuthCard } from "../components/auth/AuthCard";
+import { AuthLayout } from "../components/auth/AuthLayout";
 import { AuthPanel } from "../components/auth/AuthPanel";
+import { AuthSecurityNotice } from "../components/auth/AuthSecurityNotice";
+import { AuthSteps } from "../components/auth/AuthSteps";
 import { Alert } from "../components/ui/Alert";
-import { SectionCard } from "../components/ui/SectionCard";
 
-const PENDING_ENROLLMENT_STORAGE_KEY = "obrportal_pending_enrollment_slug";
+const PENDING_ENROLLMENT_STORAGE_KEY =
+  "obrportal_pending_enrollment_slug";
+
+const LOGIN_STEPS = [
+  {
+    title: "Войдите в портал",
+    description: "Используйте e-mail и пароль своей учётной записи.",
+  },
+  {
+    title: "Продолжите обучение",
+    description: "Откройте назначенные программы и учебные материалы.",
+  },
+  {
+    title: "Получите документы",
+    description: "Следите за результатами и доступными документами.",
+  },
+];
 
 function getPendingEnrollmentSlug() {
   try {
@@ -25,17 +45,16 @@ export function AuthPage({
   password,
   loading,
   error,
-  user,
   publicRegistrationEnabled,
   publicRegistrationLoading,
   onEmailChange,
   onPasswordChange,
   onLogin,
-  onLogout,
   onPageChange,
 }) {
   const [pendingCourse, setPendingCourse] = useState(null);
-  const [pendingCourseLoading, setPendingCourseLoading] = useState(false);
+  const [pendingCourseLoading, setPendingCourseLoading] =
+    useState(false);
   const [pendingCourseError, setPendingCourseError] = useState("");
 
   useEffect(() => {
@@ -62,7 +81,10 @@ export function AuthPage({
         if (!cancelled) {
           setPendingCourse(null);
           setPendingCourseError(
-            formatApiError(err, "Не удалось загрузить выбранную программу.")
+            formatApiError(
+              err,
+              "Не удалось загрузить выбранную программу."
+            )
           );
         }
       } finally {
@@ -79,11 +101,58 @@ export function AuthPage({
     };
   }, []);
 
+  const registrationFooter = publicRegistrationLoading ? (
+    <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
+      Проверяем доступность самостоятельной регистрации...
+    </div>
+  ) : publicRegistrationEnabled ? (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="font-bold text-slate-900">
+          Ещё нет учётной записи?
+        </div>
+        <div className="mt-1 text-sm text-slate-600">
+          Зарегистрируйтесь и подтвердите адрес электронной почты.
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onPageChange("register")}
+        className="shrink-0 rounded-full bg-blue-50 px-5 py-2.5 text-sm font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+      >
+        Создать аккаунт
+      </button>
+    </div>
+  ) : (
+    <div className="rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
+      <div className="font-bold">
+        Самостоятельная регистрация временно недоступна
+      </div>
+      <div className="mt-1 text-amber-800">
+        Пользователи с созданной учётной записью могут войти по
+        e-mail и паролю. Для получения доступа обратитесь в поддержку
+        портала.
+      </div>
+    </div>
+  );
+
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-      <SectionCard
-        title="Вход в систему"
-        subtitle="Вход для слушателей, организаций и администраторов."
+    <AuthLayout
+      brand={
+        <AuthBrandPanel
+          title="Обучение и документы — в одном кабинете"
+          description="Войдите в ОбрПортал, чтобы продолжить обучение, увидеть назначенные программы и получить итоговые документы."
+          footer="Один вход для слушателей, представителей организаций и администраторов."
+        >
+          <AuthSteps steps={LOGIN_STEPS} activeStep={0} />
+        </AuthBrandPanel>
+      }
+    >
+      <AuthCard
+        title="Вход в ОбрПортал"
+        subtitle="Введите e-mail и пароль, указанные при создании учётной записи."
+        footer={registrationFooter}
       >
         {error && (
           <Alert title="Не удалось выполнить вход" tone="red">
@@ -92,136 +161,57 @@ export function AuthPage({
         )}
 
         {pendingCourseLoading && (
-          <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+          <div className="mb-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
             Проверяем выбранную программу...
           </div>
         )}
 
-        {pendingCourse && !user && (
-          <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-200">
-            <div className="font-semibold text-blue-900">
-              После входа вы будете записаны на программу:
+        {pendingCourse && (
+          <div className="mb-5 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-200">
+            <div className="font-bold text-blue-950">
+              После входа вы будете записаны на программу
             </div>
-            <div className="mt-2 text-base font-bold text-blue-950">
+            <div className="mt-2 text-base font-black text-blue-950">
               {pendingCourse.title}
             </div>
             <div className="mt-2 text-blue-800">
-              {pendingCourse.hours ? `${pendingCourse.hours} часов` : "Объём уточняется"} ·{" "}
-              {formatCourseDocument(pendingCourse)}
+              {pendingCourse.hours
+                ? `${pendingCourse.hours} часов`
+                : "Объём уточняется"}{" "}
+              · {formatCourseDocument(pendingCourse)}
             </div>
           </div>
         )}
 
-        {pendingCourseError && !user && (
-          <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
+        {pendingCourseError && (
+          <div className="mb-5 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
             {pendingCourseError}
           </div>
         )}
 
-        <div className="mt-4">
-          <AuthPanel
-            email={email}
-            password={password}
-            loading={loading}
-            error=""
-            onEmailChange={onEmailChange}
-            onPasswordChange={onPasswordChange}
-            onLogin={onLogin}
-            onLogout={onLogout}
-          />
+        <AuthPanel
+          email={email}
+          password={password}
+          loading={loading}
+          onEmailChange={onEmailChange}
+          onPasswordChange={onPasswordChange}
+          onLogin={onLogin}
+        />
+
+        <div className="mt-4 text-center sm:text-right">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-bold text-blue-700 transition hover:text-blue-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+          >
+            Забыли пароль?
+          </Link>
         </div>
 
-        {!user && (
-          <div className="mt-4 text-center">
-            <Link
-              to="/forgot-password"
-              className="text-sm font-semibold text-blue-700 transition hover:text-blue-900"
-            >
-              Забыли пароль?
-            </Link>
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard
-        title="Что будет дальше"
-        subtitle="После входа система откроет подходящий раздел."
-      >
-        <div className="space-y-4 text-sm leading-6 text-slate-600">
-          <p>
-            После входа вы увидите только доступные вам разделы: личный кабинет
-            слушателя или панель администрирования.
-          </p>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              <div className="font-semibold text-slate-900">Для слушателя</div>
-              <div className="mt-1">
-                Каталог, запись на программу, личный кабинет, обучение и документы.
-              </div>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              <div className="font-semibold text-slate-900">Для администраторов</div>
-              <div className="mt-1">
-                Управление пользователями, программами, назначениями и документами.
-              </div>
-            </div>
-          </div>
-
-          {pendingCourse && !user && (
-            <div className="rounded-2xl bg-blue-50 p-4 text-blue-800 ring-1 ring-blue-200">
-              Выбранная программа будет автоматически добавлена в раздел
-              «Назначенные программы» после успешного входа.
-            </div>
-          )}
-
-          {!user && publicRegistrationEnabled && (
-            <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-200">
-              <div className="font-semibold text-blue-900">
-                Нет аккаунта?
-              </div>
-              <div className="mt-1 text-blue-800">
-                Можно перейти на страницу регистрации. Если программа уже выбрана,
-                она сохранится и будет назначена после регистрации.
-              </div>
-              <button
-                type="button"
-                onClick={() => onPageChange("register")}
-                className="mt-4 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-              >
-                Перейти к регистрации
-              </button>
-            </div>
-          )}
-
-          {!user && publicRegistrationLoading && (
-            <div className="rounded-2xl bg-slate-50 p-4 text-slate-700 ring-1 ring-slate-200">
-              Проверяем доступность самостоятельной регистрации...
-            </div>
-          )}
-
-          {!user &&
-            !publicRegistrationLoading &&
-            !publicRegistrationEnabled && (
-              <div className="rounded-2xl bg-amber-50 p-4 text-amber-800 ring-1 ring-amber-200">
-                <div className="font-semibold text-amber-900">
-                  Самостоятельная регистрация временно недоступна
-                </div>
-                <div className="mt-1">
-                  Пользователи с уже созданной учётной записью могут войти по
-                  e-mail и паролю. Для получения доступа обратитесь в
-                  поддержку портала.
-                </div>
-              </div>
-            )}
-
-          {user && (
-            <div className="rounded-2xl bg-green-50 p-4 text-green-800 ring-1 ring-green-200">
-              Активная сессия: {user.email}
-            </div>
-          )}
-        </div>
-      </SectionCard>
-    </div>
+        <AuthSecurityNotice className="mt-6">
+          Данные для входа передаются по защищённому соединению.
+          Никому не сообщайте свой пароль.
+        </AuthSecurityNotice>
+      </AuthCard>
+    </AuthLayout>
   );
 }

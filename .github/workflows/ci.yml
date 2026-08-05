@@ -270,6 +270,7 @@ jobs:
           python scripts/smoke_auth_pages.py
           python scripts/smoke_auth_entry_route_guards.py
           python scripts/smoke_auth_components.py
+          python scripts/smoke_login_page_layout.py
           python scripts/smoke_admin_renderer.py
           python scripts/smoke_admin_hooks.py
           python scripts/smoke_frontend_core.py
