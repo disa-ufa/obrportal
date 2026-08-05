@@ -398,6 +398,7 @@ export default function App() {
     <PublicShell
       user={user}
       isAdmin={isAdmin}
+      initializingAuth={initializingAuth}
       currentPage={currentPublicPage}
       onPageChange={handleNavigatePublicPage}
       publicRegistrationEnabled={publicRegistrationEnabled}
