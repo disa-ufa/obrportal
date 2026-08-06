@@ -1,4 +1,10 @@
-from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -80,6 +86,47 @@ class OrganizationService(
     description: Mapped[str | None] = mapped_column(
         String(2048),
         nullable=True,
+    )
+    sort_order: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+
+class OrganizationSpecialist(
+    Base,
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+):
+    __tablename__ = "organization_specialists"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "name",
+            name="uq_org_specialist_org_name",
+        ),
+        CheckConstraint(
+            "count >= 1",
+            name="ck_org_specialist_count_positive",
+        ),
+    )
+
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(
+        String(2048),
+        nullable=True,
+    )
+    count: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
     )
     sort_order: Mapped[int] = mapped_column(
         Integer,

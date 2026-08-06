@@ -15,6 +15,7 @@ from app.models.organization import (
     Organization,
     OrganizationActivityDirection,
     OrganizationService,
+    OrganizationSpecialist,
 )
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
@@ -35,6 +36,9 @@ from app.schemas.org import (
     OrgProfileOfferingItem,
     OrgProfileOfferingsUpdate,
     OrgProfileOrganizationItem,
+    OrgProfileSpecialistInput,
+    OrgProfileSpecialistItem,
+    OrgProfileSpecialistsUpdate,
     OrgProfileSummary,
     OrgProfileUpdate,
     OrgUserSearchItem,
@@ -292,6 +296,89 @@ def normalize_org_profile_offering_items(
     return normalized_items
 
 
+def normalize_org_profile_specialist_items(
+    items: list[OrgProfileSpecialistInput],
+) -> list[dict]:
+    if len(items) > 100:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Specialists must contain at most 100 items",
+        )
+
+    normalized_items: list[dict] = []
+    normalized_names: set[str] = set()
+
+    for index, item in enumerate(items):
+        data = model_to_dict(item)
+        name = (data.get("name") or "").strip()
+        description = normalize_optional_text(data.get("description"))
+        specialist_count = data.get("count", 1)
+
+        if not name:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Specialist name is required",
+            )
+
+        if len(name) > 255:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Specialist name must be at most 255 characters",
+            )
+
+        if description is not None and len(description) > 2048:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "Specialist description must be at most "
+                    "2048 characters"
+                ),
+            )
+
+        if (
+            not isinstance(specialist_count, int)
+            or isinstance(specialist_count, bool)
+            or specialist_count < 1
+            or specialist_count > 10000
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Specialist count must be between 1 and 10000",
+            )
+
+        normalized_name = name.casefold()
+
+        if normalized_name in normalized_names:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Specialist names must be unique",
+            )
+
+        normalized_names.add(normalized_name)
+        normalized_items.append(
+            {
+                "name": name,
+                "description": description,
+                "count": specialist_count,
+                "sort_order": index,
+            }
+        )
+
+    return normalized_items
+
+
+def build_org_profile_specialist_item(
+    item: OrganizationSpecialist,
+) -> OrgProfileSpecialistItem:
+    return OrgProfileSpecialistItem(
+        id=str(item.id),
+        name=item.name,
+        description=item.description,
+        count=item.count,
+        sort_order=item.sort_order,
+    )
+
+
 def build_org_profile_offering_item(
     item: OrganizationActivityDirection | OrganizationService,
 ) -> OrgProfileOfferingItem:
@@ -361,6 +448,41 @@ async def get_org_profile_offering_maps(
     return direction_map, service_map
 
 
+async def get_org_profile_specialist_map(
+    organization_ids: list[str],
+    session: AsyncSession,
+) -> dict[str, list[OrganizationSpecialist]]:
+    specialist_map: dict[str, list[OrganizationSpecialist]] = {
+        organization_id: []
+        for organization_id in organization_ids
+    }
+
+    if not organization_ids:
+        return specialist_map
+
+    result = await session.execute(
+        select(OrganizationSpecialist)
+        .where(
+            OrganizationSpecialist.organization_id.in_(
+                organization_ids
+            )
+        )
+        .order_by(
+            OrganizationSpecialist.organization_id,
+            OrganizationSpecialist.sort_order,
+            OrganizationSpecialist.name,
+        )
+    )
+
+    for item in result.scalars().all():
+        specialist_map.setdefault(
+            str(item.organization_id),
+            [],
+        ).append(item)
+
+    return specialist_map
+
+
 def build_org_profile_organization_item(
     organization: Organization,
     *,
@@ -368,6 +490,7 @@ def build_org_profile_organization_item(
         list[OrganizationActivityDirection] | None
     ) = None,
     services: list[OrganizationService] | None = None,
+    specialists: list[OrganizationSpecialist] | None = None,
 ) -> OrgProfileOrganizationItem:
     return OrgProfileOrganizationItem(
         id=str(organization.id),
@@ -388,6 +511,10 @@ def build_org_profile_organization_item(
         services=[
             build_org_profile_offering_item(item)
             for item in (services or [])
+        ],
+        specialists=[
+            build_org_profile_specialist_item(item)
+            for item in (specialists or [])
         ],
         created_at=organization.created_at,
         updated_at=organization.updated_at,
@@ -1267,6 +1394,10 @@ async def get_org_profile(
         organization_ids,
         session,
     )
+    specialist_map = await get_org_profile_specialist_map(
+        organization_ids,
+        session,
+    )
 
     return OrgProfile(
         organizations=[
@@ -1277,6 +1408,10 @@ async def get_org_profile(
                     [],
                 ),
                 services=service_map.get(str(organization.id), []),
+                specialists=specialist_map.get(
+                    str(organization.id),
+                    [],
+                ),
             )
             for organization in organizations
         ],
@@ -1316,6 +1451,10 @@ async def update_org_profile(
         [str(organization.id)],
         session,
     )
+    specialist_map = await get_org_profile_specialist_map(
+        [str(organization.id)],
+        session,
+    )
 
     return build_org_profile_organization_item(
         organization,
@@ -1324,6 +1463,7 @@ async def update_org_profile(
             [],
         ),
         services=service_map.get(str(organization.id), []),
+        specialists=specialist_map.get(str(organization.id), []),
     )
 
 
@@ -1411,6 +1551,10 @@ async def replace_org_profile_offerings(
         [str(organization.id)],
         session,
     )
+    specialist_map = await get_org_profile_specialist_map(
+        [str(organization.id)],
+        session,
+    )
 
     return build_org_profile_organization_item(
         organization,
@@ -1419,6 +1563,87 @@ async def replace_org_profile_offerings(
             [],
         ),
         services=service_map.get(str(organization.id), []),
+        specialists=specialist_map.get(str(organization.id), []),
+    )
+
+
+@router.put(
+    "/profile/{organization_id}/specialists",
+    response_model=OrgProfileOrganizationItem,
+)
+async def replace_org_profile_specialists(
+    organization_id: str,
+    payload: OrgProfileSpecialistsUpdate,
+    current_user: User = Depends(
+        require_permission("org.profile.write")
+    ),
+    session: AsyncSession = Depends(get_db),
+) -> OrgProfileOrganizationItem:
+    normalized_organization_id = organization_id.strip()
+    allowed_organization_ids = (
+        await get_organization_scope_for_permission(
+            current_user,
+            "org.profile.write",
+            session,
+        )
+    )
+
+    ensure_organization_in_scope_or_404(
+        normalized_organization_id,
+        allowed_organization_ids,
+    )
+
+    organization = await get_organization_or_404(
+        normalized_organization_id,
+        session,
+    )
+    specialist_data = normalize_org_profile_specialist_items(
+        payload.specialists
+    )
+
+    await session.execute(
+        delete(OrganizationSpecialist).where(
+            OrganizationSpecialist.organization_id
+            == normalized_organization_id
+        )
+    )
+
+    session.add_all(
+        [
+            OrganizationSpecialist(
+                organization_id=normalized_organization_id,
+                **item,
+            )
+            for item in specialist_data
+        ]
+    )
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Organization specialist already exists",
+        )
+
+    direction_map, service_map = await get_org_profile_offering_maps(
+        [str(organization.id)],
+        session,
+    )
+    specialist_map = await get_org_profile_specialist_map(
+        [str(organization.id)],
+        session,
+    )
+
+    return build_org_profile_organization_item(
+        organization,
+        activity_directions=direction_map.get(
+            str(organization.id),
+            [],
+        ),
+        services=service_map.get(str(organization.id), []),
+        specialists=specialist_map.get(str(organization.id), []),
     )
 
 

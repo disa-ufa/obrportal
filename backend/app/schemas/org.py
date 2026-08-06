@@ -156,6 +156,31 @@ class OrgProfileOfferingsUpdate(BaseModel):
     services: list[OrgProfileOfferingInput] = Field(default_factory=list)
 
 
+class OrgProfileSpecialistItem(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    count: int
+    sort_order: int
+
+
+class OrgProfileSpecialistInput(BaseModel):
+    name: str
+    description: str | None = None
+    count: int = Field(
+        default=1,
+        ge=1,
+        le=10000,
+        strict=True,
+    )
+
+
+class OrgProfileSpecialistsUpdate(BaseModel):
+    specialists: list[OrgProfileSpecialistInput] = Field(
+        default_factory=list
+    )
+
+
 class OrgProfileOrganizationItem(BaseModel):
     id: str
     inn: str
@@ -172,6 +197,9 @@ class OrgProfileOrganizationItem(BaseModel):
         default_factory=list
     )
     services: list[OrgProfileOfferingItem] = Field(default_factory=list)
+    specialists: list[OrgProfileSpecialistItem] = Field(
+        default_factory=list
+    )
     created_at: datetime
     updated_at: datetime
 
