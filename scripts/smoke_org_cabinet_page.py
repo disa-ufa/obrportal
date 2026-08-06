@@ -46,6 +46,7 @@ def main() -> None:
             "updateOrgLearningGroup,",
             "updateOrgProfile,",
             "replaceOrgProfileOfferings,",
+            "replaceOrgProfileSpecialists,",
             "export function OrganizationCabinetPage",
             "const [groups, setGroups] = useState([]);",
             "const [selectedGroupId, setSelectedGroupId] = useState(\"\");",
@@ -60,7 +61,9 @@ def main() -> None:
             "getOrgGroupEnrollments(selectedGroupId)",
             "updateOrgProfile(organizationId, payload)",
             "replaceOrgProfileOfferings(",
+            "replaceOrgProfileSpecialists(",
             "handleSaveOrganizationOfferings",
+            "handleSaveOrganizationSpecialists",
             "createOrgLearningGroup({",
             "updateOrgLearningGroup(groupId, payload)",
             "deleteOrgLearningGroup(group.id)",
@@ -108,7 +111,9 @@ def main() -> None:
             "Сохранить профиль",
             "organization-document-profile-readiness",
             "OrganizationProfileOfferingsEditor",
+            "OrganizationProfileSpecialistsEditor",
             "onSaveOrganizationOfferings",
+            "onSaveOrganizationSpecialists",
             "Профиль для итогового PDF",
             "Эти реквизиты используются при подготовке итоговых документов",
             "Если в PDF нужны отдельные данные подписанта",
@@ -133,6 +138,24 @@ def main() -> None:
         ],
     )
 
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationProfileSpecialistsEditor.jsx",
+        [
+            "export function OrganizationProfileSpecialistsEditor",
+            "organization-profile-specialists",
+            "Специалисты организации",
+            "без ФИО",
+            "Редактировать специалистов",
+            "Добавить тип специалиста",
+            "Сохранить специалистов",
+            "buildOrganizationProfileSpecialistsFormData",
+            "validateSpecialists",
+            "Количество специалистов должно быть от 1 до 10 000",
+            "Можно указать не более 100 типов специалистов",
+        ],
+    )
+
     require_contains(
         "frontend/src/api/client.js",
         [
@@ -141,6 +164,8 @@ def main() -> None:
             "export async function updateOrgProfile(organizationId, payload)",
             "export async function replaceOrgProfileOfferings(organizationId, payload)",
             "/api/v1/org/profile/${organizationId}/offerings",
+            "export async function replaceOrgProfileSpecialists(organizationId, payload)",
+            "/api/v1/org/profile/${organizationId}/specialists",
             "export async function getOrgLearningGroups(filters = {})",
             "export async function getOrgLearningGroupDetail(groupId)",
             "export async function createOrgLearningGroup(payload)",
@@ -162,6 +187,7 @@ def main() -> None:
             "export function buildHeroSectionProps",
             "export function buildOrganizationProfileSectionProps",
             "onSaveOrganizationOfferings",
+            "onSaveOrganizationSpecialists",
             "export function buildOrganizationUsersSectionProps",
             "export function buildGroupCreateSectionProps",
             "export function buildSelectedGroupAsideSectionProps",

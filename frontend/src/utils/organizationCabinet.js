@@ -398,3 +398,23 @@ export function buildOrganizationProfileOfferingsFormData(organization) {
     services: buildOrganizationOfferingFormRows(item.services),
   };
 }
+
+function buildOrganizationSpecialistFormRows(items) {
+  return normalizeItems(items).map((item) => {
+    const normalized = normalizeObject(item);
+
+    return {
+      name: `${normalized.name || ""}`,
+      description: `${normalized.description || ""}`,
+      count: `${normalized.count ?? 1}`,
+    };
+  });
+}
+
+export function buildOrganizationProfileSpecialistsFormData(organization) {
+  const item = normalizeObject(organization);
+
+  return {
+    specialists: buildOrganizationSpecialistFormRows(item.specialists),
+  };
+}

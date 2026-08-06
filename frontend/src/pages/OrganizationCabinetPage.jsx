@@ -13,6 +13,7 @@ import {
   getPublicCourses,
   removeOrgLearningGroupMember,
   replaceOrgProfileOfferings,
+  replaceOrgProfileSpecialists,
   searchOrgUsers,
   updateOrgLearningGroup,
   updateOrgProfile,
@@ -369,6 +370,19 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
 
   async function handleSaveOrganizationOfferings(organizationId, payload) {
     const updated = await replaceOrgProfileOfferings(
+      organizationId,
+      payload
+    );
+
+    applyUpdatedOrganizationToProfile(updated);
+    return updated;
+  }
+
+  async function handleSaveOrganizationSpecialists(
+    organizationId,
+    payload
+  ) {
+    const updated = await replaceOrgProfileSpecialists(
       organizationId,
       payload
     );
@@ -836,6 +850,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     organizations,
     onSaveOrganization: handleSaveOrganization,
     onSaveOrganizationOfferings: handleSaveOrganizationOfferings,
+    onSaveOrganizationSpecialists: handleSaveOrganizationSpecialists,
   });
 
   const organizationUsersSectionProps = buildOrganizationUsersSectionProps({

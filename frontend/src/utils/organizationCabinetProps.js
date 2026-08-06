@@ -30,11 +30,13 @@ export function buildOrganizationProfileSectionProps({
   organizations,
   onSaveOrganization,
   onSaveOrganizationOfferings,
+  onSaveOrganizationSpecialists,
 }) {
   return {
     organizations,
     onSaveOrganization,
     onSaveOrganizationOfferings,
+    onSaveOrganizationSpecialists,
   };
 }
 

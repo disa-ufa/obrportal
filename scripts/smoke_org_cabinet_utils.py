@@ -13,6 +13,7 @@ import {
   buildOrganizationOptions,
   buildOrganizationProfileFormData,
   buildOrganizationProfileOfferingsFormData,
+  buildOrganizationProfileSpecialistsFormData,
   enrollmentMatchesFilters,
   formatUserOrganizations,
   formatUserRoles,
@@ -128,6 +129,38 @@ assertDeepEqual(
     services: [],
   },
   "buildOrganizationProfileOfferingsFormData creates safe empty lists"
+);
+
+assertDeepEqual(
+  buildOrganizationProfileSpecialistsFormData({
+    specialists: [
+      {
+        id: "specialist-1",
+        name: "Педагог-психолог",
+        description: null,
+        count: 3,
+        sort_order: 0,
+      },
+    ],
+  }),
+  {
+    specialists: [
+      {
+        name: "Педагог-психолог",
+        description: "",
+        count: "3",
+      },
+    ],
+  },
+  "buildOrganizationProfileSpecialistsFormData removes API-only fields"
+);
+
+assertDeepEqual(
+  buildOrganizationProfileSpecialistsFormData(null),
+  {
+    specialists: [],
+  },
+  "buildOrganizationProfileSpecialistsFormData creates a safe empty list"
 );
 
 assertEqual(
