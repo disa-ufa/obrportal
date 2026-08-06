@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +11,11 @@ from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup, LearningGroupMember
-from app.models.organization import Organization
+from app.models.organization import (
+    Organization,
+    OrganizationActivityDirection,
+    OrganizationService,
+)
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.schemas.org import (
@@ -27,6 +31,9 @@ from app.schemas.org import (
     OrgLearningGroupMemberItem,
     OrgLearningGroupUpdate,
     OrgProfile,
+    OrgProfileOfferingInput,
+    OrgProfileOfferingItem,
+    OrgProfileOfferingsUpdate,
     OrgProfileOrganizationItem,
     OrgProfileSummary,
     OrgProfileUpdate,
@@ -225,8 +232,142 @@ def normalize_org_profile_update_data(payload: OrgProfileUpdate) -> dict:
     return data
 
 
+def normalize_org_profile_offering_items(
+    items: list[OrgProfileOfferingInput],
+    *,
+    item_label: str,
+) -> list[dict]:
+    if len(items) > 100:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{item_label} must contain at most 100 items",
+        )
+
+    normalized_items: list[dict] = []
+    normalized_names: set[str] = set()
+
+    for index, item in enumerate(items):
+        data = model_to_dict(item)
+        name = (data.get("name") or "").strip()
+        description = normalize_optional_text(data.get("description"))
+
+        if not name:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{item_label} name is required",
+            )
+
+        if len(name) > 255:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{item_label} name must be at most 255 characters",
+            )
+
+        if description is not None and len(description) > 2048:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"{item_label} description must be at most "
+                    "2048 characters"
+                ),
+            )
+
+        normalized_name = name.casefold()
+
+        if normalized_name in normalized_names:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{item_label} names must be unique",
+            )
+
+        normalized_names.add(normalized_name)
+        normalized_items.append(
+            {
+                "name": name,
+                "description": description,
+                "sort_order": index,
+            }
+        )
+
+    return normalized_items
+
+
+def build_org_profile_offering_item(
+    item: OrganizationActivityDirection | OrganizationService,
+) -> OrgProfileOfferingItem:
+    return OrgProfileOfferingItem(
+        id=str(item.id),
+        name=item.name,
+        description=item.description,
+        sort_order=item.sort_order,
+    )
+
+
+async def get_org_profile_offering_maps(
+    organization_ids: list[str],
+    session: AsyncSession,
+) -> tuple[
+    dict[str, list[OrganizationActivityDirection]],
+    dict[str, list[OrganizationService]],
+]:
+    direction_map: dict[str, list[OrganizationActivityDirection]] = {
+        organization_id: []
+        for organization_id in organization_ids
+    }
+    service_map: dict[str, list[OrganizationService]] = {
+        organization_id: []
+        for organization_id in organization_ids
+    }
+
+    if not organization_ids:
+        return direction_map, service_map
+
+    direction_result = await session.execute(
+        select(OrganizationActivityDirection)
+        .where(
+            OrganizationActivityDirection.organization_id.in_(
+                organization_ids
+            )
+        )
+        .order_by(
+            OrganizationActivityDirection.organization_id,
+            OrganizationActivityDirection.sort_order,
+            OrganizationActivityDirection.name,
+        )
+    )
+
+    for item in direction_result.scalars().all():
+        direction_map.setdefault(
+            str(item.organization_id),
+            [],
+        ).append(item)
+
+    service_result = await session.execute(
+        select(OrganizationService)
+        .where(OrganizationService.organization_id.in_(organization_ids))
+        .order_by(
+            OrganizationService.organization_id,
+            OrganizationService.sort_order,
+            OrganizationService.name,
+        )
+    )
+
+    for item in service_result.scalars().all():
+        service_map.setdefault(
+            str(item.organization_id),
+            [],
+        ).append(item)
+
+    return direction_map, service_map
+
+
 def build_org_profile_organization_item(
     organization: Organization,
+    *,
+    activity_directions: (
+        list[OrganizationActivityDirection] | None
+    ) = None,
+    services: list[OrganizationService] | None = None,
 ) -> OrgProfileOrganizationItem:
     return OrgProfileOrganizationItem(
         id=str(organization.id),
@@ -240,6 +381,14 @@ def build_org_profile_organization_item(
         phone=organization.phone,
         email=organization.email,
         website=organization.website,
+        activity_directions=[
+            build_org_profile_offering_item(item)
+            for item in (activity_directions or [])
+        ],
+        services=[
+            build_org_profile_offering_item(item)
+            for item in (services or [])
+        ],
         created_at=organization.created_at,
         updated_at=organization.updated_at,
     )
@@ -1109,12 +1258,26 @@ async def get_org_profile(
     session: AsyncSession = Depends(get_db),
 ) -> OrgProfile:
     organizations = await get_org_profile_organizations(current_user, session)
-    organization_ids = [str(organization.id) for organization in organizations]
+    organization_ids = [
+        str(organization.id)
+        for organization in organizations
+    ]
     summary = await build_org_profile_summary(organization_ids, session)
+    direction_map, service_map = await get_org_profile_offering_maps(
+        organization_ids,
+        session,
+    )
 
     return OrgProfile(
         organizations=[
-            build_org_profile_organization_item(organization)
+            build_org_profile_organization_item(
+                organization,
+                activity_directions=direction_map.get(
+                    str(organization.id),
+                    [],
+                ),
+                services=service_map.get(str(organization.id), []),
+            )
             for organization in organizations
         ],
         summary=summary,
@@ -1149,7 +1312,114 @@ async def update_org_profile(
     await session.commit()
     await session.refresh(organization)
 
-    return build_org_profile_organization_item(organization)
+    direction_map, service_map = await get_org_profile_offering_maps(
+        [str(organization.id)],
+        session,
+    )
+
+    return build_org_profile_organization_item(
+        organization,
+        activity_directions=direction_map.get(
+            str(organization.id),
+            [],
+        ),
+        services=service_map.get(str(organization.id), []),
+    )
+
+
+@router.put(
+    "/profile/{organization_id}/offerings",
+    response_model=OrgProfileOrganizationItem,
+)
+async def replace_org_profile_offerings(
+    organization_id: str,
+    payload: OrgProfileOfferingsUpdate,
+    current_user: User = Depends(
+        require_permission("org.profile.write")
+    ),
+    session: AsyncSession = Depends(get_db),
+) -> OrgProfileOrganizationItem:
+    normalized_organization_id = organization_id.strip()
+    allowed_organization_ids = (
+        await get_organization_scope_for_permission(
+            current_user,
+            "org.profile.write",
+            session,
+        )
+    )
+
+    ensure_organization_in_scope_or_404(
+        normalized_organization_id,
+        allowed_organization_ids,
+    )
+
+    organization = await get_organization_or_404(
+        normalized_organization_id,
+        session,
+    )
+    direction_data = normalize_org_profile_offering_items(
+        payload.activity_directions,
+        item_label="Activity direction",
+    )
+    service_data = normalize_org_profile_offering_items(
+        payload.services,
+        item_label="Service",
+    )
+
+    await session.execute(
+        delete(OrganizationActivityDirection).where(
+            OrganizationActivityDirection.organization_id
+            == normalized_organization_id
+        )
+    )
+    await session.execute(
+        delete(OrganizationService).where(
+            OrganizationService.organization_id
+            == normalized_organization_id
+        )
+    )
+
+    session.add_all(
+        [
+            OrganizationActivityDirection(
+                organization_id=normalized_organization_id,
+                **item,
+            )
+            for item in direction_data
+        ]
+    )
+    session.add_all(
+        [
+            OrganizationService(
+                organization_id=normalized_organization_id,
+                **item,
+            )
+            for item in service_data
+        ]
+    )
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Organization offering already exists",
+        )
+
+    direction_map, service_map = await get_org_profile_offering_maps(
+        [str(organization.id)],
+        session,
+    )
+
+    return build_org_profile_organization_item(
+        organization,
+        activity_directions=direction_map.get(
+            str(organization.id),
+            [],
+        ),
+        services=service_map.get(str(organization.id), []),
+    )
 
 
 @router.get("/groups", response_model=list[OrgLearningGroupItem])

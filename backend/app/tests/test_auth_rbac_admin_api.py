@@ -7516,6 +7516,203 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     assert isinstance(forbidden_payload, dict)
 
 
+def test_org_profile_offerings_replace_is_scoped_and_normalized() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+
+    org_rep_email = (
+        f"org_profile_offerings_{uuid4().hex[:12]}@example.com"
+    )
+    org_rep_password = "OrgProfileOfferings123!"
+
+    status, org_rep_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": org_rep_email,
+            "password": org_rep_password,
+            "full_name": "Org profile offerings representative",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(org_rep_user, dict)
+
+    org_rep_role_id = get_role_id_by_code(admin_token, "org_rep")
+
+    status, scoped_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{org_rep_user['id']}/roles",
+        {
+            "role_id": org_rep_role_id,
+            "organization_id": first_organization_id,
+        },
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(scoped_user, dict)
+
+    org_rep_token = login(org_rep_email, org_rep_password)
+
+    status, updated = request_json(
+        "PUT",
+        (
+            f"/api/v1/org/profile/{first_organization_id}"
+            "/offerings"
+        ),
+        {
+            "activity_directions": [
+                {
+                    "name": "  Дополнительное образование  ",
+                    "description": "  Образовательные программы  ",
+                },
+                {
+                    "name": "Методическая поддержка",
+                    "description": None,
+                },
+            ],
+            "services": [
+                {
+                    "name": "  Консультация  ",
+                    "description": "  Помощь педагогам  ",
+                },
+                {
+                    "name": "Вебинар",
+                },
+            ],
+        },
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(updated, dict)
+    assert updated["id"] == first_organization_id
+    assert [
+        item["name"]
+        for item in updated["activity_directions"]
+    ] == [
+        "Дополнительное образование",
+        "Методическая поддержка",
+    ]
+    assert [
+        item["sort_order"]
+        for item in updated["activity_directions"]
+    ] == [0, 1]
+    assert updated["activity_directions"][0]["description"] == (
+        "Образовательные программы"
+    )
+    assert [
+        item["name"]
+        for item in updated["services"]
+    ] == ["Консультация", "Вебинар"]
+    assert [
+        item["sort_order"]
+        for item in updated["services"]
+    ] == [0, 1]
+    assert updated["services"][0]["description"] == (
+        "Помощь педагогам"
+    )
+
+    status, profile = request_json(
+        "GET",
+        "/api/v1/org/profile",
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(profile, dict)
+    assert len(profile["organizations"]) == 1
+    assert profile["organizations"][0]["id"] == first_organization_id
+    assert len(
+        profile["organizations"][0]["activity_directions"]
+    ) == 2
+    assert len(profile["organizations"][0]["services"]) == 2
+
+    status, duplicate_payload = request_json(
+        "PUT",
+        (
+            f"/api/v1/org/profile/{first_organization_id}"
+            "/offerings"
+        ),
+        {
+            "activity_directions": [
+                {"name": "Повышение квалификации"},
+                {"name": "  ПОВЫШЕНИЕ КВАЛИФИКАЦИИ  "},
+            ],
+            "services": [],
+        },
+        token=org_rep_token,
+    )
+    assert status == 422
+    assert isinstance(duplicate_payload, dict)
+
+    status, blank_name_payload = request_json(
+        "PUT",
+        (
+            f"/api/v1/org/profile/{first_organization_id}"
+            "/offerings"
+        ),
+        {
+            "activity_directions": [],
+            "services": [{"name": "   "}],
+        },
+        token=org_rep_token,
+    )
+    assert status == 422
+    assert isinstance(blank_name_payload, dict)
+
+    status, foreign_payload = request_json(
+        "PUT",
+        (
+            f"/api/v1/org/profile/{second_organization_id}"
+            "/offerings"
+        ),
+        {
+            "activity_directions": [{"name": "Недоступно"}],
+            "services": [],
+        },
+        token=org_rep_token,
+    )
+    assert status == 404
+    assert isinstance(foreign_payload, dict)
+
+    learner_token = login(LEARNER_EMAIL, LEARNER_PASSWORD)
+
+    status, forbidden_payload = request_json(
+        "PUT",
+        (
+            f"/api/v1/org/profile/{first_organization_id}"
+            "/offerings"
+        ),
+        {
+            "activity_directions": [],
+            "services": [],
+        },
+        token=learner_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_payload, dict)
+
+    status, cleared = request_json(
+        "PUT",
+        (
+            f"/api/v1/org/profile/{first_organization_id}"
+            "/offerings"
+        ),
+        {
+            "activity_directions": [],
+            "services": [],
+        },
+        token=org_rep_token,
+    )
+    assert status == 200
+    assert isinstance(cleared, dict)
+    assert cleared["activity_directions"] == []
+    assert cleared["services"] == []
+
+
 
 def test_org_user_search_is_limited_to_assigned_organization() -> None:
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)

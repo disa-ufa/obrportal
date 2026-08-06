@@ -137,6 +137,25 @@ class OrgEnrollmentBulkCreateResult(BaseModel):
     skipped: list[OrgEnrollmentBulkSkippedItem] = Field(default_factory=list)
 
 
+class OrgProfileOfferingItem(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    sort_order: int
+
+
+class OrgProfileOfferingInput(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class OrgProfileOfferingsUpdate(BaseModel):
+    activity_directions: list[OrgProfileOfferingInput] = Field(
+        default_factory=list
+    )
+    services: list[OrgProfileOfferingInput] = Field(default_factory=list)
+
+
 class OrgProfileOrganizationItem(BaseModel):
     id: str
     inn: str
@@ -149,6 +168,10 @@ class OrgProfileOrganizationItem(BaseModel):
     phone: str | None = None
     email: str | None = None
     website: str | None = None
+    activity_directions: list[OrgProfileOfferingItem] = Field(
+        default_factory=list
+    )
+    services: list[OrgProfileOfferingItem] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
