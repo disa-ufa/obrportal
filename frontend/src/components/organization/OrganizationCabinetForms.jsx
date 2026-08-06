@@ -42,7 +42,7 @@ export function OrganizationProfileCard({ organization, onSave }) {
       setFormData(buildOrganizationProfileFormData(updated));
       setEditing(false);
     } catch (err) {
-      setError(formatApiError(err, "Не удалось сохранить реквизиты организации."));
+      setError(formatApiError(err, "Не удалось сохранить профиль организации."));
     } finally {
       setSaving(false);
     }
@@ -132,13 +132,75 @@ export function OrganizationProfileCard({ organization, onSave }) {
             />
           </label>
 
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-500">
+              Описание организации
+            </span>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              maxLength={4096}
+              rows={5}
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
+              placeholder="Кратко расскажите об организации и её деятельности"
+            />
+          </label>
+
+          <div>
+            <div className="text-xs font-semibold text-slate-500">
+              Контактные данные
+            </div>
+            <div className="mt-1 grid gap-3 md:grid-cols-3">
+              <label className="block">
+                <span className="sr-only">Телефон</span>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  maxLength={128}
+                  autoComplete="tel"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
+                  placeholder="Телефон"
+                />
+              </label>
+              <label className="block">
+                <span className="sr-only">Email</span>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  maxLength={320}
+                  autoComplete="email"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
+                  placeholder="Email"
+                />
+              </label>
+              <label className="block">
+                <span className="sr-only">Сайт</span>
+                <input
+                  type="url"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleChange}
+                  maxLength={2048}
+                  autoComplete="url"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
+                  placeholder="https://example.ru"
+                />
+              </label>
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-3">
             <button
               type="submit"
               disabled={saving}
               className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-300"
             >
-              {saving ? "Сохраняем..." : "Сохранить реквизиты"}
+              {saving ? "Сохраняем..." : "Сохранить профиль"}
             </button>
             <button
               type="button"
@@ -182,6 +244,34 @@ export function OrganizationProfileCard({ organization, onSave }) {
           <div className="text-xs text-slate-500">Фактический адрес</div>
           <div className="mt-1 leading-6 text-slate-900">
             {formatOptional(organization.actual_address)}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm ring-1 ring-slate-100">
+        <div className="text-xs text-slate-500">Описание организации</div>
+        <div className="mt-1 whitespace-pre-wrap leading-6 text-slate-900">
+          {formatOptional(organization.description)}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+          <div className="text-xs text-slate-500">Телефон</div>
+          <div className="mt-1 break-words font-semibold text-slate-950">
+            {formatOptional(organization.phone)}
+          </div>
+        </div>
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+          <div className="text-xs text-slate-500">Email</div>
+          <div className="mt-1 break-all font-semibold text-slate-950">
+            {formatOptional(organization.email)}
+          </div>
+        </div>
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+          <div className="text-xs text-slate-500">Сайт</div>
+          <div className="mt-1 break-all font-semibold text-slate-950">
+            {formatOptional(organization.website)}
           </div>
         </div>
       </div>

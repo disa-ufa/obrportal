@@ -11,6 +11,7 @@ TEMP_TEST = ROOT / "frontend" / "tmp_org_cabinet_utils_smoke.mjs"
 JS_TEST = r"""
 import {
   buildOrganizationOptions,
+  buildOrganizationProfileFormData,
   enrollmentMatchesFilters,
   formatUserOrganizations,
   formatUserRoles,
@@ -43,6 +44,45 @@ function assertDeepEqual(actual, expected, message) {
 }
 
 const orgId = "12345678-aaaa-bbbb-cccc-1234567890ab";
+
+assertDeepEqual(
+  buildOrganizationProfileFormData({
+    kpp: "027801001",
+    ogrn: "1020200000001",
+    legal_address: "Юридический адрес",
+    actual_address: "Фактический адрес",
+    description: "Описание организации",
+    phone: "+7 (347) 000-00-00",
+    email: "profile@example.test",
+    website: "https://example.test",
+  }),
+  {
+    kpp: "027801001",
+    ogrn: "1020200000001",
+    legal_address: "Юридический адрес",
+    actual_address: "Фактический адрес",
+    description: "Описание организации",
+    phone: "+7 (347) 000-00-00",
+    email: "profile@example.test",
+    website: "https://example.test",
+  },
+  "buildOrganizationProfileFormData preserves all editable profile fields"
+);
+
+assertDeepEqual(
+  buildOrganizationProfileFormData(null),
+  {
+    kpp: "",
+    ogrn: "",
+    legal_address: "",
+    actual_address: "",
+    description: "",
+    phone: "",
+    email: "",
+    website: "",
+  },
+  "buildOrganizationProfileFormData creates a safe empty form"
+);
 
 assertEqual(
   formatUserOrganizations([{ organization: { id: orgId, name: "Школа №1" } }], []),

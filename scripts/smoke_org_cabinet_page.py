@@ -96,6 +96,13 @@ def main() -> None:
     require_contains(
         "frontend/src/components/organization/OrganizationCabinetForms.jsx",
         [
+            'name="description"',
+            'name="phone"',
+            'name="email"',
+            'name="website"',
+            "Описание организации",
+            "Контактные данные",
+            "Сохранить профиль",
             "organization-document-profile-readiness",
             "Профиль для итогового PDF",
             "Эти реквизиты используются при подготовке итоговых документов",

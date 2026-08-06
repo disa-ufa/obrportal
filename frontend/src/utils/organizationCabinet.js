@@ -370,5 +370,9 @@ export function buildOrganizationProfileFormData(organization) {
     ogrn: item.ogrn || "",
     legal_address: item.legal_address || "",
     actual_address: item.actual_address || "",
+    description: item.description || "",
+    phone: item.phone || "",
+    email: item.email || "",
+    website: item.website || "",
   };
 }
