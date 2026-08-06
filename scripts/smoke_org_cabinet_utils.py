@@ -12,6 +12,7 @@ JS_TEST = r"""
 import {
   buildOrganizationOptions,
   buildOrganizationProfileFormData,
+  buildOrganizationProfileOfferingsFormData,
   enrollmentMatchesFilters,
   formatUserOrganizations,
   formatUserRoles,
@@ -82,6 +83,51 @@ assertDeepEqual(
     website: "",
   },
   "buildOrganizationProfileFormData creates a safe empty form"
+);
+
+assertDeepEqual(
+  buildOrganizationProfileOfferingsFormData({
+    activity_directions: [
+      {
+        id: "direction-1",
+        name: "Дополнительное образование",
+        description: "Программы",
+        sort_order: 0,
+      },
+    ],
+    services: [
+      {
+        id: "service-1",
+        name: "Консультация",
+        description: null,
+        sort_order: 0,
+      },
+    ],
+  }),
+  {
+    activity_directions: [
+      {
+        name: "Дополнительное образование",
+        description: "Программы",
+      },
+    ],
+    services: [
+      {
+        name: "Консультация",
+        description: "",
+      },
+    ],
+  },
+  "buildOrganizationProfileOfferingsFormData removes API-only fields"
+);
+
+assertDeepEqual(
+  buildOrganizationProfileOfferingsFormData(null),
+  {
+    activity_directions: [],
+    services: [],
+  },
+  "buildOrganizationProfileOfferingsFormData creates safe empty lists"
 );
 
 assertEqual(

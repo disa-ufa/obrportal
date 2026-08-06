@@ -509,6 +509,13 @@ export async function updateOrgProfile(organizationId, payload) {
   });
 }
 
+export async function replaceOrgProfileOfferings(organizationId, payload) {
+  return request(`/api/v1/org/profile/${organizationId}/offerings`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getOrgLearningGroups(filters = {}) {
   const params = new URLSearchParams();
 

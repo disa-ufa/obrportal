@@ -376,3 +376,25 @@ export function buildOrganizationProfileFormData(organization) {
     website: item.website || "",
   };
 }
+
+function buildOrganizationOfferingFormRows(items) {
+  return normalizeItems(items).map((item) => {
+    const normalized = normalizeObject(item);
+
+    return {
+      name: `${normalized.name || ""}`,
+      description: `${normalized.description || ""}`,
+    };
+  });
+}
+
+export function buildOrganizationProfileOfferingsFormData(organization) {
+  const item = normalizeObject(organization);
+
+  return {
+    activity_directions: buildOrganizationOfferingFormRows(
+      item.activity_directions
+    ),
+    services: buildOrganizationOfferingFormRows(item.services),
+  };
+}

@@ -45,6 +45,7 @@ def main() -> None:
             "searchOrgUsers,",
             "updateOrgLearningGroup,",
             "updateOrgProfile,",
+            "replaceOrgProfileOfferings,",
             "export function OrganizationCabinetPage",
             "const [groups, setGroups] = useState([]);",
             "const [selectedGroupId, setSelectedGroupId] = useState(\"\");",
@@ -58,6 +59,8 @@ def main() -> None:
             "getOrgLearningGroupMembers(selectedGroupId)",
             "getOrgGroupEnrollments(selectedGroupId)",
             "updateOrgProfile(organizationId, payload)",
+            "replaceOrgProfileOfferings(",
+            "handleSaveOrganizationOfferings",
             "createOrgLearningGroup({",
             "updateOrgLearningGroup(groupId, payload)",
             "deleteOrgLearningGroup(group.id)",
@@ -104,10 +107,29 @@ def main() -> None:
             "Контактные данные",
             "Сохранить профиль",
             "organization-document-profile-readiness",
+            "OrganizationProfileOfferingsEditor",
+            "onSaveOrganizationOfferings",
             "Профиль для итогового PDF",
             "Эти реквизиты используются при подготовке итоговых документов",
             "Если в PDF нужны отдельные данные подписанта",
             "fallback-настройки приложения",
+        ],
+    )
+
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationProfileOfferingsEditor.jsx",
+        [
+            "export function OrganizationProfileOfferingsEditor",
+            "organization-profile-offerings",
+            "Услуги и направления деятельности",
+            "Направления деятельности",
+            "Добавить направление",
+            "Добавить услугу",
+            "Сохранить услуги и направления",
+            "buildOrganizationProfileOfferingsFormData",
+            "validateOfferingCollection",
+            "Можно указать не более 100 элементов",
         ],
     )
 
@@ -117,6 +139,8 @@ def main() -> None:
             "export async function getOrgProfile()",
             'return request("/api/v1/org/profile");',
             "export async function updateOrgProfile(organizationId, payload)",
+            "export async function replaceOrgProfileOfferings(organizationId, payload)",
+            "/api/v1/org/profile/${organizationId}/offerings",
             "export async function getOrgLearningGroups(filters = {})",
             "export async function getOrgLearningGroupDetail(groupId)",
             "export async function createOrgLearningGroup(payload)",
@@ -137,6 +161,7 @@ def main() -> None:
             "export function buildCabinetStatsProps",
             "export function buildHeroSectionProps",
             "export function buildOrganizationProfileSectionProps",
+            "onSaveOrganizationOfferings",
             "export function buildOrganizationUsersSectionProps",
             "export function buildGroupCreateSectionProps",
             "export function buildSelectedGroupAsideSectionProps",

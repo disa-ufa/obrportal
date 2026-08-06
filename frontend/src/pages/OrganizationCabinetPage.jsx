@@ -12,6 +12,7 @@ import {
   getOrgProfile,
   getPublicCourses,
   removeOrgLearningGroupMember,
+  replaceOrgProfileOfferings,
   searchOrgUsers,
   updateOrgLearningGroup,
   updateOrgProfile,
@@ -344,9 +345,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     };
   }, [selectedGroupId]);
 
-  async function handleSaveOrganization(organizationId, payload) {
-    const updated = await updateOrgProfile(organizationId, payload);
-
+  function applyUpdatedOrganizationToProfile(updated) {
     setProfile((current) => {
       if (!current || !Array.isArray(current.organizations)) {
         return current;
@@ -359,7 +358,22 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
         ),
       };
     });
+  }
 
+  async function handleSaveOrganization(organizationId, payload) {
+    const updated = await updateOrgProfile(organizationId, payload);
+
+    applyUpdatedOrganizationToProfile(updated);
+    return updated;
+  }
+
+  async function handleSaveOrganizationOfferings(organizationId, payload) {
+    const updated = await replaceOrgProfileOfferings(
+      organizationId,
+      payload
+    );
+
+    applyUpdatedOrganizationToProfile(updated);
     return updated;
   }
 
@@ -821,6 +835,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
   const organizationProfileSectionProps = buildOrganizationProfileSectionProps({
     organizations,
     onSaveOrganization: handleSaveOrganization,
+    onSaveOrganizationOfferings: handleSaveOrganizationOfferings,
   });
 
   const organizationUsersSectionProps = buildOrganizationUsersSectionProps({

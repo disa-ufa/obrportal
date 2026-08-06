@@ -29,8 +29,13 @@ export function buildCabinetStatsProps({
 export function buildOrganizationProfileSectionProps({
   organizations,
   onSaveOrganization,
+  onSaveOrganizationOfferings,
 }) {
-  return { organizations, onSaveOrganization };
+  return {
+    organizations,
+    onSaveOrganization,
+    onSaveOrganizationOfferings,
+  };
 }
 
 export function buildOrganizationUsersSectionProps({
