@@ -7434,6 +7434,10 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
             "ogrn": "  1234567890123  ",
             "legal_address": "  Test legal address  ",
             "actual_address": "  Test actual address  ",
+            "description": "  Test organization profile description  ",
+            "phone": "  +7 (347) 000-00-00  ",
+            "email": "  profile@example.com  ",
+            "website": "  https://example.com/profile  ",
         },
         token=org_rep_token,
     )
@@ -7444,6 +7448,10 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     assert updated["ogrn"] == "1234567890123"
     assert updated["legal_address"] == "Test legal address"
     assert updated["actual_address"] == "Test actual address"
+    assert updated["description"] == "Test organization profile description"
+    assert updated["phone"] == "+7 (347) 000-00-00"
+    assert updated["email"] == "profile@example.com"
+    assert updated["website"] == "https://example.com/profile"
 
     status, profile = request_json(
         "GET",
@@ -7455,6 +7463,10 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     assert len(profile["organizations"]) == 1
     assert profile["organizations"][0]["id"] == first_organization_id
     assert profile["organizations"][0]["legal_address"] == "Test legal address"
+    assert profile["organizations"][0]["description"] == "Test organization profile description"
+    assert profile["organizations"][0]["phone"] == "+7 (347) 000-00-00"
+    assert profile["organizations"][0]["email"] == "profile@example.com"
+    assert profile["organizations"][0]["website"] == "https://example.com/profile"
 
     status, foreign_update = request_json(
         "PATCH",
@@ -7473,6 +7485,15 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     )
     assert status == 422
     assert isinstance(too_long_payload, dict)
+
+    status, too_long_website = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{first_organization_id}",
+        {"website": "x" * 2049},
+        token=org_rep_token,
+    )
+    assert status == 422
+    assert isinstance(too_long_website, dict)
 
     status, missing_update = request_json(
         "PATCH",

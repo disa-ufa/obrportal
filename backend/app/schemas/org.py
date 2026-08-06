@@ -145,6 +145,10 @@ class OrgProfileOrganizationItem(BaseModel):
     name: str
     legal_address: str | None = None
     actual_address: str | None = None
+    description: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    website: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -162,6 +166,10 @@ class OrgProfileUpdate(BaseModel):
     ogrn: str | None = Field(default=None)
     legal_address: str | None = Field(default=None)
     actual_address: str | None = Field(default=None)
+    description: str | None = Field(default=None)
+    phone: str | None = Field(default=None)
+    email: str | None = Field(default=None)
+    website: str | None = Field(default=None)
 
 
 class OrgProfile(BaseModel):

@@ -204,6 +204,10 @@ def normalize_org_profile_update_data(payload: OrgProfileUpdate) -> dict:
         "ogrn": 15,
         "legal_address": 1024,
         "actual_address": 1024,
+        "description": 4096,
+        "phone": 128,
+        "email": 320,
+        "website": 2048,
     }
 
     for key, max_length in max_lengths.items():
@@ -232,6 +236,10 @@ def build_org_profile_organization_item(
         name=organization.name,
         legal_address=organization.legal_address,
         actual_address=organization.actual_address,
+        description=organization.description,
+        phone=organization.phone,
+        email=organization.email,
+        website=organization.website,
         created_at=organization.created_at,
         updated_at=organization.updated_at,
     )
