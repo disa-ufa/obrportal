@@ -133,3 +133,35 @@ class OrganizationSpecialist(
         default=0,
         nullable=False,
     )
+
+
+class OrganizationRecipientCategory(
+    Base,
+    UUIDPrimaryKeyMixin,
+    TimestampMixin,
+):
+    __tablename__ = "organization_recipient_categories"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "name",
+            name="uq_org_recipient_category_org_name",
+        ),
+    )
+
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(
+        String(2048),
+        nullable=True,
+    )
+    sort_order: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )

@@ -14,6 +14,7 @@ from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import (
     Organization,
     OrganizationActivityDirection,
+    OrganizationRecipientCategory,
     OrganizationService,
     OrganizationSpecialist,
 )
@@ -36,6 +37,9 @@ from app.schemas.org import (
     OrgProfileOfferingItem,
     OrgProfileOfferingsUpdate,
     OrgProfileOrganizationItem,
+    OrgProfileRecipientCategoriesUpdate,
+    OrgProfileRecipientCategoryInput,
+    OrgProfileRecipientCategoryItem,
     OrgProfileSpecialistInput,
     OrgProfileSpecialistItem,
     OrgProfileSpecialistsUpdate,
@@ -367,6 +371,26 @@ def normalize_org_profile_specialist_items(
     return normalized_items
 
 
+def normalize_org_profile_recipient_category_items(
+    items: list[OrgProfileRecipientCategoryInput],
+) -> list[dict]:
+    return normalize_org_profile_offering_items(
+        items,
+        item_label="Recipient category",
+    )
+
+
+def build_org_profile_recipient_category_item(
+    item: OrganizationRecipientCategory,
+) -> OrgProfileRecipientCategoryItem:
+    return OrgProfileRecipientCategoryItem(
+        id=str(item.id),
+        name=item.name,
+        description=item.description,
+        sort_order=item.sort_order,
+    )
+
+
 def build_org_profile_specialist_item(
     item: OrganizationSpecialist,
 ) -> OrgProfileSpecialistItem:
@@ -483,6 +507,41 @@ async def get_org_profile_specialist_map(
     return specialist_map
 
 
+async def get_org_profile_recipient_category_map(
+    organization_ids: list[str],
+    session: AsyncSession,
+) -> dict[str, list[OrganizationRecipientCategory]]:
+    category_map: dict[str, list[OrganizationRecipientCategory]] = {
+        organization_id: []
+        for organization_id in organization_ids
+    }
+
+    if not organization_ids:
+        return category_map
+
+    result = await session.execute(
+        select(OrganizationRecipientCategory)
+        .where(
+            OrganizationRecipientCategory.organization_id.in_(
+                organization_ids
+            )
+        )
+        .order_by(
+            OrganizationRecipientCategory.organization_id,
+            OrganizationRecipientCategory.sort_order,
+            OrganizationRecipientCategory.name,
+        )
+    )
+
+    for item in result.scalars().all():
+        category_map.setdefault(
+            str(item.organization_id),
+            [],
+        ).append(item)
+
+    return category_map
+
+
 def build_org_profile_organization_item(
     organization: Organization,
     *,
@@ -491,6 +550,9 @@ def build_org_profile_organization_item(
     ) = None,
     services: list[OrganizationService] | None = None,
     specialists: list[OrganizationSpecialist] | None = None,
+    recipient_categories: (
+        list[OrganizationRecipientCategory] | None
+    ) = None,
 ) -> OrgProfileOrganizationItem:
     return OrgProfileOrganizationItem(
         id=str(organization.id),
@@ -515,6 +577,10 @@ def build_org_profile_organization_item(
         specialists=[
             build_org_profile_specialist_item(item)
             for item in (specialists or [])
+        ],
+        recipient_categories=[
+            build_org_profile_recipient_category_item(item)
+            for item in (recipient_categories or [])
         ],
         created_at=organization.created_at,
         updated_at=organization.updated_at,
@@ -1398,6 +1464,12 @@ async def get_org_profile(
         organization_ids,
         session,
     )
+    recipient_category_map = (
+        await get_org_profile_recipient_category_map(
+            organization_ids,
+            session,
+        )
+    )
 
     return OrgProfile(
         organizations=[
@@ -1409,6 +1481,10 @@ async def get_org_profile(
                 ),
                 services=service_map.get(str(organization.id), []),
                 specialists=specialist_map.get(
+                    str(organization.id),
+                    [],
+                ),
+                recipient_categories=recipient_category_map.get(
                     str(organization.id),
                     [],
                 ),
@@ -1455,6 +1531,12 @@ async def update_org_profile(
         [str(organization.id)],
         session,
     )
+    recipient_category_map = (
+        await get_org_profile_recipient_category_map(
+            [str(organization.id)],
+            session,
+        )
+    )
 
     return build_org_profile_organization_item(
         organization,
@@ -1464,6 +1546,10 @@ async def update_org_profile(
         ),
         services=service_map.get(str(organization.id), []),
         specialists=specialist_map.get(str(organization.id), []),
+        recipient_categories=recipient_category_map.get(
+            str(organization.id),
+            [],
+        ),
     )
 
 
@@ -1555,6 +1641,12 @@ async def replace_org_profile_offerings(
         [str(organization.id)],
         session,
     )
+    recipient_category_map = (
+        await get_org_profile_recipient_category_map(
+            [str(organization.id)],
+            session,
+        )
+    )
 
     return build_org_profile_organization_item(
         organization,
@@ -1564,6 +1656,10 @@ async def replace_org_profile_offerings(
         ),
         services=service_map.get(str(organization.id), []),
         specialists=specialist_map.get(str(organization.id), []),
+        recipient_categories=recipient_category_map.get(
+            str(organization.id),
+            [],
+        ),
     )
 
 
@@ -1635,6 +1731,12 @@ async def replace_org_profile_specialists(
         [str(organization.id)],
         session,
     )
+    recipient_category_map = (
+        await get_org_profile_recipient_category_map(
+            [str(organization.id)],
+            session,
+        )
+    )
 
     return build_org_profile_organization_item(
         organization,
@@ -1644,6 +1746,100 @@ async def replace_org_profile_specialists(
         ),
         services=service_map.get(str(organization.id), []),
         specialists=specialist_map.get(str(organization.id), []),
+        recipient_categories=recipient_category_map.get(
+            str(organization.id),
+            [],
+        ),
+    )
+
+
+@router.put(
+    "/profile/{organization_id}/recipient-categories",
+    response_model=OrgProfileOrganizationItem,
+)
+async def replace_org_profile_recipient_categories(
+    organization_id: str,
+    payload: OrgProfileRecipientCategoriesUpdate,
+    current_user: User = Depends(
+        require_permission("org.profile.write")
+    ),
+    session: AsyncSession = Depends(get_db),
+) -> OrgProfileOrganizationItem:
+    normalized_organization_id = organization_id.strip()
+    allowed_organization_ids = (
+        await get_organization_scope_for_permission(
+            current_user,
+            "org.profile.write",
+            session,
+        )
+    )
+
+    ensure_organization_in_scope_or_404(
+        normalized_organization_id,
+        allowed_organization_ids,
+    )
+
+    organization = await get_organization_or_404(
+        normalized_organization_id,
+        session,
+    )
+    category_data = normalize_org_profile_recipient_category_items(
+        payload.recipient_categories
+    )
+
+    await session.execute(
+        delete(OrganizationRecipientCategory).where(
+            OrganizationRecipientCategory.organization_id
+            == normalized_organization_id
+        )
+    )
+
+    session.add_all(
+        [
+            OrganizationRecipientCategory(
+                organization_id=normalized_organization_id,
+                **item,
+            )
+            for item in category_data
+        ]
+    )
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Organization recipient category already exists",
+        )
+
+    direction_map, service_map = await get_org_profile_offering_maps(
+        [str(organization.id)],
+        session,
+    )
+    specialist_map = await get_org_profile_specialist_map(
+        [str(organization.id)],
+        session,
+    )
+    recipient_category_map = (
+        await get_org_profile_recipient_category_map(
+            [str(organization.id)],
+            session,
+        )
+    )
+
+    return build_org_profile_organization_item(
+        organization,
+        activity_directions=direction_map.get(
+            str(organization.id),
+            [],
+        ),
+        services=service_map.get(str(organization.id), []),
+        specialists=specialist_map.get(str(organization.id), []),
+        recipient_categories=recipient_category_map.get(
+            str(organization.id),
+            [],
+        ),
     )
 
 
