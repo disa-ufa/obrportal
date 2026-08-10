@@ -71,6 +71,12 @@ class PreparedPublicRegistration:
     learner_role_assigned: bool = False
 
 
+@dataclass(frozen=True)
+class PreparedPublicRegistrationResend:
+    user: User | None = None
+    created_token: CreatedUserPasswordToken | None = None
+
+
 def normalize_public_registration_email(value: str) -> str:
     return normalize_learner_email(value) or ""
 
@@ -410,4 +416,66 @@ async def prepare_public_registration(
         profile=profile,
         created_token=created_token,
         learner_role_assigned=learner_role_assigned,
+    )
+
+async def prepare_public_registration_resend(
+    session: AsyncSession,
+    *,
+    email: str,
+) -> PreparedPublicRegistrationResend:
+    normalized_email = normalize_public_registration_email(
+        email
+    )
+
+    if not normalized_email:
+        return PreparedPublicRegistrationResend()
+
+    if normalized_email.endswith("@obrportal.local"):
+        return PreparedPublicRegistrationResend()
+
+    user = await _get_user_by_email(
+        session,
+        email=normalized_email,
+    )
+
+    if user is None or user.is_active:
+        return PreparedPublicRegistrationResend()
+
+    profile = await _get_learner_profile(
+        session,
+        user_id=user.id,
+    )
+
+    if profile is None:
+        return PreparedPublicRegistrationResend()
+
+    role_result = await session.execute(
+        select(Role).where(
+            Role.code
+            == PUBLIC_REGISTRATION_LEARNER_ROLE_CODE
+        )
+    )
+    learner_role = role_result.scalar_one_or_none()
+
+    if learner_role is None:
+        return PreparedPublicRegistrationResend()
+
+    assignment = await _get_global_learner_assignment(
+        session,
+        user_id=user.id,
+        role_id=learner_role.id,
+    )
+
+    if assignment is None:
+        return PreparedPublicRegistrationResend()
+
+    created_token = await create_user_password_token(
+        session,
+        user=user,
+        delivery_target_email=user.email,
+    )
+
+    return PreparedPublicRegistrationResend(
+        user=user,
+        created_token=created_token,
     )

@@ -91,6 +91,13 @@ export async function registerUser(payload) {
   });
 }
 
+export async function resendPublicRegistration(email) {
+  return request("/api/v1/auth/resend-registration", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
 export async function getPublicRegistrationStatus() {
   return request("/api/v1/auth/registration-status");
 }

@@ -74,6 +74,30 @@ class Settings(BaseSettings):
             "OBRPORTAL_PUBLIC_REGISTRATION_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
         ),
     )
+    public_registration_resend_rate_limit_window_seconds: int = Field(
+        default=900,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_WINDOW_SECONDS",
+            "OBRPORTAL_PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_WINDOW_SECONDS",
+        ),
+    )
+    public_registration_resend_rate_limit_email_max_attempts: int = Field(
+        default=3,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_EMAIL_MAX_ATTEMPTS",
+            "OBRPORTAL_PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_EMAIL_MAX_ATTEMPTS",
+        ),
+    )
+    public_registration_resend_rate_limit_client_max_attempts: int = Field(
+        default=20,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+            "OBRPORTAL_PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+        ),
+    )
     password_recovery_rate_limit_window_seconds: int = Field(
         default=900,
         validation_alias=AliasChoices(

@@ -48,6 +48,12 @@ class PublicRegistrationRequest(BaseModel):
     terms_accepted: Literal[True]
 
 
+class PublicRegistrationResendRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+
+
 class PublicRegistrationAcceptedResponse(BaseModel):
     status: Literal["accepted"]
     message: str = Field(min_length=1, max_length=512)
