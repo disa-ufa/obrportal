@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { formatApiError } from "../../utils/apiErrors";
 import { OrganizationProfileOfferingsEditor } from "./OrganizationProfileOfferingsEditor";
+import { OrganizationProfileRecipientCategoriesEditor } from "./OrganizationProfileRecipientCategoriesEditor";
 import { OrganizationProfileSpecialistsEditor } from "./OrganizationProfileSpecialistsEditor";
 import {
   buildLearningGroupFormData,
@@ -20,6 +21,7 @@ export function OrganizationProfileCard({
   onSave,
   onSaveOfferings,
   onSaveSpecialists,
+  onSaveRecipientCategories,
 }) {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState(() => buildOrganizationProfileFormData(organization));
@@ -312,6 +314,11 @@ export function OrganizationProfileCard({
       <OrganizationProfileSpecialistsEditor
         organization={organization}
         onSave={onSaveSpecialists}
+      />
+
+      <OrganizationProfileRecipientCategoriesEditor
+        organization={organization}
+        onSave={onSaveRecipientCategories}
       />
     </div>
   );
@@ -903,6 +910,7 @@ export function OrganizationProfileSection({
   onSaveOrganization,
   onSaveOrganizationOfferings,
   onSaveOrganizationSpecialists,
+  onSaveOrganizationRecipientCategories,
 }) {
   if (organizations.length === 0) {
     return null;
@@ -931,6 +939,7 @@ export function OrganizationProfileSection({
               onSave={onSaveOrganization}
               onSaveOfferings={onSaveOrganizationOfferings}
               onSaveSpecialists={onSaveOrganizationSpecialists}
+              onSaveRecipientCategories={onSaveOrganizationRecipientCategories}
             />
           ))}
         </div>

@@ -418,3 +418,13 @@ export function buildOrganizationProfileSpecialistsFormData(organization) {
     specialists: buildOrganizationSpecialistFormRows(item.specialists),
   };
 }
+
+export function buildOrganizationProfileRecipientCategoriesFormData(organization) {
+  const item = normalizeObject(organization);
+
+  return {
+    recipient_categories: buildOrganizationOfferingFormRows(
+      item.recipient_categories
+    ),
+  };
+}

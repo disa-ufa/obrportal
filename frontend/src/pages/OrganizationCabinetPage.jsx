@@ -13,6 +13,7 @@ import {
   getPublicCourses,
   removeOrgLearningGroupMember,
   replaceOrgProfileOfferings,
+  replaceOrgProfileRecipientCategories,
   replaceOrgProfileSpecialists,
   searchOrgUsers,
   updateOrgLearningGroup,
@@ -383,6 +384,19 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     payload
   ) {
     const updated = await replaceOrgProfileSpecialists(
+      organizationId,
+      payload
+    );
+
+    applyUpdatedOrganizationToProfile(updated);
+    return updated;
+  }
+
+  async function handleSaveOrganizationRecipientCategories(
+    organizationId,
+    payload
+  ) {
+    const updated = await replaceOrgProfileRecipientCategories(
       organizationId,
       payload
     );
@@ -851,6 +865,7 @@ export function OrganizationCabinetPage({ user, onPageChange, onLogout }) {
     onSaveOrganization: handleSaveOrganization,
     onSaveOrganizationOfferings: handleSaveOrganizationOfferings,
     onSaveOrganizationSpecialists: handleSaveOrganizationSpecialists,
+    onSaveOrganizationRecipientCategories: handleSaveOrganizationRecipientCategories,
   });
 
   const organizationUsersSectionProps = buildOrganizationUsersSectionProps({

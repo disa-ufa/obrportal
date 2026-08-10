@@ -13,6 +13,7 @@ import {
   buildOrganizationOptions,
   buildOrganizationProfileFormData,
   buildOrganizationProfileOfferingsFormData,
+  buildOrganizationProfileRecipientCategoriesFormData,
   buildOrganizationProfileSpecialistsFormData,
   enrollmentMatchesFilters,
   formatUserOrganizations,
@@ -161,6 +162,36 @@ assertDeepEqual(
     specialists: [],
   },
   "buildOrganizationProfileSpecialistsFormData creates a safe empty list"
+);
+
+assertDeepEqual(
+  buildOrganizationProfileRecipientCategoriesFormData({
+    recipient_categories: [
+      {
+        id: "recipient-category-1",
+        name: "Дети с инвалидностью",
+        description: null,
+        sort_order: 0,
+      },
+    ],
+  }),
+  {
+    recipient_categories: [
+      {
+        name: "Дети с инвалидностью",
+        description: "",
+      },
+    ],
+  },
+  "buildOrganizationProfileRecipientCategoriesFormData removes API-only fields"
+);
+
+assertDeepEqual(
+  buildOrganizationProfileRecipientCategoriesFormData(null),
+  {
+    recipient_categories: [],
+  },
+  "buildOrganizationProfileRecipientCategoriesFormData creates a safe empty list"
 );
 
 assertEqual(

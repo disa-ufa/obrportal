@@ -233,6 +233,8 @@ def main() -> None:
             "return request(`/api/v1/org/profile/${organizationId}/offerings`,",
             "export async function replaceOrgProfileSpecialists(organizationId, payload)",
             "return request(`/api/v1/org/profile/${organizationId}/specialists`,",
+            "export async function replaceOrgProfileRecipientCategories(organizationId, payload)",
+            "return request(`/api/v1/org/profile/${organizationId}/recipient-categories`,",
             "export async function searchOrgUsers(filters = {})",
             "return request(`/api/v1/org/users${query ? `?${query}` : \"\"}`);",
             "export async function getOrgLearningGroups(filters = {})",

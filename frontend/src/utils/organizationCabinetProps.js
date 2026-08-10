@@ -31,12 +31,14 @@ export function buildOrganizationProfileSectionProps({
   onSaveOrganization,
   onSaveOrganizationOfferings,
   onSaveOrganizationSpecialists,
+  onSaveOrganizationRecipientCategories,
 }) {
   return {
     organizations,
     onSaveOrganization,
     onSaveOrganizationOfferings,
     onSaveOrganizationSpecialists,
+    onSaveOrganizationRecipientCategories,
   };
 }
 
