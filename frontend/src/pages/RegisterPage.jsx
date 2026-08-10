@@ -1,5 +1,6 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getPublicCourseDetail } from "../api/client";
 import { AuthBrandPanel } from "../components/auth/AuthBrandPanel";
 import { AuthCard } from "../components/auth/AuthCard";
@@ -352,8 +353,9 @@ export function RegisterPage({
                 hint="Необязательно"
               />
 
-              <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100">
+              <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 transition hover:bg-slate-100">
                 <input
+                  id="register-personal-data-consent"
                   type="checkbox"
                   checked={personalDataConsent}
                   onChange={(event) =>
@@ -362,15 +364,32 @@ export function RegisterPage({
                   className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus-visible:ring-4 focus-visible:ring-blue-100"
                   required
                 />
-                <span>
-                  Я даю согласие на обработку персональных данных
-                  для создания учётной записи и предоставления
-                  доступа к образовательному порталу.
-                </span>
-              </label>
 
-              <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100">
+                <div className="min-w-0 text-sm leading-6 text-slate-700">
+                  <label
+                    htmlFor="register-personal-data-consent"
+                    className="cursor-pointer"
+                  >
+                    Я даю согласие на обработку персональных данных
+                    для создания учётной записи и предоставления
+                    доступа к образовательному порталу.
+                  </label>
+                  <div className="mt-1">
+                    <Link
+                      to="/privacy"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-bold text-blue-700 underline decoration-blue-200 underline-offset-4 transition hover:text-blue-800 hover:decoration-blue-500 focus-visible:rounded focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                    >
+                      Политика обработки персональных данных
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 transition hover:bg-slate-100">
                 <input
+                  id="register-terms-accepted"
                   type="checkbox"
                   checked={termsAccepted}
                   onChange={(event) =>
@@ -379,11 +398,27 @@ export function RegisterPage({
                   className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus-visible:ring-4 focus-visible:ring-blue-100"
                   required
                 />
-                <span>
-                  Я принимаю условия использования образовательного
-                  портала.
-                </span>
-              </label>
+
+                <div className="min-w-0 text-sm leading-6 text-slate-700">
+                  <label
+                    htmlFor="register-terms-accepted"
+                    className="cursor-pointer"
+                  >
+                    Я принимаю условия использования образовательного
+                    портала.
+                  </label>
+                  <div className="mt-1">
+                    <Link
+                      to="/offer"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-bold text-blue-700 underline decoration-blue-200 underline-offset-4 transition hover:text-blue-800 hover:decoration-blue-500 focus-visible:rounded focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+                    >
+                      Условия использования портала
+                    </Link>
+                  </div>
+                </div>
+              </div>
 
               <AuthSecurityNotice>
                 Мы не просим придумать пароль на этой странице.
