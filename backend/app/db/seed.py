@@ -32,6 +32,11 @@ ROLES = [
         "description": "Корпоративный заказчик: организация, договоры, группы обучающихся.",
     },
     {
+        "code": "ministry_admin",
+        "name": "Администратор ведомства",
+        "description": "Просмотр профилей закреплённых подведомственных организаций.",
+    },
+    {
         "code": "teacher",
         "name": "Преподаватель / куратор",
         "description": "Проверка заданий, аттестаций и сопровождение обучения.",
@@ -154,6 +159,10 @@ ROLE_PERMISSION_MAP = {
         "learning.progress.read",
         "files.read",
         "files.write",
+    ],
+
+    "ministry_admin": [
+        "org.profile.read",
     ],
 
     "teacher": [

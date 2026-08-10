@@ -146,6 +146,7 @@ SYSTEM_ROLE_CODES = {
     "learner_fl",
     "learner_org",
     "org_rep",
+    "ministry_admin",
     "teacher",
     "methodist",
     "finance_operator",
@@ -1222,10 +1223,10 @@ def role_permission_snapshot(
 
 
 def ensure_role_permissions_can_be_modified(role: Role) -> None:
-    if role.code == "admin":
+    if role.code in {"admin", "ministry_admin"}:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot modify system admin role permissions",
+            detail="Cannot modify protected system role permissions",
         )
 
 

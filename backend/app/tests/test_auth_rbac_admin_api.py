@@ -7240,6 +7240,213 @@ def test_learner_account_documents_include_revocation_metadata() -> None:
 
 
 
+
+def test_ministry_admin_profile_is_read_only_and_scoped_to_assigned_organizations() -> None:
+    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    first_organization_id = create_test_organization(admin_token)
+    second_organization_id = create_test_organization(admin_token)
+    foreign_organization_id = create_test_organization(admin_token)
+
+    status, updated_first = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{first_organization_id}",
+        {
+            "description": "Ministry scoped first organization",
+            "phone": "+7 (347) 111-11-11",
+            "email": "first-ministry@example.test",
+            "website": "https://first-ministry.example.test",
+            "accessibility_status": "partial",
+            "accessibility_description": "Вход оборудован пандусом",
+        },
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(updated_first, dict)
+
+    status, updated_second = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{second_organization_id}",
+        {
+            "description": "Ministry scoped second organization",
+            "accessibility_status": "full",
+        },
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(updated_second, dict)
+
+    ministry_email = f"ministry_admin_{uuid4().hex[:12]}@example.com"
+    ministry_password = "MinistryAdmin123!"
+
+    status, ministry_user = request_json(
+        "POST",
+        "/api/v1/admin/users",
+        {
+            "email": ministry_email,
+            "password": ministry_password,
+            "full_name": "Ministry profile administrator",
+            "is_active": True,
+            "is_email_verified": True,
+        },
+        token=admin_token,
+    )
+    assert status == 201
+    assert isinstance(ministry_user, dict)
+    ministry_user_id = str(ministry_user["id"])
+
+    ministry_role_id = get_role_id_by_code(admin_token, "ministry_admin")
+
+    status, ministry_role_detail = request_json(
+        "GET",
+        f"/api/v1/admin/roles/{ministry_role_id}",
+        token=admin_token,
+    )
+    assert status == 200
+    assert isinstance(ministry_role_detail, dict)
+    assert [
+        permission["code"]
+        for permission in ministry_role_detail["permissions"]
+    ] == ["org.profile.read"]
+
+    org_profile_write_permission_id = get_permission_id_by_code(
+        admin_token,
+        "org.profile.write",
+    )
+
+    status, protected_assign = request_json(
+        "POST",
+        f"/api/v1/admin/roles/{ministry_role_id}/permissions",
+        {"permission_id": org_profile_write_permission_id},
+        token=admin_token,
+    )
+    assert status == 400
+    assert isinstance(protected_assign, dict)
+
+    org_profile_read_role_permission_id = find_role_permission_id(
+        ministry_role_detail,
+        permission_code="org.profile.read",
+    )
+    assert org_profile_read_role_permission_id is not None
+
+    status, protected_remove = request_json(
+        "DELETE",
+        (
+            f"/api/v1/admin/roles/{ministry_role_id}/permissions/"
+            f"{org_profile_read_role_permission_id}"
+        ),
+        token=admin_token,
+    )
+    assert status == 400
+    assert isinstance(protected_remove, dict)
+
+    for organization_id in (
+        first_organization_id,
+        second_organization_id,
+    ):
+        status, scoped_user = request_json(
+            "POST",
+            f"/api/v1/admin/users/{ministry_user_id}/roles",
+            {
+                "role_id": ministry_role_id,
+                "organization_id": organization_id,
+            },
+            token=admin_token,
+        )
+        assert status == 200
+        assert isinstance(scoped_user, dict)
+
+    ministry_token = login(ministry_email, ministry_password)
+
+    status, profile = request_json(
+        "GET",
+        "/api/v1/org/profile",
+        token=ministry_token,
+    )
+    assert status == 200
+    assert isinstance(profile, dict)
+
+    organizations = profile["organizations"]
+    assert isinstance(organizations, list)
+
+    organization_ids = {
+        str(organization["id"])
+        for organization in organizations
+    }
+    assert organization_ids == {
+        first_organization_id,
+        second_organization_id,
+    }
+    assert foreign_organization_id not in organization_ids
+    assert profile["summary"]["organizations_count"] == 2
+
+    first_profile = next(
+        organization
+        for organization in organizations
+        if str(organization["id"]) == first_organization_id
+    )
+    assert first_profile["description"] == "Ministry scoped first organization"
+    assert first_profile["phone"] == "+7 (347) 111-11-11"
+    assert first_profile["email"] == "first-ministry@example.test"
+    assert first_profile["website"] == "https://first-ministry.example.test"
+    assert first_profile["accessibility_status"] == "partial"
+    assert (
+        first_profile["accessibility_description"]
+        == "Вход оборудован пандусом"
+    )
+    assert "activity_directions" in first_profile
+    assert "services" in first_profile
+    assert "specialists" in first_profile
+    assert "recipient_categories" in first_profile
+
+    status, forbidden_update = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{first_organization_id}",
+        {"description": "Must not be saved"},
+        token=ministry_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_update, dict)
+
+    status, forbidden_offerings = request_json(
+        "PUT",
+        f"/api/v1/org/profile/{first_organization_id}/offerings",
+        {
+            "activity_directions": [],
+            "services": [],
+        },
+        token=ministry_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_offerings, dict)
+
+    status, forbidden_specialists = request_json(
+        "PUT",
+        f"/api/v1/org/profile/{first_organization_id}/specialists",
+        {"specialists": []},
+        token=ministry_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_specialists, dict)
+
+    status, forbidden_recipients = request_json(
+        "PUT",
+        f"/api/v1/org/profile/{first_organization_id}/recipient-categories",
+        {"recipient_categories": []},
+        token=ministry_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_recipients, dict)
+
+    status, forbidden_admin_organizations = request_json(
+        "GET",
+        "/api/v1/admin/organizations",
+        token=ministry_token,
+    )
+    assert status == 403
+    assert isinstance(forbidden_admin_organizations, dict)
+
+
 def test_org_profile_scope_for_admin_org_rep_and_unscoped_user() -> None:
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
