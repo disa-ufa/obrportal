@@ -2,8 +2,11 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { resetPasswordWithToken } from "../api/client";
+import { AuthBrandPanel } from "../components/auth/AuthBrandPanel";
+import { AuthCard } from "../components/auth/AuthCard";
+import { AuthLayout } from "../components/auth/AuthLayout";
+import { PasswordField } from "../components/auth/PasswordField";
 import { Alert } from "../components/ui/Alert";
-import { SectionCard } from "../components/ui/SectionCard";
 import { formatApiError } from "../utils/apiErrors";
 
 const TEXT = {
@@ -36,6 +39,20 @@ const TEXT = {
   securityThree:
     "Используйте уникальный пароль длиной не менее 8 символов и не передавайте его другим людям.",
 };
+
+function SecurityItem({ children, emphasized = false }) {
+  return (
+    <div
+      className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+        emphasized
+          ? "bg-white/15 text-white ring-white/20"
+          : "bg-white/10 text-blue-50 ring-white/15"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
 
 function getPasswordValidationError(password, passwordConfirmation) {
   if (!password || !passwordConfirmation) {
@@ -103,8 +120,22 @@ export function ResetPasswordPage({ onPageChange }) {
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-      <SectionCard title={TEXT.pageTitle} subtitle={TEXT.pageSubtitle}>
+    <AuthLayout
+      brand={
+        <AuthBrandPanel
+          title={TEXT.securityTitle}
+          description={TEXT.securitySubtitle}
+          footer="Новый пароль применяется только после успешной проверки одноразовой ссылки."
+        >
+          <div className="space-y-3">
+            <SecurityItem emphasized>{TEXT.securityOne}</SecurityItem>
+            <SecurityItem>{TEXT.securityTwo}</SecurityItem>
+            <SecurityItem>{TEXT.securityThree}</SecurityItem>
+          </div>
+        </AuthBrandPanel>
+      }
+    >
+      <AuthCard title={TEXT.pageTitle} subtitle={TEXT.pageSubtitle}>
         {!hasToken && (
           <Alert title={TEXT.badLinkTitle} tone="red">
             {TEXT.badLinkBody}
@@ -133,37 +164,25 @@ export function ResetPasswordPage({ onPageChange }) {
               </Alert>
             )}
 
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">
-                {TEXT.newPassword}
-              </span>
-              <input
-                type="password"
-                className="portal-input mt-2"
-                value={password}
-                minLength={8}
-                autoComplete="new-password"
-                disabled={loading || !hasToken}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
+            <PasswordField
+              label={TEXT.newPassword}
+              value={password}
+              minLength={8}
+              autoComplete="new-password"
+              disabled={loading || !hasToken}
+              onChange={(event) => setPassword(event.target.value)}
+            />
 
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">
-                {TEXT.repeatPassword}
-              </span>
-              <input
-                type="password"
-                className="portal-input mt-2"
-                value={passwordConfirmation}
-                minLength={8}
-                autoComplete="new-password"
-                disabled={loading || !hasToken}
-                onChange={(event) =>
-                  setPasswordConfirmation(event.target.value)
-                }
-              />
-            </label>
+            <PasswordField
+              label={TEXT.repeatPassword}
+              value={passwordConfirmation}
+              minLength={8}
+              autoComplete="new-password"
+              disabled={loading || !hasToken}
+              onChange={(event) =>
+                setPasswordConfirmation(event.target.value)
+              }
+            />
 
             <button
               type="submit"
@@ -177,31 +196,14 @@ export function ResetPasswordPage({ onPageChange }) {
               <Link
                 to="/forgot-password"
                 onClick={() => onPageChange?.("forgot-password")}
-                className="text-sm font-semibold text-blue-700 transition hover:text-blue-900"
+                className="text-sm font-bold text-blue-700 transition hover:text-blue-900"
               >
                 {TEXT.requestAgain}
               </Link>
             </div>
           </form>
         )}
-      </SectionCard>
-
-      <SectionCard
-        title={TEXT.securityTitle}
-        subtitle={TEXT.securitySubtitle}
-      >
-        <div className="space-y-4 text-sm leading-6 text-slate-600">
-          <div className="rounded-2xl bg-blue-50 p-4 text-blue-800 ring-1 ring-blue-200">
-            {TEXT.securityOne}
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            {TEXT.securityTwo}
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            {TEXT.securityThree}
-          </div>
-        </div>
-      </SectionCard>
-    </div>
+      </AuthCard>
+    </AuthLayout>
   );
 }

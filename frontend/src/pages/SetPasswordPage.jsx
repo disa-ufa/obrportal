@@ -2,8 +2,11 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { setPasswordWithToken } from "../api/client";
+import { AuthBrandPanel } from "../components/auth/AuthBrandPanel";
+import { AuthCard } from "../components/auth/AuthCard";
+import { AuthLayout } from "../components/auth/AuthLayout";
+import { PasswordField } from "../components/auth/PasswordField";
 import { Alert } from "../components/ui/Alert";
-import { SectionCard } from "../components/ui/SectionCard";
 import { formatApiError } from "../utils/apiErrors";
 
 const TEXT = {
@@ -11,15 +14,18 @@ const TEXT = {
   minLength: "Пароль должен содержать не менее 8 символов.",
   mismatch: "Пароли не совпадают.",
   missingToken: "Ссылка установки пароля некорректна: отсутствует token.",
-  apiFallback: "Не удалось установить пароль. Проверьте ссылку или запросите новое приглашение.",
+  apiFallback:
+    "Не удалось установить пароль. Проверьте ссылку или запросите новое приглашение.",
   pageTitle: "Установка пароля",
   pageSubtitle: "Задайте пароль для входа в личный кабинет ОбрПортала.",
   badLinkTitle: "Некорректная ссылка",
-  badLinkBody: "В ссылке отсутствует token. Откройте полную ссылку из приглашения или запросите новое приглашение у администратора.",
+  badLinkBody:
+    "В ссылке отсутствует token. Откройте полную ссылку из приглашения или запросите новое приглашение у администратора.",
   successTitle: "Пароль успешно установлен.",
   successPrefix: "Аккаунт",
   successFallbackUser: "пользователя",
-  successSuffix: "активирован. Теперь можно войти в систему с новым паролем.",
+  successSuffix:
+    "активирован. Теперь можно войти в систему с новым паролем.",
   goLogin: "Перейти ко входу",
   submitErrorTitle: "Не удалось установить пароль",
   newPassword: "Новый пароль",
@@ -28,10 +34,27 @@ const TEXT = {
   submitButton: "Установить пароль",
   securityTitle: "Безопасность ссылки",
   securitySubtitle: "Одноразовая ссылка действует ограниченное время.",
-  securityOne: "Ссылка используется только один раз. После успешной установки пароля повторно применить ее нельзя.",
-  securityTwo: "Если срок действия истек или ссылка уже была использована, запросите новое приглашение у администратора.",
-  securityThree: "Пароль должен содержать не менее 8 символов. Не используйте очевидные пароли и не передавайте их другим людям.",
+  securityOne:
+    "Ссылка используется только один раз. После успешной установки пароля повторно применить её нельзя.",
+  securityTwo:
+    "Если срок действия истёк или ссылка уже была использована, запросите новое приглашение у администратора.",
+  securityThree:
+    "Пароль должен содержать не менее 8 символов. Не используйте очевидные пароли и не передавайте их другим людям.",
 };
+
+function SecurityItem({ children, emphasized = false }) {
+  return (
+    <div
+      className={`rounded-2xl p-4 text-sm leading-6 ring-1 ${
+        emphasized
+          ? "bg-white/15 text-white ring-white/20"
+          : "bg-white/10 text-blue-50 ring-white/15"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
 
 function getPasswordValidationError(password, passwordConfirmation) {
   if (!password || !passwordConfirmation) {
@@ -51,7 +74,10 @@ function getPasswordValidationError(password, passwordConfirmation) {
 
 export function SetPasswordPage({ onPageChange }) {
   const [searchParams] = useSearchParams();
-  const token = useMemo(() => searchParams.get("token")?.trim() || "", [searchParams]);
+  const token = useMemo(
+    () => searchParams.get("token")?.trim() || "",
+    [searchParams]
+  );
 
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
@@ -65,7 +91,10 @@ export function SetPasswordPage({ onPageChange }) {
     event.preventDefault();
     setError("");
 
-    const validationError = getPasswordValidationError(password, passwordConfirmation);
+    const validationError = getPasswordValidationError(
+      password,
+      passwordConfirmation
+    );
     if (validationError) {
       setError(validationError);
       return;
@@ -92,11 +121,22 @@ export function SetPasswordPage({ onPageChange }) {
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-      <SectionCard
-        title={TEXT.pageTitle}
-        subtitle={TEXT.pageSubtitle}
-      >
+    <AuthLayout
+      brand={
+        <AuthBrandPanel
+          title={TEXT.securityTitle}
+          description={TEXT.securitySubtitle}
+          footer="Пароль активирует доступ к личному кабинету только после успешной проверки приглашения."
+        >
+          <div className="space-y-3">
+            <SecurityItem emphasized>{TEXT.securityOne}</SecurityItem>
+            <SecurityItem>{TEXT.securityTwo}</SecurityItem>
+            <SecurityItem>{TEXT.securityThree}</SecurityItem>
+          </div>
+        </AuthBrandPanel>
+      }
+    >
+      <AuthCard title={TEXT.pageTitle} subtitle={TEXT.pageSubtitle}>
         {!hasToken && (
           <Alert title={TEXT.badLinkTitle} tone="red">
             {TEXT.badLinkBody}
@@ -110,7 +150,9 @@ export function SetPasswordPage({ onPageChange }) {
                 {TEXT.successTitle}
               </div>
               <div className="mt-2">
-                {TEXT.successPrefix} {successPayload.email || TEXT.successFallbackUser} {TEXT.successSuffix}
+                {TEXT.successPrefix}{" "}
+                {successPayload.email || TEXT.successFallbackUser}{" "}
+                {TEXT.successSuffix}
               </div>
             </div>
 
@@ -130,35 +172,25 @@ export function SetPasswordPage({ onPageChange }) {
               </Alert>
             )}
 
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">
-                {TEXT.newPassword}
-              </span>
-              <input
-                type="password"
-                className="portal-input mt-2"
-                value={password}
-                minLength={8}
-                autoComplete="new-password"
-                disabled={loading || !hasToken}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
+            <PasswordField
+              label={TEXT.newPassword}
+              value={password}
+              minLength={8}
+              autoComplete="new-password"
+              disabled={loading || !hasToken}
+              onChange={(event) => setPassword(event.target.value)}
+            />
 
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">
-                {TEXT.repeatPassword}
-              </span>
-              <input
-                type="password"
-                className="portal-input mt-2"
-                value={passwordConfirmation}
-                minLength={8}
-                autoComplete="new-password"
-                disabled={loading || !hasToken}
-                onChange={(event) => setPasswordConfirmation(event.target.value)}
-              />
-            </label>
+            <PasswordField
+              label={TEXT.repeatPassword}
+              value={passwordConfirmation}
+              minLength={8}
+              autoComplete="new-password"
+              disabled={loading || !hasToken}
+              onChange={(event) =>
+                setPasswordConfirmation(event.target.value)
+              }
+            />
 
             <button
               type="submit"
@@ -169,26 +201,7 @@ export function SetPasswordPage({ onPageChange }) {
             </button>
           </form>
         )}
-      </SectionCard>
-
-      <SectionCard
-        title={TEXT.securityTitle}
-        subtitle={TEXT.securitySubtitle}
-      >
-        <div className="space-y-4 text-sm leading-6 text-slate-600">
-          <div className="rounded-2xl bg-blue-50 p-4 text-blue-800 ring-1 ring-blue-200">
-            {TEXT.securityOne}
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            {TEXT.securityTwo}
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            {TEXT.securityThree}
-          </div>
-        </div>
-      </SectionCard>
-    </div>
+      </AuthCard>
+    </AuthLayout>
   );
 }
