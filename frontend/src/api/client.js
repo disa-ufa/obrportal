@@ -124,6 +124,17 @@ export async function getAccountSummary() {
   return request("/api/v1/account/summary");
 }
 
+export async function getAccountLearnerProfile() {
+  return request("/api/v1/account/profile");
+}
+
+export async function updateAccountLearnerProfile(payload) {
+  return request("/api/v1/account/profile", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getAccountCourses() {
   return request("/api/v1/account/courses");
 }

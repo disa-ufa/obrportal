@@ -11,6 +11,7 @@ import {
   startAccountCourse,
 } from "../api/client";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
+import { AccountLearnerProfileCard } from "../components/account/AccountLearnerProfileCard";
 import { formatRuDateTimeNative as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
@@ -1685,8 +1686,13 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         />
       )}
 
+      <AccountLearnerProfileCard accountUser={profile} />
+
       <div className="grid gap-6 xl:grid-cols-3">
-        <SectionCard title="Профиль" subtitle="Базовая информация пользователя">
+        <SectionCard
+          title="Учётная запись"
+          subtitle="Данные для входа и идентификации пользователя в ОбрПортале"
+        >
           {loading ? (
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
               Загрузка профиля...
