@@ -223,6 +223,7 @@ def normalize_org_profile_update_data(payload: OrgProfileUpdate) -> dict:
         "phone": 128,
         "email": 320,
         "website": 2048,
+        "accessibility_description": 4096,
     }
 
     for key, max_length in max_lengths.items():
@@ -566,6 +567,8 @@ def build_org_profile_organization_item(
         phone=organization.phone,
         email=organization.email,
         website=organization.website,
+        accessibility_status=organization.accessibility_status,
+        accessibility_description=organization.accessibility_description,
         activity_directions=[
             build_org_profile_offering_item(item)
             for item in (activity_directions or [])

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -137,6 +138,14 @@ class OrgEnrollmentBulkCreateResult(BaseModel):
     skipped: list[OrgEnrollmentBulkSkippedItem] = Field(default_factory=list)
 
 
+OrgAccessibilityStatus = Literal[
+    "not_specified",
+    "full",
+    "partial",
+    "none",
+]
+
+
 class OrgProfileOfferingItem(BaseModel):
     id: str
     name: str
@@ -211,6 +220,8 @@ class OrgProfileOrganizationItem(BaseModel):
     phone: str | None = None
     email: str | None = None
     website: str | None = None
+    accessibility_status: OrgAccessibilityStatus = "not_specified"
+    accessibility_description: str | None = None
     activity_directions: list[OrgProfileOfferingItem] = Field(
         default_factory=list
     )
@@ -242,6 +253,10 @@ class OrgProfileUpdate(BaseModel):
     phone: str | None = Field(default=None)
     email: str | None = Field(default=None)
     website: str | None = Field(default=None)
+    accessibility_status: OrgAccessibilityStatus = Field(
+        default="not_specified"
+    )
+    accessibility_description: str | None = Field(default=None)
 
 
 class OrgProfile(BaseModel):

@@ -13,6 +13,16 @@ from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 class Organization(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "organizations"
 
+    __table_args__ = (
+        CheckConstraint(
+            (
+                "accessibility_status IN "
+                "('not_specified', 'full', 'partial', 'none')"
+            ),
+            name="ck_organizations_accessibility_status",
+        ),
+    )
+
     inn: Mapped[str] = mapped_column(String(12), unique=True, index=True, nullable=False)
     kpp: Mapped[str | None] = mapped_column(String(9), nullable=True)
     ogrn: Mapped[str | None] = mapped_column(String(15), nullable=True)
@@ -23,6 +33,15 @@ class Organization(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     phone: Mapped[str | None] = mapped_column(String(128), nullable=True)
     email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     website: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    accessibility_status: Mapped[str] = mapped_column(
+        String(32),
+        default="not_specified",
+        nullable=False,
+    )
+    accessibility_description: Mapped[str | None] = mapped_column(
+        String(4096),
+        nullable=True,
+    )
     document_issuer_name: Mapped[str | None] = mapped_column(String(512), nullable=True)
     document_signer_position: Mapped[str | None] = mapped_column(String(255), nullable=True)
     document_signer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)

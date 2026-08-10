@@ -7438,6 +7438,11 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
             "phone": "  +7 (347) 000-00-00  ",
             "email": "  profile@example.com  ",
             "website": "  https://example.com/profile  ",
+            "accessibility_status": "partial",
+            "accessibility_description": (
+                "  Вход оборудован пандусом. "
+                "Доступного санузла нет.  "
+            ),
         },
         token=org_rep_token,
     )
@@ -7452,6 +7457,10 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     assert updated["phone"] == "+7 (347) 000-00-00"
     assert updated["email"] == "profile@example.com"
     assert updated["website"] == "https://example.com/profile"
+    assert updated["accessibility_status"] == "partial"
+    assert updated["accessibility_description"] == (
+        "Вход оборудован пандусом. Доступного санузла нет."
+    )
 
     status, profile = request_json(
         "GET",
@@ -7467,11 +7476,15 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     assert profile["organizations"][0]["phone"] == "+7 (347) 000-00-00"
     assert profile["organizations"][0]["email"] == "profile@example.com"
     assert profile["organizations"][0]["website"] == "https://example.com/profile"
+    assert profile["organizations"][0]["accessibility_status"] == "partial"
+    assert profile["organizations"][0]["accessibility_description"] == (
+        "Вход оборудован пандусом. Доступного санузла нет."
+    )
 
     status, foreign_update = request_json(
         "PATCH",
         f"/api/v1/org/profile/{second_organization_id}",
-        {"actual_address": "Forbidden foreign update"},
+        {"accessibility_status": "full"},
         token=org_rep_token,
     )
     assert status == 404
@@ -7495,6 +7508,24 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     assert status == 422
     assert isinstance(too_long_website, dict)
 
+    status, invalid_accessibility_status = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{first_organization_id}",
+        {"accessibility_status": "unknown"},
+        token=org_rep_token,
+    )
+    assert status == 422
+    assert isinstance(invalid_accessibility_status, dict)
+
+    status, too_long_accessibility_description = request_json(
+        "PATCH",
+        f"/api/v1/org/profile/{first_organization_id}",
+        {"accessibility_description": "x" * 4097},
+        token=org_rep_token,
+    )
+    assert status == 422
+    assert isinstance(too_long_accessibility_description, dict)
+
     status, missing_update = request_json(
         "PATCH",
         "/api/v1/org/profile/00000000-0000-0000-0000-000000000000",
@@ -7509,7 +7540,7 @@ def test_org_profile_update_is_limited_to_assigned_organization() -> None:
     status, forbidden_payload = request_json(
         "PATCH",
         f"/api/v1/org/profile/{first_organization_id}",
-        {"actual_address": "Learner forbidden update"},
+        {"accessibility_status": "full"},
         token=learner_token,
     )
     assert status == 403
