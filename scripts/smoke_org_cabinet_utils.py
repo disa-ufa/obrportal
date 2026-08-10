@@ -58,6 +58,8 @@ assertDeepEqual(
     phone: "+7 (347) 000-00-00",
     email: "profile@example.test",
     website: "https://example.test",
+    accessibility_status: "partial",
+    accessibility_description: "Вход оборудован пандусом",
   }),
   {
     kpp: "027801001",
@@ -68,6 +70,8 @@ assertDeepEqual(
     phone: "+7 (347) 000-00-00",
     email: "profile@example.test",
     website: "https://example.test",
+    accessibility_status: "partial",
+    accessibility_description: "Вход оборудован пандусом",
   },
   "buildOrganizationProfileFormData preserves all editable profile fields"
 );
@@ -83,6 +87,8 @@ assertDeepEqual(
     phone: "",
     email: "",
     website: "",
+    accessibility_status: "not_specified",
+    accessibility_description: "",
   },
   "buildOrganizationProfileFormData creates a safe empty form"
 );
@@ -214,11 +220,46 @@ assertEqual(
 
 assertDeepEqual(
   buildOrganizationOptions(
-    [{ organization: { id: orgId, name: "Школа №1", inn: "0270000000" } }, { broken: true }],
+    [
+      {
+        organization: {
+          id: orgId,
+          name: "Школа №1",
+          inn: "0270000000",
+          description: "Описание профиля",
+          phone: "+7 (347) 000-00-00",
+          email: "school@example.test",
+          website: "https://school.example.test",
+          accessibility_status: "partial",
+          accessibility_description: "Вход оборудован пандусом",
+          activity_directions: [{ id: "direction-1", name: "Образование" }],
+          services: [{ id: "service-1", name: "Консультация" }],
+          specialists: [{ id: "specialist-1", name: "Психолог", count: 2 }],
+          recipient_categories: [{ id: "recipient-1", name: "Дети" }],
+        },
+      },
+      { broken: true },
+    ],
     []
   ),
-  [{ id: orgId, label: "Школа №1", inn: "0270000000" }],
-  "buildOrganizationOptions filters broken organization options"
+  [
+    {
+      id: orgId,
+      label: "Школа №1",
+      inn: "0270000000",
+      description: "Описание профиля",
+      phone: "+7 (347) 000-00-00",
+      email: "school@example.test",
+      website: "https://school.example.test",
+      accessibility_status: "partial",
+      accessibility_description: "Вход оборудован пандусом",
+      activity_directions: [{ id: "direction-1", name: "Образование" }],
+      services: [{ id: "service-1", name: "Консультация" }],
+      specialists: [{ id: "specialist-1", name: "Психолог", count: 2 }],
+      recipient_categories: [{ id: "recipient-1", name: "Дети" }],
+    },
+  ],
+  "buildOrganizationOptions preserves organization profile fields"
 );
 
 assertDeepEqual(

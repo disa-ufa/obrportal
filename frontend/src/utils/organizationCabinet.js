@@ -98,6 +98,16 @@ export function buildOrganizationOptions(profileOrganizations = [], groups = [])
         ogrn: organization.ogrn,
         legal_address: organization.legal_address,
         actual_address: organization.actual_address,
+        description: organization.description,
+        phone: organization.phone,
+        email: organization.email,
+        website: organization.website,
+        accessibility_status: organization.accessibility_status,
+        accessibility_description: organization.accessibility_description,
+        activity_directions: organization.activity_directions,
+        services: organization.services,
+        specialists: organization.specialists,
+        recipient_categories: organization.recipient_categories,
       }));
   }
 
@@ -374,6 +384,8 @@ export function buildOrganizationProfileFormData(organization) {
     phone: item.phone || "",
     email: item.email || "",
     website: item.website || "",
+    accessibility_status: item.accessibility_status || "not_specified",
+    accessibility_description: item.accessibility_description || "",
   };
 }
 

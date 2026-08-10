@@ -16,6 +16,22 @@ import {
 } from "../../utils/organizationCabinet";
 
 
+const ORGANIZATION_ACCESSIBILITY_STATUS_OPTIONS = [
+  { value: "not_specified", label: "Не указано" },
+  { value: "full", label: "Полностью доступна" },
+  { value: "partial", label: "Частично доступна" },
+  { value: "none", label: "Не доступна" },
+];
+
+function formatOrganizationAccessibilityStatus(value) {
+  return (
+    ORGANIZATION_ACCESSIBILITY_STATUS_OPTIONS.find(
+      (option) => option.value === value
+    )?.label || "Не указано"
+  );
+}
+
+
 export function OrganizationProfileCard({
   organization,
   onSave,
@@ -141,6 +157,54 @@ export function OrganizationProfileCard({
             />
           </label>
 
+          <div
+            data-testid="organization-profile-accessibility-editor"
+            className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="text-sm font-bold text-slate-950">
+              Доступность среды
+            </div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Укажите общую доступность объекта и кратко опишите условия
+              для маломобильных посетителей.
+            </p>
+
+            <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+              <label className="block">
+                <span className="text-xs font-semibold text-slate-500">
+                  Статус доступности
+                </span>
+                <select
+                  name="accessibility_status"
+                  value={formData.accessibility_status}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
+                >
+                  {ORGANIZATION_ACCESSIBILITY_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-semibold text-slate-500">
+                  Описание доступности
+                </span>
+                <textarea
+                  name="accessibility_description"
+                  value={formData.accessibility_description}
+                  onChange={handleChange}
+                  maxLength={4096}
+                  rows={4}
+                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-50"
+                  placeholder="Например: вход оборудован пандусом, доступен лифт и адаптированный санузел"
+                />
+              </label>
+            </div>
+          </div>
+
           <label className="block">
             <span className="text-xs font-semibold text-slate-500">
               Описание организации
@@ -261,6 +325,21 @@ export function OrganizationProfileCard({
         <div className="text-xs text-slate-500">Описание организации</div>
         <div className="mt-1 whitespace-pre-wrap leading-6 text-slate-900">
           {formatOptional(organization.description)}
+        </div>
+      </div>
+
+      <div
+        data-testid="organization-profile-accessibility"
+        className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm ring-1 ring-slate-100"
+      >
+        <div className="text-xs text-slate-500">Доступность среды</div>
+        <div className="mt-1 font-semibold text-slate-950">
+          {formatOrganizationAccessibilityStatus(
+            organization.accessibility_status
+          )}
+        </div>
+        <div className="mt-2 whitespace-pre-wrap leading-6 text-slate-700">
+          {formatOptional(organization.accessibility_description)}
         </div>
       </div>
 
