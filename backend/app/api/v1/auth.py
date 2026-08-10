@@ -37,6 +37,7 @@ from app.services.public_registration_rate_limit import (
     PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL,
     consume_public_registration_rate_limit,
     consume_public_registration_resend_rate_limit,
+    consume_password_setup_rate_limit,
     resolve_public_registration_client_identifier,
     consume_password_recovery_rate_limit,
 )
@@ -889,6 +890,7 @@ async def set_password(
     payload: SetPasswordRequest,
     request: Request,
     session: AsyncSession = Depends(get_db),
+    redis_client: Redis = Depends(get_redis_client),
 ) -> SetPasswordResponse:
     token_record = await get_valid_user_password_token(
         session,
@@ -897,12 +899,71 @@ async def set_password(
     )
 
     if token_record is None:
+        client_identifier = (
+            resolve_public_registration_client_identifier(
+                peer_host=_request_ip(request),
+                forwarded_for=request.headers.get(
+                    "x-forwarded-for"
+                ),
+            )
+        )
+
+        try:
+            decision = await consume_password_setup_rate_limit(
+                redis_client,
+                scope=PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT,
+                identifier=client_identifier,
+                limit=(
+                    settings
+                    .password_setup_rate_limit_client_max_attempts
+                ),
+                window_seconds=(
+                    settings
+                    .password_setup_rate_limit_window_seconds
+                ),
+                secret_key=settings.secret_key,
+            )
+        except (RedisError, RuntimeError) as error:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    "Password setup is temporarily unavailable."
+                ),
+            ) from error
+
+        if not decision.allowed:
+            await write_audit_event(
+                session,
+                action="public_registration.rate_limited",
+                request=request,
+                entity_type="user_password_token",
+                payload={
+                    "flow": "password_setup",
+                    "scope": (
+                        PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT
+                    ),
+                    "retry_after_seconds": (
+                        decision.retry_after_seconds
+                    ),
+                },
+            )
+            await session.commit()
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Invalid or expired password setup token"
+                ),
+            )
+
         await write_audit_event(
             session,
             action="password_setup_failed",
             request=request,
             entity_type="user_password_token",
-            payload={"reason": "invalid_or_expired_token"},
+            payload={
+                "reason": "invalid_or_expired_token"
+            },
         )
         await session.commit()
 
@@ -948,6 +1009,41 @@ async def set_password(
             "purpose": token_record.purpose,
         },
     )
+
+    registration_origin_result = await session.execute(
+        select(AuditEvent.id)
+        .where(
+            AuditEvent.entity_type
+            == "user_password_token",
+            AuditEvent.entity_id == token_record.id,
+            AuditEvent.action.in_(
+                (
+                    "public_registration.email_sent",
+                    "public_registration.email_failed",
+                )
+            ),
+        )
+        .limit(1)
+    )
+    registration_origin_event_id = (
+        registration_origin_result.scalar_one_or_none()
+    )
+
+    if registration_origin_event_id is not None:
+        await write_audit_event(
+            session,
+            action="public_registration.completed",
+            request=request,
+            actor_user_id=user.id,
+            entity_type="user",
+            entity_id=user.id,
+            payload={
+                "email": user.email,
+                "purpose": token_record.purpose,
+                "setup_token_id": token_record.id,
+            },
+        )
+
     await session.commit()
 
     return SetPasswordResponse(

@@ -98,6 +98,22 @@ class Settings(BaseSettings):
             "OBRPORTAL_PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
         ),
     )
+    password_setup_rate_limit_window_seconds: int = Field(
+        default=900,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PASSWORD_SETUP_RATE_LIMIT_WINDOW_SECONDS",
+            "OBRPORTAL_PASSWORD_SETUP_RATE_LIMIT_WINDOW_SECONDS",
+        ),
+    )
+    password_setup_rate_limit_client_max_attempts: int = Field(
+        default=20,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PASSWORD_SETUP_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+            "OBRPORTAL_PASSWORD_SETUP_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+        ),
+    )
     password_recovery_rate_limit_window_seconds: int = Field(
         default=900,
         validation_alias=AliasChoices(
