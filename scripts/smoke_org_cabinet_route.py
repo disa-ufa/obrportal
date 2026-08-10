@@ -953,6 +953,33 @@ def main() -> None:
         ],
     )
 
+
+    require_contains(
+        "frontend/src/components/layout/GuestAuthActions.jsx",
+        [
+            "export function GuestAuthActions({",
+            'data-testid="public-header-register-button"',
+            'data-testid="public-header-login-button"',
+            'onClick={() => onPageChange("register")}',
+            'onClick={() => onPageChange("login")}',
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/layout/AuthenticatedUserMenu.jsx",
+        [
+            "export function AuthenticatedUserMenu({",
+            'userHasRole(user, "org_rep")',
+            'userHasRole(user, "ministry_admin")',
+            'page: "organization"',
+            'page: "ministry"',
+            'data-testid="authenticated-user-menu"',
+            '"Кабинет организации"',
+            '"Кабинет ведомства"',
+            "Выйти",
+        ],
+    )
+
     fetch_frontend_route("/organization")
     fetch_frontend_route("/ministry")
 

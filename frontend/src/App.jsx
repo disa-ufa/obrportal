@@ -401,6 +401,7 @@ export default function App() {
       initializingAuth={initializingAuth}
       currentPage={currentPublicPage}
       onPageChange={handleNavigatePublicPage}
+      onLogout={handleLogout}
       publicRegistrationEnabled={publicRegistrationEnabled}
     >
       <PublicRoutes

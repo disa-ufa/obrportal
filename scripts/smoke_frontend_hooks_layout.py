@@ -509,7 +509,10 @@ def main() -> None:
             "isAdmin,",
             "currentPage,",
             "onPageChange,",
+            "onLogout,",
             "children,",
+            "AuthenticatedUserMenu",
+            "GuestAuthActions",
             "const isOrgRepresentative = userHasRole(user, \"org_rep\");",
             "onClick={() => onPageChange(\"home\")}",
             "PUBLIC_NAV_ITEMS.map((item) => (",
@@ -637,10 +640,57 @@ def main() -> None:
             "<PublicShell",
             "currentPage={currentPublicPage}",
             "onPageChange={handleNavigatePublicPage}",
+            "onLogout={handleLogout}",
             "<PublicRoutes",
             "handleRegister={handleRegister}",
             "handleNavigatePublicPage={handleNavigatePublicPage}",
             "handleOpenPublicCourse={handleOpenPublicCourse}",
+        ],
+    )
+
+
+    require_contains(
+        "frontend/src/components/layout/GuestAuthActions.jsx",
+        [
+            "export function GuestAuthActions({",
+            "publicRegistrationEnabled,",
+            "onPageChange,",
+            'data-testid="public-header-register-button"',
+            'onClick={() => onPageChange("register")}',
+            'data-testid="public-header-login-button"',
+            'onClick={() => onPageChange("login")}',
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/layout/AuthenticatedUserMenu.jsx",
+        [
+            "export function AuthenticatedUserMenu({",
+            "user,",
+            "isAdmin,",
+            "onPageChange,",
+            "onLogout,",
+            'userHasRole(user, "admin")',
+            'userHasRole(user, "org_rep")',
+            'userHasRole(user, "ministry_admin")',
+            '"Администратор ведомства"',
+            '"Представитель организации"',
+            '"Слушатель"',
+            'page: "dashboard"',
+            'page: "organization"',
+            'page: "ministry"',
+            'page: "account"',
+            'data-testid="public-header-cabinet-button"',
+            'data-testid="authenticated-user-menu"',
+            'aria-haspopup="menu"',
+            'aria-expanded={open}',
+            "document.addEventListener",
+            '"pointerdown"',
+            '"keydown"',
+            'event.key === "Escape"',
+            "Публичная часть портала",
+            "Выйти",
+            "onLogout();",
         ],
     )
 

@@ -1,5 +1,7 @@
-import { BookOpen, LogIn, Mail, Send, UserPlus, UserRound } from "lucide-react";
+import { BookOpen, Mail, Send } from "lucide-react";
 import { userHasRole } from "../../utils/adminState";
+import { AuthenticatedUserMenu } from "./AuthenticatedUserMenu";
+import { GuestAuthActions } from "./GuestAuthActions";
 
 const PUBLIC_NAV_ITEMS = [
   { key: "home", label: "Главная" },
@@ -198,11 +200,10 @@ export function PublicShell({
   initializingAuth,
   currentPage,
   onPageChange,
+  onLogout,
   publicRegistrationEnabled,
   children,
 }) {
-  const isOrgRepresentative = userHasRole(user, "org_rep");
-  const isMinistryAdmin = userHasRole(user, "ministry_admin");
   const publicShellNavigationStats = getPublicShellNavigationStats({
     user,
     isAdmin,
@@ -212,14 +213,6 @@ export function PublicShell({
   const publicShellNavigationDiagnostics = getPublicShellNavigationDiagnostics(
     publicShellNavigationStats
   );
-
-  const cabinetTarget = isAdmin
-    ? { page: "dashboard", label: "Панель администратора" }
-    : isOrgRepresentative
-      ? { page: "organization", label: "Кабинет организации" }
-      : isMinistryAdmin
-        ? { page: "ministry", label: "Кабинет ведомства" }
-        : { page: "account", label: "Личный кабинет" };
 
   return (
     <main className="min-h-screen bg-[#f7faff] text-[#111936]">
@@ -259,42 +252,17 @@ export function PublicShell({
                 />
               </div>
             ) : user ? (
-              <button
-                data-testid="public-header-cabinet-button"
-                type="button"
-                aria-label={cabinetTarget.label}
-                onClick={() => onPageChange(cabinetTarget.page)}
-                className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-blue-700 px-3 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.22)] transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 sm:px-4"
-              >
-                <UserRound className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden sm:inline">{cabinetTarget.label}</span>
-              </button>
+              <AuthenticatedUserMenu
+                user={user}
+                isAdmin={isAdmin}
+                onPageChange={onPageChange}
+                onLogout={onLogout}
+              />
             ) : (
-              <>
-                {publicRegistrationEnabled && (
-                  <button
-                    data-testid="public-header-register-button"
-                    type="button"
-                    aria-label="Регистрация"
-                    onClick={() => onPageChange("register")}
-                    className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-[#172143] transition hover:border-blue-200 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 sm:px-4"
-                  >
-                    <UserPlus className="h-4 w-4" aria-hidden="true" />
-                    <span className="hidden sm:inline">Регистрация</span>
-                  </button>
-                )}
-
-                <button
-                  data-testid="public-header-login-button"
-                  type="button"
-                  aria-label="Войти"
-                  onClick={() => onPageChange("login")}
-                  className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-blue-700 px-3 text-sm font-bold text-white shadow-[0_10px_20px_rgba(15,91,232,0.22)] transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 sm:px-4"
-                >
-                  <LogIn className="h-4 w-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">Войти</span>
-                </button>
-              </>
+              <GuestAuthActions
+                publicRegistrationEnabled={publicRegistrationEnabled}
+                onPageChange={onPageChange}
+              />
             )}
           </div>
         </div>
