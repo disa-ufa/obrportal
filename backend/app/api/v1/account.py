@@ -20,6 +20,7 @@ from app.models.enrollment import Enrollment
 from app.models.learning_group import LearningGroup
 from app.models.lesson_progress import LessonProgress
 from app.models.lesson_block import LessonBlock
+from app.models.learner_profile import LearnerProfile
 from app.models.organization import Organization
 from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
@@ -38,6 +39,8 @@ from app.schemas.account import (
     AccountCourseLessonResponse,
     AccountCourseModuleResponse,
     AccountLessonBlockResponse,
+    AccountLearnerProfileResponse,
+    AccountLearnerProfileUpdateRequest,
     AccountQuizAttemptResponse,
     AccountQuizAttemptSubmitRequest,
     AccountCoursesResponse,
@@ -73,6 +76,182 @@ def account_document_completion_visibility_condition():
     return or_(
         DocumentRecord.enrollment_id.is_(None),
         (Enrollment.status == "completed") & Enrollment.completed_at.is_not(None),
+    )
+
+
+ACCOUNT_LEARNER_PROFILE_TEXT_FIELDS = {
+    "last_name",
+    "first_name",
+    "middle_name",
+    "snils",
+    "phone",
+    "email",
+    "identity_document_type",
+    "identity_document_series",
+    "identity_document_number",
+    "identity_document_issued_by",
+    "identity_document_department_code",
+}
+
+
+def normalize_account_learner_profile_text(value: str | None) -> str | None:
+    normalized = " ".join(str(value or "").split())
+    return normalized or None
+
+
+def build_account_learner_profile_response(
+    current_user: User,
+    profile: LearnerProfile | None,
+) -> AccountLearnerProfileResponse:
+    return AccountLearnerProfileResponse(
+        id=str(profile.id) if profile is not None else None,
+        user_id=str(current_user.id),
+        last_name=profile.last_name if profile is not None else None,
+        first_name=profile.first_name if profile is not None else None,
+        middle_name=profile.middle_name if profile is not None else None,
+        birth_date=profile.birth_date if profile is not None else None,
+        snils=profile.snils if profile is not None else None,
+        phone=profile.phone if profile is not None else None,
+        email=profile.email if profile is not None else None,
+        identity_document_type=(
+            profile.identity_document_type
+            if profile is not None
+            else None
+        ),
+        identity_document_series=(
+            profile.identity_document_series
+            if profile is not None
+            else None
+        ),
+        identity_document_number=(
+            profile.identity_document_number
+            if profile is not None
+            else None
+        ),
+        identity_document_issued_by=(
+            profile.identity_document_issued_by
+            if profile is not None
+            else None
+        ),
+        identity_document_issued_at=(
+            profile.identity_document_issued_at
+            if profile is not None
+            else None
+        ),
+        identity_document_department_code=(
+            profile.identity_document_department_code
+            if profile is not None
+            else None
+        ),
+        identity_document_status=(
+            profile.identity_document_status
+            if profile is not None
+            else "not_provided"
+        ),
+        education_document_status=(
+            profile.education_document_status
+            if profile is not None
+            else "not_provided"
+        ),
+        personal_data_basis=(
+            profile.personal_data_basis
+            if profile is not None
+            else None
+        ),
+        personal_data_consent_at=(
+            profile.personal_data_consent_at
+            if profile is not None
+            else None
+        ),
+        source=profile.source if profile is not None else None,
+        updated_at=profile.updated_at if profile is not None else None,
+    )
+
+
+async def load_account_learner_profile(
+    session: AsyncSession,
+    *,
+    user_id: str,
+) -> LearnerProfile | None:
+    result = await session.execute(
+        select(LearnerProfile).where(
+            LearnerProfile.user_id == user_id
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+@router.get(
+    "/profile",
+    response_model=AccountLearnerProfileResponse,
+)
+async def get_account_learner_profile(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountLearnerProfileResponse:
+    profile = await load_account_learner_profile(
+        session,
+        user_id=str(current_user.id),
+    )
+    return build_account_learner_profile_response(
+        current_user,
+        profile,
+    )
+
+
+@router.patch(
+    "/profile",
+    response_model=AccountLearnerProfileResponse,
+)
+async def update_account_learner_profile(
+    payload: AccountLearnerProfileUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountLearnerProfileResponse:
+    profile = await load_account_learner_profile(
+        session,
+        user_id=str(current_user.id),
+    )
+    update_data = payload.model_dump(exclude_unset=True)
+
+    if not update_data:
+        return build_account_learner_profile_response(
+            current_user,
+            profile,
+        )
+
+    if profile is None:
+        profile = LearnerProfile(
+            user_id=str(current_user.id),
+            source="self_service",
+        )
+        session.add(profile)
+
+    for field_name, value in update_data.items():
+        if field_name in ACCOUNT_LEARNER_PROFILE_TEXT_FIELDS:
+            value = normalize_account_learner_profile_text(value)
+        setattr(profile, field_name, value)
+
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+
+        if "snils" in update_data:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "Learner profile with this SNILS already exists"
+                ),
+            ) from exc
+
+        raise
+
+    await session.refresh(profile)
+
+    return build_account_learner_profile_response(
+        current_user,
+        profile,
     )
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -14,6 +14,49 @@ class AccountSummaryResponse(BaseModel):
     enrollments_count: int
     active_courses_count: int
     documents_count: int
+
+
+class AccountLearnerProfileResponse(BaseModel):
+    id: str | None = None
+    user_id: str
+    last_name: str | None = None
+    first_name: str | None = None
+    middle_name: str | None = None
+    birth_date: date | None = None
+    snils: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    identity_document_type: str | None = None
+    identity_document_series: str | None = None
+    identity_document_number: str | None = None
+    identity_document_issued_by: str | None = None
+    identity_document_issued_at: date | None = None
+    identity_document_department_code: str | None = None
+    identity_document_status: str = "not_provided"
+    education_document_status: str = "not_provided"
+    personal_data_basis: str | None = None
+    personal_data_consent_at: datetime | None = None
+    source: str | None = None
+    updated_at: datetime | None = None
+
+
+class AccountLearnerProfileUpdateRequest(BaseModel):
+    last_name: str | None = Field(default=None, max_length=128)
+    first_name: str | None = Field(default=None, max_length=128)
+    middle_name: str | None = Field(default=None, max_length=128)
+    birth_date: date | None = None
+    snils: str | None = Field(default=None, max_length=32)
+    phone: str | None = Field(default=None, max_length=32)
+    email: str | None = Field(default=None, max_length=320)
+    identity_document_type: str | None = Field(default=None, max_length=64)
+    identity_document_series: str | None = Field(default=None, max_length=32)
+    identity_document_number: str | None = Field(default=None, max_length=64)
+    identity_document_issued_by: str | None = None
+    identity_document_issued_at: date | None = None
+    identity_document_department_code: str | None = Field(
+        default=None,
+        max_length=32,
+    )
 
 
 class AccountCourseItemResponse(BaseModel):
