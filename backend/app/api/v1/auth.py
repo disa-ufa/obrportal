@@ -292,17 +292,26 @@ async def register(
         )
 
         if not email_rate_limit.allowed:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=(
-                    "Too many registration attempts. "
-                    "Please try again later."
-                ),
-                headers={
-                    "Retry-After": str(
+            await write_audit_event(
+                session,
+                action="public_registration.rate_limited",
+                request=request,
+                entity_type="user",
+                payload={
+                    "flow": "registration",
+                    "scope": (
+                        PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL
+                    ),
+                    "retry_after_seconds": (
                         email_rate_limit.retry_after_seconds
-                    )
+                    ),
                 },
+            )
+            await session.commit()
+
+            return PublicRegistrationAcceptedResponse(
+                status=PUBLIC_REGISTRATION_ACCEPTED_STATUS,
+                message=PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
             )
 
         client_rate_limit = (
@@ -325,17 +334,26 @@ async def register(
         )
 
         if not client_rate_limit.allowed:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=(
-                    "Too many registration attempts. "
-                    "Please try again later."
-                ),
-                headers={
-                    "Retry-After": str(
+            await write_audit_event(
+                session,
+                action="public_registration.rate_limited",
+                request=request,
+                entity_type="user",
+                payload={
+                    "flow": "registration",
+                    "scope": (
+                        PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT
+                    ),
+                    "retry_after_seconds": (
                         client_rate_limit.retry_after_seconds
-                    )
+                    ),
                 },
+            )
+            await session.commit()
+
+            return PublicRegistrationAcceptedResponse(
+                status=PUBLIC_REGISTRATION_ACCEPTED_STATUS,
+                message=PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
             )
     except HTTPException:
         raise
