@@ -52,12 +52,19 @@ def main() -> None:
             "function buildApiUrl(path)",
             'throw new Error(`API path must start with "/": ${path}`);',
             "return API_BASE_URL ? `${API_BASE_URL}${path}` : path;",
+            'const ACCESS_TOKEN_STORAGE_KEY = "obrportal_access_token";',
             'export function getStoredToken()',
-            'return localStorage.getItem("obrportal_access_token");',
-            'export function storeToken(token)',
-            'localStorage.setItem("obrportal_access_token", token);',
+            'sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)',
+            'localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)',
+            'export function storeToken(token, { persist = false } = {})',
+            'if (persist)',
+            'localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);',
+            'sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);',
+            'sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);',
+            'localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);',
             'export function clearToken()',
-            'localStorage.removeItem("obrportal_access_token");',
+            'sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);',
+            'localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);',
         ],
     )
 
@@ -89,7 +96,8 @@ def main() -> None:
     require_contains(
         relative_path,
         [
-            "export async function login(email, password)",
+            "export async function login(",
+            "{ persist = false } = {}",
             'return request("/api/v1/auth/register",',
             "export async function registerUser(payload)",
             "export async function getCurrentUser()",
@@ -100,7 +108,7 @@ def main() -> None:
             'return request("/health");',
             "export async function getReady()",
             'return request("/api/v1/ready");',
-            "storeToken(data.access_token);",
+            "storeToken(data.access_token, { persist });",
         ],
     )
 

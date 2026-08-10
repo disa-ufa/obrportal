@@ -8,7 +8,18 @@ def test_public_registration_flag_defaults_disabled() -> None:
     assert field.default is False
 
 
-def test_public_registration_flag_accepts_primary_alias() -> None:
+def test_public_registration_flag_accepts_primary_alias(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(
+        "PUBLIC_REGISTRATION_ENABLED",
+        raising=False,
+    )
+    monkeypatch.delenv(
+        "OBRPORTAL_PUBLIC_REGISTRATION_ENABLED",
+        raising=False,
+    )
+
     configured = Settings(
         _env_file=None,
         PUBLIC_REGISTRATION_ENABLED=True,
@@ -17,7 +28,18 @@ def test_public_registration_flag_accepts_primary_alias() -> None:
     assert configured.public_registration_enabled is True
 
 
-def test_public_registration_flag_accepts_prefixed_alias() -> None:
+def test_public_registration_flag_accepts_prefixed_alias(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(
+        "PUBLIC_REGISTRATION_ENABLED",
+        raising=False,
+    )
+    monkeypatch.delenv(
+        "OBRPORTAL_PUBLIC_REGISTRATION_ENABLED",
+        raising=False,
+    )
+
     configured = Settings(
         _env_file=None,
         OBRPORTAL_PUBLIC_REGISTRATION_ENABLED=True,
