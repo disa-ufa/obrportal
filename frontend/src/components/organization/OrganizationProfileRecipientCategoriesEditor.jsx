@@ -22,7 +22,11 @@ function validateRecipientCategories(items) {
   return "";
 }
 
-export function OrganizationProfileRecipientCategoriesEditor({ organization, onSave }) {
+export function OrganizationProfileRecipientCategoriesEditor({
+  organization,
+  onSave,
+  readOnly = false,
+}) {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState(() =>
     buildOrganizationProfileRecipientCategoriesFormData(organization)
@@ -118,18 +122,20 @@ export function OrganizationProfileRecipientCategoriesEditor({ organization, onS
             Укажите группы получателей услуг. Не добавляйте персональные данные конкретных получателей.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditing((current) => !current);
-            setFormData(buildOrganizationProfileRecipientCategoriesFormData(organization));
-            setError("");
-            setMessage("");
-          }}
-          className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
-        >
-          {editing ? "Отменить" : "Редактировать категории"}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditing((current) => !current);
+              setFormData(buildOrganizationProfileRecipientCategoriesFormData(organization));
+              setError("");
+              setMessage("");
+            }}
+            className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
+          >
+            {editing ? "Отменить" : "Редактировать категории"}
+          </button>
+        )}
       </div>
 
       {error && (

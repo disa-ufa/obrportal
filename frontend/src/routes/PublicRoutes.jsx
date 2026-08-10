@@ -23,6 +23,7 @@ const NotFoundPage = lazyNamed(() => import("../pages/NotFoundPage"), "NotFoundP
 const OfferPage = lazyNamed(() => import("../pages/OfferPage"), "OfferPage");
 const OrganizationInfoPage = lazyNamed(() => import("../pages/OrganizationInfoPage"), "OrganizationInfoPage");
 const OrganizationCabinetPage = lazyNamed(() => import("../pages/OrganizationCabinetPage"), "OrganizationCabinetPage");
+const MinistryCabinetPage = lazyNamed(() => import("../pages/MinistryCabinetPage"), "MinistryCabinetPage");
 const PrivacyPage = lazyNamed(() => import("../pages/PrivacyPage"), "PrivacyPage");
 const RegisterPage = lazyNamed(() => import("../pages/RegisterPage"), "RegisterPage");
 const SetPasswordPage = lazyNamed(() => import("../pages/SetPasswordPage"), "SetPasswordPage");
@@ -67,11 +68,14 @@ export function PublicRoutes({
   handleOpenPublicCourse,
 }) {
   const isOrgRepresentative = userHasRole(user, "org_rep");
+  const isMinistryAdmin = userHasRole(user, "ministry_admin");
   const authenticatedEntryPath = isAdmin
     ? getAdminPathForPage("dashboard")
     : isOrgRepresentative
       ? "/organization"
-      : "/account";
+      : isMinistryAdmin
+        ? "/ministry"
+        : "/account";
 
   return (
     <Suspense fallback={<PublicRouteLoadingFallback />}>
@@ -129,6 +133,27 @@ export function PublicRoutes({
                 <OrganizationCabinetPage
                   user={user}
                   onPageChange={handleNavigatePublicPage}
+                  onLogout={handleLogout}
+                />
+              ) : (
+                <Navigate to="/account" replace />
+              )
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/ministry"
+          element={
+            user ? (
+              isAdmin ? (
+                <Navigate to={getAdminPathForPage("dashboard")} replace />
+              ) : isOrgRepresentative ? (
+                <Navigate to="/organization" replace />
+              ) : isMinistryAdmin ? (
+                <MinistryCabinetPage
+                  user={user}
                   onLogout={handleLogout}
                 />
               ) : (
@@ -237,6 +262,8 @@ export function PublicRoutes({
                 <Navigate to={getAdminPathForPage("dashboard")} replace />
               ) : isOrgRepresentative ? (
                 <Navigate to="/organization" replace />
+              ) : isMinistryAdmin ? (
+                <Navigate to="/ministry" replace />
               ) : (
                 <AccountPage
                   user={user}

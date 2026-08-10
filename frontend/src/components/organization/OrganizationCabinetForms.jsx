@@ -38,6 +38,7 @@ export function OrganizationProfileCard({
   onSaveOfferings,
   onSaveSpecialists,
   onSaveRecipientCategories,
+  readOnly = false,
 }) {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState(() => buildOrganizationProfileFormData(organization));
@@ -88,13 +89,15 @@ export function OrganizationProfileCard({
           <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
             Доступ по роли
           </span>
-          <button
-            type="button"
-            onClick={() => setEditing((current) => !current)}
-            className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white transition hover:bg-slate-700"
-          >
-            {editing ? "Отменить" : "Редактировать"}
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => setEditing((current) => !current)}
+              className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white transition hover:bg-slate-700"
+            >
+              {editing ? "Отменить" : "Редактировать"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -388,17 +391,29 @@ export function OrganizationProfileCard({
       <OrganizationProfileOfferingsEditor
         organization={organization}
         onSave={onSaveOfferings}
+        readOnly={readOnly}
       />
 
       <OrganizationProfileSpecialistsEditor
         organization={organization}
         onSave={onSaveSpecialists}
+        readOnly={readOnly}
       />
 
       <OrganizationProfileRecipientCategoriesEditor
         organization={organization}
         onSave={onSaveRecipientCategories}
+        readOnly={readOnly}
       />
+
+      {readOnly && (
+        <div
+          data-testid="organization-profile-read-only"
+          className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm text-blue-900 ring-1 ring-blue-100"
+        >
+          Профиль доступен только для просмотра.
+        </div>
+      )}
     </div>
   );
 }

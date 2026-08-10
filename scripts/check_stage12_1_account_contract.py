@@ -92,8 +92,11 @@ REQUIRED_MARKERS = {
         "Bearer",
     ],
     "frontend_auth_flow": [
-        'return userHasRole(user, "org_rep") ? "organization" : "account";',
-        'return userHasRole(user, "org_rep") ? "/organization" : "/account";',
+        'if (userHasRole(user, "org_rep"))',
+        'return "organization";',
+        'userHasRole(user, "ministry_admin") ? "ministry" : "account"',
+        'return "/organization";',
+        'userHasRole(user, "ministry_admin") ? "/ministry" : "/account"',
         "completePendingEnrollmentIfNeeded",
         "navigate(getPostAuthPublicPath(currentUser), { replace: true })",
     ],

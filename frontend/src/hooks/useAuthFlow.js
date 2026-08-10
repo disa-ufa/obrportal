@@ -13,11 +13,19 @@ import {
 import { EMPTY_ADMIN_DATA, userHasRole } from "../utils/adminState";
 
 function getPostAuthPublicPage(user) {
-  return userHasRole(user, "org_rep") ? "organization" : "account";
+  if (userHasRole(user, "org_rep")) {
+    return "organization";
+  }
+
+  return userHasRole(user, "ministry_admin") ? "ministry" : "account";
 }
 
 function getPostAuthPublicPath(user) {
-  return userHasRole(user, "org_rep") ? "/organization" : "/account";
+  if (userHasRole(user, "org_rep")) {
+    return "/organization";
+  }
+
+  return userHasRole(user, "ministry_admin") ? "/ministry" : "/account";
 }
 
 export function useAuthFlow({

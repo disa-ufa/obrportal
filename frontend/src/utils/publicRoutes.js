@@ -5,6 +5,7 @@ export const PUBLIC_ROUTE_MAP = {
   catalog: "/catalog",
   "organization-info": "/organization-info",
   organization: "/organization",
+  ministry: "/ministry",
   "verify-document": "/verify-document",
   contacts: "/contacts",
   faq: "/faq",
@@ -22,6 +23,7 @@ export function getPublicPageFromPathname(pathname) {
   if (pathname.startsWith("/courses/")) return "course-detail";
   if (pathname === "/organization-info") return "organization-info";
   if (pathname === "/organization") return "organization";
+  if (pathname === "/ministry") return "ministry";
   if (pathname === "/verify-document") return "verify-document";
   if (pathname.startsWith("/verify/")) return "verify-document";
   if (pathname === "/contacts") return "contacts";
@@ -106,6 +108,14 @@ export function buildPublicMeta(pathname) {
     };
   }
 
+  if (pathname === "/ministry") {
+    return {
+      title: "Кабинет ведомства — ObrPortal",
+      description:
+        "Кабинет администратора ведомства для просмотра профилей закреплённых подведомственных организаций.",
+    };
+  }
+
   if (pathname === "/contacts") {
     return {
       title: "Контакты — ObrPortal",
@@ -183,6 +193,7 @@ export const PUBLIC_ROUTE_META_DIAGNOSTIC_CASES = [
   { pathname: "/courses/__missing_routes_meta_course__", expectedPage: "course-detail", expectedTitle: "Карточка курса — ObrPortal" },
   { pathname: "/organization-info", expectedPage: "organization-info", expectedTitle: "Сведения об образовательной организации — ObrPortal" },
   { pathname: "/organization", expectedPage: "organization", expectedTitle: "Кабинет организации - ObrPortal" },
+  { pathname: "/ministry", expectedPage: "ministry", expectedTitle: "Кабинет ведомства — ObrPortal" },
   { pathname: "/verify-document", expectedPage: "verify-document", expectedTitle: "Проверка документа — ObrPortal" },
   { pathname: "/verify/__missing_routes_meta_code__", expectedPage: "verify-document", expectedTitle: "Проверка документа — ObrPortal" },
   { pathname: "/contacts", expectedPage: "contacts", expectedTitle: "Контакты — ObrPortal" },

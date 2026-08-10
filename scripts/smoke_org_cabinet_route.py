@@ -124,7 +124,7 @@ def main() -> None:
             "buildLearningGroupFormData",
             "formatOptional",
             "formatApiError",
-            "Сохранить реквизиты",
+            "Сохранить профиль",
             "organization-document-profile-readiness",
             "Профиль для итогового PDF",
             "Эти реквизиты используются при подготовке итоговых документов",
@@ -826,9 +826,13 @@ def main() -> None:
         "frontend/src/routes/PublicRoutes.jsx",
         [
             "const OrganizationCabinetPage = lazyNamed(() => import(\"../pages/OrganizationCabinetPage\"), \"OrganizationCabinetPage\");",
+            "const MinistryCabinetPage = lazyNamed(() => import(\"../pages/MinistryCabinetPage\"), \"MinistryCabinetPage\");",
             'path="/organization"',
+            'path="/ministry"',
             'userHasRole(user, "org_rep")',
+            'userHasRole(user, "ministry_admin")',
             '<Navigate to="/organization" replace />',
+            '<Navigate to="/ministry" replace />',
         ],
     )
 
@@ -836,8 +840,11 @@ def main() -> None:
         "frontend/src/utils/publicRoutes.js",
         [
             'organization: "/organization"',
+            'ministry: "/ministry"',
             'if (pathname === "/organization") return "organization";',
+            'if (pathname === "/ministry") return "ministry";',
             "Кабинет организации - ObrPortal",
+            "Кабинет ведомства — ObrPortal",
         ],
     )
 
@@ -846,8 +853,11 @@ def main() -> None:
         [
             "getPostAuthPublicPage",
             "getPostAuthPublicPath",
-            'userHasRole(user, "org_rep") ? "organization" : "account"',
-            'userHasRole(user, "org_rep") ? "/organization" : "/account"',
+            'if (userHasRole(user, "org_rep"))',
+            'return "organization";',
+            'userHasRole(user, "ministry_admin") ? "ministry" : "account"',
+            'return "/organization";',
+            'userHasRole(user, "ministry_admin") ? "/ministry" : "/account"',
         ],
     )
 
@@ -855,9 +865,13 @@ def main() -> None:
         "frontend/src/components/layout/PublicShell.jsx",
         [
             'userHasRole(user, "org_rep")',
+            'userHasRole(user, "ministry_admin")',
             'active={currentPage === "organization"}',
             'onClick={() => onPageChange("organization")}',
+            'active={currentPage === "ministry"}',
+            'onClick={() => onPageChange("ministry")}',
             "Кабинет организации",
+            "Кабинет ведомства",
         ],
     )
 
@@ -868,7 +882,79 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "frontend/src/pages/MinistryCabinetPage.jsx",
+        [
+            'data-testid="ministry-cabinet-page"',
+            "Администратор ведомства",
+            "Подведомственные организации",
+            "getOrgProfile()",
+            "<OrganizationProfileCard",
+            "readOnly",
+            "Изменение данных из кабинета ведомства недоступно.",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationCabinetForms.jsx",
+        [
+            "readOnly = false",
+            "readOnly={readOnly}",
+            'data-testid="organization-profile-read-only"',
+            "Профиль доступен только для просмотра.",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationProfileOfferingsEditor.jsx",
+        [
+            "readOnly = false",
+            "!readOnly && (",
+            "Услуги и направления деятельности",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationProfileSpecialistsEditor.jsx",
+        [
+            "readOnly = false",
+            "!readOnly && (",
+            "Специалисты организации",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/organization/OrganizationProfileRecipientCategoriesEditor.jsx",
+        [
+            "readOnly = false",
+            "!readOnly && (",
+            "Категории получателей услуг",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/RolesPage.jsx",
+        [
+            "const SYSTEM_ROLE_CODES = new Set([",
+            '"ministry_admin"',
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/admin/RoleDetailPanel.jsx",
+        [
+            "const SYSTEM_ROLE_CODES = new Set([",
+            "const PROTECTED_PERMISSION_ROLE_CODES = new Set([",
+            '"ministry_admin"',
+            "PROTECTED_PERMISSION_ROLE_CODES.has(",
+            'roleDetail?.code === "ministry_admin"',
+            "!isProtectedPermissionRole && (",
+            "Системная роль ministry_admin защищена",
+        ],
+    )
+
     fetch_frontend_route("/organization")
+    fetch_frontend_route("/ministry")
 
     print("Organization cabinet frontend smoke passed:")
     print(" - source route wiring ok")
@@ -876,6 +962,8 @@ def main() -> None:
     print(" - org_rep auth redirect wiring ok")
     print(" - org_rep public navigation ok")
     print(" - direct /organization frontend shell ok")
+    print(" - ministry_admin read-only route wiring ok")
+    print(" - direct /ministry frontend shell ok")
 
 
 if __name__ == "__main__":

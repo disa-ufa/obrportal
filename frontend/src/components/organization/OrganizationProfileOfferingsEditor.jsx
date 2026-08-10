@@ -41,6 +41,7 @@ function validateOfferingCollection(items, label) {
 export function OrganizationProfileOfferingsEditor({
   organization,
   onSave,
+  readOnly = false,
 }) {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState(() =>
@@ -144,18 +145,20 @@ export function OrganizationProfileOfferingsEditor({
             Основные направления работы и услуги организации.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditing((current) => !current);
-            setFormData(buildOrganizationProfileOfferingsFormData(organization));
-            setError("");
-            setMessage("");
-          }}
-          className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
-        >
-          {editing ? "Отменить" : "Редактировать услуги"}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditing((current) => !current);
+              setFormData(buildOrganizationProfileOfferingsFormData(organization));
+              setError("");
+              setMessage("");
+            }}
+            className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
+          >
+            {editing ? "Отменить" : "Редактировать услуги"}
+          </button>
+        )}
       </div>
 
       {error && (

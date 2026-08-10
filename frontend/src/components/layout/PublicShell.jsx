@@ -29,6 +29,7 @@ function getPublicShellNavigationStats({
       ...footerKeys,
       "dashboard",
       "organization",
+      "ministry",
       "account",
       "login",
       "register",
@@ -38,6 +39,7 @@ function getPublicShellNavigationStats({
   ];
   const duplicatedFooterKeys = footerKeys.filter((key, index) => footerKeys.indexOf(key) !== index);
   const isOrgRepresentative = userHasRole(user, "org_rep");
+  const isMinistryAdmin = userHasRole(user, "ministry_admin");
 
   return {
     primaryCount: primaryKeys.length,
@@ -48,14 +50,17 @@ function getPublicShellNavigationStats({
     userAuthenticated: Boolean(user),
     isAdmin,
     isOrgRepresentative,
+    isMinistryAdmin,
     publicRegistrationEnabled,
     targetArea: isAdmin && user
       ? "admin"
       : user && isOrgRepresentative
         ? "organization"
-        : user
-          ? "account"
-          : "auth",
+        : user && isMinistryAdmin
+          ? "ministry"
+          : user
+            ? "account"
+            : "auth",
   };
 }
 
@@ -92,6 +97,10 @@ function getPublicShellNavigationDiagnostics(stats) {
 
   if (stats.targetArea === "organization") {
     items.push("Organization bridge: представителю организации доступен кабинет организации.");
+  }
+
+  if (stats.targetArea === "ministry") {
+    items.push("Ministry bridge: администратору ведомства доступен кабинет ведомства.");
   }
 
   if (stats.targetArea === "account") {
@@ -193,6 +202,7 @@ export function PublicShell({
   children,
 }) {
   const isOrgRepresentative = userHasRole(user, "org_rep");
+  const isMinistryAdmin = userHasRole(user, "ministry_admin");
   const publicShellNavigationStats = getPublicShellNavigationStats({
     user,
     isAdmin,
@@ -207,7 +217,9 @@ export function PublicShell({
     ? { page: "dashboard", label: "Панель администратора" }
     : isOrgRepresentative
       ? { page: "organization", label: "Кабинет организации" }
-      : { page: "account", label: "Личный кабинет" };
+      : isMinistryAdmin
+        ? { page: "ministry", label: "Кабинет ведомства" }
+        : { page: "account", label: "Личный кабинет" };
 
   return (
     <main className="min-h-screen bg-[#f7faff] text-[#111936]">
@@ -332,6 +344,12 @@ export function PublicShell({
             onClick={() => onPageChange("organization")}
           >
             Кабинет организации
+          </NavButton>
+          <NavButton
+            active={currentPage === "ministry"}
+            onClick={() => onPageChange("ministry")}
+          >
+            Кабинет ведомства
           </NavButton>
           <NavButton
             active={currentPage === "account"}

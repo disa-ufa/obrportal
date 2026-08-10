@@ -111,6 +111,7 @@ const SYSTEM_ROLE_CODES = new Set([
   "learner_fl",
   "learner_org",
   "org_rep",
+  "ministry_admin",
   "teacher",
   "methodist",
   "finance_operator",

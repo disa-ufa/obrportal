@@ -20,11 +20,17 @@ const SYSTEM_ROLE_CODES = new Set([
   "learner_fl",
   "learner_org",
   "org_rep",
+  "ministry_admin",
   "teacher",
   "methodist",
   "finance_operator",
   "edo_operator",
   "frdo_operator",
+]);
+
+const PROTECTED_PERMISSION_ROLE_CODES = new Set([
+  "admin",
+  "ministry_admin",
 ]);
 
 const ROLE_RELATED_LINK_CLASS =
@@ -187,6 +193,9 @@ export function RoleDetailPanel({
 
   const isSystemAdminRole = roleDetail?.code === "admin";
   const isSystemRole = SYSTEM_ROLE_CODES.has(roleDetail?.code);
+  const isProtectedPermissionRole = PROTECTED_PERMISSION_ROLE_CODES.has(
+    roleDetail?.code
+  );
   const roleAttentionItems = getRoleAttentionItems(roleDetail, isSystemRole, isSystemAdminRole);
 
   async function handleUpdateRole(payload) {
@@ -314,7 +323,13 @@ export function RoleDetailPanel({
             </Alert>
           )}
 
-          {isSystemRole && !isSystemAdminRole && (
+          {roleDetail?.code === "ministry_admin" && (
+            <Alert title="Системная роль ministry_admin защищена" tone="amber">
+              Состав прав роли ministry_admin нельзя менять из интерфейса. Роль предназначена только для просмотра профилей закреплённых организаций.
+            </Alert>
+          )}
+
+          {isSystemRole && !isProtectedPermissionRole && (
             <Alert title="Системная роль защищена" tone="amber">
               Название и описание базовых ролей управляются системным seed. Для ручной настройки создавайте пользовательские роли.
             </Alert>
@@ -475,7 +490,7 @@ export function RoleDetailPanel({
                           </div>
                         </div>
 
-                        {!isSystemAdminRole && (
+                        {!isProtectedPermissionRole && (
                           <ActionButton
                             type="button"
                             tone="red"
@@ -501,7 +516,7 @@ export function RoleDetailPanel({
               )}
             </div>
 
-            {!isSystemAdminRole && (
+            {!isProtectedPermissionRole && (
               <RolePermissionAssignmentForm
                 permissions={permissions}
                 assignedPermissions={roleDetail.permissions}

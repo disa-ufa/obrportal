@@ -35,6 +35,7 @@ function validateSpecialists(items) {
 export function OrganizationProfileSpecialistsEditor({
   organization,
   onSave,
+  readOnly = false,
 }) {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState(() =>
@@ -142,20 +143,22 @@ export function OrganizationProfileSpecialistsEditor({
             персональных данных.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditing((current) => !current);
-            setFormData(
-              buildOrganizationProfileSpecialistsFormData(organization)
-            );
-            setError("");
-            setMessage("");
-          }}
-          className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
-        >
-          {editing ? "Отменить" : "Редактировать специалистов"}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditing((current) => !current);
+              setFormData(
+                buildOrganizationProfileSpecialistsFormData(organization)
+              );
+              setError("");
+              setMessage("");
+            }}
+            className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
+          >
+            {editing ? "Отменить" : "Редактировать специалистов"}
+          </button>
+        )}
       </div>
 
       {error && (
