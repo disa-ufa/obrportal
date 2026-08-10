@@ -187,8 +187,13 @@ function Logo({ onClick }) {
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
         <BookOpen className="h-5 w-5" aria-hidden="true" />
       </span>
-      <span className="text-xl font-black tracking-tight text-[#111936]">
-        ObrPortal
+      <span className="min-w-0">
+        <span className="block text-xl font-black tracking-tight text-[#111936]">
+          ОбрПортал
+        </span>
+        <span className="hidden text-[11px] font-semibold text-slate-500 sm:block">
+          Единый образовательный портал
+        </span>
       </span>
     </button>
   );
@@ -213,6 +218,7 @@ export function PublicShell({
   const publicShellNavigationDiagnostics = getPublicShellNavigationDiagnostics(
     publicShellNavigationStats
   );
+  const currentYear = new Date().getFullYear();
 
   return (
     <main className="min-h-screen bg-[#f7faff] text-[#111936]">
@@ -347,7 +353,7 @@ export function PublicShell({
       <footer className="border-t border-slate-200/80 bg-white/90">
         <div className="portal-container flex flex-col gap-5 py-5 md:flex-row md:items-center md:justify-between">
           <div className="text-sm font-medium text-slate-500">
-            © 2024 РЦДО. Все права защищены.
+            © {currentYear} РЦДО. Все права защищены.
           </div>
 
           <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm font-medium text-slate-500">

@@ -552,6 +552,8 @@ def main() -> None:
             "Качество admin shell",
             "Критичных замечаний по admin shell и навигации не найдено.",
             "<AdminShellNavigationDiagnostics",
+            "ОбрПортал",
+            "Единый образовательный портал",
         ],
     )
 
@@ -574,6 +576,10 @@ def main() -> None:
             "Organization bridge: представителю организации доступен кабинет организации.",
             "Account bridge: пользователю доступен личный кабинет.",
             "<PublicShellNavigationDiagnostics",
+            "ОбрПортал",
+            "Единый образовательный портал",
+            "const currentYear = new Date().getFullYear();",
+            "© {currentYear} РЦДО. Все права защищены.",
         ],
     )
 

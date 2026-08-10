@@ -224,15 +224,20 @@ function Logo({ collapsed, onToggle }) {
       <Link
         to="/admin"
         className={`flex min-w-0 items-center gap-3 ${collapsed ? "justify-center" : ""}`}
-        title="ObrPortal"
+        title="ОбрПортал — Единый образовательный портал"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
           <BookOpen className="h-5 w-5" aria-hidden="true" />
         </span>
 
         {!collapsed ? (
-          <span className="truncate text-xl font-black tracking-tight text-[#111936]">
-            ObrPortal
+          <span className="min-w-0">
+            <span className="block truncate text-xl font-black tracking-tight text-[#111936]">
+              ОбрПортал
+            </span>
+            <span className="mt-0.5 block truncate text-[10px] font-semibold text-slate-500">
+              Единый образовательный портал
+            </span>
           </span>
         ) : null}
       </Link>

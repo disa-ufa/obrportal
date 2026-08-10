@@ -455,7 +455,7 @@ def main() -> None:
             "expectedPage: \"course-detail\"",
             "expectedPage: \"verify-document\"",
             "expectedPage: \"not-found\"",
-            "expectedTitle: \"Страница не найдена — ObrPortal\"",
+            "expectedTitle: \"Страница не найдена — ОбрПортал\"",
             "export function getPublicRoutesMetaDiagnostics()",
             "routeMapTotal",
             "metaCasesTotal",

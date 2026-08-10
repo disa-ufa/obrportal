@@ -18,9 +18,14 @@ export function AuthBrandPanel({
           <BookOpenCheck className="h-5 w-5" aria-hidden="true" />
         </span>
 
-        <span className="text-sm font-bold uppercase tracking-[0.16em] text-blue-100">
-          {eyebrow}
-        </span>
+        <div className="min-w-0">
+          <span className="block text-sm font-bold uppercase tracking-[0.16em] text-blue-100">
+            {eyebrow}
+          </span>
+          <span className="mt-1 block text-xs font-semibold text-blue-200">
+            Единый образовательный портал
+          </span>
+        </div>
       </div>
 
       <div className="mt-10 max-w-xl">

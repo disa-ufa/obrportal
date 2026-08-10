@@ -52,7 +52,7 @@ export function ensureMetaDescriptionTag() {
 export function buildPublicMeta(pathname) {
   if (pathname === "/") {
     return {
-      title: "ObrPortal — образовательная платформа",
+      title: "ОбрПортал — Единый образовательный портал",
       description:
         "Публичный сайт образовательной платформы: каталог программ, сведения об организации, проверка документов и правовые страницы.",
     };
@@ -60,7 +60,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/catalog" || pathname === "/programs") {
     return {
-      title: "Каталог программ — ObrPortal",
+      title: "Каталог программ — ОбрПортал",
       description:
         "Публичный каталог образовательных программ с карточками курсов, стоимостью, форматом обучения и итоговыми документами.",
     };
@@ -72,13 +72,13 @@ export function buildPublicMeta(pathname) {
 
     if (course) {
       return {
-        title: `${course.title} — ObrPortal`,
+        title: `${course.title} — ОбрПортал`,
         description: `${course.title}. Формат: ${course.format}. Объем: ${course.hours} часов. Итоговый документ: ${course.document}.`,
       };
     }
 
     return {
-      title: "Карточка курса — ObrPortal",
+      title: "Карточка курса — ОбрПортал",
       description:
         "Описание образовательной программы, условий обучения, итоговой аттестации и итогового документа.",
     };
@@ -86,7 +86,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/organization-info") {
     return {
-      title: "Сведения об образовательной организации — ObrPortal",
+      title: "Сведения об образовательной организации — ОбрПортал",
       description:
         "Официальный публичный раздел со сведениями об образовательной организации, документах, программах и контактных данных.",
     };
@@ -94,7 +94,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/verify-document" || pathname.startsWith("/verify/")) {
     return {
-      title: "Проверка документа — ObrPortal",
+      title: "Проверка документа — ОбрПортал",
       description:
         "Публичная проверка подлинности итогового документа по номеру или безопасному идентификатору.",
     };
@@ -102,7 +102,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/organization") {
     return {
-      title: "Кабинет организации - ObrPortal",
+      title: "Кабинет организации — ОбрПортал",
       description:
         "Кабинет представителя юридического лица для просмотра учебных групп, участников и корпоративного обучения.",
     };
@@ -110,7 +110,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/ministry") {
     return {
-      title: "Кабинет ведомства — ObrPortal",
+      title: "Кабинет ведомства — ОбрПортал",
       description:
         "Кабинет администратора ведомства для просмотра профилей закреплённых подведомственных организаций.",
     };
@@ -118,7 +118,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/contacts") {
     return {
-      title: "Контакты — ObrPortal",
+      title: "Контакты — ОбрПортал",
       description:
         "Публичные контакты образовательной платформы для физических лиц, юридических лиц и обращений по документам.",
     };
@@ -126,7 +126,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/faq") {
     return {
-      title: "FAQ — ObrPortal",
+      title: "FAQ — ОбрПортал",
       description:
         "Частые вопросы по курсам, обучению, итоговым документам, проверке подлинности и работе платформы.",
     };
@@ -134,7 +134,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/privacy") {
     return {
-      title: "Политика обработки персональных данных — ObrPortal",
+      title: "Политика обработки персональных данных — ОбрПортал",
       description:
         "Публичная политика обработки персональных данных: цели, состав данных, правовые основания и права субъекта.",
     };
@@ -142,7 +142,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/offer") {
     return {
-      title: "Условия использования портала — ObrPortal",
+      title: "Условия использования портала — ОбрПортал",
       description:
         "Публичные условия использования образовательного портала: назначение сервиса, регистрация, доступ к обучению, итоговые документы и обращения пользователей.",
     };
@@ -150,7 +150,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/login") {
     return {
-      title: "Вход — ObrPortal",
+      title: "Вход — ОбрПортал",
       description:
         "Публичная точка входа в образовательную платформу для пользователей и административных ролей.",
     };
@@ -158,7 +158,7 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/register") {
     return {
-      title: "Регистрация — ObrPortal",
+      title: "Регистрация — ОбрПортал",
       description:
         "Публичная страница регистрации пользователя. На текущем этапе это UX-экран для будущего signup flow.",
     };
@@ -166,45 +166,45 @@ export function buildPublicMeta(pathname) {
 
   if (pathname === "/set-password") {
     return {
-      title: "Установка пароля - ObrPortal",
+      title: "Установка пароля — ОбрПортал",
       description:
-        "Страница установки пароля по одноразовой ссылке приглашения пользователя ObrPortal.",
+        "Страница установки пароля по одноразовой ссылке приглашения пользователя ОбрПортала.",
     };
   }
 
   if (pathname === "/account") {
     return {
-      title: "Личный кабинет — ObrPortal",
+      title: "Личный кабинет — ОбрПортал",
       description:
         "Личный кабинет пользователя образовательной платформы с будущими разделами программ, обучения и документов.",
     };
   }
 
   return {
-    title: "Страница не найдена — ObrPortal",
+    title: "Страница не найдена — ОбрПортал",
     description:
       "Запрошенная страница не найдена. Вернитесь на главную, в каталог программ или в обязательные публичные разделы.",
   };
 }
 
 export const PUBLIC_ROUTE_META_DIAGNOSTIC_CASES = [
-  { pathname: "/", expectedPage: "home", expectedTitle: "ObrPortal — образовательная платформа" },
-  { pathname: "/catalog", expectedPage: "catalog", expectedTitle: "Каталог программ — ObrPortal" },
-  { pathname: "/courses/__missing_routes_meta_course__", expectedPage: "course-detail", expectedTitle: "Карточка курса — ObrPortal" },
-  { pathname: "/organization-info", expectedPage: "organization-info", expectedTitle: "Сведения об образовательной организации — ObrPortal" },
-  { pathname: "/organization", expectedPage: "organization", expectedTitle: "Кабинет организации - ObrPortal" },
-  { pathname: "/ministry", expectedPage: "ministry", expectedTitle: "Кабинет ведомства — ObrPortal" },
-  { pathname: "/verify-document", expectedPage: "verify-document", expectedTitle: "Проверка документа — ObrPortal" },
-  { pathname: "/verify/__missing_routes_meta_code__", expectedPage: "verify-document", expectedTitle: "Проверка документа — ObrPortal" },
-  { pathname: "/contacts", expectedPage: "contacts", expectedTitle: "Контакты — ObrPortal" },
-  { pathname: "/faq", expectedPage: "faq", expectedTitle: "FAQ — ObrPortal" },
-  { pathname: "/privacy", expectedPage: "privacy", expectedTitle: "Политика обработки персональных данных — ObrPortal" },
-  { pathname: "/offer", expectedPage: "offer", expectedTitle: "Условия использования портала — ObrPortal" },
-  { pathname: "/login", expectedPage: "login", expectedTitle: "Вход — ObrPortal" },
-  { pathname: "/register", expectedPage: "register", expectedTitle: "Регистрация — ObrPortal" },
-  { pathname: "/set-password", expectedPage: "set-password", expectedTitle: "Установка пароля - ObrPortal" },
-  { pathname: "/account", expectedPage: "account", expectedTitle: "Личный кабинет — ObrPortal" },
-  { pathname: "/__missing_routes_meta_public__", expectedPage: "not-found", expectedTitle: "Страница не найдена — ObrPortal" },
+  { pathname: "/", expectedPage: "home", expectedTitle: "ОбрПортал — Единый образовательный портал" },
+  { pathname: "/catalog", expectedPage: "catalog", expectedTitle: "Каталог программ — ОбрПортал" },
+  { pathname: "/courses/__missing_routes_meta_course__", expectedPage: "course-detail", expectedTitle: "Карточка курса — ОбрПортал" },
+  { pathname: "/organization-info", expectedPage: "organization-info", expectedTitle: "Сведения об образовательной организации — ОбрПортал" },
+  { pathname: "/organization", expectedPage: "organization", expectedTitle: "Кабинет организации — ОбрПортал" },
+  { pathname: "/ministry", expectedPage: "ministry", expectedTitle: "Кабинет ведомства — ОбрПортал" },
+  { pathname: "/verify-document", expectedPage: "verify-document", expectedTitle: "Проверка документа — ОбрПортал" },
+  { pathname: "/verify/__missing_routes_meta_code__", expectedPage: "verify-document", expectedTitle: "Проверка документа — ОбрПортал" },
+  { pathname: "/contacts", expectedPage: "contacts", expectedTitle: "Контакты — ОбрПортал" },
+  { pathname: "/faq", expectedPage: "faq", expectedTitle: "FAQ — ОбрПортал" },
+  { pathname: "/privacy", expectedPage: "privacy", expectedTitle: "Политика обработки персональных данных — ОбрПортал" },
+  { pathname: "/offer", expectedPage: "offer", expectedTitle: "Условия использования портала — ОбрПортал" },
+  { pathname: "/login", expectedPage: "login", expectedTitle: "Вход — ОбрПортал" },
+  { pathname: "/register", expectedPage: "register", expectedTitle: "Регистрация — ОбрПортал" },
+  { pathname: "/set-password", expectedPage: "set-password", expectedTitle: "Установка пароля — ОбрПортал" },
+  { pathname: "/account", expectedPage: "account", expectedTitle: "Личный кабинет — ОбрПортал" },
+  { pathname: "/__missing_routes_meta_public__", expectedPage: "not-found", expectedTitle: "Страница не найдена — ОбрПортал" },
 ];
 
 export function getPublicRoutesMetaDiagnostics() {

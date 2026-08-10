@@ -843,8 +843,8 @@ def main() -> None:
             'ministry: "/ministry"',
             'if (pathname === "/organization") return "organization";',
             'if (pathname === "/ministry") return "ministry";',
-            "Кабинет организации - ObrPortal",
-            "Кабинет ведомства — ObrPortal",
+            "Кабинет организации — ОбрПортал",
+            "Кабинет ведомства — ОбрПортал",
         ],
     )
 
