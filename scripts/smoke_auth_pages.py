@@ -111,6 +111,7 @@ def main() -> None:
         "frontend/src/pages/RegisterPage.jsx",
         [
             'import { useEffect, useState } from "react";',
+            'import { Link } from "react-router-dom";',
             'import { getPublicCourseDetail } from "../api/client";',
             'import { AuthBrandPanel } from "../components/auth/AuthBrandPanel";',
             'import { AuthCard } from "../components/auth/AuthCard";',
@@ -162,6 +163,16 @@ def main() -> None:
             '<AuthSecurityNotice',
             '<Alert title="Заявка принята" tone="green">',
             'Проверьте почту',
+            'id="register-personal-data-consent"',
+            'htmlFor="register-personal-data-consent"',
+            'to="/privacy"',
+            'target="_blank"',
+            'rel="noreferrer"',
+            'Политика обработки персональных данных',
+            'id="register-terms-accepted"',
+            'htmlFor="register-terms-accepted"',
+            'to="/offer"',
+            'Условия использования портала',
             'onPageChange("login")',
         ]
     )
