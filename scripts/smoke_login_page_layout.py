@@ -7,6 +7,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 AUTH_PAGE_PATH = ROOT / "frontend/src/pages/AuthPage.jsx"
 AUTH_PANEL_PATH = ROOT / "frontend/src/components/auth/AuthPanel.jsx"
+AUTH_FIELD_PATH = ROOT / "frontend/src/components/auth/AuthField.jsx"
+PASSWORD_FIELD_PATH = ROOT / "frontend/src/components/auth/PasswordField.jsx"
+CLIENT_PATH = ROOT / "frontend/src/api/client.js"
+AUTH_FLOW_PATH = ROOT / "frontend/src/hooks/useAuthFlow.js"
 
 
 def require_fragments(
@@ -90,10 +94,19 @@ def main() -> None:
     auth_panel = require_fragments(
         AUTH_PANEL_PATH,
         [
+            'import { useState } from "react";',
+            'import { Lock, Mail } from "lucide-react";',
             'import { AuthField } from "./AuthField";',
             'import { PasswordField } from "./PasswordField";',
             'autoComplete="username"',
             'autoComplete="current-password"',
+            'icon={Mail}',
+            'icon={Lock}',
+            'const [rememberMe, setRememberMe] = useState(false);',
+            'onSubmit={(event) => onLogin(event, rememberMe)}',
+            'id="login-remember-me"',
+            'checked={rememberMe}',
+            'Запомнить меня',
             'aria-busy={loading}',
             '{loading ? "Входим..." : "Войти"}',
         ],
@@ -111,6 +124,49 @@ def main() -> None:
         ],
     )
 
+    require_fragments(
+        AUTH_FIELD_PATH,
+        [
+            "icon: Icon,",
+            "{Icon && (",
+            'aria-hidden="true"',
+            'Icon ? "pl-11 pr-4" : "px-4"',
+        ],
+    )
+
+    require_fragments(
+        PASSWORD_FIELD_PATH,
+        [
+            "icon: Icon,",
+            "{Icon && (",
+            'Icon ? "pl-11" : "pl-4"',
+            'aria-label={passwordVisible ? "Скрыть пароль" : "Показать пароль"}',
+        ],
+    )
+
+    require_fragments(
+        CLIENT_PATH,
+        [
+            'const ACCESS_TOKEN_STORAGE_KEY = "obrportal_access_token";',
+            "sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)",
+            "localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)",
+            "export function storeToken(token, { persist = false } = {})",
+            "sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token)",
+            "localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token)",
+            "sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)",
+            "localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)",
+            "storeToken(data.access_token, { persist });",
+        ],
+    )
+
+    require_fragments(
+        AUTH_FLOW_PATH,
+        [
+            "async function handleLogin(event, rememberMe = false)",
+            "await login(email, password, { persist: rememberMe });",
+        ],
+    )
+
     command = "python scripts/smoke_login_page_layout.py"
 
     require_fragments(
@@ -125,7 +181,8 @@ def main() -> None:
 
     print("Login page shared layout smoke: PASSED")
     print(" - shared auth layout and brand panel")
-    print(" - reusable accessible login fields")
+    print(" - reusable accessible login fields with icons")
+    print(" - remember-me controls local vs session token persistence")
     print(" - forgot-password link preserved")
     print(" - registration feature flag preserved")
     print(" - pending enrollment flow preserved")

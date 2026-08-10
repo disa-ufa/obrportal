@@ -14,16 +14,29 @@ export function buildApiUrl(path) {
   return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
 }
 
+const ACCESS_TOKEN_STORAGE_KEY = "obrportal_access_token";
+
 export function getStoredToken() {
-  return localStorage.getItem("obrportal_access_token");
+  return (
+    sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) ||
+    localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)
+  );
 }
 
-export function storeToken(token) {
-  localStorage.setItem("obrportal_access_token", token);
+export function storeToken(token, { persist = false } = {}) {
+  if (persist) {
+    localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+    sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    return;
+  }
+
+  sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+  localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
 }
 
 export function clearToken() {
-  localStorage.removeItem("obrportal_access_token");
+  sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
 }
 
 async function request(path, options = {}) {
@@ -56,13 +69,17 @@ async function request(path, options = {}) {
   return data;
 }
 
-export async function login(email, password) {
+export async function login(
+  email,
+  password,
+  { persist = false } = {}
+) {
   const data = await request("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
 
-  storeToken(data.access_token);
+  storeToken(data.access_token, { persist });
 
   return data;
 }

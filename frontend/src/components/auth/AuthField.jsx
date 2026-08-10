@@ -8,6 +8,7 @@ export function AuthField({
   required = false,
   className = "",
   inputClassName = "",
+  icon: Icon,
   ...inputProps
 }) {
   const generatedId = useId();
@@ -37,18 +38,29 @@ export function AuthField({
         )}
       </label>
 
-      <input
-        {...inputProps}
-        id={inputId}
-        required={required}
-        aria-invalid={error ? "true" : undefined}
-        aria-describedby={describedBy}
-        className={`h-12 w-full rounded-2xl border bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus-visible:ring-4 ${
-          error
-            ? "border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100"
-            : "border-slate-300 focus-visible:border-blue-500 focus-visible:ring-blue-100"
-        } ${inputClassName}`}
-      />
+      <div className="relative">
+        {Icon && (
+          <Icon
+            className="pointer-events-none absolute left-4 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
+          />
+        )}
+
+        <input
+          {...inputProps}
+          id={inputId}
+          required={required}
+          aria-invalid={error ? "true" : undefined}
+          aria-describedby={describedBy}
+          className={`h-12 w-full rounded-2xl border bg-white text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus-visible:ring-4 ${
+            Icon ? "pl-11 pr-4" : "px-4"
+          } ${
+            error
+              ? "border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100"
+              : "border-slate-300 focus-visible:border-blue-500 focus-visible:ring-blue-100"
+          } ${inputClassName}`}
+        />
+      </div>
 
       {hint && !error && (
         <p id={hintId} className="mt-2 text-xs leading-5 text-slate-500">

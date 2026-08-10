@@ -8,7 +8,6 @@ import {
   getStoredToken,
   login,
   registerUser,
-  storeToken,
 } from "../api/client";
 import { EMPTY_ADMIN_DATA, userHasRole } from "../utils/adminState";
 
@@ -95,7 +94,7 @@ export function useAuthFlow({
     }
   }
 
-  async function handleLogin(event) {
+  async function handleLogin(event, rememberMe = false) {
     event.preventDefault();
     setAuthLoading(true);
     setError("");
@@ -103,7 +102,7 @@ export function useAuthFlow({
     clearAllSelections();
 
     try {
-      await login(email, password);
+      await login(email, password, { persist: rememberMe });
       const currentUser = await getCurrentUser();
       setUser(currentUser);
 
