@@ -3534,13 +3534,22 @@ async def regenerate_admin_completion_document(
     ensure_document_enrollment_is_completed(enrollment)
 
     before = document_record_snapshot(document)
-    course, learner, organization = await load_completion_document_context(enrollment, session)
+    (
+        course,
+        learner,
+        learner_profile,
+        organization,
+    ) = await load_completion_document_context(
+        enrollment,
+        session,
+    )
 
     document.storage_path = write_completion_document_pdf_to_storage(
         enrollment=enrollment,
         document=document,
         course=course,
         learner=learner,
+        learner_profile=learner_profile,
         organization=organization,
     )
     mark_completion_document_generation_metadata(

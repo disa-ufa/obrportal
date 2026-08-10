@@ -11,6 +11,7 @@ from app.models.course import Course
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.learner_profile import LearnerProfile
 from app.models.organization import Organization
 from app.models.user import User
 from app.services.document_pdf import render_completion_document_pdf
@@ -20,7 +21,7 @@ from app.services.document_templates import (
     build_completion_document_title,
     build_document_verification_url,
 )
-
+from app.services.learner_profile_fields import normalize_learner_name
 
 
 COMPLETION_DOCUMENT_TEMPLATE_VERSION = "completion_pdf_v1"
@@ -95,10 +96,54 @@ def get_completion_document_public_base_url() -> str:
     )
 
 
+def build_completion_learner_full_name(
+    *,
+    learner_profile: LearnerProfile | None,
+    learner: User | None,
+) -> str:
+    last_name = normalize_learner_name(
+        getattr(learner_profile, "last_name", None)
+    )
+    first_name = normalize_learner_name(
+        getattr(learner_profile, "first_name", None)
+    )
+    middle_name = normalize_learner_name(
+        getattr(learner_profile, "middle_name", None)
+    )
+
+    profile_parts = [
+        value
+        for value in (last_name, first_name, middle_name)
+        if value
+    ]
+
+    # Use profile identity data only when the core name is complete.
+    # A partially filled self-service profile must not degrade an existing
+    # account full name in an issued completion document.
+    if last_name and first_name:
+        return " ".join(profile_parts)
+
+    user_full_name = normalize_learner_name(
+        getattr(learner, "full_name", None)
+    )
+    if user_full_name:
+        return user_full_name
+
+    if profile_parts:
+        return " ".join(profile_parts)
+
+    return "ФИО обучающегося"
+
+
 async def load_completion_document_context(
     enrollment: Enrollment,
     session: AsyncSession,
-) -> tuple[Course | None, User | None, Organization | None]:
+) -> tuple[
+    Course | None,
+    User | None,
+    LearnerProfile | None,
+    Organization | None,
+]:
     course_result = await session.execute(
         select(Course).where(Course.id == enrollment.course_id)
     )
@@ -109,6 +154,13 @@ async def load_completion_document_context(
     )
     learner = learner_result.scalar_one_or_none()
 
+    learner_profile_result = await session.execute(
+        select(LearnerProfile).where(
+            LearnerProfile.user_id == enrollment.user_id
+        )
+    )
+    learner_profile = learner_profile_result.scalar_one_or_none()
+
     organization = None
 
     if enrollment.organization_id:
@@ -117,7 +169,7 @@ async def load_completion_document_context(
         )
         organization = organization_result.scalar_one_or_none()
 
-    return course, learner, organization
+    return course, learner, learner_profile, organization
 
 
 def write_completion_document_pdf_to_storage(
@@ -126,6 +178,7 @@ def write_completion_document_pdf_to_storage(
     document: DocumentRecord,
     course: Course | None,
     learner: User | None,
+    learner_profile: LearnerProfile | None = None,
     organization: Organization | None = None,
 ) -> str:
     course_title = (
@@ -137,10 +190,9 @@ def write_completion_document_pdf_to_storage(
         document.document_type
         or "\u0421\u0435\u0440\u0442\u0438\u0444\u0438\u043a\u0430\u0442"
     )
-    learner_full_name = (
-        learner.full_name
-        if learner and learner.full_name
-        else "\u0424\u0418\u041e \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0435\u0433\u043e\u0441\u044f"
+    learner_full_name = build_completion_learner_full_name(
+        learner_profile=learner_profile,
+        learner=learner,
     )
 
     verification_url = build_document_verification_url(
@@ -228,12 +280,21 @@ async def ensure_completion_document_for_enrollment(
         document_changed = False
 
         if not existing_document.storage_path:
-            course, learner, organization = await load_completion_document_context(enrollment, session)
+            (
+                course,
+                learner,
+                learner_profile,
+                organization,
+            ) = await load_completion_document_context(
+                enrollment,
+                session,
+            )
             existing_document.storage_path = write_completion_document_pdf_to_storage(
                 enrollment=enrollment,
                 document=existing_document,
                 course=course,
                 learner=learner,
+                learner_profile=learner_profile,
                 organization=organization,
             )
             mark_completion_document_generation_metadata(
@@ -252,7 +313,15 @@ async def ensure_completion_document_for_enrollment(
 
         return existing_document
 
-    course, learner, organization = await load_completion_document_context(enrollment, session)
+    (
+        course,
+        learner,
+        learner_profile,
+        organization,
+    ) = await load_completion_document_context(
+        enrollment,
+        session,
+    )
 
     document_type = (
         course.document_type
@@ -285,6 +354,7 @@ async def ensure_completion_document_for_enrollment(
         document=document,
         course=course,
         learner=learner,
+        learner_profile=learner_profile,
         organization=organization,
     )
     mark_completion_document_generation_metadata(
