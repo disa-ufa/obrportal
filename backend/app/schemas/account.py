@@ -4,7 +4,7 @@ from typing import Any
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.auth import CurrentUserResponse
 
@@ -41,6 +41,8 @@ class AccountLearnerProfileResponse(BaseModel):
 
 
 class AccountLearnerProfileUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     last_name: str | None = Field(default=None, max_length=128)
     first_name: str | None = Field(default=None, max_length=128)
     middle_name: str | None = Field(default=None, max_length=128)

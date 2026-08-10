@@ -10,6 +10,10 @@ from typing import Any
 from email_validator import EmailNotValidError, validate_email
 from openpyxl import load_workbook
 
+from app.services.learner_profile_fields import (
+    normalize_learner_snils,
+)
+
 
 HEADER_ALIASES: dict[str, set[str]] = {
     "full_name": {
@@ -330,16 +334,7 @@ def _normalize_phone(value: Any) -> str:
 
 
 def _normalize_snils(value: Any) -> str:
-    text = _clean_spaces(value)
-    digits = re.sub(r"\D+", "", text)
-
-    if not digits:
-        return ""
-
-    if len(digits) == 11:
-        return f"{digits[0:3]}-{digits[3:6]}-{digits[6:9]} {digits[9:11]}"
-
-    return text
+    return normalize_learner_snils(value) or ""
 
 
 def _is_valid_email(value: str) -> bool:

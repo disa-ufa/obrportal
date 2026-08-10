@@ -3,13 +3,17 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.auth import build_current_user_response, get_current_user
+from app.api.v1.auth import (
+    build_current_user_response,
+    get_current_user,
+    write_audit_event,
+)
 from app.db.session import get_db
 from app.models.assignment_submission import AssignmentSubmission
 from app.models.course import Course
@@ -25,6 +29,15 @@ from app.models.organization import Organization
 from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
 from app.services.completion_documents import ensure_completion_document_for_enrollment
+from app.services.learner_profile_fields import (
+    is_valid_learner_email,
+    is_valid_learner_phone,
+    is_valid_learner_snils,
+    normalize_learner_email,
+    normalize_learner_name,
+    normalize_learner_phone,
+    normalize_learner_snils,
+)
 from app.services.quiz_attempts import grade_quiz_attempt, get_quiz_max_attempts
 from app.services.document_storage import (
     build_document_download_filename,
@@ -79,13 +92,13 @@ def account_document_completion_visibility_condition():
     )
 
 
-ACCOUNT_LEARNER_PROFILE_TEXT_FIELDS = {
+ACCOUNT_LEARNER_PROFILE_NAME_FIELDS = {
     "last_name",
     "first_name",
     "middle_name",
-    "snils",
-    "phone",
-    "email",
+}
+
+ACCOUNT_LEARNER_PROFILE_GENERIC_TEXT_FIELDS = {
     "identity_document_type",
     "identity_document_series",
     "identity_document_number",
@@ -94,9 +107,81 @@ ACCOUNT_LEARNER_PROFILE_TEXT_FIELDS = {
 }
 
 
-def normalize_account_learner_profile_text(value: str | None) -> str | None:
+def normalize_account_learner_profile_text(
+    value: str | None,
+) -> str | None:
     normalized = " ".join(str(value or "").split())
     return normalized or None
+
+
+def normalize_account_learner_profile_update_data(
+    data: dict,
+) -> dict:
+    normalized = dict(data)
+
+    for field_name in ACCOUNT_LEARNER_PROFILE_NAME_FIELDS:
+        if field_name in normalized:
+            normalized[field_name] = normalize_learner_name(
+                normalized[field_name]
+            )
+
+    for field_name in ACCOUNT_LEARNER_PROFILE_GENERIC_TEXT_FIELDS:
+        if field_name in normalized:
+            normalized[field_name] = (
+                normalize_account_learner_profile_text(
+                    normalized[field_name]
+                )
+            )
+
+    if "email" in normalized:
+        normalized["email"] = normalize_learner_email(
+            normalized["email"]
+        )
+
+        if (
+            normalized["email"] is not None
+            and not is_valid_learner_email(
+                normalized["email"]
+            )
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid learner profile email format",
+            )
+
+    if "phone" in normalized:
+        normalized["phone"] = normalize_learner_phone(
+            normalized["phone"]
+        )
+
+        if (
+            normalized["phone"] is not None
+            and not is_valid_learner_phone(
+                normalized["phone"]
+            )
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid learner profile phone format",
+            )
+
+    if "snils" in normalized:
+        normalized["snils"] = normalize_learner_snils(
+            normalized["snils"]
+        )
+
+        if (
+            normalized["snils"] is not None
+            and not is_valid_learner_snils(
+                normalized["snils"]
+            )
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid SNILS format or checksum",
+            )
+
+    return normalized
 
 
 def build_account_learner_profile_response(
@@ -205,6 +290,7 @@ async def get_account_learner_profile(
 )
 async def update_account_learner_profile(
     payload: AccountLearnerProfileUpdateRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> AccountLearnerProfileResponse:
@@ -212,9 +298,49 @@ async def update_account_learner_profile(
         session,
         user_id=str(current_user.id),
     )
-    update_data = payload.model_dump(exclude_unset=True)
+    update_data = normalize_account_learner_profile_update_data(
+        payload.model_dump(exclude_unset=True)
+    )
 
     if not update_data:
+        return build_account_learner_profile_response(
+            current_user,
+            profile,
+        )
+
+    if update_data.get("snils"):
+        snils_owner = await session.scalar(
+            select(LearnerProfile.id).where(
+                LearnerProfile.snils == update_data["snils"],
+                LearnerProfile.user_id != str(current_user.id),
+            )
+        )
+
+        if snils_owner is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "Learner profile with this SNILS already exists"
+                ),
+            )
+
+    profile_created = profile is None
+    changed_fields = sorted(
+        field_name
+        for field_name, value in update_data.items()
+        if (
+            (
+                profile is None
+                and value is not None
+            )
+            or (
+                profile is not None
+                and getattr(profile, field_name) != value
+            )
+        )
+    )
+
+    if not changed_fields:
         return build_account_learner_profile_response(
             current_user,
             profile,
@@ -227,17 +353,38 @@ async def update_account_learner_profile(
         )
         session.add(profile)
 
-    for field_name, value in update_data.items():
-        if field_name in ACCOUNT_LEARNER_PROFILE_TEXT_FIELDS:
-            value = normalize_account_learner_profile_text(value)
-        setattr(profile, field_name, value)
+    for field_name in changed_fields:
+        setattr(
+            profile,
+            field_name,
+            update_data[field_name],
+        )
 
     try:
+        await session.flush()
+
+        await write_audit_event(
+            session,
+            action=(
+                "account.learner_profile_created"
+                if profile_created
+                else "account.learner_profile_updated"
+            ),
+            request=request,
+            actor_user_id=str(current_user.id),
+            entity_type="learner_profile",
+            entity_id=str(profile.id),
+            payload={
+                "changed_fields": changed_fields,
+                "profile_created": profile_created,
+            },
+        )
+
         await session.commit()
     except IntegrityError as exc:
         await session.rollback()
 
-        if "snils" in update_data:
+        if "snils" in changed_fields:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(

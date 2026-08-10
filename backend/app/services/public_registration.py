@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import re
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -13,6 +12,11 @@ from app.models.learner_profile import LearnerProfile
 from app.models.organization import Organization  # noqa: F401
 from app.models.role import Role, UserRole
 from app.models.user import User
+from app.services.learner_profile_fields import (
+    normalize_learner_email,
+    normalize_learner_name,
+    normalize_learner_phone,
+)
 from app.services.user_password_tokens import (
     CreatedUserPasswordToken,
     create_user_password_token,
@@ -36,9 +40,6 @@ PUBLIC_REGISTRATION_OUTCOME_EXISTING_ACTIVE_USER = (
     "existing_active_user"
 )
 PUBLIC_REGISTRATION_OUTCOME_IDENTITY_CONFLICT = "identity_conflict"
-
-_PHONE_SEPARATORS = re.compile(r"[\s()\-]+")
-
 
 @dataclass(frozen=True)
 class NormalizedPublicRegistrationData:
@@ -71,17 +72,13 @@ class PreparedPublicRegistration:
 
 
 def normalize_public_registration_email(value: str) -> str:
-    return value.strip().lower()
+    return normalize_learner_email(value) or ""
 
 
 def normalize_public_registration_name(
     value: str | None,
 ) -> str | None:
-    if value is None:
-        return None
-
-    normalized = " ".join(value.split())
-    return normalized or None
+    return normalize_learner_name(value)
 
 
 def normalize_required_public_registration_name(
@@ -100,23 +97,7 @@ def normalize_required_public_registration_name(
 def normalize_public_registration_phone(
     value: str | None,
 ) -> str | None:
-    if value is None:
-        return None
-
-    compact = _PHONE_SEPARATORS.sub("", value.strip())
-
-    if not compact:
-        return None
-
-    digits = re.sub(r"\D", "", compact)
-
-    if len(digits) == 11 and digits[0] in {"7", "8"}:
-        return f"+7{digits[1:]}"
-
-    if compact.startswith("+") and digits:
-        return f"+{digits}"
-
-    return compact
+    return normalize_learner_phone(value)
 
 
 def normalize_public_registration_data(
