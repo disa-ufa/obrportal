@@ -93,7 +93,7 @@ def test_resend_request_schema_is_email_only() -> None:
     with pytest.raises(ValidationError):
         schema(
             email="learner@example.com",
-            password="must-not-be-accepted",
+            password="dummy-password-fixture",
         )
 
 

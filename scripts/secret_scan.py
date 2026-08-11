@@ -166,6 +166,20 @@ def looks_like_code_reference(path: Path, line: str, value: str) -> bool:
     ):
         return True
 
+    # Runtime function/method calls are code references, not
+    # hardcoded credential values. The generic assignment regex
+    # stops at quotes, so an expression such as:
+    #
+    #     token = learner_token("fixture")
+    #
+    # is captured as "learner_token(".
+    if re.fullmatch(
+        r"[A-Za-z_][A-Za-z0-9_]*"
+        r"(?:\.[A-Za-z_][A-Za-z0-9_]*)*\(",
+        value,
+    ):
+        return True
+
     if lowered_value in {"token", "password", "secret", "headers", "payload"}:
         return True
 
