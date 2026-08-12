@@ -286,7 +286,10 @@ def send_email_message(
                 smtp.ehlo()
 
             if email_settings.smtp_auth_username:
-                smtp.login(email_settings.smtp_auth_username, email_settings.smtp_auth_value)
+                smtp.login(
+                    email_settings.smtp_auth_username,
+                    email_settings.smtp_auth_value.get_secret_value(),
+                )
 
             smtp.send_message(message)
 

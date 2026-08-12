@@ -1,7 +1,10 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getPublicCourseDetail } from "../api/client";
+import {
+  getPublicCourseDetail,
+  resendPublicRegistration,
+} from "../api/client";
 import { AuthBrandPanel } from "../components/auth/AuthBrandPanel";
 import { AuthCard } from "../components/auth/AuthCard";
 import { AuthField } from "../components/auth/AuthField";
@@ -59,6 +62,9 @@ export function RegisterPage({
   const [localError, setLocalError] = useState("");
   const [acceptedMessage, setAcceptedMessage] = useState("");
   const [submittedEmail, setSubmittedEmail] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendError, setResendError] = useState("");
+  const [resendMessage, setResendMessage] = useState("");
 
   const [pendingCourse, setPendingCourse] = useState(null);
   const [pendingCourseLoading, setPendingCourseLoading] =
@@ -113,6 +119,8 @@ export function RegisterPage({
     event.preventDefault();
     setLocalError("");
     setAcceptedMessage("");
+    setResendError("");
+    setResendMessage("");
 
     if (!personalDataConsent) {
       setLocalError(
@@ -145,6 +153,33 @@ export function RegisterPage({
       );
     } catch {
       // Ошибка уже поднята и отрисуется через внешний error.
+    }
+  }
+
+  async function handleResend() {
+    if (!submittedEmail || resendLoading) {
+      return;
+    }
+
+    setResendLoading(true);
+    setResendError("");
+    setResendMessage("");
+
+    try {
+      const response = await resendPublicRegistration(submittedEmail);
+
+      setResendMessage(
+        response?.message || DEFAULT_ACCEPTED_MESSAGE
+      );
+    } catch (err) {
+      setResendError(
+        formatApiError(
+          err,
+          "Не удалось повторно отправить письмо. Попробуйте позже."
+        )
+      );
+    } finally {
+      setResendLoading(false);
     }
   }
 
@@ -230,13 +265,39 @@ export function RegisterPage({
               время. Не пересылайте её другим людям.
             </AuthSecurityNotice>
 
-            <button
-              type="button"
-              onClick={() => onPageChange("login")}
-              className="inline-flex h-12 w-full items-center justify-center rounded-full bg-blue-600 px-6 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 sm:w-auto"
-            >
-              Перейти ко входу
-            </button>
+            {resendMessage && (
+              <Alert title="Запрос принят" tone="green">
+                {resendMessage}
+              </Alert>
+            )}
+
+            {resendError && (
+              <Alert title="Не удалось повторить отправку" tone="red">
+                {resendError}
+              </Alert>
+            )}
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendLoading || !submittedEmail}
+                className="inline-flex h-12 w-full items-center justify-center rounded-full bg-blue-600 px-6 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+              >
+                {resendLoading
+                  ? "Отправляем..."
+                  : "Отправить письмо повторно"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onPageChange("login")}
+                disabled={resendLoading}
+                className="inline-flex h-12 w-full items-center justify-center rounded-full bg-white px-6 text-sm font-black text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:text-slate-400 sm:w-auto"
+              >
+                Перейти ко входу
+              </button>
+            </div>
           </div>
         ) : (
           <>

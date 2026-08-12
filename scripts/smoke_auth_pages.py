@@ -112,7 +112,9 @@ def main() -> None:
         [
             'import { useEffect, useState } from "react";',
             'import { Link } from "react-router-dom";',
-            'import { getPublicCourseDetail } from "../api/client";',
+            'getPublicCourseDetail,',
+            'resendPublicRegistration,',
+            '} from "../api/client";',
             'import { AuthBrandPanel } from "../components/auth/AuthBrandPanel";',
             'import { AuthCard } from "../components/auth/AuthCard";',
             'import { AuthField } from "../components/auth/AuthField";',

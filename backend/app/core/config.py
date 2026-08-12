@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -74,6 +74,46 @@ class Settings(BaseSettings):
             "OBRPORTAL_PUBLIC_REGISTRATION_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
         ),
     )
+    public_registration_resend_rate_limit_window_seconds: int = Field(
+        default=900,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_WINDOW_SECONDS",
+            "OBRPORTAL_PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_WINDOW_SECONDS",
+        ),
+    )
+    public_registration_resend_rate_limit_email_max_attempts: int = Field(
+        default=3,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_EMAIL_MAX_ATTEMPTS",
+            "OBRPORTAL_PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_EMAIL_MAX_ATTEMPTS",
+        ),
+    )
+    public_registration_resend_rate_limit_client_max_attempts: int = Field(
+        default=20,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+            "OBRPORTAL_PUBLIC_REGISTRATION_RESEND_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+        ),
+    )
+    password_setup_rate_limit_window_seconds: int = Field(
+        default=900,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PASSWORD_SETUP_RATE_LIMIT_WINDOW_SECONDS",
+            "OBRPORTAL_PASSWORD_SETUP_RATE_LIMIT_WINDOW_SECONDS",
+        ),
+    )
+    password_setup_rate_limit_client_max_attempts: int = Field(
+        default=20,
+        ge=1,
+        validation_alias=AliasChoices(
+            "PASSWORD_SETUP_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+            "OBRPORTAL_PASSWORD_SETUP_RATE_LIMIT_CLIENT_MAX_ATTEMPTS",
+        ),
+    )
     password_recovery_rate_limit_window_seconds: int = Field(
         default=900,
         validation_alias=AliasChoices(
@@ -135,8 +175,9 @@ class Settings(BaseSettings):
             "OBRPORTAL_SMTP_USERNAME",
         ),
     )
-    smtp_auth_value: str = Field(
-        default="",
+    smtp_auth_value: SecretStr = Field(
+        default_factory=lambda: SecretStr(""),
+        repr=False,
         validation_alias=AliasChoices(
             "SMTP_PASSWORD",
             "EMAIL_SMTP_PASSWORD",

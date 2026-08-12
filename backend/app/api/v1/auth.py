@@ -28,12 +28,16 @@ from app.services.public_registration import (
     PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
     PUBLIC_REGISTRATION_ACCEPTED_STATUS,
     normalize_public_registration_data,
+    normalize_public_registration_email,
     prepare_public_registration,
+    prepare_public_registration_resend,
 )
 from app.services.public_registration_rate_limit import (
     PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT,
     PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL,
     consume_public_registration_rate_limit,
+    consume_public_registration_resend_rate_limit,
+    consume_password_setup_rate_limit,
     resolve_public_registration_client_identifier,
     consume_password_recovery_rate_limit,
 )
@@ -52,6 +56,7 @@ from app.schemas.auth import (
     LoginRequest,
     PublicRegistrationAcceptedResponse,
     PublicRegistrationRequest,
+    PublicRegistrationResendRequest,
     PublicRegistrationStatusResponse,
     SetPasswordRequest,
     SetPasswordResponse,
@@ -287,17 +292,26 @@ async def register(
         )
 
         if not email_rate_limit.allowed:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=(
-                    "Too many registration attempts. "
-                    "Please try again later."
-                ),
-                headers={
-                    "Retry-After": str(
+            await write_audit_event(
+                session,
+                action="public_registration.rate_limited",
+                request=request,
+                entity_type="user",
+                payload={
+                    "flow": "registration",
+                    "scope": (
+                        PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL
+                    ),
+                    "retry_after_seconds": (
                         email_rate_limit.retry_after_seconds
-                    )
+                    ),
                 },
+            )
+            await session.commit()
+
+            return PublicRegistrationAcceptedResponse(
+                status=PUBLIC_REGISTRATION_ACCEPTED_STATUS,
+                message=PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
             )
 
         client_rate_limit = (
@@ -320,17 +334,26 @@ async def register(
         )
 
         if not client_rate_limit.allowed:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=(
-                    "Too many registration attempts. "
-                    "Please try again later."
-                ),
-                headers={
-                    "Retry-After": str(
+            await write_audit_event(
+                session,
+                action="public_registration.rate_limited",
+                request=request,
+                entity_type="user",
+                payload={
+                    "flow": "registration",
+                    "scope": (
+                        PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT
+                    ),
+                    "retry_after_seconds": (
                         client_rate_limit.retry_after_seconds
-                    )
+                    ),
                 },
+            )
+            await session.commit()
+
+            return PublicRegistrationAcceptedResponse(
+                status=PUBLIC_REGISTRATION_ACCEPTED_STATUS,
+                message=PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
             )
     except HTTPException:
         raise
@@ -406,6 +429,191 @@ async def register(
         status=PUBLIC_REGISTRATION_ACCEPTED_STATUS,
         message=PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
     )
+
+@router.post(
+    "/resend-registration",
+    response_model=PublicRegistrationAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def resend_registration(
+    payload: PublicRegistrationResendRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+    redis_client: Redis = Depends(get_redis_client),
+) -> PublicRegistrationAcceptedResponse:
+    if not settings.public_registration_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Public registration is temporarily unavailable."
+            ),
+        )
+
+    normalized_email = (
+        normalize_public_registration_email(
+            str(payload.email)
+        )
+    )
+    client_identifier = (
+        resolve_public_registration_client_identifier(
+            peer_host=_request_ip(request),
+            forwarded_for=request.headers.get(
+                "x-forwarded-for"
+            ),
+        )
+    )
+
+    await write_audit_event(
+        session,
+        action="public_registration.resend_requested",
+        request=request,
+        entity_type="user",
+        payload={
+            "email": normalized_email,
+        },
+    )
+    await session.commit()
+
+    rate_limit_checks = (
+        (
+            PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL,
+            normalized_email,
+            settings.public_registration_resend_rate_limit_email_max_attempts,
+        ),
+        (
+            PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT,
+            client_identifier,
+            settings.public_registration_resend_rate_limit_client_max_attempts,
+        ),
+    )
+
+    try:
+        for (
+            rate_limit_scope,
+            rate_limit_identifier,
+            rate_limit_max_attempts,
+        ) in rate_limit_checks:
+            decision = (
+                await consume_public_registration_resend_rate_limit(
+                    redis_client,
+                    scope=rate_limit_scope,
+                    identifier=rate_limit_identifier,
+                    limit=rate_limit_max_attempts,
+                    window_seconds=(
+                        settings
+                        .public_registration_resend_rate_limit_window_seconds
+                    ),
+                    secret_key=settings.secret_key,
+                )
+            )
+
+            if not decision.allowed:
+                await write_audit_event(
+                    session,
+                    action="public_registration.rate_limited",
+                    request=request,
+                    entity_type="user",
+                    payload={
+                        "email": normalized_email,
+                        "flow": "resend",
+                        "scope": rate_limit_scope,
+                        "retry_after_seconds": (
+                            decision.retry_after_seconds
+                        ),
+                    },
+                )
+                await session.commit()
+
+                return PublicRegistrationAcceptedResponse(
+                    status=(
+                        PUBLIC_REGISTRATION_ACCEPTED_STATUS
+                    ),
+                    message=(
+                        PUBLIC_REGISTRATION_ACCEPTED_MESSAGE
+                    ),
+                )
+    except (RedisError, RuntimeError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Public registration is temporarily unavailable."
+            ),
+        ) from error
+
+    prepared = await prepare_public_registration_resend(
+        session,
+        email=normalized_email,
+    )
+    await session.commit()
+
+    if (
+        prepared.user is not None
+        and prepared.created_token is not None
+    ):
+        delivery_status = "failed"
+        delivery_error: str | None = None
+
+        try:
+            setup_url = build_password_setup_url(
+                settings.public_base_url,
+                prepared.created_token.raw_token,
+            )
+
+            delivery_result = (
+                send_public_registration_email(
+                    recipient=prepared.user.email,
+                    user_email=prepared.user.email,
+                    setup_url=setup_url,
+                    expires_at=(
+                        prepared
+                        .created_token
+                        .record
+                        .expires_at
+                    ),
+                )
+            )
+
+            delivery_status = delivery_result.status
+            delivery_error = delivery_result.error
+
+            if delivery_result.sent:
+                prepared.created_token.record.sent_at = (
+                    utcnow()
+                )
+        except Exception as error:
+            delivery_error = error.__class__.__name__
+
+        email_action = (
+            "public_registration.email_sent"
+            if (
+                delivery_status
+                == EMAIL_DELIVERY_STATUS_SENT
+            )
+            else "public_registration.email_failed"
+        )
+
+        await write_audit_event(
+            session,
+            action=email_action,
+            request=request,
+            entity_type="user_password_token",
+            entity_id=(
+                prepared.created_token.record.id
+            ),
+            payload={
+                "email": prepared.user.email,
+                "flow": "resend",
+                "delivery_status": delivery_status,
+                "error": delivery_error,
+            },
+        )
+        await session.commit()
+
+    return PublicRegistrationAcceptedResponse(
+        status=PUBLIC_REGISTRATION_ACCEPTED_STATUS,
+        message=PUBLIC_REGISTRATION_ACCEPTED_MESSAGE,
+    )
+
 
 @router.post(
     "/forgot-password",
@@ -700,6 +908,7 @@ async def set_password(
     payload: SetPasswordRequest,
     request: Request,
     session: AsyncSession = Depends(get_db),
+    redis_client: Redis = Depends(get_redis_client),
 ) -> SetPasswordResponse:
     token_record = await get_valid_user_password_token(
         session,
@@ -708,12 +917,71 @@ async def set_password(
     )
 
     if token_record is None:
+        client_identifier = (
+            resolve_public_registration_client_identifier(
+                peer_host=_request_ip(request),
+                forwarded_for=request.headers.get(
+                    "x-forwarded-for"
+                ),
+            )
+        )
+
+        try:
+            decision = await consume_password_setup_rate_limit(
+                redis_client,
+                scope=PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT,
+                identifier=client_identifier,
+                limit=(
+                    settings
+                    .password_setup_rate_limit_client_max_attempts
+                ),
+                window_seconds=(
+                    settings
+                    .password_setup_rate_limit_window_seconds
+                ),
+                secret_key=settings.secret_key,
+            )
+        except (RedisError, RuntimeError) as error:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    "Password setup is temporarily unavailable."
+                ),
+            ) from error
+
+        if not decision.allowed:
+            await write_audit_event(
+                session,
+                action="public_registration.rate_limited",
+                request=request,
+                entity_type="user_password_token",
+                payload={
+                    "flow": "password_setup",
+                    "scope": (
+                        PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_CLIENT
+                    ),
+                    "retry_after_seconds": (
+                        decision.retry_after_seconds
+                    ),
+                },
+            )
+            await session.commit()
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Invalid or expired password setup token"
+                ),
+            )
+
         await write_audit_event(
             session,
             action="password_setup_failed",
             request=request,
             entity_type="user_password_token",
-            payload={"reason": "invalid_or_expired_token"},
+            payload={
+                "reason": "invalid_or_expired_token"
+            },
         )
         await session.commit()
 
@@ -759,6 +1027,41 @@ async def set_password(
             "purpose": token_record.purpose,
         },
     )
+
+    registration_origin_result = await session.execute(
+        select(AuditEvent.id)
+        .where(
+            AuditEvent.entity_type
+            == "user_password_token",
+            AuditEvent.entity_id == token_record.id,
+            AuditEvent.action.in_(
+                (
+                    "public_registration.email_sent",
+                    "public_registration.email_failed",
+                )
+            ),
+        )
+        .limit(1)
+    )
+    registration_origin_event_id = (
+        registration_origin_result.scalar_one_or_none()
+    )
+
+    if registration_origin_event_id is not None:
+        await write_audit_event(
+            session,
+            action="public_registration.completed",
+            request=request,
+            actor_user_id=user.id,
+            entity_type="user",
+            entity_id=user.id,
+            payload={
+                "email": user.email,
+                "purpose": token_record.purpose,
+                "setup_token_id": token_record.id,
+            },
+        )
+
     await session.commit()
 
     return SetPasswordResponse(

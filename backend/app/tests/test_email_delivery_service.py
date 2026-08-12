@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+import traceback
 
 from app.core.config import Settings
 from app.services import email_delivery
@@ -367,3 +368,112 @@ def test_email_sources_have_no_corrupted_question_mark_runs() -> None:
         )
 
         assert "?" * 3 not in source, source_path
+
+
+def test_smtp_auth_secret_is_redacted_and_unwrapped_only_for_login(
+    monkeypatch,
+) -> None:
+    dummy_secret = "dummy-smtp-secret-fixture"
+
+    email_settings = build_settings(
+        email_delivery_enabled=True,
+        smtp_host="smtp.example.test",
+        smtp_port=2525,
+        smtp_auth_username="mailer@example.test",
+        smtp_auth_value=dummy_secret,
+        smtp_use_tls=False,
+        smtp_use_ssl=False,
+    )
+
+    # The application can explicitly retrieve the credential when
+    # it actually needs to authenticate.
+    assert (
+        email_settings.smtp_auth_value.get_secret_value()
+        == dummy_secret
+    )
+
+    # Generic representations must never expose the credential.
+    assert dummy_secret not in repr(email_settings)
+    assert dummy_secret not in str(email_settings)
+    assert (
+        dummy_secret
+        not in email_settings.model_dump_json()
+    )
+
+    dumped = email_settings.model_dump()
+
+    assert (
+        dumped["smtp_auth_value"].get_secret_value()
+        == dummy_secret
+    )
+
+    try:
+        raise RuntimeError(email_settings)
+    except RuntimeError:
+        exception_trace = traceback.format_exc()
+
+    assert dummy_secret not in exception_trace
+
+    class FakeSMTP:
+        captured_login: tuple[str, str] | None = None
+
+        def __init__(
+            self,
+            host: str,
+            port: int,
+            timeout: float,
+        ) -> None:
+            self.host = host
+            self.port = port
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return None
+
+        def ehlo(self) -> None:
+            return None
+
+        def login(
+            self,
+            username: str,
+            password: str,
+        ) -> None:
+            FakeSMTP.captured_login = (
+                username,
+                password,
+            )
+
+        def send_message(self, message) -> None:
+            return None
+
+    monkeypatch.setattr(
+        email_delivery.smtplib,
+        "SMTP",
+        FakeSMTP,
+    )
+
+    message = build_password_setup_email_message(
+        recipient="learner@example.test",
+        setup_url=(
+            "https://portal.example.test/"
+            "set-password?code=dummy"
+        ),
+        email_settings=email_settings,
+    )
+
+    result = send_email_message(
+        message,
+        email_settings=email_settings,
+    )
+
+    assert result.status == EMAIL_DELIVERY_STATUS_SENT
+
+    # Plain text exists only at the explicit SMTP authentication
+    # boundary and is not retained by Settings representations.
+    assert FakeSMTP.captured_login == (
+        "mailer@example.test",
+        dummy_secret,
+    )
