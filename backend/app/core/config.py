@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -175,8 +175,9 @@ class Settings(BaseSettings):
             "OBRPORTAL_SMTP_USERNAME",
         ),
     )
-    smtp_auth_value: str = Field(
-        default="",
+    smtp_auth_value: SecretStr = Field(
+        default_factory=lambda: SecretStr(""),
+        repr=False,
         validation_alias=AliasChoices(
             "SMTP_PASSWORD",
             "EMAIL_SMTP_PASSWORD",
