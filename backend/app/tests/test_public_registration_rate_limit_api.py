@@ -1,20 +1,18 @@
+import asyncio
 import json
 import os
 import urllib.error
 import urllib.request
 from uuid import uuid4
 
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
 
 BASE_URL = os.getenv(
     "TEST_BASE_URL",
     "http://127.0.0.1:8000",
 ).rstrip("/")
-
-RATE_LIMIT_DETAIL = (
-    "Too many registration attempts. "
-    "Please try again later."
-)
-
 
 def registration_payload(email: str) -> dict:
     return {
@@ -80,6 +78,44 @@ def assert_neutral_accepted(
     assert "user_id" not in payload
 
 
+def count_registration_rate_limited_events(
+    scope: str,
+) -> int:
+    from app.core.config import settings
+
+    async def count_events() -> int:
+        engine = create_async_engine(
+            settings.database_url
+        )
+
+        try:
+            async with engine.connect() as connection:
+                result = await connection.execute(
+                    text(
+                        """
+                        SELECT COUNT(*)
+                        FROM audit_events
+                        WHERE action = :action
+                          AND payload->>'flow' = :flow
+                          AND payload->>'scope' = :scope
+                        """
+                    ),
+                    {
+                        "action": (
+                            "public_registration.rate_limited"
+                        ),
+                        "flow": "registration",
+                        "scope": scope,
+                    },
+                )
+
+                return int(result.scalar_one())
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(count_events())
+
+
 def test_public_registration_rate_limit_keeps_success_neutral() -> None:
     suffix = uuid4().hex
     status_code, payload, _ = post_registration(
@@ -119,15 +155,28 @@ def test_public_registration_rate_limits_normalized_email() -> None:
     for status_code, payload, _ in accepted_results:
         assert_neutral_accepted(status_code, payload)
 
+    rate_limited_before = (
+        count_registration_rate_limited_events(
+            "email"
+        )
+    )
+
     status_code, payload, headers = post_registration(
         email=email,
         forwarded_for=f"2001:db8:2:ffff::{suffix[:4]}",
     )
 
-    assert status_code == 429
-    assert payload == {"detail": RATE_LIMIT_DETAIL}
-    assert int(headers["retry-after"]) >= 1
+    assert_neutral_accepted(status_code, payload)
+    assert "retry-after" not in headers
     assert email not in json.dumps(payload)
+
+    rate_limited_after = (
+        count_registration_rate_limited_events(
+            "email"
+        )
+    )
+
+    assert rate_limited_after == rate_limited_before + 1
 
 
 def test_public_registration_rate_limits_client_identifier() -> None:
@@ -155,13 +204,27 @@ def test_public_registration_rate_limits_client_identifier() -> None:
         assert_neutral_accepted(status_code, payload)
 
     blocked_email = f"rate-client-blocked-{suffix}@example.test"
+
+    rate_limited_before = (
+        count_registration_rate_limited_events(
+            "client"
+        )
+    )
+
     status_code, payload, headers = post_registration(
         email=blocked_email,
         forwarded_for=forwarded_for,
     )
 
-    assert status_code == 429
-    assert payload == {"detail": RATE_LIMIT_DETAIL}
-    assert int(headers["retry-after"]) >= 1
+    assert_neutral_accepted(status_code, payload)
+    assert "retry-after" not in headers
     assert blocked_email not in json.dumps(payload)
     assert forwarded_for not in json.dumps(payload)
+
+    rate_limited_after = (
+        count_registration_rate_limited_events(
+            "client"
+        )
+    )
+
+    assert rate_limited_after == rate_limited_before + 1
