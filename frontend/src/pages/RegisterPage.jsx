@@ -481,12 +481,6 @@ export function RegisterPage({
                 </div>
               </div>
 
-              <AuthSecurityNotice>
-                Мы не просим придумать пароль на этой странице.
-                Установка пароля выполняется только по ссылке из
-                подтверждающего письма.
-              </AuthSecurityNotice>
-
               <button
                 type="submit"
                 disabled={loading}

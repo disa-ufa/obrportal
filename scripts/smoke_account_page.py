@@ -61,6 +61,7 @@ def main() -> None:
             "startAccountCourse,",
             "DocumentVerificationQrBlock",
             "AdminQuickFilterButtons",
+            'import { AccountLearnerProfileCard } from "../components/account/AccountLearnerProfileCard";',
             "SectionCard",
             "export function AccountPage",
             "function getStatusLabel(status)",
@@ -117,6 +118,62 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/components/account/AccountLearnerProfileCard.jsx",
+        [
+            "getAccountLearnerProfile,",
+            "updateAccountLearnerProfile,",
+            "const EMPTY_FORM = {",
+            "function toFormData(profile)",
+            "function buildPayload(formData, profile)",
+            "function formatProfileSaveError(error)",
+            (
+                "export function "
+                "AccountLearnerProfileCard({ accountUser })"
+            ),
+            "getAccountLearnerProfile()",
+            "updateAccountLearnerProfile(",
+            'data-testid="account-learner-profile"',
+            (
+                'data-testid='
+                '"account-learner-profile-loading"'
+            ),
+            (
+                'data-testid='
+                '"account-learner-profile-unavailable"'
+            ),
+            (
+                'title="\u041f\u0435\u0440\u0441\u043e\u043d\u0430\u043b'
+                '\u044c\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b'
+                '\u0435 \u0434\u043b\u044f \u0434\u043e\u043a\u0443\u043c'
+                '\u0435\u043d\u0442\u043e\u0432"'
+            ),
+            (
+                "\u0423\u0447\u0451\u0442\u043d\u0430\u044f "
+                "\u0437\u0430\u043f\u0438\u0441\u044c \u0438 "
+                "\u0434\u0430\u043d\u043d\u044b\u0435 \u0434\u043b\u044f "
+                "\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432 "
+                "\u2014 \u0440\u0430\u0437\u043d\u044b\u0435 "
+                "\u043d\u0430\u0431\u043e\u0440\u044b "
+                "\u0441\u0432\u0435\u0434\u0435\u043d\u0438\u0439."
+            ),
+            (
+                'value={profile?.'
+                'identity_document_status}'
+            ),
+            (
+                'value={profile?.'
+                'education_document_status}'
+            ),
+            "setSaveNotice(",
+            'disabled={saving || !hasChanges}',
+            (
+                "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c "
+                "\u0434\u0430\u043d\u043d\u044b\u0435"
+            ),
+        ],
+    )
+
+    require_contains(
         "frontend/src/components/documents/DocumentVerificationQrBlock.jsx",
         [
             "export function DocumentVerificationQrBlock",
@@ -169,6 +226,7 @@ def main() -> None:
     )
 
     print("Account page behavior smoke passed")
+    print(" - learner profile card contract covered")
 
 
 if __name__ == "__main__":
