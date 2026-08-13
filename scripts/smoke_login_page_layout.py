@@ -68,8 +68,8 @@ def main() -> None:
             'import { AuthLayout }',
             'import { AuthBrandPanel }',
             'import { AuthCard }',
-            'import { AuthSecurityNotice }',
             'import { AuthSteps }',
+            'title="Образовательный портал РЦДО"',
             'title="Вход в ОбрПортал"',
             'to="/forgot-password"',
             'onPageChange("register")',
@@ -88,6 +88,10 @@ def main() -> None:
             'import { SectionCard }',
             'title="Что будет дальше"',
             "Активная сессия:",
+            "Безопасное соединение",
+            "Самостоятельная регистрация временно недоступна",
+            "Один вход для слушателей, представителей организаций и администраторов.",
+            "Обучение и документы — в одном кабинете",
         ],
     )
 
@@ -186,6 +190,7 @@ def main() -> None:
     print(" - forgot-password link preserved")
     print(" - registration feature flag preserved")
     print(" - pending enrollment flow preserved")
+    print(" - redundant login notices removed")
     print(" - legacy admin-only labels removed")
 
 

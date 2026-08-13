@@ -6,7 +6,6 @@ import { AuthBrandPanel } from "../components/auth/AuthBrandPanel";
 import { AuthCard } from "../components/auth/AuthCard";
 import { AuthLayout } from "../components/auth/AuthLayout";
 import { AuthPanel } from "../components/auth/AuthPanel";
-import { AuthSecurityNotice } from "../components/auth/AuthSecurityNotice";
 import { AuthSteps } from "../components/auth/AuthSteps";
 import { Alert } from "../components/ui/Alert";
 
@@ -101,49 +100,34 @@ export function AuthPage({
     };
   }, []);
 
-  const registrationFooter = publicRegistrationLoading ? (
-    <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
-      Проверяем доступность самостоятельной регистрации...
-    </div>
-  ) : publicRegistrationEnabled ? (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <div className="font-bold text-slate-900">
-          Ещё нет учётной записи?
+  const registrationFooter =
+    !publicRegistrationLoading && publicRegistrationEnabled ? (
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="font-bold text-slate-900">
+            Ещё нет учётной записи?
+          </div>
+          <div className="mt-1 text-sm text-slate-600">
+            Зарегистрируйтесь и подтвердите адрес электронной почты.
+          </div>
         </div>
-        <div className="mt-1 text-sm text-slate-600">
-          Зарегистрируйтесь и подтвердите адрес электронной почты.
-        </div>
-      </div>
 
-      <button
-        type="button"
-        onClick={() => onPageChange("register")}
-        className="shrink-0 rounded-full bg-blue-50 px-5 py-2.5 text-sm font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
-      >
-        Создать аккаунт
-      </button>
-    </div>
-  ) : (
-    <div className="rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
-      <div className="font-bold">
-        Самостоятельная регистрация временно недоступна
+        <button
+          type="button"
+          onClick={() => onPageChange("register")}
+          className="shrink-0 rounded-full bg-blue-50 px-5 py-2.5 text-sm font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+        >
+          Создать аккаунт
+        </button>
       </div>
-      <div className="mt-1 text-amber-800">
-        Пользователи с созданной учётной записью могут войти по
-        e-mail и паролю. Для получения доступа обратитесь в поддержку
-        портала.
-      </div>
-    </div>
-  );
+    ) : null;
 
   return (
     <AuthLayout
       brand={
         <AuthBrandPanel
-          title="Обучение и документы — в одном кабинете"
+          title="Образовательный портал РЦДО"
           description="Войдите в ОбрПортал, чтобы продолжить обучение, увидеть назначенные программы и получить итоговые документы."
-          footer="Один вход для слушателей, представителей организаций и администраторов."
         >
           <AuthSteps steps={LOGIN_STEPS} activeStep={0} />
         </AuthBrandPanel>
@@ -206,11 +190,6 @@ export function AuthPage({
             Забыли пароль?
           </Link>
         </div>
-
-        <AuthSecurityNotice className="mt-6">
-          Данные для входа передаются по защищённому соединению.
-          Никому не сообщайте свой пароль.
-        </AuthSecurityNotice>
       </AuthCard>
     </AuthLayout>
   );
