@@ -6,6 +6,7 @@ import { AuthBrandPanel } from "../components/auth/AuthBrandPanel";
 import { AuthCard } from "../components/auth/AuthCard";
 import { AuthLayout } from "../components/auth/AuthLayout";
 import { AuthPanel } from "../components/auth/AuthPanel";
+import { AuthSecurityNotice } from "../components/auth/AuthSecurityNotice";
 import { AuthSteps } from "../components/auth/AuthSteps";
 import { Alert } from "../components/ui/Alert";
 
