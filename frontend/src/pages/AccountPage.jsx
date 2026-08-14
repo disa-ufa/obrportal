@@ -4,6 +4,7 @@ import {
   completeAccountCourse,
   completeAccountCourseLesson,
   downloadAccountDocument,
+  getAccountActivities,
   getAccountCourseDetail,
   getAccountCourses,
   getAccountDocuments,
@@ -18,6 +19,7 @@ import {
   LearnerAccountDashboard,
 } from "../components/account/LearnerAccountDashboard";
 import { LearnerAccountLearning } from "../components/account/LearnerAccountLearning";
+import { LearnerAccountAssignments } from "../components/account/LearnerAccountAssignments";
 import { formatRuDateTimeNative as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
@@ -71,11 +73,7 @@ const ACCOUNT_DOCUMENT_FILTERS = [
 const ACCOUNT_SECTION_TARGETS = {
   overview: "account-overview",
   learning: "account-learning",
-
-  // До отдельного раздела заданий тесты и практические задания
-  // остаются частью существующей структуры курса.
-  assignments: "account-courses",
-
+  assignments: "account-assignments",
   documents: "account-documents",
   profile: "account-learner-profile",
 };
@@ -1360,6 +1358,9 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [summary, setSummary] = useState(null);
   const [coursesResponse, setCoursesResponse] = useState(null);
   const [documentsResponse, setDocumentsResponse] = useState(null);
+  const [activitiesResponse, setActivitiesResponse] = useState(null);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [activitiesError, setActivitiesError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
@@ -1368,6 +1369,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [courseActionLoadingKey, setCourseActionLoadingKey] = useState("");
   const [courseStatusFilter, setCourseStatusFilter] = useState("");
   const [learningStatusFilter, setLearningStatusFilter] = useState("");
+  const [activityStatusFilter, setActivityStatusFilter] = useState("");
   const [documentStatusFilter, setDocumentStatusFilter] = useState("");
   const [accountNotice, setAccountNotice] = useState(null);
   const [selectedCourseDetail, setSelectedCourseDetail] = useState(null);
@@ -1431,6 +1433,42 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAccountActivities() {
+      try {
+        setActivitiesLoading(true);
+        setActivitiesError("");
+
+        const data = await getAccountActivities();
+
+        if (!cancelled) {
+          setActivitiesResponse(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setActivitiesError(
+            formatApiError(
+              err,
+              "Не удалось загрузить задания и тесты."
+            )
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setActivitiesLoading(false);
+        }
+      }
+    }
+
+    loadAccountActivities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function refreshAccountSnapshot() {
     const [summaryResponse, coursesData, documentsData] = await Promise.all([
       getAccountSummary(),
@@ -1443,6 +1481,26 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     setDocumentsResponse(documentsData);
   }
 
+  async function refreshAccountActivities() {
+    try {
+      setActivitiesLoading(true);
+      setActivitiesError("");
+
+      const data = await getAccountActivities();
+
+      setActivitiesResponse(data);
+    } catch (err) {
+      setActivitiesError(
+        formatApiError(
+          err,
+          "Не удалось обновить задания и тесты."
+        )
+      );
+    } finally {
+      setActivitiesLoading(false);
+    }
+  }
+
   async function handleStartCourse(enrollmentId) {
     try {
       setCourseActionError("");
@@ -1450,6 +1508,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
 
       await startAccountCourse(enrollmentId);
       await refreshAccountSnapshot();
+      await refreshAccountActivities();
 
       setAccountNotice({
         tone: "green",
@@ -1479,6 +1538,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
 
       await completeAccountCourse(enrollmentId);
       await refreshAccountSnapshot();
+      await refreshAccountActivities();
       await refreshOpenedCourseDetailAfterCompletion(enrollmentId);
 
       setAccountNotice({
@@ -1560,6 +1620,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
 
       setSelectedCourseDetail(detail);
       await refreshAccountSnapshot();
+      await refreshAccountActivities();
 
       setAccountNotice({
         tone: "green",
@@ -1608,6 +1669,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const profile = summary?.profile || user;
   const courses = coursesResponse?.items || [];
   const documents = documentsResponse?.items || [];
+  const activities = activitiesResponse?.items || [];
 
   useEffect(() => {
     let cancelled = false;
@@ -1798,11 +1860,34 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         />
       </div>
 
+
+      <div
+        id="account-assignments"
+        className={
+          activeAccountSection === "assignments"
+            ? "scroll-mt-24"
+            : "hidden"
+        }
+      >
+        <LearnerAccountAssignments
+          activities={activities}
+          selectedFilter={activityStatusFilter}
+          loading={activitiesLoading}
+          errorMessage={activitiesError}
+          onFilterChange={setActivityStatusFilter}
+          onOpenCourse={onOpenCourse}
+          onOpenLearning={() =>
+            handleAccountSectionChange("learning")
+          }
+        />
+      </div>
+
       <div
         data-testid="learner-account-legacy-sections"
         className={
           activeAccountSection === "overview" ||
-          activeAccountSection === "learning"
+          activeAccountSection === "learning" ||
+          activeAccountSection === "assignments"
             ? "hidden"
             : "space-y-6"
         }
