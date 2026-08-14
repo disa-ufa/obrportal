@@ -69,6 +69,40 @@ def main() -> None:
         ],
     )
 
+    require_contains(
+        "frontend/src/pages/AccountPage.jsx",
+        [
+            'import { LearnerAccountLayout } from "../components/account/LearnerAccountLayout";',
+            "const ACCOUNT_SECTION_TARGETS = {",
+            'overview: "account-overview"',
+            'learning: "account-courses"',
+            'assignments: "account-courses"',
+            'documents: "account-documents"',
+            'profile: "account-learner-profile"',
+            'const [activeAccountSection, setActiveAccountSection] = useState("overview");',
+            "function handleAccountSectionChange(section)",
+            "setActiveAccountSection(section);",
+            "const targetId = ACCOUNT_SECTION_TARGETS[section];",
+            "window.requestAnimationFrame(() => {",
+            "document.getElementById(targetId)?.scrollIntoView({",
+            'behavior: "smooth"',
+            "<LearnerAccountLayout",
+            "user={profile}",
+            "activeSection={activeAccountSection}",
+            "onSectionChange={handleAccountSectionChange}",
+            'id="account-overview"',
+            'id="account-courses"',
+            'id="account-documents"',
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/account/AccountLearnerProfileCard.jsx",
+        [
+            'id="account-learner-profile"',
+        ],
+    )
+
     print("Learner account layout smoke passed")
     print(" - desktop sidebar contract covered")
     print(" - mobile navigation contract covered")

@@ -12,6 +12,7 @@ import {
 } from "../api/client";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
 import { AccountLearnerProfileCard } from "../components/account/AccountLearnerProfileCard";
+import { LearnerAccountLayout } from "../components/account/LearnerAccountLayout";
 import { formatRuDateTimeNative as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
@@ -61,6 +62,18 @@ const ACCOUNT_DOCUMENT_FILTERS = [
   { value: "draft", label: "Ожидают публикации" },
   { value: "revoked", label: "Отозванные" },
 ];
+
+const ACCOUNT_SECTION_TARGETS = {
+  overview: "account-overview",
+  learning: "account-courses",
+
+  // До отдельного раздела заданий тесты и практические задания
+  // остаются частью существующей структуры курса.
+  assignments: "account-courses",
+
+  documents: "account-documents",
+  profile: "account-learner-profile",
+};
 
 function calculateStatusCounts(items, getStatus) {
   const counts = {
@@ -1336,6 +1349,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [courseDetailLoadingId, setCourseDetailLoadingId] = useState("");
   const [courseDetailError, setCourseDetailError] = useState(null);
   const [lessonProgressLoadingId, setLessonProgressLoadingId] = useState("");
+  const [activeAccountSection, setActiveAccountSection] = useState("overview");
 
   useEffect(() => {
     try {
@@ -1517,6 +1531,23 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     }
   }
 
+  function handleAccountSectionChange(section) {
+    setActiveAccountSection(section);
+
+    const targetId = ACCOUNT_SECTION_TARGETS[section];
+
+    if (!targetId) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }
+
   const profile = summary?.profile || user;
   const courses = coursesResponse?.items || [];
   const documents = documentsResponse?.items || [];
@@ -1596,7 +1627,15 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   );
 
   return (
-    <div className="space-y-6">
+    <LearnerAccountLayout
+      user={profile}
+      activeSection={activeAccountSection}
+      onSectionChange={handleAccountSectionChange}
+    >
+      <div
+        id="account-overview"
+        className="scroll-mt-24 space-y-6"
+      >
       <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
           Личный кабинет
@@ -2181,6 +2220,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         )}
         </SectionCard>
       </div>
-    </div>
+      </div>
+    </LearnerAccountLayout>
   );
 }
