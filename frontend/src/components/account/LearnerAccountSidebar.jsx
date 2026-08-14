@@ -1,4 +1,4 @@
-﻿import {
+import {
   ClipboardCheck,
   FileText,
   GraduationCap,
