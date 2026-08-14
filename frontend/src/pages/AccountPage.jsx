@@ -17,6 +17,7 @@ import {
   getLearnerDashboardCurrentCourse,
   LearnerAccountDashboard,
 } from "../components/account/LearnerAccountDashboard";
+import { LearnerAccountLearning } from "../components/account/LearnerAccountLearning";
 import { formatRuDateTimeNative as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
@@ -69,7 +70,7 @@ const ACCOUNT_DOCUMENT_FILTERS = [
 
 const ACCOUNT_SECTION_TARGETS = {
   overview: "account-overview",
-  learning: "account-courses",
+  learning: "account-learning",
 
   // До отдельного раздела заданий тесты и практические задания
   // остаются частью существующей структуры курса.
@@ -78,6 +79,25 @@ const ACCOUNT_SECTION_TARGETS = {
   documents: "account-documents",
   profile: "account-learner-profile",
 };
+
+function getInitialAccountSection() {
+  try {
+    const requestedSection =
+      sessionStorage.getItem("obrportal_account_section") || "";
+
+    if (
+      requestedSection &&
+      ACCOUNT_SECTION_TARGETS[requestedSection]
+    ) {
+      return requestedSection;
+    }
+  } catch {
+    // sessionStorage may be unavailable in private mode or tests.
+  }
+
+  return "overview";
+}
+
 
 function calculateStatusCounts(items, getStatus) {
   const counts = {
@@ -1347,6 +1367,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [courseActionError, setCourseActionError] = useState("");
   const [courseActionLoadingKey, setCourseActionLoadingKey] = useState("");
   const [courseStatusFilter, setCourseStatusFilter] = useState("");
+  const [learningStatusFilter, setLearningStatusFilter] = useState("");
   const [documentStatusFilter, setDocumentStatusFilter] = useState("");
   const [accountNotice, setAccountNotice] = useState(null);
   const [selectedCourseDetail, setSelectedCourseDetail] = useState(null);
@@ -1354,10 +1375,14 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [courseDetailError, setCourseDetailError] = useState(null);
   const [lessonProgressLoadingId, setLessonProgressLoadingId] = useState("");
   const [overviewCourseDetail, setOverviewCourseDetail] = useState(null);
-  const [activeAccountSection, setActiveAccountSection] = useState("overview");
+  const [activeAccountSection, setActiveAccountSection] = useState(
+    getInitialAccountSection
+  );
 
   useEffect(() => {
     try {
+      sessionStorage.removeItem("obrportal_account_section");
+
       const rawNotice = sessionStorage.getItem("obrportal_account_notice");
 
       if (rawNotice) {
@@ -1493,6 +1518,33 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       setCourseDetailError({
         enrollmentId,
         message: formatApiError(err, "Не удалось загрузить программу курса."),
+      });
+    } finally {
+      setCourseDetailLoadingId("");
+    }
+  }
+
+  async function handleLoadLearningCourseDetail(course) {
+    const enrollmentId = course?.enrollment_id;
+
+    if (!enrollmentId) {
+      return;
+    }
+
+    try {
+      setCourseDetailError(null);
+      setCourseDetailLoadingId(enrollmentId);
+
+      const detail = await getAccountCourseDetail(enrollmentId);
+
+      setSelectedCourseDetail(detail);
+    } catch (err) {
+      setCourseDetailError({
+        enrollmentId,
+        message: formatApiError(
+          err,
+          "Не удалось загрузить прогресс по программе."
+        ),
       });
     } finally {
       setCourseDetailLoadingId("");
@@ -1676,6 +1728,20 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       activeSection={activeAccountSection}
       onSectionChange={handleAccountSectionChange}
     >
+      {accountNotice && (
+        <div
+          data-testid="learner-account-global-notice"
+          className="mb-5"
+        >
+          <Alert
+            title={accountNotice.title || "Уведомление"}
+            tone={accountNotice.tone || "green"}
+          >
+            {accountNotice.message}
+          </Alert>
+        </div>
+      )}
+
       <div
         id="account-overview"
         className={
@@ -1698,9 +1764,45 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       </div>
 
       <div
+        id="account-learning"
+        className={
+          activeAccountSection === "learning"
+            ? "scroll-mt-24"
+            : "hidden"
+        }
+      >
+        <LearnerAccountLearning
+          courses={courses}
+          selectedStatus={learningStatusFilter}
+          selectedCourseDetail={selectedCourseDetail}
+          detailLoadingEnrollmentId={courseDetailLoadingId}
+          actionLoadingEnrollmentId={
+            courseActionLoadingKey.endsWith(":start")
+              ? courseActionLoadingKey.slice(0, -6)
+              : ""
+          }
+          loading={loading}
+          errorMessage={
+            error ||
+            courseActionError ||
+            courseDetailError?.message ||
+            ""
+          }
+          onStatusChange={setLearningStatusFilter}
+          onLoadCourseDetail={handleLoadLearningCourseDetail}
+          onStartCourse={(course) =>
+            handleStartCourse(course.enrollment_id)
+          }
+          onOpenCourse={onOpenCourse}
+          onOpenCatalog={() => onPageChange("catalog")}
+        />
+      </div>
+
+      <div
         data-testid="learner-account-legacy-sections"
         className={
-          activeAccountSection === "overview"
+          activeAccountSection === "overview" ||
+          activeAccountSection === "learning"
             ? "hidden"
             : "space-y-6"
         }
@@ -1760,11 +1862,6 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         </Alert>
       )}
 
-      {accountNotice && (
-        <Alert title={accountNotice.title || "Уведомление"} tone={accountNotice.tone || "green"}>
-          {accountNotice.message}
-        </Alert>
-      )}
 
       {!loading && (
         <AccountAccessDiagnostics

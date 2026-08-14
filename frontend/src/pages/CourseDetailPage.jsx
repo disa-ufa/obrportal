@@ -4841,6 +4841,25 @@ function CourseDetailLearnerJourneyHint({
   );
 }
 
+function setAccountLearningEntryIntent(notice = null) {
+  try {
+    sessionStorage.setItem(
+      "obrportal_account_section",
+      "learning"
+    );
+
+    if (notice) {
+      sessionStorage.setItem(
+        "obrportal_account_notice",
+        JSON.stringify(notice)
+      );
+    }
+  } catch {
+    // sessionStorage may be unavailable in private mode or tests.
+  }
+}
+
+
 export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user }) {
   const [course, setCourse] = useState(null);
   const [relatedCourses, setRelatedCourses] = useState([]);
@@ -5308,6 +5327,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     }
 
     if (existingEnrollment) {
+      setAccountLearningEntryIntent();
       onPageChange("account");
       return;
     }
@@ -5332,6 +5352,14 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setAccountCourseDetail(createdCourseDetail);
       setExistingEnrollment(createdCourseDetail || createdEnrollment);
       setEnrollSuccess("Вы записаны на программу. Курс добавлен в личный кабинет.");
+
+      setAccountLearningEntryIntent({
+        tone: "green",
+        title: "Запись на курс",
+        message:
+          "Вы успешно записаны на программу. Курс добавлен в раздел «Моё обучение».",
+      });
+
       onPageChange("account");
     } catch (err) {
       if (err.status === 409) {
@@ -5342,6 +5370,15 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         });
         setEnrollError("");
         setEnrollSuccess("Вы уже записаны на эту программу. Курс доступен в личном кабинете.");
+
+        setAccountLearningEntryIntent({
+          tone: "green",
+          title: "Курс уже назначен",
+          message:
+            "Вы уже записаны на эту программу. Она доступна в разделе «Моё обучение».",
+        });
+
+        onPageChange("account");
         return;
       }
 
@@ -5681,4 +5718,3 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     </div>
   );
 }
-
