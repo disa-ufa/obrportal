@@ -66,8 +66,29 @@ function getDisplayName(user) {
 
   const email = String(user?.email || "").trim();
 
-  return email || "Обучающийся";
+  return email || "Слушатель";
 }
+
+function getRoleLabel(user) {
+  const roles = Array.isArray(user?.roles)
+    ? user.roles
+    : [];
+
+  const isLearner = roles.some(
+    (role) =>
+      role?.code === "learner_fl" ||
+      role?.code === "learner_org"
+  );
+
+  if (isLearner) {
+    return "Слушатель";
+  }
+
+  const primaryRole = roles[0];
+
+  return String(primaryRole?.name || "Слушатель").trim() || "Слушатель";
+}
+
 
 export function LearnerAccountSidebar({
   user,
@@ -99,7 +120,7 @@ export function LearnerAccountSidebar({
             </div>
 
             <div className="mt-1 text-xs font-medium text-slate-500">
-              Обучающийся
+              {getRoleLabel(user)}
             </div>
           </div>
         </div>

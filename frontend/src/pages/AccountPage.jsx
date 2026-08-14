@@ -13,6 +13,10 @@ import {
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
 import { AccountLearnerProfileCard } from "../components/account/AccountLearnerProfileCard";
 import { LearnerAccountLayout } from "../components/account/LearnerAccountLayout";
+import {
+  getLearnerDashboardCurrentCourse,
+  LearnerAccountDashboard,
+} from "../components/account/LearnerAccountDashboard";
 import { formatRuDateTimeNative as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
@@ -1349,6 +1353,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const [courseDetailLoadingId, setCourseDetailLoadingId] = useState("");
   const [courseDetailError, setCourseDetailError] = useState(null);
   const [lessonProgressLoadingId, setLessonProgressLoadingId] = useState("");
+  const [overviewCourseDetail, setOverviewCourseDetail] = useState(null);
   const [activeAccountSection, setActiveAccountSection] = useState("overview");
 
   useEffect(() => {
@@ -1552,6 +1557,45 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
   const courses = coursesResponse?.items || [];
   const documents = documentsResponse?.items || [];
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const currentCourse = getLearnerDashboardCurrentCourse(
+      coursesResponse?.items || []
+    );
+
+    if (!currentCourse?.enrollment_id) {
+      setOverviewCourseDetail(null);
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    async function loadOverviewCourseDetail() {
+      try {
+        const detail = await getAccountCourseDetail(
+          currentCourse.enrollment_id
+        );
+
+        if (!cancelled) {
+          setOverviewCourseDetail(detail);
+        }
+      } catch {
+        if (!cancelled) {
+          setOverviewCourseDetail(null);
+        }
+      }
+    }
+
+    setOverviewCourseDetail(null);
+    loadOverviewCourseDetail();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [coursesResponse]);
+
   const courseStatusCounts = useMemo(
     () => calculateStatusCounts(courses, (course) => course.status),
     [courses]
@@ -1634,7 +1678,32 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
     >
       <div
         id="account-overview"
-        className="scroll-mt-24 space-y-6"
+        className={
+          activeAccountSection === "overview"
+            ? "scroll-mt-24"
+            : "hidden"
+        }
+      >
+        <LearnerAccountDashboard
+          user={profile}
+          summary={summary}
+          courses={courses}
+          documents={documents}
+          currentCourseDetail={overviewCourseDetail}
+          loading={loading}
+          errorMessage={error}
+          onSectionChange={handleAccountSectionChange}
+          onOpenCourse={onOpenCourse}
+        />
+      </div>
+
+      <div
+        data-testid="learner-account-legacy-sections"
+        className={
+          activeAccountSection === "overview"
+            ? "hidden"
+            : "space-y-6"
+        }
       >
       <section className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10">
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-600">
