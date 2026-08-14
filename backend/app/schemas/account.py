@@ -182,6 +182,54 @@ class AccountCourseDetailResponse(AccountCourseItemResponse):
     modules: list[AccountCourseModuleResponse] = Field(default_factory=list)
 
 
+
+class AccountActivityItemResponse(BaseModel):
+    activity_type: str
+    status: str
+    requires_action: bool = False
+
+    enrollment_id: str
+    enrollment_status: str
+
+    course_id: str
+    course_slug: str
+    course_title: str
+
+    module_id: str
+    module_title: str
+    module_position: int
+
+    lesson_id: str
+    lesson_title: str
+    lesson_position: int
+
+    block_id: str
+    block_title: str | None = None
+    block_position: int
+    is_required: bool = False
+
+    quiz_passed: bool | None = None
+    attempts_used: int | None = None
+    max_attempts: int | None = None
+    remaining_attempts: int | None = None
+    last_attempt_percent: int | None = None
+    best_percent: int | None = None
+    last_attempt_submitted_at: datetime | None = None
+
+    review_mode: str | None = None
+    submission_status: str | None = None
+    score: float | None = None
+    max_score: float | None = None
+    review_comment: str | None = None
+    submitted_at: datetime | None = None
+    reviewed_at: datetime | None = None
+
+
+class AccountActivitiesResponse(BaseModel):
+    total: int
+    items: list[AccountActivityItemResponse]
+
+
 class AccountCoursesResponse(BaseModel):
     total: int
     items: list[AccountCourseItemResponse]

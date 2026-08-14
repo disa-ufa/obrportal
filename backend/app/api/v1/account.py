@@ -45,6 +45,8 @@ from app.services.document_storage import (
     resolve_private_storage_path,
 )
 from app.schemas.account import (
+    AccountActivitiesResponse,
+    AccountActivityItemResponse,
     AccountAssignmentSubmissionSubmitRequest,
     AccountAssignmentSubmissionResponse,
     AccountCourseDetailResponse,
@@ -487,6 +489,426 @@ async def get_account_courses(
     ]
 
     return AccountCoursesResponse(
+        total=len(items),
+        items=items,
+    )
+
+
+
+def get_account_quiz_activity_status(
+    attempts: list[QuizAttempt],
+    *,
+    max_attempts: int | None,
+) -> str:
+    if any(bool(attempt.passed) for attempt in attempts):
+        return "completed"
+
+    if not attempts:
+        return "not_started"
+
+    if (
+        max_attempts is not None
+        and len(attempts) >= max_attempts
+    ):
+        return "blocked"
+
+    return "in_progress"
+
+
+def get_account_assignment_activity_status(
+    review_mode: str,
+    submission: AssignmentSubmission | None,
+) -> str:
+    if submission is None:
+        return "not_started"
+
+    submission_status = str(
+        submission.status or ""
+    ).strip()
+
+    if review_mode == "manual_review":
+        if submission_status in {"approved", "completed"}:
+            return "completed"
+
+        if submission_status == "submitted":
+            return "review"
+
+        return "in_progress"
+
+    if submission_status in {
+        "completed",
+        "submitted",
+        "approved",
+    }:
+        return "completed"
+
+    return "in_progress"
+
+
+def account_activity_requires_action(
+    *,
+    is_required: bool,
+    enrollment_status: str,
+    activity_status: str,
+) -> bool:
+    return bool(
+        is_required
+        and enrollment_status in {"assigned", "active"}
+        and activity_status in {
+            "not_started",
+            "in_progress",
+            "blocked",
+        }
+    )
+
+
+@router.get(
+    "/activities",
+    response_model=AccountActivitiesResponse,
+)
+async def get_account_activities(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountActivitiesResponse:
+    activities_result = await session.execute(
+        select(
+            Enrollment.id.label("enrollment_id"),
+            Enrollment.status.label("enrollment_status"),
+            Course.id.label("course_id"),
+            Course.slug.label("course_slug"),
+            Course.title.label("course_title"),
+            CourseModule.id.label("module_id"),
+            CourseModule.title.label("module_title"),
+            CourseModule.position.label("module_position"),
+            CourseLesson.id.label("lesson_id"),
+            CourseLesson.title.label("lesson_title"),
+            CourseLesson.position.label("lesson_position"),
+            LessonBlock.id.label("block_id"),
+            LessonBlock.block_type.label("block_type"),
+            LessonBlock.title.label("block_title"),
+            LessonBlock.position.label("block_position"),
+            LessonBlock.content_json.label("block_content_json"),
+            LessonBlock.is_required.label("is_required"),
+        )
+        .join(
+            Course,
+            Course.id == Enrollment.course_id,
+        )
+        .join(
+            CourseModule,
+            CourseModule.course_id == Course.id,
+        )
+        .join(
+            CourseLesson,
+            CourseLesson.module_id == CourseModule.id,
+        )
+        .join(
+            LessonBlock,
+            LessonBlock.lesson_id == CourseLesson.id,
+        )
+        .where(
+            Enrollment.user_id == current_user.id,
+            CourseModule.is_active.is_(True),
+            CourseLesson.is_active.is_(True),
+            LessonBlock.is_active.is_(True),
+            LessonBlock.block_type.in_(
+                ["quiz", "assignment"]
+            ),
+        )
+        .order_by(
+            Course.title.asc(),
+            CourseModule.position.asc(),
+            CourseLesson.position.asc(),
+            LessonBlock.position.asc(),
+        )
+    )
+
+    activity_rows = list(activities_result.all())
+
+    if not activity_rows:
+        return AccountActivitiesResponse(
+            total=0,
+            items=[],
+        )
+
+    enrollment_ids = sorted(
+        {
+            str(row.enrollment_id)
+            for row in activity_rows
+        }
+    )
+
+    quiz_block_ids = sorted(
+        {
+            str(row.block_id)
+            for row in activity_rows
+            if row.block_type == "quiz"
+        }
+    )
+
+    assignment_block_ids = sorted(
+        {
+            str(row.block_id)
+            for row in activity_rows
+            if row.block_type == "assignment"
+        }
+    )
+
+    quiz_attempts_by_key: dict[
+        tuple[str, str],
+        list[QuizAttempt],
+    ] = {}
+
+    if quiz_block_ids:
+        attempts_result = await session.execute(
+            select(QuizAttempt)
+            .where(
+                QuizAttempt.enrollment_id.in_(
+                    enrollment_ids
+                ),
+                QuizAttempt.block_id.in_(
+                    quiz_block_ids
+                ),
+            )
+            .order_by(
+                QuizAttempt.enrollment_id.asc(),
+                QuizAttempt.block_id.asc(),
+                QuizAttempt.attempt_number.asc(),
+            )
+        )
+
+        for attempt in attempts_result.scalars().all():
+            key = (
+                str(attempt.enrollment_id),
+                str(attempt.block_id),
+            )
+            quiz_attempts_by_key.setdefault(
+                key,
+                [],
+            ).append(attempt)
+
+    assignment_submissions_by_key: dict[
+        tuple[str, str],
+        AssignmentSubmission,
+    ] = {}
+
+    if assignment_block_ids:
+        submissions_result = await session.execute(
+            select(AssignmentSubmission).where(
+                AssignmentSubmission.enrollment_id.in_(
+                    enrollment_ids
+                ),
+                AssignmentSubmission.block_id.in_(
+                    assignment_block_ids
+                ),
+            )
+        )
+
+        for submission in submissions_result.scalars().all():
+            key = (
+                str(submission.enrollment_id),
+                str(submission.block_id),
+            )
+            assignment_submissions_by_key[key] = (
+                submission
+            )
+
+    items: list[AccountActivityItemResponse] = []
+
+    for row in activity_rows:
+        enrollment_id = str(row.enrollment_id)
+        enrollment_status = str(
+            row.enrollment_status or ""
+        )
+        block_id = str(row.block_id)
+        block_type = str(row.block_type or "")
+
+        common = {
+            "activity_type": block_type,
+            "enrollment_id": enrollment_id,
+            "enrollment_status": enrollment_status,
+            "course_id": str(row.course_id),
+            "course_slug": row.course_slug,
+            "course_title": row.course_title,
+            "module_id": str(row.module_id),
+            "module_title": row.module_title,
+            "module_position": int(
+                row.module_position or 0
+            ),
+            "lesson_id": str(row.lesson_id),
+            "lesson_title": row.lesson_title,
+            "lesson_position": int(
+                row.lesson_position or 0
+            ),
+            "block_id": block_id,
+            "block_title": row.block_title,
+            "block_position": int(
+                row.block_position or 0
+            ),
+            "is_required": bool(
+                row.is_required
+            ),
+        }
+
+        if block_type == "quiz":
+            attempts = quiz_attempts_by_key.get(
+                (enrollment_id, block_id),
+                [],
+            )
+
+            max_attempts = get_quiz_max_attempts(
+                row.block_content_json or {}
+            )
+
+            activity_status = (
+                get_account_quiz_activity_status(
+                    attempts,
+                    max_attempts=max_attempts,
+                )
+            )
+
+            attempts_used = len(attempts)
+            latest_attempt = (
+                attempts[-1]
+                if attempts
+                else None
+            )
+
+            passed = any(
+                bool(attempt.passed)
+                for attempt in attempts
+            )
+
+            if max_attempts is None:
+                remaining_attempts = None
+            else:
+                remaining_attempts = max(
+                    0,
+                    max_attempts - attempts_used,
+                )
+
+            best_percent = (
+                max(
+                    int(attempt.percent or 0)
+                    for attempt in attempts
+                )
+                if attempts
+                else None
+            )
+
+            items.append(
+                AccountActivityItemResponse(
+                    **common,
+                    status=activity_status,
+                    requires_action=(
+                        account_activity_requires_action(
+                            is_required=bool(
+                                row.is_required
+                            ),
+                            enrollment_status=(
+                                enrollment_status
+                            ),
+                            activity_status=(
+                                activity_status
+                            ),
+                        )
+                    ),
+                    quiz_passed=passed,
+                    attempts_used=attempts_used,
+                    max_attempts=max_attempts,
+                    remaining_attempts=(
+                        remaining_attempts
+                    ),
+                    last_attempt_percent=(
+                        int(
+                            latest_attempt.percent
+                            or 0
+                        )
+                        if latest_attempt
+                        else None
+                    ),
+                    best_percent=best_percent,
+                    last_attempt_submitted_at=(
+                        latest_attempt.submitted_at
+                        if latest_attempt
+                        else None
+                    ),
+                )
+            )
+
+            continue
+
+        submission = (
+            assignment_submissions_by_key.get(
+                (enrollment_id, block_id)
+            )
+        )
+
+        review_mode = (
+            normalize_assignment_review_mode(
+                row.block_content_json or {}
+            )
+        )
+
+        activity_status = (
+            get_account_assignment_activity_status(
+                review_mode,
+                submission,
+            )
+        )
+
+        items.append(
+            AccountActivityItemResponse(
+                **common,
+                status=activity_status,
+                requires_action=(
+                    account_activity_requires_action(
+                        is_required=bool(
+                            row.is_required
+                        ),
+                        enrollment_status=(
+                            enrollment_status
+                        ),
+                        activity_status=(
+                            activity_status
+                        ),
+                    )
+                ),
+                review_mode=review_mode,
+                submission_status=(
+                    str(submission.status)
+                    if submission
+                    else "not_started"
+                ),
+                score=(
+                    submission.score
+                    if submission
+                    else None
+                ),
+                max_score=(
+                    submission.max_score
+                    if submission
+                    else None
+                ),
+                review_comment=(
+                    submission.review_comment
+                    if submission
+                    else None
+                ),
+                submitted_at=(
+                    submission.submitted_at
+                    if submission
+                    else None
+                ),
+                reviewed_at=(
+                    submission.reviewed_at
+                    if submission
+                    else None
+                ),
+            )
+        )
+
+    return AccountActivitiesResponse(
         total=len(items),
         items=items,
     )
