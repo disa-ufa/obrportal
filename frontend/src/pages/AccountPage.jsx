@@ -12,7 +12,7 @@ import {
   startAccountCourse,
 } from "../api/client";
 import { AdminQuickFilterButtons } from "../components/admin/AdminQuickFilterButtons";
-import { AccountLearnerProfileCard } from "../components/account/AccountLearnerProfileCard";
+import { LearnerAccountProfile } from "../components/account/LearnerAccountProfile";
 import { LearnerAccountLayout } from "../components/account/LearnerAccountLayout";
 import {
   getLearnerDashboardCurrentCourse,
@@ -76,7 +76,7 @@ const ACCOUNT_SECTION_TARGETS = {
   learning: "account-learning",
   assignments: "account-assignments",
   documents: "account-documents",
-  profile: "account-learner-profile",
+  profile: "account-profile",
 };
 
 function getInitialAccountSection() {
@@ -1907,12 +1907,25 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       </div>
 
       <div
+        id="account-profile"
+        className={
+          activeAccountSection === "profile"
+            ? "scroll-mt-24"
+            : "hidden"
+        }
+      >
+        <LearnerAccountProfile
+          accountUser={profile}
+        />
+      </div>
+      <div
         data-testid="learner-account-legacy-sections"
         className={
           activeAccountSection === "overview" ||
           activeAccountSection === "learning" ||
           activeAccountSection === "assignments" ||
-          activeAccountSection === "documents"
+          activeAccountSection === "documents" ||
+          activeAccountSection === "profile"
             ? "hidden"
             : "space-y-6"
         }
@@ -2000,8 +2013,6 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
           onPageChange={onPageChange}
         />
       )}
-
-      <AccountLearnerProfileCard accountUser={profile} />
 
       <div className="grid gap-6 xl:grid-cols-3">
         <SectionCard

@@ -61,7 +61,7 @@ def main() -> None:
             "startAccountCourse,",
             "DocumentVerificationQrBlock",
             "AdminQuickFilterButtons",
-            'import { AccountLearnerProfileCard } from "../components/account/AccountLearnerProfileCard";',
+            'import { LearnerAccountProfile } from "../components/account/LearnerAccountProfile";',
             "SectionCard",
             "export function AccountPage",
             "function getStatusLabel(status)",
