@@ -510,7 +510,14 @@ export function LearnerAccountDashboard({
                 <div className="flex flex-wrap gap-3 border-t border-slate-100 p-4">
                   <button
                     type="button"
-                    onClick={() => openSection("learning")}
+                    onClick={() => {
+                      if (currentCourse.course_slug && onOpenCourse) {
+                        onOpenCourse(currentCourse.course_slug);
+                        return;
+                      }
+
+                      openSection("learning");
+                    }}
                     className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
                   >
                     <PlayCircle className="h-4 w-4" aria-hidden="true" />
@@ -518,16 +525,6 @@ export function LearnerAccountDashboard({
                       ? "Перейти к программе"
                       : "Продолжить обучение"}
                   </button>
-
-                  {currentCourse.course_slug && onOpenCourse && (
-                    <button
-                      type="button"
-                      onClick={() => onOpenCourse(currentCourse.course_slug)}
-                      className="rounded-xl px-4 py-2.5 text-sm font-bold text-blue-600 transition hover:bg-blue-50"
-                    >
-                      Карточка программы
-                    </button>
-                  )}
                 </div>
               </div>
             )}
