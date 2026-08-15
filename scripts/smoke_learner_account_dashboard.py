@@ -36,6 +36,11 @@ def main() -> None:
         [
             "export function LearnerAccountDashboard",
             'data-testid="learner-account-dashboard"',
+            "aria-busy={loading}",
+            'role="status"',
+            'aria-live="polite"',
+            "Загружаем данные личного кабинета.",
+            'role="alert"',
             "export function getLearnerDashboardCurrentCourse(courses)",
             "function getMatchingCourseDetail(",
             "function getNextLesson(detail)",

@@ -14,7 +14,7 @@ const ACTIVITY_FILTERS = [
   },
   {
     value: "action",
-    label: "Требуют выполнения",
+    label: "Требуют внимания",
   },
   {
     value: "review",
@@ -448,6 +448,7 @@ export function LearnerAccountAssignments({
   return (
     <section
       data-testid="learner-account-assignments"
+      aria-busy={loading}
       className="space-y-5"
     >
       <div className="rounded-shell bg-white p-7 shadow-sm ring-1 ring-slate-200 md:p-8">
@@ -484,7 +485,7 @@ export function LearnerAccountAssignments({
 
         <ActivityStat
           icon={ShieldAlert}
-          label="Требуют выполнения"
+          label="Требуют внимания"
           value={counts.action}
         />
 
@@ -527,6 +528,7 @@ export function LearnerAccountAssignments({
       {errorMessage && (
         <div
           data-testid="learner-assignments-error"
+          role="alert"
           className="rounded-3xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200"
         >
           {errorMessage}
@@ -536,6 +538,9 @@ export function LearnerAccountAssignments({
       {loading ? (
         <div
           data-testid="learner-assignments-loading"
+          role="status"
+          aria-live="polite"
+          aria-label="Загружаем задания и тесты"
           className="space-y-4"
         >
           {[1, 2].map((item) => (

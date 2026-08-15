@@ -436,6 +436,7 @@ export function LearnerAccountLearning({
   return (
     <div
       data-testid="learner-account-learning"
+      aria-busy={loading}
       className="space-y-5"
     >
       <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-7">
@@ -521,6 +522,9 @@ export function LearnerAccountLearning({
       {loading ? (
         <section
           data-testid="learner-learning-loading"
+          role="status"
+          aria-live="polite"
+          aria-label="Загружаем программы обучения"
           className="grid gap-4 xl:grid-cols-2"
         >
           {[0, 1].map((item) => (

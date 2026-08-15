@@ -1895,7 +1895,8 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
           documents={documents}
           selectedFilter={documentStatusFilter}
           loading={loading}
-          errorMessage={error || downloadError}
+          errorMessage={error}
+          actionErrorMessage={downloadError}
           downloadLoadingId={downloadLoadingId}
           onFilterChange={setDocumentStatusFilter}
           onDownload={handleDownload}

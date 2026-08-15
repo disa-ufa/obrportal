@@ -42,6 +42,12 @@ def main() -> None:
         [
             "export function LearnerAccountLearning",
             'data-testid="learner-account-learning"',
+            "aria-busy={loading}",
+            'data-testid="learner-learning-loading"',
+            'role="status"',
+            'aria-live="polite"',
+            'aria-label="Загружаем программы обучения"',
+            'role="alert"',
             "const LEARNING_FILTERS = [",
             'value: "active"',
             'value: "assigned"',

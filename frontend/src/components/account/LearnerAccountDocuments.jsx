@@ -275,6 +275,7 @@ function DocumentCard({
           onClick={() =>
             onDownload?.(documentItem.id)
           }
+          aria-busy={downloadLoadingId === documentItem.id}
           disabled={
             !downloadAvailable ||
             downloadLoadingId === documentItem.id
@@ -298,6 +299,7 @@ export function LearnerAccountDocuments({
   selectedFilter = "",
   loading = false,
   errorMessage = "",
+  actionErrorMessage = "",
   downloadLoadingId = "",
   onFilterChange,
   onDownload,
@@ -329,6 +331,7 @@ export function LearnerAccountDocuments({
   return (
     <section
       data-testid="learner-account-documents"
+      aria-busy={loading}
       className="space-y-5"
     >
       <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 md:p-7">
@@ -401,9 +404,27 @@ export function LearnerAccountDocuments({
         ))}
       </div>
 
+      {!loading && actionErrorMessage && (
+        <div
+          data-testid="learner-documents-action-error"
+          role="alert"
+          className="rounded-3xl bg-red-50 p-5 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+        >
+          <div className="font-semibold">
+            Не удалось скачать документ
+          </div>
+
+          <div className="mt-1">
+            {actionErrorMessage}
+          </div>
+        </div>
+      )}
+
       {loading && (
         <div
           data-testid="learner-documents-loading"
+          role="status"
+          aria-live="polite"
           className="rounded-3xl bg-white p-8 text-center text-sm text-slate-600 ring-1 ring-slate-200"
         >
           Загружаем документы...
@@ -413,6 +434,7 @@ export function LearnerAccountDocuments({
       {!loading && errorMessage && (
         <div
           data-testid="learner-documents-error"
+          role="alert"
           className="rounded-3xl bg-red-50 p-5 text-sm leading-6 text-red-800 ring-1 ring-red-200"
         >
           {errorMessage}

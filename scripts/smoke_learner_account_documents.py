@@ -44,11 +44,18 @@ def main() -> None:
             'label: "Ожидают публикации"',
             'label: "Отозванные"',
             'data-testid="learner-account-documents"',
+            "aria-busy={loading}",
             'data-testid="learner-documents-stats"',
             'data-testid="learner-document-filters"',
             'data-testid="learner-document-card"',
             'data-testid="learner-documents-loading"',
+            'role="status"',
+            'aria-live="polite"',
             'data-testid="learner-documents-error"',
+            'role="alert"',
+            'data-testid="learner-documents-action-error"',
+            'actionErrorMessage = ""',
+            "Не удалось скачать документ",
             'data-testid="learner-documents-empty"',
             'data-testid="learner-documents-filter-empty"',
             'data-testid="learner-documents-list"',
@@ -56,6 +63,7 @@ def main() -> None:
             "verification_code",
             "document_number",
             "download_available",
+            "aria-busy={downloadLoadingId === documentItem.id}",
             "file_available",
             "revocation_reason",
             "Скачать документ",
@@ -78,7 +86,8 @@ def main() -> None:
             "documents={documents}",
             "selectedFilter={documentStatusFilter}",
             "loading={loading}",
-            "errorMessage={error || downloadError}",
+            "errorMessage={error}",
+            "actionErrorMessage={downloadError}",
             "downloadLoadingId={downloadLoadingId}",
             "onFilterChange={setDocumentStatusFilter}",
             "onDownload={handleDownload}",
@@ -88,6 +97,15 @@ def main() -> None:
             'id="account-documents-legacy"',
         ],
     )
+
+    account_page = read_text(
+        "frontend/src/pages/AccountPage.jsx"
+    )
+
+    if "errorMessage={error || downloadError}" in account_page:
+        raise SystemExit(
+            "Document load and download errors are still combined"
+        )
 
     print("Learner account documents smoke passed")
     print(" - document status filters covered")

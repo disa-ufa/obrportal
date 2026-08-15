@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 
 import {
@@ -21,6 +21,31 @@ export function LearnerAccountLayout({
   children,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileToggleRef = useRef(null);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      return undefined;
+    }
+
+    function handleKeyDown(event) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setMobileMenuOpen(false);
+
+      window.requestAnimationFrame(() => {
+        mobileToggleRef.current?.focus();
+      });
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileMenuOpen]);
 
   function handleSectionChange(section) {
     onSectionChange(section);
@@ -44,6 +69,7 @@ export function LearnerAccountLayout({
         </div>
 
         <button
+          ref={mobileToggleRef}
           type="button"
           onClick={() => setMobileMenuOpen((value) => !value)}
           aria-expanded={mobileMenuOpen}
@@ -53,7 +79,7 @@ export function LearnerAccountLayout({
               ? "Закрыть меню личного кабинета"
               : "Открыть меню личного кабинета"
           }
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
         >
           {mobileMenuOpen ? (
             <X className="h-5 w-5" aria-hidden="true" />

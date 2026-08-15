@@ -140,7 +140,7 @@ export function LearnerAccountSidebar({
               type="button"
               onClick={() => onSectionChange(item.key)}
               aria-current={active ? "page" : undefined}
-              className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${
+              className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 ${
                 active
                   ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"

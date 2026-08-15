@@ -301,8 +301,19 @@ export function LearnerAccountDashboard({
   return (
     <div
       data-testid="learner-account-dashboard"
+      aria-busy={loading}
       className="space-y-5"
     >
+      {loading && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="sr-only"
+        >
+          Загружаем данные личного кабинета.
+        </div>
+      )}
+
       {errorMessage && (
         <div
           role="alert"

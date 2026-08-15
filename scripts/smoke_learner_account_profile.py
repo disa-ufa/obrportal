@@ -94,6 +94,30 @@ for fragment, label in [
         "profile form test id",
     ),
     (
+        "aria-busy={loading || saving}",
+        "profile root busy state",
+    ),
+    (
+        'data-testid="account-learner-profile-loading"',
+        "profile loading test id",
+    ),
+    (
+        'role="status"',
+        "profile live status role",
+    ),
+    (
+        'aria-live="polite"',
+        "profile live announcement",
+    ),
+    (
+        'role="alert"',
+        "profile error alert role",
+    ),
+    (
+        "aria-busy={saving}",
+        "profile save busy state",
+    ),
+    (
         "Получатель документа",
         "recipient fields",
     ),
