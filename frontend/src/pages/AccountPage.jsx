@@ -20,6 +20,7 @@ import {
 } from "../components/account/LearnerAccountDashboard";
 import { LearnerAccountLearning } from "../components/account/LearnerAccountLearning";
 import { LearnerAccountAssignments } from "../components/account/LearnerAccountAssignments";
+import { LearnerAccountDocuments } from "../components/account/LearnerAccountDocuments";
 import { formatRuDateTimeNative as formatDateTime } from "../utils/dateFormat";
 import { Alert } from "../components/ui/Alert";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
@@ -1883,11 +1884,35 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
       </div>
 
       <div
+        id="account-documents"
+        className={
+          activeAccountSection === "documents"
+            ? "scroll-mt-24"
+            : "hidden"
+        }
+      >
+        <LearnerAccountDocuments
+          documents={documents}
+          selectedFilter={documentStatusFilter}
+          loading={loading}
+          errorMessage={error || downloadError}
+          downloadLoadingId={downloadLoadingId}
+          onFilterChange={setDocumentStatusFilter}
+          onDownload={handleDownload}
+          onOpenCourse={onOpenCourse}
+          onOpenLearning={() =>
+            handleAccountSectionChange("learning")
+          }
+        />
+      </div>
+
+      <div
         data-testid="learner-account-legacy-sections"
         className={
           activeAccountSection === "overview" ||
           activeAccountSection === "learning" ||
-          activeAccountSection === "assignments"
+          activeAccountSection === "assignments" ||
+          activeAccountSection === "documents"
             ? "hidden"
             : "space-y-6"
         }
@@ -2290,7 +2315,7 @@ export function AccountPage({ user, onPageChange, onLogout, onOpenCourse }) {
         </SectionCard>
       </div>
 
-      <div id="account-documents" className="scroll-mt-24">
+      <div id="account-documents-legacy" className="scroll-mt-24">
         <SectionCard
         title="Мои документы"
         subtitle="Статусы, проверка и скачивание итоговых документов"
