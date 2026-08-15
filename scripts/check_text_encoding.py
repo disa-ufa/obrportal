@@ -14,6 +14,7 @@ CRITICAL_FILES = [
     Path("backend/app/services/document_templates.py"),
     Path("backend/app/tests/test_document_pdf.py"),
     Path("frontend/src/pages/AccountPage.jsx"),
+    Path("frontend/src/components/account/LearnerAccountDocuments.jsx"),
     Path("frontend/src/pages/AuthPage.jsx"),
     Path("frontend/src/pages/RegisterPage.jsx"),
     Path("frontend/src/pages/CourseDetailPage.jsx"),
@@ -84,11 +85,12 @@ REQUIRED_BY_FILE = {
         r"\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0430",
         r"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430",
     ],
-    Path("frontend/src/pages/AccountPage.jsx"): [
-        u(r"\u0421\u043a\u0430\u0447\u0430\u0442\u044c PDF"),
+    Path("frontend/src/components/account/LearnerAccountDocuments.jsx"): [
         u(r"\u0421\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"),
         u(r"\u041e\u0436\u0438\u0434\u0430\u0435\u0442 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438"),
         u(r"\u0424\u0430\u0439\u043b \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442"),
+        u(r"\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e"),
+        "DocumentVerificationQrBlock",
         "showPublicLink",
     ],
     Path("frontend/src/pages/DocumentsPage.jsx"): [

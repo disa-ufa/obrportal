@@ -94,7 +94,6 @@ def main() -> None:
             "onOpenCourse={onOpenCourse}",
             'handleAccountSectionChange("learning")',
             'activeAccountSection === "documents"',
-            'id="account-documents-legacy"',
         ],
     )
 

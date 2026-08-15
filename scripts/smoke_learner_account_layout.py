@@ -108,7 +108,6 @@ def main() -> None:
             'id="account-overview"',
             'id="account-learning"',
             'id="account-assignments"',
-            'id="account-courses"',
             'id="account-documents"',
         ],
     )

@@ -97,10 +97,13 @@ def main() -> None:
         [
             "export function AccountPage",
             "useEffect",
-            "useMemo",
             "useState",
-            "SectionCard",
-            "AdminQuickFilterButtons",
+            "LearnerAccountLayout",
+            "LearnerAccountDocuments",
+            "getAccountSummary",
+            "getAccountDocuments",
+            "downloadAccountDocument",
+            'id="account-documents"',
         ],
     )
     require_any(
@@ -133,7 +136,23 @@ def main() -> None:
         ],
     )
     require_occurs("frontend/src/pages/AccountPage.jsx", "useState(", 6)
-    require_occurs("frontend/src/pages/AccountPage.jsx", "useMemo(", 2)
+
+    require_contains(
+        "frontend/src/components/account/LearnerAccountDocuments.jsx",
+        [
+            "export function LearnerAccountDocuments",
+            'data-testid="learner-account-documents"',
+            "DocumentVerificationQrBlock",
+            "verification_code",
+            "document_number",
+            "download_available",
+            "revocation_reason",
+            'data-testid="learner-documents-action-error"',
+            "Скачать документ",
+            "Проверить публично",
+        ],
+    )
+
 
     require_contains(
         "frontend/src/pages/VerifyDocumentPage.jsx",

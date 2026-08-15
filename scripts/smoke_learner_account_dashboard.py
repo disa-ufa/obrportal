@@ -92,7 +92,6 @@ def main() -> None:
             "errorMessage={error}",
             "onSectionChange={handleAccountSectionChange}",
             "onOpenCourse={onOpenCourse}",
-            'data-testid="learner-account-legacy-sections"',
             'activeAccountSection === "overview"',
         ],
     )
