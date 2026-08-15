@@ -29,6 +29,17 @@ export function usePendingEnrollment({ setError }) {
     }
   }
 
+  function setAccountLearningSection() {
+    try {
+      sessionStorage.setItem(
+        "obrportal_account_section",
+        "learning"
+      );
+    } catch {
+      // sessionStorage can be unavailable in private mode or tests.
+    }
+  }
+
   async function completePendingEnrollmentIfNeeded() {
     const pendingSlug = getPendingEnrollmentSlug();
 
@@ -46,6 +57,8 @@ export function usePendingEnrollment({ setError }) {
         message: "\u0412\u044b \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u043f\u0438\u0441\u0430\u043d\u044b \u043d\u0430 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u0443\u044e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443. \u041a\u0443\u0440\u0441 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0432 \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442.",
       });
 
+      setAccountLearningSection();
+
       return {
         status: "created",
         slug: pendingSlug,
@@ -58,6 +71,8 @@ export function usePendingEnrollment({ setError }) {
           title: "\u041a\u0443\u0440\u0441 \u0443\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d",
           message: "\u0412\u044b \u0443\u0436\u0435 \u0431\u044b\u043b\u0438 \u0437\u0430\u043f\u0438\u0441\u0430\u043d\u044b \u043d\u0430 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u0443\u044e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443. \u041a\u0443\u0440\u0441 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435.",
         });
+
+        setAccountLearningSection();
 
         return {
           status: "already_enrolled",

@@ -146,6 +146,10 @@ export async function getAccountCourses() {
   return request("/api/v1/account/courses");
 }
 
+export async function getAccountActivities() {
+  return request("/api/v1/account/activities");
+}
+
 export async function getAccountCourseDetail(enrollmentId) {
   return request(`/api/v1/account/courses/${enrollmentId}`);
 }

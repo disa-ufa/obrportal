@@ -276,6 +276,7 @@ export function AccountLearnerProfileCard({ accountUser }) {
       <div
         id="account-learner-profile"
         data-testid="account-learner-profile"
+        aria-busy={loading || saving}
         className="space-y-5"
       >
         <div className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900 ring-1 ring-blue-200">
@@ -292,26 +293,37 @@ export function AccountLearnerProfileCard({ accountUser }) {
         </div>
 
         {loadError && (
-          <Alert title="Не удалось загрузить профиль" tone="red">
-            {loadError}
-          </Alert>
+          <div role="alert">
+            <Alert title="Не удалось загрузить профиль" tone="red">
+              {loadError}
+            </Alert>
+          </div>
         )}
 
         {saveError && (
-          <Alert title="Не удалось сохранить профиль" tone="red">
-            {saveError}
-          </Alert>
+          <div role="alert">
+            <Alert title="Не удалось сохранить профиль" tone="red">
+              {saveError}
+            </Alert>
+          </div>
         )}
 
         {saveNotice && (
-          <Alert title="Профиль сохранён" tone="green">
-            {saveNotice}
-          </Alert>
+          <div
+            role="status"
+            aria-live="polite"
+          >
+            <Alert title="Профиль сохранён" tone="green">
+              {saveNotice}
+            </Alert>
+          </div>
         )}
 
         {loading ? (
           <div
             data-testid="account-learner-profile-loading"
+            role="status"
+            aria-live="polite"
             className="rounded-2xl bg-slate-50 p-5 text-sm text-slate-600 ring-1 ring-slate-200"
           >
             Загружаем персональные данные...
@@ -481,6 +493,7 @@ export function AccountLearnerProfileCard({ accountUser }) {
             <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-5">
               <button
                 type="submit"
+                aria-busy={saving}
                 disabled={saving || !hasChanges}
                 className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
