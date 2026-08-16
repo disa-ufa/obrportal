@@ -48,6 +48,33 @@ const DIRECTIONS = [
   { label: "Воспитательная работа", icon: GraduationCap },
 ];
 
+const LEARNING_STEPS = [
+  {
+    number: "01",
+    title:
+      "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443",
+    description:
+      "\u0418\u0437\u0443\u0447\u0438\u0442\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0438 \u0443\u0441\u043b\u043e\u0432\u0438\u044f \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435.",
+    icon: Search,
+  },
+  {
+    number: "02",
+    title:
+      "\u041e\u0431\u0443\u0447\u0430\u0439\u0442\u0435\u0441\u044c \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435",
+    description:
+      "\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u044b\u0435 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b \u0438 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0439\u0442\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0432 \u0441\u0432\u043e\u0435\u043c \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435.",
+    icon: MonitorPlay,
+  },
+  {
+    number: "03",
+    title:
+      "\u041f\u043e\u043b\u0443\u0447\u0438\u0442\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+    description:
+      "\u0415\u0441\u043b\u0438 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u043e\u0439 \u043f\u0440\u0435\u0434\u0443\u0441\u043c\u043e\u0442\u0440\u0435\u043d \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442, \u043e\u043d \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f.",
+    icon: FileText,
+  },
+];
+
 function formatCourseDocument(course) {
   return course.document_type || course.document || "";
 }
@@ -596,6 +623,67 @@ export function HomePage({ onPageChange, onOpenCourse }) {
                 </span>
                 <span className="text-sm font-black leading-5 text-[#111936]">{item.label}</span>
               </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="home-learning-flow-title"
+        data-testid="home-learning-flow"
+      >
+        <div className="mb-6 max-w-2xl">
+          <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-600">
+            {"\u041f\u0440\u043e\u0441\u0442\u043e\u0439 \u043f\u0443\u0442\u044c \u043a \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044e"}
+          </div>
+
+          <h2
+            id="home-learning-flow-title"
+            className="mt-2 text-2xl font-black tracking-[-0.02em] text-[#111936] sm:text-3xl"
+          >
+            {"\u041a\u0430\u043a \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u0442 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+          </h2>
+
+          <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
+            {"\u041e\u0442 \u0432\u044b\u0431\u043e\u0440\u0430 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0434\u043e \u0438\u0442\u043e\u0433\u043e\u0432\u043e\u0433\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u2014 \u043e\u0441\u043d\u043e\u0432\u043d\u044b\u0435 \u044d\u0442\u0430\u043f\u044b \u0441\u043e\u0431\u0440\u0430\u043d\u044b \u0432 \u043e\u0434\u043d\u043e\u043c \u043f\u043e\u0440\u0442\u0430\u043b\u0435."}
+          </p>
+        </div>
+
+        <div className="relative grid gap-5 lg:grid-cols-3">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-[16.666%] right-[16.666%] top-9 hidden h-px bg-gradient-to-r from-blue-100 via-blue-300 to-blue-100 lg:block"
+          />
+
+          {LEARNING_STEPS.map((step) => {
+            const Icon = step.icon;
+
+            return (
+              <article
+                key={step.number}
+                className="relative flex min-h-[245px] flex-col rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_16px_40px_rgba(17,25,54,0.05)] sm:p-7"
+              >
+                <div className="relative z-10 flex items-center justify-between gap-4">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                    <Icon
+                      className="h-6 w-6"
+                      aria-hidden="true"
+                    />
+                  </span>
+
+                  <span className="text-4xl font-black tracking-[-0.04em] text-blue-100">
+                    {step.number}
+                  </span>
+                </div>
+
+                <h3 className="mt-6 text-lg font-black leading-6 text-[#111936] sm:text-xl">
+                  {step.title}
+                </h3>
+
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  {step.description}
+                </p>
+              </article>
             );
           })}
         </div>
