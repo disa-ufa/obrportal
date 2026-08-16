@@ -86,7 +86,7 @@ function ProgramCard({ course, index, onOpenCourse }) {
   const documentLabel = formatCourseDocument(course);
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_16px_40px_rgba(17,25,54,0.05)] transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(15,91,232,0.12)]">
+    <article className="group flex h-full min-h-[360px] flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_16px_40px_rgba(17,25,54,0.05)] transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(15,91,232,0.12)]">
       <div className={getCourseVisualClass(course, index)}>
         {course.format ? (
           <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-blue-700 shadow-sm ring-1 ring-blue-100">
@@ -136,6 +136,21 @@ function ProgramCard({ course, index, onOpenCourse }) {
       </div>
     </article>
   );
+}
+function getPopularProgramsGridClass(courseCount) {
+  if (courseCount <= 1) {
+    return "grid gap-6 lg:grid-cols-2";
+  }
+
+  if (courseCount === 2) {
+    return "grid gap-6 md:grid-cols-2";
+  }
+
+  if (courseCount === 3) {
+    return "grid gap-6 md:grid-cols-2 xl:grid-cols-3";
+  }
+
+  return "grid gap-6 md:grid-cols-2 xl:grid-cols-4";
 }
 function saveCatalogQuery(query) {
   const value = `${query || ""}`.trim();
@@ -504,7 +519,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
             </button>
           </div>
         ) : featuredCourses.length ? (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className={getPopularProgramsGridClass(featuredCourses.length)}>
             {featuredCourses.map((course, index) => (
               <ProgramCard
                 key={course.id || course.slug || index}
