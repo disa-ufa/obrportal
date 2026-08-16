@@ -6,8 +6,8 @@ import { GuestAuthActions } from "./GuestAuthActions";
 const PUBLIC_NAV_ITEMS = [
   { key: "home", label: "Главная" },
   { key: "catalog", label: "Программы" },
-  { key: "verify-document", label: "Документы" },
   { key: "organization-info", label: "О центре" },
+  { key: "faq", label: "Помощь" },
 ];
 
 const FOOTER_LINKS = [
@@ -36,6 +36,7 @@ function getPublicShellNavigationStats({
       "login",
       "register",
       "course-detail",
+      "verify-document",
       "not-found",
     ]),
   ];
@@ -192,7 +193,7 @@ function Logo({ onClick }) {
           ОбрПортал
         </span>
         <span className="hidden text-[11px] font-semibold text-slate-500 sm:block">
-          Единый образовательный портал
+          Образовательный портал РЦДО
         </span>
       </span>
     </button>
