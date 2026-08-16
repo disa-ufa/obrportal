@@ -1,4 +1,4 @@
-import { BookOpen, Mail, Send } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { userHasRole } from "../../utils/adminState";
 import { AuthenticatedUserMenu } from "./AuthenticatedUserMenu";
 import { GuestAuthActions } from "./GuestAuthActions";
@@ -370,15 +370,6 @@ export function PublicShell({
             ))}
           </div>
 
-          <div className="flex items-center gap-3 text-slate-500">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-xs font-black">VK</span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-              <Send className="h-4 w-4" aria-hidden="true" />
-            </span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-              <Mail className="h-4 w-4" aria-hidden="true" />
-            </span>
-          </div>
         </div>
       </footer>
     </main>
