@@ -1,6 +1,6 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BookOpen, Boxes, BriefcaseBusiness, FileText, GraduationCap, Layers3, LibraryBig, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
+import { ArrowRight, BookOpen, BriefcaseBusiness, FileText, GraduationCap, Layers3, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
 import { getPublicCourses } from "../api/client";
 import { PUBLIC_COURSES } from "../data/publicCourses";
 
@@ -21,33 +21,36 @@ const POPULAR_QUERIES = [
   "Методические материалы",
 ];
 
-const PORTAL_STATS = [
+const HOME_FEATURES = [
   {
-    label: "Программ",
-    value: "256",
-    hint: "Актуальные образовательные программы",
+    title: "Каталог программ",
+    description: "Найдите подходящую образовательную программу и изучите условия обучения.",
+    page: "catalog",
+    actionLabel: "Открыть каталог",
     icon: BookOpen,
   },
   {
-    label: "Модулей",
-    value: "1 248",
-    hint: "Структурированные учебные модули",
-    icon: Boxes,
+    title: "Личный кабинет",
+    description: "Продолжайте обучение, выполняйте задания и работайте со своими документами.",
+    page: "account",
+    actionLabel: "Перейти в кабинет",
+    icon: GraduationCap,
   },
   {
-    label: "Уроков",
-    value: "5 796",
-    hint: "Интерактивные уроки и материалы",
-    icon: MonitorPlay,
+    title: "Проверка документов",
+    description: "Проверьте подлинность документа об обучении через публичный сервис портала.",
+    page: "verify-document",
+    actionLabel: "Проверить документ",
+    icon: FileText,
   },
   {
-    label: "Организаций",
-    value: "342",
-    hint: "Партнёры и образовательные организации",
-    icon: LibraryBig,
+    title: "Для организаций",
+    description: "Откройте сведения и возможности портала для образовательных организаций.",
+    page: "organization-info",
+    actionLabel: "Для организаций",
+    icon: UsersRound,
   },
 ];
-
 const DIRECTIONS = [
   { label: "Дополнительное образование", icon: Palette },
   { label: "Повышение квалификации", icon: Sparkles },
@@ -478,24 +481,47 @@ export function HomePage({ onPageChange, onOpenCourse }) {
           </div>
         </div>
       </section>
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {PORTAL_STATS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.label} className="portal-card flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5 p-6 xl:p-7">
-              <span className="portal-icon-tile">
-                <Icon className="h-6 w-6" aria-hidden="true" />
-              </span>
-              <div>
-                <div className="text-4xl font-black leading-none text-[#111936]">{item.value}</div>
-                <div className="mt-1 text-base font-black text-[#111936]">{item.label}</div>
-                <div className="mt-1 text-xs leading-5 text-slate-500">{item.hint}</div>
-              </div>
-            </div>
-          );
-        })}
-      </section>
+      <section aria-label="Основные возможности портала">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {HOME_FEATURES.map((item) => {
+            const Icon = item.icon;
 
+            return (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() => onPageChange(item.page)}
+                className="group relative flex min-h-[190px] flex-col items-start overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-6 text-left shadow-[0_16px_40px_rgba(17,25,54,0.05)] transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_22px_50px_rgba(15,91,232,0.12)] focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-50 transition duration-200 group-hover:scale-125 group-hover:bg-blue-100/80"
+                />
+
+                <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100 transition group-hover:bg-blue-600 group-hover:text-white">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+
+                <h2 className="relative mt-5 text-lg font-black leading-6 text-[#111936]">
+                  {item.title}
+                </h2>
+
+                <p className="relative mt-2 flex-1 text-sm leading-6 text-slate-500">
+                  {item.description}
+                </p>
+
+                <span className="relative mt-5 inline-flex items-center gap-2 text-sm font-black text-blue-700">
+                  {item.actionLabel}
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                    aria-hidden="true"
+                  />
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
       <section>
         <div className="mb-5 flex items-center justify-between gap-4">
           <h2 className="text-2xl font-black text-[#111936]">Популярные программы</h2>
