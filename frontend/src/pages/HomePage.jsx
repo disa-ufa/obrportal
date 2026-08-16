@@ -1,6 +1,6 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
-import { ArrowRight, BookOpen, BriefcaseBusiness, FileText, GraduationCap, Layers3, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
+import { ArrowRight, BookOpen, BriefcaseBusiness, FileText, GraduationCap, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
 import { getPublicCourses } from "../api/client";
 
 const POPULAR_QUERIES = [
@@ -785,22 +785,103 @@ export function HomePage({ onPageChange, onOpenCourse }) {
         </div>
       </section>
 
-      <section className="portal-card flex flex-col gap-5 bg-blue-50/80 p-5 sm:p-7 md:flex-row md:items-center md:justify-between md:p-9">
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-700 text-white shadow-[0_12px_24px_rgba(15,91,232,0.25)] sm:h-16 sm:w-16">
-            <Layers3 className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="text-xl font-black text-[#111936]">Начните обучение уже сегодня</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Выберите программу и получите новые знания в удобном онлайн-формате.
-            </p>
+      <section
+        data-testid="home-audience-cta"
+        aria-labelledby="home-audience-cta-title"
+      >
+        <div className="mb-5">
+          <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-600">
+            {"\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0441\u0432\u043e\u0439 \u043f\u0443\u0442\u044c"}
           </div>
+
+          <h2
+            id="home-audience-cta-title"
+            className="mt-2 text-2xl font-black tracking-[-0.02em] text-[#111936]"
+          >
+            {"\u0412\u043e\u0437\u043c\u043e\u0436\u043d\u043e\u0441\u0442\u0438 \u043f\u043e\u0440\u0442\u0430\u043b\u0430 \u0434\u043b\u044f \u0432\u0430\u0441"}
+          </h2>
         </div>
 
-        <button type="button" onClick={() => onPageChange("catalog")} className="portal-btn-primary w-full sm:w-auto md:min-w-[220px]">
-          Выбрать программу
-        </button>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <article className="portal-card flex min-h-[220px] flex-col p-6 sm:p-7">
+            <div className="flex items-start justify-between gap-5">
+              <span className="portal-icon-tile !h-12 !w-12">
+                <GraduationCap
+                  className="h-6 w-6"
+                  aria-hidden="true"
+                />
+              </span>
+
+              <span className="text-xs font-black uppercase tracking-[0.08em] text-blue-600">
+                {"\u0421\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044e"}
+              </span>
+            </div>
+
+            <h3 className="mt-6 text-xl font-black text-[#111936]">
+              {"\u0425\u043e\u0447\u0443 \u043e\u0431\u0443\u0447\u0430\u0442\u044c\u0441\u044f"}
+            </h3>
+
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+              {"\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u043e\u0434\u0445\u043e\u0434\u044f\u0449\u0443\u044e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443 \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435 \u0438 \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u043f\u043e\u0434\u0440\u043e\u0431\u043d\u0443\u044e \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u044e \u043e\u0431 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0438."}
+            </p>
+
+            <button
+              type="button"
+              data-testid="home-audience-learner-action"
+              onClick={() => onPageChange("catalog")}
+              className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-black text-blue-700"
+            >
+              {"\u0421\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b"}
+              <ArrowRight
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+            </button>
+          </article>
+
+          <article className="relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.75rem] border border-blue-100 bg-blue-50/80 p-6 shadow-[0_16px_40px_rgba(17,25,54,0.05)] sm:p-7">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-blue-100/70"
+            />
+
+            <div className="relative flex items-start justify-between gap-5">
+              <span className="portal-icon-tile !h-12 !w-12">
+                <UsersRound
+                  className="h-6 w-6"
+                  aria-hidden="true"
+                />
+              </span>
+
+              <span className="text-xs font-black uppercase tracking-[0.08em] text-blue-600">
+                {"\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438"}
+              </span>
+            </div>
+
+            <div className="relative">
+              <h3 className="mt-6 text-xl font-black text-[#111936]">
+                {"\u041f\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u043b\u044f\u044e \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044e"}
+              </h3>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                {"\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0438 \u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e\u0441\u0442\u0438 \u043f\u043e\u0440\u0442\u0430\u043b\u0430 \u0434\u043b\u044f \u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0439."}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              data-testid="home-audience-organization-action"
+              onClick={() => onPageChange("organization-info")}
+              className="relative mt-auto inline-flex items-center gap-2 pt-6 text-sm font-black text-blue-700"
+            >
+              {"\u0414\u043b\u044f \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0439"}
+              <ArrowRight
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+            </button>
+          </article>
+        </div>
       </section>
     </div>
   );
