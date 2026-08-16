@@ -285,6 +285,7 @@ class AdminCourseItem(BaseModel):
     format: str | None = None
     document_type: str | None = None
     direction: str | None = None
+    is_public: bool
     is_active: bool
 
 
@@ -429,6 +430,7 @@ class AdminCourseCreate(BaseModel):
     format: str | None = Field(default=None, max_length=64)
     document_type: str | None = Field(default=None, max_length=128)
     direction: str | None = Field(default=None, max_length=128)
+    is_public: bool = False
     is_active: bool = True
 
 
@@ -440,6 +442,7 @@ class AdminCourseUpdate(BaseModel):
     format: str | None = Field(default=None, max_length=64)
     document_type: str | None = Field(default=None, max_length=128)
     direction: str | None = Field(default=None, max_length=128)
+    is_public: bool | None = None
     is_active: bool | None = None
 
 

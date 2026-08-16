@@ -2164,6 +2164,7 @@ async def create_account_course_enrollment(
         select(Course).where(
             Course.id == normalized_course_id,
             Course.is_active.is_(True),
+            Course.is_public.is_(True),
         )
     )
     course = result.scalar_one_or_none()

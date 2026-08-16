@@ -210,6 +210,7 @@ const COURSE_CSV_EXPORT_COLUMNS = [
   { key: "slug", title: "Slug" },
   { key: "title", title: "Название" },
   { key: "is_active", title: "Активна" },
+  { key: "is_public", title: "Опубликована" },
   { key: "hours", title: "Объем, часов" },
   { key: "format", title: "Формат" },
   { key: "document_type", title: "Итоговый документ" },
@@ -229,6 +230,7 @@ const EMPTY_COURSE_FORM = {
   format: "",
   direction: "",
   document_type: RU.certificate,
+  is_public: false,
   is_active: true,
 };
 
@@ -240,6 +242,7 @@ const EMPTY_EDIT_FORM = {
   format: "",
   direction: "",
   document_type: "",
+  is_public: false,
   is_active: true,
 };
 
@@ -366,6 +369,7 @@ function buildEditForm(course) {
     format: course.format || "",
     direction: course.direction || "",
     document_type: course.document_type || "",
+    is_public: Boolean(course.is_public),
     is_active: Boolean(course.is_active),
   };
 }
@@ -380,6 +384,27 @@ const adminLinkClass =
 function getCourseStatusLabel(course) {
   return course.is_active ? RU.active : RU.inactive;
 }
+
+function getCoursePublicationTone(course) {
+  if (course.is_active && course.is_public) {
+    return "blue";
+  }
+
+  return course.is_public ? "amber" : "gray";
+}
+
+function getCoursePublicationLabel(course) {
+  if (course.is_active && course.is_public) {
+    return "Опубликована";
+  }
+
+  if (course.is_public) {
+    return "Публикация включена";
+  }
+
+  return "Не опубликована";
+}
+
 function formatCourseApiError(err, fallback) {
   const status = getApiErrorStatus(err);
   const message = getApiErrorMessage(err);
@@ -549,25 +574,57 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
           </div>
         </div>
 
-        <label className={`flex min-h-full items-start gap-4 rounded-3xl border p-5 text-sm transition ${
-          values.is_active
-            ? "border-emerald-200 bg-emerald-50/70"
-            : "border-slate-200 bg-white"
-        }`}>
-          <input
-            id={`${prefix}is-active`}
-            type="checkbox"
-            checked={values.is_active}
-            onChange={(event) => onChange("is_active", event.target.checked)}
-            className="mt-1 h-5 w-5 rounded border-slate-300"
-          />
-          <span>
-            <span className="block font-black text-slate-950">{RU.active}</span>
-            <span className="mt-1 block text-xs leading-5 text-slate-500">
-              Активная программа доступна в каталоге и может использоваться в назначениях. Снимите галочку, чтобы временно скрыть программу.
+        <div className="space-y-4">
+          <label
+            data-testid={`${prefix}course-active-control`}
+            className={`flex items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+              values.is_active
+                ? "border-emerald-200 bg-emerald-50/70"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <input
+              id={`${prefix}is-active`}
+              type="checkbox"
+              checked={values.is_active}
+              onChange={(event) => onChange("is_active", event.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-slate-300"
+            />
+            <span>
+              <span className="block font-black text-slate-950">
+                Активна
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Активная программа может использоваться в назначениях и прохождении. Публикация в открытом каталоге управляется отдельно.
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+
+          <label
+            data-testid={`${prefix}course-publication-control`}
+            className={`flex items-start gap-4 rounded-3xl border p-5 text-sm transition ${
+              values.is_public
+                ? "border-blue-200 bg-blue-50/70"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <input
+              id={`${prefix}is-public`}
+              type="checkbox"
+              checked={values.is_public}
+              onChange={(event) => onChange("is_public", event.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-slate-300"
+            />
+            <span>
+              <span className="block font-black text-slate-950">
+                Опубликована в каталоге
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Включает публичную карточку и самостоятельную запись. Неактивная программа остаётся скрытой даже при включённой публикации.
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
     </div>
   );
@@ -1720,7 +1777,10 @@ function getCourseBuilderCardUxFacts(course, modules = [], lessonsByModuleId = {
     activeModules: courseModules.filter((module) => module.is_active).length,
     activeLessons: allLessons.filter((lesson) => lesson.is_active).length,
     requiredLessons: allLessons.filter((lesson) => lesson.is_required).length,
-    publicPath: course.slug ? `/courses/${encodeURIComponent(course.slug)}` : "",
+    publicPath:
+      course.slug && course.is_active && course.is_public
+        ? `/courses/${encodeURIComponent(course.slug)}`
+        : "",
     enrollmentsPath: buildEnrollmentsPath({ course_id: course.id }),
     auditPath: buildAuditPath({ entity_type: "course" }),
   };
@@ -2091,7 +2151,7 @@ const COURSE_PUBLICATION_UX_LABELS = {
   subtitle:
     "\u0424\u0438\u043d\u0430\u043b\u044c\u043d\u044b\u0439 \u0431\u043b\u043e\u043a \u0441\u043e\u0431\u0438\u0440\u0430\u0435\u0442 \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c, \u0431\u043b\u043e\u043a\u0435\u0440\u044b \u0438 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0435 \u0448\u0430\u0433\u0438 \u043f\u0435\u0440\u0435\u0434 \u0432\u044b\u0432\u043e\u0434\u043e\u043c \u043a\u0443\u0440\u0441\u0430 \u0432 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0442\u0430\u043b\u043e\u0433.",
   published: "\u041a\u0443\u0440\u0441 \u043e\u0442\u043a\u0440\u044b\u0442 \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435",
-  readyToEnable: "\u0413\u043e\u0442\u043e\u0432 \u043a \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044e",
+  readyToEnable: "Готов к публикации",
   blocked: "\u041d\u0435\u043b\u044c\u0437\u044f \u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c",
   decision: "\u0420\u0435\u0448\u0435\u043d\u0438\u0435 \u043f\u043e \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438",
   readiness: "\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c",
@@ -2100,7 +2160,8 @@ const COURSE_PUBLICATION_UX_LABELS = {
   blockers: "\u0427\u0442\u043e \u0431\u043b\u043e\u043a\u0438\u0440\u0443\u0435\u0442 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044e",
   noBlockers: "\u0411\u043b\u043e\u043a\u0435\u0440\u043e\u0432 \u043d\u0435\u0442.",
   nextSteps: "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0435 \u0448\u0430\u0433\u0438",
-  activateCourse: "\u0412\u043a\u043b\u044e\u0447\u0438\u0442\u0435 \u043a\u0443\u0440\u0441, \u0447\u0442\u043e\u0431\u044b \u043e\u043d \u0441\u0442\u0430\u043b \u0432\u0438\u0434\u0435\u043d \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435.",
+  activateCourse: "Активируйте курс, чтобы он мог использоваться в назначениях и публикации.",
+  publishCourse: "Включите «Опубликована в каталоге», чтобы открыть курс в публичном каталоге и для самостоятельной записи.",
   fixBlockers: "\u0423\u0441\u0442\u0440\u0430\u043d\u0438\u0442\u0435 \u0431\u043b\u043e\u043a\u0435\u0440\u044b \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.",
   reviewCatalog: "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435, \u043a\u0430\u043a \u043a\u0443\u0440\u0441 \u0432\u044b\u0433\u043b\u044f\u0434\u0438\u0442 \u0432 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435.",
   assignLearners: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043a \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f\u043c \u0438 \u0434\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u0435\u0439.",
@@ -2118,15 +2179,20 @@ function getCoursePublicationUxFacts(course, modules = [], lessonsByModuleId = {
   const readiness = getCourseBuilderReadiness(course, modules, lessonsByModuleId);
   const hasPublicCard = Boolean(`${course.slug || ""}`.trim());
   const active = Boolean(course.is_active);
-  const publicPath = hasPublicCard ? `/courses/${encodeURIComponent(course.slug)}` : "";
+  const publicEnabled = Boolean(course.is_public);
+  const published = active && publicEnabled;
+  const publicPath =
+    published && hasPublicCard
+      ? `/courses/${encodeURIComponent(course.slug)}`
+      : "";
   const enrollmentsPath = buildEnrollmentsPath({ course_id: course.id });
   const auditPath = buildAuditPath({ entity_type: "course" });
 
-  const status = readiness.publishable
-    ? active
-      ? "published"
-      : "ready_to_enable"
-    : "blocked";
+  const status = published
+    ? "published"
+    : readiness.publishable
+      ? "ready_to_enable"
+      : "blocked";
 
   const decisionLabel =
     status === "published"
@@ -2142,9 +2208,17 @@ function getCoursePublicationUxFacts(course, modules = [], lessonsByModuleId = {
 
   if (!readiness.publishable) {
     nextSteps.push(COURSE_PUBLICATION_UX_LABELS.fixBlockers);
-  } else if (!active) {
+  }
+
+  if (!active) {
     nextSteps.push(COURSE_PUBLICATION_UX_LABELS.activateCourse);
-  } else {
+  }
+
+  if (!publicEnabled) {
+    nextSteps.push(COURSE_PUBLICATION_UX_LABELS.publishCourse);
+  }
+
+  if (published) {
     nextSteps.push(COURSE_PUBLICATION_UX_LABELS.reviewCatalog);
     nextSteps.push(COURSE_PUBLICATION_UX_LABELS.assignLearners);
     nextSteps.push(COURSE_PUBLICATION_UX_LABELS.checkAudit);
@@ -2159,6 +2233,8 @@ function getCoursePublicationUxFacts(course, modules = [], lessonsByModuleId = {
     enrollmentsPath,
     auditPath,
     active,
+    publicEnabled,
+    published,
     hasPublicCard,
     nextSteps,
   };
@@ -2211,8 +2287,8 @@ function CoursePublicationUxPanel({ course, modules, lessonsByModuleId }) {
             {COURSE_PUBLICATION_UX_LABELS.visibility}
           </div>
           <div className="mt-2">
-            <StatusBadge tone={facts.active ? "green" : "gray"}>
-              {facts.active ? COURSE_PUBLICATION_UX_LABELS.visible : COURSE_PUBLICATION_UX_LABELS.hidden}
+            <StatusBadge tone={facts.published ? "green" : "gray"}>
+              {facts.published ? COURSE_PUBLICATION_UX_LABELS.visible : COURSE_PUBLICATION_UX_LABELS.hidden}
             </StatusBadge>
           </div>
         </div>
@@ -2780,6 +2856,7 @@ function CourseStructureTree({
   onEditSubmit,
   onCancelEdit,
   onToggleActive,
+  onTogglePublic,
   onDelete,
   onModuleCreateFieldChange,
   onModuleCreateSubmit,
@@ -3036,9 +3113,14 @@ function CourseStructureTree({
                       </td>
 
                       <td className="px-3 py-3 align-top">
-                        <StatusBadge tone={getCourseStatusTone(course)}>
-                          {getCourseStatusLabel(course)}
-                        </StatusBadge>
+                        <div className="flex flex-wrap gap-1.5">
+                          <StatusBadge tone={getCourseStatusTone(course)}>
+                            {getCourseStatusLabel(course)}
+                          </StatusBadge>
+                          <StatusBadge tone={getCoursePublicationTone(course)}>
+                            {getCoursePublicationLabel(course)}
+                          </StatusBadge>
+                        </div>
                       </td>
 
                       <td className="px-3 py-3 align-top text-xs leading-5 text-slate-500">
@@ -3050,7 +3132,7 @@ function CourseStructureTree({
                           data-testid={`admin-course-tree-course-actions-${course.id}`}
                           className="flex justify-end gap-1.5"
                         >
-                          {course.slug ? (
+                          {course.slug && course.is_active && course.is_public ? (
                             <Link
                               to={`/courses/${encodeURIComponent(course.slug)}`}
                               className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
@@ -3082,6 +3164,16 @@ function CourseStructureTree({
                                 className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                               >
                                 {course.is_active ? RU.deactivate : RU.activate}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onTogglePublic(course)}
+                                disabled={isActionRunning}
+                                className="block w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-60"
+                              >
+                                {course.is_public
+                                  ? "Снять с публикации"
+                                  : "Опубликовать в каталоге"}
                               </button>
                               <Link
                                 to={buildEnrollmentsPath({ course_id: course.id })}
@@ -4060,7 +4152,7 @@ function CourseCard({
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            {course.slug && (
+            {course.slug && course.is_active && course.is_public && (
               <Link
                 to={`/courses/${encodeURIComponent(course.slug)}`}
                 className={CARD_LINK_CLASS}
@@ -4456,6 +4548,7 @@ export function AdminCoursesPage() {
       format: values.format.trim() || null,
       direction: values.direction.trim() || null,
       document_type: values.document_type.trim() || null,
+      is_public: Boolean(values.is_public),
       is_active: Boolean(values.is_active),
     };
   }
@@ -4556,6 +4649,35 @@ export function AdminCoursesPage() {
       await refreshCoursesFastPath(buildFilters());
     } catch (err) {
       setError(formatCourseApiError(err, RU.statusChangeFailed));
+    } finally {
+      setActionCourseId("");
+    }
+  }
+
+  async function handleTogglePublic(course) {
+    try {
+      setActionCourseId(course.id);
+      setError("");
+      setSuccessMessage("");
+
+      const updated = await updateAdminCourse(course.id, {
+        is_public: !course.is_public,
+      });
+
+      setSuccessMessage(
+        updated.is_public
+          ? `Публикация включена: ${updated.title}`
+          : `Публикация отключена: ${updated.title}`
+      );
+
+      await refreshCoursesFastPath(buildFilters());
+    } catch (err) {
+      setError(
+        formatCourseApiError(
+          err,
+          "Не удалось изменить публикацию программы."
+        )
+      );
     } finally {
       setActionCourseId("");
     }
@@ -4913,12 +5035,16 @@ export function AdminCoursesPage() {
         slug: course.slug || "",
         title: course.title || "",
         is_active: course.is_active ? "yes" : "no",
+        is_public: course.is_public ? "yes" : "no",
         hours: course.hours ?? "",
         format: course.format || "",
         document_type: course.document_type || "",
         modules_count: modules.length,
         lessons_count: lessons.length,
-        public_url: course.slug ? `/courses/${course.slug}` : "",
+        public_url:
+          course.slug && course.is_active && course.is_public
+            ? `/courses/${course.slug}`
+            : "",
         description: course.description || "",
         created_at: course.created_at || "",
         updated_at: course.updated_at || "",
@@ -5043,6 +5169,7 @@ export function AdminCoursesPage() {
             onEditSubmit={handleEditSubmit}
             onCancelEdit={resetEditState}
             onToggleActive={handleToggleActive}
+            onTogglePublic={handleTogglePublic}
             onDelete={handleDelete}
             onModuleCreateFieldChange={updateModuleCreateField}
             onModuleCreateSubmit={handleModuleCreateSubmit}

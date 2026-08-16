@@ -3659,6 +3659,7 @@ def build_admin_course_item(course: Course) -> AdminCourseItem:
         format=course.format,
         document_type=course.document_type,
         direction=course.direction,
+        is_public=course.is_public,
         is_active=course.is_active,
     )
 
@@ -3673,6 +3674,7 @@ def build_admin_course_detail(course: Course) -> AdminCourseDetail:
         format=course.format,
         document_type=course.document_type,
         direction=course.direction,
+        is_public=course.is_public,
         is_active=course.is_active,
         created_at=course.created_at,
         updated_at=course.updated_at,
@@ -3689,6 +3691,7 @@ def course_snapshot(course: Course) -> dict:
         "format": course.format,
         "document_type": course.document_type,
         "direction": course.direction,
+        "is_public": course.is_public,
         "is_active": course.is_active,
     }
 
@@ -3743,6 +3746,7 @@ async def ensure_course_can_be_deleted(
 @router.get("/courses", response_model=list[AdminCourseItem])
 async def list_admin_courses(
     is_active: bool | None = Query(default=None),
+    is_public: bool | None = Query(default=None),
     q: str | None = Query(default=None, max_length=255),
     limit: int = Query(default=100, ge=1, le=300),
     _: User = Depends(require_permission("catalog.write")),
@@ -3752,6 +3756,9 @@ async def list_admin_courses(
 
     if is_active is not None:
         query = query.where(Course.is_active == is_active)
+
+    if is_public is not None:
+        query = query.where(Course.is_public == is_public)
 
     if q and q.strip():
         q_filter = f"%{q.strip()}%"

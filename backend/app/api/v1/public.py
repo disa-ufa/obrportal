@@ -415,7 +415,10 @@ async def list_public_courses(
 ) -> list[PublicCourseItemResponse]:
     query = (
         select(Course)
-        .where(Course.is_active.is_(True))
+        .where(
+            Course.is_active.is_(True),
+            Course.is_public.is_(True),
+        )
         .order_by(Course.title.asc())
         .limit(limit)
     )
@@ -453,6 +456,7 @@ async def get_public_course_detail(
         select(Course).where(
             Course.slug == normalized_slug,
             Course.is_active.is_(True),
+            Course.is_public.is_(True),
         )
     )
     course = result.scalar_one_or_none()
