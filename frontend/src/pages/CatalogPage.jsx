@@ -122,6 +122,16 @@ function getDocumentOptions(courses) {
   ).sort((left, right) => left.localeCompare(right, "ru"));
 }
 
+function getDirectionOptions(courses) {
+  return Array.from(
+    new Set(
+      courses
+        .map((course) => `${course.direction || ""}`.trim())
+        .filter(Boolean),
+    ),
+  ).sort((left, right) => left.localeCompare(right, "ru"));
+}
+
 function getCatalogGridClass(courseCount) {
   if (courseCount <= 1) {
     return "grid gap-6 lg:grid-cols-2";
@@ -138,12 +148,21 @@ function getInitialCatalogQuery() {
     return "";
   }
 
-  const value =
-    sessionStorage.getItem("obrportal_catalog_query") || "";
+  return (
+    sessionStorage.getItem("obrportal_catalog_query") || ""
+  );
+}
 
-  sessionStorage.removeItem("obrportal_catalog_query");
+function getInitialCatalogDirection() {
+  if (typeof sessionStorage === "undefined") {
+    return "all";
+  }
 
-  return value;
+  const value = `${
+    sessionStorage.getItem("obrportal_catalog_direction") || ""
+  }`.trim();
+
+  return value || "all";
 }
 
 function CourseCard({
@@ -295,6 +314,9 @@ export function CatalogPage({
   const [query, setQuery] = useState(
     () => getInitialCatalogQuery(),
   );
+  const [directionFilter, setDirectionFilter] = useState(
+    () => getInitialCatalogDirection(),
+  );
   const [formatFilter, setFormatFilter] = useState("all");
   const [documentFilter, setDocumentFilter] =
     useState("all");
@@ -304,6 +326,11 @@ export function CatalogPage({
   const enrollmentMap = useMemo(
     () => buildEnrollmentMap(accountCourses),
     [accountCourses],
+  );
+
+  const directionOptions = useMemo(
+    () => getDirectionOptions(courses),
+    [courses],
   );
 
   const formatOptions = useMemo(
@@ -324,6 +351,7 @@ export function CatalogPage({
         course.title,
         course.slug,
         course.description,
+        course.direction,
         course.format,
         course.document_type,
       ]
@@ -335,6 +363,11 @@ export function CatalogPage({
         !normalizedQuery ||
         searchableText.includes(normalizedQuery);
 
+      const matchesDirection =
+        directionFilter === "all" ||
+        `${course.direction || ""}`.trim() ===
+          directionFilter;
+
       const matchesFormat =
         formatFilter === "all" ||
         course.format === formatFilter;
@@ -345,6 +378,7 @@ export function CatalogPage({
 
       return (
         matchesQuery &&
+        matchesDirection &&
         matchesFormat &&
         matchesDocument
       );
@@ -352,9 +386,19 @@ export function CatalogPage({
   }, [
     courses,
     query,
+    directionFilter,
     formatFilter,
     documentFilter,
   ]);
+
+  useEffect(() => {
+    if (typeof sessionStorage === "undefined") {
+      return;
+    }
+
+    sessionStorage.removeItem("obrportal_catalog_query");
+    sessionStorage.removeItem("obrportal_catalog_direction");
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -429,12 +473,14 @@ export function CatalogPage({
 
   function resetFilters() {
     setQuery("");
+    setDirectionFilter("all");
     setFormatFilter("all");
     setDocumentFilter("all");
   }
 
   const hasFilters =
     Boolean(query.trim()) ||
+    directionFilter !== "all" ||
     formatFilter !== "all" ||
     documentFilter !== "all";
 
@@ -504,7 +550,7 @@ export function CatalogPage({
           </p>
         </div>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_240px_auto]">
+        <div className="mt-5 grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_240px_190px_220px_auto]">
           <label className="flex h-12 min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
             <Search
               className="h-5 w-5 shrink-0 text-slate-400"
@@ -522,6 +568,37 @@ export function CatalogPage({
               placeholder="Название или ключевое слово..."
               className="min-w-0 flex-1 border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400"
             />
+          </label>
+
+          <label>
+            <span className="sr-only">
+              {"\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+            </span>
+            <select
+              value={directionFilter}
+              onChange={(event) =>
+                setDirectionFilter(event.target.value)
+              }
+              className="portal-input h-12"
+              data-testid="catalog-direction-filter"
+            >
+              <option value="all">
+                {"\u0412\u0441\u0435 \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f"}
+              </option>
+
+              {directionFilter !== "all" &&
+              !directionOptions.includes(directionFilter) ? (
+                <option value={directionFilter}>
+                  {directionFilter}
+                </option>
+              ) : null}
+
+              {directionOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label>
