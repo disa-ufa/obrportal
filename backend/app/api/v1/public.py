@@ -258,6 +258,7 @@ def build_public_course_item(course: Course) -> PublicCourseItemResponse:
         hours=course.hours,
         format=course.format,
         document_type=course.document_type,
+        direction=course.direction,
     )
 
 
@@ -329,6 +330,7 @@ def build_public_course_detail(
         hours=course.hours,
         format=course.format,
         document_type=course.document_type,
+        direction=course.direction,
         modules=modules or [],
     )
 
@@ -427,6 +429,7 @@ async def list_public_courses(
                 Course.description.ilike(q_filter),
                 Course.format.ilike(q_filter),
                 Course.document_type.ilike(q_filter),
+                Course.direction.ilike(q_filter),
             )
         )
 

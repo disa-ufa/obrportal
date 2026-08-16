@@ -13,4 +13,5 @@ class Course(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
     format: Mapped[str | None] = mapped_column(String(64), nullable=True)
     document_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    direction: Mapped[str | None] = mapped_column(String(128), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

@@ -284,6 +284,7 @@ class AdminCourseItem(BaseModel):
     hours: int | None = None
     format: str | None = None
     document_type: str | None = None
+    direction: str | None = None
     is_active: bool
 
 
@@ -427,6 +428,7 @@ class AdminCourseCreate(BaseModel):
     hours: int | None = Field(default=None, ge=1, le=10000)
     format: str | None = Field(default=None, max_length=64)
     document_type: str | None = Field(default=None, max_length=128)
+    direction: str | None = Field(default=None, max_length=128)
     is_active: bool = True
 
 
@@ -437,6 +439,7 @@ class AdminCourseUpdate(BaseModel):
     hours: int | None = Field(default=None, ge=1, le=10000)
     format: str | None = Field(default=None, max_length=64)
     document_type: str | None = Field(default=None, max_length=128)
+    direction: str | None = Field(default=None, max_length=128)
     is_active: bool | None = None
 
 

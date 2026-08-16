@@ -88,6 +88,9 @@ const RU = {
   hours: "\u041e\u0431\u044a\u0435\u043c, \u0447\u0430\u0441\u043e\u0432",
   format: "\u0424\u043e\u0440\u043c\u0430\u0442",
   formatPlaceholder: "online / mixed / \u043e\u0447\u043d\u043e-\u0437\u0430\u043e\u0447\u043d\u043e",
+  direction: "\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f",
+  directionPlaceholder: "\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u041f\u043e\u0432\u044b\u0448\u0435\u043d\u0438\u0435 \u043a\u0432\u0430\u043b\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u0438",
+  directionHint: "\u041d\u0435\u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e. \u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0434\u043b\u044f \u0433\u0440\u0443\u043f\u043f\u0438\u0440\u043e\u0432\u043a\u0438 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435 \u0438 \u043d\u0430 \u0433\u043b\u0430\u0432\u043d\u043e\u0439.",
   documentType: "\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
   documentPlaceholder:
     "\u0421\u0435\u0440\u0442\u0438\u0444\u0438\u043a\u0430\u0442 / \u0423\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u0435\u043d\u0438\u0435",
@@ -193,6 +196,15 @@ const COURSE_ACTIVE_FILTERS = [
   { value: "false", label: RU.inactivePlural },
 ];
 
+const COURSE_DIRECTION_OPTIONS = [
+  "\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0435 \u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435",
+  "\u041f\u043e\u0432\u044b\u0448\u0435\u043d\u0438\u0435 \u043a\u0432\u0430\u043b\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u0438",
+  "\u041f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u043e\u043d\u0430\u043b\u044c\u043d\u0430\u044f \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430",
+  "\u041c\u0435\u0442\u043e\u0434\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b",
+  "\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0438 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435",
+  "\u0412\u043e\u0441\u043f\u0438\u0442\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u0440\u0430\u0431\u043e\u0442\u0430",
+];
+
 const COURSE_CSV_EXPORT_COLUMNS = [
   { key: "id", title: "ID" },
   { key: "slug", title: "Slug" },
@@ -215,6 +227,7 @@ const EMPTY_COURSE_FORM = {
   description: "",
   hours: "",
   format: "",
+  direction: "",
   document_type: RU.certificate,
   is_active: true,
 };
@@ -225,6 +238,7 @@ const EMPTY_EDIT_FORM = {
   description: "",
   hours: "",
   format: "",
+  direction: "",
   document_type: "",
   is_active: true,
 };
@@ -350,6 +364,7 @@ function buildEditForm(course) {
     description: course.description || "",
     hours: course.hours ?? "",
     format: course.format || "",
+    direction: course.direction || "",
     document_type: course.document_type || "",
     is_active: Boolean(course.is_active),
   };
@@ -457,7 +472,7 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <label className="block">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {RU.hours}
@@ -488,6 +503,31 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
                 <option value="очно-заочно">Очно-заочно</option>
                 <option value="self-paced">Самостоятельное прохождение</option>
               </select>
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {RU.direction}
+              </span>
+              <input
+                id={`${prefix}course-direction`}
+                type="text"
+                list={`${prefix}course-direction-options`}
+                maxLength={128}
+                value={values.direction}
+                onChange={(event) => onChange("direction", event.target.value)}
+                placeholder={RU.directionPlaceholder}
+                data-testid={`${prefix}course-direction-field`}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+              />
+              <datalist id={`${prefix}course-direction-options`}>
+                {COURSE_DIRECTION_OPTIONS.map((direction) => (
+                  <option key={direction} value={direction} />
+                ))}
+              </datalist>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                {RU.directionHint}
+              </p>
             </label>
 
             <label className="block">
@@ -4414,6 +4454,7 @@ export function AdminCoursesPage() {
       description: values.description.trim() || null,
       hours: normalizeHoursInput(values.hours),
       format: values.format.trim() || null,
+      direction: values.direction.trim() || null,
       document_type: values.document_type.trim() || null,
       is_active: Boolean(values.is_active),
     };
