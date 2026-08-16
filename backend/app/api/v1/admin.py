@@ -3609,6 +3609,7 @@ def normalize_course_create_data(data: dict) -> dict:
     normalized["description"] = normalize_optional_text(normalized.get("description"))
     normalized["format"] = normalize_optional_text(normalized.get("format"))
     normalized["document_type"] = normalize_optional_text(normalized.get("document_type"))
+    normalized["direction"] = normalize_optional_text(normalized.get("direction"))
 
     if not normalized["title"]:
         raise HTTPException(
@@ -3642,6 +3643,9 @@ def normalize_course_update_data(data: dict) -> dict:
     if "document_type" in normalized:
         normalized["document_type"] = normalize_optional_text(normalized["document_type"])
 
+    if "direction" in normalized:
+        normalized["direction"] = normalize_optional_text(normalized["direction"])
+
     return normalized
 
 
@@ -3654,6 +3658,7 @@ def build_admin_course_item(course: Course) -> AdminCourseItem:
         hours=course.hours,
         format=course.format,
         document_type=course.document_type,
+        direction=course.direction,
         is_active=course.is_active,
     )
 
@@ -3667,6 +3672,7 @@ def build_admin_course_detail(course: Course) -> AdminCourseDetail:
         hours=course.hours,
         format=course.format,
         document_type=course.document_type,
+        direction=course.direction,
         is_active=course.is_active,
         created_at=course.created_at,
         updated_at=course.updated_at,
@@ -3682,6 +3688,7 @@ def course_snapshot(course: Course) -> dict:
         "hours": course.hours,
         "format": course.format,
         "document_type": course.document_type,
+        "direction": course.direction,
         "is_active": course.is_active,
     }
 
@@ -3755,6 +3762,7 @@ async def list_admin_courses(
                 Course.description.ilike(q_filter),
                 Course.format.ilike(q_filter),
                 Course.document_type.ilike(q_filter),
+                Course.direction.ilike(q_filter),
             )
         )
 

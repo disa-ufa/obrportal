@@ -42,6 +42,7 @@ class PublicCourseItemResponse(BaseModel):
     hours: int | None = None
     format: str | None = None
     document_type: str | None = None
+    direction: str | None = None
 
 
 class PublicLessonBlockResponse(BaseModel):

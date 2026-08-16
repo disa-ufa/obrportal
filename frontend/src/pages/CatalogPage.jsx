@@ -1,131 +1,14 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, Clock3, Grid2X2, List, Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Clock3,
+  FileText,
+  Search,
+  X,
+} from "lucide-react";
 import { getAccountCourses, getPublicCourses } from "../api/client";
-import { PUBLIC_COURSES } from "../data/publicCourses";
-
-
-/*
-  CI smoke guard fragments.
-  The workflow still validates legacy CatalogPage filter wiring by literal text.
-  Keep these fragments while the redesigned catalog uses expanded filter names,
-  displayCourses and a shared CourseCard component.
-  function getFormatOptions(courses)
-  const [query, setQuery] = useState("");
-  const [formatFilter, setFormatFilter] = useState("all");
-  const formatOptions = useMemo(
-  setFormatFilter("all");
-  filteredCourses.map((course)
-*/
-
-const CATALOG_FALLBACK_COURSES = [
-  {
-    id: "catalog-robotics",
-    slug: "robototekhnika-dlya-nachinayushchih",
-    title: "Робототехника для начинающих",
-    direction: "Дополнительное образование",
-    format: "Онлайн",
-    level: "Начальный",
-    audience: "Для детей",
-    status: "active",
-    hours: 24,
-    modules_count: 6,
-    price: "Бесплатно",
-    document_type: "Сертификат",
-    description: "Введение в робототехнику, основы конструирования и программирования.",
-  },
-  {
-    id: "catalog-edtech",
-    slug: "sovremennye-tehnologii-v-obuchenii",
-    title: "Современные технологии в обучении",
-    direction: "Повышение квалификации",
-    format: "Онлайн",
-    level: "Средний",
-    audience: "Для педагогов",
-    status: "active",
-    hours: 18,
-    modules_count: 5,
-    price: "4 900 ₽",
-    document_type: "Удостоверение",
-    description: "Эффективные цифровые инструменты и методики для образовательного процесса.",
-  },
-  {
-    id: "catalog-projects",
-    slug: "upravlenie-proektami-v-obrazovanii",
-    title: "Управление проектами",
-    direction: "Профессиональная подготовка",
-    format: "Смешанный",
-    level: "Продвинутый",
-    audience: "Для управленцев",
-    status: "active",
-    hours: 32,
-    modules_count: 7,
-    price: "9 900 ₽",
-    document_type: "Сертификат",
-    description: "Основы проектного управления в образовательных организациях.",
-  },
-  {
-    id: "catalog-method",
-    slug: "metodicheskaya-kopilka-pedagoga",
-    title: "Методическая копилка педагога",
-    direction: "Методические материалы",
-    format: "Онлайн",
-    level: "Базовый",
-    audience: "Для педагогов",
-    status: "active",
-    hours: 15,
-    modules_count: 4,
-    price: "Бесплатно",
-    document_type: "Материалы",
-    description: "Практические материалы и разработки для педагогов и наставников.",
-  },
-  {
-    id: "catalog-python",
-    slug: "programmirovanie-na-python",
-    title: "Программирование на Python",
-    direction: "Дополнительное образование",
-    format: "Вебинар",
-    level: "Начальный",
-    audience: "Для подростков",
-    status: "active",
-    hours: 40,
-    modules_count: 8,
-    price: "6 500 ₽",
-    document_type: "Сертификат",
-    description: "Изучаем Python с нуля: от основ до создания собственных проектов.",
-  },
-  {
-    id: "catalog-literacy",
-    slug: "cifrovaya-gramotnost-pedagoga",
-    title: "Цифровая грамотность педагога",
-    direction: "Повышение квалификации",
-    format: "Онлайн",
-    level: "Базовый",
-    audience: "Для педагогов",
-    status: "active",
-    hours: 12,
-    modules_count: 3,
-    price: "Бесплатно",
-    document_type: "Удостоверение",
-    description: "Осваиваем цифровые сервисы для работы и коммуникации.",
-  },
-];
-
-const FILTER_OPTIONS = {
-  directions: ["Все направления", "Дополнительное образование", "Повышение квалификации", "Профессиональная подготовка", "Методические материалы"],
-  formats: ["Все форматы", "Онлайн", "Вебинар", "Смешанный", "Очный"],
-  levels: ["Все уровни", "Базовый", "Начальный", "Средний", "Продвинутый"],
-  statuses: ["Все статусы", "Активные", "Черновики", "Архив"],
-  audiences: ["Все аудитории", "Для детей", "Для подростков", "Для педагогов", "Для управленцев"],
-};
-
-function formatCourseDocument(course) {
-  return course.document_type || course.document || "Итоговый документ";
-}
-
-function formatCoursePrice(course) {
-  return course.price || "Бесплатно";
-}
 
 function getEnrollmentStatusLabel(status) {
   switch (status) {
@@ -138,7 +21,7 @@ function getEnrollmentStatusLabel(status) {
     case "cancelled":
       return "Отменён";
     default:
-      return "Не записан";
+      return "";
   }
 }
 
@@ -147,363 +30,375 @@ function getEnrollmentStatusTone(status) {
     case "assigned":
       return "bg-blue-50 text-blue-700 ring-blue-200";
     case "active":
-      return "bg-green-50 text-green-700 ring-green-200";
+      return "bg-emerald-50 text-emerald-700 ring-emerald-200";
     case "completed":
       return "bg-slate-100 text-slate-700 ring-slate-200";
     case "cancelled":
       return "bg-red-50 text-red-700 ring-red-200";
     default:
-      return "bg-white text-slate-600 ring-slate-200";
+      return "bg-slate-50 text-slate-600 ring-slate-200";
   }
 }
 
 function buildEnrollmentMap(accountCourses) {
-  return accountCourses.reduce((acc, enrollment) => {
-    if (enrollment.course_id) {
-      acc.byCourseId[enrollment.course_id] = enrollment;
-    }
+  return accountCourses.reduce(
+    (acc, enrollment) => {
+      if (enrollment.course_id) {
+        acc.byCourseId[enrollment.course_id] = enrollment;
+      }
 
-    if (enrollment.course_slug) {
-      acc.byCourseSlug[enrollment.course_slug] = enrollment;
-    }
+      if (enrollment.course_slug) {
+        acc.byCourseSlug[enrollment.course_slug] = enrollment;
+      }
 
-    return acc;
-  }, { byCourseId: {}, byCourseSlug: {} });
+      return acc;
+    },
+    { byCourseId: {}, byCourseSlug: {} },
+  );
 }
 
 function getCourseEnrollment(course, enrollmentMap) {
-  return enrollmentMap.byCourseId[course.id] || enrollmentMap.byCourseSlug[course.slug] || null;
+  return (
+    enrollmentMap.byCourseId[course.id] ||
+    enrollmentMap.byCourseSlug[course.slug] ||
+    null
+  );
 }
 
 function getCourseActionLabel(enrollment) {
   if (!enrollment) {
-    return "Записаться";
+    return "Подробнее";
   }
 
   if (enrollment.status === "completed") {
-    return "Завершена";
+    return "Открыть в кабинете";
   }
 
-  return "Открыть";
+  return "Продолжить обучение";
 }
 
-function normalizePriceText(course) {
-  return `${formatCoursePrice(course)}`.trim().toLowerCase();
+function formatCourseDocument(course) {
+  return course.document_type || "";
 }
 
-function isCourseFree(course) {
-  const price = normalizePriceText(course);
+function formatCourseFormat(value) {
+  const normalized = `${value || ""}`.trim().toLowerCase();
 
-  return !price || price.includes("бесплат") || price === "0" || price === "0 ₽";
+  switch (normalized) {
+    case "online":
+      return "Онлайн";
+    case "offline":
+      return "Очно";
+    case "hybrid":
+    case "mixed":
+      return "Смешанный";
+    default:
+      return `${value || ""}`.trim();
+  }
 }
 
-function getCourseDirection(course, index = 0) {
-  return course.direction || course.category || course.format || FILTER_OPTIONS.directions[(index % 4) + 1];
+function getFormatOptions(courses) {
+  return Array.from(
+    new Set(
+      courses
+        .map((course) => `${course.format || ""}`.trim())
+        .filter(Boolean),
+    ),
+  ).sort((left, right) =>
+    formatCourseFormat(left).localeCompare(
+      formatCourseFormat(right),
+      "ru",
+    ),
+  );
 }
 
-function getCourseFormat(course) {
-  return course.format || "Онлайн";
+function getDocumentOptions(courses) {
+  return Array.from(
+    new Set(
+      courses
+        .map((course) => `${course.document_type || ""}`.trim())
+        .filter(Boolean),
+    ),
+  ).sort((left, right) => left.localeCompare(right, "ru"));
 }
 
-function getCourseLevel(course, index = 0) {
-  return course.level || ["Базовый", "Начальный", "Средний", "Продвинутый"][index % 4];
+function getDirectionOptions(courses) {
+  return Array.from(
+    new Set(
+      courses
+        .map((course) => `${course.direction || ""}`.trim())
+        .filter(Boolean),
+    ),
+  ).sort((left, right) => left.localeCompare(right, "ru"));
 }
 
-function getCourseAudience(course, index = 0) {
-  const audience = Array.isArray(course.audience) ? course.audience[0] : course.audience;
-
-  return audience || ["Для детей", "Для педагогов", "Для управленцев", "Для подростков"][index % 4];
-}
-
-function getCourseModules(course, index = 0) {
-  return course.modules_count || course.modulesCount || course.modules?.length || [6, 5, 7, 4, 8, 3][index % 6];
-}
-
-function getCourseVisualClass(course, index) {
-  const title = `${course?.title || ""} ${getCourseDirection(course, index)}`.toLowerCase();
-
-  if (title.includes("робот")) {
-    return "program-art program-art-robot";
+function getCatalogGridClass(courseCount) {
+  if (courseCount <= 1) {
+    return "grid gap-6 lg:grid-cols-2";
   }
 
-  if (title.includes("метод") || title.includes("копил")) {
-    return "program-art program-art-books";
+  if (courseCount === 2) {
+    return "grid gap-6 md:grid-cols-2";
   }
 
-  if (title.includes("грамот") || title.includes("цифров") || title.includes("технолог")) {
-    return "program-art program-art-headset";
-  }
-
-  if (index % 4 === 2) {
-    return "program-art program-art-laptop";
-  }
-
-  if (index % 4 === 1) {
-    return "program-art program-art-headset";
-  }
-
-  return "program-art program-art-robot";
+  return "grid gap-6 md:grid-cols-2 xl:grid-cols-3";
 }
-
 function getInitialCatalogQuery() {
   if (typeof sessionStorage === "undefined") {
     return "";
   }
 
-  const value = sessionStorage.getItem("obrportal_catalog_query") || "";
-  sessionStorage.removeItem("obrportal_catalog_query");
-
-  return value;
-}
-
-function SelectFilter({ label, value, onChange, options }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-xs font-black uppercase tracking-wide text-[#111936]">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="portal-input">
-        {options.map((item) => (
-          <option key={item} value={item}>{item}</option>
-        ))}
-      </select>
-    </label>
+    sessionStorage.getItem("obrportal_catalog_query") || ""
   );
 }
 
-function FilterCheckbox({ checked, onChange, label }) {
-  return (
-    <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-600">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 text-blue-700 focus-visible:ring-blue-100"
-      />
-      {label}
-    </label>
-  );
+function getInitialCatalogDirection() {
+  if (typeof sessionStorage === "undefined") {
+    return "all";
+  }
+
+  const value = `${
+    sessionStorage.getItem("obrportal_catalog_direction") || ""
+  }`.trim();
+
+  return value || "all";
 }
 
-function CatalogFilterSidebar({
-  direction,
-  setDirection,
-  format,
-  setFormat,
-  level,
-  setLevel,
-  status,
-  setStatus,
-  audience,
-  setAudience,
-  onlyFree,
-  setOnlyFree,
-  onlyPaid,
-  setOnlyPaid,
-  resetFilters,
+function CourseCard({
+  course,
+  user,
+  enrollment,
+  onOpenCourse,
+  onPageChange,
 }) {
-  return (
-    <aside className="portal-card h-max p-5 lg:sticky lg:top-28 xl:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-[#111936]">Фильтры</h2>
-        <button
-          type="button"
-          onClick={resetFilters}
-          className="inline-flex items-center gap-1 text-xs font-black text-blue-700 transition hover:text-blue-900"
-        >
-          Сбросить все
-          <X className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-      </div>
-
-      <div className="mt-6 space-y-6">
-        <SelectFilter label="Направление" value={direction} onChange={setDirection} options={FILTER_OPTIONS.directions} />
-
-        <div className="space-y-3">
-          <div className="text-xs font-black uppercase tracking-wide text-[#111936]">Формат обучения</div>
-          {FILTER_OPTIONS.formats.slice(1).map((item) => (
-            <FilterCheckbox
-              key={item}
-              label={item}
-              checked={format === item || format === "Все форматы"}
-              onChange={(checked) => setFormat(checked ? item : "Все форматы")}
-            />
-          ))}
-        </div>
-
-        <SelectFilter label="Уровень" value={level} onChange={setLevel} options={FILTER_OPTIONS.levels} />
-        <SelectFilter label="Статус программы" value={status} onChange={setStatus} options={FILTER_OPTIONS.statuses} />
-        <SelectFilter label="Для кого" value={audience} onChange={setAudience} options={FILTER_OPTIONS.audiences} />
-
-        <div className="space-y-3">
-          <div className="text-xs font-black uppercase tracking-wide text-[#111936]">Цена</div>
-          <FilterCheckbox checked={onlyFree} onChange={setOnlyFree} label="Бесплатные" />
-          <FilterCheckbox checked={onlyPaid} onChange={setOnlyPaid} label="Платные" />
-        </div>
-      </div>
-
-      <button type="button" className="portal-btn-primary mt-7 w-full">
-        Показать 1248 программ
-      </button>
-    </aside>
+  const documentLabel = formatCourseDocument(course);
+  const formatLabel = formatCourseFormat(course.format);
+  const enrollmentLabel = getEnrollmentStatusLabel(
+    enrollment?.status,
   );
-}
 
-function CourseCard({ course, index, user, enrollment, onOpenCourse, onPageChange }) {
+  function handlePrimaryAction() {
+    if (enrollment) {
+      onPageChange("account");
+      return;
+    }
+
+    onOpenCourse(course.slug || course.id);
+  }
+
   return (
-    <article className="portal-card portal-card-hover overflow-hidden">
-      <div className={getCourseVisualClass(course, index)}>
-        <span className="absolute left-3 top-3 z-10 rounded-md bg-teal-600 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-white">
-          {getCourseDirection(course, index)}
-        </span>
+    <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_16px_40px_rgba(17,25,54,0.05)] transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(15,91,232,0.10)]">
+      <div className="relative flex min-h-[160px] items-end overflow-hidden bg-gradient-to-br from-[#102856] via-[#1e58a8] to-[#5b8fe6] p-5 text-white">
+        <div
+          aria-hidden="true"
+          className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute -bottom-16 left-12 h-40 w-40 rounded-full bg-sky-300/15"
+        />
+
+        <div className="relative flex w-full items-end justify-between gap-4">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/95 text-blue-700 shadow-lg">
+            <BookOpen className="h-7 w-7" aria-hidden="true" />
+          </span>
+
+          {formatLabel ? (
+            <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-blue-700 shadow-sm">
+              {formatLabel}
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      <div className="p-5">
-        <h2 className="line-clamp-2 min-h-[3.25rem] text-xl font-black leading-7 text-[#111936]">
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        <h2 className="text-xl font-black leading-7 text-[#111936]">
           {course.title}
         </h2>
 
-        {course.description && (
-          <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm leading-5 text-slate-600">
+        {course.description ? (
+          <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">
             {course.description}
           </p>
-        )}
+        ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-slate-500">
-          <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {getCourseModules(course, index)} модулей</span>
-          <span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" /> {course.hours ? `${course.hours} уроков` : "24 урока"}</span>
-        </div>
+        {course.hours || documentLabel ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {course.hours ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+                <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                {course.hours} ч.
+              </span>
+            ) : null}
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="portal-chip">{formatCourseDocument(course)}</span>
-          <span className="portal-muted-chip">{getCourseLevel(course, index)}</span>
-          <span className="portal-muted-chip">{getCourseAudience(course, index)}</span>
-          {user && (
-            <span className={`inline-flex min-h-8 items-center rounded-md px-3 text-xs font-black ring-1 ${getEnrollmentStatusTone(enrollment?.status)}`}>
-              {getEnrollmentStatusLabel(enrollment?.status)}
-            </span>
-          )}
-        </div>
-
-        <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className={`text-base font-black ${isCourseFree(course) ? "text-teal-700" : "text-[#111936]"}`}>
-            {formatCoursePrice(course)}
+            {documentLabel ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+                <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                {documentLabel}
+              </span>
+            ) : null}
           </div>
+        ) : null}
 
-          <button
-            type="button"
-            onClick={() => (enrollment ? onPageChange("account") : onOpenCourse(course.slug || course.id))}
-            className={enrollment ? "portal-btn-primary w-full !px-4 !py-2 sm:w-auto" : "portal-btn-secondary w-full !px-4 !py-2 sm:w-auto"}
-          >
-            {getCourseActionLabel(enrollment)}
-          </button>
-        </div>
+        {user && enrollmentLabel ? (
+          <div className="mt-4">
+            <span
+              className={`inline-flex rounded-full px-3 py-1.5 text-xs font-black ring-1 ${getEnrollmentStatusTone(
+                enrollment.status,
+              )}`}
+            >
+              {enrollmentLabel}
+            </span>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={handlePrimaryAction}
+          className="mt-6 inline-flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-[#111936] transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+        >
+          {getCourseActionLabel(enrollment)}
+          <ArrowRight
+            className="h-4 w-4 transition-transform group-hover:translate-x-1"
+            aria-hidden="true"
+          />
+        </button>
       </div>
     </article>
   );
 }
 
-function CatalogDiagnostics({ courses, filteredCourses, query, loading, error }) {
+function CatalogEmptyState({
+  hasFilters,
+  resetFilters,
+}) {
   return (
-    <section data-testid="catalog-public-diagnostics">
-      <div data-testid="catalog-public-summary">
-        Всего программ: {courses.length}. В выдаче: {filteredCourses.length}. Поиск: {query || "без поиска"}. {loading ? "Загрузка." : ""} {error ? `Ошибка: ${error}` : ""}
-      </div>
-    </section>
-  );
-}
-
-function CatalogEmptyState({ resetFilters, onPageChange }) {
-  return (
-    <section data-testid="catalog-empty-state" className="portal-card p-8 text-center">
+    <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
         <Search className="h-7 w-7" aria-hidden="true" />
       </div>
-      <h2 data-testid="catalog-empty-state-title" className="mt-4 text-2xl font-black text-[#111936]">
-        По текущим фильтрам ничего не найдено
+
+      <h2 className="mt-4 text-xl font-black text-[#111936]">
+        {hasFilters
+          ? "По вашему запросу ничего не найдено"
+          : "Опубликованных программ пока нет"}
       </h2>
-      <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-        Измените поисковый запрос или сбросьте фильтры, чтобы вернуться к полному списку программ.
+
+      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
+        {hasFilters
+          ? "Измените запрос или сбросьте фильтры, чтобы увидеть другие программы."
+          : "Новые программы появятся здесь после публикации."}
       </p>
-      <p data-testid="catalog-empty-state-hint" className="mx-auto mt-4 max-w-2xl rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-        Можно перейти в личный кабинет или проверить ранее выданный документ.
-      </p>
-      <div className="mt-5 flex flex-wrap justify-center gap-3">
-        <button data-testid="catalog-empty-state-reset-action" type="button" onClick={resetFilters} className="portal-btn-primary">
+
+      {hasFilters ? (
+        <button
+          type="button"
+          onClick={resetFilters}
+          className="portal-btn-secondary mt-5"
+        >
           Сбросить фильтры
         </button>
-        <button data-testid="catalog-empty-state-account-action" type="button" onClick={() => onPageChange("account")} className="portal-btn-secondary">
-          Личный кабинет
-        </button>
-      </div>
+      ) : null}
     </section>
   );
 }
 
-export function CatalogPage({ onPageChange, onOpenCourse, user }) {
+export function CatalogPage({
+  onPageChange,
+  onOpenCourse,
+  user,
+}) {
   const [courses, setCourses] = useState([]);
   const [accountCourses, setAccountCourses] = useState([]);
-  const [query, setQuery] = useState(() => getInitialCatalogQuery());
-  const [direction, setDirection] = useState("Все направления");
-  const [format, setFormat] = useState("Все форматы");
-  const [level, setLevel] = useState("Все уровни");
-  const [status, setStatus] = useState("Все статусы");
-  const [audience, setAudience] = useState("Все аудитории");
-  const [onlyFree, setOnlyFree] = useState(false);
-  const [onlyPaid, setOnlyPaid] = useState(false);
+  const [query, setQuery] = useState(
+    () => getInitialCatalogQuery(),
+  );
+  const [directionFilter, setDirectionFilter] = useState(
+    () => getInitialCatalogDirection(),
+  );
+  const [formatFilter, setFormatFilter] = useState("all");
+  const [documentFilter, setDocumentFilter] =
+    useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const enrollmentMap = useMemo(() => buildEnrollmentMap(accountCourses), [accountCourses]);
-  const displayCourses = useMemo(() => {
-    const primaryCourses = Array.isArray(courses) ? courses : [];
-    const designFallbackCourses = PUBLIC_COURSES.length ? PUBLIC_COURSES : CATALOG_FALLBACK_COURSES;
+  const enrollmentMap = useMemo(
+    () => buildEnrollmentMap(accountCourses),
+    [accountCourses],
+  );
 
-    if (!primaryCourses.length) {
-      return designFallbackCourses;
-    }
+  const directionOptions = useMemo(
+    () => getDirectionOptions(courses),
+    [courses],
+  );
 
-    if (!import.meta.env.DEV || primaryCourses.length >= 6) {
-      return primaryCourses;
-    }
+  const formatOptions = useMemo(
+    () => getFormatOptions(courses),
+    [courses],
+  );
 
-    const usedKeys = new Set(primaryCourses.map((course) => course.slug || course.id || course.title).filter(Boolean));
-    const supplementCourses = designFallbackCourses.filter((course) => {
-      const key = course.slug || course.id || course.title;
-      return key && !usedKeys.has(key);
-    });
-
-    return [...primaryCourses, ...supplementCourses].slice(0, 6);
-  }, [courses]);
+  const documentOptions = useMemo(
+    () => getDocumentOptions(courses),
+    [courses],
+  );
 
   const filteredCourses = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return displayCourses.filter((course, index) => {
-      const text = [
+    return courses.filter((course) => {
+      const searchableText = [
         course.title,
         course.slug,
         course.description,
+        course.direction,
         course.format,
         course.document_type,
-        course.document,
-        getCourseDirection(course, index),
-        getCourseLevel(course, index),
-        getCourseAudience(course, index),
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
 
-      const matchesQuery = !normalizedQuery || text.includes(normalizedQuery);
-      const matchesDirection = direction === "Все направления" || getCourseDirection(course, index) === direction;
-      const matchesFormat = format === "Все форматы" || getCourseFormat(course) === format;
-      const matchesLevel = level === "Все уровни" || getCourseLevel(course, index) === level;
-      const matchesAudience = audience === "Все аудитории" || getCourseAudience(course, index) === audience;
-      const matchesPrice = (!onlyFree && !onlyPaid) || (onlyFree && isCourseFree(course)) || (onlyPaid && !isCourseFree(course));
-      const matchesStatus = status === "Все статусы" || (status === "Активные" && course.is_active !== false && course.status !== "draft") || status !== "Активные";
+      const matchesQuery =
+        !normalizedQuery ||
+        searchableText.includes(normalizedQuery);
 
-      return matchesQuery && matchesDirection && matchesFormat && matchesLevel && matchesAudience && matchesPrice && matchesStatus;
+      const matchesDirection =
+        directionFilter === "all" ||
+        `${course.direction || ""}`.trim() ===
+          directionFilter;
+
+      const matchesFormat =
+        formatFilter === "all" ||
+        course.format === formatFilter;
+
+      const matchesDocument =
+        documentFilter === "all" ||
+        course.document_type === documentFilter;
+
+      return (
+        matchesQuery &&
+        matchesDirection &&
+        matchesFormat &&
+        matchesDocument
+      );
     });
-  }, [displayCourses, query, direction, format, level, audience, onlyFree, onlyPaid, status]);
+  }, [
+    courses,
+    query,
+    directionFilter,
+    formatFilter,
+    documentFilter,
+  ]);
+
+  useEffect(() => {
+    if (typeof sessionStorage === "undefined") {
+      return;
+    }
+
+    sessionStorage.removeItem("obrportal_catalog_query");
+    sessionStorage.removeItem("obrportal_catalog_direction");
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -513,25 +408,53 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
         setLoading(true);
         setError("");
 
-        const [coursesResponse, accountCoursesResponse] = await Promise.all([
-          getPublicCourses({ limit: 300 }),
-          user ? getAccountCourses() : Promise.resolve(null),
-        ]);
+        const coursesResponse =
+          await getPublicCourses({ limit: 300 });
 
         if (!isMounted) {
           return;
         }
 
-        setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
-        setAccountCourses(
-          Array.isArray(accountCoursesResponse?.items) ? accountCoursesResponse.items : []
+        setCourses(
+          Array.isArray(coursesResponse)
+            ? coursesResponse
+            : [],
         );
+
+        if (!user) {
+          setAccountCourses([]);
+          return;
+        }
+
+        try {
+          const accountResponse =
+            await getAccountCourses();
+
+          if (!isMounted) {
+            return;
+          }
+
+          setAccountCourses(
+            Array.isArray(accountResponse?.items)
+              ? accountResponse.items
+              : [],
+          );
+        } catch {
+          if (isMounted) {
+            setAccountCourses([]);
+          }
+        }
       } catch (err) {
         if (!isMounted) {
           return;
         }
 
-        setError(formatApiError(err, "Не удалось загрузить каталог программ."));
+        setError(
+          formatApiError(
+            err,
+            "Не удалось загрузить каталог программ.",
+          ),
+        );
         setCourses([]);
         setAccountCourses([]);
       } finally {
@@ -550,204 +473,282 @@ export function CatalogPage({ onPageChange, onOpenCourse, user }) {
 
   function resetFilters() {
     setQuery("");
-    setDirection("Все направления");
-    setFormat("Все форматы");
-    setLevel("Все уровни");
-    setStatus("Все статусы");
-    setAudience("Все аудитории");
-    setOnlyFree(false);
-    setOnlyPaid(false);
+    setDirectionFilter("all");
+    setFormatFilter("all");
+    setDocumentFilter("all");
   }
 
-  const activeChips = [
-    query ? `Поиск: ${query}` : "Активные программы",
-    direction !== "Все направления" ? direction : "Все направления",
-    format !== "Все форматы" ? format : "Все форматы",
-    level !== "Все уровни" ? level : "Все уровни",
-    status !== "Все статусы" ? status : "Все статусы",
-  ];
-
-  const foundLabel = courses.length ? filteredCourses.length : 1248;
+  const hasFilters =
+    Boolean(query.trim()) ||
+    directionFilter !== "all" ||
+    formatFilter !== "all" ||
+    documentFilter !== "all";
 
   return (
     <div className="public-catalog-page space-y-7 md:space-y-8">
-      <section className="relative overflow-hidden rounded-shell bg-white px-5 py-8 shadow-[0_16px_44px_rgba(17,25,54,0.055)] ring-1 ring-slate-200/80 sm:px-7 sm:py-9 md:px-10 lg:px-12 lg:py-12">
-        <div className="absolute right-0 top-0 hidden h-full w-[36%] bg-gradient-to-l from-blue-50 to-transparent lg:block" />
-        <div className="relative">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
-            <button type="button" onClick={() => onPageChange("home")} className="hover:text-blue-700">Главная</button>
-            <span>›</span>
-            <span>Программы</span>
-          </div>
-          <h1 className="mt-5 text-4xl font-black tracking-[0.04em] text-[#111936] sm:text-5xl sm:tracking-[0.06em] md:text-6xl">
-            Каталог программ
-          </h1>
-          <p className="mt-5 max-w-4xl text-base leading-7 text-slate-600 md:text-lg md:leading-8">
-            Выберите программу и начните обучение уже сегодня. В каталоге представлено {courses.length ? courses.length : "1 248"} программ по различным направлениям.
-          </p>
-        </div>
-      </section>
-
-      <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <CatalogFilterSidebar
-          direction={direction}
-          setDirection={setDirection}
-          format={format}
-          setFormat={setFormat}
-          level={level}
-          setLevel={setLevel}
-          status={status}
-          setStatus={setStatus}
-          audience={audience}
-          setAudience={setAudience}
-          onlyFree={onlyFree}
-          setOnlyFree={setOnlyFree}
-          onlyPaid={onlyPaid}
-          setOnlyPaid={setOnlyPaid}
-          resetFilters={resetFilters}
+      <section className="relative overflow-hidden rounded-[2rem] border border-blue-100/80 bg-gradient-to-br from-white via-[#f8fbff] to-[#edf5ff] px-5 py-8 shadow-[0_24px_70px_rgba(15,91,232,0.07)] sm:px-7 sm:py-9 md:px-10 lg:px-12 lg:py-12">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-blue-100/70 blur-3xl"
         />
 
-        <section className="portal-card p-5 md:p-6 xl:p-7">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <label className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 ring-0 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
-              <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Поиск по названию программы или ключевому слову..."
-                className="min-w-0 flex-1 border-0 bg-transparent text-base font-semibold text-slate-900 outline-none placeholder:text-slate-400"
-              />
-            </label>
+        <div className="relative">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
+            <button
+              type="button"
+              onClick={() => onPageChange("home")}
+              className="transition hover:text-blue-700"
+            >
+              Главная
+            </button>
+            <span aria-hidden="true">›</span>
+            <span>Программы</span>
+          </div>
 
-            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center xl:w-auto">
-              <button type="button" className="portal-btn-primary !h-12 w-full !rounded-lg !px-7 !py-0 sm:w-auto">Найти</button>
-              <div className="flex w-full flex-col items-start gap-2 text-xs font-bold text-slate-500 sm:w-auto sm:flex-row sm:items-center">
-                Сортировать:
-                <select className="h-12 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100 sm:w-auto">
-                  <option>По популярности</option>
-                  <option>По новизне</option>
-                  <option>По цене</option>
-                </select>
+          <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1 className="text-4xl font-black tracking-[-0.03em] text-[#111936] sm:text-5xl md:text-6xl">
+                Каталог программ
+              </h1>
+
+              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 md:text-lg md:leading-8">
+                Найдите опубликованную программу, изучите условия обучения и откройте подробную информацию.
+              </p>
+            </div>
+
+            <div className="w-fit rounded-2xl border border-blue-100 bg-white/90 px-5 py-3 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-[0.08em] text-slate-400">
+                В каталоге
+              </div>
+              <div className="mt-1 text-lg font-black text-blue-700">
+                {loading
+                  ? "Загрузка..."
+                  : `${courses.length} ${
+                      courses.length === 1
+                        ? "программа"
+                        : "программ"
+                    }`}
               </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {activeChips.map((chip) => (
-              <span key={chip} className="portal-muted-chip gap-2">
-                {chip}
-                <X className="h-3 w-3" aria-hidden="true" />
-              </span>
-            ))}
-          </div>
+      <section
+        aria-labelledby="catalog-search-title"
+        className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-[0_16px_45px_rgba(17,25,54,0.05)] sm:p-6 lg:p-7"
+      >
+        <div className="flex flex-col gap-2">
+          <h2
+            id="catalog-search-title"
+            className="text-xl font-black text-[#111936]"
+          >
+            Поиск по каталогу
+          </h2>
+          <p className="text-sm leading-6 text-slate-500">
+            Поиск и фильтры используют только данные опубликованных программ.
+          </p>
+        </div>
 
-          <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm font-semibold text-slate-600">
-              Найдено программ: <span className="font-black text-[#111936]">{foundLabel}</span>
-            </div>
-
-            <div className="flex w-full items-center gap-2 sm:w-auto">
-              <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 ring-1 ring-blue-100">
-                <Grid2X2 className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200">
-                <List className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200 lg:hidden">
-                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-
-          <div hidden aria-hidden="true">
-            <CatalogDiagnostics
-              courses={displayCourses}
-              filteredCourses={filteredCourses}
-              query={query}
-              loading={loading}
-              error={error}
+        <div className="mt-5 grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_240px_190px_220px_auto]">
+          <label className="flex h-12 min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+            <Search
+              className="h-5 w-5 shrink-0 text-slate-400"
+              aria-hidden="true"
             />
+            <span className="sr-only">
+              Поиск программ
+            </span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) =>
+                setQuery(event.target.value)
+              }
+              placeholder="Название или ключевое слово..."
+              className="min-w-0 flex-1 border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+            />
+          </label>
+
+          <label>
+            <span className="sr-only">
+              {"\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+            </span>
+            <select
+              value={directionFilter}
+              onChange={(event) =>
+                setDirectionFilter(event.target.value)
+              }
+              className="portal-input h-12"
+              data-testid="catalog-direction-filter"
+            >
+              <option value="all">
+                {"\u0412\u0441\u0435 \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f"}
+              </option>
+
+              {directionFilter !== "all" &&
+              !directionOptions.includes(directionFilter) ? (
+                <option value={directionFilter}>
+                  {directionFilter}
+                </option>
+              ) : null}
+
+              {directionOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span className="sr-only">
+              Формат обучения
+            </span>
+            <select
+              value={formatFilter}
+              onChange={(event) =>
+                setFormatFilter(event.target.value)
+              }
+              className="portal-input h-12"
+            >
+              <option value="all">
+                Все форматы
+              </option>
+
+              {formatOptions.map((value) => (
+                <option key={value} value={value}>
+                  {formatCourseFormat(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span className="sr-only">
+              Итоговый документ
+            </span>
+            <select
+              value={documentFilter}
+              onChange={(event) =>
+                setDocumentFilter(
+                  event.target.value,
+                )
+              }
+              className="portal-input h-12"
+            >
+              <option value="all">
+                Все документы
+              </option>
+
+              {documentOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            type="button"
+            onClick={resetFilters}
+            disabled={!hasFilters}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-black text-slate-600 transition enabled:hover:border-blue-200 enabled:hover:bg-blue-50 enabled:hover:text-blue-700 disabled:cursor-default disabled:opacity-40"
+          >
+            <X
+              className="h-4 w-4"
+              aria-hidden="true"
+            />
+            Сбросить
+          </button>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm font-semibold text-slate-500">
+            {loading
+              ? "Загружаем программы..."
+              : `Найдено: ${filteredCourses.length}`}
           </div>
 
-          {error && !courses.length ? (
-            <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
-              Backend каталога сейчас не ответил, поэтому для проверки дизайна показана локальная витрина. Деталь: {error}
+          {hasFilters ? (
+            <div className="text-xs font-bold text-blue-700">
+              Применены фильтры каталога
             </div>
           ) : null}
+        </div>
 
-          {loading && !displayCourses.length ? (
-            <div className="mt-6 rounded-2xl bg-slate-50 p-6 text-sm text-slate-600 ring-1 ring-slate-200">
-              Загружаем каталог...
-            </div>
-          ) : filteredCourses.length === 0 ? (
-            <div className="mt-6">
-              <CatalogEmptyState resetFilters={resetFilters} onPageChange={onPageChange} />
-            </div>
-          ) : (
-            <div className="mt-7 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {filteredCourses.slice(0, 6).map((course, index) => {
-                const enrollment = getCourseEnrollment(course, enrollmentMap);
-
-                return (
-                  <CourseCard
-                    key={course.id || course.slug || index}
-                    course={course}
-                    index={index}
-                    user={user}
-                    enrollment={enrollment}
-                    onOpenCourse={onOpenCourse}
-                    onPageChange={onPageChange}
-                  />
-                );
-              })}
-            </div>
-          )}
-
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-            <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-slate-400 ring-1 ring-slate-200">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            {[1, 2, 3, 4, 5].map((page) => (
-              <button
-                key={page}
-                type="button"
-                className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-black ${
-                  page === 1 ? "bg-blue-700 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            <span className="px-2 text-sm font-bold text-slate-400">...</span>
-            <button type="button" className="flex h-10 w-12 items-center justify-center rounded-lg bg-white text-sm font-black text-slate-600 ring-1 ring-slate-200">208</button>
-            <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-slate-700 ring-1 ring-slate-200">
-              <ChevronRight className="h-4 w-4" />
-            </button>
+        <div hidden data-testid="catalog-public-diagnostics">
+          <div data-testid="catalog-public-summary">
+            Всего программ: {courses.length}. В выдаче:{" "}
+            {filteredCourses.length}. Поиск:{" "}
+            {query || "без поиска"}.
           </div>
+        </div>
+      </section>
+
+      {error ? (
+        <section
+          role="alert"
+          className="rounded-3xl border border-amber-200 bg-amber-50/70 p-6"
+        >
+          <h2 className="text-lg font-black text-[#111936]">
+            Не удалось загрузить каталог
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {error}
+          </p>
         </section>
-      </div>
+      ) : loading ? (
+        <section
+          aria-label="Загрузка каталога"
+          className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
+        >
+          {[0, 1, 2].map((item) => (
+            <div
+              key={item}
+              className="overflow-hidden rounded-3xl border border-slate-200 bg-white"
+              aria-hidden="true"
+            >
+              <div className="h-40 animate-pulse bg-slate-100" />
+              <div className="space-y-3 p-6">
+                <div className="h-6 w-4/5 animate-pulse rounded-full bg-slate-100" />
+                <div className="h-4 w-full animate-pulse rounded-full bg-slate-100" />
+                <div className="h-4 w-2/3 animate-pulse rounded-full bg-slate-100" />
+                <div className="h-12 animate-pulse rounded-2xl bg-slate-100" />
+              </div>
+            </div>
+          ))}
+        </section>
+      ) : filteredCourses.length === 0 ? (
+        <CatalogEmptyState
+          hasFilters={hasFilters}
+          resetFilters={resetFilters}
+        />
+      ) : (
+        <section
+          aria-label="Опубликованные программы"
+          className={getCatalogGridClass(filteredCourses.length)}
+        >
+          {filteredCourses.map((course) => {
+            const enrollment =
+              getCourseEnrollment(
+                course,
+                enrollmentMap,
+              );
+
+            return (
+              <CourseCard
+                key={course.id || course.slug}
+                course={course}
+                user={user}
+                enrollment={enrollment}
+                onOpenCourse={onOpenCourse}
+                onPageChange={onPageChange}
+              />
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }
-
-/*
-Smoke guard for legacy catalog diagnostics checks:
-function getCatalogDiagnostics
-catalogDiagnostics
-catalog-public-status
-catalog-public-filters
-catalog-public-attention
-catalog-public-attention-count
-catalog-public-links
-Диагностика каталога
-Публичный каталог и самозапись
-Что требует внимания в каталоге
-Каталог: список публичных программ загружается.
-Каталог: не удалось загрузить публичные программы
-Поиск: применён текстовый фильтр
-Формат: применён фильтр по формату обучения.
-Самозапись: пользователь не авторизован
-Проверить документ
-getCatalogDiagnostics({
-*/

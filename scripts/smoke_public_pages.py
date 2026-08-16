@@ -30,6 +30,16 @@ def require_contains(relative_path: str, fragments: list[str]) -> None:
         raise SystemExit(1)
 
 
+def require_not_contains(relative_path: str, fragments: list[str]) -> None:
+    text = read_text(relative_path)
+    present = [fragment for fragment in fragments if fragment in text]
+
+    if present:
+        print(f"{relative_path} contains forbidden fragments:")
+        for fragment in present:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
 def main() -> None:
     require_contains(
         "frontend/src/api/client.js",
@@ -50,58 +60,99 @@ def main() -> None:
         [
             'import { useEffect, useState } from "react";',
             'import { getPublicCourses } from "../api/client";',
+            "const HOME_FEATURES = [",
+            'page: "verify-document"',
             "function formatCourseDocument(course)",
-            "function formatCoursePrice(course)",
+            "function ProgramCard({ course, index, onOpenCourse })",
             "export function HomePage",
             "const [featuredCourses, setFeaturedCourses] = useState([]);",
             "const [loadingCourses, setLoadingCourses] = useState(true);",
-            "const [coursesError, setCoursesError] = useState(\"\");",
+            'const [coursesError, setCoursesError] = useState("");',
             "async function loadFeaturedCourses()",
-            "getPublicCourses({ limit: 3 })",
+            "getPublicCourses({ limit: 4 })",
             "setFeaturedCourses(Array.isArray(response) ? response : []);",
-            "onPageChange(\"catalog\")",
-            "onPageChange(\"verify-document\")",
-            "featuredCourses.map((course)",
-            "onOpenCourse(course.slug)",
+            "{course.hours} ч.",
+            "featuredCourses.map((course, index) => (",
+            "onClick={() => onOpenCourse(slug)}",
+            'onPageChange("catalog")',
+            "Опубликованных программ пока нет",
         ],
     )
 
+    require_not_contains(
+        "frontend/src/pages/HomePage.jsx",
+        [
+            'import { PUBLIC_COURSES } from "../data/publicCourses";',
+            "const FALLBACK_HOME_COURSES = [",
+            "function formatCoursePrice(course)",
+            "function getCourseModulesLabel(course, index)",
+            "const displayCourses = useMemo(() => {",
+            "designFallbackCourses",
+            'price: "4 900 ₽"',
+            'price: "9 900 ₽"',
+            "для витрины показаны локальные демонстрационные карточки",
+        ],
+    )
     require_contains(
         "frontend/src/pages/CatalogPage.jsx",
         [
             'import { useEffect, useMemo, useState } from "react";',
-            "getAccountCourses,",
-            "getPublicCourses",
-            "function formatCourseDocument(course)",
-            "function formatCoursePrice(course)",
+            'import { getAccountCourses, getPublicCourses } from "../api/client";',
             "function getEnrollmentStatusLabel(status)",
             "function getEnrollmentStatusTone(status)",
             "function buildEnrollmentMap(accountCourses)",
             "function getCourseEnrollment(course, enrollmentMap)",
             "function getCourseActionLabel(enrollment)",
+            "function formatCourseDocument(course)",
+            "function formatCourseFormat(value)",
             "function getFormatOptions(courses)",
+            "function getDocumentOptions(courses)",
+            "function getInitialCatalogQuery()",
+            "function CourseCard({",
+            "function CatalogEmptyState({",
             "export function CatalogPage",
             "const [courses, setCourses] = useState([]);",
             "const [accountCourses, setAccountCourses] = useState([]);",
-            "const [query, setQuery] = useState(\"\");",
             "const [formatFilter, setFormatFilter] = useState(\"all\");",
+            "const [documentFilter, setDocumentFilter] =",
             "const formatOptions = useMemo(",
-            "const enrollmentMap = useMemo(",
-            "const filteredCourses = useMemo(",
-            "async function loadCourses()",
+            "const documentOptions = useMemo(",
+            "const filteredCourses = useMemo(() => {",
             "getPublicCourses({ limit: 300 })",
-            "user ? getAccountCourses() : Promise.resolve(null)",
-            "setCourses(Array.isArray(coursesResponse) ? coursesResponse : []);",
-            "function resetFilters()",
-            "setQuery(\"\");",
-            "setFormatFilter(\"all\");",
-            "filteredCourses.map((course)",
-            "const enrollment = getCourseEnrollment(course, enrollmentMap);",
-            "getEnrollmentStatusTone(",
-            "getEnrollmentStatusLabel(",
+            "await getAccountCourses()",
+            "setCourses(",
+            "filteredCourses.map((course) => {",
+            "onOpenCourse(course.slug || course.id)",
+            'data-testid="catalog-public-diagnostics"',
+            'data-testid="catalog-public-summary"',
+            "Опубликованных программ пока нет",
+            "Поиск и фильтры используют только данные опубликованных программ.",
         ],
     )
 
+    require_not_contains(
+        "frontend/src/pages/CatalogPage.jsx",
+        [
+            'import { PUBLIC_COURSES } from "../data/publicCourses";',
+            "const CATALOG_FALLBACK_COURSES = [",
+            "function formatCoursePrice(course)",
+            "function isCourseFree(course)",
+            "function getCourseDirection(course",
+            "function getCourseLevel(course",
+            "function getCourseAudience(course",
+            "function getCourseModules(course",
+            "designFallbackCourses",
+            "supplementCourses",
+            "Показать 1248 программ",
+            'courses.length ? courses.length : "1 248"',
+            "filteredCourses.length : 1248",
+            "По популярности",
+            "По новизне",
+            "По цене",
+            ">208<",
+            "Backend каталога сейчас не ответил, поэтому для проверки дизайна показана локальная витрина.",
+        ],
+    )
     require_contains(
         "frontend/src/pages/CourseDetailPage.jsx",
         [

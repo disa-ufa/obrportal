@@ -1,19 +1,7 @@
 import { formatApiError } from "../utils/apiErrors";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BookOpen, Boxes, BriefcaseBusiness, FileText, GraduationCap, Layers3, LibraryBig, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, BookOpen, BriefcaseBusiness, FileText, GraduationCap, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
 import { getPublicCourses } from "../api/client";
-import { PUBLIC_COURSES } from "../data/publicCourses";
-
-/*
-  CI smoke guard fragments.
-  The smoke workflow checks these legacy HomePage wiring fragments by literal text.
-  Keep them here while the redesigned page uses displayCourses and a shared card component.
-  import { useEffect, useState } from "react";
-  getPublicCourses({ limit: 3 })
-  onPageChange("verify-document")
-  featuredCourses.map((course)
-  onOpenCourse(course.slug)
-*/
 
 const POPULAR_QUERIES = [
   "Дополнительное образование",
@@ -21,33 +9,36 @@ const POPULAR_QUERIES = [
   "Методические материалы",
 ];
 
-const PORTAL_STATS = [
+const HOME_FEATURES = [
   {
-    label: "Программ",
-    value: "256",
-    hint: "Актуальные образовательные программы",
+    title: "Каталог программ",
+    description: "Найдите подходящую образовательную программу и изучите условия обучения.",
+    page: "catalog",
+    actionLabel: "Открыть каталог",
     icon: BookOpen,
   },
   {
-    label: "Модулей",
-    value: "1 248",
-    hint: "Структурированные учебные модули",
-    icon: Boxes,
+    title: "Личный кабинет",
+    description: "Продолжайте обучение, выполняйте задания и работайте со своими документами.",
+    page: "account",
+    actionLabel: "Перейти в кабинет",
+    icon: GraduationCap,
   },
   {
-    label: "Уроков",
-    value: "5 796",
-    hint: "Интерактивные уроки и материалы",
-    icon: MonitorPlay,
+    title: "Проверка документов",
+    description: "Проверьте подлинность документа об обучении через публичный сервис портала.",
+    page: "verify-document",
+    actionLabel: "Проверить документ",
+    icon: FileText,
   },
   {
-    label: "Организаций",
-    value: "342",
-    hint: "Партнёры и образовательные организации",
-    icon: LibraryBig,
+    title: "Для организаций",
+    description: "Откройте сведения и возможности портала для образовательных организаций.",
+    page: "organization-info",
+    actionLabel: "Для организаций",
+    icon: UsersRound,
   },
 ];
-
 const DIRECTIONS = [
   { label: "Дополнительное образование", icon: Palette },
   { label: "Повышение квалификации", icon: Sparkles },
@@ -57,57 +48,36 @@ const DIRECTIONS = [
   { label: "Воспитательная работа", icon: GraduationCap },
 ];
 
-const FALLBACK_HOME_COURSES = [
+const LEARNING_STEPS = [
   {
-    id: "home-robotics",
-    slug: "robototekhnika-dlya-nachinayushchih",
-    title: "Робототехника для начинающих",
-    description: "Введение в робототехнику, основы конструирования и программирования.",
-    hours: 24,
-    format: "Дополнительное образование",
-    document_type: "Сертификат",
-    price: "Бесплатно",
+    number: "01",
+    title:
+      "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443",
+    description:
+      "\u0418\u0437\u0443\u0447\u0438\u0442\u0435 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0438 \u0443\u0441\u043b\u043e\u0432\u0438\u044f \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435.",
+    icon: Search,
   },
   {
-    id: "home-edtech",
-    slug: "sovremennye-tehnologii-v-obuchenii",
-    title: "Современные технологии в обучении",
-    description: "Эффективные цифровые инструменты и методики для образовательного процесса.",
-    hours: 18,
-    format: "Повышение квалификации",
-    document_type: "Удостоверение",
-    price: "4 900 ₽",
+    number: "02",
+    title:
+      "\u041e\u0431\u0443\u0447\u0430\u0439\u0442\u0435\u0441\u044c \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435",
+    description:
+      "\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u044b\u0435 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b \u0438 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0439\u0442\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0432 \u0441\u0432\u043e\u0435\u043c \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435.",
+    icon: MonitorPlay,
   },
   {
-    id: "home-projects",
-    slug: "upravlenie-proektami-v-obrazovanii",
-    title: "Управление проектами",
-    description: "Основы проектного управления в образовательных организациях.",
-    hours: 32,
-    format: "Профессиональная подготовка",
-    document_type: "Сертификат",
-    price: "9 900 ₽",
-  },
-  {
-    id: "home-method",
-    slug: "metodicheskaya-kopilka-pedagoga",
-    title: "Методическая копилка педагога",
-    description: "Практические материалы и разработки для педагогов и наставников.",
-    hours: 15,
-    format: "Методические материалы",
-    document_type: "Материалы",
-    price: "Бесплатно",
+    number: "03",
+    title:
+      "\u041f\u043e\u043b\u0443\u0447\u0438\u0442\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+    description:
+      "\u0415\u0441\u043b\u0438 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u043e\u0439 \u043f\u0440\u0435\u0434\u0443\u0441\u043c\u043e\u0442\u0440\u0435\u043d \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442, \u043e\u043d \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f.",
+    icon: FileText,
   },
 ];
 
 function formatCourseDocument(course) {
-  return course.document_type || course.document || "Итоговый документ";
+  return course.document_type || course.document || "";
 }
-
-function formatCoursePrice(course) {
-  return course.price || "Бесплатно";
-}
-
 function getCourseVisualClass(course, index) {
   const title = `${course?.title || ""} ${course?.format || ""}`.toLowerCase();
 
@@ -138,73 +108,112 @@ function getCourseVisualClass(course, index) {
   return "program-art program-art-robot";
 }
 
-function getCourseModulesLabel(course, index) {
-  const modules = course.modules_count || course.modulesCount || course.modules?.length;
-
-  if (modules) {
-    return `${modules} модулей`;
-  }
-
-  return `${[6, 5, 7, 4][index % 4]} модулей`;
-}
-
 function ProgramCard({ course, index, onOpenCourse }) {
   const slug = course.slug || course.id;
+  const documentLabel = formatCourseDocument(course);
 
   return (
-    <article className="portal-card portal-card-hover overflow-hidden">
+    <article className="group flex h-full min-h-[360px] flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_16px_40px_rgba(17,25,54,0.05)] transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(15,91,232,0.12)]">
       <div className={getCourseVisualClass(course, index)}>
-        <span className="absolute left-3 top-3 z-10 rounded-md bg-teal-600 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-white">
-          {course.format || "Программа"}
-        </span>
+        {course.format ? (
+          <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-blue-700 shadow-sm ring-1 ring-blue-100">
+            {course.format}
+          </span>
+        ) : null}
       </div>
 
-      <div className="p-5">
-        <h3 className="line-clamp-2 min-h-[3.25rem] text-xl font-black leading-7 text-[#111936]">
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="line-clamp-2 text-xl font-black leading-7 text-[#111936]">
           {course.title}
         </h3>
 
         {course.description ? (
-          <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm leading-5 text-slate-600">
+          <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">
             {course.description}
           </p>
         ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-slate-500">
-          <span>{getCourseModulesLabel(course, index)}</span>
-          <span>{course.hours ? `${course.hours} уроков` : `${[24, 18, 32, 15][index % 4]} уроков`}</span>
-        </div>
+        {course.hours || documentLabel ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {course.hours ? (
+              <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+                {course.hours} ч.
+              </span>
+            ) : null}
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="portal-chip">{formatCourseDocument(course)}</span>
-        </div>
-
-        <div className="mt-6 flex items-center justify-between gap-3">
-          <div className={`text-base font-black ${formatCoursePrice(course).toLowerCase().includes("бесплат") ? "text-teal-700" : "text-[#111936]"}`}>
-            {formatCoursePrice(course)}
+            {documentLabel ? (
+              <span className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+                {documentLabel}
+              </span>
+            ) : null}
           </div>
+        ) : null}
 
-          <button
-            type="button"
-            onClick={() => onOpenCourse(slug)}
-            className="portal-btn-secondary !px-4 !py-2"
-          >
-            Подробнее
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => onOpenCourse(slug)}
+          className="mt-6 inline-flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-[#111936] transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+        >
+          Подробнее
+          <ArrowRight
+            className="h-4 w-4 transition-transform group-hover:translate-x-1"
+            aria-hidden="true"
+          />
+        </button>
       </div>
     </article>
   );
 }
+function getPopularProgramsGridClass(courseCount) {
+  if (courseCount <= 1) {
+    return "grid gap-6 lg:grid-cols-2";
+  }
 
+  if (courseCount === 2) {
+    return "grid gap-6 md:grid-cols-2";
+  }
+
+  if (courseCount === 3) {
+    return "grid gap-6 md:grid-cols-2 xl:grid-cols-3";
+  }
+
+  return "grid gap-6 md:grid-cols-2 xl:grid-cols-4";
+}
 function saveCatalogQuery(query) {
   const value = `${query || ""}`.trim();
 
-  if (!value || typeof sessionStorage === "undefined") {
+  if (typeof sessionStorage === "undefined") {
+    return;
+  }
+
+  sessionStorage.removeItem("obrportal_catalog_direction");
+
+  if (!value) {
+    sessionStorage.removeItem("obrportal_catalog_query");
     return;
   }
 
   sessionStorage.setItem("obrportal_catalog_query", value);
+}
+
+function saveCatalogDirection(direction) {
+  const value = `${direction || ""}`.trim();
+
+  if (typeof sessionStorage === "undefined") {
+    return;
+  }
+
+  sessionStorage.removeItem("obrportal_catalog_query");
+
+  if (!value) {
+    sessionStorage.removeItem("obrportal_catalog_direction");
+    return;
+  }
+
+  sessionStorage.setItem(
+    "obrportal_catalog_direction",
+    value,
+  );
 }
 
 export function HomePage({ onPageChange, onOpenCourse }) {
@@ -249,27 +258,6 @@ export function HomePage({ onPageChange, onOpenCourse }) {
     };
   }, []);
 
-  const displayCourses = useMemo(() => {
-    const primaryCourses = Array.isArray(featuredCourses) ? featuredCourses : [];
-    const designFallbackCourses = PUBLIC_COURSES.length ? PUBLIC_COURSES : FALLBACK_HOME_COURSES;
-
-    if (!primaryCourses.length) {
-      return designFallbackCourses.slice(0, 4);
-    }
-
-    if (!import.meta.env.DEV || primaryCourses.length >= 4) {
-      return primaryCourses.slice(0, 4);
-    }
-
-    const usedKeys = new Set(primaryCourses.map((course) => course.slug || course.id || course.title).filter(Boolean));
-    const supplementCourses = designFallbackCourses.filter((course) => {
-      const key = course.slug || course.id || course.title;
-      return key && !usedKeys.has(key);
-    });
-
-    return [...primaryCourses, ...supplementCourses].slice(0, 4);
-  }, [featuredCourses]);
-
   function handleSearchSubmit(event) {
     event?.preventDefault?.();
     saveCatalogQuery(searchQuery);
@@ -278,98 +266,315 @@ export function HomePage({ onPageChange, onOpenCourse }) {
 
   return (
     <div className="public-home-page space-y-10 md:space-y-12">
-      <section className="relative overflow-hidden rounded-shell bg-gradient-to-r from-white via-white to-blue-50/90 px-5 py-8 sm:px-7 sm:py-10 md:px-12 lg:min-h-[430px] lg:px-16 lg:py-14 2xl:px-20">
-        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[48%] overflow-hidden lg:block">
-          <div className="absolute right-10 top-8 h-56 w-56 rounded-full bg-blue-100/80 blur-2xl" />
-          <div className="absolute right-28 top-14 h-48 w-72 rounded-[4rem] bg-blue-200/35" />
-          <div className="absolute bottom-8 right-20 h-28 w-80 rounded-shell bg-white/70 shadow-[0_20px_50px_rgba(15,91,232,0.16)]" />
-          <div className="absolute bottom-16 right-52 h-3 w-40 rounded-full bg-blue-700/80" />
-          <div className="absolute bottom-24 right-48 h-3 w-32 rounded-full bg-blue-500/50" />
-          <GraduationCap className="absolute right-32 top-16 h-11 w-11 text-blue-600/70" />
-          <MonitorPlay className="absolute right-72 top-28 h-10 w-10 text-blue-500/50" />
-          <FileText className="absolute right-16 top-28 h-12 w-12 text-blue-700/50" />
-        </div>
+      <section className="relative overflow-hidden rounded-[2rem] border border-blue-100/80 bg-gradient-to-br from-white via-[#f8fbff] to-[#edf5ff] px-5 py-7 shadow-[0_24px_70px_rgba(15,91,232,0.08)] sm:px-7 sm:py-9 md:px-10 lg:px-12 lg:py-12 xl:px-14">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-blue-100/60 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-20 h-96 w-96 rounded-full bg-sky-100/80 blur-3xl"
+        />
 
-        <div className="relative max-w-4xl">
-          <h1 className="max-w-3xl text-4xl font-black leading-[1.05] tracking-tight text-[#111936] sm:text-5xl md:text-6xl md:leading-[1.02] xl:text-[4.4rem]">
-            Образовательный портал РЦДО
-          </h1>
-          <p className="mt-6 max-w-3xl text-base leading-7 text-slate-600 md:text-xl md:leading-8">
-            Современная платформа для дистанционного обучения и эффективного управления образовательными программами.
-          </p>
+        <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(410px,0.95fr)] xl:gap-14">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/90 px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-blue-700 shadow-sm">
+              <GraduationCap className="h-4 w-4" aria-hidden="true" />
+              Единая образовательная среда РЦДО
+            </div>
 
-          <form onSubmit={handleSearchSubmit} className="mt-8 flex max-w-3xl flex-col gap-3 rounded-xl bg-white p-2.5 shadow-[0_18px_40px_rgba(17,25,54,0.09)] ring-1 ring-slate-200 transition focus-within:ring-4 focus-within:ring-blue-100 sm:mt-9 sm:flex-row">
-            <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
-              <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Поиск программ и материалов..."
-                className="h-12 min-w-0 flex-1 border-0 bg-transparent text-base font-semibold text-slate-900 outline-none placeholder:text-slate-400"
-              />
-            </label>
-            <button type="submit" className="portal-btn-primary !h-12 w-full !rounded-lg !px-9 !py-0 sm:w-auto">
-              Найти
-            </button>
-          </form>
+            <h1 className="mt-6 max-w-3xl text-4xl font-black leading-[1.04] tracking-[-0.035em] text-[#111936] sm:text-5xl md:text-6xl md:leading-[1.02] xl:text-[4.15rem]">
+              Все для обучения
+              <span className="block text-blue-700">в одном портале</span>
+            </h1>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-            <span className="font-semibold">Популярные запросы:</span>
-            {POPULAR_QUERIES.map((query) => (
+            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 md:text-lg md:leading-8">
+              Находите программы, обучайтесь в личном кабинете, выполняйте задания
+              и получайте документы установленного образца.
+            </p>
+
+            <form
+              onSubmit={handleSearchSubmit}
+              className="mt-8 flex max-w-2xl flex-col gap-2 rounded-2xl border border-slate-200/90 bg-white p-2 shadow-[0_16px_45px_rgba(17,25,54,0.10)] transition focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-100 sm:flex-row"
+            >
+              <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
+                <Search
+                  className="h-5 w-5 shrink-0 text-slate-400"
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Поиск программ</span>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Найти программу..."
+                  className="h-12 min-w-0 flex-1 border-0 bg-transparent text-base font-semibold text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-400"
+                />
+              </label>
+
               <button
-                key={query}
-                type="button"
-                onClick={() => {
-                  setSearchQuery(query);
-                  saveCatalogQuery(query);
-                  onPageChange("catalog");
-                }}
-                className="portal-chip"
+                type="submit"
+                className="portal-btn-primary !h-12 w-full !rounded-xl !px-8 !py-0 sm:w-auto"
               >
-                {query}
+                Найти
               </button>
-            ))}
+            </form>
+
+            <div className="mt-4 flex max-w-2xl flex-wrap items-center gap-2 text-sm text-slate-500">
+              <span className="mr-1 font-semibold">Популярное:</span>
+
+              {POPULAR_QUERIES.map((query) => (
+                <button
+                  key={query}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery(query);
+                    saveCatalogQuery(query);
+                    onPageChange("catalog");
+                  }}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition hover:border-blue-200 hover:text-blue-700"
+                >
+                  {query}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onPageChange("catalog")}
+              className="mt-6 inline-flex items-center gap-2 text-sm font-black text-blue-700 transition hover:text-blue-800"
+            >
+              Смотреть все программы
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className="relative mx-auto w-full max-w-[560px] lg:mx-0 lg:max-w-none">
+            <div
+              aria-hidden="true"
+              className="absolute -inset-5 rounded-[2.5rem] bg-gradient-to-br from-blue-200/50 via-sky-100/30 to-indigo-100/50 blur-2xl"
+            />
+
+            <div className="relative overflow-hidden rounded-[1.75rem] border border-white/90 bg-white/95 p-4 shadow-[0_30px_80px_rgba(15,53,110,0.20)] ring-1 ring-blue-100/80 backdrop-blur sm:p-5">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="min-w-0">
+                  <div className="text-xs font-black uppercase tracking-[0.08em] text-blue-600">
+                    Интерфейс обучения
+                  </div>
+                  <div className="mt-1 truncate text-base font-black text-[#111936] sm:text-lg">
+                    Современные технологии в обучении
+                  </div>
+                </div>
+
+                <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100">
+                  Личный кабинет
+                </span>
+              </div>
+
+              <div className="mt-4 overflow-hidden rounded-2xl bg-gradient-to-br from-[#14285b] via-[#1d4f9f] to-[#2f75d6] p-5 text-white shadow-inner sm:p-6">
+                <div className="flex min-h-[150px] flex-col justify-between sm:min-h-[180px]">
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="rounded-full bg-white/12 px-3 py-1 text-[11px] font-bold backdrop-blur">
+                      Учебный модуль
+                    </span>
+                    <span className="text-xs font-semibold text-blue-100">
+                      Видеозанятие
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white text-blue-700 shadow-lg">
+                      <MonitorPlay className="h-7 w-7" aria-hidden="true" />
+                    </div>
+
+                    <div className="text-xl font-black sm:text-2xl">
+                      Цифровые инструменты педагога
+                    </div>
+                    <div className="mt-2 text-sm leading-6 text-blue-100">
+                      Видеозанятие и практические материалы
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <div className="flex items-center justify-between gap-4 text-xs font-bold">
+                  <span className="text-slate-500">Прогресс обучения</span>
+                  <span className="text-blue-700">В процессе</span>
+                </div>
+
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full w-2/3 rounded-full bg-blue-600" />
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                      <BookOpen className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-slate-500">
+                        Следующий раздел
+                      </div>
+                      <div className="mt-0.5 text-sm font-black leading-5 text-[#111936]">
+                        Практическое задание
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                      <FileText className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-slate-500">
+                        Материалы курса
+                      </div>
+                      <div className="mt-0.5 text-sm font-black leading-5 text-[#111936]">
+                        Методические материалы
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-700 shadow-sm">
+                    <GraduationCap className="h-4 w-4" aria-hidden="true" />
+                  </span>
+
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-500">
+                      После завершения
+                    </div>
+                    <div className="truncate text-sm font-black text-[#111936]">
+                      Документ об обучении
+                    </div>
+                  </div>
+                </div>
+
+                <span className="shrink-0 text-xs font-black text-blue-700">
+                  В кабинете
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
+      <section aria-label="Основные возможности портала">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {HOME_FEATURES.map((item) => {
+            const Icon = item.icon;
 
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {PORTAL_STATS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.label} className="portal-card flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5 p-6 xl:p-7">
-              <span className="portal-icon-tile">
-                <Icon className="h-6 w-6" aria-hidden="true" />
-              </span>
-              <div>
-                <div className="text-4xl font-black leading-none text-[#111936]">{item.value}</div>
-                <div className="mt-1 text-base font-black text-[#111936]">{item.label}</div>
-                <div className="mt-1 text-xs leading-5 text-slate-500">{item.hint}</div>
-              </div>
-            </div>
-          );
-        })}
+            return (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() => onPageChange(item.page)}
+                className="group relative flex min-h-[190px] flex-col items-start overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-6 text-left shadow-[0_16px_40px_rgba(17,25,54,0.05)] transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_22px_50px_rgba(15,91,232,0.12)] focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-50 transition duration-200 group-hover:scale-125 group-hover:bg-blue-100/80"
+                />
+
+                <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100 transition group-hover:bg-blue-600 group-hover:text-white">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+
+                <h2 className="relative mt-5 text-lg font-black leading-6 text-[#111936]">
+                  {item.title}
+                </h2>
+
+                <p className="relative mt-2 flex-1 text-sm leading-6 text-slate-500">
+                  {item.description}
+                </p>
+
+                <span className="relative mt-5 inline-flex items-center gap-2 text-sm font-black text-blue-700">
+                  {item.actionLabel}
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                    aria-hidden="true"
+                  />
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </section>
+      <section aria-labelledby="home-popular-programs-title">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <h2
+              id="home-popular-programs-title"
+              className="text-2xl font-black text-[#111936]"
+            >
+              Популярные программы
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Выберите программу и откройте подробную информацию об обучении.
+            </p>
+          </div>
 
-      <section>
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-black text-[#111936]">Популярные программы</h2>
           <button
             type="button"
             onClick={() => onPageChange("catalog")}
-            className="hidden items-center gap-2 text-sm font-black text-blue-700 transition hover:text-blue-900 sm:inline-flex"
+            className="hidden shrink-0 items-center gap-2 text-sm font-black text-blue-700 transition hover:text-blue-900 sm:inline-flex"
           >
             Смотреть все программы
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
-        {loadingCourses && !displayCourses.length ? (
-          <div className="portal-card p-6 text-sm text-slate-600">Загружаем программы...</div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {displayCourses.map((course, index) => (
+        {loadingCourses ? (
+          <div
+            className="grid gap-6 md:grid-cols-2 xl:grid-cols-4"
+            aria-label="Загрузка программ"
+          >
+            {[0, 1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white"
+                aria-hidden="true"
+              >
+                <div className="h-40 animate-pulse bg-slate-100" />
+                <div className="space-y-3 p-5">
+                  <div className="h-5 w-4/5 animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-4 w-full animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-4 w-2/3 animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-11 animate-pulse rounded-2xl bg-slate-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : coursesError ? (
+          <div
+            role="status"
+            className="rounded-3xl border border-amber-200 bg-amber-50/70 p-6"
+          >
+            <h3 className="text-base font-black text-[#111936]">
+              Не удалось загрузить программы
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              {coursesError}
+            </p>
+            <button
+              type="button"
+              onClick={() => onPageChange("catalog")}
+              className="mt-4 inline-flex items-center gap-2 text-sm font-black text-blue-700"
+            >
+              Открыть каталог
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        ) : featuredCourses.length ? (
+          <div className={getPopularProgramsGridClass(featuredCourses.length)}>
+            {featuredCourses.map((course, index) => (
               <ProgramCard
                 key={course.id || course.slug || index}
                 course={course}
@@ -378,15 +583,26 @@ export function HomePage({ onPageChange, onOpenCourse }) {
               />
             ))}
           </div>
+        ) : (
+          <div className="rounded-3xl border border-slate-200 bg-white p-6">
+            <h3 className="text-base font-black text-[#111936]">
+              Опубликованных программ пока нет
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Новые программы появятся здесь после публикации в каталоге.
+            </p>
+          </div>
         )}
 
-        {coursesError && !featuredCourses.length ? (
-          <p className="mt-3 text-xs text-slate-400">
-            API каталога сейчас не ответил, для витрины показаны локальные демонстрационные карточки. Деталь: {coursesError}
-          </p>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => onPageChange("catalog")}
+          className="mt-5 inline-flex items-center gap-2 text-sm font-black text-blue-700 sm:hidden"
+        >
+          Смотреть все программы
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </button>
       </section>
-
       <section>
         <h2 className="mb-5 text-2xl font-black text-[#111936]">Направления обучения</h2>
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-6">
@@ -397,7 +613,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
                 key={item.label}
                 type="button"
                 onClick={() => {
-                  saveCatalogQuery(item.label);
+                  saveCatalogDirection(item.label);
                   onPageChange("catalog");
                 }}
                 className="portal-card portal-card-hover flex min-h-[92px] items-center gap-4 p-5 text-left"
@@ -412,22 +628,260 @@ export function HomePage({ onPageChange, onOpenCourse }) {
         </div>
       </section>
 
-      <section className="portal-card flex flex-col gap-5 bg-blue-50/80 p-5 sm:p-7 md:flex-row md:items-center md:justify-between md:p-9">
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-700 text-white shadow-[0_12px_24px_rgba(15,91,232,0.25)] sm:h-16 sm:w-16">
-            <Layers3 className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden="true" />
-          </span>
+      <section
+        aria-labelledby="home-learning-flow-title"
+        data-testid="home-learning-flow"
+      >
+        <div className="mb-6 max-w-2xl">
+          <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-600">
+            {"\u041f\u0440\u043e\u0441\u0442\u043e\u0439 \u043f\u0443\u0442\u044c \u043a \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044e"}
+          </div>
+
+          <h2
+            id="home-learning-flow-title"
+            className="mt-2 text-2xl font-black tracking-[-0.02em] text-[#111936] sm:text-3xl"
+          >
+            {"\u041a\u0430\u043a \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u0442 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+          </h2>
+
+          <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
+            {"\u041e\u0442 \u0432\u044b\u0431\u043e\u0440\u0430 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0434\u043e \u0438\u0442\u043e\u0433\u043e\u0432\u043e\u0433\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u2014 \u043e\u0441\u043d\u043e\u0432\u043d\u044b\u0435 \u044d\u0442\u0430\u043f\u044b \u0441\u043e\u0431\u0440\u0430\u043d\u044b \u0432 \u043e\u0434\u043d\u043e\u043c \u043f\u043e\u0440\u0442\u0430\u043b\u0435."}
+          </p>
+        </div>
+
+        <div className="relative grid gap-5 lg:grid-cols-3">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-[16.666%] right-[16.666%] top-9 hidden h-px bg-gradient-to-r from-blue-100 via-blue-300 to-blue-100 lg:block"
+          />
+
+          {LEARNING_STEPS.map((step) => {
+            const Icon = step.icon;
+
+            return (
+              <article
+                key={step.number}
+                className="relative flex min-h-[245px] flex-col rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_16px_40px_rgba(17,25,54,0.05)] sm:p-7"
+              >
+                <div className="relative z-10 flex items-center justify-between gap-4">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                    <Icon
+                      className="h-6 w-6"
+                      aria-hidden="true"
+                    />
+                  </span>
+
+                  <span className="text-4xl font-black tracking-[-0.04em] text-blue-100">
+                    {step.number}
+                  </span>
+                </div>
+
+                <h3 className="mt-6 text-lg font-black leading-6 text-[#111936] sm:text-xl">
+                  {step.title}
+                </h3>
+
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  {step.description}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section
+        data-testid="home-document-verification"
+        aria-labelledby="home-document-verification-title"
+        className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-[#13285b] via-[#18458f] to-[#2868c7] p-6 text-white shadow-[0_24px_60px_rgba(15,53,110,0.18)] sm:p-8 lg:p-10"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl"
+        />
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-28 left-1/3 h-64 w-64 rounded-full bg-sky-300/10 blur-3xl"
+        />
+
+        <div className="relative grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)] lg:items-center lg:gap-12">
           <div>
-            <h2 className="text-xl font-black text-[#111936]">Начните обучение уже сегодня</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Выберите программу и получите новые знания в удобном онлайн-формате.
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white ring-1 ring-white/15 backdrop-blur">
+              <FileText
+                className="h-6 w-6"
+                aria-hidden="true"
+              />
+            </span>
+
+            <div className="mt-6 text-xs font-black uppercase tracking-[0.1em] text-blue-100">
+              {"\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u0440\u0435\u0435\u0441\u0442\u0440"}
+            </div>
+
+            <h2
+              id="home-document-verification-title"
+              className="mt-2 text-2xl font-black tracking-[-0.025em] text-white sm:text-3xl"
+            >
+              {"\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+            </h2>
+
+            <p
+              id="home-document-verification-description"
+              className="mt-3 max-w-xl text-sm leading-6 text-blue-100 sm:text-base"
+            >
+              {"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0438\u043b\u0438 \u043a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438. \u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u0432 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u043c \u0440\u0435\u0435\u0441\u0442\u0440\u0435 \u043f\u043e\u0440\u0442\u0430\u043b\u0430."}
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-white/15 bg-white/10 p-4 shadow-inner backdrop-blur sm:p-5">
+            <form
+              action="/verify-document"
+              method="get"
+              data-testid="home-document-verification-form"
+              className="rounded-2xl bg-white p-3 shadow-[0_18px_45px_rgba(8,25,62,0.24)]"
+            >
+              <label
+                htmlFor="home-document-verification-number"
+                className="block px-2 pt-1 text-xs font-black uppercase tracking-[0.06em] text-slate-500"
+              >
+                {"\u041d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0438\u043b\u0438 \u043a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438"}
+              </label>
+
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <label className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                  <Search
+                    className="h-5 w-5 shrink-0 text-slate-400"
+                    aria-hidden="true"
+                  />
+
+                  <input
+                    id="home-document-verification-number"
+                    name="number"
+                    type="text"
+                    required
+                    minLength={3}
+                    maxLength={128}
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-describedby="home-document-verification-description"
+                    placeholder={"\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: AUTO-... \u0438\u043b\u0438 DOCV-..."}
+                    className="min-w-0 flex-1 border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-400"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  data-testid="home-document-verification-submit"
+                  className="portal-btn-primary !h-12 shrink-0 !rounded-xl !px-7 !py-0"
+                >
+                  {"\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c"}
+                </button>
+              </div>
+            </form>
+
+            <p className="mt-3 px-1 text-xs leading-5 text-blue-100">
+              {"\u0414\u043b\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u0432\u0445\u043e\u0434 \u0432 \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442."}
             </p>
           </div>
         </div>
+      </section>
 
-        <button type="button" onClick={() => onPageChange("catalog")} className="portal-btn-primary w-full sm:w-auto md:min-w-[220px]">
-          Выбрать программу
-        </button>
+      <section
+        data-testid="home-audience-cta"
+        aria-labelledby="home-audience-cta-title"
+      >
+        <div className="mb-5">
+          <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-600">
+            {"\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0441\u0432\u043e\u0439 \u043f\u0443\u0442\u044c"}
+          </div>
+
+          <h2
+            id="home-audience-cta-title"
+            className="mt-2 text-2xl font-black tracking-[-0.02em] text-[#111936]"
+          >
+            {"\u0412\u043e\u0437\u043c\u043e\u0436\u043d\u043e\u0441\u0442\u0438 \u043f\u043e\u0440\u0442\u0430\u043b\u0430 \u0434\u043b\u044f \u0432\u0430\u0441"}
+          </h2>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <article className="portal-card flex min-h-[220px] flex-col p-6 sm:p-7">
+            <div className="flex items-start justify-between gap-5">
+              <span className="portal-icon-tile !h-12 !w-12">
+                <GraduationCap
+                  className="h-6 w-6"
+                  aria-hidden="true"
+                />
+              </span>
+
+              <span className="text-xs font-black uppercase tracking-[0.08em] text-blue-600">
+                {"\u0421\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044e"}
+              </span>
+            </div>
+
+            <h3 className="mt-6 text-xl font-black text-[#111936]">
+              {"\u0425\u043e\u0447\u0443 \u043e\u0431\u0443\u0447\u0430\u0442\u044c\u0441\u044f"}
+            </h3>
+
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+              {"\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u043e\u0434\u0445\u043e\u0434\u044f\u0449\u0443\u044e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443 \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435 \u0438 \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u043f\u043e\u0434\u0440\u043e\u0431\u043d\u0443\u044e \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u044e \u043e\u0431 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0438."}
+            </p>
+
+            <button
+              type="button"
+              data-testid="home-audience-learner-action"
+              onClick={() => onPageChange("catalog")}
+              className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-black text-blue-700"
+            >
+              {"\u0421\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b"}
+              <ArrowRight
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+            </button>
+          </article>
+
+          <article className="relative flex min-h-[220px] flex-col overflow-hidden rounded-[1.75rem] border border-blue-100 bg-blue-50/80 p-6 shadow-[0_16px_40px_rgba(17,25,54,0.05)] sm:p-7">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-blue-100/70"
+            />
+
+            <div className="relative flex items-start justify-between gap-5">
+              <span className="portal-icon-tile !h-12 !w-12">
+                <UsersRound
+                  className="h-6 w-6"
+                  aria-hidden="true"
+                />
+              </span>
+
+              <span className="text-xs font-black uppercase tracking-[0.08em] text-blue-600">
+                {"\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438"}
+              </span>
+            </div>
+
+            <div className="relative">
+              <h3 className="mt-6 text-xl font-black text-[#111936]">
+                {"\u041f\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u043b\u044f\u044e \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044e"}
+              </h3>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                {"\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0438 \u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e\u0441\u0442\u0438 \u043f\u043e\u0440\u0442\u0430\u043b\u0430 \u0434\u043b\u044f \u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0439."}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              data-testid="home-audience-organization-action"
+              onClick={() => onPageChange("organization-info")}
+              className="relative mt-auto inline-flex items-center gap-2 pt-6 text-sm font-black text-blue-700"
+            >
+              {"\u0414\u043b\u044f \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0439"}
+              <ArrowRight
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+            </button>
+          </article>
+        </div>
       </section>
     </div>
   );

@@ -1,4 +1,4 @@
-import { BookOpen, Mail, Send } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { userHasRole } from "../../utils/adminState";
 import { AuthenticatedUserMenu } from "./AuthenticatedUserMenu";
 import { GuestAuthActions } from "./GuestAuthActions";
@@ -6,8 +6,8 @@ import { GuestAuthActions } from "./GuestAuthActions";
 const PUBLIC_NAV_ITEMS = [
   { key: "home", label: "Главная" },
   { key: "catalog", label: "Программы" },
-  { key: "verify-document", label: "Документы" },
   { key: "organization-info", label: "О центре" },
+  { key: "faq", label: "Помощь" },
 ];
 
 const FOOTER_LINKS = [
@@ -36,6 +36,7 @@ function getPublicShellNavigationStats({
       "login",
       "register",
       "course-detail",
+      "verify-document",
       "not-found",
     ]),
   ];
@@ -192,7 +193,7 @@ function Logo({ onClick }) {
           ОбрПортал
         </span>
         <span className="hidden text-[11px] font-semibold text-slate-500 sm:block">
-          Единый образовательный портал
+          Образовательный портал РЦДО
         </span>
       </span>
     </button>
@@ -369,15 +370,6 @@ export function PublicShell({
             ))}
           </div>
 
-          <div className="flex items-center gap-3 text-slate-500">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-xs font-black">VK</span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-              <Send className="h-4 w-4" aria-hidden="true" />
-            </span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-              <Mail className="h-4 w-4" aria-hidden="true" />
-            </span>
-          </div>
         </div>
       </footer>
     </main>
