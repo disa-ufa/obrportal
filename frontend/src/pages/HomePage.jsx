@@ -155,11 +155,38 @@ function getPopularProgramsGridClass(courseCount) {
 function saveCatalogQuery(query) {
   const value = `${query || ""}`.trim();
 
-  if (!value || typeof sessionStorage === "undefined") {
+  if (typeof sessionStorage === "undefined") {
+    return;
+  }
+
+  sessionStorage.removeItem("obrportal_catalog_direction");
+
+  if (!value) {
+    sessionStorage.removeItem("obrportal_catalog_query");
     return;
   }
 
   sessionStorage.setItem("obrportal_catalog_query", value);
+}
+
+function saveCatalogDirection(direction) {
+  const value = `${direction || ""}`.trim();
+
+  if (typeof sessionStorage === "undefined") {
+    return;
+  }
+
+  sessionStorage.removeItem("obrportal_catalog_query");
+
+  if (!value) {
+    sessionStorage.removeItem("obrportal_catalog_direction");
+    return;
+  }
+
+  sessionStorage.setItem(
+    "obrportal_catalog_direction",
+    value,
+  );
 }
 
 export function HomePage({ onPageChange, onOpenCourse }) {
@@ -559,7 +586,7 @@ export function HomePage({ onPageChange, onOpenCourse }) {
                 key={item.label}
                 type="button"
                 onClick={() => {
-                  saveCatalogQuery(item.label);
+                  saveCatalogDirection(item.label);
                   onPageChange("catalog");
                 }}
                 className="portal-card portal-card-hover flex min-h-[92px] items-center gap-4 p-5 text-left"
