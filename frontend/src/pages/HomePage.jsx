@@ -1,19 +1,7 @@
 import { formatApiError } from "../utils/apiErrors";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, BookOpen, BriefcaseBusiness, FileText, GraduationCap, Layers3, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
 import { getPublicCourses } from "../api/client";
-import { PUBLIC_COURSES } from "../data/publicCourses";
-
-/*
-  CI smoke guard fragments.
-  The smoke workflow checks these legacy HomePage wiring fragments by literal text.
-  Keep them here while the redesigned page uses displayCourses and a shared card component.
-  import { useEffect, useState } from "react";
-  getPublicCourses({ limit: 3 })
-  onPageChange("verify-document")
-  featuredCourses.map((course)
-  onOpenCourse(course.slug)
-*/
 
 const POPULAR_QUERIES = [
   "Дополнительное образование",
@@ -60,57 +48,9 @@ const DIRECTIONS = [
   { label: "Воспитательная работа", icon: GraduationCap },
 ];
 
-const FALLBACK_HOME_COURSES = [
-  {
-    id: "home-robotics",
-    slug: "robototekhnika-dlya-nachinayushchih",
-    title: "Робототехника для начинающих",
-    description: "Введение в робототехнику, основы конструирования и программирования.",
-    hours: 24,
-    format: "Дополнительное образование",
-    document_type: "Сертификат",
-    price: "Бесплатно",
-  },
-  {
-    id: "home-edtech",
-    slug: "sovremennye-tehnologii-v-obuchenii",
-    title: "Современные технологии в обучении",
-    description: "Эффективные цифровые инструменты и методики для образовательного процесса.",
-    hours: 18,
-    format: "Повышение квалификации",
-    document_type: "Удостоверение",
-    price: "4 900 ₽",
-  },
-  {
-    id: "home-projects",
-    slug: "upravlenie-proektami-v-obrazovanii",
-    title: "Управление проектами",
-    description: "Основы проектного управления в образовательных организациях.",
-    hours: 32,
-    format: "Профессиональная подготовка",
-    document_type: "Сертификат",
-    price: "9 900 ₽",
-  },
-  {
-    id: "home-method",
-    slug: "metodicheskaya-kopilka-pedagoga",
-    title: "Методическая копилка педагога",
-    description: "Практические материалы и разработки для педагогов и наставников.",
-    hours: 15,
-    format: "Методические материалы",
-    document_type: "Материалы",
-    price: "Бесплатно",
-  },
-];
-
 function formatCourseDocument(course) {
-  return course.document_type || course.document || "Итоговый документ";
+  return course.document_type || course.document || "";
 }
-
-function formatCoursePrice(course) {
-  return course.price || "Бесплатно";
-}
-
 function getCourseVisualClass(course, index) {
   const title = `${course?.title || ""} ${course?.format || ""}`.toLowerCase();
 
@@ -141,65 +81,62 @@ function getCourseVisualClass(course, index) {
   return "program-art program-art-robot";
 }
 
-function getCourseModulesLabel(course, index) {
-  const modules = course.modules_count || course.modulesCount || course.modules?.length;
-
-  if (modules) {
-    return `${modules} модулей`;
-  }
-
-  return `${[6, 5, 7, 4][index % 4]} модулей`;
-}
-
 function ProgramCard({ course, index, onOpenCourse }) {
   const slug = course.slug || course.id;
+  const documentLabel = formatCourseDocument(course);
 
   return (
-    <article className="portal-card portal-card-hover overflow-hidden">
+    <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_16px_40px_rgba(17,25,54,0.05)] transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(15,91,232,0.12)]">
       <div className={getCourseVisualClass(course, index)}>
-        <span className="absolute left-3 top-3 z-10 rounded-md bg-teal-600 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-white">
-          {course.format || "Программа"}
-        </span>
+        {course.format ? (
+          <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-blue-700 shadow-sm ring-1 ring-blue-100">
+            {course.format}
+          </span>
+        ) : null}
       </div>
 
-      <div className="p-5">
-        <h3 className="line-clamp-2 min-h-[3.25rem] text-xl font-black leading-7 text-[#111936]">
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="line-clamp-2 text-xl font-black leading-7 text-[#111936]">
           {course.title}
         </h3>
 
         {course.description ? (
-          <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm leading-5 text-slate-600">
+          <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">
             {course.description}
           </p>
         ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-slate-500">
-          <span>{getCourseModulesLabel(course, index)}</span>
-          <span>{course.hours ? `${course.hours} уроков` : `${[24, 18, 32, 15][index % 4]} уроков`}</span>
-        </div>
+        {course.hours || documentLabel ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {course.hours ? (
+              <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+                {course.hours} ч.
+              </span>
+            ) : null}
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="portal-chip">{formatCourseDocument(course)}</span>
-        </div>
-
-        <div className="mt-6 flex items-center justify-between gap-3">
-          <div className={`text-base font-black ${formatCoursePrice(course).toLowerCase().includes("бесплат") ? "text-teal-700" : "text-[#111936]"}`}>
-            {formatCoursePrice(course)}
+            {documentLabel ? (
+              <span className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+                {documentLabel}
+              </span>
+            ) : null}
           </div>
+        ) : null}
 
-          <button
-            type="button"
-            onClick={() => onOpenCourse(slug)}
-            className="portal-btn-secondary !px-4 !py-2"
-          >
-            Подробнее
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => onOpenCourse(slug)}
+          className="mt-6 inline-flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-[#111936] transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+        >
+          Подробнее
+          <ArrowRight
+            className="h-4 w-4 transition-transform group-hover:translate-x-1"
+            aria-hidden="true"
+          />
+        </button>
       </div>
     </article>
   );
 }
-
 function saveCatalogQuery(query) {
   const value = `${query || ""}`.trim();
 
@@ -251,27 +188,6 @@ export function HomePage({ onPageChange, onOpenCourse }) {
       isMounted = false;
     };
   }, []);
-
-  const displayCourses = useMemo(() => {
-    const primaryCourses = Array.isArray(featuredCourses) ? featuredCourses : [];
-    const designFallbackCourses = PUBLIC_COURSES.length ? PUBLIC_COURSES : FALLBACK_HOME_COURSES;
-
-    if (!primaryCourses.length) {
-      return designFallbackCourses.slice(0, 4);
-    }
-
-    if (!import.meta.env.DEV || primaryCourses.length >= 4) {
-      return primaryCourses.slice(0, 4);
-    }
-
-    const usedKeys = new Set(primaryCourses.map((course) => course.slug || course.id || course.title).filter(Boolean));
-    const supplementCourses = designFallbackCourses.filter((course) => {
-      const key = course.slug || course.id || course.title;
-      return key && !usedKeys.has(key);
-    });
-
-    return [...primaryCourses, ...supplementCourses].slice(0, 4);
-  }, [featuredCourses]);
 
   function handleSearchSubmit(event) {
     event?.preventDefault?.();
@@ -522,24 +438,74 @@ export function HomePage({ onPageChange, onOpenCourse }) {
           })}
         </div>
       </section>
-      <section>
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-black text-[#111936]">Популярные программы</h2>
+      <section aria-labelledby="home-popular-programs-title">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <h2
+              id="home-popular-programs-title"
+              className="text-2xl font-black text-[#111936]"
+            >
+              Популярные программы
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Выберите программу и откройте подробную информацию об обучении.
+            </p>
+          </div>
+
           <button
             type="button"
             onClick={() => onPageChange("catalog")}
-            className="hidden items-center gap-2 text-sm font-black text-blue-700 transition hover:text-blue-900 sm:inline-flex"
+            className="hidden shrink-0 items-center gap-2 text-sm font-black text-blue-700 transition hover:text-blue-900 sm:inline-flex"
           >
             Смотреть все программы
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
-        {loadingCourses && !displayCourses.length ? (
-          <div className="portal-card p-6 text-sm text-slate-600">Загружаем программы...</div>
-        ) : (
+        {loadingCourses ? (
+          <div
+            className="grid gap-6 md:grid-cols-2 xl:grid-cols-4"
+            aria-label="Загрузка программ"
+          >
+            {[0, 1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white"
+                aria-hidden="true"
+              >
+                <div className="h-40 animate-pulse bg-slate-100" />
+                <div className="space-y-3 p-5">
+                  <div className="h-5 w-4/5 animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-4 w-full animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-4 w-2/3 animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-11 animate-pulse rounded-2xl bg-slate-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : coursesError ? (
+          <div
+            role="status"
+            className="rounded-3xl border border-amber-200 bg-amber-50/70 p-6"
+          >
+            <h3 className="text-base font-black text-[#111936]">
+              Не удалось загрузить программы
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              {coursesError}
+            </p>
+            <button
+              type="button"
+              onClick={() => onPageChange("catalog")}
+              className="mt-4 inline-flex items-center gap-2 text-sm font-black text-blue-700"
+            >
+              Открыть каталог
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        ) : featuredCourses.length ? (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {displayCourses.map((course, index) => (
+            {featuredCourses.map((course, index) => (
               <ProgramCard
                 key={course.id || course.slug || index}
                 course={course}
@@ -548,15 +514,26 @@ export function HomePage({ onPageChange, onOpenCourse }) {
               />
             ))}
           </div>
+        ) : (
+          <div className="rounded-3xl border border-slate-200 bg-white p-6">
+            <h3 className="text-base font-black text-[#111936]">
+              Опубликованных программ пока нет
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Новые программы появятся здесь после публикации в каталоге.
+            </p>
+          </div>
         )}
 
-        {coursesError && !featuredCourses.length ? (
-          <p className="mt-3 text-xs text-slate-400">
-            API каталога сейчас не ответил, для витрины показаны локальные демонстрационные карточки. Деталь: {coursesError}
-          </p>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => onPageChange("catalog")}
+          className="mt-5 inline-flex items-center gap-2 text-sm font-black text-blue-700 sm:hidden"
+        >
+          Смотреть все программы
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </button>
       </section>
-
       <section>
         <h2 className="mb-5 text-2xl font-black text-[#111936]">Направления обучения</h2>
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-6">

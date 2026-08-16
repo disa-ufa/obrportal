@@ -30,6 +30,16 @@ def require_contains(relative_path: str, fragments: list[str]) -> None:
         raise SystemExit(1)
 
 
+def require_not_contains(relative_path: str, fragments: list[str]) -> None:
+    text = read_text(relative_path)
+    present = [fragment for fragment in fragments if fragment in text]
+
+    if present:
+        print(f"{relative_path} contains forbidden fragments:")
+        for fragment in present:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
 def main() -> None:
     require_contains(
         "frontend/src/api/client.js",
@@ -50,22 +60,39 @@ def main() -> None:
         [
             'import { useEffect, useState } from "react";',
             'import { getPublicCourses } from "../api/client";',
+            "const HOME_FEATURES = [",
+            'page: "verify-document"',
             "function formatCourseDocument(course)",
-            "function formatCoursePrice(course)",
+            "function ProgramCard({ course, index, onOpenCourse })",
             "export function HomePage",
             "const [featuredCourses, setFeaturedCourses] = useState([]);",
             "const [loadingCourses, setLoadingCourses] = useState(true);",
-            "const [coursesError, setCoursesError] = useState(\"\");",
+            'const [coursesError, setCoursesError] = useState("");',
             "async function loadFeaturedCourses()",
-            "getPublicCourses({ limit: 3 })",
+            "getPublicCourses({ limit: 4 })",
             "setFeaturedCourses(Array.isArray(response) ? response : []);",
-            "onPageChange(\"catalog\")",
-            "onPageChange(\"verify-document\")",
-            "featuredCourses.map((course)",
-            "onOpenCourse(course.slug)",
+            "{course.hours} ч.",
+            "featuredCourses.map((course, index) => (",
+            "onClick={() => onOpenCourse(slug)}",
+            'onPageChange("catalog")',
+            "Опубликованных программ пока нет",
         ],
     )
 
+    require_not_contains(
+        "frontend/src/pages/HomePage.jsx",
+        [
+            'import { PUBLIC_COURSES } from "../data/publicCourses";',
+            "const FALLBACK_HOME_COURSES = [",
+            "function formatCoursePrice(course)",
+            "function getCourseModulesLabel(course, index)",
+            "const displayCourses = useMemo(() => {",
+            "designFallbackCourses",
+            'price: "4 900 ₽"',
+            'price: "9 900 ₽"',
+            "для витрины показаны локальные демонстрационные карточки",
+        ],
+    )
     require_contains(
         "frontend/src/pages/CatalogPage.jsx",
         [
