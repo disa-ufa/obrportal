@@ -689,6 +689,102 @@ export function HomePage({ onPageChange, onOpenCourse }) {
         </div>
       </section>
 
+      <section
+        data-testid="home-document-verification"
+        aria-labelledby="home-document-verification-title"
+        className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-[#13285b] via-[#18458f] to-[#2868c7] p-6 text-white shadow-[0_24px_60px_rgba(15,53,110,0.18)] sm:p-8 lg:p-10"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl"
+        />
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-28 left-1/3 h-64 w-64 rounded-full bg-sky-300/10 blur-3xl"
+        />
+
+        <div className="relative grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)] lg:items-center lg:gap-12">
+          <div>
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white ring-1 ring-white/15 backdrop-blur">
+              <FileText
+                className="h-6 w-6"
+                aria-hidden="true"
+              />
+            </span>
+
+            <div className="mt-6 text-xs font-black uppercase tracking-[0.1em] text-blue-100">
+              {"\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u0440\u0435\u0435\u0441\u0442\u0440"}
+            </div>
+
+            <h2
+              id="home-document-verification-title"
+              className="mt-2 text-2xl font-black tracking-[-0.025em] text-white sm:text-3xl"
+            >
+              {"\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+            </h2>
+
+            <p
+              id="home-document-verification-description"
+              className="mt-3 max-w-xl text-sm leading-6 text-blue-100 sm:text-base"
+            >
+              {"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0438\u043b\u0438 \u043a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438. \u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u0432 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u043c \u0440\u0435\u0435\u0441\u0442\u0440\u0435 \u043f\u043e\u0440\u0442\u0430\u043b\u0430."}
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-white/15 bg-white/10 p-4 shadow-inner backdrop-blur sm:p-5">
+            <form
+              action="/verify-document"
+              method="get"
+              data-testid="home-document-verification-form"
+              className="rounded-2xl bg-white p-3 shadow-[0_18px_45px_rgba(8,25,62,0.24)]"
+            >
+              <label
+                htmlFor="home-document-verification-number"
+                className="block px-2 pt-1 text-xs font-black uppercase tracking-[0.06em] text-slate-500"
+              >
+                {"\u041d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u0438\u043b\u0438 \u043a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438"}
+              </label>
+
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <label className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                  <Search
+                    className="h-5 w-5 shrink-0 text-slate-400"
+                    aria-hidden="true"
+                  />
+
+                  <input
+                    id="home-document-verification-number"
+                    name="number"
+                    type="text"
+                    required
+                    minLength={3}
+                    maxLength={128}
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-describedby="home-document-verification-description"
+                    placeholder={"\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: AUTO-... \u0438\u043b\u0438 DOCV-..."}
+                    className="min-w-0 flex-1 border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-400"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  data-testid="home-document-verification-submit"
+                  className="portal-btn-primary !h-12 shrink-0 !rounded-xl !px-7 !py-0"
+                >
+                  {"\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c"}
+                </button>
+              </div>
+            </form>
+
+            <p className="mt-3 px-1 text-xs leading-5 text-blue-100">
+              {"\u0414\u043b\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u0432\u0445\u043e\u0434 \u0432 \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442."}
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="portal-card flex flex-col gap-5 bg-blue-50/80 p-5 sm:p-7 md:flex-row md:items-center md:justify-between md:p-9">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
           <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-700 text-white shadow-[0_12px_24px_rgba(15,91,232,0.25)] sm:h-16 sm:w-16">
