@@ -47,6 +47,9 @@ function getStatusLabel(status) {
     case "completed":
       return "Завершена";
 
+    case "cancelled":
+      return "Отменена";
+
     default:
       return status || "Статус не указан";
   }
@@ -63,6 +66,9 @@ function getStatusTone(status) {
 
     case "completed":
       return "bg-blue-50 text-blue-700 ring-blue-200";
+
+    case "cancelled":
+      return "bg-slate-100 text-slate-600 ring-slate-200";
 
     default:
       return "bg-slate-100 text-slate-600 ring-slate-200";
@@ -201,7 +207,7 @@ function CourseProgress({
     100,
     Math.max(
       0,
-      Number(detail.progress_percent || 0)
+      Number(detail.required_progress_percent || 0)
     )
   );
 
@@ -244,22 +250,16 @@ function LearningCourseCard({
   course,
   detail,
   detailLoading,
-  actionLoading,
+  onOpenLearningCourse,
   onOpenCourse,
   onLoadDetail,
-  onStartCourse,
 }) {
   const actionLabel = getCourseActionLabel(
     course.status
   );
 
   function handlePrimaryAction() {
-    if (course.status === "assigned") {
-      onStartCourse?.(course);
-      return;
-    }
-
-    onLoadDetail?.(course);
+    onOpenLearningCourse?.(course);
   }
 
   return (
@@ -338,7 +338,7 @@ function LearningCourseCard({
         <button
           type="button"
           onClick={handlePrimaryAction}
-          disabled={actionLoading}
+          disabled={!course.enrollment_id}
           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {course.status === "completed" ? (
@@ -353,9 +353,7 @@ function LearningCourseCard({
             />
           )}
 
-          {actionLoading
-            ? "Подождите..."
-            : actionLabel}
+          {actionLabel}
         </button>
 
         <button
@@ -394,12 +392,11 @@ export function LearnerAccountLearning({
   selectedStatus = "",
   selectedCourseDetail = null,
   detailLoadingEnrollmentId = "",
-  actionLoadingEnrollmentId = "",
   loading = false,
   errorMessage = "",
   onStatusChange,
   onLoadCourseDetail,
-  onStartCourse,
+  onOpenLearningCourse,
   onOpenCourse,
   onOpenCatalog,
 }) {
@@ -590,12 +587,10 @@ export function LearnerAccountLearning({
                 detailLoadingEnrollmentId ===
                 course.enrollment_id
               }
-              actionLoading={
-                actionLoadingEnrollmentId ===
-                course.enrollment_id
-              }
               onLoadDetail={onLoadCourseDetail}
-              onStartCourse={onStartCourse}
+              onOpenLearningCourse={
+                onOpenLearningCourse
+              }
               onOpenCourse={onOpenCourse}
             />
           ))}

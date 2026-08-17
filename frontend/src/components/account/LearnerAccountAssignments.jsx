@@ -305,7 +305,7 @@ function AssignmentDetails({ activity }) {
 
 function ActivityCard({
   activity,
-  onOpenCourse,
+  onOpenLearningCourse,
 }) {
   const isQuiz = activity.activity_type === "quiz";
 
@@ -394,9 +394,15 @@ function ActivityCard({
         <button
           type="button"
           onClick={() =>
-            onOpenCourse?.(activity.course_slug)
+            onOpenLearningCourse?.(
+              activity,
+              activity.lesson_id
+            )
           }
-          disabled={!activity.course_slug}
+          disabled={
+            !activity.enrollment_id ||
+            !activity.lesson_id
+          }
           className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Открыть программу
@@ -417,7 +423,7 @@ export function LearnerAccountAssignments({
   loading = false,
   errorMessage = "",
   onFilterChange,
-  onOpenCourse,
+  onOpenLearningCourse,
   onOpenLearning,
 }) {
   const safeActivities = Array.isArray(activities)
@@ -593,7 +599,9 @@ export function LearnerAccountAssignments({
             <ActivityCard
               key={`${activity.enrollment_id}:${activity.block_id}`}
               activity={activity}
-              onOpenCourse={onOpenCourse}
+              onOpenLearningCourse={
+                onOpenLearningCourse
+              }
             />
           ))}
         </div>

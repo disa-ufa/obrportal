@@ -86,9 +86,9 @@ function getNextLesson(detail) {
   );
 
   return (
-    lessons.find((lesson) => lesson.is_required && !lesson.is_completed) ||
-    lessons.find((lesson) => !lesson.is_completed) ||
-    null
+    lessons.find(
+      (lesson) => !lesson.is_completed
+    ) || null
   );
 }
 
@@ -258,7 +258,7 @@ export function LearnerAccountDashboard({
   loading = false,
   errorMessage = "",
   onSectionChange,
-  onOpenCourse,
+  onOpenLearningCourse,
 }) {
   const currentCourse = getLearnerDashboardCurrentCourse(courses);
   const detail = getMatchingCourseDetail(
@@ -292,7 +292,9 @@ export function LearnerAccountDashboard({
     summary?.enrollments_count ??
     courses.length;
 
-  const progressPercent = Number(detail?.progress_percent || 0);
+  const progressPercent = Number(
+    detail?.required_progress_percent || 0
+  );
 
   function openSection(section) {
     onSectionChange?.(section);
@@ -510,14 +512,11 @@ export function LearnerAccountDashboard({
                 <div className="flex flex-wrap gap-3 border-t border-slate-100 p-4">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (currentCourse.course_slug && onOpenCourse) {
-                        onOpenCourse(currentCourse.course_slug);
-                        return;
-                      }
-
-                      openSection("learning");
-                    }}
+                    onClick={() =>
+                      onOpenLearningCourse?.(
+                        currentCourse
+                      )
+                    }
                     className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
                   >
                     <PlayCircle className="h-4 w-4" aria-hidden="true" />
@@ -547,7 +546,11 @@ export function LearnerAccountDashboard({
                   <button
                     key={course.enrollment_id}
                     type="button"
-                    onClick={() => openSection("learning")}
+                    onClick={() =>
+                      onOpenLearningCourse?.(
+                        course
+                      )
+                    }
                     className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-slate-50"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">

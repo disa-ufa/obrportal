@@ -325,3 +325,163 @@ def test_lesson_complete_rejects_completed_course() -> None:
             delete_admin_documents_for_enrollment(admin_token, enrollment_id)
             delete_admin_enrollment(admin_token, enrollment_id)
         delete_admin_course(admin_token, course_id)
+
+
+def test_course_completion_falls_back_to_all_active_lessons_when_none_are_required() -> None:
+    admin_token = login(
+        ADMIN_EMAIL,
+        ADMIN_PASSWORD,
+    )
+    learner = register_learner(
+        prefix="lesson-progress-effective-required"
+    )
+    learner_token = login(
+        learner["email"],
+        learner["password"],
+    )
+
+    course = create_admin_course(admin_token)
+    course_id = str(course["id"])
+    enrollment_id: str | None = None
+
+    try:
+        module = create_course_module(
+            admin_token,
+            course_id,
+            title="Fallback completion module",
+            position=1,
+            is_active=True,
+        )
+
+        first_lesson = create_course_lesson(
+            admin_token,
+            str(module["id"]),
+            title="Fallback lesson 1",
+            position=1,
+            content_type="text",
+            is_required=False,
+            is_active=True,
+        )
+
+        second_lesson = create_course_lesson(
+            admin_token,
+            str(module["id"]),
+            title="Fallback lesson 2",
+            position=2,
+            content_type="text",
+            is_required=False,
+            is_active=True,
+        )
+
+        first_lesson_id = str(
+            first_lesson["id"]
+        )
+        second_lesson_id = str(
+            second_lesson["id"]
+        )
+
+        enrollment = enroll_learner_to_course(
+            learner_token,
+            course_id,
+        )
+
+        enrollment_id = str(
+            enrollment["enrollment_id"]
+        )
+
+        status, detail = request_json(
+            "GET",
+            f"/api/v1/account/courses/{enrollment_id}",
+            token=learner_token,
+        )
+
+        assert status == 200
+        assert detail["lessons_total"] == 2
+        assert detail["lessons_completed"] == 0
+
+        # No lesson has is_required=True, so all active
+        # lessons become the effective completion set.
+        assert detail["required_lessons_total"] == 2
+        assert detail["required_lessons_completed"] == 0
+        assert detail["required_progress_percent"] == 0
+
+        status, payload = request_json(
+            "POST",
+            f"/api/v1/account/courses/{enrollment_id}/complete",
+            token=learner_token,
+        )
+
+        assert status == 400
+        assert payload["detail"] == (
+            "Complete required lessons before completing course"
+        )
+
+        status, detail = request_json(
+            "POST",
+            (
+                f"/api/v1/account/courses/{enrollment_id}"
+                f"/lessons/{first_lesson_id}/complete"
+            ),
+            token=learner_token,
+        )
+
+        assert status == 200
+        assert detail["lessons_completed"] == 1
+        assert detail["required_lessons_total"] == 2
+        assert detail["required_lessons_completed"] == 1
+        assert detail["progress_percent"] == 50
+        assert detail["required_progress_percent"] == 50
+
+        status, payload = request_json(
+            "POST",
+            f"/api/v1/account/courses/{enrollment_id}/complete",
+            token=learner_token,
+        )
+
+        assert status == 400
+        assert payload["detail"] == (
+            "Complete required lessons before completing course"
+        )
+
+        status, detail = request_json(
+            "POST",
+            (
+                f"/api/v1/account/courses/{enrollment_id}"
+                f"/lessons/{second_lesson_id}/complete"
+            ),
+            token=learner_token,
+        )
+
+        assert status == 200
+        assert detail["lessons_completed"] == 2
+        assert detail["required_lessons_total"] == 2
+        assert detail["required_lessons_completed"] == 2
+        assert detail["progress_percent"] == 100
+        assert detail["required_progress_percent"] == 100
+
+        status, completed = request_json(
+            "POST",
+            f"/api/v1/account/courses/{enrollment_id}/complete",
+            token=learner_token,
+        )
+
+        assert status == 200
+        assert completed["status"] == "completed"
+        assert completed["completed_at"] is not None
+
+    finally:
+        if enrollment_id is not None:
+            delete_admin_documents_for_enrollment(
+                admin_token,
+                enrollment_id,
+            )
+
+            delete_admin_enrollment(
+                admin_token,
+                enrollment_id,
+            )
+
+        delete_admin_course(
+            admin_token,
+            course_id,
+        )

@@ -38,7 +38,13 @@ from app.services.learner_profile_fields import (
     normalize_learner_phone,
     normalize_learner_snils,
 )
-from app.services.quiz_attempts import grade_quiz_attempt, get_quiz_max_attempts
+from app.services.quiz_attempts import (
+    grade_quiz_attempt,
+    get_quiz_max_attempts,
+    sanitize_quiz_question_results_for_learner,
+    should_reveal_quiz_correct_answers,
+    sanitize_quiz_content_for_learner,
+)
 from app.services.document_storage import (
     build_document_download_filename,
     detect_document_download_metadata,
@@ -1079,13 +1085,20 @@ def build_account_course_item_from_row(row) -> AccountCourseItemResponse:
 
 
 def build_account_lesson_block(block: LessonBlock) -> AccountLessonBlockResponse:
+    content_json = block.content_json or {}
+
+    if block.block_type == "quiz":
+        content_json = sanitize_quiz_content_for_learner(
+            content_json
+        )
+
     return AccountLessonBlockResponse(
         id=str(block.id),
         lesson_id=str(block.lesson_id),
         block_type=block.block_type,
         position=block.position,
         title=block.title,
-        content_json=block.content_json or {},
+        content_json=content_json,
         settings_json=block.settings_json or {},
         is_required=block.is_required,
         is_active=block.is_active,
@@ -1096,12 +1109,20 @@ def build_account_quiz_attempt_response(
     attempt: QuizAttempt,
     *,
     max_attempts: int | None = None,
+    reveal_correct_answers: bool = False,
 ) -> AccountQuizAttemptResponse:
     result_json = attempt.result_json or {}
     question_results = result_json.get("question_results")
 
     if not isinstance(question_results, list):
         question_results = []
+
+    question_results = (
+        sanitize_quiz_question_results_for_learner(
+            question_results,
+            reveal_correct_answers=reveal_correct_answers,
+        )
+    )
 
     remaining_attempts = None
 
@@ -1356,17 +1377,39 @@ def calculate_account_course_progress(
     ]
 
     lessons_total = len(lessons)
-    lessons_completed = sum(1 for lesson in lessons if lesson.is_completed)
+    lessons_completed = sum(
+        1
+        for lesson in lessons
+        if lesson.is_completed
+    )
 
-    required_lessons = [
+    explicit_required_lessons = [
         lesson
         for lesson in lessons
         if lesson.is_required
     ]
-    required_lessons_total = len(required_lessons)
+
+    # Completion policy:
+    # - if at least one active lesson is explicitly required,
+    #   only explicitly required lessons gate course completion;
+    # - otherwise every active lesson gates course completion.
+    #
+    # The existing required_* response fields intentionally expose
+    # this effective completion set so the learner UI can use one
+    # consistent progress contract.
+    effective_required_lessons = (
+        explicit_required_lessons
+        if explicit_required_lessons
+        else lessons
+    )
+
+    required_lessons_total = len(
+        effective_required_lessons
+    )
+
     required_lessons_completed = sum(
         1
-        for lesson in required_lessons
+        for lesson in effective_required_lessons
         if lesson.is_completed
     )
 
@@ -1664,10 +1707,33 @@ async def list_account_course_lesson_quiz_attempts(
     )
     attempts = attempts_result.scalars().all()
 
+    attempts_used = max(
+        (
+            int(attempt.attempt_number or 0)
+            for attempt in attempts
+        ),
+        default=0,
+    )
+    quiz_passed = any(
+        bool(attempt.passed)
+        for attempt in attempts
+    )
+    reveal_correct_answers = (
+        should_reveal_quiz_correct_answers(
+            block.content_json or {},
+            passed=quiz_passed,
+            attempts_used=attempts_used,
+            max_attempts=max_attempts,
+        )
+    )
+
     return [
         build_account_quiz_attempt_response(
             attempt,
             max_attempts=max_attempts,
+            reveal_correct_answers=(
+                reveal_correct_answers
+            ),
         )
         for attempt in attempts
     ]
@@ -1691,11 +1757,10 @@ async def submit_account_course_lesson_quiz_attempt(
         session=session,
     )
 
-    if enrollment.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Completed course cannot be changed",
-        )
+    await ensure_account_learning_mutation_allowed(
+        enrollment,
+        session,
+    )
 
     lesson_result = await session.execute(
         select(CourseLesson)
@@ -1790,6 +1855,16 @@ async def submit_account_course_lesson_quiz_attempt(
     return build_account_quiz_attempt_response(
         attempt,
         max_attempts=max_attempts,
+        reveal_correct_answers=(
+            should_reveal_quiz_correct_answers(
+                block.content_json or {},
+                passed=bool(attempt.passed),
+                attempts_used=int(
+                    attempt.attempt_number or 0
+                ),
+                max_attempts=max_attempts,
+            )
+        ),
     )
 
 
@@ -1851,11 +1926,10 @@ async def submit_account_course_lesson_assignment_answer(
         session=session,
     )
 
-    if enrollment.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Completed course cannot be changed",
-        )
+    await ensure_account_learning_mutation_allowed(
+        enrollment,
+        session,
+    )
 
     answer_text = (payload.answer_text or "").strip()
 
@@ -1915,10 +1989,11 @@ async def submit_account_course_lesson_assignment_answer(
         submission.attachments_json = submission.attachments_json or {}
         submission.submitted_at = now
 
-        if submission.review_comment or submission.reviewed_at or submission.reviewed_by_user_id:
-            submission.review_comment = None
-            submission.reviewed_at = None
-            submission.reviewed_by_user_id = None
+        submission.score = None
+        submission.max_score = None
+        submission.review_comment = None
+        submission.reviewed_at = None
+        submission.reviewed_by_user_id = None
 
     try:
         await session.commit()
@@ -1956,11 +2031,10 @@ async def complete_account_course_lesson_assignment_submission(
         session=session,
     )
 
-    if enrollment.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Completed course cannot be changed",
-        )
+    await ensure_account_learning_mutation_allowed(
+        enrollment,
+        session,
+    )
 
     lesson, block = await get_account_assignment_block_context_or_404(
         enrollment=enrollment,
@@ -2051,11 +2125,10 @@ async def complete_account_course_lesson(
         session=session,
     )
 
-    if enrollment.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Completed course cannot be changed",
-        )
+    await ensure_account_learning_mutation_allowed(
+        enrollment,
+        session,
+    )
 
     lesson_result = await session.execute(
         select(CourseLesson)
@@ -2220,6 +2293,49 @@ async def get_account_enrollment_entity_or_404(
     return enrollment
 
 
+async def ensure_account_learning_mutation_allowed(
+    enrollment: Enrollment,
+    session: AsyncSession,
+    *,
+    completed_detail: str = "Completed course cannot be changed",
+) -> None:
+    if enrollment.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=completed_detail,
+        )
+
+    if enrollment.status == "cancelled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cancelled enrollment cannot be changed",
+        )
+
+    if enrollment.status not in {"assigned", "active"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Enrollment cannot be changed from current status",
+        )
+
+    course_active = await session.scalar(
+        select(Course.is_active).where(
+            Course.id == enrollment.course_id,
+        )
+    )
+
+    if course_active is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    if not bool(course_active):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Course is inactive",
+        )
+
+
 @router.post("/courses/{enrollment_id}/start", response_model=AccountCourseItemResponse)
 async def start_account_course_learning(
     enrollment_id: str,
@@ -2232,11 +2348,11 @@ async def start_account_course_learning(
         session=session,
     )
 
-    if enrollment.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Completed course cannot be started",
-        )
+    await ensure_account_learning_mutation_allowed(
+        enrollment,
+        session,
+        completed_detail="Completed course cannot be started",
+    )
 
     enrollment.status = "active"
 
@@ -2264,11 +2380,10 @@ async def complete_account_course_learning(
         session=session,
     )
 
-    if enrollment.status not in {"assigned", "active", "completed"}:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Enrollment cannot be completed from current status",
-        )
+    await ensure_account_learning_mutation_allowed(
+        enrollment,
+        session,
+    )
 
     modules = await load_account_course_modules(
         session,

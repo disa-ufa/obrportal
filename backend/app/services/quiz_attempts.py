@@ -219,6 +219,165 @@ def normalize_quiz_content(content: Any) -> dict[str, Any]:
     }
 
 
+
+def sanitize_quiz_content_for_learner(
+    content: Any,
+) -> dict[str, Any]:
+    quiz = normalize_quiz_content(content)
+
+    safe_questions: list[dict[str, Any]] = []
+
+    for question in quiz.get("questions", []):
+        question_type = _as_text(
+            question.get("type") or "single_choice"
+        )
+
+        safe_question: dict[str, Any] = {
+            "id": _as_text(question.get("id")),
+            "type": question_type,
+            "title": _as_text(question.get("title")),
+            "description": _as_text(
+                question.get("description")
+            ),
+            "points": max(
+                0,
+                _as_float(question.get("points"), 1),
+            ),
+            "required": _as_bool(
+                question.get("required"),
+                True,
+            ),
+            "shuffle_options": _as_bool(
+                question.get("shuffle_options"),
+                False,
+            ),
+        }
+
+        if question_type in {
+            "single_choice",
+            "multiple_choice",
+        }:
+            safe_question["options"] = [
+                {
+                    "id": _as_text(option.get("id")),
+                    "text": _as_text(option.get("text")),
+                }
+                for option in (
+                    question.get("options") or []
+                )
+                if isinstance(option, dict)
+            ]
+
+            safe_question["scoring_mode"] = _as_text(
+                question.get("scoring_mode")
+                or "all_or_nothing"
+            )
+
+        elif question_type == "short_text":
+            safe_question["case_sensitive"] = _as_bool(
+                question.get("case_sensitive"),
+                False,
+            )
+            safe_question["trim_spaces"] = _as_bool(
+                question.get("trim_spaces"),
+                True,
+            )
+
+        elif question_type == "number":
+            safe_question["tolerance"] = max(
+                0,
+                _as_float(
+                    question.get("tolerance"),
+                    0,
+                ),
+            )
+
+        safe_questions.append(safe_question)
+
+    grading = quiz.get("grading")
+    grading = grading if isinstance(grading, dict) else {}
+
+    behavior = quiz.get("behavior")
+    behavior = (
+        behavior
+        if isinstance(behavior, dict)
+        else {}
+    )
+
+    ui = quiz.get("ui")
+    ui = ui if isinstance(ui, dict) else {}
+
+    return {
+        "schema_version": quiz.get(
+            "schema_version"
+        ) or 1,
+        "title": _as_text(
+            quiz.get("title"),
+            "Quiz",
+        ),
+        "description": _as_text(
+            quiz.get("description")
+        ),
+        "questions": safe_questions,
+        "grading": {
+            "mode": grading.get("mode") or "points",
+            "pass_score_percent": _as_int(
+                grading.get("pass_score_percent"),
+                70,
+            ),
+            "partial_credit": _as_bool(
+                grading.get("partial_credit"),
+                True,
+            ),
+            "negative_points": _as_bool(
+                grading.get("negative_points"),
+                False,
+            ),
+        },
+        "behavior": {
+            "show_result": (
+                behavior.get("show_result")
+                or "after_submit"
+            ),
+            "show_correct_answers": (
+                behavior.get("show_correct_answers")
+                or "after_submit"
+            ),
+            "allow_retry": _as_bool(
+                behavior.get("allow_retry"),
+                True,
+            ),
+            "max_attempts": _as_int(
+                behavior.get("max_attempts"),
+                3,
+            ),
+            "shuffle_questions": _as_bool(
+                behavior.get("shuffle_questions"),
+                False,
+            ),
+            "shuffle_answers": _as_bool(
+                behavior.get("shuffle_answers"),
+                False,
+            ),
+        },
+        "ui": {
+            "display_mode": (
+                ui.get("display_mode")
+                or "all_questions"
+            ),
+            "show_progress": _as_bool(
+                ui.get("show_progress"),
+                True,
+            ),
+            "show_question_points": _as_bool(
+                ui.get("show_question_points"),
+                True,
+            ),
+        },
+    }
+
+
+
 def grade_quiz_question(question: dict[str, Any], answer: Any) -> dict[str, Any]:
     question_type = _as_text(question.get("type")).lower()
     points = max(0, _as_float(question.get("points"), 0))
@@ -368,3 +527,84 @@ def get_quiz_max_attempts(content: Any) -> int | None:
     max_attempts = _as_int(behavior.get("max_attempts"), 0)
 
     return max_attempts if max_attempts > 0 else None
+
+
+def should_reveal_quiz_correct_answers(
+    content: Any,
+    *,
+    passed: bool,
+    attempts_used: int,
+    max_attempts: int | None,
+) -> bool:
+    source = content if isinstance(content, dict) else {}
+    raw_behavior = source.get("behavior")
+    raw_behavior = (
+        raw_behavior
+        if isinstance(raw_behavior, dict)
+        else {}
+    )
+    raw_setting = raw_behavior.get(
+        "show_correct_answers"
+    )
+
+    if raw_setting is False:
+        return False
+
+    quiz = normalize_quiz_content(content)
+    behavior = quiz.get("behavior")
+    behavior = (
+        behavior
+        if isinstance(behavior, dict)
+        else {}
+    )
+
+    setting = _as_text(
+        behavior.get("show_correct_answers"),
+        "after_submit",
+    ).strip().lower()
+
+    if setting in {
+        "never",
+        "none",
+        "hidden",
+        "false",
+        "off",
+        "disabled",
+    }:
+        return False
+
+    attempts_exhausted = bool(
+        max_attempts is not None
+        and int(attempts_used or 0) >= max_attempts
+    )
+
+    return bool(
+        passed
+        or attempts_exhausted
+    )
+
+
+def sanitize_quiz_question_results_for_learner(
+    question_results: Any,
+    *,
+    reveal_correct_answers: bool,
+) -> list[dict[str, Any]]:
+    if not isinstance(question_results, list):
+        return []
+
+    safe_results: list[dict[str, Any]] = []
+
+    for result in question_results:
+        if not isinstance(result, dict):
+            continue
+
+        safe_result = dict(result)
+
+        if not reveal_correct_answers:
+            safe_result["correct_answer"] = None
+
+        safe_results.append(
+            safe_result
+        )
+
+    return safe_results

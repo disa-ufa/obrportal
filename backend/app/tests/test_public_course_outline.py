@@ -169,6 +169,15 @@ def test_public_course_detail_returns_active_outline_only_sorted_by_position() -
             first_module_lesson["id"],
         ]
 
+        first_public_lesson = modules[0]["lessons"][0]
+        assert first_public_lesson["description"] == (
+            "Description for First module visible lesson"
+        )
+        assert first_public_lesson["content_type"] == "text"
+        assert "content_url" not in first_public_lesson
+        assert "content_text" not in first_public_lesson
+        assert "blocks" not in first_public_lesson
+
         assert modules[1]["position"] == 2
         assert modules[1]["title"] == "Visible module second"
 
@@ -189,5 +198,10 @@ def test_public_course_detail_returns_active_outline_only_sorted_by_position() -
         assert second_module_lessons[1]["position"] == 2
         assert second_module_lessons[1]["content_type"] == "video"
         assert second_module_lessons[1]["is_required"] is False
+
+        for lesson in second_module_lessons:
+            assert "content_url" not in lesson
+            assert "content_text" not in lesson
+            assert "blocks" not in lesson
     finally:
         delete_admin_course(token, course_id)

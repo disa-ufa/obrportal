@@ -13,6 +13,10 @@ function lazyNamed(loader, exportName) {
 }
 
 const AccountPage = lazyNamed(() => import("../pages/AccountPage"), "AccountPage");
+const LearnerCoursePage = lazyNamed(
+  () => import("../pages/LearnerCoursePage"),
+  "LearnerCoursePage"
+);
 const AuthPage = lazyNamed(() => import("../pages/AuthPage"), "AuthPage");
 const ForgotPasswordPage = lazyNamed(() => import("../pages/ForgotPasswordPage"), "ForgotPasswordPage");
 const CatalogPage = lazyNamed(() => import("../pages/CatalogPage"), "CatalogPage");
@@ -76,6 +80,20 @@ export function PublicRoutes({
       : isMinistryAdmin
         ? "/ministry"
         : "/account";
+
+  const learnerCourseElement = user ? (
+    isAdmin ? (
+      <Navigate to={getAdminPathForPage("dashboard")} replace />
+    ) : isOrgRepresentative ? (
+      <Navigate to="/organization" replace />
+    ) : isMinistryAdmin ? (
+      <Navigate to="/ministry" replace />
+    ) : (
+      <LearnerCoursePage />
+    )
+  ) : (
+    <Navigate to="/login" replace />
+  );
 
   return (
     <Suspense fallback={<PublicRouteLoadingFallback />}>
@@ -253,6 +271,14 @@ export function PublicRoutes({
               onPageChange={handleNavigatePublicPage}
             />
           }
+        />
+        <Route
+          path="/account/courses/:enrollmentId"
+          element={learnerCourseElement}
+        />
+        <Route
+          path="/account/courses/:enrollmentId/lessons/:lessonId"
+          element={learnerCourseElement}
         />
         <Route
           path="/account"

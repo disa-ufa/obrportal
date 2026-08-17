@@ -33,6 +33,7 @@ export function getPublicPageFromPathname(pathname) {
   if (pathname === "/login") return "login";
   if (pathname === "/register") return "register";
   if (pathname === "/set-password") return "set-password";
+  if (pathname.startsWith("/account/courses/")) return "account";
   if (pathname === "/account") return "account";
   return "not-found";
 }
@@ -172,6 +173,14 @@ export function buildPublicMeta(pathname) {
     };
   }
 
+  if (pathname.startsWith("/account/courses/")) {
+    return {
+      title: "Обучение — ОбрПортал",
+      description:
+        "Учебное пространство программы: содержание курса, уроки, прогресс и учебные материалы.",
+    };
+  }
+
   if (pathname === "/account") {
     return {
       title: "Личный кабинет — ОбрПортал",
@@ -204,6 +213,8 @@ export const PUBLIC_ROUTE_META_DIAGNOSTIC_CASES = [
   { pathname: "/register", expectedPage: "register", expectedTitle: "Регистрация — ОбрПортал" },
   { pathname: "/set-password", expectedPage: "set-password", expectedTitle: "Установка пароля — ОбрПортал" },
   { pathname: "/account", expectedPage: "account", expectedTitle: "Личный кабинет — ОбрПортал" },
+  { pathname: "/account/courses/__learner_enrollment__", expectedPage: "account", expectedTitle: "Обучение — ОбрПортал" },
+  { pathname: "/account/courses/__learner_enrollment__/lessons/__lesson__", expectedPage: "account", expectedTitle: "Обучение — ОбрПортал" },
   { pathname: "/__missing_routes_meta_public__", expectedPage: "not-found", expectedTitle: "Страница не найдена — ОбрПортал" },
 ];
 

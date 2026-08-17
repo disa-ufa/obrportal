@@ -1,5 +1,6 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   downloadAccountDocument,
   getAccountActivities,
@@ -7,7 +8,6 @@ import {
   getAccountCourses,
   getAccountDocuments,
   getAccountSummary,
-  startAccountCourse,
 } from "../api/client";
 import { LearnerAccountProfile } from "../components/account/LearnerAccountProfile";
 import { LearnerAccountLayout } from "../components/account/LearnerAccountLayout";
@@ -47,6 +47,8 @@ function getInitialAccountSection() {
 }
 
 export function AccountPage({ user, onPageChange, onOpenCourse }) {
+  const navigate = useNavigate();
+
   const [summary, setSummary] = useState(null);
   const [coursesResponse, setCoursesResponse] = useState(null);
   const [documentsResponse, setDocumentsResponse] = useState(null);
@@ -57,8 +59,6 @@ export function AccountPage({ user, onPageChange, onOpenCourse }) {
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [downloadLoadingId, setDownloadLoadingId] = useState("");
-  const [courseActionError, setCourseActionError] = useState("");
-  const [courseActionLoadingKey, setCourseActionLoadingKey] = useState("");
 
   const [learningStatusFilter, setLearningStatusFilter] = useState("");
   const [activityStatusFilter, setActivityStatusFilter] = useState("");
@@ -193,25 +193,26 @@ export function AccountPage({ user, onPageChange, onOpenCourse }) {
     }
   }
 
-  async function handleStartCourse(enrollmentId) {
-    try {
-      setCourseActionError("");
-      setCourseActionLoadingKey(`${enrollmentId}:start`);
+  function handleOpenLearningCourse(
+    course,
+    lessonId = ""
+  ) {
+    const enrollmentId = course?.enrollment_id;
 
-      await startAccountCourse(enrollmentId);
-      await refreshAccountSnapshot();
-      await refreshAccountActivities();
-
-      setAccountNotice({
-        tone: "green",
-        title: "Обучение начато",
-        message: "Статус программы обновлён. Теперь курс находится в работе.",
-      });
-    } catch (err) {
-      setCourseActionError(formatApiError(err, "Не удалось начать обучение."));
-    } finally {
-      setCourseActionLoadingKey("");
+    if (!enrollmentId) {
+      return;
     }
+
+    if (lessonId) {
+      navigate(
+        `/account/courses/${enrollmentId}/lessons/${lessonId}`
+      );
+      return;
+    }
+
+    navigate(
+      `/account/courses/${enrollmentId}`
+    );
   }
 
   async function handleLoadLearningCourseDetail(course) {
@@ -351,7 +352,7 @@ export function AccountPage({ user, onPageChange, onOpenCourse }) {
           loading={loading}
           errorMessage={error}
           onSectionChange={handleAccountSectionChange}
-          onOpenCourse={onOpenCourse}
+          onOpenLearningCourse={handleOpenLearningCourse}
         />
       </div>
 
@@ -368,23 +369,15 @@ export function AccountPage({ user, onPageChange, onOpenCourse }) {
           selectedStatus={learningStatusFilter}
           selectedCourseDetail={selectedCourseDetail}
           detailLoadingEnrollmentId={courseDetailLoadingId}
-          actionLoadingEnrollmentId={
-            courseActionLoadingKey.endsWith(":start")
-              ? courseActionLoadingKey.slice(0, -6)
-              : ""
-          }
           loading={loading}
           errorMessage={
             error ||
-            courseActionError ||
             courseDetailError?.message ||
             ""
           }
           onStatusChange={setLearningStatusFilter}
           onLoadCourseDetail={handleLoadLearningCourseDetail}
-          onStartCourse={(course) =>
-            handleStartCourse(course.enrollment_id)
-          }
+          onOpenLearningCourse={handleOpenLearningCourse}
           onOpenCourse={onOpenCourse}
           onOpenCatalog={() => onPageChange("catalog")}
         />
@@ -404,7 +397,7 @@ export function AccountPage({ user, onPageChange, onOpenCourse }) {
           loading={activitiesLoading}
           errorMessage={activitiesError}
           onFilterChange={setActivityStatusFilter}
-          onOpenCourse={onOpenCourse}
+          onOpenLearningCourse={handleOpenLearningCourse}
           onOpenLearning={() =>
             handleAccountSectionChange("learning")
           }
