@@ -4329,6 +4329,7 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -5390,6 +5391,7 @@ def test_public_can_list_active_courses() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -5408,6 +5410,7 @@ def test_public_can_list_active_courses() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": False,
+            "is_public": True,
         },
     )
 
@@ -5441,6 +5444,7 @@ def test_public_can_get_active_course_detail_by_slug() -> None:
             "format": "mixed",
             "document_type": "Удостоверение",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -5472,6 +5476,7 @@ def test_public_inactive_course_detail_returns_404() -> None:
             "slug": slug,
             "title": "Inactive Detail Course",
             "is_active": False,
+            "is_public": True,
         },
     )
 
@@ -5514,6 +5519,7 @@ def test_learner_can_self_enroll_active_course() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -5556,6 +5562,7 @@ def test_self_enroll_duplicate_course_returns_409() -> None:
             "slug": slug,
             "title": "Self Enrollment Duplicate Course",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -5594,6 +5601,7 @@ def test_self_enroll_inactive_course_returns_404() -> None:
             "slug": slug,
             "title": "Self Enrollment Inactive Course",
             "is_active": False,
+            "is_public": True,
         },
     )
 
@@ -5637,6 +5645,7 @@ def test_learner_can_start_and_complete_self_enrolled_course() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -5720,6 +5729,7 @@ def test_account_course_progress_dates_are_returned() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -5800,6 +5810,7 @@ def test_complete_course_creates_draft_document() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -5896,6 +5907,7 @@ def test_draft_completion_document_cannot_be_downloaded_by_learner() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -5971,6 +5983,7 @@ def test_admin_can_publish_completion_document_for_learner_download() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -6456,6 +6469,7 @@ def test_learner_course_completion_generates_draft_pdf_file() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -6618,6 +6632,7 @@ def test_completion_document_keeps_enrollment_course_and_user_integrity() -> Non
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -6712,6 +6727,7 @@ def test_admin_can_publish_generated_completion_pdf_without_reupload() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 
@@ -6825,6 +6841,7 @@ def test_public_can_verify_published_generated_completion_pdf() -> None:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
 

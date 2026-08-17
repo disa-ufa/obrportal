@@ -76,6 +76,7 @@ async def get_or_create_demo_course(session) -> Course:
             "SEED_DEMO_COURSE_DOCUMENT_TYPE",
             "certificate",
         ),
+        "is_public": True,
         "is_active": True,
     }
 
@@ -85,6 +86,7 @@ async def get_or_create_demo_course(session) -> Course:
         course.hours = data["hours"]
         course.format = data["format"]
         course.document_type = data["document_type"]
+        course.is_public = data["is_public"]
         course.is_active = data["is_active"]
         return course
 

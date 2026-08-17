@@ -3142,6 +3142,7 @@ def main() -> int:
             "format": "online",
             "document_type": "Сертификат",
             "is_active": True,
+            "is_public": True,
         },
     )
     assert_status(status, 201, "self enroll course create")

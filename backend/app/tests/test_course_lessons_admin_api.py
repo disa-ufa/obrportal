@@ -85,6 +85,7 @@ def create_admin_course(token: str) -> dict:
             "hours": 24,
             "format": "online",
             "document_type": "Certificate",
+            "is_public": True,
             "is_active": True,
         },
         token=token,

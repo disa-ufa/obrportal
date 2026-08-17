@@ -14,4 +14,10 @@ class Course(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     format: Mapped[str | None] = mapped_column(String(64), nullable=True)
     document_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
     direction: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    is_public: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
