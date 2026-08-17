@@ -149,8 +149,32 @@ import {
   updateAdminEnrollment,
 } from "../api/client";
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 
-const U = (value) => JSON.parse(`"${value}"`);
+const ENROLLMENT_CSV_EXPORT_COLUMNS = [
+  { key: "id", label: "ID" },
+  { key: "user_id", label: "User ID" },
+  { key: "user_email", label: "Email" },
+  { key: "user_full_name", label: "\u0424\u0418\u041e" },
+  { key: "course_id", label: "Course ID" },
+  { key: "course_title", label: "\u041a\u0443\u0440\u0441" },
+  { key: "course_slug", label: "Course slug" },
+  { key: "organization_id", label: "Organization ID" },
+  { key: "organization_name", label: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f" },
+  { key: "learning_group_id", label: "Group ID" },
+  { key: "learning_group_name", label: "\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430" },
+  { key: "status", label: "\u0421\u0442\u0430\u0442\u0443\u0441" },
+  { key: "status_label", label: "\u0421\u0442\u0430\u0442\u0443\u0441, \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435" },
+  { key: "started_at", label: "\u0414\u0430\u0442\u0430 \u0441\u0442\u0430\u0440\u0442\u0430" },
+  { key: "completed_at", label: "\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f" },
+  { key: "action_required", label: "\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f" },
+  { key: "documents_url", label: "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b" },
+  { key: "course_url", label: "\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0443\u0440\u0441" },
+  { key: "created_at", label: "\u0421\u043e\u0437\u0434\u0430\u043d\u043e" },
+  { key: "updated_at", label: "\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e" },
+];
+
+const U = (value) => JSON.parse(`\"${value}\"`);
 
 const T = {
   breadcrumbAdmin: U("\\u0410\\u0434\\u043c\\u0438\\u043d\\u043a\\u0430"),
@@ -418,37 +442,6 @@ function getActionHints(enrollment, documents) {
     }
   }
   return hints;
-}
-
-function buildCsv(rows) {
-  const header = [
-    "id",
-    "user_email",
-    "user_full_name",
-    "course_title",
-    "organization_name",
-    "learning_group_name",
-    "status",
-    "started_at",
-    "completed_at",
-    "created_at",
-    "updated_at",
-  ];
-  const escape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
-  return [header.join(";"), ...rows.map((row) => header.map((key) => escape(row[key])).join(";"))].join("\n");
-}
-
-function downloadCsv(rows) {
-  const blob = new Blob([`\ufeff${buildCsv(rows)}`], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  const stamp = new Date().toISOString().slice(0, 10);
-  link.href = url;
-  link.download = `admin-enrollments-${stamp}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }
 
 function Badge({ children, className }) {
@@ -902,6 +895,8 @@ function AdminEnrollmentsPage() {
     }
   }
 
+  const visibleEnrollments = enrollments;
+
   function applyFilters(nextFilters = filters) {
     setAppliedFilters(nextFilters);
   }
@@ -920,6 +915,45 @@ function AdminEnrollmentsPage() {
     };
     setFilters(next);
     setAppliedFilters(next);
+  }
+
+  function handleExportEnrollmentsCsv() {
+    const rows = visibleEnrollments.map((enrollment) => ({
+      id: enrollment.id,
+      user_id: enrollment.user_id || "",
+      user_email: enrollment.user_email || "",
+      user_full_name: enrollment.user_full_name || "",
+      course_id: enrollment.course_id || "",
+      course_title: enrollment.course_title || "",
+      course_slug: enrollment.course_slug || "",
+      organization_id: enrollment.organization_id || "",
+      organization_name: enrollment.organization_name || "",
+      learning_group_id: enrollment.learning_group_id || "",
+      learning_group_name: enrollment.learning_group_name || "",
+      status: enrollment.status || "",
+      status_label: getStatusLabel(enrollment.status),
+      started_at: enrollment.started_at || "",
+      completed_at: enrollment.completed_at || "",
+      action_required:
+        enrollment.status === "assigned" ||
+        enrollment.status === "completed"
+          ? "yes"
+          : "no",
+      documents_url: enrollment.id
+        ? `/admin/documents?enrollment_id=${enrollment.id}`
+        : "",
+      course_url: enrollment.course_slug
+        ? `/courses/${enrollment.course_slug}`
+        : "",
+      created_at: enrollment.created_at || "",
+      updated_at: enrollment.updated_at || "",
+    }));
+
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-enrollments"),
+      ENROLLMENT_CSV_EXPORT_COLUMNS,
+      rows
+    );
   }
 
   return (
@@ -941,7 +975,7 @@ function AdminEnrollmentsPage() {
 
           <div className="flex flex-wrap gap-2">
             <ActionButton disabled>{T.importCsv}</ActionButton>
-            <ActionButton onClick={() => downloadCsv(enrollments)}>{T.exportCsv}</ActionButton>
+            <ActionButton data-testid="admin-enrollments-export-csv-button" onClick={handleExportEnrollmentsCsv} disabled={visibleEnrollments.length === 0}>{T.exportCsv}</ActionButton>
             <ActionButton tone="primary" onClick={() => setCreateOpen((value) => !value)}>
               {T.create}
             </ActionButton>
@@ -1191,10 +1225,10 @@ function AdminEnrollmentsPage() {
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4 text-sm font-bold text-slate-600">
           <span>{T.shown} {enrollments.length} {T.records}</span>
           <span>{"\u00b7"}</span>
-          <span>{T.csvRows}: {enrollments.length}</span>
+          <span data-testid="admin-enrollments-export-summary">{T.csvRows}: {visibleEnrollments.length}</span>
           <button
             type="button"
-            onClick={() => downloadCsv(enrollments)}
+            onClick={handleExportEnrollmentsCsv}
             className="rounded-full bg-slate-50 px-3 py-1 text-xs font-black text-slate-800 ring-1 ring-slate-200"
           >
             {T.exportCsv}

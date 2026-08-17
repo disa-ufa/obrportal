@@ -206,20 +206,20 @@ const COURSE_DIRECTION_OPTIONS = [
 ];
 
 const COURSE_CSV_EXPORT_COLUMNS = [
-  { key: "id", title: "ID" },
-  { key: "slug", title: "Slug" },
-  { key: "title", title: "Название" },
-  { key: "is_active", title: "Активна" },
-  { key: "is_public", title: "Опубликована" },
-  { key: "hours", title: "Объем, часов" },
-  { key: "format", title: "Формат" },
-  { key: "document_type", title: "Итоговый документ" },
-  { key: "modules_count", title: "Модулей" },
-  { key: "lessons_count", title: "Уроков" },
-  { key: "public_url", title: "Публичная карточка" },
-  { key: "description", title: "Описание" },
-  { key: "created_at", title: "Создана" },
-  { key: "updated_at", title: "Обновлена" },
+  { key: "id", label: "ID" },
+  { key: "slug", label: "Slug" },
+  { key: "title", label: "Название" },
+  { key: "is_active", label: "Активна" },
+  { key: "is_public", label: "Опубликована" },
+  { key: "hours", label: "Объем, часов" },
+  { key: "format", label: "Формат" },
+  { key: "document_type", label: "Итоговый документ" },
+  { key: "modules_count", label: "Модулей" },
+  { key: "lessons_count", label: "Уроков" },
+  { key: "public_url", label: "Публичная карточка" },
+  { key: "description", label: "Описание" },
+  { key: "created_at", label: "Создана" },
+  { key: "updated_at", label: "Обновлена" },
 ];
 
 const EMPTY_COURSE_FORM = {
@@ -5132,12 +5132,29 @@ export function AdminCoursesPage() {
 
             <ActionButton
               type="button"
+              tone="light"
+              onClick={handleExportCoursesCsv}
+              disabled={loading || courses.length === 0}
+              data-testid="admin-courses-export-csv-button"
+            >
+              {"\u0421\u043a\u0430\u0447\u0430\u0442\u044c CSV"}
+            </ActionButton>
+
+            <ActionButton
+              type="button"
               tone="blue"
               onClick={openCreateForm}
               disabled={saving}
             >
               + Добавить программу
             </ActionButton>
+          </div>
+
+          <div
+            data-testid="admin-courses-export-summary"
+            className="mb-4 rounded-2xl bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+          >
+            CSV: {courses.length}
           </div>
 
           <CourseStructureTree

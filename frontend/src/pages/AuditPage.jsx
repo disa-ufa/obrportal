@@ -61,8 +61,50 @@ import { AuditEventDetailPanel } from "../components/admin/AuditEventDetailPanel
 import { buildAuditPath, buildEntityAdminPath } from "../utils/adminLinks";
 import { formatRuDateTimeNativeUnsafe as formatDateTime } from "../utils/dateFormat";
 import { normalizeSearchValue } from "../utils/search";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 
-const U = (value) => JSON.parse(`"${value}"`);
+const AUDIT_CSV_EXPORT_COLUMNS = [
+  { key: "id", label: "ID" },
+  { key: "created_at", label: "\u0414\u0430\u0442\u0430" },
+  { key: "action", label: "Action" },
+  { key: "category", label: "\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f" },
+  { key: "result", label: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442" },
+  { key: "action_tone", label: "Action tone" },
+  { key: "entity_type", label: "Entity type" },
+  { key: "entity_id", label: "Entity ID" },
+  { key: "entity_audit_url", label: "Entity audit URL" },
+  { key: "actor_user_id", label: "Actor user ID" },
+  { key: "actor_user_email", label: "Actor email" },
+  { key: "actor_user_full_name", label: "Actor name" },
+  { key: "actor_audit_url", label: "Actor audit URL" },
+  { key: "action_audit_url", label: "Action audit URL" },
+  { key: "request_id", label: "Request ID" },
+  { key: "ip_address", label: "IP" },
+  { key: "user_agent", label: "User agent" },
+  { key: "payload", label: "Payload" },
+  { key: "metadata", label: "Metadata" },
+  { key: "details", label: "Details" },
+  { key: "old_values", label: "Old values" },
+  { key: "new_values", label: "New values" },
+];
+
+function stringifyAuditCsvValue(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+const U = (value) => JSON.parse(`\"${value}\"`);
 
 const T = {
   admin: U("\\u0410\\u0434\\u043c\\u0438\\u043d\\u043a\\u0430"),
@@ -917,37 +959,47 @@ export function AuditPage({
     );
   }
 
-  function handleExportCsv() {
-    const header = [
-      "id",
-      "created_at",
-      "action",
-      "category",
-      "result",
-      "entity_type",
-      "entity_id",
-      "actor_user_id",
-      "ip_address",
-      "user_agent",
-      "payload",
-    ];
+  function handleExportAuditCsv() {
+    const rows = filteredEvents.map((event) => ({
+      id: event.id,
+      created_at: event.created_at || "",
+      action: event.action || "",
+      category: getEventCategory(event),
+      result: getEventOutcome(event),
+      action_tone: getActionTone(event.action),
+      entity_type: event.entity_type || "",
+      entity_id: event.entity_id || "",
+      entity_audit_url:
+        event.entity_type && event.entity_id
+          ? buildAuditPath({
+              entity_type: event.entity_type,
+              entity_id: event.entity_id,
+            })
+          : "",
+      actor_user_id: event.actor_user_id || "",
+      actor_user_email: event.actor_user_email || "",
+      actor_user_full_name: event.actor_user_full_name || "",
+      actor_audit_url: event.actor_user_id
+        ? buildAuditPath({ actor_user_id: event.actor_user_id })
+        : "",
+      action_audit_url: event.action
+        ? buildAuditPath({ action: event.action })
+        : "",
+      request_id: event.request_id || "",
+      ip_address: event.ip_address || "",
+      user_agent: event.user_agent || "",
+      payload: stringifyAuditCsvValue(event.payload),
+      metadata: stringifyAuditCsvValue(event.metadata),
+      details: stringifyAuditCsvValue(event.details),
+      old_values: stringifyAuditCsvValue(event.old_values),
+      new_values: stringifyAuditCsvValue(event.new_values),
+    }));
 
-    const rows = filteredEvents.map((event) => [
-      event.id,
-      event.created_at,
-      event.action,
-      getEventCategory(event),
-      getEventOutcome(event),
-      event.entity_type,
-      event.entity_id,
-      event.actor_user_id,
-      event.ip_address,
-      event.user_agent,
-      JSON.stringify(event.payload || {}),
-    ]);
-
-    const content = [header, ...rows].map((row) => row.map(escapeCsv).join(";")).join("\n");
-    downloadTextFile(`admin-audit-events-${new Date().toISOString().slice(0, 10)}.csv`, `\ufeff${content}`, "text/csv;charset=utf-8");
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-audit-events"),
+      AUDIT_CSV_EXPORT_COLUMNS,
+      rows
+    );
   }
 
   return (
@@ -970,7 +1022,7 @@ export function AuditPage({
             <button type="button" onClick={handleRefresh} disabled={loading} className={SECONDARY_BUTTON_CLASS}>
               {T.refresh}
             </button>
-            <button type="button" data-testid="admin-audit-export-csv-button" onClick={handleExportCsv} disabled={loading || filteredEvents.length === 0} className={SECONDARY_BUTTON_CLASS}>
+            <button type="button" data-testid="admin-audit-export-csv-button" onClick={handleExportAuditCsv} disabled={loading || filteredEvents.length === 0} className={SECONDARY_BUTTON_CLASS}>
               {T.exportCsv}
             </button>
             <button type="button" data-testid="admin-audit-export-json-button" onClick={handleExportJson} disabled={loading || filteredEvents.length === 0} className={SECONDARY_BUTTON_CLASS}>
@@ -1116,7 +1168,7 @@ export function AuditPage({
 
           <section className="grid gap-4">
             <div className="overflow-hidden rounded-3xl bg-white ring-1 ring-slate-200">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 text-sm text-slate-500">
+              <div data-testid="admin-audit-export-summary" className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 text-sm text-slate-500">
                 <div className="flex flex-wrap gap-3">
                   <span>{T.shown} {filteredEvents.length} {T.of} {events.length}</span>
                   <span>-</span>
@@ -1124,7 +1176,7 @@ export function AuditPage({
                   <span>-</span>
                   <span>{T.actor}: {counts.actors}</span>
                 </div>
-                <button type="button" onClick={handleExportCsv} disabled={loading || filteredEvents.length === 0} className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+                <button type="button" onClick={handleExportAuditCsv} disabled={loading || filteredEvents.length === 0} className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
                   {T.exportCsv}
                 </button>
               </div>
