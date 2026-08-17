@@ -3795,8 +3795,13 @@ def main() -> int:
         "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
         token=learner_token,
     )
-    assert_status(status, 200, "learner repeat complete self enrolled course")
+    assert_status(status, 400, "learner repeat complete self enrolled course")
     assert isinstance(completed_self_enrollment_again, dict)
+    assert (
+        completed_self_enrollment_again.get("detail")
+        == "Completed course cannot be changed"
+    )
+    checks.append("learner repeat completion rejected for completed course")
 
     status, learner_documents_after_repeat_completion = request_json(
         "GET",

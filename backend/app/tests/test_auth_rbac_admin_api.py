@@ -5869,8 +5869,12 @@ def test_complete_course_creates_draft_document() -> None:
         token=learner_token,
     )
 
-    assert status == 200
+    assert status == 400
     assert isinstance(completed_again, dict)
+    assert (
+        completed_again["detail"]
+        == "Completed course cannot be changed"
+    )
 
     status, documents_after_repeat = request_json(
         "GET",
