@@ -11,6 +11,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
+  completeAccountCourse,
+  completeAccountCourseLesson,
   getAccountCourseDetail,
   startAccountCourse,
 } from "../api/client";
@@ -58,6 +60,105 @@ function clampPercent(value) {
 }
 
 
+function getLessonCompletionErrorMessage(err) {
+  const detail = err?.payload?.detail;
+  const code =
+    detail &&
+    typeof detail === "object" &&
+    !Array.isArray(detail)
+      ? detail.code
+      : "";
+
+  if (code === "required_quiz_not_passed") {
+    return "\u0427\u0442\u043e\u0431\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u0443\u0440\u043e\u043a, \u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u043f\u0440\u043e\u0439\u0434\u0438\u0442\u0435 \u0432\u0441\u0435 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0442\u0435\u0441\u0442\u044b.";
+  }
+
+  if (code === "required_assignment_not_completed") {
+    return "\u0427\u0442\u043e\u0431\u044b \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u0443\u0440\u043e\u043a, \u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u0432\u0441\u0435 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u044f.";
+  }
+
+  return formatApiError(
+    err,
+    "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439."
+  );
+}
+
+
+function flattenCourseLessons(courseDetail) {
+  return (courseDetail?.modules || []).flatMap(
+    (module) =>
+      (module.lessons || []).map(
+        (lesson) => ({
+          ...lesson,
+          moduleTitle: module.title,
+        })
+      )
+  );
+}
+
+
+function getNextIncompleteLesson(
+  lessons,
+  currentLessonId
+) {
+  if (!Array.isArray(lessons) || !lessons.length) {
+    return null;
+  }
+
+  const currentIndex = lessons.findIndex(
+    (lesson) => lesson.id === currentLessonId
+  );
+
+  const laterLessons =
+    currentIndex >= 0
+      ? lessons.slice(currentIndex + 1)
+      : lessons;
+
+  return (
+    laterLessons.find(
+      (lesson) => !lesson.is_completed
+    ) ||
+    lessons.find(
+      (lesson) =>
+        lesson.id !== currentLessonId &&
+        !lesson.is_completed
+    ) ||
+    null
+  );
+}
+
+
+function getCourseCompletionErrorMessage(err) {
+  const detail = err?.payload?.detail;
+
+  if (
+    detail
+    === "Complete required lessons before completing course"
+  ) {
+    return "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u0432\u0441\u0435 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0443\u0440\u043e\u043a\u0438.";
+  }
+
+  if (
+    detail
+    === "Completed course cannot be changed"
+  ) {
+    return "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430.";
+  }
+
+  if (
+    detail
+    === "Cancelled enrollment cannot be changed"
+  ) {
+    return "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e \u044d\u0442\u043e\u0439 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435 \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u043e.";
+  }
+
+  return formatApiError(
+    err,
+    "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443."
+  );
+}
+
+
 export function LearnerCoursePage() {
   const {
     enrollmentId,
@@ -69,8 +170,26 @@ export function LearnerCoursePage() {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [lessonCompletionLoading, setLessonCompletionLoading] = useState(false);
+  const [lessonCompletionError, setLessonCompletionError] = useState("");
+  const [lessonCompletionSuccess, setLessonCompletionSuccess] = useState("");
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+
+  const [
+    courseCompletionLoading,
+    setCourseCompletionLoading,
+  ] = useState(false);
+
+  const [
+    courseCompletionError,
+    setCourseCompletionError,
+  ] = useState("");
+
+  const [
+    courseCompletionSuccess,
+    setCourseCompletionSuccess,
+  ] = useState("");
 
   const readOnly = detail?.status !== "active";
 
@@ -124,16 +243,7 @@ export function LearnerCoursePage() {
   }, [enrollmentId, reloadKey]);
 
   const allLessons = useMemo(
-    () =>
-      (detail?.modules || []).flatMap(
-        (module) =>
-          (module.lessons || []).map(
-            (lesson) => ({
-              ...lesson,
-              moduleTitle: module.title,
-            })
-          )
-      ),
+    () => flattenCourseLessons(detail),
     [detail]
   );
 
@@ -159,6 +269,15 @@ export function LearnerCoursePage() {
     );
   }, [allLessons, lessonId]);
 
+  const nextLesson = useMemo(
+    () =>
+      getNextIncompleteLesson(
+        allLessons,
+        selectedLesson?.id
+      ),
+    [allLessons, selectedLesson]
+  );
+
   const requestedLessonMissing = Boolean(
     lessonId &&
     detail &&
@@ -167,6 +286,32 @@ export function LearnerCoursePage() {
 
   const effectiveProgress = clampPercent(
     detail?.required_progress_percent
+  );
+
+  const requiredLessonsTotal = Math.max(
+    0,
+    Number(
+      detail?.required_lessons_total || 0
+    )
+  );
+
+  const requiredLessonsCompleted = Math.max(
+    0,
+    Number(
+      detail?.required_lessons_completed || 0
+    )
+  );
+
+  const remainingRequiredLessons = Math.max(
+    0,
+    requiredLessonsTotal
+      - requiredLessonsCompleted
+  );
+
+  const courseCompletionEligible = Boolean(
+    detail?.status === "active"
+    && requiredLessonsCompleted
+      >= requiredLessonsTotal
   );
 
   function handleBack() {
@@ -182,10 +327,27 @@ export function LearnerCoursePage() {
     navigate("/account");
   }
 
+  function handleOpenDocuments() {
+    try {
+      sessionStorage.setItem(
+        "obrportal_account_section",
+        "documents"
+      );
+    } catch {
+      // Navigation must work even without sessionStorage.
+    }
+
+    navigate("/account");
+  }
+
+
   function handleOpenLesson(nextLessonId) {
     if (!enrollmentId || !nextLessonId) {
       return;
     }
+
+    setLessonCompletionError("");
+    setLessonCompletionSuccess("");
 
     navigate(
       `/account/courses/${enrollmentId}/lessons/${nextLessonId}`
@@ -219,6 +381,142 @@ export function LearnerCoursePage() {
       setActionLoading(false);
     }
   }
+
+  async function handleCompleteLesson() {
+    if (
+      !enrollmentId ||
+      !selectedLesson ||
+      readOnly ||
+      selectedLesson.is_completed ||
+      lessonCompletionLoading
+    ) {
+      return;
+    }
+
+    const completedLessonId = selectedLesson.id;
+    const completedLessonTitle = selectedLesson.title;
+
+    try {
+      setLessonCompletionLoading(true);
+      setLessonCompletionError("");
+      setLessonCompletionSuccess("");
+
+      const response =
+        await completeAccountCourseLesson(
+          enrollmentId,
+          completedLessonId
+        );
+
+      const updatedLessons =
+        flattenCourseLessons(response);
+
+      const nextIncompleteLesson =
+        getNextIncompleteLesson(
+          updatedLessons,
+          completedLessonId
+        );
+
+      setDetail(response);
+
+      if (nextIncompleteLesson) {
+        setLessonCompletionSuccess(
+          `\u0423\u0440\u043e\u043a \u00ab${completedLessonTitle}\u00bb \u0438\u0437\u0443\u0447\u0435\u043d. \u041e\u0442\u043a\u0440\u044b\u0442 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a: ${nextIncompleteLesson.title}.`
+        );
+
+        navigate(
+          `/account/courses/${enrollmentId}/lessons/${nextIncompleteLesson.id}`
+        );
+      } else {
+        setLessonCompletionSuccess(
+          "\u0423\u0440\u043e\u043a \u0438\u0437\u0443\u0447\u0435\u043d. \u0412\u0441\u0435 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0443\u0440\u043e\u043a\u0438 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u044b."
+        );
+      }
+    } catch (err) {
+      setLessonCompletionError(
+        getLessonCompletionErrorMessage(err)
+      );
+      setLessonCompletionSuccess("");
+    } finally {
+      setLessonCompletionLoading(false);
+    }
+  }
+
+
+  async function handleCompleteCourse() {
+    if (
+      !enrollmentId
+      || detail?.status !== "active"
+      || courseCompletionLoading
+    ) {
+      return;
+    }
+
+    if (!courseCompletionEligible) {
+      setCourseCompletionError(
+        `\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0443\u0440\u043e\u043a\u0438: ${requiredLessonsCompleted} \u0438\u0437 ${requiredLessonsTotal}.`
+      );
+
+      setCourseCompletionSuccess("");
+      return;
+    }
+
+    try {
+      setCourseCompletionLoading(true);
+      setCourseCompletionError("");
+      setCourseCompletionSuccess("");
+
+      const completedCourse =
+        await completeAccountCourse(
+          enrollmentId
+        );
+
+      let refreshedDetail = null;
+
+      try {
+        refreshedDetail =
+          await getAccountCourseDetail(
+            enrollmentId
+          );
+      } catch {
+        refreshedDetail = null;
+      }
+
+      if (refreshedDetail) {
+        setDetail(refreshedDetail);
+      } else {
+        setDetail((current) => (
+          current
+            ? {
+                ...current,
+                ...completedCourse,
+                status:
+                  completedCourse?.status
+                  || "completed",
+                completed_at:
+                  completedCourse?.completed_at
+                  || current.completed_at
+                  || null,
+              }
+            : completedCourse
+        ));
+      }
+
+      setCourseCompletionSuccess(
+        "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430."
+      );
+    } catch (err) {
+      setCourseCompletionError(
+        getCourseCompletionErrorMessage(
+          err
+        )
+      );
+
+      setCourseCompletionSuccess("");
+    } finally {
+      setCourseCompletionLoading(false);
+    }
+  }
+
 
   if (loading) {
     return (
@@ -355,8 +653,85 @@ export function LearnerCoursePage() {
         </div>
       </header>
 
+      {detail.status === "active" ? (
+        <div
+          data-testid="learner-course-course-completion"
+          className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-sm font-black text-slate-950">
+                {"\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b"}
+              </div>
+
+              {courseCompletionEligible ? (
+                <div
+                  data-testid="learner-course-course-completion-eligible"
+                  className="mt-1 text-sm text-green-700"
+                >
+                  {"\u0412\u0441\u0435 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0443\u0440\u043e\u043a\u0438 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b. \u041c\u043e\u0436\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443."}
+                </div>
+              ) : (
+                <div
+                  data-testid="learner-course-course-completion-blocked"
+                  className="mt-1 text-sm text-slate-600"
+                >
+                  {"\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0443\u0440\u043e\u043a\u0438: "}
+                  <span className="font-bold text-slate-900">
+                    {requiredLessonsCompleted}
+                    {" \u0438\u0437 "}
+                    {requiredLessonsTotal}
+                  </span>
+                  {remainingRequiredLessons > 0
+                    ? ` \u00b7 \u043e\u0441\u0442\u0430\u043b\u043e\u0441\u044c ${remainingRequiredLessons}`
+                    : ""}
+                </div>
+              )}
+            </div>
+
+            <button
+              data-testid="learner-course-complete-course-button"
+              type="button"
+              onClick={handleCompleteCourse}
+              disabled={
+                courseCompletionLoading
+                || !courseCompletionEligible
+              }
+              className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+
+              {courseCompletionLoading
+                ? "\u0417\u0430\u0432\u0435\u0440\u0448\u0430\u0435\u043c..."
+                : "\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {courseCompletionError ? (
+        <div
+          data-testid="learner-course-course-completion-error"
+          className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700 ring-1 ring-red-100"
+        >
+          {courseCompletionError}
+        </div>
+      ) : null}
+
+      {courseCompletionSuccess ? (
+        <div
+          data-testid="learner-course-course-completion-success"
+          className="mt-4 rounded-2xl bg-green-50 p-4 text-sm font-semibold text-green-700 ring-1 ring-green-100"
+        >
+          {courseCompletionSuccess}
+        </div>
+      ) : null}
+
       {detail.status === "completed" ? (
-        <div className="mt-4 flex gap-3 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-100">
+        <div
+          data-testid="learner-course-course-completed"
+          className="mt-4 flex gap-3 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-100"
+        >
           <CheckCircle2 className="h-5 w-5 shrink-0" />
 
           <div>
@@ -366,6 +741,15 @@ export function LearnerCoursePage() {
             <div className="mt-1">
               Материалы доступны для просмотра. Изменение прогресса отключено.
             </div>
+            <button
+              data-testid="learner-course-open-documents-button"
+              type="button"
+              onClick={handleOpenDocuments}
+              className="mt-3 inline-flex items-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+            >
+              {"\u041f\u0435\u0440\u0435\u0439\u0442\u0438 \u043a \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c"}
+            </button>
+
           </div>
         </div>
       ) : null}
@@ -556,6 +940,7 @@ export function LearnerCoursePage() {
                         "text",
                         "video",
                         "audio",
+                        "presentation",
                         "file_link",
                         "file",
                         "link",
@@ -583,6 +968,85 @@ export function LearnerCoursePage() {
                   </div>
                 </div>
               ) : null}
+
+              <div
+                data-testid="learner-course-lesson-completion"
+                className="mt-7 border-t border-slate-100 pt-6"
+              >
+                {selectedLesson.is_completed ? (
+                  <div
+                    data-testid="learner-course-lesson-completed"
+                    className="rounded-2xl bg-green-50 p-4 text-sm text-green-800 ring-1 ring-green-200"
+                  >
+                    <div className="flex items-center gap-2 font-bold">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span>\u0423\u0440\u043e\u043a \u0438\u0437\u0443\u0447\u0435\u043d</span>
+                    </div>
+
+                    {nextLesson ? (
+                      <button
+                        type="button"
+                        data-testid="learner-course-next-lesson-button"
+                        onClick={() =>
+                          handleOpenLesson(nextLesson.id)
+                        }
+                        className="mt-4 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+                      >
+                        \u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a
+                      </button>
+                    ) : null}
+                  </div>
+                ) : !readOnly ? (
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                    <div className="text-sm font-bold text-slate-900">
+                      \u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430
+                    </div>
+
+                    <div className="mt-1 text-sm leading-6 text-slate-600">
+                      \u041f\u043e\u0441\u043b\u0435 \u0438\u0437\u0443\u0447\u0435\u043d\u0438\u044f \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u043e\u0432 \u043e\u0442\u043c\u0435\u0442\u044c\u0442\u0435 \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439. \u0415\u0441\u043b\u0438 \u0435\u0441\u0442\u044c \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0442\u0435\u0441\u0442 \u0438\u043b\u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u0435, \u0441\u0438\u0441\u0442\u0435\u043c\u0430 \u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442 \u0438\u0445 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435.
+                    </div>
+
+                    <button
+                      type="button"
+                      data-testid="learner-course-complete-lesson-button"
+                      onClick={handleCompleteLesson}
+                      disabled={lessonCompletionLoading}
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {lessonCompletionLoading
+                        ? "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c..."
+                        : "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439"}
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    data-testid="learner-course-lesson-completion-read-only"
+                    className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200"
+                  >
+                    \u0418\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430 \u0434\u043b\u044f \u044d\u0442\u043e\u0439 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e.
+                  </div>
+                )}
+
+                {lessonCompletionError ? (
+                  <div
+                    data-testid="learner-course-lesson-completion-error"
+                    className="mt-3 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700 ring-1 ring-red-200"
+                  >
+                    {lessonCompletionError}
+                  </div>
+                ) : null}
+
+                {lessonCompletionSuccess ? (
+                  <div
+                    data-testid="learner-course-lesson-completion-success"
+                    className="mt-3 rounded-2xl bg-green-50 p-4 text-sm font-semibold text-green-800 ring-1 ring-green-200"
+                  >
+                    {lessonCompletionSuccess}
+                  </div>
+                ) : null}
+              </div>
+
             </article>
           ) : (
             <div className="rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">

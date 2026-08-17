@@ -517,26 +517,16 @@ def test_workspace_wires_content_blocks_without_regressing_quiz_assignment() -> 
     assert "{block.block_type}" in page
 
 
-def test_audio_remains_deferred_from_stable_content_block_scope() -> None:
+def test_audio_is_integrated_after_deferred_stable_scope() -> None:
     page = read(PAGE)
     content = read(
         ROOT
         / "frontend/src/components/learner/LearnerContentBlock.jsx"
     )
 
-    content_branch_start = page.index(
-        '] .includes(block.block_type)'
-        if '] .includes(block.block_type)' in page
-        else '].includes(block.block_type)'
-    )
+    assert '"audio"' in page
+    assert 'blockType === "audio"' in content
 
-    nearby = page[
-        max(0, content_branch_start - 300):
-        content_branch_start + 300
-    ]
-
-    assert '"audio"' not in nearby
-    assert 'blockType === "audio"' not in content
 
 # STEP_7H_B2_B1_AUDIO
 def test_learner_audio_renderer_uses_saved_audio_contract() -> None:
@@ -621,3 +611,529 @@ def test_workspace_routes_audio_through_content_renderer() -> None:
     assert "<LearnerAssignmentBlock" in page
 
     assert "{block.block_type}" in page
+
+# STEP_7H_B2_B2
+def test_workspace_completion_uses_account_api_active_only() -> None:
+    page = read(PAGE)
+
+    assert "completeAccountCourseLesson" in page
+    assert "await completeAccountCourseLesson(" in page
+    assert "async function handleCompleteLesson()" in page
+
+    assert (
+        'data-testid="learner-course-lesson-completion"'
+        in page
+    )
+    assert (
+        'data-testid="learner-course-complete-lesson-button"'
+        in page
+    )
+    assert "readOnly" in page
+    assert "selectedLesson.is_completed" in page
+    assert "disabled={lessonCompletionLoading}" in page
+
+    assert "getPublicCourseDetail" not in page
+    assert "getPublicCourses" not in page
+
+
+def test_workspace_completion_maps_required_backend_gates() -> None:
+    page = read(PAGE)
+
+    assert "getLessonCompletionErrorMessage" in page
+    assert '"required_quiz_not_passed"' in page
+    assert '"required_assignment_not_completed"' in page
+
+    assert "err?.payload?.detail" in page
+
+    assert (
+        'data-testid="learner-course-lesson-completion-error"'
+        in page
+    )
+    assert (
+        'data-testid="learner-course-lesson-completion-success"'
+        in page
+    )
+
+
+def test_workspace_completion_updates_detail_and_opens_next_incomplete_lesson() -> None:
+    page = read(PAGE)
+
+    assert "function getNextIncompleteLesson(" in page
+    assert "const nextLesson = useMemo(" in page
+    assert "const nextIncompleteLesson =" in page
+    assert "flattenCourseLessons(response)" in page
+    assert "setDetail(response);" in page
+
+    assert "nextIncompleteLesson.id" in page
+
+    assert (
+        "`/account/courses/${enrollmentId}/lessons/${nextIncompleteLesson.id}`"
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-next-lesson-button"'
+        in page
+    )
+
+    assert "handleOpenLesson(nextLesson.id)" in page
+
+
+def test_workspace_completion_has_completed_and_read_only_states() -> None:
+    page = read(PAGE)
+
+    assert (
+        'data-testid="learner-course-lesson-completed"'
+        in page
+    )
+    assert (
+        'data-testid="learner-course-lesson-completion-read-only"'
+        in page
+    )
+
+    assert "selectedLesson.is_completed" in page
+    assert 'detail?.status !== "active"' in page
+
+
+# STEP_7H_B2_B3_MEDIA
+def test_workspace_routes_presentation_through_content_renderer() -> None:
+    page = read(PAGE)
+
+    anchor = page.index(
+        '"rich_text",'
+    )
+
+    end = page.index(
+        "].includes(block.block_type)",
+        anchor,
+    )
+
+    routed = page[
+        anchor:end
+    ]
+
+    assert '"audio",' in routed
+    assert '"presentation",' in routed
+    assert '"file_link",' in routed
+    assert "<LearnerContentBlock" in page
+
+
+def test_learner_image_material_renders_inline_safely() -> None:
+    content = read(
+        ROOT
+        / "frontend/src/components/learner/LearnerContentBlock.jsx"
+    )
+
+    assert "function isImageMaterialBlock(block)" in content
+    assert 'getMaterialKind(block) === "image"' in content
+
+    assert "content.image_url" in content
+    assert "content.content_url" in content
+    assert "content.original_url" in content
+    assert "content.download_url" in content
+
+    assert "getSafeHref(rawSource)" in content
+    assert "getSafeHref(rawDownload)" in content
+
+    assert "<img" in content
+
+    assert (
+        'data-testid="learner-content-image"'
+        in content
+    )
+
+    assert (
+        'data-testid="learner-content-image-element"'
+        in content
+    )
+
+    assert (
+        'data-testid="learner-content-image-unavailable"'
+        in content
+    )
+
+    assert "dangerouslySetInnerHTML" not in content
+
+
+def test_learner_presentation_renders_pdf_safely() -> None:
+    content = read(
+        ROOT
+        / "frontend/src/components/learner/LearnerContentBlock.jsx"
+    )
+
+    assert (
+        'blockType === "presentation"'
+        in content
+    )
+
+    assert (
+        "function getPresentationViewerUrl(block)"
+        in content
+    )
+
+    assert "content.viewer_url" in content
+    assert "content.url" in content
+    assert "content.content_url" in content
+    assert "content.original_url" in content
+    assert "content.download_url" in content
+
+    assert "getSafeHref(rawViewer)" in content
+    assert "getSafeHref(rawDownload)" in content
+
+    assert "<iframe" in content
+
+    assert (
+        'data-testid="learner-content-presentation"'
+        in content
+    )
+
+    assert (
+        'data-testid="learner-content-presentation-viewer"'
+        in content
+    )
+
+    assert (
+        'data-testid="learner-content-presentation-unavailable"'
+        in content
+    )
+
+
+def test_media_renderers_preserve_open_download_and_fallback_contracts() -> None:
+    content = read(
+        ROOT
+        / "frontend/src/components/learner/LearnerContentBlock.jsx"
+    )
+
+    for marker in (
+        'data-testid="learner-content-image-open"',
+        'data-testid="learner-content-image-download"',
+        'data-testid="learner-content-presentation-open"',
+        'data-testid="learner-content-presentation-download"',
+    ):
+        assert marker in content
+
+    assert "content.open_full_size !== false" in content
+    assert "content.full_width !== false" in content
+    assert "content.show_download !== false" in content
+    assert "content.conversion_status" in content
+
+    assert "isImageMaterialBlock(block)" in content
+    assert "<FileLinkBlock block={block} />" in content
+
+
+# STEP_7H_B2_B4_COURSE_COMPLETE
+def test_course_completion_uses_existing_account_api_active_only() -> None:
+    page = read(PAGE)
+
+    assert "completeAccountCourse," in page
+
+    assert (
+        "async function handleCompleteCourse()"
+        in page
+    )
+
+    assert (
+        "await completeAccountCourse("
+        in page
+    )
+
+    assert (
+        'detail?.status !== "active"'
+        in page
+    )
+
+    assert (
+        'detail.status === "active" ? ('
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-complete-course-button"'
+        in page
+    )
+
+    assert "getPublicCourseDetail" not in page
+
+
+def test_course_completion_eligibility_uses_server_required_progress() -> None:
+    page = read(PAGE)
+
+    assert (
+        "detail?.required_lessons_total"
+        in page
+    )
+
+    assert (
+        "detail?.required_lessons_completed"
+        in page
+    )
+
+    assert (
+        "requiredLessonsCompleted"
+        in page
+    )
+
+    assert (
+        "requiredLessonsTotal"
+        in page
+    )
+
+    assert (
+        "courseCompletionEligible"
+        in page
+    )
+
+    assert (
+        "requiredLessonsCompleted"
+        "\n      >= requiredLessonsTotal"
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-course-completion-eligible"'
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-course-completion-blocked"'
+        in page
+    )
+
+
+def test_course_completion_refreshes_detail_and_maps_backend_gate() -> None:
+    page = read(PAGE)
+
+    assert (
+        '"Complete required lessons before completing course"'
+        in page
+    )
+
+    assert (
+        "function getCourseCompletionErrorMessage(err)"
+        in page
+    )
+
+    assert (
+        "const completedCourse ="
+        in page
+    )
+
+    assert (
+        "await getAccountCourseDetail("
+        in page
+    )
+
+    assert (
+        "setDetail(refreshedDetail);"
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-course-completion-error"'
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-course-completion-success"'
+        in page
+    )
+
+
+def test_course_completion_has_terminal_completed_state_without_action() -> None:
+    page = read(PAGE)
+
+    assert (
+        'data-testid="learner-course-course-completion"'
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-course-completed"'
+        in page
+    )
+
+    assert (
+        'detail.status === "completed" ? ('
+        in page
+    )
+
+    assert (
+        'detail.status === "cancelled" ? ('
+        in page
+    )
+
+    assert (
+        'const readOnly = detail?.status !== "active";'
+        in page
+    )
+
+
+# STEP_7H_B2_B5_POST_COMPLETION_DOCUMENT_ACTION
+def test_completed_course_offers_account_documents_action() -> None:
+    page = read(PAGE)
+
+    assert (
+        'data-testid="learner-course-course-completed"'
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-open-documents-button"'
+        in page
+    )
+
+    assert (
+        "onClick={handleOpenDocuments}"
+        in page
+    )
+
+    completed_index = page.index(
+        'data-testid="learner-course-course-completed"'
+    )
+
+    button_index = page.index(
+        'data-testid="learner-course-open-documents-button"'
+    )
+
+    cancelled_index = page.index(
+        'detail.status === "cancelled" ? ('
+    )
+
+    assert (
+        completed_index
+        < button_index
+        < cancelled_index
+    )
+
+
+def test_post_completion_document_action_targets_account_documents_section() -> None:
+    page = read(PAGE)
+
+    account_page = read(
+        ROOT
+        / "frontend/src/pages/AccountPage.jsx"
+    )
+
+    assert (
+        "function handleOpenDocuments()"
+        in page
+    )
+
+    assert (
+        '"obrportal_account_section"'
+        in page
+    )
+
+    assert (
+        '"documents"'
+        in page
+    )
+
+    assert (
+        'navigate("/account");'
+        in page
+    )
+
+    assert (
+        'documents: "account-documents"'
+        in account_page
+    )
+
+    assert (
+        'sessionStorage.getItem("obrportal_account_section")'
+        in account_page
+    )
+
+    assert (
+        'activeAccountSection === "documents"'
+        in account_page
+    )
+
+    assert (
+        "<LearnerAccountDocuments"
+        in account_page
+    )
+
+
+def test_post_completion_document_action_reuses_existing_document_api() -> None:
+    page = read(PAGE)
+
+    client = read(
+        ROOT
+        / "frontend/src/api/client.js"
+    )
+
+    assert (
+        "export async function getAccountDocuments("
+        in client
+    )
+
+    assert (
+        "export async function downloadAccountDocument("
+        in client
+    )
+
+    assert (
+        "getAccountDocuments"
+        not in page
+    )
+
+    assert (
+        "downloadAccountDocument"
+        not in page
+    )
+
+    assert (
+        'const readOnly = detail?.status !== "active";'
+        in page
+    )
+
+
+def run_smoke_suite() -> None:
+    import inspect
+
+    tests = sorted(
+        (
+            name,
+            value,
+        )
+        for name, value in globals().items()
+        if (
+            name.startswith("test_")
+            and callable(value)
+        )
+    )
+
+    print(
+        "SMOKE_TEST_COUNT="
+        + str(len(tests))
+    )
+
+    assert len(tests) == 42, (
+        "Expected exactly 42 workspace smoke tests, "
+        f"found {len(tests)}"
+    )
+
+    for name, test in tests:
+        signature = inspect.signature(test)
+
+        assert not signature.parameters, (
+            "Smoke test requires parameters: "
+            + name
+        )
+
+        test()
+
+        print(
+            "SMOKE_TEST "
+            + name
+            + "=PASS"
+        )
+
+    print(
+        "WORKSPACE_SMOKE_42=PASS"
+    )
+
+
+if __name__ == "__main__":
+    run_smoke_suite()
