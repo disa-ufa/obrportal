@@ -77,7 +77,6 @@ def main() -> None:
             "getAccountCourses,",
             "getAccountDocuments,",
             "getAccountSummary,",
-            "startAccountCourse,",
             "LearnerAccountLayout",
             "LearnerAccountDashboard",
             "LearnerAccountLearning",
@@ -99,7 +98,6 @@ def main() -> None:
             "async function loadAccountActivities()",
             "async function refreshAccountSnapshot()",
             "async function refreshAccountActivities()",
-            "async function handleStartCourse(enrollmentId)",
             "async function handleLoadLearningCourseDetail(course)",
             "async function handleDownload(documentId)",
             "function handleAccountSectionChange(section)",
@@ -149,6 +147,20 @@ def main() -> None:
             'data-testid="learner-account-legacy-sections"',
             'id="account-documents-legacy"',
             'id="account-courses"',
+        ],
+    )
+
+    # Starting an assigned course belongs to the authenticated
+    # learner course workspace, not the account overview page.
+    require_contains(
+        "frontend/src/pages/LearnerCoursePage.jsx",
+        [
+            "export function LearnerCoursePage",
+            "getAccountCourseDetail",
+            "startAccountCourse,",
+            "async function handleStartCourse()",
+            "await startAccountCourse(enrollmentId)",
+            "setDetail(response)",
         ],
     )
 
