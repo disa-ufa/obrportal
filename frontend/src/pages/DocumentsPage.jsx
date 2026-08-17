@@ -252,8 +252,31 @@ import {
   buildOrganizationsPath,
 } from "../utils/adminLinks";
 import { buildDocumentVerificationPath } from "../utils/documentVerification";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 
-const U = (value) => JSON.parse(`"${value}"`);
+const DOCUMENT_CSV_EXPORT_COLUMNS = [
+  { key: "id", label: "ID" },
+  { key: "document_number", label: "\u041d\u043e\u043c\u0435\u0440" },
+  { key: "verification_code", label: "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438" },
+  { key: "title", label: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435" },
+  { key: "document_type", label: "\u0422\u0438\u043f" },
+  { key: "status", label: "\u0421\u0442\u0430\u0442\u0443\u0441" },
+  { key: "status_label", label: "\u0421\u0442\u0430\u0442\u0443\u0441, \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435" },
+  { key: "user_id", label: "User ID" },
+  { key: "user_label", label: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c" },
+  { key: "course_id", label: "Course ID" },
+  { key: "course_title", label: "\u041a\u0443\u0440\u0441" },
+  { key: "organization_id", label: "Organization ID" },
+  { key: "organization_name", label: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f" },
+  { key: "enrollment_id", label: "Enrollment ID" },
+  { key: "file_available", label: "\u0424\u0430\u0439\u043b" },
+  { key: "created_at", label: "\u0421\u043e\u0437\u0434\u0430\u043d\u043e" },
+  { key: "created_display", label: "\u0421\u043e\u0437\u0434\u0430\u043d\u043e, \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e" },
+  { key: "updated_at", label: "\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e" },
+  { key: "updated_display", label: "\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e, \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e" },
+];
+
+const U = (value) => JSON.parse(`\"${value}\"`);
 
 const T = {
   admin: U("\\u0410\\u0434\\u043c\\u0438\\u043d\\u043a\\u0430"),
@@ -1352,37 +1375,38 @@ export function DocumentsPage() {
     }
   }
 
-  function handleExportCsv() {
-    const header = [
-      T.number,
-      T.verificationCode,
-      T.title,
-      T.type,
-      T.status,
-      T.user,
-      T.course,
-      T.organization,
-      T.file,
-      T.created,
-      T.updated,
-    ];
+  function handleExportDocumentsCsv() {
+    const displayedDocuments = documents;
 
-    const rows = documents.map((doc) => [
-      doc.document_number,
-      doc.verification_code,
-      doc.title,
-      doc.document_type,
-      getStatusLabel(doc.status),
-      getDocumentUserLabel(doc),
-      doc.course_title,
-      doc.organization_name,
-      doc.file_available ? T.fileReady : T.fileMissing,
-      formatDate(doc.created_at),
-      formatDate(doc.updated_at),
-    ]);
+    const rows = displayedDocuments.map((documentItem) => ({
+      id: documentItem.id,
+      document_number: documentItem.document_number || "",
+      verification_code: documentItem.verification_code || "",
+      title: documentItem.title || "",
+      document_type: documentItem.document_type || "",
+      status: documentItem.status || "",
+      status_label: getStatusLabel(documentItem.status),
+      user_id: documentItem.user_id || "",
+      user_label: getDocumentUserLabel(documentItem),
+      course_id: documentItem.course_id || "",
+      course_title: documentItem.course_title || "",
+      organization_id: documentItem.organization_id || "",
+      organization_name: documentItem.organization_name || "",
+      enrollment_id: documentItem.enrollment_id || "",
+      file_available: documentItem.file_available
+        ? T.fileReady
+        : T.fileMissing,
+      created_at: documentItem.created_at || "",
+      created_display: formatDate(documentItem.created_at),
+      updated_at: documentItem.updated_at || "",
+      updated_display: formatDate(documentItem.updated_at),
+    }));
 
-    const content = [header, ...rows].map((row) => row.map(escapeCsv).join(";")).join("\n");
-    downloadTextFile(`admin-documents-${new Date().toISOString().slice(0, 10)}.csv`, `\ufeff${content}`);
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-documents"),
+      DOCUMENT_CSV_EXPORT_COLUMNS,
+      rows
+    );
   }
 
   const quickTabs = [
@@ -1415,7 +1439,7 @@ export function DocumentsPage() {
             <button type="button" disabled className={SECONDARY_BUTTON_CLASS}>
               {T.importDocuments}
             </button>
-            <button type="button" onClick={handleExportCsv} disabled={documents.length === 0} className={SECONDARY_BUTTON_CLASS}>
+            <button type="button" onClick={handleExportDocumentsCsv} disabled={documents.length === 0} className={SECONDARY_BUTTON_CLASS}>
               {T.exportCsv}
             </button>
             <button type="button" data-testid="document-create-action" onClick={handleStartCreate} className={PRIMARY_BUTTON_CLASS}>
@@ -1532,8 +1556,8 @@ export function DocumentsPage() {
           <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4 text-sm text-slate-500">
             <span>{T.shown} {documents.length}</span>
             <span>-</span>
-            <span>{T.csvRows}: {documents.length}</span>
-            <button type="button" data-testid="admin-documents-export-csv-button" onClick={handleExportCsv} disabled={documents.length === 0} className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+            <span data-testid="admin-documents-export-summary">{T.csvRows}: {documents.length}</span>
+            <button type="button" data-testid="admin-documents-export-csv-button" onClick={handleExportDocumentsCsv} disabled={documents.length === 0} className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
               {T.exportCsv}
             </button>
           </div>

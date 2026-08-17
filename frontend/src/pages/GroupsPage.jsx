@@ -78,6 +78,7 @@
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
 import {
   addOrgLearningGroupMember,
   createOrgGroupEnrollments,
@@ -102,6 +103,23 @@ import {
   buildOrganizationsPath,
   buildUsersPath,
 } from "../utils/adminLinks";
+
+const GROUP_CSV_EXPORT_COLUMNS = [
+  { key: "id", label: "ID" },
+  { key: "name", label: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435" },
+  { key: "code", label: "\u041a\u043e\u0434" },
+  { key: "type", label: "\u0422\u0438\u043f" },
+  { key: "organization_name", label: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f" },
+  { key: "organization_id", label: "ID \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438" },
+  { key: "members_count", label: "\u0423\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0438" },
+  { key: "assignments_count", label: "\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f" },
+  { key: "is_active", label: "\u0410\u043a\u0442\u0438\u0432\u043d\u0430" },
+  { key: "status_label", label: "\u0421\u0442\u0430\u0442\u0443\u0441" },
+  { key: "description", label: "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435" },
+  { key: "created_at", label: "\u0421\u043e\u0437\u0434\u0430\u043d\u0430" },
+  { key: "updated_at", label: "\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0430" },
+  { key: "updated_display", label: "\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0430, \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e" },
+];
 
 const T = {
   pageTitle: "\u0413\u0440\u0443\u043f\u043f\u044b",
@@ -258,24 +276,6 @@ function formatDate(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
-}
-
-function buildCsvValue(value) {
-  const prepared = String(value ?? "").replaceAll('"', '""');
-  return `"${prepared}"`;
-}
-
-function downloadCsv(filename, rows) {
-  const csv = rows.map((row) => row.map(buildCsvValue).join(";")).join("\n");
-  const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = filename;
-  link.click();
-
-  URL.revokeObjectURL(url);
 }
 
 function initials(name, fallback = "GR") {
@@ -771,6 +771,8 @@ export function GroupsPage() {
       .sort((left, right) => String(left.name || "").localeCompare(String(right.name || ""), "ru-RU"));
   }, [groups, organizationsById, query, typeFilter, statusFilter, organizationFilter, membersByGroupId]);
 
+  const filteredGroups = visibleGroups;
+
   const counts = useMemo(() => {
     return {
       all: groups.length,
@@ -882,22 +884,30 @@ export function GroupsPage() {
     navigate(buildGroupsPath(), { replace: true });
   }
 
-  function handleExportCsv() {
-    const rows = [
-      [T.name, T.code, T.type, T.organization, T.members, T.assignments, T.status, T.updated],
-      ...visibleGroups.map((group) => [
-        group.name || "",
-        group.code || "",
-        getKindLabel(getGroupKind(group)),
-        getOrganizationName(organizationsById, group.organization_id),
-        (membersByGroupId[group.id] || []).length,
-        (enrollmentsByGroupId[group.id] || []).length,
-        group.is_active ? T.activeStatus : T.draftStatus,
-        formatDate(group.updated_at),
-      ]),
-    ];
+  function handleExportGroupsCsv() {
+    const rows = filteredGroups.map((group) => ({
+      id: group.id,
+      name: group.name || "",
+      code: group.code || "",
+      type: getKindLabel(getGroupKind(group)),
+      organization_name:
+        organizationsById[group.organization_id]?.name || "",
+      organization_id: group.organization_id || "",
+      members_count: (membersByGroupId[group.id] || []).length,
+      assignments_count: (enrollmentsByGroupId[group.id] || []).length,
+      is_active: group.is_active ? "yes" : "no",
+      status_label: group.is_active ? T.activeStatus : T.draftStatus,
+      description: group.description || "",
+      created_at: group.created_at || "",
+      updated_at: group.updated_at || "",
+      updated_display: formatDate(group.updated_at),
+    }));
 
-    downloadCsv(`obrportal-groups-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    downloadCsvFile(
+      buildDatedCsvFilename("obrportal-admin-groups"),
+      GROUP_CSV_EXPORT_COLUMNS,
+      rows
+    );
   }
 
   async function refreshGroup(groupId) {
@@ -1089,7 +1099,7 @@ export function GroupsPage() {
 
           <div className="flex flex-wrap gap-2">
             <button type="button" className={BUTTON_LIGHT} disabled>{T.importGroups}</button>
-            <button type="button" onClick={handleExportCsv} disabled={!visibleGroups.length} className={BUTTON_LIGHT}>{T.exportCsv}</button>
+            <button type="button" data-testid="admin-groups-export-csv-button" onClick={handleExportGroupsCsv} disabled={!visibleGroups.length} className={BUTTON_LIGHT}>{T.exportCsv}</button>
             <button type="button" onClick={() => setIsCreating((value) => !value)} className={BUTTON_BLUE}>
               {isCreating ? T.hideForm : T.createGroup}
             </button>
@@ -1225,8 +1235,8 @@ export function GroupsPage() {
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4 text-sm font-semibold text-slate-500">
           <span>{T.shownPrefix} {visibleGroups.length} {T.groups}</span>
           <span>{"\u2022"}</span>
-          <span>CSV: {visibleGroups.length} {"\u0441\u0442\u0440\u043e\u043a"}</span>
-          <button type="button" onClick={handleExportCsv} disabled={!visibleGroups.length} className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
+          <span data-testid="admin-groups-export-summary">CSV: {visibleGroups.length} {"\u0441\u0442\u0440\u043e\u043a"}</span>
+          <button type="button" onClick={handleExportGroupsCsv} disabled={!visibleGroups.length} className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
             {T.exportCsv}
           </button>
         </div>
