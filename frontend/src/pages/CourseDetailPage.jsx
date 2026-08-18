@@ -8,6 +8,7 @@ import {
 // Legacy CI smoke compatibility marker: import { useEffect, useState } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { completeAccountCourse, completeAccountCourseLesson, completeAccountCourseLessonAssignment, submitAccountCourseLessonAssignmentAnswer, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonAssignmentSubmission, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
@@ -4656,10 +4657,18 @@ function getPrimaryActionLabel(enrollment, user) {
 function CourseDetailGuestProgram({
   modules = [],
   authenticated = false,
+  assigned = false,
 }) {
   const normalizedModules = Array.isArray(modules)
     ? modules
     : [];
+
+  const firstModuleWithLessonsIndex =
+    normalizedModules.findIndex(
+      (module) =>
+        Array.isArray(module?.lessons) &&
+        module.lessons.length > 0
+    );
 
   return (
     <section
@@ -4677,9 +4686,11 @@ function CourseDetailGuestProgram({
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            {authenticated
-              ? "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438."
-              : "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0431\u0435\u0437 \u0432\u0445\u043e\u0434\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
+            {assigned
+              ? "\u041a\u0443\u0440\u0441 \u0443\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d. \u0417\u0434\u0435\u0441\u044c \u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b, \u0430 \u0443\u0440\u043e\u043a\u0438 \u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."
+              : authenticated
+                ? "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438."
+                : "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0431\u0435\u0437 \u0432\u0445\u043e\u0434\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
           </p>
         </div>
 
@@ -4726,14 +4737,25 @@ function CourseDetailGuestProgram({
                   {lessons.length > 0 ? (
                     <div className="border-t border-slate-200 bg-white">
                       {lessons.map(
-                        (lesson, lessonIndex) => (
+                        (lesson, lessonIndex) => {
+                          const isAssignedFirstLesson =
+                            assigned &&
+                            firstModuleWithLessonsIndex >= 0 &&
+                            moduleIndex === firstModuleWithLessonsIndex &&
+                            lessonIndex === 0;
+
+                          return (
                           <div
                             key={
                               lesson?.id ||
                               `guest-lesson-${moduleIndex}-${lessonIndex}`
                             }
                             data-testid="course-detail-guest-locked-lesson"
-                            className="flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 sm:px-5"
+                            className={
+                              isAssignedFirstLesson
+                                ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                : "flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 sm:px-5"
+                            }
                           >
                             <div className="flex min-w-0 items-center gap-3">
                               <div
@@ -4751,11 +4773,22 @@ function CourseDetailGuestProgram({
                               </div>
                             </div>
 
-                            <span className="hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex">
-                              {"\u0414\u043e\u0441\u0442\u0443\u043f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438"}
+                            <span
+                              className={
+                                isAssignedFirstLesson
+                                  ? "hidden shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 sm:inline-flex"
+                                  : "hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
+                              }
+                            >
+                              {isAssignedFirstLesson
+                                ? "\u041f\u0435\u0440\u0432\u044b\u0439 \u0448\u0430\u0433"
+                                : assigned
+                                  ? "\u0412 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435"
+                                  : "\u0414\u043e\u0441\u0442\u0443\u043f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438"}
                             </span>
                           </div>
-                        )
+                          );
+                        }
                       )}
                     </div>
                   ) : null}
@@ -5123,6 +5156,223 @@ function CourseDetailAuthenticatedUnenrolledState({
 }
 
 
+function CourseDetailAssignedState({
+  course,
+  enrollment,
+  onStart,
+  onAccount,
+  onCatalog,
+}) {
+  const progressPercent = normalizeProgressPercent(
+    enrollment?.progress_percent ??
+      course?.learner_progress?.progress_percent ??
+      0
+  );
+
+  return (
+    <div
+      data-testid="course-detail-assigned-state"
+      data-course-detail-state="assigned"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-assigned-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div className="rounded-shell bg-emerald-50 px-5 py-4 ring-1 ring-emerald-200 sm:px-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+            {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+          </span>
+
+          <p className="text-sm font-medium text-emerald-900">
+            {enrollment?.organization_name
+              ? `\u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d: ${enrollment.organization_name}`
+              : "\u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d \u0432\u0430\u043c \u0434\u043b\u044f \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f."}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-assigned-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-emerald-50 via-white to-blue-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
+                  {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  {formatCourseDocument(course)}
+                </span>
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                {"\u0413\u043e\u0442\u043e\u0432\u043e \u043a \u043d\u0430\u0447\u0430\u043b\u0443"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441"}
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-900">
+                  {`${progressPercent}%`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041e\u0431\u044a\u0451\u043c"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.hours
+                    ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
+                    : "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div data-testid="course-detail-assigned-program">
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+              assigned
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-assigned-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+            {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u041c\u043e\u0436\u043d\u043e \u043d\u0430\u0447\u0438\u043d\u0430\u0442\u044c"}
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {"\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u043a\u0443\u0440\u0441\u0430. \u0422\u0430\u043c \u0431\u0443\u0434\u0443\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b."}
+          </p>
+
+          <div
+            data-testid="course-detail-assigned-progress"
+            className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm font-semibold text-slate-700">
+                {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+              </span>
+
+              <span className="text-sm font-bold text-slate-900">
+                {`${progressPercent}%`}
+              </span>
+            </div>
+
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progressPercent}
+              className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"
+            >
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-[width]"
+                style={{
+                  width: `${progressPercent}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          {enrollment?.organization_name ? (
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435"}
+              </div>
+
+              <div className="mt-2 text-sm font-semibold text-slate-800">
+                {enrollment.organization_name}
+              </div>
+
+              {enrollment.learning_group_name ? (
+                <div className="mt-1 text-sm text-slate-600">
+                  {enrollment.learning_group_name}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-assigned-start-action"
+            onClick={onStart}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {"\u041d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-assigned-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
 const COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING = false;
 
 function CourseLearnerWorkspaceHandoff({
@@ -5456,6 +5706,7 @@ function setAccountLearningEntryIntent(notice = null) {
 
 
 export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user }) {
+  const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [relatedCourses, setRelatedCourses] = useState([]);
   const [publicState, setPublicState] = useState(
@@ -6129,6 +6380,22 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setEnrollLoading(false);
     }
   }
+  function handleOpenLearningWorkspace() {
+    const enrollmentId = getEnrollmentId(
+      existingEnrollment
+    );
+
+    if (!enrollmentId) {
+      setAccountLearningEntryIntent();
+      onPageChange("account");
+      return;
+    }
+
+    navigate(
+      `/account/courses/${enrollmentId}`
+    );
+  }
+
   function handleGuestLogin() {
     if (!course) {
       return;
@@ -6221,6 +6488,23 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         enrollSuccess={enrollSuccess}
         onEnroll={handleEnroll}
         onAccount={() => onPageChange("account")}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.ASSIGNED
+  ) {
+    return (
+      <CourseDetailAssignedState
+        course={course}
+        enrollment={existingEnrollment}
+        onStart={handleOpenLearningWorkspace}
+        onAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
         onCatalog={() => onPageChange("catalog")}
       />
     );
