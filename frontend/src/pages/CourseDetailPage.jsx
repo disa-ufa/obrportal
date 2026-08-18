@@ -4659,6 +4659,7 @@ function CourseDetailGuestProgram({
   authenticated = false,
   assigned = false,
   active = false,
+  completed = false,
 }) {
   const normalizedModules = Array.isArray(modules)
     ? modules
@@ -4704,7 +4705,9 @@ function CourseDetailGuestProgram({
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            {active
+            {completed
+              ? "\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d. \u0412 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d \u0444\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0443\u0440\u043e\u043a\u0430."
+              : active
               ? "\u0417\u0434\u0435\u0441\u044c \u043f\u043e\u043a\u0430\u0437\u0430\u043d \u0442\u0435\u043a\u0443\u0449\u0438\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043f\u043e \u0443\u0440\u043e\u043a\u0430\u043c. \u0414\u043b\u044f \u0438\u0437\u0443\u0447\u0435\u043d\u0438\u044f \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u043e\u0432, \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0437\u0430\u0434\u0430\u043d\u0438\u0439 \u0438 \u0442\u0435\u0441\u0442\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e."
               : assigned
                 ? "\u041a\u0443\u0440\u0441 \u0443\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d. \u0417\u0434\u0435\u0441\u044c \u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b, \u0430 \u0443\u0440\u043e\u043a\u0438 \u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."
@@ -4761,6 +4764,14 @@ function CourseDetailGuestProgram({
                           const lessonPosition =
                             `${moduleIndex}:${lessonIndex}`;
 
+                          const isCompletedCourseLesson =
+                            completed &&
+                            getLessonCompleted(lesson);
+
+                          const isCompletedCourseIncompleteLesson =
+                            completed &&
+                            !isCompletedCourseLesson;
+
                           const isActiveCompletedLesson =
                             active &&
                             getLessonCompleted(lesson);
@@ -4785,7 +4796,11 @@ function CourseDetailGuestProgram({
                             }
                             data-testid="course-detail-guest-locked-lesson"
                             className={
-                              isActiveCompletedLesson
+                              isCompletedCourseLesson
+                                ? "flex items-center justify-between gap-4 border-b border-green-100 bg-green-50/60 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                : isCompletedCourseIncompleteLesson
+                                  ? "flex items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                  : isActiveCompletedLesson
                                 ? "flex items-center justify-between gap-4 border-b border-green-100 bg-green-50/60 px-4 py-3.5 last:border-b-0 sm:px-5"
                                 : isActiveNextLesson
                                   ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
@@ -4812,7 +4827,11 @@ function CourseDetailGuestProgram({
 
                             <span
                               className={
-                                isActiveCompletedLesson
+                                isCompletedCourseLesson
+                                  ? "hidden shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200 sm:inline-flex"
+                                  : isCompletedCourseIncompleteLesson
+                                    ? "hidden shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 sm:inline-flex"
+                                    : isActiveCompletedLesson
                                   ? "hidden shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200 sm:inline-flex"
                                   : isActiveNextLesson
                                     ? "hidden shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 sm:inline-flex"
@@ -4821,7 +4840,11 @@ function CourseDetailGuestProgram({
                                       : "hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
                               }
                             >
-                              {isActiveCompletedLesson
+                              {isCompletedCourseLesson
+                                ? "\u041f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                : isCompletedCourseIncompleteLesson
+                                  ? "\u041d\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                  : isActiveCompletedLesson
                                 ? "\u041f\u0440\u043e\u0439\u0434\u0435\u043d"
                                 : isActiveNextLesson
                                   ? "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433"
@@ -5690,6 +5713,370 @@ function CourseDetailActiveState({
           <p className="mt-5 border-t border-slate-100 pt-5 text-sm leading-6 text-slate-600">
             {"\u0423\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435 \u043a\u0443\u0440\u0441\u0430."}
           </p>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+function CourseDetailCompletedState({
+  course,
+  enrollment,
+  accountDocuments = [],
+  documentsLoading = false,
+  documentsLoadError = "",
+  downloadError = "",
+  documentDownloadLoadingId = "",
+  onDownloadDocument,
+  onDocuments,
+  onAccount,
+  onCatalog,
+}) {
+  const lessons = getCourseDetailOverviewLessons(
+    course
+  );
+
+  const lessonsTotal = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_total ??
+        course?.learner_progress?.lessons_total ??
+        lessons.length
+    ) || 0
+  );
+
+  const lessonsCompleted = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_completed ??
+        course?.learner_progress?.lessons_completed ??
+        lessons.filter(getLessonCompleted).length
+    ) || 0
+  );
+
+  const requiredLessonsTotal = Math.max(
+    0,
+    Number(
+      enrollment?.required_lessons_total ??
+        course?.learner_progress?.required_lessons_total ??
+        0
+    ) || 0
+  );
+
+  const requiredLessonsCompleted = Math.max(
+    0,
+    Number(
+      enrollment?.required_lessons_completed ??
+        course?.learner_progress?.required_lessons_completed ??
+        0
+    ) || 0
+  );
+
+  const documentItem =
+    getLearnerDocumentAvailabilityHandoffDocument(
+      course,
+      enrollment,
+      accountDocuments
+    );
+
+  const documentAvailable =
+    documentItem?.status === "available" &&
+    Boolean(documentItem?.download_available);
+
+  const documentRevoked =
+    documentItem?.status === "revoked";
+
+  const documentStatusLabel = documentsLoading
+    ? "\u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"
+    : documentsLoadError
+      ? "\u0421\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u043d\u0435 \u043e\u0431\u043d\u043e\u0432\u0438\u043b\u0438\u0441\u044c"
+      : !documentItem
+        ? "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442\u0441\u044f"
+        : documentAvailable
+          ? "\u0413\u043e\u0442\u043e\u0432 \u043a \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u044e"
+          : documentRevoked
+            ? "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"
+            : documentItem.status === "available"
+              ? "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d"
+              : "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u0434\u0433\u043e\u0442\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442\u0441\u044f";
+
+  const documentStatusTone = documentsLoadError
+    ? "bg-red-50 text-red-800 ring-red-200"
+    : documentRevoked
+      ? "bg-red-50 text-red-800 ring-red-200"
+      : documentAvailable
+        ? "bg-green-50 text-green-800 ring-green-200"
+        : "bg-amber-50 text-amber-800 ring-amber-200";
+
+  return (
+    <div
+      data-testid="course-detail-completed-state"
+      data-course-detail-state="completed"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-completed-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div
+        data-testid="course-detail-completed-banner"
+        className="rounded-shell bg-green-50 px-5 py-4 ring-1 ring-green-200 sm:px-6"
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+            {"\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+          </span>
+
+          <p className="text-sm font-medium text-green-900">
+            {"\u0412\u044b \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043b\u0438 \u043a\u0443\u0440\u0441."}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-completed-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-green-50 via-white to-blue-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 ring-1 ring-green-200">
+                  {"\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-green-700">
+                {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e"}
+                </div>
+
+                <div className="mt-2 text-2xl font-bold text-green-700">
+                  {"100%"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e \u0443\u0440\u043e\u043a\u043e\u0432"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {enrollment?.completed_at
+                    ? formatDateTime(enrollment.completed_at)
+                    : "\u2014"}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-completed-summary"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-green-700">
+              {"\u0418\u0442\u043e\u0433\u0438 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+            </div>
+
+            <h2 className="mt-2 text-xl font-bold text-slate-900">
+              {"\u0422\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u044b"}
+            </h2>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
+                <div className="text-sm font-semibold text-green-900">
+                  {"\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+                </div>
+
+                <div className="mt-1 text-sm text-green-800">
+                  {"\u0421\u0442\u0430\u0442\u0443\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d."}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
+                <div className="text-sm font-semibold text-green-900">
+                  {"\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u0447\u0430\u0441\u0442\u044c"}
+                </div>
+
+                <div className="mt-1 text-sm text-green-800">
+                  {requiredLessonsTotal > 0
+                    ? `${requiredLessonsCompleted} \u0438\u0437 ${requiredLessonsTotal} \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u0443\u0440\u043e\u043a\u043e\u0432`
+                    : "\u0422\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u044f \u043a \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044e \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u044b."}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div data-testid="course-detail-completed-program">
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+              completed
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-completed-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+            {"\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+          </h2>
+
+          <div className="mt-4 text-sm font-semibold text-slate-900">
+            {documentItem?.title ||
+              formatCourseDocument(course)}
+          </div>
+
+          <div
+            data-testid="course-detail-completed-document-status"
+            className={`mt-4 rounded-2xl p-4 text-sm font-semibold ring-1 ${documentStatusTone}`}
+          >
+            {documentStatusLabel}
+          </div>
+
+          {documentItem ? (
+            <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430"}
+                </div>
+
+                <div className="mt-1 break-all text-sm font-semibold text-slate-900">
+                  {documentItem.document_number || "\u2014"}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0414\u0430\u0442\u0430 \u0432\u044b\u0434\u0430\u0447\u0438"}
+                </div>
+
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {documentItem.issued_at
+                    ? formatDateTime(documentItem.issued_at)
+                    : "\u2014"}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {documentsLoadError ? (
+            <div
+              data-testid="course-detail-completed-document-load-error"
+              role="alert"
+              className="mt-5 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+            >
+              {documentsLoadError}
+            </div>
+          ) : null}
+
+          {downloadError ? (
+            <div
+              data-testid="course-detail-completed-document-download-error"
+              role="alert"
+              className="mt-5 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+            >
+              {downloadError}
+            </div>
+          ) : null}
+
+          {documentAvailable ? (
+            <button
+              type="button"
+              data-testid="course-detail-completed-download-action"
+              onClick={() =>
+                onDownloadDocument?.(documentItem)
+              }
+              disabled={
+                documentDownloadLoadingId ===
+                documentItem.id
+              }
+              className="mt-6 min-h-12 w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {documentDownloadLoadingId ===
+              documentItem.id
+                ? "\u0421\u043a\u0430\u0447\u0438\u0432\u0430\u0435\u043c..."
+                : "\u0421\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              data-testid="course-detail-completed-documents-action"
+              onClick={onDocuments}
+              className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              {"\u041f\u0435\u0440\u0435\u0439\u0442\u0438 \u043a \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c"}
+            </button>
+          )}
+
+          {documentAvailable ? (
+            <button
+              type="button"
+              data-testid="course-detail-completed-documents-action"
+              onClick={onDocuments}
+              className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+            >
+              {"\u0412\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"}
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-completed-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
         </aside>
       </div>
     </div>
@@ -6842,6 +7229,33 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         course={course}
         enrollment={existingEnrollment}
         onContinue={handleOpenLearningWorkspace}
+        onAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.COMPLETED
+  ) {
+    return (
+      <CourseDetailCompletedState
+        course={course}
+        enrollment={existingEnrollment}
+        accountDocuments={accountDocuments}
+        documentsLoading={accountDocumentsLoading}
+        documentsLoadError={accountDocumentsError}
+        downloadError={accountDocumentDownloadError}
+        documentDownloadLoadingId={
+          accountDocumentDownloadLoadingId
+        }
+        onDownloadDocument={
+          handleDownloadAccountDocument
+        }
+        onDocuments={() => onPageChange("documents")}
         onAccount={() => {
           setAccountLearningEntryIntent();
           onPageChange("account");
