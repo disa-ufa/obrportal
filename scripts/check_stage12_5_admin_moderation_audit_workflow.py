@@ -232,8 +232,6 @@ ADMIN_PAGE_MARKERS = [
         "admin-audit-apply-filters-action",
         "admin-audit-reset-filters-action",
         "admin-audit-filter-error-state",
-        "admin-audit-quick-action-filter",
-        "admin-audit-quick-entity-type-filter",
         "admin-audit-result-summary",
         "admin-audit-loading-state",
         "admin-audit-empty-state",
