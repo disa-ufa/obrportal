@@ -350,6 +350,7 @@ def main() -> None:
             "getAccountCourses,",
             "getPublicCourseDetail,",
             "getPublicCourses",
+            'from "../utils/courseDetailState";',
             "function formatCourseDocument(course)",
             "function formatCoursePrice(course)",
             "function getEnrollmentStatusLabel(status)",
@@ -363,9 +364,20 @@ def main() -> None:
             "const [enrollSuccess, setEnrollSuccess] = useState(\"\");",
             "const [existingEnrollment, setExistingEnrollment] = useState(null);",
             "async function loadCourse()",
-            "getPublicCourseDetail(courseSlug)",
             "getPublicCourses({ limit: 6 })",
-            "user ? getAccountCourses() : Promise.resolve(null)",
+            "const [publicState, setPublicState] = useState(",
+            "const [accountState, setAccountState] = useState(",
+            "const [publicError, setPublicError] = useState(",
+            "const [accountError, setAccountError] = useState(",
+            "const courseDetailState = resolveCourseDetailState({",
+            "courseResponse = await getPublicCourseDetail(",
+            "accountCoursesResponse =",
+            "await getAccountCourses();",
+            "PUBLIC_COURSE_LOAD_STATES.NOT_FOUND",
+            "ACCOUNT_COURSE_LOAD_STATES.ERROR",
+            "ACCOUNT_COURSE_LOAD_STATES.READY",
+            'variant="error"',
+            'data-testid="course-detail-state-retry-action"',
             "setRelatedCourses(",
             "setExistingEnrollment(",
             "async function handleEnroll()",
@@ -375,6 +387,16 @@ def main() -> None:
             "enrollAccountCourse(course.id)",
             "if (err.status === 409)",
             "getPrimaryActionLabel(existingEnrollment, user)",
+        ],
+    )
+
+    require_not_contains(
+        "frontend/src/pages/CourseDetailPage.jsx",
+        [
+            "const [loading, setLoading] = useState(Boolean(courseSlug));",
+            'const [error, setError] = useState("");',
+            "const [courseResponse, coursesResponse, accountCoursesResponse] = await Promise.all([",
+            "user ? getAccountCourses() : Promise.resolve(null)",
         ],
     )
 

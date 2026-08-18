@@ -1,4 +1,10 @@
 import { formatApiError } from "../utils/apiErrors";
+import {
+  ACCOUNT_COURSE_LOAD_STATES,
+  COURSE_DETAIL_STATES,
+  PUBLIC_COURSE_LOAD_STATES,
+  resolveCourseDetailState,
+} from "../utils/courseDetailState";
 // Legacy CI smoke compatibility marker: import { useEffect, useState } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
@@ -4647,31 +4653,61 @@ function getPrimaryActionLabel(enrollment, user) {
 
 
 
-function CourseDetailServiceState({ variant, error, onPageChange }) {
+function CourseDetailServiceState({
+  variant,
+  error,
+  onPageChange,
+  onRetry,
+}) {
   const isLoading = variant === "loading";
-  const testId = isLoading ? "course-detail-loading-state" : "course-detail-not-found-state";
+  const isError = variant === "error";
+
+  const testId = isLoading
+    ? "course-detail-loading-state"
+    : isError
+      ? "course-detail-error-state"
+      : "course-detail-not-found-state";
+
   const title = isLoading
     ? "Загружаем карточку программы"
-    : "По этому адресу нет опубликованной карточки курса";
-  const eyebrow = isLoading ? "Загрузка" : "Программа не найдена";
+    : isError
+      ? "Не удалось загрузить данные курса"
+      : "По этому адресу нет опубликованной карточки курса";
+
+  const eyebrow = isLoading
+    ? "Загрузка"
+    : isError
+      ? "Ошибка загрузки"
+      : "Программа не найдена";
+
   const description = isLoading
     ? "Получаем описание программы, структуру обучения и статус записи в личном кабинете."
-    : error || "Вернитесь в каталог и выберите активную опубликованную программу.";
+    : isError
+      ? error || "Не удалось получить актуальные данные программы. Попробуйте повторить запрос."
+      : error || "Вернитесь в каталог и выберите активную опубликованную программу.";
 
   return (
     <section
       data-testid={testId}
       className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10"
     >
-      <div className={isLoading ? "text-sm font-semibold uppercase tracking-wide text-blue-600" : "text-sm font-semibold uppercase tracking-wide text-red-600"}>
+      <div
+        className={
+          isLoading
+            ? "text-sm font-semibold uppercase tracking-wide text-blue-600"
+            : "text-sm font-semibold uppercase tracking-wide text-red-600"
+        }
+      >
         {eyebrow}
       </div>
+
       <h1
         data-testid="course-detail-state-title"
         className="mt-2 text-3xl font-bold text-slate-900"
       >
         {title}
       </h1>
+
       <p
         data-testid="course-detail-state-description"
         className="mt-4 max-w-2xl text-sm leading-6 text-slate-600"
@@ -4681,7 +4717,11 @@ function CourseDetailServiceState({ variant, error, onPageChange }) {
 
       {isLoading ? (
         <div className="mt-6 grid gap-3 md:grid-cols-3">
-          {["Описание", "Структура", "Статус записи"].map((item) => (
+          {[
+            "Описание",
+            "Структура",
+            "Статус записи",
+          ].map((item) => (
             <div
               key={item}
               className="h-16 animate-pulse rounded-2xl bg-slate-100 ring-1 ring-slate-200"
@@ -4691,23 +4731,40 @@ function CourseDetailServiceState({ variant, error, onPageChange }) {
         </div>
       ) : (
         <div className="mt-6 flex flex-wrap gap-3">
+          {isError && onRetry ? (
+            <button
+              type="button"
+              data-testid="course-detail-state-retry-action"
+              onClick={onRetry}
+              className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              {"Повторить"}
+            </button>
+          ) : null}
+
           <button
             type="button"
             data-testid="course-detail-state-catalog-action"
             onClick={() => onPageChange("catalog")}
-            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className={
+              isError
+                ? "rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                : "rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            }
           >
-            В каталог
+            {"В каталог"}
           </button>
 
-          <button
-            type="button"
-            data-testid="course-detail-state-verify-action"
-            onClick={() => onPageChange("verify-document")}
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Проверить документ
-          </button>
+          {!isError ? (
+            <button
+              type="button"
+              data-testid="course-detail-state-verify-action"
+              onClick={() => onPageChange("verify-document")}
+              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+            >
+              {"Проверить документ"}
+            </button>
+          ) : null}
         </div>
       )}
     </section>
@@ -4863,8 +4920,17 @@ function setAccountLearningEntryIntent(notice = null) {
 export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user }) {
   const [course, setCourse] = useState(null);
   const [relatedCourses, setRelatedCourses] = useState([]);
-  const [loading, setLoading] = useState(Boolean(courseSlug));
-  const [error, setError] = useState("");
+  const [publicState, setPublicState] = useState(
+    PUBLIC_COURSE_LOAD_STATES.LOADING
+  );
+  const [accountState, setAccountState] = useState(
+    user
+      ? ACCOUNT_COURSE_LOAD_STATES.LOADING
+      : ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+  );
+  const [publicError, setPublicError] = useState("");
+  const [accountError, setAccountError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const [enrollLoading, setEnrollLoading] = useState(false);
   const [enrollError, setEnrollError] = useState("");
   const [enrollSuccess, setEnrollSuccess] = useState("");
@@ -4887,107 +4953,241 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [completionDocumentFocus, setCompletionDocumentFocus] = useState(null);
   const documentHandoffPanelRef = useRef(null);
 
+  const courseDetailState = resolveCourseDetailState({
+    publicState,
+    accountState,
+    user,
+    enrollment: existingEnrollment,
+  });
+
   useEffect(() => {
     let isMounted = true;
 
     async function loadCourse() {
+      setCourse(null);
+      setRelatedCourses([]);
+      setExistingEnrollment(null);
+      setAccountCourseDetail(null);
+      setAccountDocuments([]);
+      setAccountDocumentsError("");
+      setAccountDocumentDownloadError("");
+      setAccountDocumentDownloadLoadingId("");
+      setCompletionDocumentFocus(null);
+      setPublicError("");
+      setAccountError("");
+
       if (!courseSlug) {
-        setCourse(null);
-        setRelatedCourses([]);
-        setExistingEnrollment(null);
-        setAccountCourseDetail(null);
-        setAccountDocuments([]);
         setAccountDocumentsLoading(false);
-        setAccountDocumentsError("");
-        setAccountDocumentDownloadError("");
-        setAccountDocumentDownloadLoadingId("");
-        setCompletionDocumentFocus(null);
-        setLoading(false);
-        setError("Курс не выбран.");
+        setPublicState(PUBLIC_COURSE_LOAD_STATES.ERROR);
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+        );
+        setPublicError(
+          "\u041a\u0443\u0440\u0441 \u043d\u0435 \u0432\u044b\u0431\u0440\u0430\u043d."
+        );
         return;
       }
 
+      setPublicState(
+        PUBLIC_COURSE_LOAD_STATES.LOADING
+      );
+      setAccountState(
+        user
+          ? ACCOUNT_COURSE_LOAD_STATES.LOADING
+          : ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+      );
+      setAccountDocumentsLoading(Boolean(user));
+
+      let courseResponse = null;
+
       try {
-        setLoading(true);
-        setError("");
-        setAccountDocumentsLoading(Boolean(user));
-        setAccountDocumentsError("");
-        setAccountDocumentDownloadError("");
-        setCompletionDocumentFocus(null);
-
-        const [courseResponse, coursesResponse, accountCoursesResponse] = await Promise.all([
-          getPublicCourseDetail(courseSlug),
-          getPublicCourses({ limit: 6 }),
-          user ? getAccountCourses() : Promise.resolve(null),
-        ]);
-
-        const accountCourses = Array.isArray(accountCoursesResponse?.items)
-          ? accountCoursesResponse.items
-          : [];
-
-        const matchedEnrollment =
-          accountCourses.find(
-            (item) =>
-              item.course_id === courseResponse.id ||
-              item.course_slug === courseResponse.slug
-          ) || null;
-
-        let accountCourseDetailResponse = null;
-        const matchedEnrollmentId = getEnrollmentId(matchedEnrollment);
-
-        let accountDocumentItems = [];
-        let accountDocumentLoadError = "";
-
-        if (matchedEnrollmentId) {
-          try {
-            accountCourseDetailResponse = await getAccountCourseDetail(matchedEnrollmentId);
-          } catch {
-            accountCourseDetailResponse = null;
-          }
-
-          try {
-            const accountDocumentsResponse = await getAccountDocuments({
-              enrollment_id: matchedEnrollmentId,
-              course_id: courseResponse.id,
-            });
-            accountDocumentItems = Array.isArray(accountDocumentsResponse?.items)
-              ? accountDocumentsResponse.items
-              : [];
-          } catch (err) {
-            accountDocumentLoadError = formatApiError(err, "Не удалось загрузить итоговые документы по курсу.");
-          }
-        }
-
-        if (!isMounted) {
-          return;
-        }
-
-        setCourse(courseResponse);
-        setAccountCourseDetail(accountCourseDetailResponse);
-        setAccountDocuments(accountDocumentItems);
-        setAccountDocumentsError(accountDocumentLoadError);
-        setAccountDocumentsLoading(false);
-        setRelatedCourses(
-          Array.isArray(coursesResponse)
-            ? coursesResponse.filter((item) => item.slug !== courseResponse.slug).slice(0, 2)
-            : []
+        courseResponse = await getPublicCourseDetail(
+          courseSlug
         );
-        setExistingEnrollment(accountCourseDetailResponse || matchedEnrollment);
       } catch (err) {
         if (!isMounted) {
           return;
         }
 
-        setCourse(null);
-        setRelatedCourses([]);
+        const isNotFound = err?.status === 404;
+
+        setPublicState(
+          isNotFound
+            ? PUBLIC_COURSE_LOAD_STATES.NOT_FOUND
+            : PUBLIC_COURSE_LOAD_STATES.ERROR
+        );
+
+        setPublicError(
+          formatApiError(
+            err,
+            isNotFound
+              ? "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430."
+              : "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b."
+          )
+        );
+
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+        );
+        setAccountDocumentsLoading(false);
+        return;
+      }
+
+      if (!isMounted) {
+        return;
+      }
+
+      setCourse(courseResponse);
+      setPublicState(
+        PUBLIC_COURSE_LOAD_STATES.READY
+      );
+
+      getPublicCourses({ limit: 6 })
+        .then((coursesResponse) => {
+          if (!isMounted) {
+            return;
+          }
+
+          setRelatedCourses(
+            Array.isArray(coursesResponse)
+              ? coursesResponse
+                  .filter(
+                    (item) =>
+                      item.slug !== courseResponse.slug
+                  )
+                  .slice(0, 2)
+              : []
+          );
+        })
+        .catch(() => {
+          if (isMounted) {
+            setRelatedCourses([]);
+          }
+        });
+
+      if (!user) {
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+        );
+        setAccountDocumentsLoading(false);
+        return;
+      }
+
+      let accountCoursesResponse = null;
+
+      try {
+        accountCoursesResponse =
+          await getAccountCourses();
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.ERROR
+        );
+
+        setAccountError(
+          formatApiError(
+            err,
+            "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0441\u0442\u0430\u0442\u0443\u0441 \u0432\u0430\u0448\u0435\u0439 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."
+          )
+        );
+
+        setAccountDocumentsLoading(false);
+        return;
+      }
+
+      if (!isMounted) {
+        return;
+      }
+
+      const accountCourses = Array.isArray(
+        accountCoursesResponse?.items
+      )
+        ? accountCoursesResponse.items
+        : [];
+
+      const matchedEnrollment =
+        accountCourses.find(
+          (item) =>
+            item.course_id === courseResponse.id ||
+            item.course_slug === courseResponse.slug
+        ) || null;
+
+      const matchedEnrollmentId =
+        getEnrollmentId(matchedEnrollment);
+
+      if (!matchedEnrollmentId) {
         setExistingEnrollment(null);
         setAccountCourseDetail(null);
-        setError(formatApiError(err, "Программа не найдена."));
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setAccountDocuments([]);
+        setAccountDocumentsLoading(false);
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.READY
+        );
+        return;
       }
+
+      let accountCourseDetailResponse = null;
+
+      try {
+        accountCourseDetailResponse =
+          await getAccountCourseDetail(
+            matchedEnrollmentId
+          );
+      } catch {
+        accountCourseDetailResponse = null;
+      }
+
+      let accountDocumentItems = [];
+      let accountDocumentLoadError = "";
+
+      try {
+        const accountDocumentsResponse =
+          await getAccountDocuments({
+            enrollment_id: matchedEnrollmentId,
+            course_id: courseResponse.id,
+          });
+
+        accountDocumentItems = Array.isArray(
+          accountDocumentsResponse?.items
+        )
+          ? accountDocumentsResponse.items
+          : [];
+      } catch (err) {
+        accountDocumentLoadError = formatApiError(
+          err,
+          "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u043f\u043e \u043a\u0443\u0440\u0441\u0443."
+        );
+      }
+
+      if (!isMounted) {
+        return;
+      }
+
+      setAccountCourseDetail(
+        accountCourseDetailResponse
+      );
+
+      setExistingEnrollment(
+        accountCourseDetailResponse ||
+          matchedEnrollment
+      );
+
+      setAccountDocuments(
+        accountDocumentItems
+      );
+
+      setAccountDocumentsError(
+        accountDocumentLoadError
+      );
+
+      setAccountDocumentsLoading(false);
+
+      setAccountState(
+        ACCOUNT_COURSE_LOAD_STATES.READY
+      );
     }
 
     loadCourse();
@@ -4995,7 +5195,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     return () => {
       isMounted = false;
     };
-  }, [courseSlug, user?.id]);
+  }, [courseSlug, user?.id, reloadKey]);
 
   const learnerCourse = useMemo(
     () => mergeCourseWithAccountCourseDetail(course, accountCourseDetail),
@@ -5351,6 +5551,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
 
       setAccountCourseDetail(createdCourseDetail);
       setExistingEnrollment(createdCourseDetail || createdEnrollment);
+      setAccountState(ACCOUNT_COURSE_LOAD_STATES.READY);
+      setAccountError("");
       setEnrollSuccess("Вы записаны на программу. Курс добавлен в личный кабинет.");
 
       setAccountLearningEntryIntent({
@@ -5368,6 +5570,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           course_slug: course.slug,
           status: "assigned",
         });
+        setAccountState(ACCOUNT_COURSE_LOAD_STATES.READY);
+        setAccountError("");
         setEnrollError("");
         setEnrollSuccess("Вы уже записаны на эту программу. Курс доступен в личном кабинете.");
 
@@ -5387,16 +5591,51 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setEnrollLoading(false);
     }
   }
-  if (loading) {
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.LOADING
+  ) {
     return <CourseDetailServiceState variant="loading" onPageChange={onPageChange} />;
+  }
+
+  if (
+    courseDetailState ===
+    COURSE_DETAIL_STATES.NOT_FOUND
+  ) {
+    return (
+      <CourseDetailServiceState
+        variant="not-found"
+        error={publicError}
+        onPageChange={onPageChange}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.ERROR
+  ) {
+    return (
+      <CourseDetailServiceState
+        variant="error"
+        error={publicError || accountError}
+        onPageChange={onPageChange}
+        onRetry={() =>
+          setReloadKey((value) => value + 1)
+        }
+      />
+    );
   }
 
   if (!course) {
     return (
       <CourseDetailServiceState
-        variant="not-found"
-        error={error}
+        variant="error"
+        error={
+          "\u0414\u0430\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b."
+        }
         onPageChange={onPageChange}
+        onRetry={() =>
+          setReloadKey((value) => value + 1)
+        }
       />
     );
   }
