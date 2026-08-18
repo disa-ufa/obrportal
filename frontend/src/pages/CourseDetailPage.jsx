@@ -4658,6 +4658,7 @@ function CourseDetailGuestProgram({
   modules = [],
   authenticated = false,
   assigned = false,
+  active = false,
 }) {
   const normalizedModules = Array.isArray(modules)
     ? modules
@@ -4669,6 +4670,23 @@ function CourseDetailGuestProgram({
         Array.isArray(module?.lessons) &&
         module.lessons.length > 0
     );
+
+  const programLessonEntries =
+    normalizedModules.flatMap(
+      (module, moduleIndex) =>
+        (Array.isArray(module?.lessons)
+          ? module.lessons
+          : []
+        ).map((lesson, lessonIndex) => ({
+          lesson,
+          position: `${moduleIndex}:${lessonIndex}`,
+        }))
+    );
+
+  const firstIncompleteLessonPosition =
+    programLessonEntries.find(
+      (item) => !getLessonCompleted(item.lesson)
+    )?.position || "";
 
   return (
     <section
@@ -4686,11 +4704,13 @@ function CourseDetailGuestProgram({
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            {assigned
-              ? "\u041a\u0443\u0440\u0441 \u0443\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d. \u0417\u0434\u0435\u0441\u044c \u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b, \u0430 \u0443\u0440\u043e\u043a\u0438 \u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."
-              : authenticated
-                ? "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438."
-                : "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0431\u0435\u0437 \u0432\u0445\u043e\u0434\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
+            {active
+              ? "\u0417\u0434\u0435\u0441\u044c \u043f\u043e\u043a\u0430\u0437\u0430\u043d \u0442\u0435\u043a\u0443\u0449\u0438\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043f\u043e \u0443\u0440\u043e\u043a\u0430\u043c. \u0414\u043b\u044f \u0438\u0437\u0443\u0447\u0435\u043d\u0438\u044f \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u043e\u0432, \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0437\u0430\u0434\u0430\u043d\u0438\u0439 \u0438 \u0442\u0435\u0441\u0442\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e."
+              : assigned
+                ? "\u041a\u0443\u0440\u0441 \u0443\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d. \u0417\u0434\u0435\u0441\u044c \u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b, \u0430 \u0443\u0440\u043e\u043a\u0438 \u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."
+                : authenticated
+                  ? "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438."
+                  : "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0431\u0435\u0437 \u0432\u0445\u043e\u0434\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
           </p>
         </div>
 
@@ -4738,6 +4758,19 @@ function CourseDetailGuestProgram({
                     <div className="border-t border-slate-200 bg-white">
                       {lessons.map(
                         (lesson, lessonIndex) => {
+                          const lessonPosition =
+                            `${moduleIndex}:${lessonIndex}`;
+
+                          const isActiveCompletedLesson =
+                            active &&
+                            getLessonCompleted(lesson);
+
+                          const isActiveNextLesson =
+                            active &&
+                            !isActiveCompletedLesson &&
+                            Boolean(firstIncompleteLessonPosition) &&
+                            lessonPosition === firstIncompleteLessonPosition;
+
                           const isAssignedFirstLesson =
                             assigned &&
                             firstModuleWithLessonsIndex >= 0 &&
@@ -4752,9 +4785,13 @@ function CourseDetailGuestProgram({
                             }
                             data-testid="course-detail-guest-locked-lesson"
                             className={
-                              isAssignedFirstLesson
-                                ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
-                                : "flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 sm:px-5"
+                              isActiveCompletedLesson
+                                ? "flex items-center justify-between gap-4 border-b border-green-100 bg-green-50/60 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                : isActiveNextLesson
+                                  ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                  : isAssignedFirstLesson
+                                    ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                    : "flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 sm:px-5"
                             }
                           >
                             <div className="flex min-w-0 items-center gap-3">
@@ -4775,16 +4812,24 @@ function CourseDetailGuestProgram({
 
                             <span
                               className={
-                                isAssignedFirstLesson
-                                  ? "hidden shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 sm:inline-flex"
-                                  : "hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
+                                isActiveCompletedLesson
+                                  ? "hidden shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200 sm:inline-flex"
+                                  : isActiveNextLesson
+                                    ? "hidden shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 sm:inline-flex"
+                                    : isAssignedFirstLesson
+                                      ? "hidden shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 sm:inline-flex"
+                                      : "hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
                               }
                             >
-                              {isAssignedFirstLesson
-                                ? "\u041f\u0435\u0440\u0432\u044b\u0439 \u0448\u0430\u0433"
-                                : assigned
-                                  ? "\u0412 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435"
-                                  : "\u0414\u043e\u0441\u0442\u0443\u043f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438"}
+                              {isActiveCompletedLesson
+                                ? "\u041f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                : isActiveNextLesson
+                                  ? "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433"
+                                  : isAssignedFirstLesson
+                                    ? "\u041f\u0435\u0440\u0432\u044b\u0439 \u0448\u0430\u0433"
+                                    : active || assigned
+                                      ? "\u0412 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435"
+                                      : "\u0414\u043e\u0441\u0442\u0443\u043f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438"}
                             </span>
                           </div>
                           );
@@ -5366,6 +5411,285 @@ function CourseDetailAssignedState({
           >
             {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
           </button>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+function getCourseDetailOverviewLessons(course) {
+  const modules = Array.isArray(course?.modules)
+    ? course.modules
+    : [];
+
+  return modules.flatMap((module) =>
+    (Array.isArray(module?.lessons)
+      ? module.lessons
+      : []
+    ).map((lesson) => ({
+      ...lesson,
+      module_title: module?.title || "",
+    }))
+  );
+}
+
+
+function CourseDetailActiveState({
+  course,
+  enrollment,
+  onContinue,
+  onAccount,
+  onCatalog,
+}) {
+  const lessons = getCourseDetailOverviewLessons(
+    course
+  );
+
+  const nextLesson =
+    lessons.find(
+      (lesson) => !getLessonCompleted(lesson)
+    ) || null;
+
+  const progressPercent = normalizeProgressPercent(
+    enrollment?.progress_percent ??
+      course?.learner_progress?.progress_percent ??
+      0
+  );
+
+  const lessonsTotal = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_total ??
+        course?.learner_progress?.lessons_total ??
+        lessons.length
+    ) || 0
+  );
+
+  const lessonsCompleted = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_completed ??
+        course?.learner_progress?.lessons_completed ??
+        lessons.filter(getLessonCompleted).length
+    ) || 0
+  );
+
+  return (
+    <div
+      data-testid="course-detail-active-state"
+      data-course-detail-state="active"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-active-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-active-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-green-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 ring-1 ring-green-200">
+                  {"\u0412 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0435"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u0412\u0430\u0448\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441"}
+                </div>
+
+                <div className="mt-2 text-2xl font-bold text-blue-700">
+                  {`${progressPercent}%`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e \u0443\u0440\u043e\u043a\u043e\u0432"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-active-next-step"
+            className="rounded-shell bg-blue-50 p-5 ring-1 ring-blue-200 sm:p-6"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
+              {"\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433"}
+            </div>
+
+            {nextLesson ? (
+              <>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">
+                  {nextLesson.title ||
+                    "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a"}
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {nextLesson.module_title
+                    ? `\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435 \u00b7 ${nextLesson.module_title}`
+                    : "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435."}
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">
+                  {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {"\u0412\u0441\u0435 \u0443\u0440\u043e\u043a\u0438 \u043e\u0442\u043c\u0435\u0447\u0435\u043d\u044b \u043a\u0430\u043a \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043d\u044b\u0435. \u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u0434\u043b\u044f \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0435\u0433\u043e \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f."}
+                </p>
+              </>
+            )}
+          </section>
+
+          <div data-testid="course-detail-active-program">
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+              active
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-active-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+            {"\u0412 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0435"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+          </h2>
+
+          <div
+            data-testid="course-detail-active-progress"
+            className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm font-semibold text-slate-700">
+                {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+              </span>
+
+              <span className="text-sm font-bold text-blue-700">
+                {`${progressPercent}%`}
+              </span>
+            </div>
+
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progressPercent}
+              className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"
+            >
+              <div
+                className="h-full rounded-full bg-blue-600 transition-[width]"
+                style={{
+                  width: `${progressPercent}%`,
+                }}
+              />
+            </div>
+
+            <div className="mt-3 text-xs font-medium text-slate-500">
+              {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal} \u0443\u0440\u043e\u043a\u043e\u0432`}
+            </div>
+          </div>
+
+          {nextLesson ? (
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {"\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a"}
+              </div>
+
+              <div className="mt-2 text-sm font-semibold leading-6 text-slate-900">
+                {nextLesson.title}
+              </div>
+            </div>
+          ) : null}
+
+          {enrollment?.started_at ? (
+            <div className="mt-4 text-xs leading-5 text-slate-500">
+              {`\u041d\u0430\u0447\u0430\u0442\u043e: ${formatDateTime(enrollment.started_at)}`}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-active-continue-action"
+            onClick={onContinue}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-active-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
+
+          <p className="mt-5 border-t border-slate-100 pt-5 text-sm leading-6 text-slate-600">
+            {"\u0423\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435 \u043a\u0443\u0440\u0441\u0430."}
+          </p>
         </aside>
       </div>
     </div>
@@ -6501,6 +6825,23 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         course={course}
         enrollment={existingEnrollment}
         onStart={handleOpenLearningWorkspace}
+        onAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.ACTIVE
+  ) {
+    return (
+      <CourseDetailActiveState
+        course={course}
+        enrollment={existingEnrollment}
+        onContinue={handleOpenLearningWorkspace}
         onAccount={() => {
           setAccountLearningEntryIntent();
           onPageChange("account");
