@@ -4653,6 +4653,74 @@ function getPrimaryActionLabel(enrollment, user) {
 
 
 
+const COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING = false;
+
+function CourseLearnerWorkspaceHandoff({
+  existingEnrollment,
+  onOpenAccount,
+}) {
+  if (!existingEnrollment) {
+    return null;
+  }
+
+  const status = existingEnrollment.status;
+
+  const title =
+    status === "assigned"
+      ? "\u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"
+      : status === "active"
+        ? "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u0442\u0441\u044f"
+        : status === "completed"
+          ? "\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"
+          : status === "cancelled"
+            ? "\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"
+            : "\u041a\u0443\u0440\u0441 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435";
+
+  const description =
+    status === "completed"
+      ? "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u044b \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u0438 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435."
+      : status === "cancelled"
+        ? "\u0418\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0435 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e. \u0421\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u043e \u0437\u0430\u043f\u0438\u0441\u0438 \u043e\u0441\u0442\u0430\u044e\u0442\u0441\u044f \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435."
+        : "\u0423\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u0432 \u0440\u0430\u0431\u043e\u0447\u0435\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435 \u043a\u0443\u0440\u0441\u0430 \u0438\u0437 \u0440\u0430\u0437\u0434\u0435\u043b\u0430 \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb.";
+
+  const actionLabel =
+    status === "cancelled"
+      ? "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"
+      : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb";
+
+  return (
+    <section
+      data-testid="course-detail-learner-workspace-handoff"
+      data-enrollment-status={status || "unknown"}
+      className="rounded-shell bg-blue-50 p-6 ring-1 ring-blue-200 md:p-8"
+    >
+      <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+        {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435"}
+      </div>
+
+      <h2 className="mt-2 text-2xl font-bold text-slate-900">
+        {title}
+      </h2>
+
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-700">
+        {description}
+      </p>
+
+      <div className="mt-5">
+        <button
+          type="button"
+          data-testid="course-detail-open-learning-workspace"
+          onClick={onOpenAccount}
+          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          {actionLabel}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+
 function CourseDetailServiceState({
   variant,
   error,
@@ -5796,89 +5864,101 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         onPageChange={onPageChange}
       />
 
-      <CourseLearnerLessonAccessPanel
-        course={learnerCourse}
+      <CourseLearnerWorkspaceHandoff
         existingEnrollment={existingEnrollment}
-        user={user}
-        onPrimaryAction={handleEnroll}
-        onPageChange={onPageChange}
+        onOpenAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
       />
 
-      <CourseLearnerLessonContentPreviewPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onPrimaryAction={handleEnroll}
-        onPageChange={onPageChange}
-        selectedLessonId={selectedLessonId}
-      />
+      {COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING ? (
+        <>
+          <CourseLearnerLessonAccessPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPrimaryAction={handleEnroll}
+            onPageChange={onPageChange}
+          />
 
-      <CourseLearnerLessonBlockViewerPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onPrimaryAction={handleEnroll}
-        onPageChange={onPageChange}
-        selectedLessonId={selectedLessonId}
-        onSelectLesson={setSelectedLessonId}
-        onCompleteLesson={handleCompleteLesson}
-        lessonCompletionLoading={lessonCompletionLoading}
-        onQuizAttemptStateChange={handleQuizAttemptStateChange}
-        onAssignmentSubmissionStateChange={handleAssignmentSubmissionStateChange}
-      />
+          <CourseLearnerLessonContentPreviewPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPrimaryAction={handleEnroll}
+            onPageChange={onPageChange}
+            selectedLessonId={selectedLessonId}
+          />
 
-      <CourseLearnerCompletionActionPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onPrimaryAction={handleEnroll}
-        onPageChange={onPageChange}
-        onCompleteLesson={handleCompleteLesson}
-        selectedLessonId={selectedLessonId}
-        quizCompletionGate={selectedLessonQuizCompletionGate}
-        assignmentCompletionGate={selectedLessonAssignmentCompletionGate}
-        lessonCompletionLoading={lessonCompletionLoading}
-        lessonCompletionError={lessonCompletionError}
-        lessonCompletionSuccess={lessonCompletionSuccess}
-      />
+          <CourseLearnerLessonBlockViewerPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPrimaryAction={handleEnroll}
+            onPageChange={onPageChange}
+            selectedLessonId={selectedLessonId}
+            onSelectLesson={setSelectedLessonId}
+            onCompleteLesson={handleCompleteLesson}
+            lessonCompletionLoading={lessonCompletionLoading}
+            onQuizAttemptStateChange={handleQuizAttemptStateChange}
+            onAssignmentSubmissionStateChange={handleAssignmentSubmissionStateChange}
+          />
 
-      <CourseLearnerCourseCompletionPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onCompleteCourse={handleCompleteCourse}
-        courseCompletionLoading={courseCompletionLoading}
-        courseCompletionError={courseCompletionError}
-        courseCompletionSuccess={courseCompletionSuccess}
-        onPageChange={onPageChange}
-      />
+          <CourseLearnerCompletionActionPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPrimaryAction={handleEnroll}
+            onPageChange={onPageChange}
+            onCompleteLesson={handleCompleteLesson}
+            selectedLessonId={selectedLessonId}
+            quizCompletionGate={selectedLessonQuizCompletionGate}
+            assignmentCompletionGate={selectedLessonAssignmentCompletionGate}
+            lessonCompletionLoading={lessonCompletionLoading}
+            lessonCompletionError={lessonCompletionError}
+            lessonCompletionSuccess={lessonCompletionSuccess}
+          />
 
-      <CourseLearnerDocumentHandoffPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onPageChange={onPageChange}
-        accountDocuments={accountDocuments}
-        documentsLoading={accountDocumentsLoading}
-        documentsError={accountDocumentsError || accountDocumentDownloadError}
-        documentDownloadLoadingId={accountDocumentDownloadLoadingId}
-        onDownloadDocument={handleDownloadAccountDocument}
-        completionDocumentFocus={completionDocumentFocus}
-        onClearCompletionDocumentFocus={() => setCompletionDocumentFocus(null)}
-        documentHandoffRef={documentHandoffPanelRef}
-      />
+          <CourseLearnerCourseCompletionPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onCompleteCourse={handleCompleteCourse}
+            courseCompletionLoading={courseCompletionLoading}
+            courseCompletionError={courseCompletionError}
+            courseCompletionSuccess={courseCompletionSuccess}
+            onPageChange={onPageChange}
+          />
 
-      <CourseSelfEnrollmentDiagnostics
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        enrollLoading={enrollLoading}
-        enrollError={enrollError}
-        enrollSuccess={enrollSuccess}
-        relatedCourses={relatedCourses}
-        diagnostics={courseDiagnostics}
-        onPageChange={onPageChange}
-      />
+          <CourseLearnerDocumentHandoffPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPageChange={onPageChange}
+            accountDocuments={accountDocuments}
+            documentsLoading={accountDocumentsLoading}
+            documentsError={accountDocumentsError || accountDocumentDownloadError}
+            documentDownloadLoadingId={accountDocumentDownloadLoadingId}
+            onDownloadDocument={handleDownloadAccountDocument}
+            completionDocumentFocus={completionDocumentFocus}
+            onClearCompletionDocumentFocus={() => setCompletionDocumentFocus(null)}
+            documentHandoffRef={documentHandoffPanelRef}
+          />
+
+          <CourseSelfEnrollmentDiagnostics
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            enrollLoading={enrollLoading}
+            enrollError={enrollError}
+            enrollSuccess={enrollSuccess}
+            relatedCourses={relatedCourses}
+            diagnostics={courseDiagnostics}
+            onPageChange={onPageChange}
+          />
+        </>
+      ) : null}
 
       <CourseOutlineSection modules={course.modules} />
 
