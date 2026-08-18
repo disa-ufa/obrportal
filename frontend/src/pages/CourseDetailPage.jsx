@@ -4653,6 +4653,283 @@ function getPrimaryActionLabel(enrollment, user) {
 
 
 
+function CourseDetailGuestProgram({
+  modules = [],
+}) {
+  const normalizedModules = Array.isArray(modules)
+    ? modules
+    : [];
+
+  return (
+    <section
+      data-testid="course-detail-guest-program"
+      className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+            {"\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+          </div>
+
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430"}
+          </h2>
+
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            {"\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0431\u0435\u0437 \u0432\u0445\u043e\u0434\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
+          </p>
+        </div>
+
+        <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+          {`${normalizedModules.length} \u043c\u043e\u0434\u0443\u043b\u0435\u0439`}
+        </span>
+      </div>
+
+      {normalizedModules.length > 0 ? (
+        <div className="mt-6 space-y-4">
+          {normalizedModules.map(
+            (module, moduleIndex) => {
+              const lessons = Array.isArray(
+                module?.lessons
+              )
+                ? module.lessons
+                : [];
+
+              return (
+                <article
+                  key={
+                    module?.id ||
+                    `guest-module-${moduleIndex}`
+                  }
+                  className="overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {`\u041c\u043e\u0434\u0443\u043b\u044c ${moduleIndex + 1}`}
+                      </div>
+
+                      <h3 className="mt-1 text-base font-semibold text-slate-900">
+                        {module?.title ||
+                          `\u041c\u043e\u0434\u0443\u043b\u044c ${moduleIndex + 1}`}
+                      </h3>
+                    </div>
+
+                    <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+                      {`${lessons.length} \u0443\u0440\u043e\u043a\u043e\u0432`}
+                    </span>
+                  </div>
+
+                  {lessons.length > 0 ? (
+                    <div className="border-t border-slate-200 bg-white">
+                      {lessons.map(
+                        (lesson, lessonIndex) => (
+                          <div
+                            key={
+                              lesson?.id ||
+                              `guest-lesson-${moduleIndex}-${lessonIndex}`
+                            }
+                            data-testid="course-detail-guest-locked-lesson"
+                            className="flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 sm:px-5"
+                          >
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div
+                                aria-hidden="true"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 ring-1 ring-slate-200"
+                              >
+                                {lessonIndex + 1}
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-medium text-slate-800">
+                                  {lesson?.title ||
+                                    `\u0423\u0440\u043e\u043a ${lessonIndex + 1}`}
+                                </div>
+                              </div>
+                            </div>
+
+                            <span className="hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex">
+                              {"\u0414\u043e\u0441\u0442\u0443\u043f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438"}
+                            </span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            }
+          )}
+        </div>
+      ) : (
+        <div
+          data-testid="course-detail-guest-program-empty"
+          className="mt-6 rounded-2xl bg-slate-50 p-5 text-sm text-slate-600 ring-1 ring-slate-200"
+        >
+          {"\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043f\u043e\u043a\u0430 \u043d\u0435 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u0430."}
+        </div>
+      )}
+    </section>
+  );
+}
+
+
+function CourseDetailGuestState({
+  course,
+  enrollLoading,
+  onRegisterAndEnroll,
+  onLogin,
+  onCatalog,
+}) {
+  return (
+    <div
+      data-testid="course-detail-guest-state"
+      data-course-detail-state="guest"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-guest-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-guest-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  {formatCourseDocument(course)}
+                </span>
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041e\u0431\u044a\u0451\u043c"}
+                </div>
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.hours
+                    ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
+                    : "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435"}
+                </div>
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.direction || "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <CourseDetailGuestProgram
+            modules={course.modules}
+          />
+        </main>
+
+        <aside
+          data-testid="course-detail-guest-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+            {"\u0414\u043e\u0441\u0442\u0443\u043f \u0434\u043b\u044f \u0433\u043e\u0441\u0442\u0435\u0439"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441"}
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {"\u0414\u043b\u044f \u0434\u043e\u0441\u0442\u0443\u043f\u0430 \u043a \u0443\u0440\u043e\u043a\u0430\u043c, \u0437\u0430\u0434\u0430\u043d\u0438\u044f\u043c \u0438 \u0442\u0435\u0441\u0442\u0430\u043c \u043d\u0443\u0436\u043d\u0430 \u0443\u0447\u0451\u0442\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c."}
+          </p>
+
+          <button
+            type="button"
+            data-testid="course-detail-guest-register-action"
+            onClick={onRegisterAndEnroll}
+            disabled={enrollLoading}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {enrollLoading
+              ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+              : "\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u0438 \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-guest-login-action"
+            onClick={onLogin}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u0412\u043e\u0439\u0442\u0438"}
+          </button>
+
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <div className="flex gap-3">
+              <div
+                aria-hidden="true"
+                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700 ring-1 ring-green-200"
+              >
+                {"\u2713"}
+              </div>
+
+              <p className="text-sm leading-6 text-slate-600">
+                {"\u041f\u043e\u0441\u043b\u0435 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u0438\u043b\u0438 \u0432\u0445\u043e\u0434\u0430 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u043a\u0443\u0440\u0441 \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0432 \u0440\u0430\u0437\u0434\u0435\u043b \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb."}
+              </p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
 const COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING = false;
 
 function CourseLearnerWorkspaceHandoff({
@@ -5659,6 +5936,23 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setEnrollLoading(false);
     }
   }
+  function handleGuestLogin() {
+    if (!course) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        "obrportal_pending_enrollment_slug",
+        course.slug
+      );
+    } catch {
+      // localStorage can be unavailable in private mode or tests.
+    }
+
+    onPageChange("login");
+  }
+
   if (
     courseDetailState === COURSE_DETAIL_STATES.LOADING
   ) {
@@ -5704,6 +5998,20 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         onRetry={() =>
           setReloadKey((value) => value + 1)
         }
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.GUEST
+  ) {
+    return (
+      <CourseDetailGuestState
+        course={course}
+        enrollLoading={enrollLoading}
+        onRegisterAndEnroll={handleEnroll}
+        onLogin={handleGuestLogin}
+        onCatalog={() => onPageChange("catalog")}
       />
     );
   }
