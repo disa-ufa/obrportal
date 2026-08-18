@@ -480,7 +480,7 @@ function InfoCard({ title, subtitle, counter, children, testId }) {
   );
 }
 
-function ActionButton({ children, onClick, disabled, tone = "default", type = "button" }) {
+function ActionButton({ children, onClick, disabled, tone = "default", type = "button", ...buttonProps }) {
   const toneClass =
     tone === "primary"
       ? "bg-blue-600 text-white hover:bg-blue-700"
@@ -488,7 +488,7 @@ function ActionButton({ children, onClick, disabled, tone = "default", type = "b
         ? "bg-red-50 text-red-700 ring-1 ring-red-100 hover:bg-red-100"
         : "bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50";
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={cx(BUTTON_CLASS, toneClass)}>
+    <button {...buttonProps} type={type} onClick={onClick} disabled={disabled} className={cx(BUTTON_CLASS, toneClass)}>
       {children}
     </button>
   );
@@ -506,22 +506,23 @@ function ProgressBar({ value }) {
   );
 }
 
-function SelectField({ label, value, onChange, children, disabled }) {
+function SelectField({ label, value, onChange, children, disabled, ...selectProps }) {
   return (
     <label className="block">
       <span className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</span>
-      <select className={cx(INPUT_CLASS, "mt-2")} value={value} onChange={onChange} disabled={disabled}>
+      <select {...selectProps} className={cx(INPUT_CLASS, "mt-2")} value={value} onChange={onChange} disabled={disabled}>
         {children}
       </select>
     </label>
   );
 }
 
-function TextField({ label, value, onChange, placeholder, onEnter }) {
+function TextField({ label, value, onChange, placeholder, onEnter, ...inputProps }) {
   return (
     <label className="block">
       <span className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</span>
       <input
+        {...inputProps}
         className={cx(INPUT_CLASS, "mt-2")}
         value={value}
         placeholder={placeholder}
@@ -957,7 +958,7 @@ function AdminEnrollmentsPage() {
   }
 
   return (
-    <main className="space-y-5 px-4 pb-10 pt-4 sm:px-6 lg:px-8">
+    <main data-testid="admin-enrollments-page" className="space-y-5 px-4 pb-10 pt-4 sm:px-6 lg:px-8">
       <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -970,7 +971,7 @@ function AdminEnrollmentsPage() {
               <h1 className="text-3xl font-black tracking-tight text-slate-950">{T.title}</h1>
               <Badge className="bg-green-50 text-green-700 ring-green-200">{"\u2022"} {T.systemOk}</Badge>
             </div>
-            <p className="mt-2 text-sm font-medium text-slate-500">{T.subtitle}</p>
+            <p data-testid="admin-enrollments-moderation-notice" className="mt-2 text-sm font-medium text-slate-500">{T.subtitle}</p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -985,7 +986,8 @@ function AdminEnrollmentsPage() {
         {(createOpen || bulkOpen) && (
           <div className="mt-5 grid gap-4 xl:grid-cols-2">
             {createOpen && (
-              <form onSubmit={handleCreateSubmit} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div data-testid="admin-enrollments-create-section" className="contents">
+                <form data-testid="admin-enrollments-create-form" onSubmit={handleCreateSubmit} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                 <h2 className="text-base font-black text-slate-950">{T.create}</h2>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <SelectField
@@ -1059,11 +1061,13 @@ function AdminEnrollmentsPage() {
                   </ActionButton>
                   <ActionButton onClick={() => setBulkOpen((value) => !value)}>{T.bulkCreate}</ActionButton>
                 </div>
-              </form>
+                </form>
+              </div>
             )}
 
             {bulkOpen && (
-              <form onSubmit={handleBulkSubmit} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div data-testid="admin-enrollments-bulk-section" className="contents">
+                <form data-testid="admin-enrollments-bulk-form" onSubmit={handleBulkSubmit} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                 <h2 className="text-base font-black text-slate-950">{T.bulkCreate}</h2>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <SelectField
@@ -1127,15 +1131,17 @@ function AdminEnrollmentsPage() {
                     {savingId === "bulk" ? T.saving : T.save}
                   </ActionButton>
                 </div>
-              </form>
+                </form>
+              </div>
             )}
           </div>
         )}
       </section>
 
-      <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <section data-testid="admin-enrollments-filters" className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
         <div className="grid gap-4 xl:grid-cols-[1.4fr_0.8fr_0.8fr_0.9fr_0.8fr]">
           <TextField
+            data-testid="admin-enrollments-search-input"
             label={T.search}
             value={filters.q}
             placeholder={T.searchPlaceholder}
@@ -1143,7 +1149,7 @@ function AdminEnrollmentsPage() {
             onEnter={() => applyFilters()}
           />
 
-          <SelectField label={T.status} value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
+          <SelectField data-testid="admin-enrollments-status-filter" label={T.status} value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
             <option value="">{T.allStatuses}</option>
             {STATUS_OPTIONS.map((status) => (
               <option key={status.value} value={status.value}>
@@ -1171,10 +1177,10 @@ function AdminEnrollmentsPage() {
           </SelectField>
 
           <div className="flex items-end gap-2">
-            <ActionButton tone="primary" onClick={() => applyFilters()}>
+            <ActionButton data-testid="admin-enrollments-apply-filters-action" tone="primary" onClick={() => applyFilters()}>
               {T.apply}
             </ActionButton>
-            <ActionButton onClick={resetFilters}>{T.reset}</ActionButton>
+            <ActionButton data-testid="admin-enrollments-reset-filters-action" onClick={resetFilters}>{T.reset}</ActionButton>
           </div>
         </div>
       </section>
@@ -1210,18 +1216,18 @@ function AdminEnrollmentsPage() {
       </section>
 
       {error ? (
-        <div data-testid="admin-enrollments-error-state" className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700 ring-1 ring-red-200">
+        <div data-testid="admin-enrollments-error-state" role="alert" aria-live="assertive" className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700 ring-1 ring-red-200">
           {error}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div data-testid="admin-enrollments-success-state" className="rounded-2xl bg-green-50 p-4 text-sm font-bold text-green-700 ring-1 ring-green-200">
+        <div data-testid="admin-enrollments-success-state" aria-live="polite" className="rounded-2xl bg-green-50 p-4 text-sm font-bold text-green-700 ring-1 ring-green-200">
           {successMessage}
         </div>
       ) : null}
 
-      <section className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+      <section data-testid="admin-enrollments-list-section" className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4 text-sm font-bold text-slate-600">
           <span>{T.shown} {enrollments.length} {T.records}</span>
           <span>{"\u00b7"}</span>
@@ -1251,16 +1257,16 @@ function AdminEnrollmentsPage() {
                 <th className="px-5 py-4 text-right">{T.actions}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody data-testid="admin-enrollments-list">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="px-5 py-12 text-center text-sm font-bold text-slate-500">
+                  <td data-testid="admin-enrollments-loading-state" aria-live="polite" colSpan={10} className="px-5 py-12 text-center text-sm font-bold text-slate-500">
                     {T.loading}
                   </td>
                 </tr>
               ) : enrollments.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-5 py-12 text-center text-sm font-bold text-slate-500">
+                  <td data-testid="admin-enrollments-empty-state" aria-live="polite" colSpan={10} className="px-5 py-12 text-center text-sm font-bold text-slate-500">
                     {T.empty}
                   </td>
                 </tr>
@@ -1282,7 +1288,7 @@ function AdminEnrollmentsPage() {
 
                   return (
                     <Fragment key={`enrollment-row-block-${enrollment.id}`}>
-                      <tr className={cx("border-b border-slate-100 align-middle", isSelected ? "bg-blue-50/30" : "bg-white")}>
+                      <tr data-testid="admin-enrollment-card" className={cx("border-b border-slate-100 align-middle", isSelected ? "bg-blue-50/30" : "bg-white")}>
                         <td className="px-5 py-4">
                           <button
                             type="button"
@@ -1327,8 +1333,8 @@ function AdminEnrollmentsPage() {
                             <ActionButton onClick={() => handleToggleEnrollment(enrollment)}>
                               {isSelected ? T.close : T.open}
                             </ActionButton>
-                            <ActionButton onClick={() => beginEdit(details)}>{T.edit}</ActionButton>
-                            <ActionButton onClick={() => handleDelete(details)} tone="danger" disabled={savingId === enrollment.id}>
+                            <ActionButton data-testid="admin-enrollment-edit-action" onClick={() => beginEdit(details)}>{T.edit}</ActionButton>
+                            <ActionButton data-testid="admin-enrollment-delete-action" onClick={() => handleDelete(details)} tone="danger" disabled={savingId === enrollment.id}>
                               ...
                             </ActionButton>
                           </div>
@@ -1358,14 +1364,14 @@ function AdminEnrollmentsPage() {
                                 </div>
 
                                 <div data-testid="admin-enrollment-detail-actions" className="flex flex-wrap justify-end gap-2">
-                                  <ActionButton onClick={() => beginEdit(details)}>{T.edit}</ActionButton>
+                                  <ActionButton data-testid="admin-enrollment-edit-action" onClick={() => beginEdit(details)}>{T.edit}</ActionButton>
                                   {details.status !== "active" ? (
                                     <ActionButton onClick={() => handleStatusUpdate(details, "active")} disabled={savingId === details.id}>
                                       {T.start}
                                     </ActionButton>
                                   ) : null}
                                   {details.status !== "completed" ? (
-                                    <ActionButton onClick={() => handleStatusUpdate(details, "completed")} disabled={savingId === details.id}>
+                                    <ActionButton data-testid="admin-enrollment-complete-action" onClick={() => handleStatusUpdate(details, "completed")} disabled={savingId === details.id}>
                                       {T.complete}
                                     </ActionButton>
                                   ) : null}
@@ -1399,7 +1405,7 @@ function AdminEnrollmentsPage() {
                               ) : null}
 
                               {editingId === details.id ? (
-                                <form onSubmit={(event) => handleEditSubmit(event, details)} className="mt-4 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
+                                <form data-testid="admin-enrollment-edit-form" onSubmit={(event) => handleEditSubmit(event, details)} className="mt-4 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
                                   <div className="grid gap-4 md:grid-cols-3">
                                     <SelectField label={T.organization} value={editForm.organization_id} onChange={(event) => setEditForm((current) => ({ ...current, organization_id: event.target.value }))}>
                                       <option value="">{T.optional}</option>

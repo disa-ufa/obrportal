@@ -160,12 +160,20 @@ COURSE_DETAIL_MARKERS = [
 ]
 
 CATALOG_MARKERS = [
-    "CatalogLearnerJourneyHint",
-    "CatalogEmptyState",
-    "onOpenCourse(course.slug)",
-    "Подробнее / записаться",
-    "Открыть в кабинете",
-    "Программа завершена",
+    'CatalogEmptyState',
+    '<CatalogEmptyState',
+    'function getEnrollmentStatusLabel(status)',
+    'case "completed":',
+    'return "Завершён";',
+    'function getCourseActionLabel(enrollment)',
+    'return "Подробнее";',
+    'return "Открыть в кабинете";',
+    'return "Продолжить обучение";',
+    'function handlePrimaryAction()',
+    'onPageChange("account");',
+    'onOpenCourse(course.slug || course.id);',
+    'getCourseActionLabel(enrollment)',
+    'getCourseEnrollment(',
 ]
 
 API_MARKERS = [

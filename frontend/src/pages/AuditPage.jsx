@@ -703,6 +703,27 @@ function AuditInlineDetail({
       </div>
 
       <div data-testid="audit-detail-card-horizontal" className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+        {selectedAuditEventLoading ? (
+          <div
+            data-testid="admin-audit-detail-loading"
+            className="sr-only"
+            aria-live="polite"
+          >
+            Загружается карточка события аудита.
+          </div>
+        ) : null}
+
+        {selectedAuditEventError ? (
+          <div
+            data-testid="admin-audit-detail-error"
+            className="sr-only"
+            role="alert"
+            aria-live="assertive"
+          >
+            Ошибка загрузки карточки события аудита.
+          </div>
+        ) : null}
+
         <AuditEventDetailPanel
           auditEventDetail={selectedAuditEvent?.id === event.id ? selectedAuditEvent : detail}
           loading={selectedAuditEventLoading}
@@ -1016,6 +1037,12 @@ export function AuditPage({
               <Badge className="bg-slate-50 text-slate-600 ring-slate-200">{T.readOnly}</Badge>
             </div>
             <p className="mt-2 text-sm text-slate-500">{T.subtitle}</p>
+            <p
+              data-testid="admin-audit-readonly-notice"
+              className="mt-2 text-xs font-semibold text-slate-500"
+            >
+              Журнал доступен только для чтения: интерфейс не изменяет audit_events.
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -1040,13 +1067,20 @@ export function AuditPage({
       </section>
 
       {!isAuthenticated ? (
-        <section className="rounded-3xl bg-white p-6 text-sm text-slate-600 ring-1 ring-slate-200">
+        <section
+          data-testid="admin-audit-unauthorized-state"
+          className="rounded-3xl bg-white p-6 text-sm text-slate-600 ring-1 ring-slate-200"
+        >
           {T.signIn}
         </section>
       ) : (
         <>
           <section className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
-            <form onSubmit={handleSubmit} className="grid gap-3 xl:grid-cols-[1.4fr_0.75fr_0.75fr_0.75fr_0.75fr_0.55fr_auto_auto]">
+            <form
+              data-testid="admin-audit-filters"
+              onSubmit={handleSubmit}
+              className="grid gap-3 xl:grid-cols-[1.4fr_0.75fr_0.75fr_0.75fr_0.75fr_0.55fr_auto_auto]"
+            >
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.search}</span>
                 <input
@@ -1060,7 +1094,7 @@ export function AuditPage({
 
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.action}</span>
-                <select value={filters.action} onChange={(event) => updateLocalFilter("action", event.target.value)} className={cx(INPUT_CLASS, "mt-1")}>
+                <select data-testid="admin-audit-filter-action" value={filters.action} onChange={(event) => updateLocalFilter("action", event.target.value)} className={cx(INPUT_CLASS, "mt-1")}>
                   <option value="">{T.allActions}</option>
                   {actionOptions.map((action) => (
                     <option key={action} value={action}>{action}</option>
@@ -1070,7 +1104,7 @@ export function AuditPage({
 
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.section}</span>
-                <select value={filters.entity_type} onChange={(event) => updateLocalFilter("entity_type", event.target.value)} className={cx(INPUT_CLASS, "mt-1")}>
+                <select data-testid="admin-audit-filter-entity-type" value={filters.entity_type} onChange={(event) => updateLocalFilter("entity_type", event.target.value)} className={cx(INPUT_CLASS, "mt-1")}>
                   <option value="">{T.allSections}</option>
                   {entityTypeOptions.map((entityType) => (
                     <option key={entityType} value={entityType}>{entityType}</option>
@@ -1080,7 +1114,7 @@ export function AuditPage({
 
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.actor}</span>
-                <select value={filters.actor_user_id} onChange={(event) => updateLocalFilter("actor_user_id", event.target.value)} className={cx(INPUT_CLASS, "mt-1")}>
+                <select data-testid="admin-audit-filter-actor-user-id" value={filters.actor_user_id} onChange={(event) => updateLocalFilter("actor_user_id", event.target.value)} className={cx(INPUT_CLASS, "mt-1")}>
                   <option value="">{T.allActors}</option>
                   {actorOptions.map((actorId) => (
                     <option key={actorId} value={actorId}>{getShortId(actorId, 18)}</option>
@@ -1101,6 +1135,7 @@ export function AuditPage({
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.limit}</span>
                 <input
+                  data-testid="admin-audit-filter-limit"
                   type="number"
                   min="1"
                   max="200"
@@ -1110,12 +1145,14 @@ export function AuditPage({
                 />
               </label>
 
-              <div className="flex items-end">
-                <button type="submit" disabled={loading} className={PRIMARY_BUTTON_CLASS}>{T.apply}</button>
-              </div>
+              <div data-testid="admin-audit-filter-actions" className="contents">
+                <div className="flex items-end">
+                  <button data-testid="admin-audit-apply-filters-action" type="submit" disabled={loading} className={PRIMARY_BUTTON_CLASS}>{T.apply}</button>
+                </div>
 
-              <div className="flex items-end">
-                <button type="button" onClick={handleReset} disabled={loading} className={SECONDARY_BUTTON_CLASS}>{T.reset}</button>
+                <div className="flex items-end">
+                  <button data-testid="admin-audit-reset-filters-action" type="button" onClick={handleReset} disabled={loading} className={SECONDARY_BUTTON_CLASS}>{T.reset}</button>
+                </div>
               </div>
             </form>
 
@@ -1123,6 +1160,7 @@ export function AuditPage({
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{T.objectId}</span>
                 <input
+                  data-testid="admin-audit-filter-entity-id"
                   type="text"
                   value={filters.entity_id}
                   onChange={(event) => updateLocalFilter("entity_id", event.target.value)}
@@ -1133,7 +1171,14 @@ export function AuditPage({
 
               <div className="flex items-end text-xs text-slate-500">
                 {filterError ? (
-                  <span className="rounded-xl bg-red-50 px-3 py-2 font-semibold text-red-700 ring-1 ring-red-200">{filterError}</span>
+                  <span
+                    data-testid="admin-audit-filter-error-state"
+                    role="alert"
+                    aria-live="assertive"
+                    className="rounded-xl bg-red-50 px-3 py-2 font-semibold text-red-700 ring-1 ring-red-200"
+                  >
+                    {filterError}
+                  </span>
                 ) : (
                   <span>{T.loadedFromBackend}</span>
                 )}
@@ -1169,7 +1214,7 @@ export function AuditPage({
           <section className="grid gap-4">
             <div className="overflow-hidden rounded-3xl bg-white ring-1 ring-slate-200">
               <div data-testid="admin-audit-export-summary" className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 text-sm text-slate-500">
-                <div className="flex flex-wrap gap-3">
+                <div data-testid="admin-audit-result-summary" className="flex flex-wrap gap-3">
                   <span>{T.shown} {filteredEvents.length} {T.of} {events.length}</span>
                   <span>-</span>
                   <span>{T.action}: {Object.keys(counts.actions).length}</span>
@@ -1182,11 +1227,11 @@ export function AuditPage({
               </div>
 
               {loading ? (
-                <div data-testid="admin-audit-loading-state" className="p-6 text-sm text-slate-500">
+                <div data-testid="admin-audit-loading-state" aria-live="polite" className="p-6 text-sm text-slate-500">
                   {U("\\u0417\\u0430\\u0433\\u0440\\u0443\\u0436\\u0430\\u0435\\u043c audit-events...")}
                 </div>
               ) : filteredEvents.length === 0 ? (
-                <div data-testid="admin-audit-empty-state" className="p-6 text-sm text-slate-500">{T.empty}</div>
+                <div data-testid="admin-audit-empty-state" aria-live="polite" className="p-6 text-sm text-slate-500">{T.empty}</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table data-testid="admin-audit-table" className="min-w-full text-left text-sm">
@@ -1242,7 +1287,7 @@ export function AuditPage({
                               </td>
                               <td className="px-5 py-4">
                                 <div data-testid={`admin-audit-row-actions-${event.id}`} className="flex justify-end gap-2">
-                                  <button type="button" onClick={() => handleOpenEvent(event)} disabled={selectedAuditEventLoading} className={SECONDARY_BUTTON_CLASS}>
+                                  <button data-testid="admin-audit-open-detail-action" type="button" onClick={() => handleOpenEvent(event)} disabled={selectedAuditEventLoading} className={SECONDARY_BUTTON_CLASS}>
                                     {selected ? T.opened : T.open}
                                   </button>
                                   <button type="button" onClick={() => handleDownloadJson(event)} className={SECONDARY_BUTTON_CLASS}>
@@ -1258,7 +1303,7 @@ export function AuditPage({
                             </tr>
                             {selected ? (
                               <tr key={`audit-detail-${event.id}`} className="bg-slate-50/70">
-                                <td colSpan={7} className="px-4 pb-4 pt-0">
+                                <td data-testid="admin-audit-detail-panel" colSpan={7} className="px-4 pb-4 pt-0">
                                   <AuditInlineDetail
                                     event={event}
                                     selectedAuditEvent={selectedAuditEvent}

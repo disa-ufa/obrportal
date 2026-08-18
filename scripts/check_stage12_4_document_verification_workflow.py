@@ -3,6 +3,7 @@ from pathlib import Path
 DOC = Path("docs/stage-12-4-document-verification-workflow.md")
 VERIFY_PAGE = Path("frontend/src/pages/VerifyDocumentPage.jsx")
 ACCOUNT_PAGE = Path("frontend/src/pages/AccountPage.jsx")
+LEARNER_ACCOUNT_DOCUMENTS = Path("frontend/src/components/account/LearnerAccountDocuments.jsx")
 DOCUMENTS_PAGE = Path("frontend/src/pages/DocumentsPage.jsx")
 API_CLIENT = Path("frontend/src/api/client.js")
 APP = Path("frontend/src/App.jsx")
@@ -13,6 +14,7 @@ REQUIRED_FILES = [
     DOC,
     VERIFY_PAGE,
     ACCOUNT_PAGE,
+    LEARNER_ACCOUNT_DOCUMENTS,
     DOCUMENTS_PAGE,
     API_CLIENT,
     APP,
@@ -138,13 +140,13 @@ VERIFY_PAGE_MARKERS = [
     "setError",
     "setLoading",
     "<PublicVerificationJourneyHint",
-    "Публичная проверка не открывает файл документа",
-    "Проверка документа → код/номер → результат",
-    "public-verification-journey-catalog-action",
-    "public-verification-journey-account-action",
-    "public-verification-journey-safe-data",
-    "public-verification-journey-current-state",
-    "public-verification-journey-steps",
+    "Публичная страница не раскрывает файл документа и личный кабинет пользователя.",
+    "Проверка по номеру, коду и QR-ссылке",
+    'onPageChange?.("catalog")',
+    'onPageChange("account")',
+    "public-verification-qr-attention",
+    "public-verification-current-state",
+    "steps.map((step)",
     "public-verification-journey-title",
     "public-verification-journey",
     "PublicVerificationJourneyHint",
@@ -169,34 +171,37 @@ VERIFY_PAGE_MARKERS = [
 ]
 
 ACCOUNT_MARKERS = [
-    "getAccountDocuments",
-    "downloadAccountDocument",
-    "DocumentVerificationQrBlock",
-    "hasDocumentVerificationTarget",
-    "canShowPublicDocumentVerification",
-    "getAccountDocumentNotice",
-    "getAccountDocumentDownloadLabel",
-    "canDownloadDocument",
-    "CompletionDocumentsDiagnostics",
-    "account-completion-documents-diagnostics",
-    "account-completion-documents-summary",
-    "account-completion-documents-quality",
-    "account-completion-documents-attention",
-    "account-completion-documents-links",
-    "account-documents",
-    "Публичная проверка",
-    "QR/проверка",
+    'getAccountDocuments',
+    'downloadAccountDocument',
+    'LearnerAccountDocuments',
+    'DocumentVerificationQrBlock',
+    'canDownloadDocument',
+    'canVerifyDocument',
+    'getDownloadLabel',
+    'learner-account-documents',
+    'learner-documents-stats',
+    'learner-document-filters',
+    'learner-document-card',
+    'learner-documents-loading',
+    'learner-documents-error',
+    'learner-documents-empty',
+    'learner-documents-filter-empty',
+    'Проверить публично',
+    'QR-код проверки',
 ]
 
 DOCUMENTS_PAGE_MARKERS = [
-    "DocumentsPage",
-    "DOCUMENT_STATUSES",
-    "document_number",
-    "verification_code",
-    "revocation_reason",
-    "document-missing-file-action-hint",
-    "admin-document-edit-file",
-    "Заменить файл",
+    'DocumentsPage',
+    'document_number',
+    'verification_code',
+    'revocation_reason',
+    'function buildEditForm(doc)',
+    'function handleStartEdit(doc)',
+    'async function handleEdit(event)',
+    'type="file"',
+    'setFile(event.target.files?.[0] || null)',
+    'updateAdminDocument(selectedDocument.id, buildFormData(form, file, false))',
+    'file_available',
 ]
 
 API_MARKERS = [
@@ -239,7 +244,11 @@ def main() -> None:
 
     doc_text = read(DOC)
     verify_page_text = read(VERIFY_PAGE)
-    account_text = read(ACCOUNT_PAGE)
+    account_text = (
+        read(ACCOUNT_PAGE)
+        + "\n"
+        + read(LEARNER_ACCOUNT_DOCUMENTS)
+    )
     documents_text = read(DOCUMENTS_PAGE)
     api_text = read(API_CLIENT)
     route_text = read(APP) + "\n" + read(PUBLIC_ROUTES) + "\n" + read(PUBLIC_ROUTE_COMPONENTS)
