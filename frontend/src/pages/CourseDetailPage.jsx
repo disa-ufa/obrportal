@@ -4655,6 +4655,7 @@ function getPrimaryActionLabel(enrollment, user) {
 
 function CourseDetailGuestProgram({
   modules = [],
+  authenticated = false,
 }) {
   const normalizedModules = Array.isArray(modules)
     ? modules
@@ -4676,7 +4677,9 @@ function CourseDetailGuestProgram({
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            {"\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0431\u0435\u0437 \u0432\u0445\u043e\u0434\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
+            {authenticated
+              ? "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438."
+              : "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0431\u0435\u0437 \u0432\u0445\u043e\u0434\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
           </p>
         </div>
 
@@ -4920,6 +4923,196 @@ function CourseDetailGuestState({
 
               <p className="text-sm leading-6 text-slate-600">
                 {"\u041f\u043e\u0441\u043b\u0435 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u0438\u043b\u0438 \u0432\u0445\u043e\u0434\u0430 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u043a\u0443\u0440\u0441 \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0432 \u0440\u0430\u0437\u0434\u0435\u043b \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb."}
+              </p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+function CourseDetailAuthenticatedUnenrolledState({
+  course,
+  enrollLoading,
+  enrollError,
+  enrollSuccess,
+  onEnroll,
+  onAccount,
+  onCatalog,
+}) {
+  return (
+    <div
+      data-testid="course-detail-authenticated-unenrolled-state"
+      data-course-detail-state="authenticated_unenrolled"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-authenticated-unenrolled-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-authenticated-unenrolled-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+                  {"\u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  {formatCourseDocument(course)}
+                </span>
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041e\u0431\u044a\u0451\u043c"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.hours
+                    ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
+                    : "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.direction || "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div
+            data-testid="course-detail-authenticated-unenrolled-program"
+          >
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-authenticated-unenrolled-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+            {"\u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441"}
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {"\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb. \u0422\u0430\u043c \u0431\u0443\u0434\u0443\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b."}
+          </p>
+
+          {enrollError ? (
+            <div
+              data-testid="course-detail-authenticated-unenrolled-error"
+              role="alert"
+              className="mt-5 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+            >
+              {enrollError}
+            </div>
+          ) : null}
+
+          {enrollSuccess ? (
+            <div
+              data-testid="course-detail-authenticated-unenrolled-success"
+              aria-live="polite"
+              className="mt-5 rounded-xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200"
+            >
+              {enrollSuccess}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-authenticated-unenrolled-enroll-action"
+            onClick={onEnroll}
+            disabled={enrollLoading}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {enrollLoading
+              ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+              : "\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-authenticated-unenrolled-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
+
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <div className="flex gap-3">
+              <div
+                aria-hidden="true"
+                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700 ring-1 ring-blue-200"
+              >
+                {"\u2192"}
+              </div>
+
+              <p className="text-sm leading-6 text-slate-600">
+                {"\u0417\u0430\u043f\u0438\u0441\u044c \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f \u0434\u043b\u044f \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0443\u0447\u0451\u0442\u043d\u043e\u0439 \u0437\u0430\u043f\u0438\u0441\u0438. \u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb."}
               </p>
             </div>
           </div>
@@ -6011,6 +6204,23 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         enrollLoading={enrollLoading}
         onRegisterAndEnroll={handleEnroll}
         onLogin={handleGuestLogin}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState ===
+      COURSE_DETAIL_STATES.AUTHENTICATED_UNENROLLED
+  ) {
+    return (
+      <CourseDetailAuthenticatedUnenrolledState
+        course={course}
+        enrollLoading={enrollLoading}
+        enrollError={enrollError}
+        enrollSuccess={enrollSuccess}
+        onEnroll={handleEnroll}
+        onAccount={() => onPageChange("account")}
         onCatalog={() => onPageChange("catalog")}
       />
     );
