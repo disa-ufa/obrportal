@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 
@@ -39,6 +40,174 @@ def require_not_contains(relative_path: str, fragments: list[str]) -> None:
         for fragment in present:
             print(f" - {fragment}")
         raise SystemExit(1)
+
+def run_course_detail_state_semantic_smoke() -> None:
+    script = r"""
+import {
+  ACCOUNT_COURSE_LOAD_STATES as ACCOUNT,
+  COURSE_DETAIL_STATES as STATE,
+  PUBLIC_COURSE_LOAD_STATES as PUBLIC,
+  resolveCourseDetailState,
+} from "./frontend/src/utils/courseDetailState.js";
+
+const user = { id: "semantic-smoke-user" };
+
+const cases = [
+  ["loading", {}, STATE.LOADING],
+  [
+    "not_found",
+    { publicState: PUBLIC.NOT_FOUND },
+    STATE.NOT_FOUND,
+  ],
+  [
+    "public_error",
+    { publicState: PUBLIC.ERROR },
+    STATE.ERROR,
+  ],
+  [
+    "guest",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.NOT_REQUIRED,
+      user: null,
+    },
+    STATE.GUEST,
+  ],
+  [
+    "authenticated_unenrolled",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: null,
+    },
+    STATE.AUTHENTICATED_UNENROLLED,
+  ],
+  [
+    "assigned",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "assigned" },
+    },
+    STATE.ASSIGNED,
+  ],
+  [
+    "active",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "active" },
+    },
+    STATE.ACTIVE,
+  ],
+  [
+    "completed",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "completed" },
+    },
+    STATE.COMPLETED,
+  ],
+  [
+    "cancelled",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "cancelled" },
+    },
+    STATE.CANCELLED,
+  ],
+  [
+    "account_loading",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.LOADING,
+      user,
+    },
+    STATE.LOADING,
+  ],
+  [
+    "account_error",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.ERROR,
+      user,
+    },
+    STATE.ERROR,
+  ],
+  [
+    "unknown_enrollment_status",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "unexpected_status" },
+    },
+    STATE.ERROR,
+  ],
+];
+
+for (const [name, input, expected] of cases) {
+  const actual = resolveCourseDetailState(input);
+
+  if (actual !== expected) {
+    throw new Error(
+      `${name}: expected ${expected}, received ${actual}`
+    );
+  }
+
+  console.log(`PASS ${name} -> ${actual}`);
+}
+
+const uniqueStates = new Set(Object.values(STATE));
+
+if (uniqueStates.size !== 9) {
+  throw new Error(
+    `Expected 9 course-detail states, received ${uniqueStates.size}`
+  );
+}
+
+console.log("COURSE_DETAIL_STATE_COUNT=9");
+console.log("COURSE_DETAIL_STATE_SEMANTICS=PASS");
+"""
+
+    try:
+        result = subprocess.run(
+            [
+                "node",
+                "--input-type=module",
+                "-e",
+                script,
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        raise SystemExit(
+            "Node.js is required for course detail state semantic smoke"
+        ) from exc
+
+    if result.stdout:
+        print(result.stdout.rstrip())
+
+    if result.returncode != 0:
+        if result.stderr:
+            print(result.stderr.rstrip())
+
+        raise SystemExit(
+            "Course detail state semantic smoke failed"
+        )
+
+    print("Course detail state semantic smoke passed")
 
 def main() -> None:
     require_contains(
@@ -154,6 +323,26 @@ def main() -> None:
         ],
     )
     require_contains(
+        "frontend/src/utils/courseDetailState.js",
+        [
+            "export const COURSE_DETAIL_STATES = Object.freeze({",
+            'LOADING: "loading"',
+            'NOT_FOUND: "not_found"',
+            'ERROR: "error"',
+            'GUEST: "guest"',
+            'AUTHENTICATED_UNENROLLED: "authenticated_unenrolled"',
+            'ASSIGNED: "assigned"',
+            'ACTIVE: "active"',
+            'COMPLETED: "completed"',
+            'CANCELLED: "cancelled"',
+            "export const PUBLIC_COURSE_LOAD_STATES = Object.freeze({",
+            "export const ACCOUNT_COURSE_LOAD_STATES = Object.freeze({",
+            "export function resolveCourseDetailState({",
+            "ENROLLMENT_PAGE_STATES[enrollmentStatus]",
+        ],
+    )
+
+    require_contains(
         "frontend/src/pages/CourseDetailPage.jsx",
         [
             'import { useEffect, useState } from "react";',
@@ -254,6 +443,8 @@ def main() -> None:
             "async def verify_document(",
         ],
     )
+
+    run_course_detail_state_semantic_smoke()
 
     print("Public pages behavior smoke passed")
 
