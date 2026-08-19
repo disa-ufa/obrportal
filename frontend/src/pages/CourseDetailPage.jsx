@@ -4660,6 +4660,7 @@ function CourseDetailGuestProgram({
   assigned = false,
   active = false,
   completed = false,
+  cancelled = false,
 }) {
   const normalizedModules = Array.isArray(modules)
     ? modules
@@ -4705,7 +4706,9 @@ function CourseDetailGuestProgram({
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            {completed
+            {cancelled
+              ? "\u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441 \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430. \u0417\u0434\u0435\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430 \u0438\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0443\u0440\u043e\u043a\u043e\u0432."
+              : completed
               ? "\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d. \u0412 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d \u0444\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0443\u0440\u043e\u043a\u0430."
               : active
               ? "\u0417\u0434\u0435\u0441\u044c \u043f\u043e\u043a\u0430\u0437\u0430\u043d \u0442\u0435\u043a\u0443\u0449\u0438\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043f\u043e \u0443\u0440\u043e\u043a\u0430\u043c. \u0414\u043b\u044f \u0438\u0437\u0443\u0447\u0435\u043d\u0438\u044f \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u043e\u0432, \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0437\u0430\u0434\u0430\u043d\u0438\u0439 \u0438 \u0442\u0435\u0441\u0442\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e."
@@ -4764,6 +4767,14 @@ function CourseDetailGuestProgram({
                           const lessonPosition =
                             `${moduleIndex}:${lessonIndex}`;
 
+                          const isCancelledCourseCompletedLesson =
+                            cancelled &&
+                            getLessonCompleted(lesson);
+
+                          const isCancelledCourseIncompleteLesson =
+                            cancelled &&
+                            !isCancelledCourseCompletedLesson;
+
                           const isCompletedCourseLesson =
                             completed &&
                             getLessonCompleted(lesson);
@@ -4796,7 +4807,11 @@ function CourseDetailGuestProgram({
                             }
                             data-testid="course-detail-guest-locked-lesson"
                             className={
-                              isCompletedCourseLesson
+                              isCancelledCourseCompletedLesson
+                                ? "flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                : isCancelledCourseIncompleteLesson
+                                  ? "flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3.5 last:border-b-0 sm:px-5"
+                                  : isCompletedCourseLesson
                                 ? "flex items-center justify-between gap-4 border-b border-green-100 bg-green-50/60 px-4 py-3.5 last:border-b-0 sm:px-5"
                                 : isCompletedCourseIncompleteLesson
                                   ? "flex items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
@@ -4827,7 +4842,11 @@ function CourseDetailGuestProgram({
 
                             <span
                               className={
-                                isCompletedCourseLesson
+                                isCancelledCourseCompletedLesson
+                                  ? "hidden shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-300 sm:inline-flex"
+                                  : isCancelledCourseIncompleteLesson
+                                    ? "hidden shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
+                                    : isCompletedCourseLesson
                                   ? "hidden shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200 sm:inline-flex"
                                   : isCompletedCourseIncompleteLesson
                                     ? "hidden shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 sm:inline-flex"
@@ -4840,7 +4859,11 @@ function CourseDetailGuestProgram({
                                       : "hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
                               }
                             >
-                              {isCompletedCourseLesson
+                              {isCancelledCourseCompletedLesson
+                                ? "\u041f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                : isCancelledCourseIncompleteLesson
+                                  ? "\u041d\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                  : isCompletedCourseLesson
                                 ? "\u041f\u0440\u043e\u0439\u0434\u0435\u043d"
                                 : isCompletedCourseIncompleteLesson
                                   ? "\u041d\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d"
@@ -6084,6 +6107,240 @@ function CourseDetailCompletedState({
 }
 
 
+function CourseDetailCancelledState({
+  course,
+  enrollment,
+  onAccount,
+  onCatalog,
+}) {
+  const lessons =
+    getCourseDetailOverviewLessons(course);
+
+  const lessonsTotal = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_total ??
+        course?.learner_progress?.lessons_total ??
+        lessons.length
+    ) || 0
+  );
+
+  const lessonsCompleted = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_completed ??
+        course?.learner_progress?.lessons_completed ??
+        lessons.filter(getLessonCompleted).length
+    ) || 0
+  );
+
+  const organizationName =
+    enrollment?.organization_name || "";
+
+  const learningGroupName =
+    enrollment?.learning_group_name || "";
+
+  return (
+    <div
+      data-testid="course-detail-cancelled-state"
+      data-course-detail-state="cancelled"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-cancelled-catalog-back-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <section
+        data-testid="course-detail-cancelled-banner"
+        className="rounded-shell bg-red-50 px-5 py-5 ring-1 ring-red-200 sm:px-6"
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-red-600 ring-1 ring-red-200">
+            {"!"}
+          </div>
+
+          <div>
+            <div className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+              {"\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
+            </div>
+
+            <h1 className="mt-3 text-xl font-bold text-red-950 sm:text-2xl">
+              {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e \u044d\u0442\u043e\u043c\u0443 \u043a\u0443\u0440\u0441\u0443 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043e"}
+            </h1>
+
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-red-800">
+              {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430, \u043d\u043e \u0443\u0447\u0435\u0431\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b. \u041f\u043e\u0432\u0442\u043e\u0440\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430."}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-cancelled-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-red-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+                  {"\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-red-700">
+                {"\u0410\u0440\u0445\u0438\u0432 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+              </div>
+
+              <h2 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h2>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0421\u0442\u0430\u0442\u0443\u0441"}
+                </div>
+
+                <div className="mt-2 font-semibold text-red-700">
+                  {"\u041e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0443\u0440\u043e\u043a\u043e\u0432"}
+                </div>
+
+                <div
+                  data-testid="course-detail-cancelled-lesson-history"
+                  className="mt-2 font-semibold text-slate-900"
+                >
+                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-2 font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div
+            data-testid="course-detail-cancelled-program"
+          >
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+              cancelled
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-cancelled-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+            {"\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043a\u0440\u044b\u0442"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u0423\u0447\u0435\u0431\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b"}
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0438 \u0438\u0441\u0442\u043e\u0440\u0438\u044f \u0437\u0430\u043f\u0438\u0441\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b. \u041d\u0430\u0447\u0430\u0442\u044c, \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u0438\u043b\u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u043e \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u0441 \u044d\u0442\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u043d\u0435\u043b\u044c\u0437\u044f."}
+          </p>
+
+          {(organizationName || learningGroupName) ? (
+            <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
+              {organizationName ? (
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f"}
+                  </div>
+
+                  <div className="mt-1 text-sm font-semibold text-slate-900">
+                    {organizationName}
+                  </div>
+                </div>
+              ) : null}
+
+              {learningGroupName ? (
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430"}
+                  </div>
+
+                  <div className="mt-1 text-sm font-semibold text-slate-900">
+                    {learningGroupName}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-cancelled-catalog-action"
+            onClick={onCatalog}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {"\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-cancelled-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
+
+          <div
+            data-testid="course-detail-cancelled-admin-note"
+            className="mt-5 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200"
+          >
+            {"\u0415\u0441\u043b\u0438 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0443\u0436\u043d\u043e \u0432\u043e\u0437\u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c, \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430."}
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
 const COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING = false;
 
 function CourseLearnerWorkspaceHandoff({
@@ -7256,6 +7513,22 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           handleDownloadAccountDocument
         }
         onDocuments={() => onPageChange("documents")}
+        onAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.CANCELLED
+  ) {
+    return (
+      <CourseDetailCancelledState
+        course={course}
+        enrollment={existingEnrollment}
         onAccount={() => {
           setAccountLearningEntryIntent();
           onPageChange("account");
