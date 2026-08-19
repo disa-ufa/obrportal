@@ -1,7 +1,14 @@
 import { formatApiError } from "../utils/apiErrors";
+import {
+  ACCOUNT_COURSE_LOAD_STATES,
+  COURSE_DETAIL_STATES,
+  PUBLIC_COURSE_LOAD_STATES,
+  resolveCourseDetailState,
+} from "../utils/courseDetailState";
 // Legacy CI smoke compatibility marker: import { useEffect, useState } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { completeAccountCourse, completeAccountCourseLesson, completeAccountCourseLessonAssignment, submitAccountCourseLessonAssignmentAnswer, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonAssignmentSubmission, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
@@ -4647,72 +4654,2046 @@ function getPrimaryActionLabel(enrollment, user) {
 
 
 
-function CourseDetailServiceState({ variant, error, onPageChange }) {
-  const isLoading = variant === "loading";
-  const testId = isLoading ? "course-detail-loading-state" : "course-detail-not-found-state";
-  const title = isLoading
-    ? "Загружаем карточку программы"
-    : "По этому адресу нет опубликованной карточки курса";
-  const eyebrow = isLoading ? "Загрузка" : "Программа не найдена";
-  const description = isLoading
-    ? "Получаем описание программы, структуру обучения и статус записи в личном кабинете."
-    : error || "Вернитесь в каталог и выберите активную опубликованную программу.";
+function CourseDetailGuestProgram({
+  modules = [],
+  authenticated = false,
+  assigned = false,
+  active = false,
+  completed = false,
+  cancelled = false,
+}) {
+  const normalizedModules = Array.isArray(modules)
+    ? modules
+    : [];
+
+  const firstModuleWithLessonsIndex =
+    normalizedModules.findIndex(
+      (module) =>
+        Array.isArray(module?.lessons) &&
+        module.lessons.length > 0
+    );
+
+  const programLessonEntries =
+    normalizedModules.flatMap(
+      (module, moduleIndex) =>
+        (Array.isArray(module?.lessons)
+          ? module.lessons
+          : []
+        ).map((lesson, lessonIndex) => ({
+          lesson,
+          position: `${moduleIndex}:${lessonIndex}`,
+        }))
+    );
+
+  const firstIncompleteLessonPosition =
+    programLessonEntries.find(
+      (item) => !getLessonCompleted(item.lesson)
+    )?.position || "";
 
   return (
     <section
-      data-testid={testId}
-      className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10"
+      data-testid="course-detail-guest-program"
+      className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
     >
-      <div className={isLoading ? "text-sm font-semibold uppercase tracking-wide text-blue-600" : "text-sm font-semibold uppercase tracking-wide text-red-600"}>
-        {eyebrow}
-      </div>
-      <h1
-        data-testid="course-detail-state-title"
-        className="mt-2 text-3xl font-bold text-slate-900"
-      >
-        {title}
-      </h1>
-      <p
-        data-testid="course-detail-state-description"
-        className="mt-4 max-w-2xl text-sm leading-6 text-slate-600"
-      >
-        {description}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+            {"\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+          </div>
 
-      {isLoading ? (
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
-          {["Описание", "Структура", "Статус записи"].map((item) => (
-            <div
-              key={item}
-              className="h-16 animate-pulse rounded-2xl bg-slate-100 ring-1 ring-slate-200"
-              aria-label={`Загружается: ${item}`}
-            />
-          ))}
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">
+            {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430"}
+          </h2>
+
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            {cancelled
+              ? "\u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441 \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430. \u0417\u0434\u0435\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430 \u0438\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0443\u0440\u043e\u043a\u043e\u0432."
+              : completed
+              ? "\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d. \u0412 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d \u0444\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0443\u0440\u043e\u043a\u0430."
+              : active
+              ? "\u0417\u0434\u0435\u0441\u044c \u043f\u043e\u043a\u0430\u0437\u0430\u043d \u0442\u0435\u043a\u0443\u0449\u0438\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043f\u043e \u0443\u0440\u043e\u043a\u0430\u043c. \u0414\u043b\u044f \u0438\u0437\u0443\u0447\u0435\u043d\u0438\u044f \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u043e\u0432, \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0437\u0430\u0434\u0430\u043d\u0438\u0439 \u0438 \u0442\u0435\u0441\u0442\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e."
+              : assigned
+                ? "\u041a\u0443\u0440\u0441 \u0443\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d. \u0417\u0434\u0435\u0441\u044c \u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b, \u0430 \u0443\u0440\u043e\u043a\u0438 \u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."
+                : authenticated
+                  ? "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438."
+                  : "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0431\u0435\u0437 \u0432\u0445\u043e\u0434\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0443\u0440\u043e\u043a\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
+          </p>
+        </div>
+
+        <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+          {`${normalizedModules.length} \u043c\u043e\u0434\u0443\u043b\u0435\u0439`}
+        </span>
+      </div>
+
+      {normalizedModules.length > 0 ? (
+        <div className="mt-6 space-y-4">
+          {normalizedModules.map(
+            (module, moduleIndex) => {
+              const lessons = Array.isArray(
+                module?.lessons
+              )
+                ? module.lessons
+                : [];
+
+              return (
+                <article
+                  key={
+                    module?.id ||
+                    `guest-module-${moduleIndex}`
+                  }
+                  className="overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {`\u041c\u043e\u0434\u0443\u043b\u044c ${moduleIndex + 1}`}
+                      </div>
+
+                      <h3 className="mt-1 text-base font-semibold text-slate-900">
+                        {module?.title ||
+                          `\u041c\u043e\u0434\u0443\u043b\u044c ${moduleIndex + 1}`}
+                      </h3>
+                    </div>
+
+                    <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+                      {`${lessons.length} \u0443\u0440\u043e\u043a\u043e\u0432`}
+                    </span>
+                  </div>
+
+                  {lessons.length > 0 ? (
+                    <div className="border-t border-slate-200 bg-white">
+                      {lessons.map(
+                        (lesson, lessonIndex) => {
+                          const lessonPosition =
+                            `${moduleIndex}:${lessonIndex}`;
+
+                          const isCancelledCourseCompletedLesson =
+                            cancelled &&
+                            getLessonCompleted(lesson);
+
+                          const isCancelledCourseIncompleteLesson =
+                            cancelled &&
+                            !isCancelledCourseCompletedLesson;
+
+                          const isCompletedCourseLesson =
+                            completed &&
+                            getLessonCompleted(lesson);
+
+                          const isCompletedCourseIncompleteLesson =
+                            completed &&
+                            !isCompletedCourseLesson;
+
+                          const isActiveCompletedLesson =
+                            active &&
+                            getLessonCompleted(lesson);
+
+                          const isActiveNextLesson =
+                            active &&
+                            !isActiveCompletedLesson &&
+                            Boolean(firstIncompleteLessonPosition) &&
+                            lessonPosition === firstIncompleteLessonPosition;
+
+                          const isAssignedFirstLesson =
+                            assigned &&
+                            firstModuleWithLessonsIndex >= 0 &&
+                            moduleIndex === firstModuleWithLessonsIndex &&
+                            lessonIndex === 0;
+
+                          return (
+                          <div
+                            key={
+                              lesson?.id ||
+                              `guest-lesson-${moduleIndex}-${lessonIndex}`
+                            }
+                            data-testid="course-detail-guest-locked-lesson"
+                            className={
+                              isCancelledCourseCompletedLesson
+                                ? "flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                : isCancelledCourseIncompleteLesson
+                                  ? "flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3.5 last:border-b-0 sm:px-5"
+                                  : isCompletedCourseLesson
+                                ? "flex items-center justify-between gap-4 border-b border-green-100 bg-green-50/60 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                : isCompletedCourseIncompleteLesson
+                                  ? "flex items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                  : isActiveCompletedLesson
+                                ? "flex items-center justify-between gap-4 border-b border-green-100 bg-green-50/60 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                : isActiveNextLesson
+                                  ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                  : isAssignedFirstLesson
+                                    ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                    : "flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 sm:px-5"
+                            }
+                          >
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div
+                                aria-hidden="true"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 ring-1 ring-slate-200"
+                              >
+                                {lessonIndex + 1}
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-medium text-slate-800">
+                                  {lesson?.title ||
+                                    `\u0423\u0440\u043e\u043a ${lessonIndex + 1}`}
+                                </div>
+                              </div>
+                            </div>
+
+                            <span
+                              className={
+                                isCancelledCourseCompletedLesson
+                                  ? "hidden shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-300 sm:inline-flex"
+                                  : isCancelledCourseIncompleteLesson
+                                    ? "hidden shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
+                                    : isCompletedCourseLesson
+                                  ? "hidden shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200 sm:inline-flex"
+                                  : isCompletedCourseIncompleteLesson
+                                    ? "hidden shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 sm:inline-flex"
+                                    : isActiveCompletedLesson
+                                  ? "hidden shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200 sm:inline-flex"
+                                  : isActiveNextLesson
+                                    ? "hidden shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 sm:inline-flex"
+                                    : isAssignedFirstLesson
+                                      ? "hidden shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 sm:inline-flex"
+                                      : "hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
+                              }
+                            >
+                              {isCancelledCourseCompletedLesson
+                                ? "\u041f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                : isCancelledCourseIncompleteLesson
+                                  ? "\u041d\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                  : isCompletedCourseLesson
+                                ? "\u041f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                : isCompletedCourseIncompleteLesson
+                                  ? "\u041d\u0435 \u043f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                  : isActiveCompletedLesson
+                                ? "\u041f\u0440\u043e\u0439\u0434\u0435\u043d"
+                                : isActiveNextLesson
+                                  ? "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433"
+                                  : isAssignedFirstLesson
+                                    ? "\u041f\u0435\u0440\u0432\u044b\u0439 \u0448\u0430\u0433"
+                                    : active || assigned
+                                      ? "\u0412 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435"
+                                      : "\u0414\u043e\u0441\u0442\u0443\u043f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438"}
+                            </span>
+                          </div>
+                          );
+                        }
+                      )}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            }
+          )}
         </div>
       ) : (
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            type="button"
-            data-testid="course-detail-state-catalog-action"
-            onClick={() => onPageChange("catalog")}
-            className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            В каталог
-          </button>
-
-          <button
-            type="button"
-            data-testid="course-detail-state-verify-action"
-            onClick={() => onPageChange("verify-document")}
-            className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-          >
-            Проверить документ
-          </button>
+        <div
+          data-testid="course-detail-guest-program-empty"
+          className="mt-6 rounded-2xl bg-slate-50 p-5 text-sm text-slate-600 ring-1 ring-slate-200"
+        >
+          {"\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043f\u043e\u043a\u0430 \u043d\u0435 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u0430."}
         </div>
       )}
     </section>
   );
 }
+
+
+function CourseDetailGuestState({
+  course,
+  enrollLoading,
+  onRegisterAndEnroll,
+  onLogin,
+  onCatalog,
+}) {
+  return (
+    <div
+      data-testid="course-detail-guest-state"
+      data-course-detail-state="guest"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-guest-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-guest-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  {formatCourseDocument(course)}
+                </span>
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041e\u0431\u044a\u0451\u043c"}
+                </div>
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.hours
+                    ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
+                    : "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435"}
+                </div>
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.direction || "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <CourseDetailGuestProgram
+            modules={course.modules}
+          />
+        </main>
+
+        <aside
+          data-testid="course-detail-guest-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+            {"\u0414\u043e\u0441\u0442\u0443\u043f \u0434\u043b\u044f \u0433\u043e\u0441\u0442\u0435\u0439"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441"}
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {"\u0414\u043b\u044f \u0434\u043e\u0441\u0442\u0443\u043f\u0430 \u043a \u0443\u0440\u043e\u043a\u0430\u043c, \u0437\u0430\u0434\u0430\u043d\u0438\u044f\u043c \u0438 \u0442\u0435\u0441\u0442\u0430\u043c \u043d\u0443\u0436\u043d\u0430 \u0443\u0447\u0451\u0442\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c."}
+          </p>
+
+          <button
+            type="button"
+            data-testid="course-detail-guest-register-action"
+            onClick={onRegisterAndEnroll}
+            disabled={enrollLoading}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {enrollLoading
+              ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+              : "\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u0438 \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-guest-login-action"
+            onClick={onLogin}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u0412\u043e\u0439\u0442\u0438"}
+          </button>
+
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <div className="flex gap-3">
+              <div
+                aria-hidden="true"
+                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700 ring-1 ring-green-200"
+              >
+                {"\u2713"}
+              </div>
+
+              <p className="text-sm leading-6 text-slate-600">
+                {"\u041f\u043e\u0441\u043b\u0435 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u0438\u043b\u0438 \u0432\u0445\u043e\u0434\u0430 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u043a\u0443\u0440\u0441 \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0432 \u0440\u0430\u0437\u0434\u0435\u043b \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb."}
+              </p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+function CourseDetailAuthenticatedUnenrolledState({
+  course,
+  enrollLoading,
+  enrollError,
+  enrollSuccess,
+  onEnroll,
+  onAccount,
+  onCatalog,
+}) {
+  return (
+    <div
+      data-testid="course-detail-authenticated-unenrolled-state"
+      data-course-detail-state="authenticated_unenrolled"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-authenticated-unenrolled-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-authenticated-unenrolled-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+                  {"\u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  {formatCourseDocument(course)}
+                </span>
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041e\u0431\u044a\u0451\u043c"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.hours
+                    ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
+                    : "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.direction || "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div
+            data-testid="course-detail-authenticated-unenrolled-program"
+          >
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-authenticated-unenrolled-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+            {"\u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441"}
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {"\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb. \u0422\u0430\u043c \u0431\u0443\u0434\u0443\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b."}
+          </p>
+
+          {enrollError ? (
+            <div
+              data-testid="course-detail-authenticated-unenrolled-error"
+              role="alert"
+              className="mt-5 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+            >
+              {enrollError}
+            </div>
+          ) : null}
+
+          {enrollSuccess ? (
+            <div
+              data-testid="course-detail-authenticated-unenrolled-success"
+              aria-live="polite"
+              className="mt-5 rounded-xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200"
+            >
+              {enrollSuccess}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-authenticated-unenrolled-enroll-action"
+            onClick={onEnroll}
+            disabled={enrollLoading}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {enrollLoading
+              ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+              : "\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-authenticated-unenrolled-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
+
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <div className="flex gap-3">
+              <div
+                aria-hidden="true"
+                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700 ring-1 ring-blue-200"
+              >
+                {"\u2192"}
+              </div>
+
+              <p className="text-sm leading-6 text-slate-600">
+                {"\u0417\u0430\u043f\u0438\u0441\u044c \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f \u0434\u043b\u044f \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0443\u0447\u0451\u0442\u043d\u043e\u0439 \u0437\u0430\u043f\u0438\u0441\u0438. \u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb."}
+              </p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+function CourseDetailAssignedState({
+  course,
+  enrollment,
+  onStart,
+  onAccount,
+  onCatalog,
+}) {
+  const progressPercent = normalizeProgressPercent(
+    enrollment?.progress_percent ??
+      course?.learner_progress?.progress_percent ??
+      0
+  );
+
+  return (
+    <div
+      data-testid="course-detail-assigned-state"
+      data-course-detail-state="assigned"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-assigned-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div className="rounded-shell bg-emerald-50 px-5 py-4 ring-1 ring-emerald-200 sm:px-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+            {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+          </span>
+
+          <p className="text-sm font-medium text-emerald-900">
+            {enrollment?.organization_name
+              ? `\u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d: ${enrollment.organization_name}`
+              : "\u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d \u0432\u0430\u043c \u0434\u043b\u044f \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f."}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-assigned-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-emerald-50 via-white to-blue-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
+                  {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  {formatCourseDocument(course)}
+                </span>
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                {"\u0413\u043e\u0442\u043e\u0432\u043e \u043a \u043d\u0430\u0447\u0430\u043b\u0443"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441"}
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-900">
+                  {`${progressPercent}%`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041e\u0431\u044a\u0451\u043c"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {course.hours
+                    ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
+                    : "\u2014"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div data-testid="course-detail-assigned-program">
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+              assigned
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-assigned-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+            {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u041c\u043e\u0436\u043d\u043e \u043d\u0430\u0447\u0438\u043d\u0430\u0442\u044c"}
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {"\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u043a\u0443\u0440\u0441\u0430. \u0422\u0430\u043c \u0431\u0443\u0434\u0443\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b."}
+          </p>
+
+          <div
+            data-testid="course-detail-assigned-progress"
+            className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm font-semibold text-slate-700">
+                {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+              </span>
+
+              <span className="text-sm font-bold text-slate-900">
+                {`${progressPercent}%`}
+              </span>
+            </div>
+
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progressPercent}
+              className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"
+            >
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-[width]"
+                style={{
+                  width: `${progressPercent}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          {enrollment?.organization_name ? (
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435"}
+              </div>
+
+              <div className="mt-2 text-sm font-semibold text-slate-800">
+                {enrollment.organization_name}
+              </div>
+
+              {enrollment.learning_group_name ? (
+                <div className="mt-1 text-sm text-slate-600">
+                  {enrollment.learning_group_name}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-assigned-start-action"
+            onClick={onStart}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {"\u041d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-assigned-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+function getCourseDetailOverviewLessons(course) {
+  const modules = Array.isArray(course?.modules)
+    ? course.modules
+    : [];
+
+  return modules.flatMap((module) =>
+    (Array.isArray(module?.lessons)
+      ? module.lessons
+      : []
+    ).map((lesson) => ({
+      ...lesson,
+      module_title: module?.title || "",
+    }))
+  );
+}
+
+
+function CourseDetailActiveState({
+  course,
+  enrollment,
+  onContinue,
+  onAccount,
+  onCatalog,
+}) {
+  const lessons = getCourseDetailOverviewLessons(
+    course
+  );
+
+  const nextLesson =
+    lessons.find(
+      (lesson) => !getLessonCompleted(lesson)
+    ) || null;
+
+  const progressPercent = normalizeProgressPercent(
+    enrollment?.progress_percent ??
+      course?.learner_progress?.progress_percent ??
+      0
+  );
+
+  const lessonsTotal = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_total ??
+        course?.learner_progress?.lessons_total ??
+        lessons.length
+    ) || 0
+  );
+
+  const lessonsCompleted = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_completed ??
+        course?.learner_progress?.lessons_completed ??
+        lessons.filter(getLessonCompleted).length
+    ) || 0
+  );
+
+  return (
+    <div
+      data-testid="course-detail-active-state"
+      data-course-detail-state="active"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-active-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-active-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-green-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 ring-1 ring-green-200">
+                  {"\u0412 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0435"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u0412\u0430\u0448\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441"}
+                </div>
+
+                <div className="mt-2 text-2xl font-bold text-blue-700">
+                  {`${progressPercent}%`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e \u0443\u0440\u043e\u043a\u043e\u0432"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-active-next-step"
+            className="rounded-shell bg-blue-50 p-5 ring-1 ring-blue-200 sm:p-6"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
+              {"\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433"}
+            </div>
+
+            {nextLesson ? (
+              <>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">
+                  {nextLesson.title ||
+                    "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a"}
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {nextLesson.module_title
+                    ? `\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435 \u00b7 ${nextLesson.module_title}`
+                    : "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435."}
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">
+                  {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {"\u0412\u0441\u0435 \u0443\u0440\u043e\u043a\u0438 \u043e\u0442\u043c\u0435\u0447\u0435\u043d\u044b \u043a\u0430\u043a \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043d\u044b\u0435. \u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u0434\u043b\u044f \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0435\u0433\u043e \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f."}
+                </p>
+              </>
+            )}
+          </section>
+
+          <div data-testid="course-detail-active-program">
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+              active
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-active-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+            {"\u0412 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0435"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+          </h2>
+
+          <div
+            data-testid="course-detail-active-progress"
+            className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm font-semibold text-slate-700">
+                {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+              </span>
+
+              <span className="text-sm font-bold text-blue-700">
+                {`${progressPercent}%`}
+              </span>
+            </div>
+
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progressPercent}
+              className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"
+            >
+              <div
+                className="h-full rounded-full bg-blue-600 transition-[width]"
+                style={{
+                  width: `${progressPercent}%`,
+                }}
+              />
+            </div>
+
+            <div className="mt-3 text-xs font-medium text-slate-500">
+              {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal} \u0443\u0440\u043e\u043a\u043e\u0432`}
+            </div>
+          </div>
+
+          {nextLesson ? (
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {"\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a"}
+              </div>
+
+              <div className="mt-2 text-sm font-semibold leading-6 text-slate-900">
+                {nextLesson.title}
+              </div>
+            </div>
+          ) : null}
+
+          {enrollment?.started_at ? (
+            <div className="mt-4 text-xs leading-5 text-slate-500">
+              {`\u041d\u0430\u0447\u0430\u0442\u043e: ${formatDateTime(enrollment.started_at)}`}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-active-continue-action"
+            onClick={onContinue}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-active-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
+
+          <p className="mt-5 border-t border-slate-100 pt-5 text-sm leading-6 text-slate-600">
+            {"\u0423\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435 \u043a\u0443\u0440\u0441\u0430."}
+          </p>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+function CourseDetailCompletedState({
+  course,
+  enrollment,
+  accountDocuments = [],
+  documentsLoading = false,
+  documentsLoadError = "",
+  downloadError = "",
+  documentDownloadLoadingId = "",
+  onDownloadDocument,
+  onDocuments,
+  onAccount,
+  onCatalog,
+}) {
+  const lessons = getCourseDetailOverviewLessons(
+    course
+  );
+
+  const lessonsTotal = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_total ??
+        course?.learner_progress?.lessons_total ??
+        lessons.length
+    ) || 0
+  );
+
+  const lessonsCompleted = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_completed ??
+        course?.learner_progress?.lessons_completed ??
+        lessons.filter(getLessonCompleted).length
+    ) || 0
+  );
+
+  const requiredLessonsTotal = Math.max(
+    0,
+    Number(
+      enrollment?.required_lessons_total ??
+        course?.learner_progress?.required_lessons_total ??
+        0
+    ) || 0
+  );
+
+  const requiredLessonsCompleted = Math.max(
+    0,
+    Number(
+      enrollment?.required_lessons_completed ??
+        course?.learner_progress?.required_lessons_completed ??
+        0
+    ) || 0
+  );
+
+  const documentItem =
+    getLearnerDocumentAvailabilityHandoffDocument(
+      course,
+      enrollment,
+      accountDocuments
+    );
+
+  const documentAvailable =
+    documentItem?.status === "available" &&
+    Boolean(documentItem?.download_available);
+
+  const documentRevoked =
+    documentItem?.status === "revoked";
+
+  const documentStatusLabel = documentsLoading
+    ? "\u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"
+    : documentsLoadError
+      ? "\u0421\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u043d\u0435 \u043e\u0431\u043d\u043e\u0432\u0438\u043b\u0438\u0441\u044c"
+      : !documentItem
+        ? "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442\u0441\u044f"
+        : documentAvailable
+          ? "\u0413\u043e\u0442\u043e\u0432 \u043a \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u044e"
+          : documentRevoked
+            ? "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d"
+            : documentItem.status === "available"
+              ? "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d"
+              : "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u0434\u0433\u043e\u0442\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442\u0441\u044f";
+
+  const documentStatusTone = documentsLoadError
+    ? "bg-red-50 text-red-800 ring-red-200"
+    : documentRevoked
+      ? "bg-red-50 text-red-800 ring-red-200"
+      : documentAvailable
+        ? "bg-green-50 text-green-800 ring-green-200"
+        : "bg-amber-50 text-amber-800 ring-amber-200";
+
+  return (
+    <div
+      data-testid="course-detail-completed-state"
+      data-course-detail-state="completed"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-completed-catalog-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <div
+        data-testid="course-detail-completed-banner"
+        className="rounded-shell bg-green-50 px-5 py-4 ring-1 ring-green-200 sm:px-6"
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+            {"\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+          </span>
+
+          <p className="text-sm font-medium text-green-900">
+            {"\u0412\u044b \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043b\u0438 \u043a\u0443\u0440\u0441."}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-completed-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-green-50 via-white to-blue-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 ring-1 ring-green-200">
+                  {"\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-green-700">
+                {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e"}
+              </div>
+
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e"}
+                </div>
+
+                <div className="mt-2 text-2xl font-bold text-green-700">
+                  {"100%"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e \u0443\u0440\u043e\u043a\u043e\u0432"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f"}
+                </div>
+
+                <div className="mt-2 text-base font-semibold text-slate-900">
+                  {enrollment?.completed_at
+                    ? formatDateTime(enrollment.completed_at)
+                    : "\u2014"}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-completed-summary"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-green-700">
+              {"\u0418\u0442\u043e\u0433\u0438 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+            </div>
+
+            <h2 className="mt-2 text-xl font-bold text-slate-900">
+              {"\u0422\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u044b"}
+            </h2>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
+                <div className="text-sm font-semibold text-green-900">
+                  {"\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+                </div>
+
+                <div className="mt-1 text-sm text-green-800">
+                  {"\u0421\u0442\u0430\u0442\u0443\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d."}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
+                <div className="text-sm font-semibold text-green-900">
+                  {"\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u0447\u0430\u0441\u0442\u044c"}
+                </div>
+
+                <div className="mt-1 text-sm text-green-800">
+                  {requiredLessonsTotal > 0
+                    ? `${requiredLessonsCompleted} \u0438\u0437 ${requiredLessonsTotal} \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u0443\u0440\u043e\u043a\u043e\u0432`
+                    : "\u0422\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u044f \u043a \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044e \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u044b."}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div data-testid="course-detail-completed-program">
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+              completed
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-completed-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+            {"\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+          </h2>
+
+          <div className="mt-4 text-sm font-semibold text-slate-900">
+            {documentItem?.title ||
+              formatCourseDocument(course)}
+          </div>
+
+          <div
+            data-testid="course-detail-completed-document-status"
+            className={`mt-4 rounded-2xl p-4 text-sm font-semibold ring-1 ${documentStatusTone}`}
+          >
+            {documentStatusLabel}
+          </div>
+
+          {documentItem ? (
+            <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430"}
+                </div>
+
+                <div className="mt-1 break-all text-sm font-semibold text-slate-900">
+                  {documentItem.document_number || "\u2014"}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0414\u0430\u0442\u0430 \u0432\u044b\u0434\u0430\u0447\u0438"}
+                </div>
+
+                <div className="mt-1 text-sm font-semibold text-slate-900">
+                  {documentItem.issued_at
+                    ? formatDateTime(documentItem.issued_at)
+                    : "\u2014"}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {documentsLoadError ? (
+            <div
+              data-testid="course-detail-completed-document-load-error"
+              role="alert"
+              className="mt-5 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+            >
+              {documentsLoadError}
+            </div>
+          ) : null}
+
+          {downloadError ? (
+            <div
+              data-testid="course-detail-completed-document-download-error"
+              role="alert"
+              className="mt-5 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+            >
+              {downloadError}
+            </div>
+          ) : null}
+
+          {documentAvailable ? (
+            <button
+              type="button"
+              data-testid="course-detail-completed-download-action"
+              onClick={() =>
+                onDownloadDocument?.(documentItem)
+              }
+              disabled={
+                documentDownloadLoadingId ===
+                documentItem.id
+              }
+              className="mt-6 min-h-12 w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {documentDownloadLoadingId ===
+              documentItem.id
+                ? "\u0421\u043a\u0430\u0447\u0438\u0432\u0430\u0435\u043c..."
+                : "\u0421\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              data-testid="course-detail-completed-documents-action"
+              onClick={onDocuments}
+              className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              {"\u041f\u0435\u0440\u0435\u0439\u0442\u0438 \u043a \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c"}
+            </button>
+          )}
+
+          {documentAvailable ? (
+            <button
+              type="button"
+              data-testid="course-detail-completed-documents-action"
+              onClick={onDocuments}
+              className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+            >
+              {"\u0412\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"}
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-completed-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+function CourseDetailCancelledState({
+  course,
+  enrollment,
+  onAccount,
+  onCatalog,
+}) {
+  const lessons =
+    getCourseDetailOverviewLessons(course);
+
+  const lessonsTotal = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_total ??
+        course?.learner_progress?.lessons_total ??
+        lessons.length
+    ) || 0
+  );
+
+  const lessonsCompleted = Math.max(
+    0,
+    Number(
+      enrollment?.lessons_completed ??
+        course?.learner_progress?.lessons_completed ??
+        lessons.filter(getLessonCompleted).length
+    ) || 0
+  );
+
+  const organizationName =
+    enrollment?.organization_name || "";
+
+  const learningGroupName =
+    enrollment?.learning_group_name || "";
+
+  return (
+    <div
+      data-testid="course-detail-cancelled-state"
+      data-course-detail-state="cancelled"
+      className="mx-auto max-w-7xl space-y-5"
+    >
+      <button
+        type="button"
+        data-testid="course-detail-cancelled-catalog-back-action"
+        onClick={onCatalog}
+        className="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+      >
+        {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+      </button>
+
+      <section
+        data-testid="course-detail-cancelled-banner"
+        className="rounded-shell bg-red-50 px-5 py-5 ring-1 ring-red-200 sm:px-6"
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-red-600 ring-1 ring-red-200">
+            {"!"}
+          </div>
+
+          <div>
+            <div className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+              {"\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
+            </div>
+
+            <h1 className="mt-3 text-xl font-bold text-red-950 sm:text-2xl">
+              {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e \u044d\u0442\u043e\u043c\u0443 \u043a\u0443\u0440\u0441\u0443 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043e"}
+            </h1>
+
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-red-800">
+              {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430, \u043d\u043e \u0443\u0447\u0435\u0431\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b. \u041f\u043e\u0432\u0442\u043e\u0440\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430."}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+        <main className="min-w-0 space-y-6">
+          <section
+            data-testid="course-detail-cancelled-hero"
+            className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-gradient-to-br from-red-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+                  {"\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
+                </span>
+
+                {course.direction ? (
+                  <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                    {course.direction}
+                  </span>
+                ) : null}
+
+                {course.hours ? (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-red-700">
+                {"\u0410\u0440\u0445\u0438\u0432 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+              </div>
+
+              <h2 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+                {course.title}
+              </h2>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {course.description ||
+                  "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0421\u0442\u0430\u0442\u0443\u0441"}
+                </div>
+
+                <div className="mt-2 font-semibold text-red-700">
+                  {"\u041e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0443\u0440\u043e\u043a\u043e\u0432"}
+                </div>
+
+                <div
+                  data-testid="course-detail-cancelled-lesson-history"
+                  className="mt-2 font-semibold text-slate-900"
+                >
+                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-2 font-semibold text-slate-900">
+                  {formatCourseDocument(course)}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div
+            data-testid="course-detail-cancelled-program"
+          >
+            <CourseDetailGuestProgram
+              modules={course.modules}
+              authenticated
+              cancelled
+            />
+          </div>
+        </main>
+
+        <aside
+          data-testid="course-detail-cancelled-sidebar"
+          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+        >
+          <div className="inline-flex rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+            {"\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043a\u0440\u044b\u0442"}
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            {"\u0423\u0447\u0435\u0431\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b"}
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0438 \u0438\u0441\u0442\u043e\u0440\u0438\u044f \u0437\u0430\u043f\u0438\u0441\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b. \u041d\u0430\u0447\u0430\u0442\u044c, \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u0438\u043b\u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u043e \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u0441 \u044d\u0442\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u043d\u0435\u043b\u044c\u0437\u044f."}
+          </p>
+
+          {(organizationName || learningGroupName) ? (
+            <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
+              {organizationName ? (
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f"}
+                  </div>
+
+                  <div className="mt-1 text-sm font-semibold text-slate-900">
+                    {organizationName}
+                  </div>
+                </div>
+              ) : null}
+
+              {learningGroupName ? (
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430"}
+                  </div>
+
+                  <div className="mt-1 text-sm font-semibold text-slate-900">
+                    {learningGroupName}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            data-testid="course-detail-cancelled-catalog-action"
+            onClick={onCatalog}
+            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {"\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+          </button>
+
+          <button
+            type="button"
+            data-testid="course-detail-cancelled-account-action"
+            onClick={onAccount}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+          >
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+          </button>
+
+          <div
+            data-testid="course-detail-cancelled-admin-note"
+            className="mt-5 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200"
+          >
+            {"\u0415\u0441\u043b\u0438 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0443\u0436\u043d\u043e \u0432\u043e\u0437\u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c, \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430."}
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+const COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING = false;
+
+function CourseLearnerWorkspaceHandoff({
+  existingEnrollment,
+  onOpenAccount,
+}) {
+  if (!existingEnrollment) {
+    return null;
+  }
+
+  const status = existingEnrollment.status;
+
+  const title =
+    status === "assigned"
+      ? "\u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"
+      : status === "active"
+        ? "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u0442\u0441\u044f"
+        : status === "completed"
+          ? "\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"
+          : status === "cancelled"
+            ? "\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"
+            : "\u041a\u0443\u0440\u0441 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435";
+
+  const description =
+    status === "completed"
+      ? "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u044b \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u0438 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435."
+      : status === "cancelled"
+        ? "\u0418\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0435 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e. \u0421\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u043e \u0437\u0430\u043f\u0438\u0441\u0438 \u043e\u0441\u0442\u0430\u044e\u0442\u0441\u044f \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435."
+        : "\u0423\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u0432 \u0440\u0430\u0431\u043e\u0447\u0435\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435 \u043a\u0443\u0440\u0441\u0430 \u0438\u0437 \u0440\u0430\u0437\u0434\u0435\u043b\u0430 \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb.";
+
+  const actionLabel =
+    status === "cancelled"
+      ? "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"
+      : "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb";
+
+  return (
+    <section
+      data-testid="course-detail-learner-workspace-handoff"
+      data-enrollment-status={status || "unknown"}
+      className="rounded-shell bg-blue-50 p-6 ring-1 ring-blue-200 md:p-8"
+    >
+      <div className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+        {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435"}
+      </div>
+
+      <h2 className="mt-2 text-2xl font-bold text-slate-900">
+        {title}
+      </h2>
+
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-700">
+        {description}
+      </p>
+
+      <div className="mt-5">
+        <button
+          type="button"
+          data-testid="course-detail-open-learning-workspace"
+          onClick={onOpenAccount}
+          className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          {actionLabel}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+
+function CourseDetailServiceState({
+  variant,
+  error,
+  onPageChange,
+  onRetry,
+}) {
+  const isLoading = variant === "loading";
+  const isError = variant === "error";
+  const isNotFound = !isLoading && !isError;
+
+  if (isLoading) {
+    return (
+      <div
+        data-testid="course-detail-loading-state"
+        data-course-detail-state="loading"
+        aria-live="polite"
+        aria-busy="true"
+        className="mx-auto max-w-7xl space-y-6"
+      >
+        <div className="flex min-h-11 items-center">
+          <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" />
+        </div>
+
+        <div
+          data-testid="course-detail-loading-skeleton"
+          className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8"
+        >
+          <main
+            data-testid="course-detail-loading-main-skeleton"
+            className="min-w-0 space-y-6"
+          >
+            <section className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200">
+              <div className="px-5 py-8 sm:px-8 sm:py-10">
+                <div className="flex gap-2">
+                  <div className="h-7 w-28 animate-pulse rounded-full bg-blue-100" />
+                  <div className="h-7 w-24 animate-pulse rounded-full bg-slate-100" />
+                </div>
+
+                <div className="mt-7 h-4 w-36 animate-pulse rounded-full bg-slate-200" />
+
+                <div className="mt-4 h-10 w-11/12 animate-pulse rounded-2xl bg-slate-200 sm:w-4/5" />
+
+                <div className="mt-3 h-10 w-3/5 animate-pulse rounded-2xl bg-slate-200" />
+
+                <div className="mt-7 space-y-3">
+                  <div className="h-4 w-full animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-4 w-11/12 animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-4 w-3/4 animate-pulse rounded-full bg-slate-100" />
+                </div>
+              </div>
+
+              <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+                {[0, 1, 2].map((item) => (
+                  <div
+                    key={item}
+                    className="bg-white p-5"
+                  >
+                    <div className="h-3 w-20 animate-pulse rounded-full bg-slate-100" />
+                    <div className="mt-3 h-5 w-28 animate-pulse rounded-full bg-slate-200" />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+              <div className="h-5 w-40 animate-pulse rounded-full bg-slate-200" />
+
+              <div className="mt-5 space-y-3">
+                {[0, 1, 2].map((item) => (
+                  <div
+                    key={item}
+                    className="h-16 animate-pulse rounded-2xl bg-slate-100 ring-1 ring-slate-200"
+                  />
+                ))}
+              </div>
+            </section>
+          </main>
+
+          <aside
+            data-testid="course-detail-loading-sidebar-skeleton"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+          >
+            <div className="h-7 w-32 animate-pulse rounded-full bg-blue-100" />
+
+            <div className="mt-5 h-7 w-4/5 animate-pulse rounded-xl bg-slate-200" />
+
+            <div className="mt-4 space-y-3">
+              <div className="h-4 w-full animate-pulse rounded-full bg-slate-100" />
+              <div className="h-4 w-5/6 animate-pulse rounded-full bg-slate-100" />
+            </div>
+
+            <div className="mt-7 h-12 w-full animate-pulse rounded-xl bg-blue-100" />
+
+            <div className="mt-3 h-12 w-full animate-pulse rounded-xl bg-slate-100" />
+          </aside>
+        </div>
+
+        <div
+          data-testid="course-detail-state-title"
+          className="sr-only"
+        >
+          {"\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0434\u0430\u043d\u043d\u044b\u0445 \u043a\u0443\u0440\u0441\u0430..."}
+        </div>
+
+        <div
+          data-testid="course-detail-state-description"
+          className="sr-only"
+        >
+          {"\u041f\u043e\u043b\u0443\u0447\u0430\u0435\u043c \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0443 \u043a\u0443\u0440\u0441\u0430 \u0438 \u0441\u0442\u0430\u0442\u0443\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f."}
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div
+        data-testid="course-detail-error-state"
+        data-course-detail-state="error"
+        className="mx-auto max-w-7xl space-y-6"
+      >
+        <section
+          data-testid="course-detail-error-panel"
+          role="alert"
+          className="rounded-shell bg-white px-5 py-10 text-center shadow-sm ring-1 ring-slate-200 sm:px-8 sm:py-12"
+        >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-2xl font-bold text-red-600 ring-1 ring-red-200">
+            {"!"}
+          </div>
+
+          <div className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-red-600">
+            {"\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438"}
+          </div>
+
+          <h1
+            data-testid="course-detail-state-title"
+            className="mx-auto mt-3 max-w-3xl text-2xl font-bold text-slate-950 sm:text-3xl"
+          >
+            {"\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u0430"}
+          </h1>
+
+          <p
+            data-testid="course-detail-state-description"
+            className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600"
+          >
+            {"\u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c \u0437\u0430\u043f\u0440\u043e\u0441. \u0415\u0441\u043b\u0438 \u043e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u0441\u044f, \u0432\u0435\u0440\u043d\u0438\u0442\u0435\u0441\u044c \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433."}
+          </p>
+
+          {error ? (
+            <div
+              data-testid="course-detail-error-message"
+              className="mx-auto mt-5 max-w-2xl rounded-xl bg-red-50 px-4 py-3 text-sm leading-6 text-red-700 ring-1 ring-red-200"
+            >
+              {error}
+            </div>
+          ) : null}
+
+          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
+            {onRetry ? (
+              <button
+                type="button"
+                data-testid="course-detail-state-retry-action"
+                onClick={onRetry}
+                className="min-h-12 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                {"\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c"}
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              data-testid="course-detail-state-catalog-action"
+              onClick={() => onPageChange("catalog")}
+              className="min-h-12 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+            >
+              {"\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+            </button>
+          </div>
+        </section>
+
+        <section
+          data-testid="course-detail-error-disabled-content"
+          aria-hidden="true"
+          className="pointer-events-none grid gap-6 opacity-45 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8"
+        >
+          <div className="space-y-4 rounded-shell bg-white p-6 ring-1 ring-slate-200">
+            <div className="h-7 w-2/3 rounded-xl bg-slate-200" />
+            <div className="h-4 w-full rounded-full bg-slate-100" />
+            <div className="h-4 w-5/6 rounded-full bg-slate-100" />
+
+            <div className="mt-6 space-y-3">
+              <div className="h-14 rounded-2xl bg-slate-100" />
+              <div className="h-14 rounded-2xl bg-slate-100" />
+            </div>
+          </div>
+
+          <div className="rounded-shell bg-white p-6 ring-1 ring-slate-200">
+            <div className="h-6 w-1/2 rounded-xl bg-slate-200" />
+            <div className="mt-5 h-12 rounded-xl bg-slate-100" />
+            <div className="mt-3 h-12 rounded-xl bg-slate-100" />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (isNotFound) {
+    return (
+      <div
+        data-testid="course-detail-not-found-state"
+        data-course-detail-state="not_found"
+        className="mx-auto max-w-7xl space-y-6"
+      >
+        <section
+          data-testid="course-detail-not-found-panel"
+          className="rounded-shell bg-white px-5 py-12 text-center shadow-sm ring-1 ring-slate-200 sm:px-8 sm:py-16"
+        >
+          <div
+            data-testid="course-detail-not-found-code"
+            className="text-7xl font-black tracking-tight text-blue-100 sm:text-8xl"
+          >
+            {"404"}
+          </div>
+
+          <div className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+            {"\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u043a\u0443\u0440\u0441\u0430"}
+          </div>
+
+          <h1
+            data-testid="course-detail-state-title"
+            className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl"
+          >
+            {"\u041a\u0443\u0440\u0441 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d"}
+          </h1>
+
+          <p
+            data-testid="course-detail-state-description"
+            className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base"
+          >
+            {error ||
+              "\u0412\u043e\u0437\u043c\u043e\u0436\u043d\u043e, \u043a\u0443\u0440\u0441 \u0431\u044b\u043b \u0441\u043d\u044f\u0442 \u0441 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438 \u0438\u043b\u0438 \u0430\u0434\u0440\u0435\u0441 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u0443\u043a\u0430\u0437\u0430\u043d \u043d\u0435\u0432\u0435\u0440\u043d\u043e."}
+          </p>
+
+          <button
+            type="button"
+            data-testid="course-detail-state-catalog-action"
+            onClick={() => onPageChange("catalog")}
+            className="mt-7 min-h-12 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            {"\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+          </button>
+        </section>
+
+        <section
+          data-testid="course-detail-not-found-catalog-hint"
+          className="rounded-shell bg-blue-50 px-5 py-5 ring-1 ring-blue-100 sm:px-6"
+        >
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <div className="text-sm font-bold text-slate-900">
+                {"\u0414\u0440\u0443\u0433\u0438\u0435 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u044b"}
+              </div>
+
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                {"\u0410\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0431\u0440\u0430\u0442\u044c \u0432 \u043e\u0431\u0449\u0435\u043c \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435."}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              data-testid="course-detail-not-found-catalog-hint-action"
+              onClick={() => onPageChange("catalog")}
+              className="min-h-11 shrink-0 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
+            >
+              {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u0442\u0430\u043b\u043e\u0433"}
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 
 function CourseDetailLearnerJourneyHint({
   course,
@@ -4861,10 +6842,20 @@ function setAccountLearningEntryIntent(notice = null) {
 
 
 export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user }) {
+  const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [relatedCourses, setRelatedCourses] = useState([]);
-  const [loading, setLoading] = useState(Boolean(courseSlug));
-  const [error, setError] = useState("");
+  const [publicState, setPublicState] = useState(
+    PUBLIC_COURSE_LOAD_STATES.LOADING
+  );
+  const [accountState, setAccountState] = useState(
+    user
+      ? ACCOUNT_COURSE_LOAD_STATES.LOADING
+      : ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+  );
+  const [publicError, setPublicError] = useState("");
+  const [accountError, setAccountError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const [enrollLoading, setEnrollLoading] = useState(false);
   const [enrollError, setEnrollError] = useState("");
   const [enrollSuccess, setEnrollSuccess] = useState("");
@@ -4887,107 +6878,241 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [completionDocumentFocus, setCompletionDocumentFocus] = useState(null);
   const documentHandoffPanelRef = useRef(null);
 
+  const courseDetailState = resolveCourseDetailState({
+    publicState,
+    accountState,
+    user,
+    enrollment: existingEnrollment,
+  });
+
   useEffect(() => {
     let isMounted = true;
 
     async function loadCourse() {
+      setCourse(null);
+      setRelatedCourses([]);
+      setExistingEnrollment(null);
+      setAccountCourseDetail(null);
+      setAccountDocuments([]);
+      setAccountDocumentsError("");
+      setAccountDocumentDownloadError("");
+      setAccountDocumentDownloadLoadingId("");
+      setCompletionDocumentFocus(null);
+      setPublicError("");
+      setAccountError("");
+
       if (!courseSlug) {
-        setCourse(null);
-        setRelatedCourses([]);
-        setExistingEnrollment(null);
-        setAccountCourseDetail(null);
-        setAccountDocuments([]);
         setAccountDocumentsLoading(false);
-        setAccountDocumentsError("");
-        setAccountDocumentDownloadError("");
-        setAccountDocumentDownloadLoadingId("");
-        setCompletionDocumentFocus(null);
-        setLoading(false);
-        setError("Курс не выбран.");
+        setPublicState(PUBLIC_COURSE_LOAD_STATES.ERROR);
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+        );
+        setPublicError(
+          "\u041a\u0443\u0440\u0441 \u043d\u0435 \u0432\u044b\u0431\u0440\u0430\u043d."
+        );
         return;
       }
 
+      setPublicState(
+        PUBLIC_COURSE_LOAD_STATES.LOADING
+      );
+      setAccountState(
+        user
+          ? ACCOUNT_COURSE_LOAD_STATES.LOADING
+          : ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+      );
+      setAccountDocumentsLoading(Boolean(user));
+
+      let courseResponse = null;
+
       try {
-        setLoading(true);
-        setError("");
-        setAccountDocumentsLoading(Boolean(user));
-        setAccountDocumentsError("");
-        setAccountDocumentDownloadError("");
-        setCompletionDocumentFocus(null);
-
-        const [courseResponse, coursesResponse, accountCoursesResponse] = await Promise.all([
-          getPublicCourseDetail(courseSlug),
-          getPublicCourses({ limit: 6 }),
-          user ? getAccountCourses() : Promise.resolve(null),
-        ]);
-
-        const accountCourses = Array.isArray(accountCoursesResponse?.items)
-          ? accountCoursesResponse.items
-          : [];
-
-        const matchedEnrollment =
-          accountCourses.find(
-            (item) =>
-              item.course_id === courseResponse.id ||
-              item.course_slug === courseResponse.slug
-          ) || null;
-
-        let accountCourseDetailResponse = null;
-        const matchedEnrollmentId = getEnrollmentId(matchedEnrollment);
-
-        let accountDocumentItems = [];
-        let accountDocumentLoadError = "";
-
-        if (matchedEnrollmentId) {
-          try {
-            accountCourseDetailResponse = await getAccountCourseDetail(matchedEnrollmentId);
-          } catch {
-            accountCourseDetailResponse = null;
-          }
-
-          try {
-            const accountDocumentsResponse = await getAccountDocuments({
-              enrollment_id: matchedEnrollmentId,
-              course_id: courseResponse.id,
-            });
-            accountDocumentItems = Array.isArray(accountDocumentsResponse?.items)
-              ? accountDocumentsResponse.items
-              : [];
-          } catch (err) {
-            accountDocumentLoadError = formatApiError(err, "Не удалось загрузить итоговые документы по курсу.");
-          }
-        }
-
-        if (!isMounted) {
-          return;
-        }
-
-        setCourse(courseResponse);
-        setAccountCourseDetail(accountCourseDetailResponse);
-        setAccountDocuments(accountDocumentItems);
-        setAccountDocumentsError(accountDocumentLoadError);
-        setAccountDocumentsLoading(false);
-        setRelatedCourses(
-          Array.isArray(coursesResponse)
-            ? coursesResponse.filter((item) => item.slug !== courseResponse.slug).slice(0, 2)
-            : []
+        courseResponse = await getPublicCourseDetail(
+          courseSlug
         );
-        setExistingEnrollment(accountCourseDetailResponse || matchedEnrollment);
       } catch (err) {
         if (!isMounted) {
           return;
         }
 
-        setCourse(null);
-        setRelatedCourses([]);
+        const isNotFound = err?.status === 404;
+
+        setPublicState(
+          isNotFound
+            ? PUBLIC_COURSE_LOAD_STATES.NOT_FOUND
+            : PUBLIC_COURSE_LOAD_STATES.ERROR
+        );
+
+        setPublicError(
+          formatApiError(
+            err,
+            isNotFound
+              ? "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430."
+              : "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b."
+          )
+        );
+
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+        );
+        setAccountDocumentsLoading(false);
+        return;
+      }
+
+      if (!isMounted) {
+        return;
+      }
+
+      setCourse(courseResponse);
+      setPublicState(
+        PUBLIC_COURSE_LOAD_STATES.READY
+      );
+
+      getPublicCourses({ limit: 6 })
+        .then((coursesResponse) => {
+          if (!isMounted) {
+            return;
+          }
+
+          setRelatedCourses(
+            Array.isArray(coursesResponse)
+              ? coursesResponse
+                  .filter(
+                    (item) =>
+                      item.slug !== courseResponse.slug
+                  )
+                  .slice(0, 2)
+              : []
+          );
+        })
+        .catch(() => {
+          if (isMounted) {
+            setRelatedCourses([]);
+          }
+        });
+
+      if (!user) {
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.NOT_REQUIRED
+        );
+        setAccountDocumentsLoading(false);
+        return;
+      }
+
+      let accountCoursesResponse = null;
+
+      try {
+        accountCoursesResponse =
+          await getAccountCourses();
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.ERROR
+        );
+
+        setAccountError(
+          formatApiError(
+            err,
+            "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0441\u0442\u0430\u0442\u0443\u0441 \u0432\u0430\u0448\u0435\u0439 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."
+          )
+        );
+
+        setAccountDocumentsLoading(false);
+        return;
+      }
+
+      if (!isMounted) {
+        return;
+      }
+
+      const accountCourses = Array.isArray(
+        accountCoursesResponse?.items
+      )
+        ? accountCoursesResponse.items
+        : [];
+
+      const matchedEnrollment =
+        accountCourses.find(
+          (item) =>
+            item.course_id === courseResponse.id ||
+            item.course_slug === courseResponse.slug
+        ) || null;
+
+      const matchedEnrollmentId =
+        getEnrollmentId(matchedEnrollment);
+
+      if (!matchedEnrollmentId) {
         setExistingEnrollment(null);
         setAccountCourseDetail(null);
-        setError(formatApiError(err, "Программа не найдена."));
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setAccountDocuments([]);
+        setAccountDocumentsLoading(false);
+        setAccountState(
+          ACCOUNT_COURSE_LOAD_STATES.READY
+        );
+        return;
       }
+
+      let accountCourseDetailResponse = null;
+
+      try {
+        accountCourseDetailResponse =
+          await getAccountCourseDetail(
+            matchedEnrollmentId
+          );
+      } catch {
+        accountCourseDetailResponse = null;
+      }
+
+      let accountDocumentItems = [];
+      let accountDocumentLoadError = "";
+
+      try {
+        const accountDocumentsResponse =
+          await getAccountDocuments({
+            enrollment_id: matchedEnrollmentId,
+            course_id: courseResponse.id,
+          });
+
+        accountDocumentItems = Array.isArray(
+          accountDocumentsResponse?.items
+        )
+          ? accountDocumentsResponse.items
+          : [];
+      } catch (err) {
+        accountDocumentLoadError = formatApiError(
+          err,
+          "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u043f\u043e \u043a\u0443\u0440\u0441\u0443."
+        );
+      }
+
+      if (!isMounted) {
+        return;
+      }
+
+      setAccountCourseDetail(
+        accountCourseDetailResponse
+      );
+
+      setExistingEnrollment(
+        accountCourseDetailResponse ||
+          matchedEnrollment
+      );
+
+      setAccountDocuments(
+        accountDocumentItems
+      );
+
+      setAccountDocumentsError(
+        accountDocumentLoadError
+      );
+
+      setAccountDocumentsLoading(false);
+
+      setAccountState(
+        ACCOUNT_COURSE_LOAD_STATES.READY
+      );
     }
 
     loadCourse();
@@ -4995,7 +7120,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
     return () => {
       isMounted = false;
     };
-  }, [courseSlug, user?.id]);
+  }, [courseSlug, user?.id, reloadKey]);
 
   const learnerCourse = useMemo(
     () => mergeCourseWithAccountCourseDetail(course, accountCourseDetail),
@@ -5351,6 +7476,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
 
       setAccountCourseDetail(createdCourseDetail);
       setExistingEnrollment(createdCourseDetail || createdEnrollment);
+      setAccountState(ACCOUNT_COURSE_LOAD_STATES.READY);
+      setAccountError("");
       setEnrollSuccess("Вы записаны на программу. Курс добавлен в личный кабинет.");
 
       setAccountLearningEntryIntent({
@@ -5368,6 +7495,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
           course_slug: course.slug,
           status: "assigned",
         });
+        setAccountState(ACCOUNT_COURSE_LOAD_STATES.READY);
+        setAccountError("");
         setEnrollError("");
         setEnrollSuccess("Вы уже записаны на эту программу. Курс доступен в личном кабинете.");
 
@@ -5387,16 +7516,192 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setEnrollLoading(false);
     }
   }
-  if (loading) {
+  function handleOpenLearningWorkspace() {
+    const enrollmentId = getEnrollmentId(
+      existingEnrollment
+    );
+
+    if (!enrollmentId) {
+      setAccountLearningEntryIntent();
+      onPageChange("account");
+      return;
+    }
+
+    navigate(
+      `/account/courses/${enrollmentId}`
+    );
+  }
+
+  function handleGuestLogin() {
+    if (!course) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        "obrportal_pending_enrollment_slug",
+        course.slug
+      );
+    } catch {
+      // localStorage can be unavailable in private mode or tests.
+    }
+
+    onPageChange("login");
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.LOADING
+  ) {
     return <CourseDetailServiceState variant="loading" onPageChange={onPageChange} />;
+  }
+
+  if (
+    courseDetailState ===
+    COURSE_DETAIL_STATES.NOT_FOUND
+  ) {
+    return (
+      <CourseDetailServiceState
+        variant="not-found"
+        error={publicError}
+        onPageChange={onPageChange}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.ERROR
+  ) {
+    return (
+      <CourseDetailServiceState
+        variant="error"
+        error={publicError || accountError}
+        onPageChange={onPageChange}
+        onRetry={() =>
+          setReloadKey((value) => value + 1)
+        }
+      />
+    );
   }
 
   if (!course) {
     return (
       <CourseDetailServiceState
-        variant="not-found"
-        error={error}
+        variant="error"
+        error={
+          "\u0414\u0430\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b."
+        }
         onPageChange={onPageChange}
+        onRetry={() =>
+          setReloadKey((value) => value + 1)
+        }
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.GUEST
+  ) {
+    return (
+      <CourseDetailGuestState
+        course={course}
+        enrollLoading={enrollLoading}
+        onRegisterAndEnroll={handleEnroll}
+        onLogin={handleGuestLogin}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState ===
+      COURSE_DETAIL_STATES.AUTHENTICATED_UNENROLLED
+  ) {
+    return (
+      <CourseDetailAuthenticatedUnenrolledState
+        course={course}
+        enrollLoading={enrollLoading}
+        enrollError={enrollError}
+        enrollSuccess={enrollSuccess}
+        onEnroll={handleEnroll}
+        onAccount={() => onPageChange("account")}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.ASSIGNED
+  ) {
+    return (
+      <CourseDetailAssignedState
+        course={course}
+        enrollment={existingEnrollment}
+        onStart={handleOpenLearningWorkspace}
+        onAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.ACTIVE
+  ) {
+    return (
+      <CourseDetailActiveState
+        course={course}
+        enrollment={existingEnrollment}
+        onContinue={handleOpenLearningWorkspace}
+        onAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.COMPLETED
+  ) {
+    return (
+      <CourseDetailCompletedState
+        course={course}
+        enrollment={existingEnrollment}
+        accountDocuments={accountDocuments}
+        documentsLoading={accountDocumentsLoading}
+        documentsLoadError={accountDocumentsError}
+        downloadError={accountDocumentDownloadError}
+        documentDownloadLoadingId={
+          accountDocumentDownloadLoadingId
+        }
+        onDownloadDocument={
+          handleDownloadAccountDocument
+        }
+        onDocuments={() => onPageChange("documents")}
+        onAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
+        onCatalog={() => onPageChange("catalog")}
+      />
+    );
+  }
+
+  if (
+    courseDetailState === COURSE_DETAIL_STATES.CANCELLED
+  ) {
+    return (
+      <CourseDetailCancelledState
+        course={course}
+        enrollment={existingEnrollment}
+        onAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
+        onCatalog={() => onPageChange("catalog")}
       />
     );
   }
@@ -5557,89 +7862,101 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         onPageChange={onPageChange}
       />
 
-      <CourseLearnerLessonAccessPanel
-        course={learnerCourse}
+      <CourseLearnerWorkspaceHandoff
         existingEnrollment={existingEnrollment}
-        user={user}
-        onPrimaryAction={handleEnroll}
-        onPageChange={onPageChange}
+        onOpenAccount={() => {
+          setAccountLearningEntryIntent();
+          onPageChange("account");
+        }}
       />
 
-      <CourseLearnerLessonContentPreviewPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onPrimaryAction={handleEnroll}
-        onPageChange={onPageChange}
-        selectedLessonId={selectedLessonId}
-      />
+      {COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING ? (
+        <>
+          <CourseLearnerLessonAccessPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPrimaryAction={handleEnroll}
+            onPageChange={onPageChange}
+          />
 
-      <CourseLearnerLessonBlockViewerPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onPrimaryAction={handleEnroll}
-        onPageChange={onPageChange}
-        selectedLessonId={selectedLessonId}
-        onSelectLesson={setSelectedLessonId}
-        onCompleteLesson={handleCompleteLesson}
-        lessonCompletionLoading={lessonCompletionLoading}
-        onQuizAttemptStateChange={handleQuizAttemptStateChange}
-        onAssignmentSubmissionStateChange={handleAssignmentSubmissionStateChange}
-      />
+          <CourseLearnerLessonContentPreviewPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPrimaryAction={handleEnroll}
+            onPageChange={onPageChange}
+            selectedLessonId={selectedLessonId}
+          />
 
-      <CourseLearnerCompletionActionPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onPrimaryAction={handleEnroll}
-        onPageChange={onPageChange}
-        onCompleteLesson={handleCompleteLesson}
-        selectedLessonId={selectedLessonId}
-        quizCompletionGate={selectedLessonQuizCompletionGate}
-        assignmentCompletionGate={selectedLessonAssignmentCompletionGate}
-        lessonCompletionLoading={lessonCompletionLoading}
-        lessonCompletionError={lessonCompletionError}
-        lessonCompletionSuccess={lessonCompletionSuccess}
-      />
+          <CourseLearnerLessonBlockViewerPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPrimaryAction={handleEnroll}
+            onPageChange={onPageChange}
+            selectedLessonId={selectedLessonId}
+            onSelectLesson={setSelectedLessonId}
+            onCompleteLesson={handleCompleteLesson}
+            lessonCompletionLoading={lessonCompletionLoading}
+            onQuizAttemptStateChange={handleQuizAttemptStateChange}
+            onAssignmentSubmissionStateChange={handleAssignmentSubmissionStateChange}
+          />
 
-      <CourseLearnerCourseCompletionPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onCompleteCourse={handleCompleteCourse}
-        courseCompletionLoading={courseCompletionLoading}
-        courseCompletionError={courseCompletionError}
-        courseCompletionSuccess={courseCompletionSuccess}
-        onPageChange={onPageChange}
-      />
+          <CourseLearnerCompletionActionPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPrimaryAction={handleEnroll}
+            onPageChange={onPageChange}
+            onCompleteLesson={handleCompleteLesson}
+            selectedLessonId={selectedLessonId}
+            quizCompletionGate={selectedLessonQuizCompletionGate}
+            assignmentCompletionGate={selectedLessonAssignmentCompletionGate}
+            lessonCompletionLoading={lessonCompletionLoading}
+            lessonCompletionError={lessonCompletionError}
+            lessonCompletionSuccess={lessonCompletionSuccess}
+          />
 
-      <CourseLearnerDocumentHandoffPanel
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        onPageChange={onPageChange}
-        accountDocuments={accountDocuments}
-        documentsLoading={accountDocumentsLoading}
-        documentsError={accountDocumentsError || accountDocumentDownloadError}
-        documentDownloadLoadingId={accountDocumentDownloadLoadingId}
-        onDownloadDocument={handleDownloadAccountDocument}
-        completionDocumentFocus={completionDocumentFocus}
-        onClearCompletionDocumentFocus={() => setCompletionDocumentFocus(null)}
-        documentHandoffRef={documentHandoffPanelRef}
-      />
+          <CourseLearnerCourseCompletionPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onCompleteCourse={handleCompleteCourse}
+            courseCompletionLoading={courseCompletionLoading}
+            courseCompletionError={courseCompletionError}
+            courseCompletionSuccess={courseCompletionSuccess}
+            onPageChange={onPageChange}
+          />
 
-      <CourseSelfEnrollmentDiagnostics
-        course={learnerCourse}
-        existingEnrollment={existingEnrollment}
-        user={user}
-        enrollLoading={enrollLoading}
-        enrollError={enrollError}
-        enrollSuccess={enrollSuccess}
-        relatedCourses={relatedCourses}
-        diagnostics={courseDiagnostics}
-        onPageChange={onPageChange}
-      />
+          <CourseLearnerDocumentHandoffPanel
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            onPageChange={onPageChange}
+            accountDocuments={accountDocuments}
+            documentsLoading={accountDocumentsLoading}
+            documentsError={accountDocumentsError || accountDocumentDownloadError}
+            documentDownloadLoadingId={accountDocumentDownloadLoadingId}
+            onDownloadDocument={handleDownloadAccountDocument}
+            completionDocumentFocus={completionDocumentFocus}
+            onClearCompletionDocumentFocus={() => setCompletionDocumentFocus(null)}
+            documentHandoffRef={documentHandoffPanelRef}
+          />
+
+          <CourseSelfEnrollmentDiagnostics
+            course={learnerCourse}
+            existingEnrollment={existingEnrollment}
+            user={user}
+            enrollLoading={enrollLoading}
+            enrollError={enrollError}
+            enrollSuccess={enrollSuccess}
+            relatedCourses={relatedCourses}
+            diagnostics={courseDiagnostics}
+            onPageChange={onPageChange}
+          />
+        </>
+      ) : null}
 
       <CourseOutlineSection modules={course.modules} />
 

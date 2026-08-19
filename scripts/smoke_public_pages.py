@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 
@@ -39,6 +40,174 @@ def require_not_contains(relative_path: str, fragments: list[str]) -> None:
         for fragment in present:
             print(f" - {fragment}")
         raise SystemExit(1)
+
+def run_course_detail_state_semantic_smoke() -> None:
+    script = r"""
+import {
+  ACCOUNT_COURSE_LOAD_STATES as ACCOUNT,
+  COURSE_DETAIL_STATES as STATE,
+  PUBLIC_COURSE_LOAD_STATES as PUBLIC,
+  resolveCourseDetailState,
+} from "./frontend/src/utils/courseDetailState.js";
+
+const user = { id: "semantic-smoke-user" };
+
+const cases = [
+  ["loading", {}, STATE.LOADING],
+  [
+    "not_found",
+    { publicState: PUBLIC.NOT_FOUND },
+    STATE.NOT_FOUND,
+  ],
+  [
+    "public_error",
+    { publicState: PUBLIC.ERROR },
+    STATE.ERROR,
+  ],
+  [
+    "guest",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.NOT_REQUIRED,
+      user: null,
+    },
+    STATE.GUEST,
+  ],
+  [
+    "authenticated_unenrolled",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: null,
+    },
+    STATE.AUTHENTICATED_UNENROLLED,
+  ],
+  [
+    "assigned",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "assigned" },
+    },
+    STATE.ASSIGNED,
+  ],
+  [
+    "active",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "active" },
+    },
+    STATE.ACTIVE,
+  ],
+  [
+    "completed",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "completed" },
+    },
+    STATE.COMPLETED,
+  ],
+  [
+    "cancelled",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "cancelled" },
+    },
+    STATE.CANCELLED,
+  ],
+  [
+    "account_loading",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.LOADING,
+      user,
+    },
+    STATE.LOADING,
+  ],
+  [
+    "account_error",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.ERROR,
+      user,
+    },
+    STATE.ERROR,
+  ],
+  [
+    "unknown_enrollment_status",
+    {
+      publicState: PUBLIC.READY,
+      accountState: ACCOUNT.READY,
+      user,
+      enrollment: { status: "unexpected_status" },
+    },
+    STATE.ERROR,
+  ],
+];
+
+for (const [name, input, expected] of cases) {
+  const actual = resolveCourseDetailState(input);
+
+  if (actual !== expected) {
+    throw new Error(
+      `${name}: expected ${expected}, received ${actual}`
+    );
+  }
+
+  console.log(`PASS ${name} -> ${actual}`);
+}
+
+const uniqueStates = new Set(Object.values(STATE));
+
+if (uniqueStates.size !== 9) {
+  throw new Error(
+    `Expected 9 course-detail states, received ${uniqueStates.size}`
+  );
+}
+
+console.log("COURSE_DETAIL_STATE_COUNT=9");
+console.log("COURSE_DETAIL_STATE_SEMANTICS=PASS");
+"""
+
+    try:
+        result = subprocess.run(
+            [
+                "node",
+                "--input-type=module",
+                "-e",
+                script,
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        raise SystemExit(
+            "Node.js is required for course detail state semantic smoke"
+        ) from exc
+
+    if result.stdout:
+        print(result.stdout.rstrip())
+
+    if result.returncode != 0:
+        if result.stderr:
+            print(result.stderr.rstrip())
+
+        raise SystemExit(
+            "Course detail state semantic smoke failed"
+        )
+
+    print("Course detail state semantic smoke passed")
 
 def main() -> None:
     require_contains(
@@ -123,6 +292,12 @@ def main() -> None:
             "setCourses(",
             "filteredCourses.map((course) => {",
             "onOpenCourse(course.slug || course.id)",
+            'return "Открыть курс";',
+            "const [reloadKey, setReloadKey] = useState(0);",
+            "}, [user?.id, reloadKey]);",
+            'data-testid="catalog-error-state"',
+            'data-testid="catalog-error-retry"',
+            "onClick={() => setReloadKey((value) => value + 1)}",
             'data-testid="catalog-public-diagnostics"',
             'data-testid="catalog-public-summary"',
             "Опубликованных программ пока нет",
@@ -151,8 +326,31 @@ def main() -> None:
             "По цене",
             ">208<",
             "Backend каталога сейчас не ответил, поэтому для проверки дизайна показана локальная витрина.",
+            'return "Открыть в кабинете";',
+            'return "Продолжить обучение";',
+            'onPageChange("account");',
         ],
     )
+    require_contains(
+        "frontend/src/utils/courseDetailState.js",
+        [
+            "export const COURSE_DETAIL_STATES = Object.freeze({",
+            'LOADING: "loading"',
+            'NOT_FOUND: "not_found"',
+            'ERROR: "error"',
+            'GUEST: "guest"',
+            'AUTHENTICATED_UNENROLLED: "authenticated_unenrolled"',
+            'ASSIGNED: "assigned"',
+            'ACTIVE: "active"',
+            'COMPLETED: "completed"',
+            'CANCELLED: "cancelled"',
+            "export const PUBLIC_COURSE_LOAD_STATES = Object.freeze({",
+            "export const ACCOUNT_COURSE_LOAD_STATES = Object.freeze({",
+            "export function resolveCourseDetailState({",
+            "ENROLLMENT_PAGE_STATES[enrollmentStatus]",
+        ],
+    )
+
     require_contains(
         "frontend/src/pages/CourseDetailPage.jsx",
         [
@@ -161,6 +359,7 @@ def main() -> None:
             "getAccountCourses,",
             "getPublicCourseDetail,",
             "getPublicCourses",
+            'from "../utils/courseDetailState";',
             "function formatCourseDocument(course)",
             "function formatCoursePrice(course)",
             "function getEnrollmentStatusLabel(status)",
@@ -174,9 +373,126 @@ def main() -> None:
             "const [enrollSuccess, setEnrollSuccess] = useState(\"\");",
             "const [existingEnrollment, setExistingEnrollment] = useState(null);",
             "async function loadCourse()",
-            "getPublicCourseDetail(courseSlug)",
             "getPublicCourses({ limit: 6 })",
-            "user ? getAccountCourses() : Promise.resolve(null)",
+            "const [publicState, setPublicState] = useState(",
+            "const [accountState, setAccountState] = useState(",
+            "const [publicError, setPublicError] = useState(",
+            "const [accountError, setAccountError] = useState(",
+            "const courseDetailState = resolveCourseDetailState({",
+            "courseResponse = await getPublicCourseDetail(",
+            "accountCoursesResponse =",
+            "await getAccountCourses();",
+            "PUBLIC_COURSE_LOAD_STATES.NOT_FOUND",
+            "ACCOUNT_COURSE_LOAD_STATES.ERROR",
+            "ACCOUNT_COURSE_LOAD_STATES.READY",
+            'variant="error"',
+            'data-testid="course-detail-state-retry-action"',
+            'data-testid="course-detail-loading-state"',
+            'data-course-detail-state="loading"',
+            'data-testid="course-detail-loading-skeleton"',
+            'data-testid="course-detail-loading-main-skeleton"',
+            'data-testid="course-detail-loading-sidebar-skeleton"',
+            'data-testid="course-detail-error-state"',
+            'data-course-detail-state="error"',
+            'data-testid="course-detail-error-panel"',
+            'data-testid="course-detail-error-message"',
+            'data-testid="course-detail-error-disabled-content"',
+            'data-testid="course-detail-not-found-state"',
+            'data-course-detail-state="not_found"',
+            'data-testid="course-detail-not-found-code"',
+            'data-testid="course-detail-not-found-panel"',
+            'data-testid="course-detail-not-found-catalog-hint"',
+            'data-testid="course-detail-not-found-catalog-hint-action"',
+            "const COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING = false;",
+            "function CourseLearnerWorkspaceHandoff({",
+            'data-testid="course-detail-learner-workspace-handoff"',
+            'data-testid="course-detail-open-learning-workspace"',
+            "<CourseLearnerWorkspaceHandoff",
+            "COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING ? (",
+            "function CourseDetailGuestProgram({",
+            "function CourseDetailGuestState({",
+            'data-testid="course-detail-guest-state"',
+            'data-testid="course-detail-guest-hero"',
+            'data-testid="course-detail-guest-sidebar"',
+            'data-testid="course-detail-guest-program"',
+            'data-testid="course-detail-guest-locked-lesson"',
+            'data-testid="course-detail-guest-register-action"',
+            'data-testid="course-detail-guest-login-action"',
+            "function handleGuestLogin()",
+            'onPageChange("login")',
+            "courseDetailState === COURSE_DETAIL_STATES.GUEST",
+            "course.direction",
+            "course.hours",
+            "<CourseDetailGuestProgram",
+            "function CourseDetailAuthenticatedUnenrolledState({",
+            'data-testid="course-detail-authenticated-unenrolled-state"',
+            'data-testid="course-detail-authenticated-unenrolled-hero"',
+            'data-testid="course-detail-authenticated-unenrolled-sidebar"',
+            'data-testid="course-detail-authenticated-unenrolled-program"',
+            'data-testid="course-detail-authenticated-unenrolled-enroll-action"',
+            'data-testid="course-detail-authenticated-unenrolled-account-action"',
+            "COURSE_DETAIL_STATES.AUTHENTICATED_UNENROLLED",
+            "onEnroll={handleEnroll}",
+            "authenticated",
+            "function CourseDetailAssignedState({",
+            'data-testid="course-detail-assigned-state"',
+            'data-testid="course-detail-assigned-hero"',
+            'data-testid="course-detail-assigned-sidebar"',
+            'data-testid="course-detail-assigned-progress"',
+            'data-testid="course-detail-assigned-start-action"',
+            'data-testid="course-detail-assigned-account-action"',
+            "COURSE_DETAIL_STATES.ASSIGNED",
+            "function handleOpenLearningWorkspace()",
+            "const navigate = useNavigate();",
+            "`/account/courses/${enrollmentId}`",
+            "onStart={handleOpenLearningWorkspace}",
+            "function getCourseDetailOverviewLessons(course)",
+            "function CourseDetailActiveState({",
+            'data-testid="course-detail-active-state"',
+            'data-testid="course-detail-active-hero"',
+            'data-testid="course-detail-active-sidebar"',
+            'data-testid="course-detail-active-progress"',
+            'data-testid="course-detail-active-next-step"',
+            'data-testid="course-detail-active-program"',
+            'data-testid="course-detail-active-continue-action"',
+            'data-testid="course-detail-active-account-action"',
+            "COURSE_DETAIL_STATES.ACTIVE",
+            "onContinue={handleOpenLearningWorkspace}",
+            "const firstIncompleteLessonPosition =",
+            "isActiveCompletedLesson",
+            "isActiveNextLesson",
+            "function CourseDetailCompletedState({",
+            'data-testid="course-detail-completed-state"',
+            'data-testid="course-detail-completed-banner"',
+            'data-testid="course-detail-completed-hero"',
+            'data-testid="course-detail-completed-summary"',
+            'data-testid="course-detail-completed-program"',
+            'data-testid="course-detail-completed-sidebar"',
+            'data-testid="course-detail-completed-document-status"',
+            'data-testid="course-detail-completed-download-action"',
+            'data-testid="course-detail-completed-documents-action"',
+            'data-testid="course-detail-completed-account-action"',
+            "COURSE_DETAIL_STATES.COMPLETED",
+            "getLearnerDocumentAvailabilityHandoffDocument(",
+            "handleDownloadAccountDocument",
+            "documentAvailable",
+            "documentsLoadError",
+            "downloadError",
+            'data-testid="course-detail-completed-document-load-error"',
+            'data-testid="course-detail-completed-document-download-error"',
+            "function CourseDetailCancelledState({",
+            'data-testid="course-detail-cancelled-state"',
+            'data-testid="course-detail-cancelled-banner"',
+            'data-testid="course-detail-cancelled-hero"',
+            'data-testid="course-detail-cancelled-lesson-history"',
+            'data-testid="course-detail-cancelled-program"',
+            'data-testid="course-detail-cancelled-sidebar"',
+            'data-testid="course-detail-cancelled-catalog-action"',
+            'data-testid="course-detail-cancelled-account-action"',
+            'data-testid="course-detail-cancelled-admin-note"',
+            "COURSE_DETAIL_STATES.CANCELLED",
+            "isCancelledCourseCompletedLesson",
+            "isCancelledCourseIncompleteLesson",
             "setRelatedCourses(",
             "setExistingEnrollment(",
             "async function handleEnroll()",
@@ -186,6 +502,16 @@ def main() -> None:
             "enrollAccountCourse(course.id)",
             "if (err.status === 409)",
             "getPrimaryActionLabel(existingEnrollment, user)",
+        ],
+    )
+
+    require_not_contains(
+        "frontend/src/pages/CourseDetailPage.jsx",
+        [
+            "const [loading, setLoading] = useState(Boolean(courseSlug));",
+            'const [error, setError] = useState("");',
+            "const [courseResponse, coursesResponse, accountCoursesResponse] = await Promise.all([",
+            "user ? getAccountCourses() : Promise.resolve(null)",
         ],
     )
 
@@ -254,6 +580,8 @@ def main() -> None:
             "async def verify_document(",
         ],
     )
+
+    run_course_detail_state_semantic_smoke()
 
     print("Public pages behavior smoke passed")
 

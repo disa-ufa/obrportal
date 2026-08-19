@@ -70,11 +70,7 @@ function getCourseActionLabel(enrollment) {
     return "Подробнее";
   }
 
-  if (enrollment.status === "completed") {
-    return "Открыть в кабинете";
-  }
-
-  return "Продолжить обучение";
+  return "Открыть курс";
 }
 
 function formatCourseDocument(course) {
@@ -170,7 +166,6 @@ function CourseCard({
   user,
   enrollment,
   onOpenCourse,
-  onPageChange,
 }) {
   const documentLabel = formatCourseDocument(course);
   const formatLabel = formatCourseFormat(course.format);
@@ -179,11 +174,6 @@ function CourseCard({
   );
 
   function handlePrimaryAction() {
-    if (enrollment) {
-      onPageChange("account");
-      return;
-    }
-
     onOpenCourse(course.slug || course.id);
   }
 
@@ -322,6 +312,7 @@ export function CatalogPage({
     useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const enrollmentMap = useMemo(
     () => buildEnrollmentMap(accountCourses),
@@ -469,7 +460,7 @@ export function CatalogPage({
     return () => {
       isMounted = false;
     };
-  }, [user?.id]);
+  }, [user?.id, reloadKey]);
 
   function resetFilters() {
     setQuery("");
@@ -689,6 +680,7 @@ export function CatalogPage({
       {error ? (
         <section
           role="alert"
+          data-testid="catalog-error-state"
           className="rounded-3xl border border-amber-200 bg-amber-50/70 p-6"
         >
           <h2 className="text-lg font-black text-[#111936]">
@@ -697,6 +689,15 @@ export function CatalogPage({
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {error}
           </p>
+
+          <button
+            type="button"
+            data-testid="catalog-error-retry"
+            onClick={() => setReloadKey((value) => value + 1)}
+            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+          >
+            {"Повторить"}
+          </button>
         </section>
       ) : loading ? (
         <section
@@ -743,7 +744,6 @@ export function CatalogPage({
                 user={user}
                 enrollment={enrollment}
                 onOpenCourse={onOpenCourse}
-                onPageChange={onPageChange}
               />
             );
           })}
