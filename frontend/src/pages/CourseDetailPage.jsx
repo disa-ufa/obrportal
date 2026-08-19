@@ -6417,115 +6417,283 @@ function CourseDetailServiceState({
 }) {
   const isLoading = variant === "loading";
   const isError = variant === "error";
+  const isNotFound = !isLoading && !isError;
 
-  const testId = isLoading
-    ? "course-detail-loading-state"
-    : isError
-      ? "course-detail-error-state"
-      : "course-detail-not-found-state";
-
-  const title = isLoading
-    ? "Загружаем карточку программы"
-    : isError
-      ? "Не удалось загрузить данные курса"
-      : "По этому адресу нет опубликованной карточки курса";
-
-  const eyebrow = isLoading
-    ? "Загрузка"
-    : isError
-      ? "Ошибка загрузки"
-      : "Программа не найдена";
-
-  const description = isLoading
-    ? "Получаем описание программы, структуру обучения и статус записи в личном кабинете."
-    : isError
-      ? error || "Не удалось получить актуальные данные программы. Попробуйте повторить запрос."
-      : error || "Вернитесь в каталог и выберите активную опубликованную программу.";
-
-  return (
-    <section
-      data-testid={testId}
-      className="rounded-shell bg-white p-8 shadow-sm ring-1 ring-slate-200 md:p-10"
-    >
+  if (isLoading) {
+    return (
       <div
-        className={
-          isLoading
-            ? "text-sm font-semibold uppercase tracking-wide text-blue-600"
-            : "text-sm font-semibold uppercase tracking-wide text-red-600"
-        }
+        data-testid="course-detail-loading-state"
+        data-course-detail-state="loading"
+        aria-live="polite"
+        aria-busy="true"
+        className="mx-auto max-w-7xl space-y-6"
       >
-        {eyebrow}
-      </div>
-
-      <h1
-        data-testid="course-detail-state-title"
-        className="mt-2 text-3xl font-bold text-slate-900"
-      >
-        {title}
-      </h1>
-
-      <p
-        data-testid="course-detail-state-description"
-        className="mt-4 max-w-2xl text-sm leading-6 text-slate-600"
-      >
-        {description}
-      </p>
-
-      {isLoading ? (
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
-          {[
-            "Описание",
-            "Структура",
-            "Статус записи",
-          ].map((item) => (
-            <div
-              key={item}
-              className="h-16 animate-pulse rounded-2xl bg-slate-100 ring-1 ring-slate-200"
-              aria-label={`Загружается: ${item}`}
-            />
-          ))}
+        <div className="flex min-h-11 items-center">
+          <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" />
         </div>
-      ) : (
-        <div className="mt-6 flex flex-wrap gap-3">
-          {isError && onRetry ? (
+
+        <div
+          data-testid="course-detail-loading-skeleton"
+          className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8"
+        >
+          <main
+            data-testid="course-detail-loading-main-skeleton"
+            className="min-w-0 space-y-6"
+          >
+            <section className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200">
+              <div className="px-5 py-8 sm:px-8 sm:py-10">
+                <div className="flex gap-2">
+                  <div className="h-7 w-28 animate-pulse rounded-full bg-blue-100" />
+                  <div className="h-7 w-24 animate-pulse rounded-full bg-slate-100" />
+                </div>
+
+                <div className="mt-7 h-4 w-36 animate-pulse rounded-full bg-slate-200" />
+
+                <div className="mt-4 h-10 w-11/12 animate-pulse rounded-2xl bg-slate-200 sm:w-4/5" />
+
+                <div className="mt-3 h-10 w-3/5 animate-pulse rounded-2xl bg-slate-200" />
+
+                <div className="mt-7 space-y-3">
+                  <div className="h-4 w-full animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-4 w-11/12 animate-pulse rounded-full bg-slate-100" />
+                  <div className="h-4 w-3/4 animate-pulse rounded-full bg-slate-100" />
+                </div>
+              </div>
+
+              <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
+                {[0, 1, 2].map((item) => (
+                  <div
+                    key={item}
+                    className="bg-white p-5"
+                  >
+                    <div className="h-3 w-20 animate-pulse rounded-full bg-slate-100" />
+                    <div className="mt-3 h-5 w-28 animate-pulse rounded-full bg-slate-200" />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+              <div className="h-5 w-40 animate-pulse rounded-full bg-slate-200" />
+
+              <div className="mt-5 space-y-3">
+                {[0, 1, 2].map((item) => (
+                  <div
+                    key={item}
+                    className="h-16 animate-pulse rounded-2xl bg-slate-100 ring-1 ring-slate-200"
+                  />
+                ))}
+              </div>
+            </section>
+          </main>
+
+          <aside
+            data-testid="course-detail-loading-sidebar-skeleton"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+          >
+            <div className="h-7 w-32 animate-pulse rounded-full bg-blue-100" />
+
+            <div className="mt-5 h-7 w-4/5 animate-pulse rounded-xl bg-slate-200" />
+
+            <div className="mt-4 space-y-3">
+              <div className="h-4 w-full animate-pulse rounded-full bg-slate-100" />
+              <div className="h-4 w-5/6 animate-pulse rounded-full bg-slate-100" />
+            </div>
+
+            <div className="mt-7 h-12 w-full animate-pulse rounded-xl bg-blue-100" />
+
+            <div className="mt-3 h-12 w-full animate-pulse rounded-xl bg-slate-100" />
+          </aside>
+        </div>
+
+        <div
+          data-testid="course-detail-state-title"
+          className="sr-only"
+        >
+          {"\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0434\u0430\u043d\u043d\u044b\u0445 \u043a\u0443\u0440\u0441\u0430..."}
+        </div>
+
+        <div
+          data-testid="course-detail-state-description"
+          className="sr-only"
+        >
+          {"\u041f\u043e\u043b\u0443\u0447\u0430\u0435\u043c \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0443 \u043a\u0443\u0440\u0441\u0430 \u0438 \u0441\u0442\u0430\u0442\u0443\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f."}
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div
+        data-testid="course-detail-error-state"
+        data-course-detail-state="error"
+        className="mx-auto max-w-7xl space-y-6"
+      >
+        <section
+          data-testid="course-detail-error-panel"
+          role="alert"
+          className="rounded-shell bg-white px-5 py-10 text-center shadow-sm ring-1 ring-slate-200 sm:px-8 sm:py-12"
+        >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-2xl font-bold text-red-600 ring-1 ring-red-200">
+            {"!"}
+          </div>
+
+          <div className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-red-600">
+            {"\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438"}
+          </div>
+
+          <h1
+            data-testid="course-detail-state-title"
+            className="mx-auto mt-3 max-w-3xl text-2xl font-bold text-slate-950 sm:text-3xl"
+          >
+            {"\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u0430"}
+          </h1>
+
+          <p
+            data-testid="course-detail-state-description"
+            className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600"
+          >
+            {"\u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c \u0437\u0430\u043f\u0440\u043e\u0441. \u0415\u0441\u043b\u0438 \u043e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u0441\u044f, \u0432\u0435\u0440\u043d\u0438\u0442\u0435\u0441\u044c \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433."}
+          </p>
+
+          {error ? (
+            <div
+              data-testid="course-detail-error-message"
+              className="mx-auto mt-5 max-w-2xl rounded-xl bg-red-50 px-4 py-3 text-sm leading-6 text-red-700 ring-1 ring-red-200"
+            >
+              {error}
+            </div>
+          ) : null}
+
+          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
+            {onRetry ? (
+              <button
+                type="button"
+                data-testid="course-detail-state-retry-action"
+                onClick={onRetry}
+                className="min-h-12 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                {"\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c"}
+              </button>
+            ) : null}
+
             <button
               type="button"
-              data-testid="course-detail-state-retry-action"
-              onClick={onRetry}
-              className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+              data-testid="course-detail-state-catalog-action"
+              onClick={() => onPageChange("catalog")}
+              className="min-h-12 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
             >
-              {"Повторить"}
+              {"\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
             </button>
-          ) : null}
+          </div>
+        </section>
+
+        <section
+          data-testid="course-detail-error-disabled-content"
+          aria-hidden="true"
+          className="pointer-events-none grid gap-6 opacity-45 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8"
+        >
+          <div className="space-y-4 rounded-shell bg-white p-6 ring-1 ring-slate-200">
+            <div className="h-7 w-2/3 rounded-xl bg-slate-200" />
+            <div className="h-4 w-full rounded-full bg-slate-100" />
+            <div className="h-4 w-5/6 rounded-full bg-slate-100" />
+
+            <div className="mt-6 space-y-3">
+              <div className="h-14 rounded-2xl bg-slate-100" />
+              <div className="h-14 rounded-2xl bg-slate-100" />
+            </div>
+          </div>
+
+          <div className="rounded-shell bg-white p-6 ring-1 ring-slate-200">
+            <div className="h-6 w-1/2 rounded-xl bg-slate-200" />
+            <div className="mt-5 h-12 rounded-xl bg-slate-100" />
+            <div className="mt-3 h-12 rounded-xl bg-slate-100" />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (isNotFound) {
+    return (
+      <div
+        data-testid="course-detail-not-found-state"
+        data-course-detail-state="not_found"
+        className="mx-auto max-w-7xl space-y-6"
+      >
+        <section
+          data-testid="course-detail-not-found-panel"
+          className="rounded-shell bg-white px-5 py-12 text-center shadow-sm ring-1 ring-slate-200 sm:px-8 sm:py-16"
+        >
+          <div
+            data-testid="course-detail-not-found-code"
+            className="text-7xl font-black tracking-tight text-blue-100 sm:text-8xl"
+          >
+            {"404"}
+          </div>
+
+          <div className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+            {"\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u043a\u0443\u0440\u0441\u0430"}
+          </div>
+
+          <h1
+            data-testid="course-detail-state-title"
+            className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl"
+          >
+            {"\u041a\u0443\u0440\u0441 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d"}
+          </h1>
+
+          <p
+            data-testid="course-detail-state-description"
+            className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base"
+          >
+            {error ||
+              "\u0412\u043e\u0437\u043c\u043e\u0436\u043d\u043e, \u043a\u0443\u0440\u0441 \u0431\u044b\u043b \u0441\u043d\u044f\u0442 \u0441 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438 \u0438\u043b\u0438 \u0430\u0434\u0440\u0435\u0441 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u0443\u043a\u0430\u0437\u0430\u043d \u043d\u0435\u0432\u0435\u0440\u043d\u043e."}
+          </p>
 
           <button
             type="button"
             data-testid="course-detail-state-catalog-action"
             onClick={() => onPageChange("catalog")}
-            className={
-              isError
-                ? "rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                : "rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-            }
+            className="mt-7 min-h-12 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
-            {"В каталог"}
+            {"\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
           </button>
+        </section>
 
-          {!isError ? (
+        <section
+          data-testid="course-detail-not-found-catalog-hint"
+          className="rounded-shell bg-blue-50 px-5 py-5 ring-1 ring-blue-100 sm:px-6"
+        >
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <div className="text-sm font-bold text-slate-900">
+                {"\u0414\u0440\u0443\u0433\u0438\u0435 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u044b"}
+              </div>
+
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                {"\u0410\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0431\u0440\u0430\u0442\u044c \u0432 \u043e\u0431\u0449\u0435\u043c \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435."}
+              </p>
+            </div>
+
             <button
               type="button"
-              data-testid="course-detail-state-verify-action"
-              onClick={() => onPageChange("verify-document")}
-              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+              data-testid="course-detail-not-found-catalog-hint-action"
+              onClick={() => onPageChange("catalog")}
+              className="min-h-11 shrink-0 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
             >
-              {"Проверить документ"}
+              {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u0442\u0430\u043b\u043e\u0433"}
             </button>
-          ) : null}
-        </div>
-      )}
-    </section>
-  );
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  return null;
 }
+
 
 function CourseDetailLearnerJourneyHint({
   course,
