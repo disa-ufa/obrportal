@@ -531,7 +531,7 @@ def main() -> None:
             'aria-label="\u041e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b"',
             "getCourseEnrollment(",
             "getCourseActionLabel(enrollment)",
-            'onPageChange("account");',
+            'data-testid="catalog-error-retry"',
             "onOpenCourse(course.slug || course.id);",
         ],
     )

@@ -292,6 +292,12 @@ def main() -> None:
             "setCourses(",
             "filteredCourses.map((course) => {",
             "onOpenCourse(course.slug || course.id)",
+            'return "Открыть курс";',
+            "const [reloadKey, setReloadKey] = useState(0);",
+            "}, [user?.id, reloadKey]);",
+            'data-testid="catalog-error-state"',
+            'data-testid="catalog-error-retry"',
+            "onClick={() => setReloadKey((value) => value + 1)}",
             'data-testid="catalog-public-diagnostics"',
             'data-testid="catalog-public-summary"',
             "Опубликованных программ пока нет",
@@ -320,6 +326,9 @@ def main() -> None:
             "По цене",
             ">208<",
             "Backend каталога сейчас не ответил, поэтому для проверки дизайна показана локальная витрина.",
+            'return "Открыть в кабинете";',
+            'return "Продолжить обучение";',
+            'onPageChange("account");',
         ],
     )
     require_contains(
