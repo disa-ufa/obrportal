@@ -110,6 +110,7 @@ function getText(block) {
 
   const direct = `${
     content.text
+    || content.content_text
     || content.body
     || content.description
     || content.note
@@ -130,7 +131,10 @@ function getUrl(block) {
 
   return `${
     content.url
+    || content.content_url
     || content.file_url
+    || content.href
+    || content.link
     || content.video_url
     || ""
   }`.trim();
@@ -165,6 +169,208 @@ function getSafeHref(value) {
   } catch {
     return "";
   }
+}
+
+
+function getVideoEmbedSrc(value) {
+  const code = `${value || ""}`;
+  const match = code.match(/src=["']([^"']+)["']/i);
+
+  return match?.[1]?.replaceAll("&amp;", "&").trim() || "";
+}
+
+
+function normalizeVideoEmbedUrl(value) {
+  const source = `${value || ""}`.trim().replaceAll("&amp;", "&");
+
+  if (!source) {
+    return "";
+  }
+
+  if (source.startsWith("//")) {
+    return `https:${source}`;
+  }
+
+  if (
+    source.startsWith("http://")
+    || source.startsWith("https://")
+  ) {
+    return source;
+  }
+
+  return "";
+}
+
+
+function getYouTubeVideoId(url) {
+  const host = url.hostname.replace(/^www\./, "");
+  const pathParts = url.pathname.split("/").filter(Boolean);
+
+  if (host === "youtu.be") {
+    return pathParts[0] || "";
+  }
+
+  if (host.includes("youtube.com")) {
+    if (url.pathname === "/watch") {
+      return url.searchParams.get("v") || "";
+    }
+
+    if (
+      pathParts[0] === "embed"
+      || pathParts[0] === "shorts"
+      || pathParts[0] === "live"
+    ) {
+      return pathParts[1] || "";
+    }
+  }
+
+  return "";
+}
+
+
+function getVideoPreviewEmbedUrl(value) {
+  const source = `${value || ""}`
+    .trim()
+    .replaceAll("&amp;", "&");
+
+  if (!source) {
+    return "";
+  }
+
+  const iframeSrc = getVideoEmbedSrc(source);
+
+  if (iframeSrc) {
+    return normalizeVideoEmbedUrl(iframeSrc);
+  }
+
+  try {
+    const url = new URL(source);
+    const host = url.hostname.replace(/^www\./, "");
+    const pathParts = url.pathname.split("/").filter(Boolean);
+
+    const youtubeId = getYouTubeVideoId(url);
+
+    if (youtubeId) {
+      return `https://www.youtube.com/embed/${youtubeId}`;
+    }
+
+    if (host.includes("rutube.ru")) {
+      const rutubeId =
+        pathParts[0] === "video"
+          ? pathParts[1]
+          : pathParts[0] === "play"
+            && pathParts[1] === "embed"
+            ? pathParts[2]
+            : "";
+
+      if (rutubeId) {
+        return `https://rutube.ru/play/embed/${rutubeId}`;
+      }
+    }
+
+    if (
+      host.includes("vk.com")
+      || host.includes("vkvideo.ru")
+    ) {
+      const videoMatch = url.pathname.match(
+        /video(-?\d+)_(\d+)/
+      );
+
+      if (videoMatch) {
+        return `https://vk.com/video_ext.php?oid=${videoMatch[1]}&id=${videoMatch[2]}`;
+      }
+
+      if (url.pathname.includes("video_ext.php")) {
+        return normalizeVideoEmbedUrl(source);
+      }
+    }
+
+    if (host.includes("vimeo.com")) {
+      const videoId = pathParts.find(
+        (part) => /^\d+$/.test(part)
+      );
+
+      if (videoId) {
+        return `https://player.vimeo.com/video/${videoId}`;
+      }
+    }
+
+    if (
+      url.pathname.includes("/embed/")
+      || host.includes("player.")
+      || host.includes("video_ext.php")
+    ) {
+      return normalizeVideoEmbedUrl(source);
+    }
+
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+
+function getLearnerVideoSourceValue(block) {
+  const content = getContent(block);
+
+  const embedCode = `${
+    content.embed_code
+    || content.video_embed_code
+    || content.iframe
+    || ""
+  }`.trim();
+
+  const sourceType = `${
+    content.video_source_type
+    || content.source_type
+    || content.insert_type
+    || ""
+  }`
+    .trim()
+    .toLowerCase();
+
+  const directUrl = `${
+    content.url
+    || content.content_url
+    || content.video_url
+    || content.src
+    || ""
+  }`.trim();
+
+  if (
+    sourceType === "embed"
+    || embedCode
+  ) {
+    return embedCode || directUrl;
+  }
+
+  return directUrl;
+}
+
+
+function getLearnerVideoOpenUrl(block) {
+  const content = getContent(block);
+
+  const directUrl = `${
+    content.url
+    || content.content_url
+    || content.video_url
+    || content.src
+    || ""
+  }`.trim();
+
+  if (directUrl) {
+    return directUrl;
+  }
+
+  return getVideoEmbedSrc(
+    `${
+      content.embed_code
+      || content.video_embed_code
+      || content.iframe
+      || ""
+    }`
+  );
 }
 
 
@@ -339,7 +545,7 @@ function RichTextBlock({ block }) {
   return (
     <section
       data-testid="learner-content-rich-text"
-      className="rounded-2xl bg-white p-5 ring-1 ring-slate-200"
+      className="py-2"
     >
       {block?.title ? (
         <h3 className="text-base font-black text-slate-950">
@@ -358,8 +564,18 @@ function RichTextBlock({ block }) {
 function VideoBlock({ block }) {
   const content = getContent(block);
   const text = getText(block);
-  const url = getUrl(block);
-  const href = getSafeHref(url);
+
+  const sourceValue =
+    getLearnerVideoSourceValue(block);
+
+  const embedUrl =
+    getVideoPreviewEmbedUrl(sourceValue);
+
+  const openUrl =
+    getLearnerVideoOpenUrl(block)
+    || embedUrl;
+
+  const href = getSafeHref(openUrl);
 
   const caption = `${
     content.caption
@@ -367,21 +583,47 @@ function VideoBlock({ block }) {
     || ""
   }`.trim();
 
+  const videoTitle = `${
+    block?.title
+    || "Видеоматериал"
+  }`.trim() || "Видеоматериал";
+
+  const allowFullscreen =
+    content.allow_fullscreen !== false;
+
   return (
     <section
       data-testid="learner-content-video"
       className="rounded-2xl bg-blue-50 p-5 ring-1 ring-blue-200"
     >
       <div className="text-xs font-black uppercase tracking-[0.12em] text-blue-700">
-        \u0412\u0438\u0434\u0435\u043e
+        Видео
       </div>
 
       <h3 className="mt-2 text-base font-black text-blue-950">
-        {block?.title || "\u0412\u0438\u0434\u0435\u043e\u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b"}
+        {videoTitle}
       </h3>
 
+      {embedUrl ? (
+        <div
+          data-testid="learner-content-video-player"
+          className="mt-4 overflow-hidden rounded-2xl bg-slate-950 ring-1 ring-blue-200"
+        >
+          <div className="relative aspect-[16/9] bg-slate-950">
+            <iframe
+              title={videoTitle}
+              src={embedUrl}
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen={allowFullscreen}
+            />
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-3 whitespace-pre-wrap break-words text-sm font-medium leading-7 text-blue-900">
-        {text || caption || url || "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0432\u0438\u0434\u0435\u043e \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e."}
+        {text || caption || openUrl || "Описание видео не заполнено."}
       </div>
 
       {href ? (
@@ -392,14 +634,16 @@ function VideoBlock({ block }) {
           rel="noreferrer"
           className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100"
         >
-          \u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0432\u0438\u0434\u0435\u043e
+          {embedUrl
+            ? "Открыть видео отдельно"
+            : "Открыть видео"}
         </a>
-      ) : url ? (
+      ) : sourceValue ? (
         <div
           data-testid="learner-content-video-unsafe-url"
           className="mt-4 rounded-xl bg-white/70 p-3 text-xs font-semibold text-blue-800 ring-1 ring-blue-200"
         >
-          \u0421\u0441\u044b\u043b\u043a\u0430 \u043d\u0430 \u0432\u0438\u0434\u0435\u043e \u0438\u043c\u0435\u0435\u0442 \u043d\u0435\u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043c\u044b\u0439 \u0444\u043e\u0440\u043c\u0430\u0442.
+          Ссылка на видео имеет неподдерживаемый формат.
         </div>
       ) : null}
     </section>
