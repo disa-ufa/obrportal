@@ -4656,6 +4656,7 @@ function getPrimaryActionLabel(enrollment, user) {
 
 function CourseDetailGuestProgram({
   modules = [],
+  guestPreview = false,
   authenticated = false,
   assigned = false,
   active = false,
@@ -4665,6 +4666,23 @@ function CourseDetailGuestProgram({
   const normalizedModules = Array.isArray(modules)
     ? modules
     : [];
+
+  const formatProgramCount = (count, labels) => {
+    const value = Math.abs(Number(count) || 0);
+    const mod100 = value % 100;
+    const mod10 = value % 10;
+    let label = labels[2];
+
+    if (mod100 < 11 || mod100 > 14) {
+      if (mod10 === 1) {
+        label = labels[0];
+      } else if (mod10 >= 2 && mod10 <= 4) {
+        label = labels[1];
+      }
+    }
+
+    return `${value} ${label}`;
+  };
 
   const firstModuleWithLessonsIndex =
     normalizedModules.findIndex(
@@ -4693,6 +4711,9 @@ function CourseDetailGuestProgram({
   return (
     <section
       data-testid="course-detail-guest-program"
+      data-course-program-view={
+        guestPreview ? "guest-preview" : "account-state"
+      }
       className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -4720,8 +4741,18 @@ function CourseDetailGuestProgram({
           </p>
         </div>
 
-        <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-          {`${normalizedModules.length} \u043c\u043e\u0434\u0443\u043b\u0435\u0439`}
+        <span
+          className={
+            guestPreview
+              ? "rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100"
+              : "rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+          }
+        >
+          {formatProgramCount(normalizedModules.length, [
+            "\u043c\u043e\u0434\u0443\u043b\u044c",
+            "\u043c\u043e\u0434\u0443\u043b\u044f",
+            "\u043c\u043e\u0434\u0443\u043b\u0435\u0439",
+          ])}
         </span>
       </div>
 
@@ -4741,9 +4772,19 @@ function CourseDetailGuestProgram({
                     module?.id ||
                     `guest-module-${moduleIndex}`
                   }
-                  className="overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200"
+                  className={
+                    guestPreview
+                      ? "overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200"
+                      : "overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200"
+                  }
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+                  <div
+                    className={
+                      guestPreview
+                        ? "flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-50 to-blue-50/50 px-4 py-4 sm:px-5"
+                        : "flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5"
+                    }
+                  >
                     <div className="min-w-0">
                       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         {`\u041c\u043e\u0434\u0443\u043b\u044c ${moduleIndex + 1}`}
@@ -4756,7 +4797,11 @@ function CourseDetailGuestProgram({
                     </div>
 
                     <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
-                      {`${lessons.length} \u0443\u0440\u043e\u043a\u043e\u0432`}
+                      {formatProgramCount(lessons.length, [
+                        "\u0443\u0440\u043e\u043a",
+                        "\u0443\u0440\u043e\u043a\u0430",
+                        "\u0443\u0440\u043e\u043a\u043e\u0432",
+                      ])}
                     </span>
                   </div>
 
@@ -4821,7 +4866,9 @@ function CourseDetailGuestProgram({
                                   ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
                                   : isAssignedFirstLesson
                                     ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
-                                    : "flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 sm:px-5"
+                                    : guestPreview
+                                      ? "flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-4 py-4 last:border-b-0 sm:items-center sm:px-5"
+                                      : "flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 sm:px-5"
                             }
                           >
                             <div className="flex min-w-0 items-center gap-3">
@@ -4833,7 +4880,13 @@ function CourseDetailGuestProgram({
                               </div>
 
                               <div className="min-w-0">
-                                <div className="truncate text-sm font-medium text-slate-800">
+                                <div
+                                  className={
+                                    guestPreview
+                                      ? "text-sm font-medium leading-5 text-slate-800"
+                                      : "truncate text-sm font-medium text-slate-800"
+                                  }
+                                >
                                   {lesson?.title ||
                                     `\u0423\u0440\u043e\u043a ${lessonIndex + 1}`}
                                 </div>
@@ -4856,7 +4909,9 @@ function CourseDetailGuestProgram({
                                     ? "hidden shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 sm:inline-flex"
                                     : isAssignedFirstLesson
                                       ? "hidden shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 sm:inline-flex"
-                                      : "hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
+                                      : guestPreview
+                                        ? "hidden shrink-0 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 sm:inline-flex"
+                                        : "hidden shrink-0 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:inline-flex"
                               }
                             >
                               {isCancelledCourseCompletedLesson
@@ -4908,6 +4963,25 @@ function CourseDetailGuestState({
   onLogin,
   onCatalog,
 }) {
+  const structure = getCourseStructureStats(course);
+
+  const formatGuestStructureCount = (count, labels) => {
+    const value = Math.abs(Number(count) || 0);
+    const mod100 = value % 100;
+    const mod10 = value % 10;
+    let label = labels[2];
+
+    if (mod100 < 11 || mod100 > 14) {
+      if (mod10 === 1) {
+        label = labels[0];
+      } else if (mod10 >= 2 && mod10 <= 4) {
+        label = labels[1];
+      }
+    }
+
+    return `${value} ${label}`;
+  };
+
   return (
     <div
       data-testid="course-detail-guest-state"
@@ -4929,10 +5003,14 @@ function CourseDetailGuestState({
             data-testid="course-detail-guest-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
-            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
+            <div className="bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
               <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                  {"\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+                </span>
+
                 {course.direction ? (
-                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                     {course.direction}
                   </span>
                 ) : null}
@@ -4948,11 +5026,7 @@ function CourseDetailGuestState({
                 </span>
               </div>
 
-              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
-                {"\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
-              </div>
-
-              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+              <h1 className="mt-7 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
                 {course.title}
               </h1>
 
@@ -4960,97 +5034,362 @@ function CourseDetailGuestState({
                 {course.description ||
                   "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
               </p>
+
+              <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-semibold text-slate-700">
+                <div className="inline-flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-blue-700 ring-1 ring-blue-100"
+                  >
+                    {"\u2261"}
+                  </span>
+                  <span>
+                    {formatGuestStructureCount(structure.modulesCount, [
+                      "\u043c\u043e\u0434\u0443\u043b\u044c",
+                      "\u043c\u043e\u0434\u0443\u043b\u044f",
+                      "\u043c\u043e\u0434\u0443\u043b\u0435\u0439",
+                    ])}
+                  </span>
+                </div>
+
+                <div className="inline-flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-blue-700 ring-1 ring-blue-100"
+                  >
+                    {"\u25b6"}
+                  </span>
+                  <span>
+                    {formatGuestStructureCount(structure.lessonsCount, [
+                      "\u0443\u0440\u043e\u043a",
+                      "\u0443\u0440\u043e\u043a\u0430",
+                      "\u0443\u0440\u043e\u043a\u043e\u0432",
+                    ])}
+                  </span>
+                </div>
+
+                <div className="inline-flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-blue-700 ring-1 ring-blue-100"
+                  >
+                    {"\u2713"}
+                  </span>
+                  <span>
+                    {"\u041e\u043d\u043b\u0430\u0439\u043d-\u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 inline-flex max-w-full items-start gap-3 rounded-2xl bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900 ring-1 ring-blue-100">
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-blue-700 ring-1 ring-blue-200"
+                >
+                  {"i"}
+                </span>
+
+                <span>
+                  {"\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0431\u0435\u0437 \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u0430\u0446\u0438\u0438."}
+                </span>
+              </div>
             </div>
 
-            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u041e\u0431\u044a\u0451\u043c"}
-                </div>
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {course.hours
-                    ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
-                    : "\u2014"}
-                </div>
-              </div>
 
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435"}
-                </div>
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {course.direction || "\u2014"}
-                </div>
-              </div>
+          </section>
 
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
-                </div>
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {formatCourseDocument(course)}
-                </div>
-              </div>
+          <section
+            data-testid="course-detail-guest-mobile-enrollment"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:hidden"
+          >
+            <span className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+              {"\u0414\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0434\u043b\u044f \u0437\u0430\u043f\u0438\u0441\u0438"}
+            </span>
+
+            <h2 className="mt-4 text-xl font-bold tracking-tight text-slate-950">
+              {"\u041d\u0430\u0447\u043d\u0438\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {"\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u0443\u0439\u0442\u0435\u0441\u044c \u0438\u043b\u0438 \u0432\u043e\u0439\u0434\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u043d\u0430 \u043a\u0443\u0440\u0441 \u0438 \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0441\u043e\u0434\u0435\u0440\u0436\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u043e\u0432."}
+            </p>
+
+            <div className="mt-5 grid gap-3">
+              <button
+                type="button"
+                data-testid="course-detail-guest-mobile-register-action"
+                onClick={onRegisterAndEnroll}
+                disabled={enrollLoading}
+                className="min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {enrollLoading
+                  ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+                  : "\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u0438 \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f"}
+              </button>
+
+              <button
+                type="button"
+                data-testid="course-detail-guest-mobile-login-action"
+                onClick={onLogin}
+                className="min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+              >
+                {"\u0412\u043e\u0439\u0442\u0438"}
+              </button>
             </div>
           </section>
 
           <CourseDetailGuestProgram
             modules={course.modules}
+            guestPreview
           />
+
+          <section
+            data-testid="course-detail-guest-info"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
+          >
+            <div className="max-w-3xl">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u041e\u0431 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0438"}
+              </div>
+
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                {"\u041a\u0430\u043a \u0443\u0441\u0442\u0440\u043e\u0435\u043d \u043a\u0443\u0440\u0441"}
+              </h2>
+
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                {"\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0431\u0435\u0437 \u0432\u0445\u043e\u0434\u0430. \u0421\u043e\u0434\u0435\u0440\u0436\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u043e\u0432 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <article className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+                <div
+                  aria-hidden="true"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-blue-700 ring-1 ring-blue-100"
+                >
+                  {"\u25ce"}
+                </div>
+
+                <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0424\u043e\u0440\u043c\u0430\u0442"}
+                </div>
+
+                <div className="mt-1.5 text-base font-semibold text-slate-950">
+                  {course.format || "\u0423\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f"}
+                </div>
+              </article>
+
+              <article className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+                <div
+                  aria-hidden="true"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-blue-700 ring-1 ring-blue-100"
+                >
+                  {"\u231a"}
+                </div>
+
+                <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041e\u0431\u044a\u0451\u043c"}
+                </div>
+
+                <div className="mt-1.5 text-base font-semibold text-slate-950">
+                  {formatGuestStructureCount(course.hours, [
+                    "\u0447\u0430\u0441",
+                    "\u0447\u0430\u0441\u0430",
+                    "\u0447\u0430\u0441\u043e\u0432",
+                  ])}
+                </div>
+              </article>
+
+              <article className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+                <div
+                  aria-hidden="true"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-blue-700 ring-1 ring-blue-100"
+                >
+                  {"\u2713"}
+                </div>
+
+                <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-1.5 text-base font-semibold text-slate-950">
+                  {formatCourseDocument(course)}
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-guest-bottom-cta"
+            className="overflow-hidden rounded-shell bg-slate-950 shadow-sm"
+          >
+            <div className="px-5 py-7 sm:px-7 sm:py-8">
+              <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-300">
+                    {"\u0413\u043e\u0442\u043e\u0432\u044b \u043d\u0430\u0447\u0430\u0442\u044c?"}
+                  </div>
+
+                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
+                    {"\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441"}
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                    {"\u0421\u043e\u0437\u0434\u0430\u0439\u0442\u0435 \u0443\u0447\u0451\u0442\u043d\u0443\u044e \u0437\u0430\u043f\u0438\u0441\u044c \u0438\u043b\u0438 \u0432\u043e\u0439\u0434\u0438\u0442\u0435. \u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u043a\u0443\u0440\u0441 \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0432 \u0440\u0430\u0437\u0434\u0435\u043b \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb."}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+                  <button
+                    type="button"
+                    data-testid="course-detail-guest-bottom-register-action"
+                    onClick={onRegisterAndEnroll}
+                    disabled={enrollLoading}
+                    className="min-h-12 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {enrollLoading
+                      ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+                      : "\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f"}
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="course-detail-guest-bottom-login-action"
+                    onClick={onLogin}
+                    className="min-h-12 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/15"
+                  >
+                    {"\u0412\u043e\u0439\u0442\u0438"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
         </main>
 
         <aside
-          data-testid="course-detail-guest-sidebar"
-          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
-        >
-          <div className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
-            {"\u0414\u043e\u0441\u0442\u0443\u043f \u0434\u043b\u044f \u0433\u043e\u0441\u0442\u0435\u0439"}
-          </div>
-
-          <h2 className="mt-4 text-xl font-bold text-slate-900">
-            {"\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441"}
-          </h2>
-
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            {"\u0414\u043b\u044f \u0434\u043e\u0441\u0442\u0443\u043f\u0430 \u043a \u0443\u0440\u043e\u043a\u0430\u043c, \u0437\u0430\u0434\u0430\u043d\u0438\u044f\u043c \u0438 \u0442\u0435\u0441\u0442\u0430\u043c \u043d\u0443\u0436\u043d\u0430 \u0443\u0447\u0451\u0442\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c."}
-          </p>
-
-          <button
-            type="button"
-            data-testid="course-detail-guest-register-action"
-            onClick={onRegisterAndEnroll}
-            disabled={enrollLoading}
-            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            data-testid="course-detail-guest-sidebar"
+            className="hidden lg:block lg:sticky lg:top-24 lg:self-start"
           >
-            {enrollLoading
-              ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
-              : "\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u0438 \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f"}
-          </button>
+            <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-7">
+              <span className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                {"\u0414\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0434\u043b\u044f \u0437\u0430\u043f\u0438\u0441\u0438"}
+              </span>
 
-          <button
-            type="button"
-            data-testid="course-detail-guest-login-action"
-            onClick={onLogin}
-            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
-          >
-            {"\u0412\u043e\u0439\u0442\u0438"}
-          </button>
+              <h2 className="mt-5 text-2xl font-bold tracking-tight text-slate-950">
+                {"\u041d\u0430\u0447\u043d\u0438\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+              </h2>
 
-          <div className="mt-5 border-t border-slate-100 pt-5">
-            <div className="flex gap-3">
-              <div
-                aria-hidden="true"
-                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700 ring-1 ring-green-200"
-              >
-                {"\u2713"}
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                {"\u0421\u043e\u0437\u0434\u0430\u0439\u0442\u0435 \u0443\u0447\u0451\u0442\u043d\u0443\u044e \u0437\u0430\u043f\u0438\u0441\u044c \u0438\u043b\u0438 \u0432\u043e\u0439\u0434\u0438\u0442\u0435. \u041f\u043e\u0441\u043b\u0435 \u044d\u0442\u043e\u0433\u043e \u043a\u0443\u0440\u0441 \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0432 \u0440\u0430\u0437\u0434\u0435\u043b \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb."}
+              </p>
+
+              <div className="mt-5 overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200">
+                <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3.5">
+                  <span className="text-sm text-slate-500">
+                    {"\u041e\u0431\u044a\u0451\u043c"}
+                  </span>
+
+                  <span className="text-sm font-semibold text-slate-900">
+                    {formatGuestStructureCount(course.hours, [
+                      "\u0447\u0430\u0441",
+                      "\u0447\u0430\u0441\u0430",
+                      "\u0447\u0430\u0441\u043e\u0432",
+                    ])}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3.5">
+                  <span className="text-sm text-slate-500">
+                    {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+                  </span>
+
+                  <span className="text-right text-sm font-semibold text-slate-900">
+                    {`${formatGuestStructureCount(
+                      structure.modulesCount,
+                      [
+                        "\u043c\u043e\u0434\u0443\u043b\u044c",
+                        "\u043c\u043e\u0434\u0443\u043b\u044f",
+                        "\u043c\u043e\u0434\u0443\u043b\u0435\u0439",
+                      ],
+                    )} \u00b7 ${formatGuestStructureCount(
+                      structure.lessonsCount,
+                      [
+                        "\u0443\u0440\u043e\u043a",
+                        "\u0443\u0440\u043e\u043a\u0430",
+                        "\u0443\u0440\u043e\u043a\u043e\u0432",
+                      ],
+                    )}`}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 px-4 py-3.5">
+                  <span className="text-sm text-slate-500">
+                    {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                  </span>
+
+                  <span className="text-right text-sm font-semibold text-slate-900">
+                    {formatCourseDocument(course)}
+                  </span>
+                </div>
               </div>
 
-              <p className="text-sm leading-6 text-slate-600">
-                {"\u041f\u043e\u0441\u043b\u0435 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u0438\u043b\u0438 \u0432\u0445\u043e\u0434\u0430 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u043a\u0443\u0440\u0441 \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d \u0432 \u0440\u0430\u0437\u0434\u0435\u043b \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb."}
-              </p>
+              <button
+                type="button"
+                data-testid="course-detail-guest-register-action"
+                onClick={onRegisterAndEnroll}
+                disabled={enrollLoading}
+                className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {enrollLoading
+                  ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+                  : "\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u0438 \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f"}
+              </button>
+
+              <button
+                type="button"
+                data-testid="course-detail-guest-login-action"
+                onClick={onLogin}
+                className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+              >
+                {"\u0412\u043e\u0439\u0442\u0438"}
+              </button>
+
+              <div className="mt-6 border-t border-slate-100 pt-6">
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {"\u041a\u0430\u043a \u043d\u0430\u0447\u0430\u0442\u044c"}
+                </div>
+
+                <ol className="mt-4 space-y-4">
+                  <li className="flex gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+                      1
+                    </span>
+                    <div className="pt-0.5 text-sm leading-5 text-slate-700">
+                      {"\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u0443\u0439\u0442\u0435\u0441\u044c \u0438\u043b\u0438 \u0432\u043e\u0439\u0434\u0438\u0442\u0435"}
+                    </div>
+                  </li>
+
+                  <li className="flex gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+                      2
+                    </span>
+                    <div className="pt-0.5 text-sm leading-5 text-slate-700">
+                      {"\u041a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb"}
+                    </div>
+                  </li>
+
+                  <li className="flex gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+                      3
+                    </span>
+                    <div className="pt-0.5 text-sm leading-5 text-slate-700">
+                      {"\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u043a\u0443\u0440\u0441 \u0438 \u043f\u0440\u0438\u0441\u0442\u0443\u043f\u0430\u0439\u0442\u0435 \u043a \u0443\u0440\u043e\u043a\u0430\u043c"}
+                    </div>
+                  </li>
+                </ol>
+              </div>
             </div>
-          </div>
-        </aside>
+          </aside>
       </div>
     </div>
   );
