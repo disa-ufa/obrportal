@@ -5405,6 +5405,60 @@ function CourseDetailAuthenticatedUnenrolledState({
   onAccount,
   onCatalog,
 }) {
+  const structure = getCourseStructureStats(course);
+
+  const formatAuthenticatedStructureCount = (count, labels) => {
+    const value = Math.abs(Number(count) || 0);
+    const mod100 = value % 100;
+    const mod10 = value % 10;
+    let label = labels[2];
+
+    if (mod100 < 11 || mod100 > 14) {
+      if (mod10 === 1) {
+        label = labels[0];
+      } else if (mod10 >= 2 && mod10 <= 4) {
+        label = labels[1];
+      }
+    }
+
+    return `${value} ${label}`;
+  };
+
+  const formatStructureCount = (count, labels) => {
+    const value = Math.abs(Number(count) || 0);
+    const mod100 = value % 100;
+    const mod10 = value % 10;
+    let label = labels[2];
+
+    if (mod100 < 11 || mod100 > 14) {
+      if (mod10 === 1) {
+        label = labels[0];
+      } else if (mod10 >= 2 && mod10 <= 4) {
+        label = labels[1];
+      }
+    }
+
+    return `${value} ${label}`;
+  };
+
+  const modulesLabel = formatStructureCount(
+    structure.modulesCount,
+    [
+      "\u043c\u043e\u0434\u0443\u043b\u044c",
+      "\u043c\u043e\u0434\u0443\u043b\u044f",
+      "\u043c\u043e\u0434\u0443\u043b\u0435\u0439",
+    ]
+  );
+
+  const lessonsLabel = formatStructureCount(
+    structure.lessonsCount,
+    [
+      "\u0443\u0440\u043e\u043a",
+      "\u0443\u0440\u043e\u043a\u0430",
+      "\u0443\u0440\u043e\u043a\u043e\u0432",
+    ]
+  );
+
   return (
     <div
       data-testid="course-detail-authenticated-unenrolled-state"
@@ -5426,34 +5480,24 @@ function CourseDetailAuthenticatedUnenrolledState({
             data-testid="course-detail-authenticated-unenrolled-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
-            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
+            <div className="bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
-                  {"\u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
+                  {"\u2713 \u0412\u044b \u0432\u043e\u0448\u043b\u0438 \u043a\u0430\u043a \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c"}
+                </span>
+
+                <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
+                  {"\u041d\u0435 \u0437\u0430\u043f\u0438\u0441\u0430\u043d \u043d\u0430 \u043a\u0443\u0440\u0441"}
                 </span>
 
                 {course.direction ? (
-                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                     {course.direction}
                   </span>
                 ) : null}
-
-                {course.hours ? (
-                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
-                  </span>
-                ) : null}
-
-                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                  {formatCourseDocument(course)}
-                </span>
               </div>
 
-              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
-                {"\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
-              </div>
-
-              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+              <h1 className="mt-7 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
                 {course.title}
               </h1>
 
@@ -5461,41 +5505,139 @@ function CourseDetailAuthenticatedUnenrolledState({
                 {course.description ||
                   "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
               </p>
+
+              <div
+                data-testid="course-detail-authenticated-unenrolled-facts"
+                className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+              >
+                <div className="rounded-2xl bg-white/90 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0424\u043e\u0440\u043c\u0430\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-900">
+                    {course.format || "\u2014"}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/90 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-900">
+                    {`${modulesLabel} \u00b7 ${lessonsLabel}`}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/90 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041e\u0431\u044a\u0451\u043c"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-900">
+                    {course.hours
+                      ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
+                      : "\u2014"}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/90 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-900">
+                    {formatCourseDocument(course)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex max-w-3xl items-start gap-3 rounded-2xl bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900 ring-1 ring-blue-100">
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-blue-700 ring-1 ring-blue-200"
+                >
+                  {"i"}
+                </span>
+
+                <span>
+                  {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430. \u041f\u043e\u043b\u043d\u043e\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
+                </span>
+              </div>
+
+              <p className="mt-4 text-sm leading-6 text-slate-600">
+                {"\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u0432\u0430\u0448\u0435\u043c \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435."}
+              </p>
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-authenticated-unenrolled-mobile-status"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:hidden"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+              {"\u0412\u0430\u0448 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u043e \u043a\u0443\u0440\u0441\u0443"}
             </div>
 
-            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u041e\u0431\u044a\u0451\u043c"}
-                </div>
-
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {course.hours
-                    ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
-                    : "\u2014"}
-                </div>
+            <div className="mt-4 rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
+              <div className="text-sm font-bold text-green-900">
+                {"\u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
               </div>
 
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435"}
-                </div>
-
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {course.direction || "\u2014"}
-                </div>
-              </div>
-
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
-                </div>
-
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {formatCourseDocument(course)}
-                </div>
-              </div>
+              <p className="mt-1 text-sm leading-6 text-green-800">
+                {"\u041c\u043e\u0436\u043d\u043e \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u043d\u0430 \u043a\u0443\u0440\u0441 \u0438\u0437 \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0443\u0447\u0451\u0442\u043d\u043e\u0439 \u0437\u0430\u043f\u0438\u0441\u0438."}
+              </p>
             </div>
+
+            <div className="mt-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
+              <div className="text-sm font-bold text-amber-900">
+                {"\u0417\u0430\u043f\u0438\u0441\u044c \u0435\u0449\u0451 \u043d\u0435 \u043e\u0444\u043e\u0440\u043c\u043b\u0435\u043d\u0430"}
+              </div>
+
+              <p className="mt-1 text-sm leading-6 text-amber-800">
+                {"\u0423\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438."}
+              </p>
+            </div>
+
+            {enrollError ? (
+              <div
+                role="alert"
+                className="mt-4 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+              >
+                {enrollError}
+              </div>
+            ) : null}
+
+            {enrollSuccess ? (
+              <div
+                aria-live="polite"
+                className="mt-4 rounded-xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200"
+              >
+                {enrollSuccess}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              data-testid="course-detail-authenticated-unenrolled-mobile-enroll-action"
+              onClick={onEnroll}
+              disabled={enrollLoading}
+              className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {enrollLoading
+                ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+                : "\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u043d\u0430 \u043a\u0443\u0440\u0441"}
+            </button>
+
+            <button
+              type="button"
+              data-testid="course-detail-authenticated-unenrolled-mobile-account-action"
+              onClick={onAccount}
+              className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+            >
+              {"\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            </button>
           </section>
 
           <div
@@ -5506,77 +5648,244 @@ function CourseDetailAuthenticatedUnenrolledState({
               authenticated
             />
           </div>
+
+                    <section
+            data-testid="course-detail-authenticated-unenrolled-info"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
+          >
+            <div className="max-w-3xl">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u041e\u0431 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0438"}
+              </div>
+
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                {"\u041a\u0430\u043a \u0443\u0441\u0442\u0440\u043e\u0435\u043d \u043a\u0443\u0440\u0441"}
+              </h2>
+
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                {"\u0412\u044b \u0443\u0436\u0435 \u0432\u043e\u0448\u043b\u0438 \u0432 \u0441\u0438\u0441\u0442\u0435\u043c\u0443 \u0438 \u043c\u043e\u0436\u0435\u0442\u0435 \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b. \u0421\u043e\u0434\u0435\u0440\u0436\u0430\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u043e\u0432, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u043a\u0443\u0440\u0441."}
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <article className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+                <div
+                  aria-hidden="true"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-blue-700 ring-1 ring-blue-100"
+                >
+                  {"\u25ce"}
+                </div>
+
+                <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0424\u043e\u0440\u043c\u0430\u0442"}
+                </div>
+
+                <div className="mt-1.5 text-base font-semibold text-slate-950">
+                  {course.format || "\u0423\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f"}
+                </div>
+              </article>
+
+              <article className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+                <div
+                  aria-hidden="true"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-blue-700 ring-1 ring-blue-100"
+                >
+                  {"\u231a"}
+                </div>
+
+                <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u041e\u0431\u044a\u0451\u043c"}
+                </div>
+
+                <div className="mt-1.5 text-base font-semibold text-slate-950">
+                  {formatAuthenticatedStructureCount(course.hours, [
+                    "\u0447\u0430\u0441",
+                    "\u0447\u0430\u0441\u0430",
+                    "\u0447\u0430\u0441\u043e\u0432",
+                  ])}
+                </div>
+              </article>
+
+              <article className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+                <div
+                  aria-hidden="true"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-blue-700 ring-1 ring-blue-100"
+                >
+                  {"\u2713"}
+                </div>
+
+                <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                </div>
+
+                <div className="mt-1.5 text-base font-semibold text-slate-950">
+                  {formatCourseDocument(course)}
+                </div>
+              </article>
+            </div>
+          </section>
+
+<section
+            data-testid="course-detail-authenticated-unenrolled-bottom-cta"
+            className="overflow-hidden rounded-shell bg-gradient-to-r from-slate-950 via-blue-950 to-blue-900 p-6 text-white shadow-sm sm:p-8"
+          >
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200">
+                  {"\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433"}
+                </div>
+
+                <h2 className="mt-2 text-2xl font-bold">
+                  {"\u0413\u043e\u0442\u043e\u0432\u044b \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u043d\u0430 \u043a\u0443\u0440\u0441?"}
+                </h2>
+
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100">
+                  {"\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435, \u0430 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u0442\u044c \u0432 \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e\u043c \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 flex-col gap-3 sm:flex-row xl:flex-col">
+                <button
+                  type="button"
+                  data-testid="course-detail-authenticated-unenrolled-bottom-enroll-action"
+                  onClick={onEnroll}
+                  disabled={enrollLoading}
+                  className="min-h-12 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {enrollLoading
+                    ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+                    : "\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u043d\u0430 \u043a\u0443\u0440\u0441"}
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="course-detail-authenticated-unenrolled-bottom-account-action"
+                  onClick={onAccount}
+                  className="min-h-12 rounded-xl bg-white/10 px-6 py-3 text-sm font-semibold text-white ring-1 ring-white/30 transition hover:bg-white/15"
+                >
+                  {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+                </button>
+              </div>
+            </div>
+          </section>
         </main>
 
         <aside
           data-testid="course-detail-authenticated-unenrolled-sidebar"
-          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+          className="hidden lg:block lg:sticky lg:top-24 lg:self-start"
         >
-          <div className="inline-flex rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
-            {"\u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
-          </div>
-
-          <h2 className="mt-4 text-xl font-bold text-slate-900">
-            {"\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441"}
-          </h2>
-
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            {"\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb. \u0422\u0430\u043c \u0431\u0443\u0434\u0443\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b."}
-          </p>
-
-          {enrollError ? (
-            <div
-              data-testid="course-detail-authenticated-unenrolled-error"
-              role="alert"
-              className="mt-5 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
-            >
-              {enrollError}
+          <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+              {"\u0412\u0430\u0448 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u043e \u043a\u0443\u0440\u0441\u0443"}
             </div>
-          ) : null}
 
-          {enrollSuccess ? (
-            <div
-              data-testid="course-detail-authenticated-unenrolled-success"
-              aria-live="polite"
-              className="mt-5 rounded-xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200"
-            >
-              {enrollSuccess}
-            </div>
-          ) : null}
-
-          <button
-            type="button"
-            data-testid="course-detail-authenticated-unenrolled-enroll-action"
-            onClick={onEnroll}
-            disabled={enrollLoading}
-            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {enrollLoading
-              ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
-              : "\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f"}
-          </button>
-
-          <button
-            type="button"
-            data-testid="course-detail-authenticated-unenrolled-account-action"
-            onClick={onAccount}
-            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
-          >
-            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
-          </button>
-
-          <div className="mt-5 border-t border-slate-100 pt-5">
-            <div className="flex gap-3">
-              <div
-                aria-hidden="true"
-                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700 ring-1 ring-blue-200"
-              >
-                {"\u2192"}
+            <div className="mt-5 rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
+              <div className="text-sm font-bold text-green-900">
+                {"\u2713 \u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
               </div>
 
-              <p className="text-sm leading-6 text-slate-600">
-                {"\u0417\u0430\u043f\u0438\u0441\u044c \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f \u0434\u043b\u044f \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0443\u0447\u0451\u0442\u043d\u043e\u0439 \u0437\u0430\u043f\u0438\u0441\u0438. \u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u00ab\u041c\u043e\u0451 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435\u00bb."}
+              <p className="mt-1 text-sm leading-6 text-green-800">
+                {"\u0414\u043e\u0441\u0442\u0443\u043f \u043a \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u0439 \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u0438 \u043e \u043a\u0443\u0440\u0441\u0435 \u043e\u0442\u043a\u0440\u044b\u0442."}
               </p>
+            </div>
+
+            <div className="mt-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
+              <div className="text-sm font-bold text-amber-900">
+                {"\u041d\u0435 \u0437\u0430\u043f\u0438\u0441\u0430\u043d \u043d\u0430 \u043a\u0443\u0440\u0441"}
+              </div>
+
+              <p className="mt-1 text-sm leading-6 text-amber-800">
+                {"\u0417\u0430\u043f\u0438\u0441\u044c \u0435\u0449\u0451 \u043d\u0435 \u043e\u0444\u043e\u0440\u043c\u043b\u0435\u043d\u0430."}
+              </p>
+            </div>
+
+            {enrollError ? (
+              <div
+                data-testid="course-detail-authenticated-unenrolled-error"
+                role="alert"
+                className="mt-4 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+              >
+                {enrollError}
+              </div>
+            ) : null}
+
+            {enrollSuccess ? (
+              <div
+                data-testid="course-detail-authenticated-unenrolled-success"
+                aria-live="polite"
+                className="mt-4 rounded-xl bg-green-50 p-4 text-sm leading-6 text-green-800 ring-1 ring-green-200"
+              >
+                {enrollSuccess}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              data-testid="course-detail-authenticated-unenrolled-enroll-action"
+              onClick={onEnroll}
+              disabled={enrollLoading}
+              className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {enrollLoading
+                ? "\u0417\u0430\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c..."
+                : "\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u043d\u0430 \u043a\u0443\u0440\u0441"}
+            </button>
+
+            <button
+              type="button"
+              data-testid="course-detail-authenticated-unenrolled-account-action"
+              onClick={onAccount}
+              className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+            >
+              {"\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            </button>
+
+            <div
+              data-testid="course-detail-authenticated-unenrolled-steps"
+              className="mt-6 border-t border-slate-100 pt-6"
+            >
+              <h3 className="text-base font-bold text-slate-900">
+                {"\u041a\u0430\u043a \u043d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+              </h3>
+
+              <ol className="mt-4 space-y-4">
+                {[
+                  [
+                    "1",
+                    "\u0417\u0430\u043f\u0438\u0448\u0438\u0442\u0435\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441",
+                    "\u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u043a\u043d\u043e\u043f\u043a\u0443 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0430 \u044d\u0442\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435.",
+                  ],
+                  [
+                    "2",
+                    "\u041a\u0443\u0440\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435",
+                    "\u0417\u0430\u043f\u0438\u0441\u044c \u0438 \u0441\u0442\u0430\u0442\u0443\u0441 \u0431\u0443\u0434\u0443\u0442 \u043f\u043e\u043a\u0430\u0437\u0430\u043d\u044b \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f.",
+                  ],
+                  [
+                    "3",
+                    "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e",
+                    "\u0423\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f, \u0442\u0435\u0441\u0442\u044b \u0438 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0431\u0443\u0434\u0443\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435.",
+                  ],
+                ].map(([number, title, description]) => (
+                  <li
+                    key={number}
+                    className="flex gap-3"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                      {number}
+                    </span>
+
+                    <div>
+                      <div className="text-sm font-bold text-slate-900">
+                        {title}
+                      </div>
+
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        {description}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
         </aside>
@@ -5599,6 +5908,41 @@ function CourseDetailAssignedState({
       0
   );
 
+  const structure = getCourseStructureStats(course);
+
+  const formatAssignedStructureCount = (count, labels) => {
+    const value = Math.abs(Number(count) || 0);
+    const mod100 = value % 100;
+    const mod10 = value % 10;
+    let label = labels[2];
+
+    if (mod100 < 11 || mod100 > 14) {
+      if (mod10 === 1) {
+        label = labels[0];
+      } else if (mod10 >= 2 && mod10 <= 4) {
+        label = labels[1];
+      }
+    }
+
+    return `${value} ${label}`;
+  };
+
+  const programSummary = `${formatAssignedStructureCount(
+    structure.modulesCount,
+    [
+      "\u043c\u043e\u0434\u0443\u043b\u044c",
+      "\u043c\u043e\u0434\u0443\u043b\u044f",
+      "\u043c\u043e\u0434\u0443\u043b\u0435\u0439",
+    ],
+  )} \u00b7 ${formatAssignedStructureCount(
+    structure.lessonsCount,
+    [
+      "\u0443\u0440\u043e\u043a",
+      "\u0443\u0440\u043e\u043a\u0430",
+      "\u0443\u0440\u043e\u043a\u043e\u0432",
+    ],
+  )}`;
+
   return (
     <div
       data-testid="course-detail-assigned-state"
@@ -5614,51 +5958,31 @@ function CourseDetailAssignedState({
         {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
       </button>
 
-      <div className="rounded-shell bg-emerald-50 px-5 py-4 ring-1 ring-emerald-200 sm:px-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-            {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
-          </span>
-
-          <p className="text-sm font-medium text-emerald-900">
-            {enrollment?.organization_name
-              ? `\u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d: ${enrollment.organization_name}`
-              : "\u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d \u0432\u0430\u043c \u0434\u043b\u044f \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f."}
-          </p>
-        </div>
-      </div>
-
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
         <main className="min-w-0 space-y-6">
           <section
             data-testid="course-detail-assigned-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
-            <div className="border-b border-slate-100 bg-gradient-to-br from-emerald-50 via-white to-blue-50 px-5 py-7 sm:px-8 sm:py-9">
+            <div className="bg-gradient-to-br from-emerald-50 via-white to-blue-50 px-5 py-7 sm:px-8 sm:py-9">
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
-                  {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+                  {"\u2713 \u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+                </span>
+
+                <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                  {"\u0413\u043e\u0442\u043e\u0432 \u043a \u043d\u0430\u0447\u0430\u043b\u0443"}
                 </span>
 
                 {course.direction ? (
-                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                     {course.direction}
                   </span>
                 ) : null}
-
-                {course.hours ? (
-                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
-                  </span>
-                ) : null}
-
-                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                  {formatCourseDocument(course)}
-                </span>
               </div>
 
-              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
-                {"\u0413\u043e\u0442\u043e\u0432\u043e \u043a \u043d\u0430\u0447\u0430\u043b\u0443"}
+              <div className="mt-7 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                {"\u0412\u0430\u0448\u0430 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
               </div>
 
               <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
@@ -5669,41 +5993,132 @@ function CourseDetailAssignedState({
                 {course.description ||
                   "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
               </p>
+
+              <div
+                data-testid="course-detail-assigned-facts"
+                className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+              >
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0424\u043e\u0440\u043c\u0430\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {course.format || "\u0434\u0438\u0441\u0442\u0430\u043d\u0446\u0438\u043e\u043d\u043d\u043e"}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {programSummary}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041e\u0431\u044a\u0451\u043c"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {course.hours
+                      ? formatAssignedStructureCount(course.hours, [
+                          "\u0447\u0430\u0441",
+                          "\u0447\u0430\u0441\u0430",
+                          "\u0447\u0430\u0441\u043e\u0432",
+                        ])
+                      : "\u2014"}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {formatCourseDocument(course)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-2xl bg-emerald-50/80 px-4 py-3.5 text-sm leading-6 text-emerald-900 ring-1 ring-emerald-200">
+                {"\u041a\u0443\u0440\u0441 \u0443\u0436\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d. \u041d\u0430 \u044d\u0442\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443, \u0430 \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."}
+              </div>
+
+              {enrollment?.organization_name ? (
+                <p className="mt-4 text-sm text-slate-600">
+                  {"\u041d\u0430\u0437\u043d\u0430\u0447\u0438\u043b\u0430: "}
+                  <span className="font-semibold text-slate-800">
+                    {enrollment.organization_name}
+                  </span>
+                  {enrollment.learning_group_name
+                    ? ` \u00b7 ${enrollment.learning_group_name}`
+                    : ""}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-assigned-mobile-status"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:hidden"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+              {"\u0412\u0430\u0448 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u043e \u043a\u0443\u0440\u0441\u0443"}
             </div>
 
-            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="mt-4 rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
+              <div className="font-semibold text-emerald-900">
+                {"\u2713 \u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+              </div>
+
+              <p className="mt-1 text-sm leading-6 text-emerald-800">
+                {"\u041c\u043e\u0436\u043d\u043e \u043f\u0435\u0440\u0435\u0445\u043e\u0434\u0438\u0442\u044c \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e."}
+              </p>
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-semibold text-slate-700">
                   {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441"}
-                </div>
+                </span>
 
-                <div className="mt-2 text-xl font-bold text-slate-900">
+                <span className="text-sm font-bold text-slate-950">
                   {`${progressPercent}%`}
-                </div>
+                </span>
               </div>
 
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u041e\u0431\u044a\u0451\u043c"}
-                </div>
-
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {course.hours
-                    ? `${course.hours} \u0447\u0430\u0441\u043e\u0432`
-                    : "\u2014"}
-                </div>
-              </div>
-
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
-                </div>
-
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {formatCourseDocument(course)}
-                </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-emerald-500"
+                  style={{
+                    width: `${progressPercent}%`,
+                  }}
+                />
               </div>
             </div>
+
+            <button
+              type="button"
+              data-testid="course-detail-assigned-mobile-start-action"
+              onClick={onStart}
+              className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e"}
+            </button>
+
+            <button
+              type="button"
+              data-testid="course-detail-assigned-mobile-account-action"
+              onClick={onAccount}
+              className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+            >
+              {"\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            </button>
           </section>
 
           <div data-testid="course-detail-assigned-program">
@@ -5713,34 +6128,135 @@ function CourseDetailAssignedState({
               assigned
             />
           </div>
+
+          <section
+            data-testid="course-detail-assigned-info"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
+          >
+            <div className="max-w-3xl">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433"}
+              </div>
+
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                {"\u041a\u0430\u043a \u043d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+              </h2>
+
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                {"\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0430 \u043a\u0443\u0440\u0441\u0430 \u043e\u0441\u0442\u0430\u0451\u0442\u0441\u044f \u043e\u0431\u0437\u043e\u0440\u043e\u043c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b. \u0421\u0430\u043c\u043e \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u0442 \u0432 \u0432\u0430\u0448\u0435\u043c \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."}
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              {[
+                [
+                  "1",
+                  "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e",
+                  "\u0422\u0430\u043c \u043d\u0430\u0445\u043e\u0434\u044f\u0442\u0441\u044f \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043a\u0443\u0440\u0441\u0430.",
+                ],
+                [
+                  "2",
+                  "\u041d\u0430\u0447\u043d\u0438\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435",
+                  "\u0417\u0430\u043f\u0443\u0441\u043a \u0438 \u0440\u0430\u0431\u043e\u0442\u0430 \u0441 \u043a\u0443\u0440\u0441\u043e\u043c \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435.",
+                ],
+                [
+                  "3",
+                  "\u0421\u043b\u0435\u0434\u0438\u0442\u0435 \u0437\u0430 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u043e\u043c",
+                  "\u0421\u0442\u0430\u0442\u0443\u0441 \u0438 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u044e\u0442\u0441\u044f \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435.",
+                ],
+              ].map(([number, title, description]) => (
+                <article
+                  key={number}
+                  className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                    {number}
+                  </div>
+
+                  <h3 className="mt-4 font-bold text-slate-950">
+                    {title}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-assigned-bottom-cta"
+            className="overflow-hidden rounded-shell bg-slate-950 shadow-sm"
+          >
+            <div className="px-5 py-7 sm:px-7 sm:py-8">
+              <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300">
+                    {"\u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+                  </div>
+
+                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
+                    {"\u041c\u043e\u0436\u043d\u043e \u043f\u0435\u0440\u0435\u0445\u043e\u0434\u0438\u0442\u044c \u043a \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044e"}
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                    {"\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e. \u0418\u043c\u0435\u043d\u043d\u043e \u0442\u0430\u043c \u043f\u0440\u043e\u0445\u043e\u0434\u044f\u0442 \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b."}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+                  <button
+                    type="button"
+                    data-testid="course-detail-assigned-bottom-start-action"
+                    onClick={onStart}
+                    className="min-h-12 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                  >
+                    {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e"}
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="course-detail-assigned-bottom-account-action"
+                    onClick={onAccount}
+                    className="min-h-12 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/15"
+                  >
+                    {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
         </main>
 
         <aside
           data-testid="course-detail-assigned-sidebar"
-          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+          className="hidden rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24 lg:block"
         >
-          <div className="inline-flex rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-            {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+            {"\u0412\u0430\u0448 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u043e \u043a\u0443\u0440\u0441\u0443"}
           </div>
 
-          <h2 className="mt-4 text-xl font-bold text-slate-900">
-            {"\u041c\u043e\u0436\u043d\u043e \u043d\u0430\u0447\u0438\u043d\u0430\u0442\u044c"}
-          </h2>
+          <div className="mt-5 rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
+            <div className="font-bold text-emerald-900">
+              {"\u2713 \u041a\u0443\u0440\u0441 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d"}
+            </div>
 
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            {"\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u043a\u0443\u0440\u0441\u0430. \u0422\u0430\u043c \u0431\u0443\u0434\u0443\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b."}
-          </p>
+            <p className="mt-1.5 text-sm leading-6 text-emerald-800">
+              {"\u0417\u0430\u043f\u0438\u0441\u044c \u0443\u0436\u0435 \u0441\u043e\u0437\u0434\u0430\u043d\u0430. \u041c\u043e\u0436\u043d\u043e \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e."}
+            </p>
+          </div>
 
           <div
             data-testid="course-detail-assigned-progress"
-            className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+            className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
           >
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm font-semibold text-slate-700">
                 {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
               </span>
 
-              <span className="text-sm font-bold text-slate-900">
+              <span className="text-sm font-bold text-slate-950">
                 {`${progressPercent}%`}
               </span>
             </div>
@@ -5762,12 +6278,12 @@ function CourseDetailAssignedState({
           </div>
 
           {enrollment?.organization_name ? (
-            <div className="mt-5 border-t border-slate-100 pt-5">
+            <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {"\u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435"}
               </div>
 
-              <div className="mt-2 text-sm font-semibold text-slate-800">
+              <div className="mt-2 text-sm font-semibold text-slate-900">
                 {enrollment.organization_name}
               </div>
 
@@ -5783,19 +6299,64 @@ function CourseDetailAssignedState({
             type="button"
             data-testid="course-detail-assigned-start-action"
             onClick={onStart}
-            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
-            {"\u041d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+            {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e"}
           </button>
 
           <button
             type="button"
             data-testid="course-detail-assigned-account-action"
             onClick={onAccount}
-            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
           >
-            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            {"\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
           </button>
+
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <h3 className="text-sm font-bold text-slate-950">
+              {"\u0427\u0442\u043e \u0434\u0430\u043b\u044c\u0448\u0435"}
+            </h3>
+
+            <div className="mt-4 space-y-4">
+              {[
+                [
+                  "1",
+                  "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u043a\u0443\u0440\u0441",
+                  "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e.",
+                ],
+                [
+                  "2",
+                  "\u041d\u0430\u0447\u043d\u0438\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435",
+                  "\u0417\u0430\u043f\u0443\u0441\u043a \u043a\u0443\u0440\u0441\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f \u0442\u0430\u043c.",
+                ],
+                [
+                  "3",
+                  "\u041f\u0440\u043e\u0445\u043e\u0434\u0438\u0442\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443",
+                  "\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0431\u0443\u0434\u0435\u0442 \u043e\u0431\u043d\u043e\u0432\u043b\u044f\u0442\u044c\u0441\u044f \u043f\u043e \u043c\u0435\u0440\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f.",
+                ],
+              ].map(([number, title, description]) => (
+                <div
+                  key={number}
+                  className="flex gap-3"
+                >
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                    {number}
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">
+                      {title}
+                    </div>
+
+                    <div className="mt-1 text-xs leading-5 text-slate-500">
+                      {description}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </aside>
       </div>
     </div>
@@ -5860,6 +6421,41 @@ function CourseDetailActiveState({
     ) || 0
   );
 
+  const structure = getCourseStructureStats(course);
+
+  const formatActiveStructureCount = (count, labels) => {
+    const value = Math.abs(Number(count) || 0);
+    const mod100 = value % 100;
+    const mod10 = value % 10;
+    let label = labels[2];
+
+    if (mod100 < 11 || mod100 > 14) {
+      if (mod10 === 1) {
+        label = labels[0];
+      } else if (mod10 >= 2 && mod10 <= 4) {
+        label = labels[1];
+      }
+    }
+
+    return `${value} ${label}`;
+  };
+
+  const programSummary = `${formatActiveStructureCount(
+    structure.modulesCount,
+    [
+      "\u043c\u043e\u0434\u0443\u043b\u044c",
+      "\u043c\u043e\u0434\u0443\u043b\u044f",
+      "\u043c\u043e\u0434\u0443\u043b\u0435\u0439",
+    ],
+  )} \u00b7 ${formatActiveStructureCount(
+    structure.lessonsCount,
+    [
+      "\u0443\u0440\u043e\u043a",
+      "\u0443\u0440\u043e\u043a\u0430",
+      "\u0443\u0440\u043e\u043a\u043e\u0432",
+    ],
+  )}`;
+
   return (
     <div
       data-testid="course-detail-active-state"
@@ -5881,26 +6477,24 @@ function CourseDetailActiveState({
             data-testid="course-detail-active-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
-            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-green-50 px-5 py-7 sm:px-8 sm:py-9">
+            <div className="bg-gradient-to-br from-blue-50 via-white to-emerald-50 px-5 py-7 sm:px-8 sm:py-9">
               <div className="flex flex-wrap gap-2">
-                <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 ring-1 ring-green-200">
-                  {"\u0412 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0435"}
+                <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-800 ring-1 ring-blue-200">
+                  {"\u25b6 \u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0438\u0434\u0451\u0442"}
+                </span>
+
+                <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                  {`${progressPercent}% \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043e`}
                 </span>
 
                 {course.direction ? (
-                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
-                    {course.direction}
-                  </span>
-                ) : null}
-
-                {course.hours ? (
                   <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                    {course.direction}
                   </span>
                 ) : null}
               </div>
 
-              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+              <div className="mt-7 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
                 {"\u0412\u0430\u0448\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
               </div>
 
@@ -5912,39 +6506,134 @@ function CourseDetailActiveState({
                 {course.description ||
                   "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
               </p>
+
+              <div
+                data-testid="course-detail-active-facts"
+                className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+              >
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0424\u043e\u0440\u043c\u0430\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {course.format || "\u0434\u0438\u0441\u0442\u0430\u043d\u0446\u0438\u043e\u043d\u043d\u043e"}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {programSummary}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-blue-700">
+                    {`${progressPercent}%`}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {formatCourseDocument(course)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-2xl bg-blue-50/80 px-4 py-3.5 ring-1 ring-blue-200">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-blue-950">
+                    {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e \u0443\u0440\u043e\u043a\u043e\u0432"}
+                  </div>
+
+                  <div className="text-sm font-bold text-blue-700">
+                    {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
+                  </div>
+                </div>
+
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-blue-100">
+                  <div
+                    className="h-full rounded-full bg-blue-600 transition-[width]"
+                    style={{
+                      width: `${progressPercent}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-active-mobile-status"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:hidden"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+              {"\u0412\u0430\u0448 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u043e \u043a\u0443\u0440\u0441\u0443"}
             </div>
 
-            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="mt-4 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-200">
+              <div className="font-bold text-blue-950">
+                {"\u25b6 \u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0438\u0434\u0451\u0442"}
+              </div>
+
+              <p className="mt-1 text-sm leading-6 text-blue-800">
+                {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal} \u0443\u0440\u043e\u043a\u043e\u0432 \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043e.`}
+              </p>
+            </div>
+
+            <div
+              data-testid="course-detail-active-progress-mobile"
+              className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-semibold text-slate-700">
                   {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441"}
-                </div>
+                </span>
 
-                <div className="mt-2 text-2xl font-bold text-blue-700">
+                <span className="text-sm font-bold text-blue-700">
                   {`${progressPercent}%`}
-                </div>
+                </span>
               </div>
 
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e \u0443\u0440\u043e\u043a\u043e\u0432"}
-                </div>
-
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
-                </div>
-              </div>
-
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
-                </div>
-
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {formatCourseDocument(course)}
-                </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-blue-600"
+                  style={{
+                    width: `${progressPercent}%`,
+                  }}
+                />
               </div>
             </div>
+
+            <button
+              type="button"
+              data-testid="course-detail-active-mobile-continue-action"
+              onClick={onContinue}
+              className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+            </button>
+
+            <button
+              type="button"
+              data-testid="course-detail-active-mobile-account-action"
+              onClick={onAccount}
+              className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+            >
+              {"\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            </button>
           </section>
 
           <section
@@ -5957,28 +6646,37 @@ function CourseDetailActiveState({
 
             {nextLesson ? (
               <>
-                <h2 className="mt-2 text-xl font-bold text-slate-900">
+                <h2 className="mt-2 text-xl font-bold text-slate-950">
                   {nextLesson.title ||
                     "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a"}
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {nextLesson.module_title
-                    ? `\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435 \u00b7 ${nextLesson.module_title}`
-                    : "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435."}
+                    ? `\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u043d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0439 \u0443\u0440\u043e\u043a \u00b7 ${nextLesson.module_title}`
+                    : "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u043d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u044b\u0439 \u0443\u0440\u043e\u043a \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435."}
                 </p>
               </>
             ) : (
               <>
-                <h2 className="mt-2 text-xl font-bold text-slate-900">
+                <h2 className="mt-2 text-xl font-bold text-slate-950">
                   {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {"\u0412\u0441\u0435 \u0443\u0440\u043e\u043a\u0438 \u043e\u0442\u043c\u0435\u0447\u0435\u043d\u044b \u043a\u0430\u043a \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043d\u044b\u0435. \u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u0434\u043b\u044f \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0435\u0433\u043e \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f."}
+                  {"\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u0440\u0430\u0431\u043e\u0442\u0443 \u0441 \u043a\u0443\u0440\u0441\u043e\u043c."}
                 </p>
               </>
             )}
+
+            <button
+              type="button"
+              data-testid="course-detail-active-next-step-action"
+              onClick={onContinue}
+              className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435"}
+            </button>
           </section>
 
           <div data-testid="course-detail-active-program">
@@ -5988,23 +6686,130 @@ function CourseDetailActiveState({
               active
             />
           </div>
+
+          <section
+            data-testid="course-detail-active-info"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
+          >
+            <div className="max-w-3xl">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0438\u0434\u0451\u0442"}
+              </div>
+
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                {"\u041a\u0430\u043a \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0442\u044c \u043a\u0443\u0440\u0441"}
+              </h2>
+
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                {"\u041a\u0430\u0440\u0442\u043e\u0447\u043a\u0430 \u043a\u0443\u0440\u0441\u0430 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442 \u0442\u0435\u043a\u0443\u0449\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u0438 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441. \u0420\u0430\u0431\u043e\u0442\u0430 \u0441 \u0443\u0440\u043e\u043a\u0430\u043c\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f\u043c\u0438 \u0438 \u0442\u0435\u0441\u0442\u0430\u043c\u0438 \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u0442 \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."}
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              {[
+                [
+                  "1",
+                  "\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435",
+                  "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u0438 \u0432\u0435\u0440\u043d\u0438\u0442\u0435\u0441\u044c \u043a \u043a\u0443\u0440\u0441\u0443.",
+                ],
+                [
+                  "2",
+                  "\u041f\u0440\u043e\u0445\u043e\u0434\u0438\u0442\u0435 \u0443\u0440\u043e\u043a\u0438",
+                  "\u0412\u044b\u043f\u043e\u043b\u043d\u044f\u0439\u0442\u0435 \u0443\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435.",
+                ],
+                [
+                  "3",
+                  "\u0421\u043b\u0435\u0434\u0438\u0442\u0435 \u0437\u0430 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u043e\u043c",
+                  "\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0438 \u0441\u0442\u0430\u0442\u0443\u0441 \u043a\u0443\u0440\u0441\u0430 \u043e\u0431\u043d\u043e\u0432\u043b\u044f\u044e\u0442\u0441\u044f \u043f\u043e \u043c\u0435\u0440\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f.",
+                ],
+              ].map(([number, title, description]) => (
+                <article
+                  key={number}
+                  className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                    {number}
+                  </div>
+
+                  <h3 className="mt-4 font-bold text-slate-950">
+                    {title}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-active-bottom-cta"
+            className="overflow-hidden rounded-shell bg-slate-950 shadow-sm"
+          >
+            <div className="px-5 py-7 sm:px-7 sm:py-8">
+              <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-300">
+                    {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0438\u0434\u0451\u0442"}
+                  </div>
+
+                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
+                    {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u0435 \u0441 \u0442\u043e\u0433\u043e \u043c\u0435\u0441\u0442\u0430, \u0433\u0434\u0435 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u043b\u0438\u0441\u044c"}
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                    {nextLesson?.title
+                      ? `\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0448\u0430\u0433: ${nextLesson.title}`
+                      : "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043a\u0443\u0440\u0441."}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+                  <button
+                    type="button"
+                    data-testid="course-detail-active-bottom-continue-action"
+                    onClick={onContinue}
+                    className="min-h-12 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                  >
+                    {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="course-detail-active-bottom-account-action"
+                    onClick={onAccount}
+                    className="min-h-12 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/15"
+                  >
+                    {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
         </main>
 
         <aside
           data-testid="course-detail-active-sidebar"
-          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+          className="hidden rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24 lg:block"
         >
-          <div className="inline-flex rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
-            {"\u0412 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0435"}
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+            {"\u0412\u0430\u0448 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u043e \u043a\u0443\u0440\u0441\u0443"}
           </div>
 
-          <h2 className="mt-4 text-xl font-bold text-slate-900">
-            {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
-          </h2>
+          <div className="mt-5 rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-200">
+            <div className="font-bold text-blue-950">
+              {"\u25b6 \u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0438\u0434\u0451\u0442"}
+            </div>
+
+            <p className="mt-1.5 text-sm leading-6 text-blue-800">
+              {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442\u0441\u044f \u0432 \u0432\u0430\u0448\u0435\u043c \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."}
+            </p>
+          </div>
 
           <div
             data-testid="course-detail-active-progress"
-            className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+            className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
           >
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm font-semibold text-slate-700">
@@ -6037,12 +6842,12 @@ function CourseDetailActiveState({
           </div>
 
           {nextLesson ? (
-            <div className="mt-5 border-t border-slate-100 pt-5">
+            <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {"\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a"}
               </div>
 
-              <div className="mt-2 text-sm font-semibold leading-6 text-slate-900">
+              <div className="mt-2 text-sm font-semibold leading-6 text-slate-950">
                 {nextLesson.title}
               </div>
             </div>
@@ -6058,7 +6863,7 @@ function CourseDetailActiveState({
             type="button"
             data-testid="course-detail-active-continue-action"
             onClick={onContinue}
-            className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
             {"\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
           </button>
@@ -6067,19 +6872,20 @@ function CourseDetailActiveState({
             type="button"
             data-testid="course-detail-active-account-action"
             onClick={onAccount}
-            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
           >
-            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            {"\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
           </button>
 
           <p className="mt-5 border-t border-slate-100 pt-5 text-sm leading-6 text-slate-600">
-            {"\u0423\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435 \u043a\u0443\u0440\u0441\u0430."}
+            {"\u0423\u0440\u043e\u043a\u0438, \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0438 \u0442\u0435\u0441\u0442\u044b \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u0432 \u0443\u0447\u0435\u0431\u043d\u043e\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u0435."}
           </p>
         </aside>
       </div>
     </div>
   );
 }
+
 
 
 function CourseDetailCompletedState({
@@ -6135,6 +6941,44 @@ function CourseDetailCompletedState({
     ) || 0
   );
 
+  const structure = getCourseStructureStats(course);
+
+  const formatCompletedStructureCount = (
+    count,
+    labels,
+  ) => {
+    const value = Math.abs(Number(count) || 0);
+    const mod100 = value % 100;
+    const mod10 = value % 10;
+    let label = labels[2];
+
+    if (mod100 < 11 || mod100 > 14) {
+      if (mod10 === 1) {
+        label = labels[0];
+      } else if (mod10 >= 2 && mod10 <= 4) {
+        label = labels[1];
+      }
+    }
+
+    return `${value} ${label}`;
+  };
+
+  const programSummary = `${formatCompletedStructureCount(
+    structure.modulesCount,
+    [
+      "\u043c\u043e\u0434\u0443\u043b\u044c",
+      "\u043c\u043e\u0434\u0443\u043b\u044f",
+      "\u043c\u043e\u0434\u0443\u043b\u0435\u0439",
+    ],
+  )} \u00b7 ${formatCompletedStructureCount(
+    structure.lessonsCount,
+    [
+      "\u0443\u0440\u043e\u043a",
+      "\u0443\u0440\u043e\u043a\u0430",
+      "\u0443\u0440\u043e\u043a\u043e\u0432",
+    ],
+  )}`;
+
   const documentItem =
     getLearnerDocumentAvailabilityHandoffDocument(
       course,
@@ -6186,48 +7030,31 @@ function CourseDetailCompletedState({
         {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
       </button>
 
-      <div
-        data-testid="course-detail-completed-banner"
-        className="rounded-shell bg-green-50 px-5 py-4 ring-1 ring-green-200 sm:px-6"
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
-            {"\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
-          </span>
-
-          <p className="text-sm font-medium text-green-900">
-            {"\u0412\u044b \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043b\u0438 \u043a\u0443\u0440\u0441."}
-          </p>
-        </div>
-      </div>
-
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
         <main className="min-w-0 space-y-6">
           <section
             data-testid="course-detail-completed-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
-            <div className="border-b border-slate-100 bg-gradient-to-br from-green-50 via-white to-blue-50 px-5 py-7 sm:px-8 sm:py-9">
+            <div className="bg-gradient-to-br from-emerald-50 via-white to-blue-50 px-5 py-7 sm:px-8 sm:py-9">
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 ring-1 ring-green-200">
-                  {"\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+                  {"\u2713 \u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+                </span>
+
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+                  {"100% \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043e"}
                 </span>
 
                 {course.direction ? (
-                  <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
-                    {course.direction}
-                  </span>
-                ) : null}
-
-                {course.hours ? (
                   <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
+                    {course.direction}
                   </span>
                 ) : null}
               </div>
 
-              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-green-700">
-                {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e"}
+              <div className="mt-7 text-xs font-semibold uppercase tracking-[0.16em] text-green-700">
+                {"\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
               </div>
 
               <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
@@ -6238,77 +7065,219 @@ function CourseDetailCompletedState({
                 {course.description ||
                   "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
               </p>
-            </div>
 
-            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e"}
+              <div
+                data-testid="course-detail-completed-facts"
+                className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+              >
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0424\u043e\u0440\u043c\u0430\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {course.format || "\u2014"}
+                  </div>
                 </div>
 
-                <div className="mt-2 text-2xl font-bold text-green-700">
-                  {"100%"}
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {programSummary}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-green-700">
+                    {enrollment?.completed_at
+                      ? formatDateTime(enrollment.completed_at)
+                      : "\u2014"}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {formatCourseDocument(course)}
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e \u0443\u0440\u043e\u043a\u043e\u0432"}
+              <div
+                data-testid="course-detail-completed-banner"
+                className="mt-5 rounded-2xl bg-green-50 px-4 py-3.5 ring-1 ring-green-200"
+              >
+                <div className="font-semibold text-green-900">
+                  {"\u2713 \u0412\u0441\u0435 \u0442\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u044b"}
                 </div>
 
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
-                </div>
-              </div>
-
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f"}
-                </div>
-
-                <div className="mt-2 text-base font-semibold text-slate-900">
-                  {enrollment?.completed_at
-                    ? formatDateTime(enrollment.completed_at)
-                    : "\u2014"}
-                </div>
+                <p className="mt-1 text-sm leading-6 text-green-800">
+                  {"\u0421\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d \u0432 \u0432\u0430\u0448\u0435\u043c \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435."}
+                </p>
               </div>
             </div>
           </section>
 
           <section
+            data-testid="course-detail-completed-mobile-status"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:hidden"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-green-700">
+              {"\u0412\u0430\u0448 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442"}
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
+              <div className="font-bold text-green-950">
+                {"\u2713 \u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+              </div>
+
+              <p className="mt-1 text-sm leading-6 text-green-800">
+                {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal} \u0443\u0440\u043e\u043a\u043e\u0432 \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043e.`}
+              </p>
+            </div>
+
+            <div
+              data-testid="course-detail-completed-document-status-mobile"
+              className={`mt-4 rounded-2xl p-4 text-sm font-semibold ring-1 ${documentStatusTone}`}
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+              </div>
+
+              <div className="mt-2">
+                {documentStatusLabel}
+              </div>
+            </div>
+
+            {documentsLoadError ? (
+              <div
+                data-testid="course-detail-completed-document-load-error-mobile"
+                role="alert"
+                className="mt-4 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+              >
+                {documentsLoadError}
+              </div>
+            ) : null}
+
+            {downloadError ? (
+              <div
+                data-testid="course-detail-completed-document-download-error-mobile"
+                role="alert"
+                className="mt-4 rounded-xl bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200"
+              >
+                {downloadError}
+              </div>
+            ) : null}
+
+            {documentAvailable ? (
+              <button
+                type="button"
+                data-testid="course-detail-completed-download-action-mobile"
+                onClick={() =>
+                  onDownloadDocument?.(documentItem)
+                }
+                disabled={
+                  documentDownloadLoadingId ===
+                  documentItem.id
+                }
+                className="mt-5 min-h-12 w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {documentDownloadLoadingId ===
+                documentItem.id
+                  ? "\u0421\u043a\u0430\u0447\u0438\u0432\u0430\u0435\u043c..."
+                  : "\u0421\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                data-testid="course-detail-completed-documents-action-mobile"
+                onClick={onDocuments}
+                className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                {"\u041f\u0435\u0440\u0435\u0439\u0442\u0438 \u043a \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043c"}
+              </button>
+            )}
+
+            <button
+              type="button"
+              data-testid="course-detail-completed-account-action-mobile"
+              onClick={onAccount}
+              className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
+            >
+              {"\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            </button>
+          </section>
+
+          <section
             data-testid="course-detail-completed-summary"
-            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
           >
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-green-700">
               {"\u0418\u0442\u043e\u0433\u0438 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
             </div>
 
-            <h2 className="mt-2 text-xl font-bold text-slate-900">
-              {"\u0422\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u044b"}
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+              {"\u041a\u0443\u0440\u0441 \u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
             </h2>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
-                <div className="text-sm font-semibold text-green-900">
-                  {"\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+              {"\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u043b\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u0442\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u0439 \u043a \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044e \u043a\u0443\u0440\u0441\u0430."}
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <article className="rounded-2xl bg-green-50 p-5 ring-1 ring-green-200">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white">
+                  {"\u2713"}
                 </div>
 
-                <div className="mt-1 text-sm text-green-800">
+                <h3 className="mt-4 font-bold text-green-950">
+                  {"100% \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e"}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-green-800">
                   {"\u0421\u0442\u0430\u0442\u0443\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d."}
-                </div>
-              </div>
+                </p>
+              </article>
 
-              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
-                <div className="text-sm font-semibold text-green-900">
+              <article className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                  {lessonsCompleted}
+                </div>
+
+                <h3 className="mt-4 font-bold text-slate-950">
+                  {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e \u0443\u0440\u043e\u043a\u043e\u0432"}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal} \u0443\u0440\u043e\u043a\u043e\u0432 \u043a\u0443\u0440\u0441\u0430.`}
+                </p>
+              </article>
+
+              <article className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                  {"\u2713"}
+                </div>
+
+                <h3 className="mt-4 font-bold text-slate-950">
                   {"\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u0447\u0430\u0441\u0442\u044c"}
-                </div>
+                </h3>
 
-                <div className="mt-1 text-sm text-green-800">
+                <p className="mt-2 text-sm leading-6 text-slate-600">
                   {requiredLessonsTotal > 0
-                    ? `${requiredLessonsCompleted} \u0438\u0437 ${requiredLessonsTotal} \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u0443\u0440\u043e\u043a\u043e\u0432`
+                    ? `${requiredLessonsCompleted} \u0438\u0437 ${requiredLessonsTotal} \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u0443\u0440\u043e\u043a\u043e\u0432.`
                     : "\u0422\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u044f \u043a \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044e \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u044b."}
-                </div>
-              </div>
+                </p>
+              </article>
             </div>
           </section>
 
@@ -6319,21 +7288,134 @@ function CourseDetailCompletedState({
               completed
             />
           </div>
+
+          <section
+            data-testid="course-detail-completed-info"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
+          >
+            <div className="max-w-3xl">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u041f\u043e\u0441\u043b\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f"}
+              </div>
+
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                {"\u0427\u0442\u043e \u0434\u0430\u043b\u044c\u0448\u0435"}
+              </h2>
+
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                {"\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d. \u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0438 \u0438\u0441\u0442\u043e\u0440\u0438\u044f \u043a\u0443\u0440\u0441\u0430 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0438\u0437 \u043b\u0438\u0447\u043d\u043e\u0433\u043e \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0430."}
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              {[
+                [
+                  "1",
+                  "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+                  "\u0421\u0442\u0430\u0442\u0443\u0441 \u0438\u0442\u043e\u0433\u043e\u0432\u043e\u0433\u043e \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u043e\u0442\u043e\u0431\u0440\u0430\u0436\u0430\u0435\u0442\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435.",
+                ],
+                [
+                  "2",
+                  "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430",
+                  "\u041d\u0430 \u044d\u0442\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0443 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d\u043d\u043e\u0433\u043e \u043a\u0443\u0440\u0441\u0430.",
+                ],
+                [
+                  "3",
+                  "\u0412\u0435\u0440\u043d\u0438\u0442\u0435\u0441\u044c \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442",
+                  "\u0412 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435 \u0445\u0440\u0430\u043d\u044f\u0442\u0441\u044f \u0432\u0430\u0448\u0438 \u043a\u0443\u0440\u0441\u044b \u0438 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b.",
+                ],
+              ].map(([number, title, description]) => (
+                <article
+                  key={number}
+                  className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                    {number}
+                  </div>
+
+                  <h3 className="mt-4 font-bold text-slate-950">
+                    {title}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-completed-bottom-cta"
+            className="overflow-hidden rounded-shell bg-slate-950 shadow-sm"
+          >
+            <div className="px-5 py-7 sm:px-7 sm:py-8">
+              <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-green-300">
+                    {"\u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+                  </div>
+
+                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
+                    {documentAvailable
+                      ? "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0431 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0438 \u0433\u043e\u0442\u043e\u0432"
+                      : "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d"}
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                    {documentStatusLabel}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+                  <button
+                    type="button"
+                    data-testid="course-detail-completed-bottom-documents-action"
+                    onClick={onDocuments}
+                    className="min-h-12 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-500"
+                  >
+                    {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"}
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="course-detail-completed-bottom-account-action"
+                    onClick={onAccount}
+                    className="min-h-12 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/15"
+                  >
+                    {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
         </main>
 
         <aside
           data-testid="course-detail-completed-sidebar"
-          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+          className="hidden rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24 lg:block"
         >
-          <div className="inline-flex rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
-            {"\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-green-700">
+            {"\u0412\u0430\u0448 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442"}
           </div>
 
-          <h2 className="mt-4 text-xl font-bold text-slate-900">
+          <div className="mt-5 rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
+            <div className="font-bold text-green-950">
+              {"\u2713 \u041a\u0443\u0440\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d"}
+            </div>
+
+            <p className="mt-1.5 text-sm leading-6 text-green-800">
+              {enrollment?.completed_at
+                ? `\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043d: ${formatDateTime(enrollment.completed_at)}`
+                : "\u0421\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d."}
+            </p>
+          </div>
+
+          <h2 className="mt-5 text-xl font-bold text-slate-950">
             {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
           </h2>
 
-          <div className="mt-4 text-sm font-semibold text-slate-900">
+          <div className="mt-2 text-sm font-semibold text-slate-900">
             {documentItem?.title ||
               formatCourseDocument(course)}
           </div>
@@ -6425,7 +7507,7 @@ function CourseDetailCompletedState({
               type="button"
               data-testid="course-detail-completed-documents-action"
               onClick={onDocuments}
-              className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+              className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
             >
               {"\u0412\u0441\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b"}
             </button>
@@ -6435,15 +7517,16 @@ function CourseDetailCompletedState({
             type="button"
             data-testid="course-detail-completed-account-action"
             onClick={onAccount}
-            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
           >
-            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            {"\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
           </button>
         </aside>
       </div>
     </div>
   );
 }
+
 
 
 function CourseDetailCancelledState({
@@ -6473,11 +7556,57 @@ function CourseDetailCancelledState({
     ) || 0
   );
 
+  const structure =
+    getCourseStructureStats(course);
+
   const organizationName =
     enrollment?.organization_name || "";
 
   const learningGroupName =
     enrollment?.learning_group_name || "";
+
+  const formatCancelledStructureCount = (
+    count,
+    labels,
+  ) => {
+    const value =
+      Math.abs(Number(count) || 0);
+
+    const mod100 = value % 100;
+    const mod10 = value % 10;
+
+    let label = labels[2];
+
+    if (mod100 < 11 || mod100 > 14) {
+      if (mod10 === 1) {
+        label = labels[0];
+      } else if (
+        mod10 >= 2 &&
+        mod10 <= 4
+      ) {
+        label = labels[1];
+      }
+    }
+
+    return `${value} ${label}`;
+  };
+
+  const programSummary =
+    `${formatCancelledStructureCount(
+      structure.modulesCount,
+      [
+        "\u043c\u043e\u0434\u0443\u043b\u044c",
+        "\u043c\u043e\u0434\u0443\u043b\u044f",
+        "\u043c\u043e\u0434\u0443\u043b\u0435\u0439",
+      ],
+    )} \u00b7 ${formatCancelledStructureCount(
+      structure.lessonsCount,
+      [
+        "\u0443\u0440\u043e\u043a",
+        "\u0443\u0440\u043e\u043a\u0430",
+        "\u0443\u0440\u043e\u043a\u043e\u0432",
+      ],
+    )}`;
 
   return (
     <div
@@ -6494,104 +7623,161 @@ function CourseDetailCancelledState({
         {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
       </button>
 
-      <section
-        data-testid="course-detail-cancelled-banner"
-        className="rounded-shell bg-red-50 px-5 py-5 ring-1 ring-red-200 sm:px-6"
-      >
-        <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-red-600 ring-1 ring-red-200">
-            {"!"}
-          </div>
-
-          <div>
-            <div className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200">
-              {"\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
-            </div>
-
-            <h1 className="mt-3 text-xl font-bold text-red-950 sm:text-2xl">
-              {"\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e \u044d\u0442\u043e\u043c\u0443 \u043a\u0443\u0440\u0441\u0443 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043e"}
-            </h1>
-
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-red-800">
-              {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430, \u043d\u043e \u0443\u0447\u0435\u0431\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b. \u041f\u043e\u0432\u0442\u043e\u0440\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430."}
-            </p>
-          </div>
-        </div>
-      </section>
-
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
         <main className="min-w-0 space-y-6">
           <section
             data-testid="course-detail-cancelled-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
-            <div className="border-b border-slate-100 bg-gradient-to-br from-red-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
+            <div className="bg-gradient-to-br from-red-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-full bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-200">
                   {"\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
                 </span>
 
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                  {"\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043a\u0440\u044b\u0442"}
+                </span>
+
                 {course.direction ? (
-                  <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                     {course.direction}
                   </span>
                 ) : null}
-
-                {course.hours ? (
-                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                    {`${course.hours} \u0447\u0430\u0441\u043e\u0432`}
-                  </span>
-                ) : null}
               </div>
 
-              <div className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-red-700">
-                {"\u0410\u0440\u0445\u0438\u0432 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
+              <div className="mt-7 text-xs font-semibold uppercase tracking-[0.16em] text-red-700">
+                {"\u0421\u0442\u0430\u0442\u0443\u0441 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f"}
               </div>
 
-              <h2 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+              <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
                 {course.title}
-              </h2>
+              </h1>
 
               <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
                 {course.description ||
                   "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f."}
               </p>
+
+              <div
+                data-testid="course-detail-cancelled-facts"
+                className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+              >
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0424\u043e\u0440\u043c\u0430\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {course.format || "\u2014"}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {programSummary}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e"}
+                  </div>
+
+                  <div
+                    data-testid="course-detail-cancelled-lesson-history"
+                    className="mt-2 text-sm font-bold text-slate-950"
+                  >
+                    {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-slate-950">
+                    {formatCourseDocument(course)}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                data-testid="course-detail-cancelled-banner"
+                className="mt-5 rounded-2xl bg-red-50 px-4 py-3.5 ring-1 ring-red-200"
+              >
+                <div className="font-semibold text-red-950">
+                  {"\u0423\u0447\u0435\u0431\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b"}
+                </div>
+
+                <p className="mt-1 text-sm leading-6 text-red-800">
+                  {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430. \u041d\u0430\u0447\u0430\u0442\u044c \u0438\u043b\u0438 \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e \u044d\u0442\u043e\u0439 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0435\u043b\u044c\u0437\u044f."}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-cancelled-mobile-status"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:hidden"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-red-700">
+              {"\u0421\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u043f\u0438\u0441\u0438"}
             </div>
 
-            <div className="grid gap-px bg-slate-200 sm:grid-cols-3">
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u0421\u0442\u0430\u0442\u0443\u0441"}
-                </div>
-
-                <div className="mt-2 font-semibold text-red-700">
-                  {"\u041e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
-                </div>
+            <div className="mt-4 rounded-2xl bg-red-50 p-4 ring-1 ring-red-200">
+              <div className="font-bold text-red-950">
+                {"\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
               </div>
 
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0443\u0440\u043e\u043a\u043e\u0432"}
-                </div>
-
-                <div
-                  data-testid="course-detail-cancelled-lesson-history"
-                  className="mt-2 font-semibold text-slate-900"
-                >
-                  {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
-                </div>
-              </div>
-
-              <div className="bg-white p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442"}
-                </div>
-
-                <div className="mt-2 font-semibold text-slate-900">
-                  {formatCourseDocument(course)}
-                </div>
-              </div>
+              <p className="mt-1 text-sm leading-6 text-red-800">
+                {lessonsTotal > 0
+                  ? `\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430 \u0438\u0441\u0442\u043e\u0440\u0438\u044f: ${lessonsCompleted} \u0438\u0437 ${lessonsTotal} \u0443\u0440\u043e\u043a\u043e\u0432.`
+                  : "\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0437\u0430\u043f\u0438\u0441\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430."}
+              </p>
             </div>
+
+            {(organizationName ||
+              learningGroupName) ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {organizationName ? (
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {"\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f"}
+                    </div>
+
+                    <div className="mt-2 text-sm font-semibold text-slate-900">
+                      {organizationName}
+                    </div>
+                  </div>
+                ) : null}
+
+                {learningGroupName ? (
+                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {"\u0423\u0447\u0435\u0431\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430"}
+                    </div>
+
+                    <div className="mt-2 text-sm font-semibold text-slate-900">
+                      {learningGroupName}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={onAccount}
+              className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            </button>
           </section>
 
           <div
@@ -6603,25 +7789,141 @@ function CourseDetailCancelledState({
               cancelled
             />
           </div>
+
+          <section
+            data-testid="course-detail-cancelled-info"
+            className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
+          >
+            <div className="max-w-3xl">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {"\u041f\u043e\u0441\u043b\u0435 \u043e\u0442\u043c\u0435\u043d\u044b"}
+              </div>
+
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                {"\u0427\u0442\u043e \u0434\u0435\u043b\u0430\u0442\u044c \u0434\u0430\u043b\u044c\u0448\u0435"}
+              </h2>
+
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                {"\u041e\u0442\u043c\u0435\u043d\u0430 \u0437\u0430\u043f\u0438\u0441\u0438 \u043d\u0435 \u0443\u0434\u0430\u043b\u044f\u0435\u0442 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u0443\u044e \u0438\u0441\u0442\u043e\u0440\u0438\u044e. \u0414\u043b\u044f \u0440\u0435\u0448\u0435\u043d\u0438\u044f \u0432\u043e\u043f\u0440\u043e\u0441\u0430 \u043e \u0434\u043e\u0441\u0442\u0443\u043f\u0435 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 \u043b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442 \u0438\u043b\u0438 \u043e\u0431\u0440\u0430\u0442\u0438\u0442\u0435\u0441\u044c \u043a \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0443."}
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              {[
+                [
+                  "1",
+                  "\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0441\u0442\u0430\u0442\u0443\u0441",
+                  "\u0412 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d \u0442\u0435\u043a\u0443\u0449\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u043f\u0438\u0441\u0438.",
+                ],
+                [
+                  "2",
+                  "\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430",
+                  "\u041d\u0430 \u044d\u0442\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u043e\u0442\u043e\u0431\u0440\u0430\u0436\u0430\u0435\u0442\u0441\u044f \u0444\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043f\u043e \u0443\u0440\u043e\u043a\u0430\u043c.",
+                ],
+                [
+                  "3",
+                  "\u0423\u0442\u043e\u0447\u043d\u0438\u0442\u0435 \u0434\u043e\u0441\u0442\u0443\u043f",
+                  "\u0415\u0441\u043b\u0438 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0443\u0436\u043d\u043e \u0432\u043e\u0437\u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c, \u043e\u0431\u0440\u0430\u0442\u0438\u0442\u0435\u0441\u044c \u043a \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0443.",
+                ],
+              ].map(
+                ([number, title, description]) => (
+                  <article
+                    key={number}
+                    className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                      {number}
+                    </div>
+
+                    <h3 className="mt-4 font-bold text-slate-950">
+                      {title}
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {description}
+                    </p>
+                  </article>
+                )
+              )}
+            </div>
+          </section>
+
+          <section
+            data-testid="course-detail-cancelled-bottom-cta"
+            className="overflow-hidden rounded-shell bg-slate-950 shadow-sm"
+          >
+            <div className="px-5 py-7 sm:px-7 sm:py-8">
+              <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-red-300">
+                    {"\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
+                  </div>
+
+                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
+                    {"\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430"}
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                    {"\u0421\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u043f\u0438\u0441\u0438 \u0438 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0432 \u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0431\u0438\u043d\u0435\u0442\u0435."}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+                  <button
+                    type="button"
+                    onClick={onAccount}
+                    className="min-h-12 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                  >
+                    {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onCatalog}
+                    className="min-h-12 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/15"
+                  >
+                    {"\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
         </main>
 
         <aside
           data-testid="course-detail-cancelled-sidebar"
-          className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24"
+          className="hidden rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-24 lg:block"
         >
-          <div className="inline-flex rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-200">
-            {"\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043a\u0440\u044b\u0442"}
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-red-700">
+            {"\u0421\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u043f\u0438\u0441\u0438"}
           </div>
 
-          <h2 className="mt-4 text-xl font-bold text-slate-900">
-            {"\u0423\u0447\u0435\u0431\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b"}
+          <div className="mt-5 rounded-2xl bg-red-50 p-4 ring-1 ring-red-200">
+            <div className="font-bold text-red-950">
+              {"\u0417\u0430\u043f\u0438\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430"}
+            </div>
+
+            <p className="mt-1.5 text-sm leading-6 text-red-800">
+              {"\u0423\u0447\u0435\u0431\u043d\u044b\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u043f\u043e \u044d\u0442\u043e\u0439 \u0437\u0430\u043f\u0438\u0441\u0438 \u0437\u0430\u043a\u0440\u044b\u0442\u044b."}
+            </p>
+          </div>
+
+          <h2 className="mt-5 text-xl font-bold text-slate-950">
+            {"\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441"}
           </h2>
 
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            {"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0438 \u0438\u0441\u0442\u043e\u0440\u0438\u044f \u0437\u0430\u043f\u0438\u0441\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b. \u041d\u0430\u0447\u0430\u0442\u044c, \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u0438\u043b\u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u043e \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u0441 \u044d\u0442\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u043d\u0435\u043b\u044c\u0437\u044f."}
-          </p>
+          <div className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {"\u041f\u0440\u043e\u0439\u0434\u0435\u043d\u043e \u0443\u0440\u043e\u043a\u043e\u0432"}
+            </div>
 
-          {(organizationName || learningGroupName) ? (
+            <div className="mt-2 text-lg font-bold text-slate-950">
+              {`${lessonsCompleted} \u0438\u0437 ${lessonsTotal}`}
+            </div>
+          </div>
+
+          {(organizationName ||
+            learningGroupName) ? (
             <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
               {organizationName ? (
                 <div>
@@ -6651,33 +7953,34 @@ function CourseDetailCancelledState({
 
           <button
             type="button"
-            data-testid="course-detail-cancelled-catalog-action"
-            onClick={onCatalog}
+            data-testid="course-detail-cancelled-account-action"
+            onClick={onAccount}
             className="mt-6 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
-            {"\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
+            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
           </button>
 
           <button
             type="button"
-            data-testid="course-detail-cancelled-account-action"
-            onClick={onAccount}
-            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+            data-testid="course-detail-cancelled-catalog-action"
+            onClick={onCatalog}
+            className="mt-3 min-h-12 w-full rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-50"
           >
-            {"\u041b\u0438\u0447\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442"}
+            {"\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
           </button>
 
           <div
             data-testid="course-detail-cancelled-admin-note"
             className="mt-5 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200"
           >
-            {"\u0415\u0441\u043b\u0438 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0443\u0436\u043d\u043e \u0432\u043e\u0437\u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c, \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044f \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430."}
+            {"\u0415\u0441\u043b\u0438 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043d\u0443\u0436\u043d\u043e \u0432\u043e\u0437\u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c, \u043e\u0431\u0440\u0430\u0442\u0438\u0442\u0435\u0441\u044c \u043a \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0443."}
           </div>
         </aside>
       </div>
     </div>
   );
 }
+
 
 
 const COURSE_DETAIL_LEGACY_LEARNER_WORKSPACE_RENDERING = false;
@@ -8007,7 +9310,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   ) {
     return (
       <CourseDetailCompletedState
-        course={course}
+        course={mergeCourseWithAccountCourseDetail(course, accountCourseDetail)}
         enrollment={existingEnrollment}
         accountDocuments={accountDocuments}
         documentsLoading={accountDocumentsLoading}
@@ -8034,7 +9337,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   ) {
     return (
       <CourseDetailCancelledState
-        course={course}
+        course={mergeCourseWithAccountCourseDetail(course, accountCourseDetail)}
         enrollment={existingEnrollment}
         onAccount={() => {
           setAccountLearningEntryIntent();
