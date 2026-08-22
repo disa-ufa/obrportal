@@ -1,7 +1,8 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
-import { ArrowRight, BookOpen, BriefcaseBusiness, FileText, GraduationCap, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
+import { ArrowRight, BookOpen, BriefcaseBusiness, CheckCircle2, ChevronRight, CircleUserRound, FileText, GraduationCap, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
 import { getPublicCourses } from "../api/client";
+import homeLearningVideoPreview from "../assets/home-learning-video-preview.webp";
 
 const POPULAR_QUERIES = [
   "Дополнительное образование",
@@ -349,117 +350,132 @@ export function HomePage({ onPageChange, onOpenCourse }) {
             </button>
           </div>
 
-          <div className="relative mx-auto w-full max-w-[560px] lg:mx-0 lg:max-w-none">
+          <div className="relative mx-auto w-full max-w-[650px] lg:mx-0 lg:max-w-none">
             <div
               aria-hidden="true"
-              className="absolute -inset-5 rounded-[2.5rem] bg-gradient-to-br from-blue-200/50 via-sky-100/30 to-indigo-100/50 blur-2xl"
+              className="absolute -inset-5 rounded-[2.5rem] bg-gradient-to-br from-blue-200/50 via-sky-100/40 to-indigo-100/50 blur-2xl"
             />
 
-            <div className="relative overflow-hidden rounded-[1.75rem] border border-white/90 bg-white/95 p-4 shadow-[0_30px_80px_rgba(15,53,110,0.20)] ring-1 ring-blue-100/80 backdrop-blur sm:p-5">
-              <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+            <div
+              data-testid="home-learning-video-preview"
+              className="relative overflow-hidden rounded-[1.75rem] border border-white/90 bg-white/95 p-4 shadow-[0_30px_80px_rgba(15,53,110,0.20)] ring-1 ring-blue-100/80 backdrop-blur sm:p-5"
+            >
+              <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <div className="text-xs font-black uppercase tracking-[0.08em] text-blue-600">
+                  <div className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600 sm:text-xs">
                     Интерфейс обучения
                   </div>
-                  <div className="mt-1 truncate text-base font-black text-[#111936] sm:text-lg">
+                  <div className="mt-1 truncate text-sm font-black text-[#111936] sm:text-base">
                     Современные технологии в обучении
                   </div>
                 </div>
 
-                <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100">
-                  Личный кабинет
-                </span>
+                <div className="flex shrink-0 items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-2.5 py-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-blue-700 shadow-sm">
+                    <CircleUserRound className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div className="hidden text-left sm:block">
+                    <div className="text-[10px] font-black text-[#111936]">Анна Смирнова</div>
+                    <div className="text-[9px] font-semibold text-slate-400">Слушатель</div>
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-2xl bg-gradient-to-br from-[#14285b] via-[#1d4f9f] to-[#2f75d6] p-5 text-white shadow-inner sm:p-6">
-                <div className="flex min-h-[150px] flex-col justify-between sm:min-h-[180px]">
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="rounded-full bg-white/12 px-3 py-1 text-[11px] font-bold backdrop-blur">
-                      Учебный модуль
-                    </span>
-                    <span className="text-xs font-semibold text-blue-100">
-                      Видеозанятие
-                    </span>
+              <div className="mt-4">
+                <div className="flex items-center justify-between gap-4 text-[10px] font-bold sm:text-xs">
+                  <span className="text-slate-500">Прогресс курса</span>
+                  <span className="text-blue-700">40%</span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full w-2/5 rounded-full bg-blue-600" />
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1.55fr)_minmax(150px,0.75fr)]">
+                <div className="min-w-0">
+                  <div className="relative aspect-video overflow-hidden rounded-2xl bg-slate-950 shadow-[0_18px_35px_rgba(15,23,42,0.20)]">
+                    <img
+                      src={homeLearningVideoPreview}
+                      alt="Превью видеозанятия с преподавателем"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[9px] font-black uppercase tracking-[0.08em] text-slate-400">
+                          Материалы модуля
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 text-xs font-black text-[#111936]">
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-hidden="true" />
+                          <span className="truncate">Методические материалы</span>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-[10px] font-black text-blue-700">Открыть</span>
+                    </div>
+                  </div>
+                </div>
+
+                <aside
+                  aria-label="Содержание демонстрационного курса"
+                  className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3"
+                >
+                  <div className="text-[10px] font-black uppercase tracking-[0.08em] text-slate-400">
+                    Содержание курса
                   </div>
 
-                  <div>
-                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white text-blue-700 shadow-lg">
-                      <MonitorPlay className="h-7 w-7" aria-hidden="true" />
+                  <div className="mt-3 space-y-1.5">
+                    <div className="flex items-center gap-2 rounded-xl bg-white px-2.5 py-2 ring-1 ring-slate-100">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden="true" />
+                      <div className="min-w-0">
+                        <div className="text-[9px] font-semibold text-slate-400">Модуль 1</div>
+                        <div className="truncate text-[10px] font-black text-slate-700">Введение</div>
+                      </div>
                     </div>
 
-                    <div className="text-xl font-black sm:text-2xl">
+                    <div className="rounded-xl bg-blue-600 px-2.5 py-2 text-white shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/20 text-[9px] font-black">2</span>
+                        <div className="min-w-0">
+                          <div className="text-[9px] font-semibold text-blue-100">Модуль 2</div>
+                          <div className="line-clamp-2 text-[10px] font-black leading-4">Цифровые инструменты</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 rounded-xl px-2.5 py-2">
+                      <div className="min-w-0">
+                        <div className="text-[9px] font-semibold text-slate-400">Модуль 3</div>
+                        <div className="truncate text-[10px] font-black text-slate-600">Практика</div>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden="true" />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 rounded-xl px-2.5 py-2">
+                      <div className="min-w-0">
+                        <div className="text-[9px] font-semibold text-slate-400">Модуль 4</div>
+                        <div className="truncate text-[10px] font-black text-slate-600">Итоговый тест</div>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden="true" />
+                    </div>
+                  </div>
+                </aside>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-blue-700 shadow-sm">
+                    <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[9px] font-semibold text-slate-400">Текущий урок</div>
+                    <div className="truncate text-[11px] font-black text-[#111936]">
                       Цифровые инструменты педагога
                     </div>
-                    <div className="mt-2 text-sm leading-6 text-blue-100">
-                      Видеозанятие и практические материалы
-                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-5">
-                <div className="flex items-center justify-between gap-4 text-xs font-bold">
-                  <span className="text-slate-500">Прогресс обучения</span>
-                  <span className="text-blue-700">В процессе</span>
-                </div>
-
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div className="h-full w-2/3 rounded-full bg-blue-600" />
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                      <BookOpen className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-slate-500">
-                        Следующий раздел
-                      </div>
-                      <div className="mt-0.5 text-sm font-black leading-5 text-[#111936]">
-                        Практическое задание
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                      <FileText className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-slate-500">
-                        Материалы курса
-                      </div>
-                      <div className="mt-0.5 text-sm font-black leading-5 text-[#111936]">
-                        Методические материалы
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-700 shadow-sm">
-                    <GraduationCap className="h-4 w-4" aria-hidden="true" />
-                  </span>
-
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-500">
-                      После завершения
-                    </div>
-                    <div className="truncate text-sm font-black text-[#111936]">
-                      Документ об обучении
-                    </div>
-                  </div>
-                </div>
-
-                <span className="shrink-0 text-xs font-black text-blue-700">
-                  В кабинете
+                <span className="shrink-0 rounded-lg bg-blue-600 px-2.5 py-1.5 text-[9px] font-black text-white">
+                  Продолжить
                 </span>
               </div>
             </div>
