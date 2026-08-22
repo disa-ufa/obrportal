@@ -1,7 +1,11 @@
 import {
   ArrowLeft,
+  ArrowRight,
   BookOpen,
   CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Circle,
   LockKeyhole,
   PlayCircle,
@@ -128,6 +132,45 @@ function getNextIncompleteLesson(
 }
 
 
+function getNextLesson(
+  lessons,
+  currentLessonId
+) {
+  if (!Array.isArray(lessons) || !lessons.length) {
+    return null;
+  }
+
+  const currentIndex = lessons.findIndex(
+    (lesson) => lesson.id === currentLessonId
+  );
+
+  if (currentIndex < 0) {
+    return null;
+  }
+
+  return lessons[currentIndex + 1] || null;
+}
+
+function getPreviousLesson(
+  lessons,
+  currentLessonId
+) {
+  if (!Array.isArray(lessons) || !lessons.length) {
+    return null;
+  }
+
+  const currentIndex = lessons.findIndex(
+    (lesson) => lesson.id === currentLessonId
+  );
+
+  if (currentIndex <= 0) {
+    return null;
+  }
+
+  return lessons[currentIndex - 1] || null;
+}
+
+
 function getCourseCompletionErrorMessage(err) {
   const detail = err?.payload?.detail;
 
@@ -175,6 +218,7 @@ export function LearnerCoursePage() {
   const [lessonCompletionSuccess, setLessonCompletionSuccess] = useState("");
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [courseContentsOpen, setCourseContentsOpen] = useState(false);
 
   const [
     courseCompletionLoading,
@@ -269,7 +313,7 @@ export function LearnerCoursePage() {
     );
   }, [allLessons, lessonId]);
 
-  const nextLesson = useMemo(
+  const nextIncompleteLesson = useMemo(
     () =>
       getNextIncompleteLesson(
         allLessons,
@@ -277,6 +321,35 @@ export function LearnerCoursePage() {
       ),
     [allLessons, selectedLesson]
   );
+
+  const nextLesson = useMemo(
+    () =>
+      getNextLesson(
+        allLessons,
+        selectedLesson?.id
+      ),
+    [allLessons, selectedLesson]
+  );
+
+  const previousLesson = useMemo(
+    () =>
+      getPreviousLesson(
+        allLessons,
+        selectedLesson?.id
+      ),
+    [allLessons, selectedLesson]
+  );
+
+  const selectedLessonIndex = selectedLesson
+    ? allLessons.findIndex(
+        (lesson) => lesson.id === selectedLesson.id
+      )
+    : -1;
+
+  const selectedLessonNumber =
+    selectedLessonIndex >= 0
+      ? selectedLessonIndex + 1
+      : 0;
 
   const requestedLessonMissing = Boolean(
     lessonId &&
@@ -348,6 +421,7 @@ export function LearnerCoursePage() {
 
     setLessonCompletionError("");
     setLessonCompletionSuccess("");
+    setCourseContentsOpen(false);
 
     navigate(
       `/account/courses/${enrollmentId}/lessons/${nextLessonId}`
@@ -586,7 +660,7 @@ export function LearnerCoursePage() {
         Мои программы
       </button>
 
-      <header className="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+      <header className="mt-4 border-b border-slate-100 pb-6">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0 flex-1">
             <span
@@ -623,20 +697,52 @@ export function LearnerCoursePage() {
           ) : null}
         </div>
 
-        <div className="mt-6">
-          <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-500">
-              Прогресс программы
-            </span>
-
-            <span className="text-slate-900">
-              {effectiveProgress}%
-            </span>
-          </div>
-
-          <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100">
+        <div
+            data-testid="learner-course-progress-summary"
+            className="mt-6 border-t border-slate-100 pt-5"
+        >
+          <div
+            data-testid="learner-course-progress-card"
+            className="space-y-4"
+          >
             <div
-              className="h-full rounded-full bg-blue-600"
+              data-testid="learner-course-progress-header"
+              className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4"
+            >
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                  Ваш прогресс
+                </div>
+
+                <div className="mt-1 text-xl font-black text-slate-950">
+                  {effectiveProgress}%
+                </div>
+              </div>
+
+              <div
+                className={
+                  detail?.status === "completed"
+                    ? "rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-200"
+                    : "rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200"
+                }
+              >
+                {detail?.status === "completed"
+                  ? "Курс завершён"
+                  : "В процессе"}
+              </div>
+            </div>
+
+          <div
+            data-testid="learner-course-progress-bar"
+            className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100"
+          >
+            <div
+              data-testid="learner-course-progress-fill"
+              className={
+                effectiveProgress >= 100
+                  ? "h-full rounded-full bg-green-600 transition-all duration-500 ease-out"
+                  : "h-full rounded-full bg-blue-600 transition-all duration-500 ease-out"
+              }
               style={{
                 width: `${effectiveProgress}%`,
               }}
@@ -650,13 +756,61 @@ export function LearnerCoursePage() {
               {detail.lessons_total || 0}
             </span>
           </div>
+
+          <div
+            data-testid="learner-course-required-summary"
+            className="mt-4 border-t border-slate-100 pt-4"
+          >
+            <div className="text-xs font-bold uppercase tracking-wide text-slate-400">
+              Обязательные уроки
+            </div>
+
+            <div className="mt-1 text-sm font-black text-slate-900">
+              {requiredLessonsCompleted} из {requiredLessonsTotal}
+            </div>
+
+            {remainingRequiredLessons > 0 ? (
+              <div className="mt-1 text-xs font-semibold text-slate-500">
+                Осталось пройти: {remainingRequiredLessons}
+              </div>
+            ) : (
+              <div className="mt-1 text-xs font-semibold text-green-600">
+                Все обязательные уроки завершены
+              </div>
+            )}
+          </div>
+
+          {nextIncompleteLesson ? (
+            <div
+                data-testid="learner-course-next-step"
+                className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                Следующий шаг
+              </div>
+
+              <div className="mt-2 text-sm font-black text-slate-900">
+                {nextIncompleteLesson.title}
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleOpenLesson(nextIncompleteLesson.id)
+                }
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+              >
+                Продолжить обучение
+              </button>
+            </div>
+          ) : null}
+        </div>
         </div>
       </header>
 
       {detail.status === "active" ? (
         <div
           data-testid="learner-course-course-completion"
-          className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+          className={courseCompletionEligible ? "mt-4 rounded-2xl bg-green-50 p-5 ring-1 ring-green-200" : "mt-4 rounded-2xl bg-white p-5 ring-1 ring-slate-200"}
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="min-w-0">
@@ -697,7 +851,7 @@ export function LearnerCoursePage() {
                 courseCompletionLoading
                 || !courseCompletionEligible
               }
-              className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className={courseCompletionEligible ? "inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50" : "inline-flex items-center gap-2 rounded-xl bg-slate-200 px-4 py-2.5 text-sm font-bold text-slate-500 transition disabled:cursor-not-allowed"}
             >
               <CheckCircle2 className="h-4 w-4" />
 
@@ -776,8 +930,32 @@ export function LearnerCoursePage() {
       ) : null}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="self-start rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 lg:sticky lg:top-24">
-          <div className="flex items-center gap-2 px-2 pb-3">
+        <aside data-testid="learner-course-sidebar" className="self-start rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200 lg:sticky lg:top-24">
+          <button
+            type="button"
+            data-testid="learner-course-sidebar-toggle"
+            aria-expanded={courseContentsOpen}
+            aria-controls="learner-course-sidebar-body"
+            onClick={() =>
+              setCourseContentsOpen((current) => !current)
+            }
+            className="flex w-full items-center justify-between gap-3 px-2 pb-3 text-left lg:hidden"
+          >
+            <span className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-blue-600" />
+              <span className="font-black text-slate-950">
+                Содержание курса
+              </span>
+            </span>
+
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
+                courseContentsOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          <div className="hidden items-center gap-2 px-2 pb-3 lg:flex">
             <BookOpen className="h-5 w-5 text-blue-600" />
 
             <h2 className="font-black text-slate-950">
@@ -785,7 +963,11 @@ export function LearnerCoursePage() {
             </h2>
           </div>
 
-          <div className="space-y-4">
+          <div
+            id="learner-course-sidebar-body"
+            data-testid="learner-course-sidebar-body"
+            className={`${courseContentsOpen ? "block" : "hidden"} max-h-[70vh] space-y-4 overflow-y-auto pr-1 lg:block lg:max-h-[calc(100vh-10rem)]`}
+          >
             {(detail.modules || []).map((module) => (
               <div key={module.id}>
                 <div className="px-2 text-xs font-bold uppercase tracking-wide text-slate-400">
@@ -801,13 +983,16 @@ export function LearnerCoursePage() {
                       <button
                         key={lesson.id}
                         type="button"
+                        data-testid={active ? "learner-course-active-lesson" : lesson.is_completed ? "learner-course-completed-lesson" : "learner-course-sidebar-lesson"}
                         onClick={() =>
                           handleOpenLesson(lesson.id)
                         }
                         className={`flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left ${
                           active
-                            ? "bg-blue-50 text-blue-950 ring-1 ring-blue-100"
-                            : "text-slate-700 hover:bg-slate-50"
+                            ? "bg-blue-50 text-blue-950 ring-1 ring-blue-200"
+                            : lesson.is_completed
+                              ? "bg-green-50 text-green-900 ring-1 ring-green-100"
+                              : "text-slate-700 hover:bg-slate-50"
                         }`}
                       >
                         {lesson.is_completed ? (
@@ -820,6 +1005,15 @@ export function LearnerCoursePage() {
                           <span className="block text-sm font-bold">
                             {lesson.title}
                           </span>
+
+                          {active ? (
+                            <span
+                              data-testid="learner-course-current-badge"
+                              className="mt-1 inline-block text-[11px] font-bold text-blue-600"
+                            >
+                              Текущий урок
+                            </span>
+                          ) : null}
 
                           {lesson.is_required ? (
                             <span className="mt-1 block text-[11px] font-semibold text-slate-400">
@@ -870,16 +1064,90 @@ export function LearnerCoursePage() {
             </div>
           ) : selectedLesson ? (
             <article
-              data-testid="learner-course-active-lesson"
+              data-testid="learner-course-content-active-lesson"
               className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7"
             >
-              <div className="text-xs font-bold uppercase tracking-wide text-blue-600">
-                {selectedLesson.moduleTitle}
+              <div
+                data-testid="learner-course-lesson-toolbar"
+                className="flex flex-wrap items-center justify-between gap-3"
+              >
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wide text-blue-600">
+                    {selectedLesson.moduleTitle}
+                  </div>
+
+
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    data-testid="learner-course-previous-lesson-button"
+                    onClick={() =>
+                      previousLesson
+                        ? handleOpenLesson(previousLesson.id)
+                        : null
+                    }
+                    disabled={!previousLesson}
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">Предыдущий</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="learner-course-toolbar-next-lesson-button"
+                    onClick={() =>
+                      nextLesson
+                        ? handleOpenLesson(nextLesson.id)
+                        : null
+                    }
+                    disabled={!nextLesson}
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <span className="hidden sm:inline">Следующий</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                {selectedLesson.title}
-              </h2>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl font-black tracking-tight text-slate-950">
+                  {selectedLesson.title}
+                </h2>
+
+                {selectedLesson.is_completed ? (
+                  <span
+                    data-testid="learner-course-lesson-status-badge"
+                    className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-200"
+                  >
+                    Урок завершён
+                  </span>
+                ) : (
+                  <span
+                    data-testid="learner-course-lesson-status-badge"
+                    className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200"
+                  >
+                    Текущий урок
+                  </span>
+                )}
+              </div>
+
+              <div
+                data-testid="learner-course-lesson-meta"
+                className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500"
+              >
+                <span>
+                  Урок {selectedLessonNumber} из {allLessons.length}
+                </span>
+
+                {selectedLesson.is_required ? (
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600 ring-1 ring-slate-200">
+                    Обязательный урок
+                  </span>
+                ) : null}
+              </div>
 
               {selectedLesson.description ? (
                 <p className="mt-3 text-sm leading-6 text-slate-600">
@@ -888,24 +1156,43 @@ export function LearnerCoursePage() {
               ) : null}
 
               {selectedLesson.content_text ? (
-                <div className="mt-7 whitespace-pre-wrap rounded-2xl bg-slate-50 p-5 text-sm leading-7 text-slate-700 ring-1 ring-slate-200">
-                  {selectedLesson.content_text}
+                <div
+                  data-testid="learner-course-lesson-content"
+                  className="mt-7 border-t border-slate-100 pt-6"
+                >
+                  <div className="mb-3 text-sm font-black text-slate-950">
+                    Материал урока
+                  </div>
+
+                  <div className="max-w-3xl whitespace-pre-wrap text-base leading-7 text-slate-700">
+                    {selectedLesson.content_text}
+                  </div>
                 </div>
               ) : null}
 
               {selectedLesson.content_url ? (
-                <a
-                  href={selectedLesson.content_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white"
+                <div
+                  data-testid="learner-course-lesson-material-link"
+                  className="mt-5 border-t border-slate-100 pt-5"
                 >
-                  Открыть материал
-                </a>
+                  <div className="mb-3 text-sm font-black text-slate-950">
+                    Дополнительный материал
+                  </div>
+
+                  <a
+                    href={selectedLesson.content_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white"
+                  >
+                    Открыть материал
+                  </a>
+                </div>
               ) : null}
 
               {!selectedLesson.content_text &&
-              !selectedLesson.content_url ? (
+              !selectedLesson.content_url &&
+              !(selectedLesson.blocks || []).length ? (
                 <div className="mt-7 rounded-2xl bg-slate-50 p-5 text-sm text-slate-500 ring-1 ring-slate-200">
                   Основной материал урока будет отображён здесь.
                 </div>
@@ -914,7 +1201,7 @@ export function LearnerCoursePage() {
               {(selectedLesson.blocks || []).length ? (
                 <div className="mt-7 border-t border-slate-100 pt-6">
                   <div className="text-sm font-black text-slate-950">
-                    Интерактивные материалы
+                    Материалы и задания
                   </div>
 
                   <div className="mt-3 space-y-2">
@@ -976,34 +1263,84 @@ export function LearnerCoursePage() {
                 {selectedLesson.is_completed ? (
                   <div
                     data-testid="learner-course-lesson-completed"
-                    className="rounded-2xl bg-green-50 p-4 text-sm text-green-800 ring-1 ring-green-200"
+                    className="rounded-2xl bg-green-50 p-5 ring-1 ring-green-200"
                   >
-                    <div className="flex items-center gap-2 font-bold">
-                      <CheckCircle2 className="h-5 w-5" />
-                      <span>\u0423\u0440\u043e\u043a \u0438\u0437\u0443\u0447\u0435\u043d</span>
+                    <div
+                      data-testid="learner-course-completed-title"
+                      className="flex items-center gap-2 text-sm font-black text-green-900"
+                    >
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      Урок завершён
                     </div>
 
-                    {nextLesson ? (
-                      <button
-                        type="button"
-                        data-testid="learner-course-next-lesson-button"
-                        onClick={() =>
-                          handleOpenLesson(nextLesson.id)
-                        }
-                        className="mt-4 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+                    <p className="mt-2 text-sm leading-6 text-green-800">
+                      Отлично! Материал урока изучен, прогресс обучения обновлён.
+                    </p>
+
+                    {nextIncompleteLesson ? (
+                      <div
+                        data-testid="learner-course-next-lesson-preview"
+                        className="mt-4 rounded-xl bg-white/70 p-3 ring-1 ring-green-200"
                       >
-                        \u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a
-                      </button>
-                    ) : null}
+                        <div className="text-xs font-bold uppercase tracking-wide text-green-700">
+                          Следующий урок
+                        </div>
+
+                        <div className="mt-1 text-sm font-black text-slate-900">
+                          {nextIncompleteLesson.title}
+                        </div>
+
+                        <button
+                          type="button"
+                          data-testid="learner-course-next-lesson-button"
+                          onClick={() =>
+                            handleOpenLesson(nextIncompleteLesson.id)
+                          }
+                          className="mt-3 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+                        >
+                          Перейти к следующему уроку
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        data-testid="learner-course-completed-course-card"
+                        className="mt-4 rounded-xl bg-white/70 p-4 ring-1 ring-green-200"
+                      >
+                        <div className="text-sm font-black text-green-900">
+                          {detail.status === "completed"
+                            ? "🎉 Курс завершён"
+                            : "Все уроки пройдены"}
+                        </div>
+
+                        <p className="mt-2 text-sm leading-6 text-green-800">
+                          {detail.status === "completed"
+                            ? "Программа завершена. Все доступные материалы остаются доступными для просмотра."
+                            : "Все доступные материалы программы изучены. Чтобы зафиксировать завершение обучения, завершите программу в блоке «Завершение программы»."}
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => navigate("/account")}
+                          className="mt-4 inline-flex rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-700"
+                        >
+                          Вернуться к курсам
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : !readOnly ? (
-                  <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                    <div className="text-sm font-bold text-slate-900">
-                      \u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0435 \u0443\u0440\u043e\u043a\u0430
+                  <div
+                    data-testid="learner-course-active-completion-card"
+                    className="rounded-2xl bg-blue-50 p-5 ring-1 ring-blue-200"
+                  >
+                    <div className="flex items-center gap-2 text-sm font-black text-blue-950">
+                      <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                      Завершение урока
                     </div>
 
-                    <div className="mt-1 text-sm leading-6 text-slate-600">
-                      \u041f\u043e\u0441\u043b\u0435 \u0438\u0437\u0443\u0447\u0435\u043d\u0438\u044f \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u043e\u0432 \u043e\u0442\u043c\u0435\u0442\u044c\u0442\u0435 \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439. \u0415\u0441\u043b\u0438 \u0435\u0441\u0442\u044c \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0442\u0435\u0441\u0442 \u0438\u043b\u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u0435, \u0441\u0438\u0441\u0442\u0435\u043c\u0430 \u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442 \u0438\u0445 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435.
+                    <div className="mt-2 text-sm leading-6 text-blue-900">
+                      Вы изучили материал урока? Отметьте урок завершённым,
+                      чтобы обновить прогресс обучения.
                     </div>
 
                     <button
@@ -1011,12 +1348,13 @@ export function LearnerCoursePage() {
                       data-testid="learner-course-complete-lesson-button"
                       onClick={handleCompleteLesson}
                       disabled={lessonCompletionLoading}
-                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <CheckCircle2 className="h-4 w-4" />
+                      <CheckCircle2 className="h-5 w-5" />
+
                       {lessonCompletionLoading
-                        ? "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c..."
-                        : "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0443\u0440\u043e\u043a \u043a\u0430\u043a \u0438\u0437\u0443\u0447\u0435\u043d\u043d\u044b\u0439"}
+                        ? "Сохраняем прогресс..."
+                        : "Завершить урок"}
                     </button>
                   </div>
                 ) : (
@@ -1046,6 +1384,44 @@ export function LearnerCoursePage() {
                   </div>
                 ) : null}
               </div>
+
+              <nav
+                data-testid="learner-course-lesson-bottom-navigation"
+                aria-label="Навигация по урокам"
+                className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    previousLesson
+                      ? handleOpenLesson(previousLesson.id)
+                      : null
+                  }
+                  disabled={!previousLesson}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Предыдущий урок
+                </button>
+
+                <div className="text-center text-xs font-semibold text-slate-400">
+                  {selectedLessonNumber} / {allLessons.length}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    nextLesson
+                      ? handleOpenLesson(nextLesson.id)
+                      : null
+                  }
+                  disabled={!nextLesson}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Следующий урок
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </nav>
 
             </article>
           ) : (

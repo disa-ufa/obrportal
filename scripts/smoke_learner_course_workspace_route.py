@@ -98,7 +98,9 @@ def test_workspace_has_stable_ui_markers() -> None:
         'data-testid="learner-course-loading"',
         'data-testid="learner-course-error"',
         'data-testid="learner-course-workspace"',
-        'data-testid="learner-course-active-lesson"',
+        '"learner-course-active-lesson"',
+        '"learner-course-completed-lesson"',
+        '"learner-course-sidebar-lesson"',
         'data-testid="learner-course-lesson-not-found"',
     ):
         assert marker in page
@@ -483,7 +485,27 @@ def test_learner_content_block_is_text_and_url_safe() -> None:
     assert '!raw.startsWith("//")' in content
 
     assert "extractStructuredText" in content
+
+    assert "function getText(block)" in content
+    assert (
+        "content.text\n"
+        "    || content.content_text\n"
+        "    || content.body\n"
+        "    || content.description\n"
+        "    || content.note\n"
+        "    || content.message"
+    ) in content
     assert "Array.isArray(value.content)" in content
+
+    assert "function getUrl(block)" in content
+    assert (
+        "content.url\n"
+        "    || content.content_url\n"
+        "    || content.file_url\n"
+        "    || content.href\n"
+        "    || content.link\n"
+        "    || content.video_url"
+    ) in content
 
 
 def test_workspace_wires_content_blocks_without_regressing_quiz_assignment() -> None:
